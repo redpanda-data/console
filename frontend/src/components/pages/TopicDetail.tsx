@@ -1,23 +1,24 @@
-import { Component, ReactNode } from "react";
+import { Component, ReactNode, createRef } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../models/ServiceModels";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Switch, Select, Input, Form, Divider, Typography, message } from "antd";
+import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Switch, Select, Input, Form, Divider, Typography, message, Tag, notification } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../state/backendApi";
-import { uiState as ui } from "../../state/ui";
+import { uiState as ui, uiSettings, PreviewTag } from "../../state/ui";
 import ReactJson, { CollapsedFieldProps } from 'react-json-view'
 import { PageComponent, PageInitHelper } from "./Page";
 import prettyMilliseconds from 'pretty-ms';
 import prettyBytes from 'pretty-bytes';
 import topicConfigInfo from '../../assets/topicConfigInfo.json'
-import { sortField, cullText, range, makePaginationConfig } from "../common";
-import { motion } from "framer-motion";
-import { observable } from "mobx";
+import { sortField, cullText, range, makePaginationConfig, Spacer } from "../common";
+import { motion, AnimatePresence } from "framer-motion";
+import { observable, computed } from "mobx";
 import { debounce, findElementDeep } from "../../utils/utils";
 import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
+import CheckableTag from "antd/lib/tag/CheckableTag";
 
 const { Text } = Typography;
 
@@ -109,6 +110,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         startOffset: -1, partitionID: 0, pageSize: 50,
         sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset
     };
+    @observable previewDisplay: string[] = [];
 
     constructor(props: { topic: TopicDetail }) {
         super(props);
@@ -148,12 +150,21 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                 <this.quickSearchResultInfo />
 
+                <Spacer />
+
+                {!!this.messages && <CustomTagList tags={uiSettings.topics.previewTags} />}
+
                 <this.searchQueryAdditionalInfo />
             </Row>
 
             {/* Message Table */}
             <this.renderMessageTable />
         </>
+    }
+
+    @computed
+    get activeTags() {
+        return uiSettings.topics.previewTags.filter(t => t.active).map(t => t.value);
     }
 
     renderMessageTable = observer(() => {
@@ -167,7 +178,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             {
                 title: 'Value (Preview)',
                 dataIndex: 'value',
-                render: (t, r) => RenderPreview(r.valueObject, ['hashtag', 'battleTime', 'type']),
+                render: (t, r) => <MessagePreview value={r.valueObject} getFields={() => this.activeTags} />,
             },
             {
                 width: 1,
@@ -390,33 +401,40 @@ class InnerSearchParametersForm extends Component<SearchParametersProps> {
 }
 
 
-function RenderPreview(obj: any, previewFields: string[]) {
-    try {
-        let text: ReactNode = <></>;
+@observer
+class MessagePreview extends Component<{ value: any, getFields: () => string[] }> {
+    render() {
+        const value = this.props.value;
+        const fields = this.props.getFields();
 
-        if (!obj) { // 1. handle 'null'
-            text = <code>null</code>
-        }
-        else if (previewFields.length > 0) { // 2. try preview fields
-            const previewObj: any = {};
-            for (let f of previewFields) {
-                var x = findElementDeep(obj, f);
-                if (x) {
-                    previewObj[f] = x;
-                }
+        try {
+            let text: ReactNode = <></>;
+
+            if (!value) { // 1. handle 'null'
+                text = <code>null</code>
             }
-            text = cullText(JSON.stringify(previewObj), 100);
-        }
-        else { // 3. just stringify the whole object
-            text = cullText(JSON.stringify(obj), 100);
-        }
+            else if (fields.length > 0) { // 2. try preview fields
+                const previewObj: any = {};
+                for (let f of fields) {
+                    var x = findElementDeep(value, f);
+                    if (x) {
+                        previewObj[f] = x;
+                    }
+                }
+                text = cullText(JSON.stringify(previewObj), 100);
+            }
+            else { // 3. just stringify the whole object
+                text = cullText(JSON.stringify(value), 100);
+            }
 
-        return <code><span className='cellDiv' style={{ fontSize: '85%' }}>{text}</span></code>
-    }
-    catch (e) {
-        return <span style={{ color: 'red' }}>Error in RenderPreview: {e.toString()}</span>
+            return <code><span className='cellDiv' style={{ fontSize: '85%' }}>{text}</span></code>
+        }
+        catch (e) {
+            return <span style={{ color: 'red' }}>Error in RenderPreview: {e.toString()}</span>
+        }
     }
 }
+
 
 function RenderExpandedMessage(obj: any, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
@@ -577,6 +595,97 @@ function FormatValue(configEntry: TopicConfigEntry): string {
 
 const markerIcon = <Icon type="highlight" theme="twoTone" twoToneColor="#1890ff" style={{ fontSize: '1.5em', marginRight: '.25em' }} />
 
+
+@observer
+class CustomTagList extends Component<{ tags: PreviewTag[] }> {
+    @observable inputVisible = false;
+    @observable inputValue = '';
+
+    @observable activeTags: string[] = [];
+
+    render() {
+        return <>
+            <AnimatePresence>
+                <motion.div positionTransition style={{ padding: '.3em' }}>
+
+                    {this.props.tags.map(v => <CustomTag key={v.value} tag={v} tagList={this} />)}
+
+                    {this.inputVisible &&
+                        <motion.span positionTransition>
+                            <Input
+                                ref={r => { if (r) { r.focus(); } }}
+                                type="text"
+                                size="small"
+                                style={{ width: 78 }}
+                                value={this.inputValue}
+                                onChange={e => this.inputValue = e.target.value}
+                                onBlur={this.handleInputConfirm}
+                                onPressEnter={this.handleInputConfirm}
+                            />
+                        </motion.span>
+                    }
+
+                    {!this.inputVisible &&
+                        <motion.span positionTransition>
+                            <Button onClick={() => this.inputVisible = true} size='small' type='dashed'>
+                                <Icon type='plus' style={{ color: '#999' }} />
+                                <>Add Preview</>
+                            </Button>
+                        </motion.span>
+                    }
+
+                </motion.div>
+            </AnimatePresence>
+        </>
+    }
+
+    handleInputConfirm = () => {
+        const tags = this.props.tags;
+        const newTag = this.inputValue;
+        if (newTag && tags.all(t => t.value != newTag)) {
+            tags.push({ value: newTag, active: true });
+        }
+        this.inputVisible = false;
+        this.inputValue = '';
+    };
+
+    get tags(): PreviewTag[] { return this.props.tags; }
+    get tagNames(): string[] { return this.props.tags.map(t => t.value); }
+    get activeTagNames(): string[] { return this.props.tags.filter(t => t.active).map(t => t.value); }
+
+    setTagActive(tag: string, isActive: boolean) {
+        if (!isActive) {
+            this.activeTags.remove(tag);
+        } else {
+            this.activeTags.push(tag);
+        }
+    }
+
+    removeTag(tag: string) {
+        this.props.tags.removeAll(t => t.value === tag);
+    }
+}
+
+@observer
+class CustomTag extends Component<{ tag: PreviewTag, tagList: CustomTagList }> {
+    @observable isActive = false;
+
+    render() {
+        const tag = this.props.tag;
+        const list = this.props.tagList;
+        const value = tag.value;
+
+        return <motion.span>
+            <Tag
+                color={tag.active ? 'blue' : undefined}
+                key={value}
+                onClick={() => tag.active = !tag.active}
+                closable
+                onClose={() => list.removeTag(value)}
+            >{value}</Tag>
+        </motion.span>
+    }
+}
 
 
 export default TopicDetails;
