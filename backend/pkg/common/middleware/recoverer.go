@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/weeco/kafka-explorer/pkg/common/rest"
+	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
 )
 
 // Recoverer middleware logs unhandled panics and tries to continue running the API

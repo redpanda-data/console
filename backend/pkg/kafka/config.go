@@ -3,7 +3,7 @@ package kafka
 import (
 	"flag"
 
-	"github.com/weeco/kafka-explorer/pkg/common/flagext"
+	"github.com/kafka-owl/kafka-owl/pkg/common/flagext"
 )
 
 // Config required for opening a connection to Kafka

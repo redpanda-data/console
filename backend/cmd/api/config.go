@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 
-	"github.com/weeco/kafka-explorer/pkg/common/logging"
-	"github.com/weeco/kafka-explorer/pkg/common/rest"
-	"github.com/weeco/kafka-explorer/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/common/logging"
+	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
+	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 )
 
 // Config holds all (subdependency)Configs needed to run the API

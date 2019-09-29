@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/weeco/kafka-explorer/pkg/common/flagext"
-	"github.com/weeco/kafka-explorer/pkg/common/logging"
-	"github.com/weeco/kafka-explorer/pkg/common/rest"
-	"github.com/weeco/kafka-explorer/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/common/flagext"
+	"github.com/kafka-owl/kafka-owl/pkg/common/logging"
+	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
+	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

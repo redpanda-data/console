@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/weeco/kafka-explorer/pkg/common/rest"
-	"github.com/weeco/kafka-explorer/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
+	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 )
 
 // GetConsumerGroupsResponse represents the data which is returned for listing topics
