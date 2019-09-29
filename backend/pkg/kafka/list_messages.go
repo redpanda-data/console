@@ -143,10 +143,10 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 	}
 
 	// Start a partition consumer for all requested partitions
-	errorCh := make(chan error)
-	messageCh := make(chan *TopicMessage)
-	doneCh := make(chan int, len(partitionIDs))
-	startedRoutines := 0
+	errorCh := make(chan error, len(partitions))
+	messageCh := make(chan *TopicMessage, len(partitions)*int(req.MessageCount))
+	doneCh := make(chan struct{}, len(partitions))
+	startedWorkers := 0
 
 	for _, partitionID := range partitionIDs {
 		// Calculate start and end offset for current partition
@@ -189,38 +189,73 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 			partitionID: partitionID,
 			startOffset: startOffset,
 			endOffset:   endOffset,
+			doneCh:      doneCh,
 		}
-		startedRoutines++
+		startedWorkers++
 		go pConsumer.Run(ctx)
 	}
 
 	// Read results into array
 	msgs := make([]*TopicMessage, 0, req.MessageCount)
 	isCancelled := false
-	isDone := startedRoutines == 0 // Potentially we haven't started any partition consumers (e. g. requested partition has no messages)
 	fetchedMessages := uint16(0)
+	completedWorkers := 0
+	allWorkersDone := false
+
+	// Priority list of actions
+	// since we need to process cases by their priority, we must check them individually and
+	// can't rely on 'select' since it picks a random case if multiple are ready.
 	for {
-		if isDone || isCancelled {
-			break
+		//
+		// 1. Cancelled?
+		select {
+		case <-ctx.Done():
+			s.Logger.Error("Request was cancelled while waiting for messages from workers (probably timeout)")
+			isCancelled = true
+			goto breakLoop // request cancelled
+		default:
 		}
 
-		select {
-		case msg := <-messageCh:
-			msgs = append(msgs, msg)
-			fetchedMessages++
-			if fetchedMessages == req.MessageCount {
-				isDone = true
+		//
+		// 2. Drain *all* messages from the channel (and break when we have enough)
+		keepDraining := true
+		for keepDraining {
+			select {
+			case msg := <-messageCh:
+				msgs = append(msgs, msg)
+				fetchedMessages++
+				if fetchedMessages == req.MessageCount {
+					goto breakLoop // request complete
+				}
+			default:
+				keepDraining = false
 			}
-		case <-ctx.Done():
-			s.Logger.Error("Timeout while waiting for messageChannel")
-			isCancelled = true
-		case <-doneCh:
-			startedRoutines--
-			if startedRoutines == 0 {
-				isDone = true
+		}
+
+		//
+		// 3. All workers done?
+		if allWorkersDone {
+			// That means we'll get no more messages, and since we've just drained the channel we can exit
+			goto breakLoop
+		}
+
+		//
+		// 4. Workers done?
+		keepCounting := true
+		for keepCounting {
+			select {
+			case <-doneCh:
+				completedWorkers++
+				if completedWorkers == startedWorkers {
+					// They are all done
+					allWorkersDone = true
+				}
+			default:
+				keepCounting = false
 			}
 		}
 	}
+breakLoop:
 
 	return &ListMessageResponse{
 		ElapsedMs:       time.Since(start).Seconds() * 1000,
