@@ -170,7 +170,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             expandIconAsCell={false}
             expandIconColumnIndex={4}
             columns={[
-                { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset') },
+                { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder:'descend' },
                 { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => new Date(t * 1000).toLocaleString() },
                 { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
                 { width: 1, title: 'Key', dataIndex: 'key', render: (t) => t },
