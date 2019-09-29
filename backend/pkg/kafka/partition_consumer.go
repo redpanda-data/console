@@ -13,7 +13,7 @@ type partitionConsumer struct {
 	// Infrastructure
 	errorCh   chan<- error
 	messageCh chan<- *TopicMessage // 'result' channel
-	doneCh    chan<- int
+	doneCh    chan<- struct{}      // notify parent that we're done
 
 	// Consumer Details / Parameters
 	consumer    sarama.Consumer
@@ -25,14 +25,7 @@ type partitionConsumer struct {
 
 func (p *partitionConsumer) Run(ctx context.Context) {
 	defer func() {
-		select {
-		case p.doneCh <- 1:
-			{
-			}
-		default:
-			{
-			}
-		}
+		p.doneCh <- struct{}{}
 	}()
 
 	// Create PartitionConsumer

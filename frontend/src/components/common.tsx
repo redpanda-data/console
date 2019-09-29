@@ -81,6 +81,7 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
 declare global {
     interface Array<T> {
         remove(obj: T): boolean;
+        removeAll(selector: (x:T)=>boolean): number;
         sum<T>(this: T[], selector: (x: T) => number): number;
         any<T>(this: T[], selector: (x: T) => boolean): boolean;
         all<T>(this: T[], selector: (x: T) => boolean): boolean;
@@ -94,6 +95,17 @@ Array.prototype.remove = function remove<T>(this: T[], obj: T): boolean {
     if (index === -1) return false;
     this.splice(index, 1);
     return true;
+};
+
+Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x:T)=>boolean): number {
+    let count = 0;
+    for(let i=0; i<this.length; i++){
+        if(selector(this[i])) {
+            this.splice(i, 1);
+            count++;
+        }
+    }
+    return count;
 };
 
 Array.prototype.sum = function sum<T>(this: T[], selector: (x: T) => number) {

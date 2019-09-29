@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
@@ -72,7 +74,9 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			StartOffset:  req.StartOffset,
 			MessageCount: req.PageSize,
 		}
-		messages, err := api.kafkaSvc.ListMessages(r.Context(), listReq)
+		ctx, cancelCtx := context.WithTimeout(r.Context(), 18*time.Second)
+		defer cancelCtx()
+		messages, err := api.kafkaSvc.ListMessages(ctx, listReq)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
