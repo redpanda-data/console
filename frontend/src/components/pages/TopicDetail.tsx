@@ -201,7 +201,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             expandRowByClick={false}
             expandedRowRender={record => RenderExpandedMessage(record.valueObject)}
             expandIconAsCell={false}
-            expandIconColumnIndex={4}
+            expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
             columns={columns} />
     })
 
@@ -396,7 +396,7 @@ function RenderPreview(obj: any) {
 
         const text = cullText(JSON.stringify(obj), 100);
         return (
-            <span className='cellDiv'>{text}</span>
+            <code><span className='cellDiv' style={{ fontSize:'85%' }}>{text}</span></code>
         )
     }
     catch (e) {
