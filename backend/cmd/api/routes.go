@@ -33,8 +33,9 @@ func (api *API) routes() *chi.Mux {
 	// Admin routes - only accessible from within Kubernetes or a protected ingress
 	router.Route("/admin", func(r chi.Router) {
 		r.Handle("/metrics", promhttp.Handler())
-		r.Mount("/debug", chimiddleware.Profiler())
 	})
+	// Path must be prefixed with /debug otherwise it will be overriden, see: https://golang.org/pkg/net/http/pprof/
+	r.Mount("/debug", chimiddleware.Profiler())
 
 	// REST API Endpoints
 	router.Route("/api", func(r chi.Router) {
