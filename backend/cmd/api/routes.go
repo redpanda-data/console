@@ -35,7 +35,7 @@ func (api *API) routes() *chi.Mux {
 		r.Handle("/metrics", promhttp.Handler())
 	})
 	// Path must be prefixed with /debug otherwise it will be overriden, see: https://golang.org/pkg/net/http/pprof/
-	r.Mount("/debug", chimiddleware.Profiler())
+	router.Mount("/debug", chimiddleware.Profiler())
 
 	// REST API Endpoints
 	router.Route("/api", func(r chi.Router) {
@@ -46,25 +46,25 @@ func (api *API) routes() *chi.Mux {
 		r.Get("/consumer-groups", api.handleGetConsumerGroups())
 	})
 
-	if !api.cfg.ServeFrontend {
+	if api.cfg.ServeFrontend {
+		// Check if the build directory exists
+		dir, err := filepath.Abs("./build")
+		if err != nil {
+			api.logger.Fatal("given frontend directory is invalid", zap.String("directory", dir), zap.Error(err))
+			return router
+		}
+
+		// SPA Files
+		index := api.getIndexFile(dir)
+		router.Group(func(router chi.Router) {
+			router.Use(cache)
+
+			router.Get("/", api.handleGetIndex(index))
+			router.Get("/*", api.handleGetStaticFile(index, dir))
+		})
+	} else {
 		api.logger.Info("no static files will be served as serving the frontend has been disabled")
-		return router
 	}
-
-	// Everything else will return the React SPA / static files
-	dir, err := filepath.Abs("./build")
-	if err != nil {
-		api.logger.Fatal("given frontend directory is invalid", zap.String("directory", api.cfg.FrontendDirectory), zap.Error(err))
-	}
-	index := api.getIndexFile(dir)
-
-	// SPA and static files
-	router.Group(func(router chi.Router) {
-		router.Use(cache)
-
-		router.Get("/", api.handleGetIndex(index))
-		router.Get("/*", api.handleGetStaticFile(index, dir))
-	})
 
 	return router
 }
