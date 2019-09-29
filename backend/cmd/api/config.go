@@ -11,7 +11,6 @@ import (
 // Config holds all (subdependency)Configs needed to run the API
 type Config struct {
 	MetricsNamespace  string
-	FrontendDirectory string
 	ServeFrontend     bool
 	REST              rest.Config
 	Kafka             kafka.Config
