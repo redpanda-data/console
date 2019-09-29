@@ -17,6 +17,7 @@ import { debounce } from "../../utils/utils";
 import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
+import { ColumnProps } from "antd/lib/table";
 
 const { Text } = Typography;
 
@@ -157,6 +158,38 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     renderMessageTable = observer(() => {
         const pageConfig = makePaginationConfig();
+
+        const columns: ColumnProps<TopicMessage>[] = [
+            { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend' },
+            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => new Date(t * 1000).toLocaleString() },
+            { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
+            { width: 1, title: 'Key', dataIndex: 'key', render: (t) => t },
+            {
+                title: 'Value (Preview)',
+                dataIndex: 'value',
+                render: (t, r) => RenderPreview(r.valueObject),
+            },
+            {
+                width: 1,
+                title: 'Action',
+                key: 'action',
+                render: (text, record) => (
+                    <span>
+                        <Button type='link' size='small' onClick={() => this.copyMessage(record)}>Copy</Button>
+                        {/* <Divider type="vertical" /> */}
+                    </span>
+                ),
+            },
+        ];
+
+        if (this.messages && this.messages.length > 0 && this.searchParams.partitionID >= 0) {
+            columns.removeAll(c => c.dataIndex == 'partitionID');
+        }
+        // if (this.messages && this.messages.length > 0 && this.messages.all(m => m.key == this.messages[0].key)) {
+        //     columns.removeAll(c => c.dataIndex == 'key');
+        // }
+
+
         return <Table
             style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
             bordered={true} size='small'
@@ -169,28 +202,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             expandedRowRender={record => RenderExpandedMessage(record.valueObject)}
             expandIconAsCell={false}
             expandIconColumnIndex={4}
-            columns={[
-                { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder:'descend' },
-                { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => new Date(t * 1000).toLocaleString() },
-                { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
-                { width: 1, title: 'Key', dataIndex: 'key', render: (t) => t },
-                {
-                    title: 'Value (Preview)',
-                    dataIndex: 'value',
-                    render: (t, r) => RenderPreview(r.valueObject),
-                },
-                {
-                    width: 1,
-                    title: 'Action',
-                    key: 'action',
-                    render: (text, record) => (
-                        <span>
-                            <Button type='link' size='small' onClick={() => this.copyMessage(record)}>Copy</Button>
-                            {/* <Divider type="vertical" /> */}
-                        </span>
-                    ),
-                },
-            ]} />
+            columns={columns} />
     })
 
     copyMessage(record: TopicMessage) {
