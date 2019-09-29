@@ -272,6 +272,28 @@ export function assignDeep(target: any, source: any) {
 
 }
 
+export function findElementDeep(target: any, name: string): any {
+	for (let key in target) {
+
+        const value = target[key];
+
+        // match
+        if(key === name) {
+            return value;
+        }
+
+        // try to descend
+        if (typeof value === 'object') {
+            var innerValue = findElementDeep(value, name);
+            if(innerValue != undefined) {
+                return innerValue;
+            }
+		}
+    }
+
+    return undefined;
+}
+
 const secToMs = 1000;
 const minToMs = 60 * secToMs;
 const hoursToMs = 60 * minToMs;

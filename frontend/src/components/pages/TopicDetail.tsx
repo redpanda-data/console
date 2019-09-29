@@ -1,11 +1,11 @@
-import { Component } from "react";
+import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../models/ServiceModels";
 import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Switch, Select, Input, Form, Divider, Typography, message } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../state/backendApi";
 import { uiState as ui } from "../../state/ui";
-import ReactJson from 'react-json-view'
+import ReactJson, { CollapsedFieldProps } from 'react-json-view'
 import { PageComponent, PageInitHelper } from "./Page";
 import prettyMilliseconds from 'pretty-ms';
 import prettyBytes from 'pretty-bytes';
@@ -13,7 +13,7 @@ import topicConfigInfo from '../../assets/topicConfigInfo.json'
 import { sortField, cullText, range, makePaginationConfig } from "../common";
 import { motion } from "framer-motion";
 import { observable } from "mobx";
-import { debounce } from "../../utils/utils";
+import { debounce, findElementDeep } from "../../utils/utils";
 import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -167,7 +167,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             {
                 title: 'Value (Preview)',
                 dataIndex: 'value',
-                render: (t, r) => RenderPreview(r.valueObject),
+                render: (t, r) => RenderPreview(r.valueObject, ['hashtag', 'battleTime', 'type']),
             },
             {
                 width: 1,
@@ -390,23 +390,38 @@ class InnerSearchParametersForm extends Component<SearchParametersProps> {
 }
 
 
-function RenderPreview(obj: any) {
+function RenderPreview(obj: any, previewFields: string[]) {
     try {
-        if (!obj) return <code>null</code>
+        let text: ReactNode = <></>;
 
-        const text = cullText(JSON.stringify(obj), 100);
-        return (
-            <code><span className='cellDiv' style={{ fontSize:'85%' }}>{text}</span></code>
-        )
+        if (!obj) { // 1. handle 'null'
+            text = <code>null</code>
+        }
+        else if (previewFields.length > 0) { // 2. try preview fields
+            const previewObj: any = {};
+            for (let f of previewFields) {
+                var x = findElementDeep(obj, f);
+                if (x) {
+                    previewObj[f] = x;
+                }
+            }
+            text = cullText(JSON.stringify(previewObj), 100);
+        }
+        else { // 3. just stringify the whole object
+            text = cullText(JSON.stringify(obj), 100);
+        }
+
+        return <code><span className='cellDiv' style={{ fontSize: '85%' }}>{text}</span></code>
     }
     catch (e) {
         return <span style={{ color: 'red' }}>Error in RenderPreview: {e.toString()}</span>
     }
 }
 
-function RenderExpandedMessage(obj: any) {
+function RenderExpandedMessage(obj: any, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
         if (!obj) return <code>null</code>
+        const shouldCollapse = shouldExpand ? shouldExpand : false;
 
         return (
             <>
@@ -416,15 +431,16 @@ function RenderExpandedMessage(obj: any) {
                 </Affix> */}
 
                 <ReactJson
+                    style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}
+                    displayDataTypes={false} displayObjectSize={true} enableClipboard={false}
                     src={obj}
                     name={null}
                     collapseStringsAfterLength={40}
-                    displayDataTypes={false} displayObjectSize={true} enableClipboard={false}
-                    collapsed={3}
                     groupArraysAfterLength={100}
-                    indentWidth={6}
+                    indentWidth={5}
                     iconStyle='triangle'
-                    style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}
+                    collapsed={2}
+                    shouldCollapse={shouldCollapse}
                 />
             </>
         )
