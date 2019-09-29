@@ -25,7 +25,14 @@ type partitionConsumer struct {
 
 func (p *partitionConsumer) Run(ctx context.Context) {
 	defer func() {
-		p.doneCh <- 1
+		select {
+		case p.doneCh <- 1:
+			{
+			}
+		default:
+			{
+			}
+		}
 	}()
 
 	// Create PartitionConsumer
