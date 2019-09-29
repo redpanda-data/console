@@ -168,6 +168,7 @@ const apiStore = {
     },
 
     clearMessageCache() {
+        this.MessageResponse = {} as ListMessageResponse;
         this.MessagesFor = '';
         this.Messages = [];
     },

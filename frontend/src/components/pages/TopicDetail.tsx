@@ -223,7 +223,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     searchQueryAdditionalInfo = observer(() => {
         if (!api.MessageResponse) return null;
-        if (!api.MessageResponse.fetchedMessages) return null;
+        if (api.MessageResponse.fetchedMessages === undefined) return null;
         const formatTime = (ms: number) => !!ms && ms > 0
             ? prettyMilliseconds(api.MessageResponse.elapsedMs, { secondsDecimalDigits: 2 })
             : "undefined";
