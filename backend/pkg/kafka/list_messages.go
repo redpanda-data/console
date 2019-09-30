@@ -254,6 +254,9 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 				keepCounting = false
 			}
 		}
+
+		// Throttle so we don't spin-wait
+		<-time.After(15 * time.Millisecond)
 	}
 breakLoop:
 
