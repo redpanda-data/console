@@ -1,7 +1,7 @@
-import { Component, ReactNode, createRef } from "react";
+import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../models/ServiceModels";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Switch, Select, Input, Form, Divider, Typography, message, Tag, notification } from "antd";
+import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../state/backendApi";
 import { uiState as ui, uiSettings, PreviewTag } from "../../state/ui";
@@ -18,13 +18,13 @@ import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
-import CheckableTag from "antd/lib/tag/CheckableTag";
 
 const { Text } = Typography;
 
 const { Option } = Select;
 const InputGroup = Input.Group;
 
+// todo: this file is way too big, it needs to be split into (at least) Page, Configuration, and Message Display
 
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {
@@ -43,8 +43,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
     render() {
-
-        // todo: use 'replicaAssignments': "This topic is replicating partitions 1,3,5 to broker Kafka5, and 2,4,6 to Kafka25"
         const topicName = this.props.topicName;
 
         if (!api.Topics) return skeleton;
@@ -111,6 +109,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset
     };
     @observable previewDisplay: string[] = [];
+    @observable showPreviewSettings = false;
 
     constructor(props: { topic: TopicDetail }) {
         super(props);
@@ -118,7 +117,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
     }
 
     componentDidMount() {
-        this.executeMessageSearch(new InnerSearchParametersForm(null as any));
+        this.executeMessageSearch();
     }
 
     render() {
@@ -132,33 +131,17 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             {/* Quick Search Line */}
             <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} > {/* Quick Search  -  Json Preview Settings */}
 
-                <Tooltip
-                    placement='top'
-                    overlay={<>
-                        <div>Search in: offset, key, value</div>
-                        <div>(case-sensitive)</div>
-                    </>}
-                    align={{ offset: [0, -5] }} mouseEnterDelay={0.5}
-                >
-                    <Input style={{ marginRight: '1em', width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
-                        placeholder='Quick Search' allowClear={true} size='large'
-                        value={this.quickFilter} onChange={e => this.setQuickFilter(e.target.value)}
-                    //addonAfter={this.QuickSearchSettings()}
-                    />
-
-                </Tooltip>
-
-                <this.quickSearchResultInfo />
+                <this.QuickSearch />
 
                 <Spacer />
 
-                {!!this.messages && <CustomTagList tags={uiSettings.topics.previewTags} />}
+                <this.SearchQueryAdditionalInfo />
 
-                <this.searchQueryAdditionalInfo />
             </Row>
 
-            {/* Message Table */}
-            <this.renderMessageTable />
+            <this.MessageTable />
+
+            <this.PreviewSettings />
         </>
     }
 
@@ -167,8 +150,15 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         return uiSettings.topics.previewTags.filter(t => t.active).map(t => t.value);
     }
 
-    renderMessageTable = observer(() => {
+    MessageTable = observer(() => {
         const pageConfig = makePaginationConfig();
+
+        const valueTitle = <>
+            <span>Value (Preview)</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
+                <Button icon='setting' shape='circle' className='hoverBorder' onClick={() => this.showPreviewSettings = true} />
+            </span>
+        </>
 
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend' },
@@ -176,7 +166,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
             { width: 1, title: 'Key', dataIndex: 'key', render: (t) => t },
             {
-                title: 'Value (Preview)',
+                title: valueTitle,
                 dataIndex: 'value',
                 render: (t, r) => <MessagePreview value={r.valueObject} getFields={() => this.activeTags} />,
             },
@@ -221,30 +211,55 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         message.success('Message content (JSON) copied to clipboard', 5);
     }
 
-    QuickSearchSettings(): React.ReactNode {
-        const content = <>
-            <div>Placeholder 1 <Switch size='small' /></div>
-            <div>Placeholder 2 <Switch size='small' /></div>
-            <div>Placeholder 3 <Switch size='small' /></div>
+    PreviewSettings = observer(() => {
+        return (
+            <Drawer title='Properties to show in preview' placement='top'
+                visible={this.showPreviewSettings} onClose={() => this.showPreviewSettings = false}
+                getContainer={false} closable={false}>
+
+                <Paragraph>
+                    <Text>Add any name to this list. If it exists in the message, then it will be shown in the preview.</Text>
+                    <Text>You can turn off/on properties you've created by clicking on them.</Text>
+                </Paragraph>
+                <div style={{ padding: '1em', border: 'solid 1px #0001', borderRadius: '6px' }}>
+                    <CustomTagList tags={uiSettings.topics.previewTags} />
+                </div>
+
+            </Drawer>
+        );
+    });
+
+    QuickSearch = observer(() => {
+        // todo: show results as a tooltip above the input; and prevent the 'help' tooltip from appearing
+        const quickSerach = <>
+            <Tooltip placement='top' overlay={<><div>Search in: offset, key, value</div><div>(case-sensitive)</div></>}
+                align={{ offset: [0, -5] }} mouseEnterDelay={0.5}
+            >
+                <Input style={{ marginRight: '1em', width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
+                    placeholder='Quick Search' allowClear={true} size='large'
+                    value={this.quickFilter} onChange={e => this.setQuickFilter(e.target.value)}
+                //addonAfter={this.QuickSearchSettings()}
+                />
+            </Tooltip>
         </>
-        return <Popover title='Quick Search' content={content} trigger='click'><Icon type='setting' /></Popover>
-    }
 
-    quickSearchResultInfo = observer(() => {
-        if (!this.quickFilter || this.quickFilter.length == 0 || !this.messages)
-            return null;
+        let filterResults: ReactNode | undefined = undefined;
+        if (this.quickFilter && this.quickFilter.length > 0 && !!this.messages) {
+            const displayText = this.messages.length == api.Messages.length
+                ? 'Filter matched all messages'
+                : <><b>{this.messages.length}</b> results</>;
 
-        const displayText = this.messages.length == api.Messages.length
-            ? 'Filter matched all messages'
-            : <><b>{this.messages.length}</b> results</>;
+            filterResults = <div style={{ marginRight: '1em' }}>
+                <MotionDiv identityKey={displayText}>
+                    <Text type='secondary'>{displayText}</Text>
+                </MotionDiv>
+            </div>
+        }
 
-        return <MotionDiv identityKey={displayText}>
-            <Divider type='vertical' />
-            <Text type='secondary'>{displayText}</Text>
-        </MotionDiv>
+        return <>{quickSerach}{filterResults}</>;
     })
 
-    searchQueryAdditionalInfo = observer(() => {
+    SearchQueryAdditionalInfo = observer(() => {
         if (!api.MessageResponse) return null;
         if (api.MessageResponse.fetchedMessages === undefined) return null;
         const formatTime = (ms: number) => !!ms && ms > 0
@@ -295,7 +310,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
 
 
-    async executeMessageSearch(form: InnerSearchParametersForm): Promise<void> {
+    async executeMessageSearch(): Promise<void> {
         const searchParams = this.searchParams;
 
         if (searchParams._offsetMode != TopicMessageOffset.Custom)
@@ -605,6 +620,8 @@ class CustomTagList extends Component<{ tags: PreviewTag[] }> {
 
     render() {
         return <>
+            {/* <Select<string> mode='tags' style={{ minWidth: '16em' }} size='large' placeholder='Enter properties for preview' /> */}
+
             <AnimatePresence>
                 <motion.div positionTransition style={{ padding: '.3em' }}>
 

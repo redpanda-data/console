@@ -257,3 +257,12 @@ span>.icon-container~span {
     font-size: 80%;
     margin: .5em auto;
 }
+
+
+.hoverBorder {
+    border-color: transparent;
+}
+
+.hoverBorder:hover {
+    border-color: unset;
+}

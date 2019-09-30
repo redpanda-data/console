@@ -176,7 +176,7 @@ const AppContent = observer(() =>
         </Header> */}
 
         {/* Page */}
-        <Content style={{ display: 'flex', flexDirection: 'column', overflow: 'overlay', background: 'white', padding: '1em 2em', zIndex: 1 }} >
+        <Content style={{ display: 'flex', flexDirection: 'column', overflow: 'overlay', background: 'white', padding: '1em 2em', zIndex: 1 }}>
             <AppPageHeader />
             <ErrorDisplay>
                 <RouteView />
