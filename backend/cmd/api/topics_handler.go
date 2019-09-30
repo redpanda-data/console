@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
-	"github.com/weeco/kafka-explorer/pkg/common/rest"
-	"github.com/weeco/kafka-explorer/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
+	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 )
 
 func (api *API) handleGetTopics() http.HandlerFunc {

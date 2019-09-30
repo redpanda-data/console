@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/weeco/kafka-explorer/pkg/common/middleware"
+	"github.com/kafka-owl/kafka-owl/pkg/common/middleware"
 	"go.uber.org/zap"
 )
 

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/weeco/kafka-explorer/pkg/common/rest"
-	"github.com/weeco/kafka-explorer/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
+	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 	"go.uber.org/zap"
 )
 
