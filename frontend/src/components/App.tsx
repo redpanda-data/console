@@ -12,7 +12,6 @@ import { MotionAlways, MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import prettyMilliseconds from 'pretty-ms';
 import logo from '../assets/logo.png';
-import { appGlobal } from '..';
 import { uiState } from '../state/uiState';
 
 const { Content, Footer, Sider } = Layout;

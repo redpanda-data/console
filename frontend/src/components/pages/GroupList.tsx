@@ -5,11 +5,11 @@ import { observer } from "mobx-react";
 import { api } from "../../state/backendApi";
 import { PageComponent, PageInitHelper } from "./Page";
 import { GroupMemberDescription } from "../../state/restInterfaces";
-import { appGlobal } from "../..";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
 import { makePaginationConfig } from "../common";
 import { uiSettings } from "../../state/ui";
+import { appGlobal } from "../../state/appGlobal";
 
 
 

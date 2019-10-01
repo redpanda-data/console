@@ -9,9 +9,9 @@ import { CompareFn } from "antd/lib/table";
 import { PaginationConfig } from "antd/lib/pagination";
 import { NavLink } from "react-router-dom";
 import { makePaginationConfig, sortField } from "../common";
-import { appGlobal } from "../..";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
+import { appGlobal } from "../../state/appGlobal";
 
 
 @observer
