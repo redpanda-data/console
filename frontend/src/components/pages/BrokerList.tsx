@@ -15,7 +15,7 @@ const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', pad
 @observer
 class BrokerList extends PageComponent {
 
-    pageConfig = makePaginationConfig();
+    pageConfig = makePaginationConfig(uiSettings.brokers.pageSize);
 
     initPage(p: PageInitHelper): void {
         p.title = 'Brokers';
@@ -54,6 +54,7 @@ class BrokerList extends PageComponent {
                 <Table
                     style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
                     pagination={this.pageConfig}
+                    onChange={x => { if (x.pageSize) { uiSettings.brokers.pageSize = x.pageSize } }}
                     dataSource={brokers}
                     rowKey={x => x.brokerId.toString()}
                     rowClassName={() => 'pureDisplayRow'}

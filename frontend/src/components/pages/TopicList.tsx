@@ -17,7 +17,7 @@ import { animProps } from "../../utils/animationProps";
 @observer
 class TopicList extends PageComponent {
 
-    pageConfig = makePaginationConfig();
+    pageConfig = makePaginationConfig(uiSettings.topics.pageSize);
 
     initPage(p: PageInitHelper): void {
         p.title = 'Topics';
@@ -46,6 +46,7 @@ class TopicList extends PageComponent {
                         ({
                             onClick: event => appGlobal.history.push('/topics/' + record.topicName),
                         })}
+                    onChange={x => { if (x.pageSize) { uiSettings.topics.pageSize = x.pageSize } }}
                     rowClassName={() => 'hoverLink'}
                     pagination={this.pageConfig}
                     dataSource={topics}

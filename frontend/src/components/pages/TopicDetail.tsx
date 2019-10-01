@@ -113,6 +113,9 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
     @observable previewDisplay: string[] = [];
     @observable showPreviewSettings = false;
 
+    pageConfig = makePaginationConfig(uiSettings.topicMessages.pageSize);
+
+
     constructor(props: { topic: TopicDetail }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
@@ -153,7 +156,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
     }
 
     MessageTable = observer(() => {
-        const pageConfig = makePaginationConfig(20);
+
 
         const valueTitle = <>
             <span>Value (Preview)</span>
@@ -196,7 +199,8 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         return <Table
             style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
             bordered={true} size='small'
-            pagination={pageConfig}
+            pagination={this.pageConfig}
+            onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize } }}
             dataSource={this.messages}
             loading={this.requestInProgress}
             rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}

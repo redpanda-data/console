@@ -1,6 +1,7 @@
 import { observable, autorun } from "mobx";
 import { touch, assignDeep } from "../utils/utils";
 import { TopicDetailsSettings } from "./uiState";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../components/common";
 
 const settingsName = 'uiSettings';
 
@@ -21,15 +22,28 @@ const uiSettings = observable({
     sideBarOpen: true,
     selectedClusterIndex: 0,
     allTopicsDetails: new Map<string, TopicDetailsSettings>(),
+
     brokers: {
-        hideEmptyColumns: true,
+        hideEmptyColumns: false,
+        pageSize: DEFAULT_TABLE_PAGE_SIZE,
     },
+
     topics: {
         onlyShowChanged: false,
         valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
-        hideInternalTopics: true,
-        previewTags: [] as PreviewTag[]
+        hideInternalTopics: false,
+        previewTags: [] as PreviewTag[],
+        pageSize: DEFAULT_TABLE_PAGE_SIZE,
     },
+
+    topicMessages: {
+        pageSize: 20,
+    },
+
+    consumerGroups: {
+        pageSize: DEFAULT_TABLE_PAGE_SIZE,
+    },
+
     previewNotificationHideUntil: 0, // utc seconds
 });
 export { uiSettings };

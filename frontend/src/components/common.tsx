@@ -40,8 +40,8 @@ function constant(constantValue: JSX.Element): () => JSX.Element {
 export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />)
 
 
-
-export function makePaginationConfig(pageSize: number = 50): PaginationConfig {
+export const DEFAULT_TABLE_PAGE_SIZE = 50;
+export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE): PaginationConfig {
     return {
         position: 'bottom',
         pageSize: pageSize,

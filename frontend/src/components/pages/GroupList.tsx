@@ -9,13 +9,14 @@ import { appGlobal } from "../..";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
 import { makePaginationConfig } from "../common";
+import { uiSettings } from "../../state/ui";
 
 
 
 @observer
 class GroupList extends PageComponent {
 
-    pageConfig = makePaginationConfig();
+    pageConfig = makePaginationConfig(uiSettings.consumerGroups.pageSize);
 
     initPage(p: PageInitHelper): void {
         p.title = 'Consumer Groups';
@@ -39,6 +40,7 @@ class GroupList extends PageComponent {
                         ({
                             onClick: () => appGlobal.history.push('/groups/' + record.groupId),
                         })}
+                    onChange={x => { if (x.pageSize) { uiSettings.consumerGroups.pageSize = x.pageSize } }}
                     rowClassName={() => 'hoverLink'}
                     dataSource={groups}
                     rowKey={x => x.groupId}
