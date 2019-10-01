@@ -13,6 +13,7 @@ import { ErrorDisplay } from './misc/ErrorDisplay';
 import prettyMilliseconds from 'pretty-ms';
 import logo from '../assets/logo.png';
 import { uiState } from '../state/uiState';
+import { appGlobal } from '../state/appGlobal';
 
 const { Content, Footer, Sider } = Layout;
 const { Option } = Select;
@@ -30,7 +31,9 @@ const SideBar = observer(() =>
                 <span style={{ fontSize: '1.5em', color: 'white' }}>PLACEHOLDER</span>
             </div> */}
             <div>
-                <img src={logo} style={{ width: '66%', height: 'auto', display: 'block', margin: 'auto' }} />
+                <img src={logo} style={{ width: '66%', height: 'auto', display: 'block', margin: 'auto', cursor: 'pointer' }}
+                    onClick={() => { appGlobal.history.push('/'); }}
+                />
                 <div style={{ position: 'relative', borderTop: '1px solid #fff3', margin: '0 1em', marginBottom: '.5em' }} />
             </div>
         </div>
