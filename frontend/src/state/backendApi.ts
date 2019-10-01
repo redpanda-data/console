@@ -4,7 +4,7 @@ import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
     ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse
-} from "../models/ServiceModels";
+} from "./restInterfaces";
 import { observable, autorun, computed } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/utils";
@@ -222,8 +222,9 @@ function addError(err: Error) {
 type apiStoreType = typeof apiStore;
 export const api = observable(apiStore) as apiStoreType;
 
+/*
 autorun(r => {
-    //console.log(ToJson(api))
+    console.log(toJson(api))
     touch(api)
 }, { delay: 50, name: 'api observer' });
-
+*/

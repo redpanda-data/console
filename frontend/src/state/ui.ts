@@ -10,9 +10,7 @@ import { number } from "prop-types";
 /*
 	todo:
 	- remember UI settings using local storage
-	- last selected page, topic, group, broker, ...
-	- per topic(!): message filter, display settings, ...
-	- when visiting again (user enters '/', and last visit was longer than 2*resaveTime then restore)
+	- topic: message filter, display settings, ...
 */
 
 export interface BreadcrumbEntry {
@@ -37,7 +35,7 @@ class UIState {
         return null;
     }
 
-    @observable currentRoute = null as (PageDefinition<any> | null) // will be null when a page fails to render
+    @observable currentRoute = null as (PageDefinition<any> | null); // will be null when a page fails to render
 
     @observable pathName: string; // automatically updated from router path
     @computed get selectedMenuKeys(): string[] | undefined {

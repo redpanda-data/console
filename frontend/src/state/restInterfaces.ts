@@ -1,23 +1,5 @@
-/* Do not change, this code is generated from Golang structs */
 
 
-export class ReplicaAssignment {
-    brokerId: number;
-    partitionIds: number[];
-
-    static createFrom(source: any) {
-        if ('string' === typeof source) source = JSON.parse(source);
-        const result = new ReplicaAssignment();
-        result.brokerId = source["brokerId"];
-        result.partitionIds = source["partitionIds"];
-        return result;
-    }
-
-    //[ReplicaAssignment:]
-
-
-    //[end]
-}
 export class TopicDetail {
     topicName: string;
     isInternal: boolean;
@@ -31,11 +13,8 @@ export class GetTopicsResponse {
 
 
 
-// todo in backend:
-// - maybe pre-generate a preview to save decoding time
-// - *definitely* avoid base64
-// - inline the actual object data ('decoded' base64 makes no sense, that'd be an escaped json string inside the json...)
-// - maybe parse xml and avro into json as well in the backend
+
+
 export interface TopicMessage {
     offset: number,
     timestamp: number,
@@ -58,6 +37,8 @@ export interface ListMessageResponse {
 export interface GetTopicMessagesResponse {
     kafkaMessages: ListMessageResponse,
 }
+
+
 
 
 
@@ -85,7 +66,7 @@ export class GroupMemberAssignment {
 
 }
 export class GroupMemberDescription {
-    id: string; // unique ID assigned to the member after login?
+    id: string; // unique ID assigned to the member after login
     clientId: string; // custom id reported by the member
     clientHost: string; // address/host of the connection
     assignments: GroupMemberAssignment[]; // topics+partitions that the worker is assigned to

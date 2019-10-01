@@ -17,6 +17,8 @@ import { animProps } from "../../utils/animationProps";
 @observer
 class TopicList extends PageComponent {
 
+    pageConfig = makePaginationConfig();
+
     initPage(p: PageInitHelper): void {
         p.title = 'Topics';
         p.addBreadcrumb('Topics', '/topics');
@@ -34,9 +36,6 @@ class TopicList extends PageComponent {
         if (!api.Topics) return this.skeleton;
         if (api.Topics.length == 0) return <Empty />
 
-        const pageConfig = makePaginationConfig();
-        pageConfig.total = api.Topics.length;
-
         const topics = api.Topics.filter(t => uiSettings.topics.hideInternalTopics && t.isInternal ? false : true);
 
         return (
@@ -48,7 +47,7 @@ class TopicList extends PageComponent {
                             onClick: event => appGlobal.history.push('/topics/' + record.topicName),
                         })}
                     rowClassName={() => 'hoverLink'}
-                    pagination={pageConfig}
+                    pagination={this.pageConfig}
                     dataSource={topics}
                     rowKey={x => x.topicName}
                     columns={[

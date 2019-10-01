@@ -1,6 +1,6 @@
 import { Component, ReactNode } from "react";
 import React from "react";
-import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../models/ServiceModels";
+import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../state/restInterfaces";
 import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../state/backendApi";
@@ -10,14 +10,15 @@ import { PageComponent, PageInitHelper } from "./Page";
 import prettyMilliseconds from 'pretty-ms';
 import prettyBytes from 'pretty-bytes';
 import topicConfigInfo from '../../assets/topicConfigInfo.json'
-import { sortField, cullText, range, makePaginationConfig, Spacer } from "../common";
+import { sortField, range, makePaginationConfig, Spacer } from "../common";
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed } from "mobx";
-import { debounce, findElementDeep } from "../../utils/utils";
+import { debounce, findElementDeep, cullText } from "../../utils/utils";
 import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
+import '../../utils/arrayExtensions';
 
 const { Text } = Typography;
 
@@ -151,7 +152,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
     }
 
     MessageTable = observer(() => {
-        const pageConfig = makePaginationConfig();
+        const pageConfig = makePaginationConfig(20);
 
         const valueTitle = <>
             <span>Value (Preview)</span>

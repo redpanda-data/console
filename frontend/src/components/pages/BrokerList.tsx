@@ -8,7 +8,7 @@ import { uiState, uiSettings } from "../../state/ui";
 import { Empty, Table, Statistic, Row, Skeleton, Checkbox } from "antd";
 import { makePaginationConfig } from "../common";
 import { ColumnProps } from "antd/lib/table";
-import { Broker } from "../../models/ServiceModels";
+import { Broker } from "../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
 
@@ -16,6 +16,8 @@ const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', pad
 
 @observer
 class BrokerList extends PageComponent {
+
+    pageConfig = makePaginationConfig();
 
     initPage(p: PageInitHelper): void {
         p.title = 'Brokers';
@@ -38,10 +40,6 @@ class BrokerList extends PageComponent {
         const brokers = info.brokers;
         let hasRack = brokers.any(b => b.rack ? true : false);
 
-        const pageConfig = makePaginationConfig();
-        pageConfig.total = brokers.length;
-
-
         const columns: ColumnProps<Broker>[] = [
             { title: 'ID', dataIndex: 'brokerId' },
             { title: 'Address', dataIndex: 'address' },
@@ -57,7 +55,7 @@ class BrokerList extends PageComponent {
 
                 <Table
                     style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
-                    pagination={pageConfig}
+                    pagination={this.pageConfig}
                     dataSource={brokers}
                     rowKey={x => x.brokerId.toString()}
                     rowClassName={() => 'pureDisplayRow'}

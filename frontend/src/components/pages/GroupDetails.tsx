@@ -1,6 +1,6 @@
 import { FC } from "react";
 import React from "react";
-import { GroupDescription, GroupMemberDescription, GroupMemberAssignment } from "../../models/ServiceModels";
+import { GroupDescription, GroupMemberDescription, GroupMemberAssignment } from "../../state/restInterfaces";
 import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Tag, Badge } from "antd";
 import { observer } from "mobx-react";
 
@@ -80,7 +80,6 @@ const RenderGroupState = (p: { group: GroupDescription }) => {
 const GroupMembers = observer((p: { group: GroupDescription }) => {
 
     const pageConfig = makePaginationConfig();
-    pageConfig.total = p.group.members.length;
 
     return <Table
         style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
