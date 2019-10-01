@@ -3,7 +3,7 @@ import { Table, Empty, Skeleton, Checkbox } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
-import { uiState as ui, uiSettings } from "../../state/ui";
+import { uiSettings } from "../../state/ui";
 import { PageComponent, PageInitHelper } from "./Page";
 import { CompareFn } from "antd/lib/table";
 import { PaginationConfig } from "antd/lib/pagination";

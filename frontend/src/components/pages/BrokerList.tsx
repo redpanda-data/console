@@ -1,13 +1,11 @@
-import { observer } from "mobx-react";
-import { PureComponent } from "react";
-
 import React from "react";
+import { observer } from "mobx-react";
+import { Empty, Table, Statistic, Row, Skeleton, Checkbox } from "antd";
+import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "./Page";
 import { api } from "../../state/backendApi";
-import { uiState, uiSettings } from "../../state/ui";
-import { Empty, Table, Statistic, Row, Skeleton, Checkbox } from "antd";
+import { uiSettings } from "../../state/ui";
 import { makePaginationConfig } from "../common";
-import { ColumnProps } from "antd/lib/table";
 import { Broker } from "../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";

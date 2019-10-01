@@ -1,24 +1,20 @@
-import { memo, ReactElement } from "react";
 
-import { Menu, Icon, Divider } from "antd";
+import { Menu, Icon } from "antd";
 import { Link, Switch } from "react-router-dom";
 import React from "react";
 import { Section } from "./common";
-import { Route, RouteProps, Redirect } from "react-router";
+import { Route, Redirect } from "react-router";
 import { queryToObj } from "../utils/queryHelper";
 import { PageComponentType, PageProps } from "./pages/Page";
-import { UrlTestPage } from "./pages/UrlTestPage";
-import { uiState as ui, uiSettings, uiState } from "../state/ui";
-import { appGlobal } from "..";
+import { uiSettings } from "../state/ui";
 import TopicList from "./pages/TopicList";
 import TopicDetails from "./pages/TopicDetail";
 import { observer } from "mobx-react";
-import IndexPage from "./pages/IndexPage";
 import GroupList from "./pages/GroupList";
 import GroupDetails from "./pages/GroupDetails";
 import BrokerList from "./pages/BrokerList";
-import { AnimatePresence, Transition, motion } from "framer-motion";
-import { DebugTimerStore } from "../utils/utils";
+import { AnimatePresence } from "framer-motion";
+import { uiState } from "../state/uiState";
 
 //
 //	Route Types
@@ -39,11 +35,9 @@ export interface PageDefinition<TRouteParams = {}> {
     menuItemKey?: string, // set by 'CreateRouteMenuItems'
 }
 export interface SeparatorEntry { isSeparator: boolean; }
-const separator: SeparatorEntry = { isSeparator: true };
 
 export function isPageDefinition(x: IRouteEntry): x is PageDefinition<any> { return (x as PageDefinition<any>).path !== undefined; }
 export function isSeparator(x: IRouteEntry): x is SeparatorEntry { return (x as SeparatorEntry).isSeparator !== undefined; }
-const routeStr = (r: PageDefinition<any> | null) => r ? r.path + ' - ' + r.title : 'null';
 
 const MenuGroupTitle = observer((p: { title: string }) =>
     <div className={uiSettings.sideBarOpen ? '' : 'menu-divider-group-title'}>{p.title}</div>
@@ -116,7 +110,7 @@ export const RouteView = (() =>
             {EmitRouteViews(APP_ROUTES)}
 
             <Route render={rp => {
-                ui.pageTitle = '404';
+                uiState.pageTitle = '404';
                 return (
                     <Section title='404'>
                         <div><h4>Path:</h4> <span>{rp.location.pathname}</span></div>
@@ -148,7 +142,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
         const { ...params } = rp.match.params;
 
         // Reset some things on page change
-        if (ui.currentRoute && ui.currentRoute.path != route.path) {
+        if (uiState.currentRoute && uiState.currentRoute.path != route.path) {
             //console.log('switching route: ' + routeStr(ui.currentRoute) + " -> " + routeStr(route));
             uiState.pageHeaderExtra = () => null;
         }
@@ -159,7 +153,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
             ...params,
         };
 
-        ui.currentRoute = route;
+        uiState.currentRoute = route;
         return <route.pageType {...pageProps} />
     }} />;
 

@@ -4,7 +4,7 @@ import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../state/restInt
 import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../state/backendApi";
-import { uiState as ui, uiSettings, PreviewTag } from "../../state/ui";
+import { uiSettings, PreviewTag } from "../../state/ui";
 import ReactJson, { CollapsedFieldProps } from 'react-json-view'
 import { PageComponent, PageInitHelper } from "./Page";
 import prettyMilliseconds from 'pretty-ms';
@@ -19,6 +19,7 @@ import { animProps, MotionAlways, MotionDiv } from "../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
 import '../../utils/arrayExtensions';
+import { uiState } from "../../state/uiState";
 
 const { Text } = Typography;
 
@@ -32,7 +33,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
     initPage(p: PageInitHelper): void {
         const topicName = this.props.topicName;
-        ui.currentTopicName = topicName;
+        uiState.currentTopicName = topicName;
         api.clearMessageCache();
         api.refreshTopics();
         api.refreshTopicConfig(topicName);
@@ -59,8 +60,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
                 {/* Tabs:  Messages, Configuration */}
                 <Tabs style={{ overflow: 'visible' }} animated={false}
-                    activeKey={ui.topicDetails.activeTabKey || '1'}
-                    onChange={e => ui.topicDetails.activeTabKey = e}
+                    activeKey={uiState.topicDetails.activeTabKey || '1'}
+                    onChange={e => uiState.topicDetails.activeTabKey = e}
                 >
                     <Tabs.TabPane key="1" tab="Messages">
                         <TopicMessageView topic={topic} />
@@ -85,7 +86,7 @@ const skeleton = <>
 
 const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[] }) =>
     <Row type="flex" style={{ marginBottom: '1em' }}>
-        {p.config.filter(e => ui.topicDetails.favConfigEntries.includes(e.name)).map((e) =>
+        {p.config.filter(e => uiState.topicDetails.favConfigEntries.includes(e.name)).map((e) =>
             FavoritePopover(e, (
                 <div style={{ margin: 0, marginRight: '2em', padding: '.2em' }}>
                     <Statistic title={(e.name)} value={FormatValue(e)} />
@@ -490,7 +491,7 @@ const ConfigDisplaySettings = observer(() =>
     <div style={{ marginTop: '1em', marginBottom: '1em' }}>
 
         <Row>
-            <Radio.Group value={ui.topicDetails.valueDisplay} onChange={(e) => ui.topicDetails.valueDisplay = e.target.value} size='small'>
+            <Radio.Group value={uiSettings.topics.valueDisplay} onChange={(e) => uiSettings.topics.valueDisplay = e.target.value} size='small'>
                 <Radio.Button value="friendly">Friendly</Radio.Button>
                 <Radio.Button value="raw">Raw</Radio.Button>
                 {/* <Radio.Button value="both">Both</Radio.Button> */}
@@ -498,7 +499,7 @@ const ConfigDisplaySettings = observer(() =>
 
             <span> </span>
 
-            <Checkbox onChange={(e) => ui.topicDetails.onlyShowChanged = e.target.checked} checked={ui.topicDetails.onlyShowChanged}>Only show changed</Checkbox>
+            <Checkbox onChange={(e) => uiSettings.topics.onlyShowChanged = e.target.checked} checked={uiSettings.topics.onlyShowChanged}>Only show changed</Checkbox>
 
         </Row>
     </div>);
@@ -508,7 +509,7 @@ const ConfigDisplaySettings = observer(() =>
 const TopicConfiguration = observer((p: { config: TopicConfigEntry[] }) =>
     <Descriptions bordered size='small' colon={true} layout='horizontal' column={1} style={{ display: 'inline-block' }}>
         {
-            p.config.filter(e => ui.topicDetails.onlyShowChanged ? !e.isDefault : true).map((e) =>
+            p.config.filter(e => uiSettings.topics.onlyShowChanged ? !e.isDefault : true).map((e) =>
                 <Descriptions.Item key={e.name} label={DataName(e)} >{DataValue(e)}</Descriptions.Item>
             )
         }
@@ -518,11 +519,11 @@ const TopicConfiguration = observer((p: { config: TopicConfigEntry[] }) =>
 const FavoritePopover = (configEntry: TopicConfigEntry, children: React.ReactNode) => {
 
     const name = configEntry.name;
-
-    const isFav = ui.topicDetails.favConfigEntries.includes(name);
+    const favs = uiState.topicDetails.favConfigEntries;
+    const isFav = favs.includes(name);
     const toggleFav = isFav
-        ? () => ui.topicDetails.favConfigEntries.splice(ui.topicDetails.favConfigEntries.indexOf(name), 1)
-        : () => ui.topicDetails.favConfigEntries.push(name);
+        ? () => favs.splice(favs.indexOf(name), 1)
+        : () => favs.push(name);
 
     const infoEntry = topicConfigInfo.find(e => e.Name == name);
 
@@ -573,7 +574,7 @@ function FormatValue(configEntry: TopicConfigEntry): string {
     const value = configEntry.value;
     let suffix: string;
 
-    switch (ui.topicDetails.valueDisplay) {
+    switch (uiSettings.topics.valueDisplay) {
         case 'friendly': suffix = ''; break;
         case 'both': suffix = ' (' + value + ')'; break;
 

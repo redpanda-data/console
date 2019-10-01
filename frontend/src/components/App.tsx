@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react';
 import { observer } from "mobx-react"
 import { Layout, Menu, Icon, Select, PageHeader, Alert } from 'antd';
-import { uiState as ui, uiSettings } from '../state/ui';
+import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, APP_ROUTES, RouteView, } from './routes';
 import { RenderTrap, Spacer } from './common';
 import { DebugTimerStore, hoursToMilliseconds } from '../utils/utils';
@@ -13,6 +13,7 @@ import { ErrorDisplay } from './misc/ErrorDisplay';
 import prettyMilliseconds from 'pretty-ms';
 import logo from '../assets/logo.png';
 import { appGlobal } from '..';
+import { uiState } from '../state/uiState';
 
 const { Content, Footer, Sider } = Layout;
 const { Option } = Select;
@@ -39,7 +40,7 @@ const SideBar = observer(() =>
         <Content className="scroll-on-hover-y">
             <Menu mode="inline"
                 theme='dark'
-                selectedKeys={ui.selectedMenuKeys}
+                selectedKeys={uiState.selectedMenuKeys}
                 style={{ border: 0, background: 'none' }}
             >
                 {CreateRouteMenuItems(APP_ROUTES)}
@@ -106,9 +107,9 @@ const DataAgeInfo = observer(() => {
 
 const AppPageHeader = observer(() => {
 
-    let breadcrumbs = ui.pageBreadcrumbs.map(v => ({ path: v.linkTo, breadcrumbName: v.title }));
+    let breadcrumbs = uiState.pageBreadcrumbs.map(v => ({ path: v.linkTo, breadcrumbName: v.title }));
 
-    const selectedClusterName = ui.selectedClusterName;
+    const selectedClusterName = uiState.selectedClusterName;
     if (selectedClusterName) {
         const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: selectedClusterName };
         breadcrumbs.unshift(rootBreadcrumb);
@@ -121,13 +122,13 @@ const AppPageHeader = observer(() => {
         style={{ paddingLeft: 0, paddingRight: 0 }}
         breadcrumb={{ routes: breadcrumbs, itemRender: itemRender, separator: '>' }}
         // onBack={onBack}
-        title={<MotionDiv identityKey={ui.pageTitle}>{ui.pageTitle}</MotionDiv>}
+        title={<MotionDiv identityKey={uiState.pageTitle}>{uiState.pageTitle}</MotionDiv>}
         subTitle={<></>}
         footer={
             <MotionAlways>
                 <DataAgeInfo />
             </MotionAlways>}
-        extra={<MotionAlways>{ui.pageHeaderExtra()}</MotionAlways>} // right sider
+        extra={<MotionAlways>{uiState.pageHeaderExtra()}</MotionAlways>} // right sider
     >
 
 

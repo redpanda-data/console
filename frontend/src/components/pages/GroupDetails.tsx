@@ -1,15 +1,12 @@
-import { FC } from "react";
 import React from "react";
-import { GroupDescription, GroupMemberDescription, GroupMemberAssignment } from "../../state/restInterfaces";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Tag, Badge } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
-import { uiState as ui } from "../../state/ui";
 import { PageComponent, PageInitHelper } from "./Page";
 import { makePaginationConfig } from "../common";
-import { motion } from "framer-motion";
 import { MotionDiv } from "../../utils/animationProps";
+import { GroupDescription, GroupMemberDescription, GroupMemberAssignment } from "../../state/restInterfaces";
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
@@ -49,7 +46,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             <MotionDiv>
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
                 <Row type="flex" style={{ marginBottom: '1em' }}>
-                    <Statistic title='State' valueRender={n => <RenderGroupState group={group} />} />
+                    <Statistic title='State' valueRender={() => <RenderGroupState group={group} />} />
                 </Row>
 
                 <GroupMembers group={group} />
@@ -68,7 +65,6 @@ const stateIcons = new Map<string, JSX.Element>([
 ]);
 const RenderGroupState = (p: { group: GroupDescription }) => {
     const state = p.group.state.toLowerCase();
-    let icon = stateIcons.has(state) ? stateIcons.get(state)! : null;
     // todo...
     return <>
         <span>{p.group.state}</span>
@@ -87,19 +83,19 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
         pagination={pageConfig}
         dataSource={p.group.members}
         rowKey={r => r.id}
-        rowClassName={(r) => 'pureDisplayRow'}
+        rowClassName={() => 'pureDisplayRow'}
         columns={[
             { title: 'ID', dataIndex: 'id' },
             { title: 'ClientID', dataIndex: 'clientId' },
             { title: 'Client Host', dataIndex: 'clientHost' },
-            { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t, r, i) },
+            { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t) },
         ]} />
 })
 
 const margin1Px = { margin: '1px' };
 const margin2PxLine = { margin: '2px 0' };
 
-function renderAssignments(value: GroupMemberAssignment[], record: GroupMemberDescription, index: number): React.ReactNode {
+function renderAssignments(value: GroupMemberAssignment[]): React.ReactNode {
     const topicAssignments = value.groupBy(x => x.topicName);
 
     const jsx: JSX.Element[] = [];
