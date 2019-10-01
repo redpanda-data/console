@@ -3,6 +3,7 @@ package kafka
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
@@ -50,7 +51,7 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 
 		topicsByName[topic.Name] = &TopicDetail{
 			TopicName:         topic.Name,
-			IsInternal:        topic.IsInternal,
+			IsInternal:        topic.IsInternal || strings.HasPrefix(topic.Name, "__"),
 			PartitionCount:    len(topic.Partitions),
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
 		}

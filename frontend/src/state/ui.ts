@@ -31,7 +31,7 @@ const uiSettings = observable({
     topics: {
         onlyShowChanged: false,
         valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
-        hideInternalTopics: false,
+        hideInternalTopics: true,
         previewTags: [] as PreviewTag[],
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
     },
