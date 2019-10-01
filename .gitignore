@@ -1,3 +1,5 @@
 # Docker Compose
 docker-compose/zk-single-kafka-single
 .vscode
+*.code-workspace
+
