@@ -33,6 +33,7 @@ type TopicMessage struct {
 	Timestamp   int64  `json:"timestamp"`
 	Key         []byte `json:"key"`
 	Value       []byte `json:"value"`
+	Size        int    `json:"size"`
 }
 
 // TopicHighWaterMarks returns the topic's highest offset for each requested partition in a map where
