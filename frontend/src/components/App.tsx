@@ -14,6 +14,7 @@ import prettyMilliseconds from 'pretty-ms';
 import logo from '../assets/logo.png';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
+import Title from 'antd/lib/typography/Title';
 
 const { Content, Footer, Sider } = Layout;
 const { Option } = Select;
@@ -120,21 +121,17 @@ const AppPageHeader = observer(() => {
 
     const itemRender = (r: AntBreadcrumbRoute) => <NavLink to={r.path}>{r.breadcrumbName}</NavLink>;
 
-    return <PageHeader
-        style={{ paddingLeft: 0, paddingRight: 0 }}
-        breadcrumb={{ routes: breadcrumbs, itemRender: itemRender, separator: '>' }}
-        // onBack={onBack}
-        title={<MotionDiv identityKey={uiState.pageTitle}>{uiState.pageTitle}</MotionDiv>}
-        subTitle={<></>}
-        footer={
-            <MotionAlways>
-                <DataAgeInfo />
-            </MotionAlways>}
-        extra={<MotionAlways>{uiState.pageHeaderExtra()}</MotionAlways>} // right sider
-    >
-
-
-    </PageHeader>
+    return <MotionDiv identityKey={uiState.pageTitle}>
+        <PageHeader
+            style={{ paddingLeft: 0, paddingRight: 0 }}
+            breadcrumb={{ routes: breadcrumbs, itemRender: itemRender, separator: '>' }}
+            // onBack={onBack}
+            title={<Title level={3}>{uiState.pageTitle}</Title>}
+            subTitle={<></>}
+            footer={<DataAgeInfo />}
+            extra={uiState.pageHeaderExtra()} // right sider
+        />
+    </MotionDiv>
 });
 
 const PreviewBanner = () => {
