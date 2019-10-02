@@ -145,8 +145,6 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             </Row>
 
             <this.MessageTable />
-
-            <this.PreviewSettings />
         </>
     }
 
@@ -195,21 +193,24 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         //     columns.removeAll(c => c.dataIndex == 'key');
         // }
 
+        return <>
+            <Table
+                style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
+                bordered={true} size='small'
+                pagination={this.pageConfig}
+                onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize } }}
+                dataSource={this.messages}
+                loading={this.requestInProgress}
+                rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
 
-        return <Table
-            style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
-            bordered={true} size='small'
-            pagination={this.pageConfig}
-            onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize } }}
-            dataSource={this.messages}
-            loading={this.requestInProgress}
-            rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
+                expandRowByClick={false}
+                expandedRowRender={record => RenderExpandedMessage(record.valueObject)}
+                expandIconAsCell={false}
+                expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
+                columns={columns} />
 
-            expandRowByClick={false}
-            expandedRowRender={record => RenderExpandedMessage(record.valueObject)}
-            expandIconAsCell={false}
-            expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
-            columns={columns} />
+            {(this.messages && this.messages.length > 0) && <this.PreviewSettings />}
+        </>
     })
 
     copyMessage(record: TopicMessage) {
