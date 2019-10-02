@@ -21,6 +21,7 @@ export interface TopicMessage {
     partitionID: number,
     key: string,
     value: string, // base64 of the byte[]
+    size: number,
 
     // Custom helper props (in preparation for later):
     valueJson: string, // = atob(value)

@@ -173,6 +173,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 dataIndex: 'value',
                 render: (t, r) => <MessagePreview value={r.valueObject} getFields={() => this.activeTags} />,
             },
+            { width: 1, title: 'Size (≈)', dataIndex: 'size', align: 'right', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) } },
             {
                 width: 1,
                 title: 'Action',
