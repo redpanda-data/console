@@ -59,9 +59,9 @@ class BrokerList extends PageComponent {
                     <Statistic title='Broker Count' value={brokers.length} style={statisticStyle} />
                 </Row>
 
-                <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} >
+                {/* <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} >
                     <QuickSearch2 data={brokers} isMatch={this.isMatch} setResult={this.setResult} />
-                </Row>
+                </Row> */}
 
                 <Table
                     style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
