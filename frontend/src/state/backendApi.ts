@@ -143,13 +143,7 @@ const apiStore = {
 
         this.clearMessageCache();
 
-        let response: GetTopicMessagesResponse;
-        try {
-            response = await rest<GetTopicMessagesResponse>('/api/topics/' + topicName + '/messages' + queryString);
-        } catch (error) {
-            addError(error);
-            return;
-        }
+        let response = await rest<GetTopicMessagesResponse>('/api/topics/' + topicName + '/messages' + queryString);
 
         this.MessagesFor = topicName;
         for (let m of response.kafkaMessages.messages) {

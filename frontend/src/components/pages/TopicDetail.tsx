@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../state/restInterfaces";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer } from "antd";
+import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../state/ui";
@@ -20,6 +20,7 @@ import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
 import '../../utils/arrayExtensions';
 import { uiState } from "../../state/uiState";
+import Title from "antd/lib/typography/Title";
 
 const { Text } = Typography;
 
@@ -113,6 +114,8 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
     @observable previewDisplay: string[] = [];
     @observable showPreviewSettings = false;
 
+    @observable fetchError = null as Error | null;
+
     pageConfig = makePaginationConfig(uiSettings.topicMessages.pageSize);
 
 
@@ -133,18 +136,26 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             {/* Message Search */}
             <SearchForm topic={topic} submit={this.executeMessageSearch} searchParams={this.searchParams} requestInProgress={this.requestInProgress} />
 
-            {/* Quick Search Line */}
-            <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} > {/* Quick Search  -  Json Preview Settings */}
+            {this.fetchError
+                ? <Alert
+                    type="error" showIcon
+                    message="Backend API Error"
+                    description={<div>
+                        <Text>Please check and modify the request before resubmitting.</Text>
+                        <div className='codeBox'>{this.fetchError.message}</div>
+                    </div>}
+                />
+                : <>
+                    {/* Quick Search Line */}
+                    <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} > {/* Quick Search  -  Json Preview Settings */}
+                        <this.QuickSearch />
+                        <Spacer />
+                        <this.SearchQueryAdditionalInfo />
+                    </Row>
 
-                <this.QuickSearch />
-
-                <Spacer />
-
-                <this.SearchQueryAdditionalInfo />
-
-            </Row>
-
-            <this.MessageTable />
+                    <this.MessageTable />
+                </>
+            }
         </>
     }
 
@@ -195,22 +206,24 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         // }
 
         return <>
-            <Table
-                style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
-                bordered={true} size='small'
-                pagination={this.pageConfig}
-                onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize } }}
-                dataSource={this.messages}
-                loading={this.requestInProgress}
-                rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
+            <ConfigProvider renderEmpty={this.empty}>
+                <Table
+                    style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
+                    bordered={true} size='small'
+                    pagination={this.pageConfig}
+                    onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize } }}
+                    dataSource={this.messages}
+                    loading={this.requestInProgress}
+                    rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
 
-                expandRowByClick={false}
-                expandedRowRender={record => RenderExpandedMessage(record.valueObject)}
-                expandIconAsCell={false}
-                expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
-                columns={columns} />
+                    expandRowByClick={false}
+                    expandedRowRender={record => RenderExpandedMessage(record.valueObject)}
+                    expandIconAsCell={false}
+                    expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
+                    columns={columns} />
 
-            {(this.messages && this.messages.length > 0) && <this.PreviewSettings />}
+                {(this.messages && this.messages.length > 0) && <this.PreviewSettings />}
+            </ConfigProvider>
         </>
     })
 
@@ -316,8 +329,6 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             this.messages = api.Messages;
     }
 
-
-
     async executeMessageSearch(): Promise<void> {
         const searchParams = this.searchParams;
 
@@ -325,16 +336,24 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             searchParams.startOffset = searchParams._offsetMode;
 
         try {
+            this.fetchError = null;
             this.requestInProgress = true;
             await api.searchTopicMessages(this.props.topic.topicName, searchParams);
             this.messages = api.Messages;
         } catch (error) {
             console.error('error in searchTopicMessages: ' + error.toString());
             this.messages = undefined as any;
+            this.fetchError = error;
         } finally {
             this.requestInProgress = false;
         }
     }
+
+    empty = () => <Empty description={<>
+        <Text type='secondary' strong style={{ fontSize: '125%' }}>No messages</Text>
+        <br />
+        <span>Either the selected topic/partition did not contain any messages</span>
+    </>} />
 }
 
 
