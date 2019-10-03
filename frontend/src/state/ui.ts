@@ -1,7 +1,7 @@
 import { observable, autorun } from "mobx";
 import { touch, assignDeep } from "../utils/utils";
 import { TopicDetailsSettings } from "./uiState";
-import { DEFAULT_TABLE_PAGE_SIZE } from "../components/common";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 
 const settingsName = 'uiSettings';
 

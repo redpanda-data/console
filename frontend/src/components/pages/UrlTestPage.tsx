@@ -1,5 +1,5 @@
 import React from "react";
-import { Section } from "../common";
+import { Section } from "../misc/common";
 import { PageComponent, PageInitHelper } from "./Page";
 
 import { motion, AnimatePresence } from "framer-motion"

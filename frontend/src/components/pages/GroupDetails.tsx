@@ -4,7 +4,7 @@ import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
 import { PageComponent, PageInitHelper } from "./Page";
-import { makePaginationConfig } from "../common";
+import { makePaginationConfig } from "../misc/common";
 import { MotionDiv } from "../../utils/animationProps";
 import { GroupDescription, GroupMemberDescription, GroupMemberAssignment } from "../../state/restInterfaces";
 

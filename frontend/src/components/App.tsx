@@ -3,7 +3,7 @@ import { observer } from "mobx-react"
 import { Layout, Menu, Icon, Select, PageHeader, Alert } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, APP_ROUTES, RouteView, } from './routes';
-import { RenderTrap, Spacer } from './common';
+import { RenderTrap, Spacer } from './misc/common';
 import { DebugTimerStore, hoursToMilliseconds } from '../utils/utils';
 import { api } from '../state/backendApi';
 import { NavLink } from 'react-router-dom';

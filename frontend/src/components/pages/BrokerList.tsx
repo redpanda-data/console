@@ -1,14 +1,16 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import { observer } from "mobx-react";
 import { Empty, Table, Statistic, Row, Skeleton, Checkbox } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "./Page";
 import { api } from "../../state/backendApi";
 import { uiSettings } from "../../state/ui";
-import { makePaginationConfig } from "../common";
+import { makePaginationConfig } from "../misc/common";
 import { Broker } from "../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
+import { QuickSearch, QuickSearch2 } from "../misc/QuickSearch";
+import { observable } from "mobx";
 
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -16,6 +18,9 @@ const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', pad
 class BrokerList extends PageComponent {
 
     pageConfig = makePaginationConfig(uiSettings.brokers.pageSize);
+
+    @observable filteredBrokers: Broker[];
+
 
     initPage(p: PageInitHelper): void {
         p.title = 'Brokers';
@@ -28,6 +33,9 @@ class BrokerList extends PageComponent {
         </>;
 
         api.refreshCluster();
+
+        this.isMatch = this.isMatch.bind(this);
+        this.setResult = this.setResult.bind(this);
     }
 
     render() {
@@ -51,6 +59,10 @@ class BrokerList extends PageComponent {
                     <Statistic title='Broker Count' value={brokers.length} style={statisticStyle} />
                 </Row>
 
+                <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} >
+                    <QuickSearch2 data={brokers} isMatch={this.isMatch} setResult={this.setResult} />
+                </Row>
+
                 <Table
                     style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
                     pagination={this.pageConfig}
@@ -61,6 +73,17 @@ class BrokerList extends PageComponent {
                     columns={columns} />
             </motion.div>
         </>
+    }
+
+    isMatch(filter: string, item: Broker) {
+        if (item.address.includes(filter)) return true;
+        if (item.rack.includes(filter)) return true;
+
+        return false;
+    }
+
+    setResult(filteredData: Broker[]) {
+        this.filteredBrokers = filteredData;
     }
 
 

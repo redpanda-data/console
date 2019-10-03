@@ -10,7 +10,7 @@ import { PageComponent, PageInitHelper } from "./Page";
 import prettyMilliseconds from 'pretty-ms';
 import prettyBytes from 'pretty-bytes';
 import topicConfigInfo from '../../assets/topicConfigInfo.json'
-import { sortField, range, makePaginationConfig, Spacer } from "../common";
+import { sortField, range, makePaginationConfig, Spacer } from "../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed } from "mobx";
 import { debounce, findElementDeep, cullText } from "../../utils/utils";
@@ -21,6 +21,7 @@ import { ColumnProps } from "antd/lib/table";
 import '../../utils/arrayExtensions';
 import { uiState } from "../../state/uiState";
 import Title from "antd/lib/typography/Title";
+import { QuickSearch } from "../misc/QuickSearch";
 
 const { Text } = Typography;
 
@@ -103,8 +104,8 @@ const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[] }) =>
 @observer
 class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
+    @observable filterString = '';
     @observable requestInProgress = false;
-    @observable quickFilter = '';
     @observable messages: TopicMessage[];
     @observable searchParams: TopicMessageSearchParameters = {
         _offsetMode: TopicMessageOffset.End,
@@ -122,6 +123,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
     constructor(props: { topic: TopicDetail }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
+        this.updateFilter = this.updateFilter.bind(this);
     }
 
     componentDidMount() {
@@ -147,8 +149,8 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 />
                 : <>
                     {/* Quick Search Line */}
-                    <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} > {/* Quick Search  -  Json Preview Settings */}
-                        <this.QuickSearch />
+                    <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} >
+                        <QuickSearch onChange={this.updateFilter} />
                         <Spacer />
                         <this.SearchQueryAdditionalInfo />
                     </Row>
@@ -159,13 +161,34 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         </>
     }
 
+    updateFilter(str: string): ReactNode {
+        this.filterString = str;
+        if (!api.Messages || api.Messages.length == 0 || str.length == 0) return "";
+
+        this.messages = api.Messages.filter(m => {
+            if (m.offset.toString().includes(str)) return true;
+            if (m.key && m.key.includes(str)) return true;
+            if (m.valueJson && m.valueJson.includes(str)) return true;
+            return false;
+        });
+
+        const displayText = this.messages.length == api.Messages.length
+            ? 'Filter matched all messages'
+            : <><b>{this.messages.length}</b> results</>;
+
+        return <div style={{ marginRight: '1em' }}>
+            <MotionDiv identityKey={displayText}>
+                <Text type='secondary'>{displayText}</Text>
+            </MotionDiv>
+        </div>
+    }
+
     @computed
     get activeTags() {
         return uiSettings.topics.previewTags.filter(t => t.active).map(t => t.value);
     }
 
     MessageTable = observer(() => {
-
 
         const valueTitle = <>
             <span>Value (Preview)</span>
@@ -201,9 +224,6 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (this.messages && this.messages.length > 0 && this.searchParams.partitionID >= 0) {
             columns.removeAll(c => c.dataIndex == 'partitionID');
         }
-        // if (this.messages && this.messages.length > 0 && this.messages.all(m => m.key == this.messages[0].key)) {
-        //     columns.removeAll(c => c.dataIndex == 'key');
-        // }
 
         return <>
             <ConfigProvider renderEmpty={this.empty}>
@@ -248,37 +268,28 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
             </Drawer>
         );
-    });
-
-    QuickSearch = observer(() => {
-        // todo: show results as a tooltip above the input; and prevent the 'help' tooltip from appearing
-        const quickSerach = <>
-            <Tooltip placement='top' overlay={<><div>Search in: offset, key, value</div><div>(case-sensitive)</div></>}
-                align={{ offset: [0, -5] }} mouseEnterDelay={0.5}
-            >
-                <Input style={{ marginRight: '1em', width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
-                    placeholder='Quick Search' allowClear={true} size='large'
-                    value={this.quickFilter} onChange={e => this.setQuickFilter(e.target.value)}
-                //addonAfter={this.QuickSearchSettings()}
-                />
-            </Tooltip>
-        </>
-
-        let filterResults: ReactNode | undefined = undefined;
-        if (this.quickFilter && this.quickFilter.length > 0 && !!this.messages) {
-            const displayText = this.messages.length == api.Messages.length
-                ? 'Filter matched all messages'
-                : <><b>{this.messages.length}</b> results</>;
-
-            filterResults = <div style={{ marginRight: '1em' }}>
-                <MotionDiv identityKey={displayText}>
-                    <Text type='secondary'>{displayText}</Text>
-                </MotionDiv>
-            </div>
-        }
-
-        return <>{quickSerach}{filterResults}</>;
     })
+
+
+    async executeMessageSearch(): Promise<void> {
+        const searchParams = this.searchParams;
+
+        if (searchParams._offsetMode != TopicMessageOffset.Custom)
+            searchParams.startOffset = searchParams._offsetMode;
+
+        try {
+            this.fetchError = null;
+            this.requestInProgress = true;
+            await api.searchTopicMessages(this.props.topic.topicName, searchParams);
+            this.messages = api.Messages;
+        } catch (error) {
+            console.error('error in searchTopicMessages: ' + error.toString());
+            this.messages = undefined as any;
+            this.fetchError = error;
+        } finally {
+            this.requestInProgress = false;
+        }
+    }
 
     SearchQueryAdditionalInfo = observer(() => {
         if (!api.MessageResponse) return null;
@@ -307,47 +318,6 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             </span>
         </MotionAlways>
     })
-
-    setQuickFilter(str: string) {
-        this.quickFilter = str;
-        this.updateQuickFilterDebounced();
-    }
-
-    updateQuickFilterDebounced = debounce(this.updateQuickFilter, 200);
-    updateQuickFilter() {
-        if (!this.messages) return;
-
-        const str = this.quickFilter;
-        if (str && str.length > 0)
-            this.messages = api.Messages.filter(m => {
-                if (m.offset.toString().includes(str)) { return true; }
-                if (m.key && m.key.includes(str)) { return true; }
-                if (m.valueJson && m.valueJson.includes(str)) { return true; }
-                return false;
-            });
-        else
-            this.messages = api.Messages;
-    }
-
-    async executeMessageSearch(): Promise<void> {
-        const searchParams = this.searchParams;
-
-        if (searchParams._offsetMode != TopicMessageOffset.Custom)
-            searchParams.startOffset = searchParams._offsetMode;
-
-        try {
-            this.fetchError = null;
-            this.requestInProgress = true;
-            await api.searchTopicMessages(this.props.topic.topicName, searchParams);
-            this.messages = api.Messages;
-        } catch (error) {
-            console.error('error in searchTopicMessages: ' + error.toString());
-            this.messages = undefined as any;
-            this.fetchError = error;
-        } finally {
-            this.requestInProgress = false;
-        }
-    }
 
     empty = () => <Empty description={<>
         <Text type='secondary' strong style={{ fontSize: '125%' }}>No messages</Text>

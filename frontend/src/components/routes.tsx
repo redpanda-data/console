@@ -2,7 +2,7 @@
 import { Menu, Icon } from "antd";
 import { Link, Switch } from "react-router-dom";
 import React from "react";
-import { Section } from "./common";
+import { Section } from "./misc/common";
 import { Route, Redirect } from "react-router";
 import { queryToObj } from "../utils/queryHelper";
 import { PageComponentType, PageProps } from "./pages/Page";
