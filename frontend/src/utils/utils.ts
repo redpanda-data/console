@@ -294,6 +294,31 @@ export function findElementDeep(target: any, name: string): any {
     return undefined;
 }
 
+
+export function getAllKeys(target: any): Set<string> {
+    const set = new Set<string>();
+    if (typeof target != 'object') return set;
+
+    getAllKeysRecursive(target, set);
+    return set;
+}
+
+function getAllKeysRecursive(target: any, keys: Set<string>) {
+    const targetIsAr = Array.isArray(target);
+    for (let key in target) {
+
+        const value = target[key];
+        if (typeof value == 'object') {
+            // Add key name (but not for arrays)
+            if (!targetIsAr) {
+                keys.add(key);
+            }
+            // Descend into properties / elements
+            getAllKeysRecursive(target, value);
+        }
+    }
+}
+
 const secToMs = 1000;
 const minToMs = 60 * secToMs;
 const hoursToMs = 60 * minToMs;

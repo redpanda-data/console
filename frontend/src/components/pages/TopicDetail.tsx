@@ -13,7 +13,7 @@ import topicConfigInfo from '../../assets/topicConfigInfo.json'
 import { sortField, range, makePaginationConfig, Spacer } from "../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed } from "mobx";
-import { debounce, findElementDeep, cullText } from "../../utils/utils";
+import { debounce, findElementDeep, cullText, assignDeep, getAllKeys } from "../../utils/utils";
 import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -113,6 +113,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset
     };
     @observable previewDisplay: string[] = [];
+    @observable allCurrentKeys: string[] = [];
     @observable showPreviewSettings = false;
 
     @observable fetchError = null as Error | null;
@@ -263,7 +264,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     <Text>You can turn off/on properties you've created by clicking on them.</Text>
                 </Paragraph>
                 <div style={{ padding: '1em', border: 'solid 1px #0001', borderRadius: '6px' }}>
-                    <CustomTagList tags={uiSettings.topics.previewTags} />
+                    <CustomTagList tags={uiSettings.topics.previewTags} allCurrentKeys={this.allCurrentKeys} />
                 </div>
 
             </Drawer>
@@ -282,9 +283,10 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             this.requestInProgress = true;
             await api.searchTopicMessages(this.props.topic.topicName, searchParams);
             this.messages = api.Messages;
+            //this.allCurrentKeys = Array.from(getAllKeys(this.messages));
         } catch (error) {
             console.error('error in searchTopicMessages: ' + error.toString());
-            this.messages = undefined as any;
+            this.messages = [];
             this.fetchError = error;
         } finally {
             this.requestInProgress = false;
@@ -609,7 +611,7 @@ const markerIcon = <Icon type="highlight" theme="twoTone" twoToneColor="#1890ff"
 
 
 @observer
-class CustomTagList extends Component<{ tags: PreviewTag[] }> {
+class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: string[] }> {
     @observable inputVisible = false;
     @observable inputValue = '';
 
@@ -617,8 +619,6 @@ class CustomTagList extends Component<{ tags: PreviewTag[] }> {
 
     render() {
         return <>
-            {/* <Select<string> mode='tags' style={{ minWidth: '16em' }} size='large' placeholder='Enter properties for preview' /> */}
-
             <AnimatePresence>
                 <motion.div positionTransition style={{ padding: '.3em' }}>
 
@@ -647,6 +647,17 @@ class CustomTagList extends Component<{ tags: PreviewTag[] }> {
                             </Button>
                         </motion.span>
                     }
+                    {/*
+                    <br />
+
+                    <Select<string> mode='tags'
+                        style={{ minWidth: '16em' }} size='large'
+                        placeholder='Enter properties for preview'
+                    >
+                        {this.props.allCurrentKeys.filter(k => this.props.tags.all(t => t.value != k)).map(k =>
+                            <Select.Option key={k} value={k}>{k}</Select.Option>
+                        )}
+                    </Select> */}
 
                 </motion.div>
             </AnimatePresence>
