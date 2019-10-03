@@ -211,7 +211,8 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 		// 1. Cancelled?
 		select {
 		case <-ctx.Done():
-			s.Logger.Error("Request was cancelled while waiting for messages from workers (probably timeout)")
+			s.Logger.Error("Request was cancelled while waiting for messages from workers (probably timeout)",
+				zap.Int("completedWorkers", completedWorkers), zap.Int("startedWorkers", startedWorkers), zap.Uint16("fetchedMessages", fetchedMessages))
 			isCancelled = true
 			goto breakLoop // request cancelled
 		default:
@@ -247,13 +248,13 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 			select {
 			case <-doneCh:
 				completedWorkers++
-				if completedWorkers == startedWorkers {
-					// They are all done
-					allWorkersDone = true
-				}
 			default:
 				keepCounting = false
 			}
+		}
+
+		if completedWorkers == startedWorkers {
+			allWorkersDone = true
 		}
 
 		// Throttle so we don't spin-wait
