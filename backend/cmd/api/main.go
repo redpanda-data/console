@@ -50,11 +50,12 @@ func main() {
 
 	// Health check
 	h := health.New()
+	h.WithLogger(newZapShim(logger.With(zap.String("source", "health"))))
 	check := &KafkaHealthCheck{kafkaService: kafkaService}
 	h.RegisterCheck(&health.Config{
 		Check:           check,
 		InitialDelay:    3 * time.Second,
-		ExecutionPeriod: 10 * time.Second,
+		ExecutionPeriod: 25 * time.Second,
 	})
 
 	// Custom keep alive

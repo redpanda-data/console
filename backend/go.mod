@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/AppsFlyer/go-sundheit v0.0.11
+	github.com/InVisionApp/go-logger v1.0.1
 	github.com/Shopify/sarama v1.23.1
 	github.com/aws/aws-sdk-go v1.25.5
 	github.com/go-chi/chi v4.0.2+incompatible
