@@ -4,10 +4,11 @@ import (
 	"path/filepath"
 	"time"
 
+	healthhttp "github.com/AppsFlyer/go-sundheit/http"
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/kafka-owl/kafka-owl/pkg/common/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
 
@@ -33,6 +34,7 @@ func (api *API) routes() *chi.Mux {
 	// Admin routes - only accessible from within Kubernetes or a protected ingress
 	router.Route("/admin", func(r chi.Router) {
 		r.Handle("/metrics", promhttp.Handler())
+		r.Handle("/health", healthhttp.HandleHealthJSON(api.health))
 	})
 	// Path must be prefixed with /debug otherwise it will be overriden, see: https://golang.org/pkg/net/http/pprof/
 	router.Mount("/debug", chimiddleware.Profiler())

@@ -1,6 +1,7 @@
 package main
 
 import (
+	health "github.com/AppsFlyer/go-sundheit"
 	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
 	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 	"go.uber.org/zap"
@@ -12,6 +13,7 @@ type API struct {
 	logger     *zap.Logger
 	restHelper *rest.Helper
 	kafkaSvc   *kafka.Service
+	health     health.Health
 }
 
 // Start the REST server
