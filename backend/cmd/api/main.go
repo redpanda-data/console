@@ -52,7 +52,9 @@ func main() {
 	h := health.New()
 	check := &KafkaHealthCheck{kafkaService: kafkaService}
 	h.RegisterCheck(&health.Config{
-		Check: check,
+		Check:           check,
+		InitialDelay:    3 * time.Second,
+		ExecutionPeriod: 10 * time.Second,
 	})
 
 	// Custom keep alive
