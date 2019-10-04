@@ -314,7 +314,7 @@ function getAllKeysRecursive(target: any, keys: Set<string>) {
                 keys.add(key);
             }
             // Descend into properties / elements
-            getAllKeysRecursive(target, value);
+            getAllKeysRecursive(value, keys);
         }
     }
 }

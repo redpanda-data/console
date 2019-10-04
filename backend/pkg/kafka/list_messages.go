@@ -8,6 +8,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
+
+	"math/rand"
 )
 
 // ListMessageRequest carries all filter, sort and cancellation options for fetching messages from Kafka
@@ -32,8 +34,34 @@ type TopicMessage struct {
 	Offset      int64  `json:"offset"`
 	Timestamp   int64  `json:"timestamp"`
 	Key         []byte `json:"key"`
-	Value       []byte `json:"value"`
-	Size        int    `json:"size"`
+
+	// Value       []byte `json:"value"`
+	// Value interface{} `json:"value"`
+	Value DirectEmbedding `json:"value"`
+
+	Size int `json:"size"`
+}
+
+// DirectEmbedding consists of a byte array that will be used as-is without any conversion
+type DirectEmbedding struct {
+	Value []byte `json:"value"`
+}
+
+// MarshalJSON implements the 'Marshaller' interface for DirectEmbedding
+func (m *DirectEmbedding) MarshalJSON() ([]byte, error) {
+	// todo: check if the embedding is valid json.
+	// If it isn't: detect format (XML, Avro, simple string, ...), parse into map, re-encode to json, add a marker like "format":"xml"
+	if m.Value == nil || len(m.Value) == 0 {
+		return []byte("{}"), nil
+	}
+
+	// Simulate error
+	if rand.Intn(100) < 10 {
+		// return []byte("{}"), nil
+		return []byte("[ \"Failed to parse/convert the message value as json\" ]"), nil
+	}
+
+	return m.Value, nil
 }
 
 // TopicHighWaterMarks returns the topic's highest offset for each requested partition in a map where

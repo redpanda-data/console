@@ -7,8 +7,10 @@ require (
 	github.com/InVisionApp/go-logger v1.0.1
 	github.com/Shopify/sarama v1.23.1
 	github.com/aws/aws-sdk-go v1.25.5
+	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/gorilla/schema v1.1.0
+	github.com/linkedin/goavro/v2 v2.9.6
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pkg/errors v0.8.1

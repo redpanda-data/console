@@ -206,7 +206,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             {
                 title: valueTitle,
                 dataIndex: 'value',
-                render: (t, r) => <MessagePreview value={r.valueObject} getFields={() => this.activeTags} />,
+                render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activeTags} />,
             },
             { width: 1, title: 'Size (≈)', dataIndex: 'size', align: 'right', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) } },
             {
@@ -238,7 +238,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
 
                     expandRowByClick={false}
-                    expandedRowRender={record => RenderExpandedMessage(record.valueObject)}
+                    expandedRowRender={record => RenderExpandedMessage(record)}
                     expandIconAsCell={false}
                     expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
                     columns={columns} />
@@ -416,10 +416,11 @@ class InnerSearchParametersForm extends Component<SearchParametersProps> {
 
 
 @observer
-class MessagePreview extends Component<{ value: any, getFields: () => string[] }> {
+class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => string[] }> {
     render() {
-        const value = this.props.value;
-        const fields = this.props.getFields();
+        const msg = this.props.msg;
+        const value = msg.value;
+        const fields = this.props.previewFields();
 
         try {
             let text: ReactNode = <></>;
@@ -450,9 +451,9 @@ class MessagePreview extends Component<{ value: any, getFields: () => string[] }
 }
 
 
-function RenderExpandedMessage(obj: any, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
-        if (!obj) return <code>null</code>
+        if (!msg || !msg.value) return <code>null</code>
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
         return (
@@ -465,7 +466,7 @@ function RenderExpandedMessage(obj: any, shouldExpand?: ((x: CollapsedFieldProps
                 <ReactJson
                     style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}
                     displayDataTypes={false} displayObjectSize={true} enableClipboard={false}
-                    src={obj}
+                    src={msg.value}
                     name={null}
                     collapseStringsAfterLength={40}
                     groupArraysAfterLength={100}

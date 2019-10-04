@@ -152,13 +152,7 @@ const apiStore = {
             if (m.key && typeof m.key === 'string' && m.key.length > 0)
                 m.key = atob(m.key); // unpack base64 encoded key
 
-            //console.log('value: ' + m.value);
-            const data = atob(m.value);
-            m.valueJson = data;
-            //console.log('data: ' + data);
-            const valueObj = JSON.parse(data);
-            //console.dir(valueObj);
-            m.valueObject = valueObj;
+            m.valueJson = JSON.stringify(m.value);
         }
         this.MessageResponse = response.kafkaMessages;
         this.Messages = response.kafkaMessages.messages;

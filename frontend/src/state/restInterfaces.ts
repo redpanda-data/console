@@ -19,13 +19,11 @@ export interface TopicMessage {
     offset: number,
     timestamp: number,
     partitionID: number,
-    key: string,
-    value: string, // base64 of the byte[]
-    size: number,
+    key: string, // base64 encoded key of the message
+    value: any, // json representation of the message value (xml, avro, etc will get converted)
+    size: number, // size in bytes of the kafka message
 
-    // Custom helper props (in preparation for later):
-    valueJson: string, // = atob(value)
-    valueObject: any, // actual object of value ( =parse(valueJson) )
+    valueJson: string, // a helper prop we populate after receiving the response; not part of the response
 }
 
 export interface ListMessageResponse {

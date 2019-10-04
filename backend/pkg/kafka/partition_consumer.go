@@ -49,7 +49,7 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 				return
 			}
 
-			topicMessage := &TopicMessage{m.Partition, m.Offset, m.Timestamp.Unix(), m.Key, m.Value, len(m.Value)}
+			topicMessage := &TopicMessage{m.Partition, m.Offset, m.Timestamp.Unix(), m.Key, DirectEmbedding{m.Value}, len(m.Value)}
 			p.messageCh <- topicMessage
 			if m.Offset >= p.endOffset {
 				return
