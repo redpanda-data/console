@@ -4,6 +4,7 @@ import (
 	"flag"
 	"time"
 
+	health "github.com/AppsFlyer/go-sundheit"
 	"github.com/Shopify/sarama"
 	"github.com/kafka-owl/kafka-owl/pkg/common/flagext"
 	"github.com/kafka-owl/kafka-owl/pkg/common/logging"
@@ -47,6 +48,13 @@ func main() {
 		Logger: logger,
 	}
 
+	// Health check
+	h := health.New()
+	check := &KafkaHealthCheck{kafkaService: kafkaService}
+	h.RegisterCheck(&health.Config{
+		Check: check,
+	})
+
 	// Custom keep alive
 	go func() {
 		for {
@@ -63,6 +71,7 @@ func main() {
 		logger:     logger,
 		restHelper: restHelper,
 		kafkaSvc:   kafkaService,
+		health:     h,
 	}
 	api.Start()
 }

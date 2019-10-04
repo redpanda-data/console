@@ -3,7 +3,9 @@ module github.com/kafka-owl/kafka-owl
 go 1.12
 
 require (
+	github.com/AppsFlyer/go-sundheit v0.0.11
 	github.com/Shopify/sarama v1.23.1
+	github.com/aws/aws-sdk-go v1.25.5
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/gorilla/schema v1.1.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
