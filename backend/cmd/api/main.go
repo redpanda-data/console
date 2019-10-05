@@ -58,17 +58,6 @@ func main() {
 		ExecutionPeriod: 25 * time.Second,
 	})
 
-	// Custom keep alive
-	go func() {
-		for {
-			_, err := kafkaService.ListTopics()
-			if err != nil {
-				logger.Warn("Keep alive has errored", zap.Error(err))
-			}
-			time.Sleep(30 * time.Second)
-		}
-	}()
-
 	api := &API{
 		cfg:        &cfg,
 		logger:     logger,

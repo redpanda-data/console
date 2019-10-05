@@ -24,6 +24,7 @@ func (api *API) routes() *chi.Mux {
 	// Do any set up of shared/third-party middleware and handlers
 	instrument := middleware.NewInstrument(api.cfg.MetricsNamespace)
 	recoverer := middleware.Recoverer{RestHelper: api.restHelper}
+
 	router.Use(middleware.Intercept)
 	router.Use(recoverer.Wrap)
 	router.Use(chimiddleware.RealIP)
