@@ -9,7 +9,6 @@ import { makePaginationConfig } from "../misc/common";
 import { Broker } from "../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
-import { QuickSearch, QuickSearch2 } from "../misc/QuickSearch";
 import { observable } from "mobx";
 
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
