@@ -50,7 +50,7 @@ const SideBar = observer(() =>
             </Menu>
         </Content>
 
-        <span className='version'>v0.4.0 preview</span>
+        <span className='version'>v0.4.0 preview ({(window as any).COMMIT_SHA})</span>
 
         {/* Toggle */}
         <Footer style={{
