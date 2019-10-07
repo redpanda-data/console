@@ -38,8 +38,14 @@ COPY --from=builder /app/bin/kafka-owl /app/kafka-owl
 COPY --from=frontendBuilder /app/build/ /app/build
 
 
-# todo: set version automatically somehow with: "a.b.c-gitCommitHash"
-ENV VERSION 1.0.0
+# From: https://docs.docker.com/engine/reference/builder/#using-arg-variables
+# We want to bake the commit sha into the image, or abort if the value is not set
+# ENV values are persistet in the built image, ARG instructions are not!
+ARG COMMIT_SHA
+ENV COMMIT_SHA ${COMMIT_SHA}
+RUN if [ -z "$COMMIT_SHA" ]; then echo 'Build argument "COMMIT_SHA" is missing.'; exit 1; fi
+
+
 ENTRYPOINT ["./kafka-owl", \
     "--server.http.listen-port=9090", \
     "--serve-frontend=true", \
