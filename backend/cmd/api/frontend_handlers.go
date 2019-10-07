@@ -4,18 +4,24 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 )
 
-// getIndexFile returns the byte array of the index.html file. If this file does not exist the container
-// will log a message at fatal level and exit with an error status code
+// getIndexFile loads and prepares the template index.html.
+// Before returning, this method injects the needed server variables (like
+// for example __COMMIT_SHA__) so the file is ready to be sent to a connecting browser.
+// If the file is missing, we'll log a fatal error and exit with an error code.
 func (api *API) getIndexFile(filePath string) []byte {
 	indexPath := filePath + "/index.html"
 	index, err := ioutil.ReadFile(indexPath)
 	if err != nil {
 		api.logger.Fatal("cannot read index.html", zap.String("path", indexPath), zap.Error(err))
+		os.Exit(1)
 	}
+
+	index = []byte(strings.Replace(string(index), "__COMMIT_SHA__", commitSha, 1))
 
 	return index
 }

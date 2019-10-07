@@ -12,7 +12,7 @@ import prettyBytes from 'pretty-bytes';
 import topicConfigInfo from '../../assets/topicConfigInfo.json'
 import { sortField, range, makePaginationConfig, Spacer } from "../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed } from "mobx";
+import { observable, computed, transaction } from "mobx";
 import { debounce, findElementDeep, cullText, assignDeep, getAllKeys } from "../../utils/utils";
 import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../utils/animationProps";
@@ -20,8 +20,7 @@ import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
 import '../../utils/arrayExtensions';
 import { uiState } from "../../state/uiState";
-import Title from "antd/lib/typography/Title";
-import { QuickSearch } from "../misc/QuickSearch";
+import { FilterableDataSource } from "../../utils/filterableDataSource";
 
 const { Text } = Typography;
 
@@ -104,9 +103,7 @@ const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[] }) =>
 @observer
 class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
-    @observable filterString = '';
     @observable requestInProgress = false;
-    @observable messages: TopicMessage[];
     @observable searchParams: TopicMessageSearchParameters = {
         _offsetMode: TopicMessageOffset.End,
         startOffset: -1, partitionID: 0, pageSize: 50,
@@ -119,16 +116,19 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
     @observable fetchError = null as Error | null;
 
     pageConfig = makePaginationConfig(uiSettings.topicMessages.pageSize);
-
+    messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch);
 
     constructor(props: { topic: TopicDetail }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
-        this.updateFilter = this.updateFilter.bind(this);
+        //this.updateFilter = this.updateFilter.bind(this);
     }
 
     componentDidMount() {
         this.executeMessageSearch();
+    }
+    componentWillUnmount() {
+        this.messageSource.dispose();
     }
 
     render() {
@@ -151,7 +151,14 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 : <>
                     {/* Quick Search Line */}
                     <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} >
-                        <QuickSearch onChange={this.updateFilter} />
+
+                        <Input placeholder='Quick Search' allowClear={true} size='large'
+                            style={{ marginRight: '1em', width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
+                            onChange={e => this.messageSource.filterText = e.target.value}
+                            addonAfter={null}
+                        />
+                        <this.FilterSummary />
+
                         <Spacer />
                         <this.SearchQueryAdditionalInfo />
                     </Row>
@@ -162,20 +169,25 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         </>
     }
 
-    updateFilter(str: string): ReactNode {
-        this.filterString = str;
-        if (!api.Messages || api.Messages.length == 0 || str.length == 0) return "";
+    isFilterMatch(str: string, m: TopicMessage) {
+        if (m.offset.toString().includes(str)) return true;
+        if (m.key && m.key.includes(str)) return true;
+        if (m.valueJson && m.valueJson.includes(str)) return true;
+        return false;
+    }
 
-        this.messages = api.Messages.filter(m => {
-            if (m.offset.toString().includes(str)) return true;
-            if (m.key && m.key.includes(str)) return true;
-            if (m.valueJson && m.valueJson.includes(str)) return true;
-            return false;
-        });
+    FilterSummary() {
 
-        const displayText = this.messages.length == api.Messages.length
+        if (this && this.messageSource && this.messageSource.data) {
+            // todo
+        }
+        else {
+            return null;
+        }
+
+        const displayText = this.messageSource.data.length == api.Messages.length
             ? 'Filter matched all messages'
-            : <><b>{this.messages.length}</b> results</>;
+            : <><b>{this.messageSource.data.length}</b> results</>;
 
         return <div style={{ marginRight: '1em' }}>
             <MotionDiv identityKey={displayText}>
@@ -183,6 +195,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             </MotionDiv>
         </div>
     }
+
 
     @computed
     get activeTags() {
@@ -222,10 +235,6 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
             },
         ];
 
-        if (this.messages && this.messages.length > 0 && this.searchParams.partitionID >= 0) {
-            columns.removeAll(c => c.dataIndex == 'partitionID');
-        }
-
         return <>
             <ConfigProvider renderEmpty={this.empty}>
                 <Table
@@ -233,7 +242,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     bordered={true} size='small'
                     pagination={this.pageConfig}
                     onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize } }}
-                    dataSource={this.messages}
+                    dataSource={this.messageSource.data}
                     loading={this.requestInProgress}
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
 
@@ -243,7 +252,7 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
                     columns={columns} />
 
-                {(this.messages && this.messages.length > 0) && <this.PreviewSettings />}
+                {(this.messageSource.data && this.messageSource.data.length > 0) && <this.PreviewSettings />}
             </ConfigProvider>
         </>
     })
@@ -278,19 +287,20 @@ class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (searchParams._offsetMode != TopicMessageOffset.Custom)
             searchParams.startOffset = searchParams._offsetMode;
 
-        try {
-            this.fetchError = null;
-            this.requestInProgress = true;
-            await api.searchTopicMessages(this.props.topic.topicName, searchParams);
-            this.messages = api.Messages;
-            //this.allCurrentKeys = Array.from(getAllKeys(this.messages));
-        } catch (error) {
-            console.error('error in searchTopicMessages: ' + error.toString());
-            this.messages = [];
-            this.fetchError = error;
-        } finally {
-            this.requestInProgress = false;
-        }
+        transaction(async () => {
+            try {
+                this.fetchError = null;
+                this.requestInProgress = true;
+                await api.searchTopicMessages(this.props.topic.topicName, searchParams);
+                this.allCurrentKeys = Array.from(getAllKeys(this.messageSource.data));
+            } catch (error) {
+                console.error('error in searchTopicMessages: ' + error.toString());
+                this.fetchError = error;
+            } finally {
+                this.requestInProgress = false;
+            }
+        });
+
     }
 
     SearchQueryAdditionalInfo = observer(() => {
@@ -619,6 +629,9 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
     @observable activeTags: string[] = [];
 
     render() {
+
+        const tagSuggestions = this.props.allCurrentKeys.filter(k => this.props.tags.all(t => t.value != k));
+
         return <>
             <AnimatePresence>
                 <motion.div positionTransition style={{ padding: '.3em' }}>
@@ -648,17 +661,17 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
                             </Button>
                         </motion.span>
                     }
-                    {/*
+
                     <br />
 
                     <Select<string> mode='tags'
-                        style={{ minWidth: '16em' }} size='large'
+                        style={{ minWidth: '26em' }} size='large'
                         placeholder='Enter properties for preview'
                     >
-                        {this.props.allCurrentKeys.filter(k => this.props.tags.all(t => t.value != k)).map(k =>
+                        {tagSuggestions.map(k =>
                             <Select.Option key={k} value={k}>{k}</Select.Option>
                         )}
-                    </Select> */}
+                    </Select>
 
                 </motion.div>
             </AnimatePresence>
