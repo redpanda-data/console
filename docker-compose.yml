@@ -1,11 +1,7 @@
 version: "3"
 services:
-  owl:
-    build: . # dockerfile is in the same dir
-    command: ["/app/kafka-owl",
-    "--server.http.listen-port=9090",
-    "--serve-frontend=true",
-    ]
-    ports: [
-      9090:9090
-    ]
+  web:
+    build: .
+    ports:
+      - "9090:9090"
+
