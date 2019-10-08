@@ -7,6 +7,7 @@ import { PageComponent, PageInitHelper } from "./Page";
 import { makePaginationConfig } from "../misc/common";
 import { MotionDiv } from "../../utils/animationProps";
 import { GroupDescription, GroupMemberDescription, GroupMemberAssignment } from "../../state/restInterfaces";
+import { groupConsecutive } from "../../utils/utils";
 const { Text } = Typography;
 
 @observer
@@ -105,23 +106,32 @@ function renderAssignments(value: GroupMemberAssignment[]): React.ReactNode {
     const jsx: JSX.Element[] = [];
 
     for (let [topicName, assignments] of topicAssignments) {
-        const allAssignments = assignments.flatMap(x => x.partitionIds).distinct();
+        const assignedIds = assignments.flatMap(x => x.partitionIds).distinct();
 
-        // Can we summarize the assignment? If there is only one consumer
+        // Try to summarize the assignment...
         if (api.Topics) {
             var topic = api.Topics.find(t => t.topicName == topicName);
             if (topic) {
-
-                // All
-                if (topic.partitionCount == allAssignments.length) {
-                    jsx.push(<span style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: <Tag color="geekblue">All partitions</Tag></Tag></span>);
+                // All partitions?
+                if (topic.partitionCount == assignedIds.length) {
+                    jsx.push(<span style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: <Tag color="geekblue">All partitions</Tag><b>({assignedIds.length})</b></Tag></span>);
                     continue;
                 }
             }
         }
 
-        // No summary, exhaustive listing
-        jsx.push(<span style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: {allAssignments.map(a => <Tag style={margin1Px} color="geekblue">{a}</Tag>)}</Tag></span>);
+        // List partitions explicitly, but maybe we can merge some groups
+        assignedIds.sort((a, b) => a - b);
+        const groups = groupConsecutive(assignedIds);
+        const ids: JSX.Element[] = [];
+        for (let group of groups) {
+            const text = group.length == 1
+                ? group[0].toString() // single ID
+                : group[0] + " .. " + group[group.length - 1]; // range of IDs
+            ids.push(<Tag style={margin1Px} color="geekblue">{text}</Tag>);
+        }
+
+        jsx.push(<span style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: {ids}<b> ({assignedIds.length})</b></Tag></span>);
     }
 
     return jsx;

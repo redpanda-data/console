@@ -328,10 +328,28 @@ export function hoursToMilliseconds(hours: number) {
     return hours * hoursToMs;
 }
 
-
 export const cullText = (str: string, length: number) => str.length > length ? `${str.substring(0, length - 3)}...` : str;
 
+export function groupConsecutive(ar: number[]): number[][] {
+    const groups: number[][] = [];
 
+    for (let cur of ar) {
+        const group = groups.length > 0 ? groups[groups.length - 1] : undefined;
+
+        if (group) {
+            const last = group[group.length - 1];
+            if (last == cur - 1) {
+                // We can extend the group
+                group.push(cur);
+                continue;
+            }
+        }
+
+        groups.push([cur]);
+    }
+
+    return groups;
+}
 
 
 
