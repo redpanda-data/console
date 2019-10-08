@@ -70,8 +70,8 @@ const GroupState = (p: { group: GroupDescription }) => {
     const icon = stateIcons.get(state);
     // todo...
     return <>
-        <span> {p.group.state} </span>
         {icon}
+        <span> {p.group.state}</span>
     </>
 }
 
@@ -82,7 +82,7 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
     const pageConfig = makePaginationConfig();
 
     return <Table
-        style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
+        style={{ margin: '0', padding: '0', whiteSpace: 'normal' }}
         bordered={true} size={'middle'}
         pagination={pageConfig}
         dataSource={p.group.members}
@@ -91,7 +91,7 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
         columns={[
             { title: <span>ID <Text type='secondary'>(Group Name)</Text></span>, dataIndex: 'id' },
             { title: 'ClientID', dataIndex: 'clientId' },
-            { title: 'Client Host', dataIndex: 'clientHost' },
+            { width: 1, title: 'Client Host', dataIndex: 'clientHost' },
             { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t) },
         ]} />
 })
@@ -111,16 +111,17 @@ function renderAssignments(value: GroupMemberAssignment[]): React.ReactNode {
         if (api.Topics) {
             var topic = api.Topics.find(t => t.topicName == topicName);
             if (topic) {
+
+                // All
                 if (topic.partitionCount == allAssignments.length) {
-                    // Assigned to all partitions
-                    jsx.push(<div style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: <Tag color="geekblue">All partitions</Tag></Tag></div>);
+                    jsx.push(<span style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: <Tag color="geekblue">All partitions</Tag></Tag></span>);
                     continue;
                 }
             }
         }
 
         // No summary, exhaustive listing
-        jsx.push(<div style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: {allAssignments.map(a => <Tag style={margin1Px} color="geekblue">{a}</Tag>)}</Tag></div>);
+        jsx.push(<span style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: {allAssignments.map(a => <Tag style={margin1Px} color="geekblue">{a}</Tag>)}</Tag></span>);
     }
 
     return jsx;
