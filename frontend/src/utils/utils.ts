@@ -329,20 +329,6 @@ export function hoursToMilliseconds(hours: number) {
 }
 
 
-export function debounce<F extends Function>(func: F, wait: number): F {
-    let timeoutID: number;
-    // conversion through any necessary as it wont satisfy criteria otherwise
-    return <any>function (this: any, ...args: any[]) {
-        clearTimeout(timeoutID);
-        const context = this;
-
-        timeoutID = window.setTimeout(function () {
-            func.apply(context, args);
-        }, wait);
-    };
-};
-
-
 export const cullText = (str: string, length: number) => str.length > length ? `${str.substring(0, length - 3)}...` : str;
 
 
