@@ -42,6 +42,9 @@ COPY --from=frontendBuilder /app/build/ /app/build
 # We want to bake the commit sha into the image, or abort if the value is not set
 # ENV values are persistet in the built image, ARG instructions are not!
 ARG COMMIT_SHA
-ENV COMMIT_SHA ${COMMIT_SHA:-'No git commmit hash set'}
+ENV COMMIT_SHA ${COMMIT_SHA:-'git commit sha not set'}
+
+ARG GITHUB_REF
+ENV GITHUB_REF ${GITHUB_REF:-'git ref not set'}
 
 ENTRYPOINT ["./kafka-owl"]
