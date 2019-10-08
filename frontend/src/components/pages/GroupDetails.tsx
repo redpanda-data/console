@@ -48,7 +48,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             <MotionDiv>
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
                 <Row type="flex" style={{ marginBottom: '1em' }}>
-                    <Statistic title='State' valueRender={() => <GroupState group={group} />} />
+                    <Statistic title='State' valueRender={() => <GroupState group={group} />} style={{ marginRight: '2em' }} />
+                    <Statistic title='Consumers' value={group.members.length} />
                 </Row>
 
                 <GroupMembers group={group} />
@@ -90,7 +91,7 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
         rowKey={r => r.id}
         rowClassName={() => 'pureDisplayRow'}
         columns={[
-            { title: <span>ID <Text type='secondary'>(Group Name)</Text></span>, dataIndex: 'id' },
+            { title: <span>ID</span>, dataIndex: 'id' },
             { title: 'ClientID', dataIndex: 'clientId' },
             { width: 1, title: 'Client Host', dataIndex: 'clientHost' },
             { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t) },

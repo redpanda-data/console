@@ -7,7 +7,7 @@ import { PageComponent, PageInitHelper } from "./Page";
 import { GroupMemberDescription } from "../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
-import { makePaginationConfig } from "../misc/common";
+import { makePaginationConfig, sortField } from "../misc/common";
 import { uiSettings } from "../../state/ui";
 import { appGlobal } from "../../state/appGlobal";
 
@@ -45,9 +45,9 @@ class GroupList extends PageComponent {
                     dataSource={groups}
                     rowKey={x => x.groupId}
                     columns={[
-                        { title: 'ID', dataIndex: 'groupId', },
-                        { title: 'State', dataIndex: 'state', width: 1 },
-                        { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length },
+                        { title: 'ID', dataIndex: 'groupId', sorter: sortField('groupId') },
+                        { title: 'State', dataIndex: 'state', width: 1, sorter: sortField('state') },
+                        { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: sortField('members') },
                     ]} />
             </motion.div>
         );
