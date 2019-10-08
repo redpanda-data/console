@@ -11,6 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
+      - name: Extract ref/branch name
+        shell: bash
+        run: echo "##[set-output name=ref;]$(echo ${GITHUB_REF##*/})"
+        id: extract_ref
+
       - name: Login to GitHub Package Registry
         env:
           GITHUB_PACKAGE_REGISTRY_TOKEN: ${{ secrets.GITHUB_PACKAGE_REGISTRY_TOKEN }}
@@ -20,14 +25,14 @@ jobs:
         run:
           docker build
           --build-arg "COMMIT_SHA=${GITHUB_SHA}"
-          --build-arg "GITHUB_REF=${GITHUB_REF}"
+          --build-arg "GITHUB_REF=${{ steps.extract_ref.outputs.ref }}"
           -t docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:latest
           -t docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:${GITHUB_SHA}
-          -t docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:${GITHUB_REF}
+          -t docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:${{ steps.extract_ref.outputs.ref }}
           .
 
       - name: Push Image
         run: |
           docker push docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:latest
           docker push docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:${GITHUB_SHA}
-          docker push docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:${GITHUB_REF}
+          docker push docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:${{ steps.extract_ref.outputs.ref }}
