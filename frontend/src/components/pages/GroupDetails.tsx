@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -7,6 +7,7 @@ import { PageComponent, PageInitHelper } from "./Page";
 import { makePaginationConfig } from "../misc/common";
 import { MotionDiv } from "../../utils/animationProps";
 import { GroupDescription, GroupMemberDescription, GroupMemberAssignment } from "../../state/restInterfaces";
+const { Text } = Typography;
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
@@ -46,7 +47,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             <MotionDiv>
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
                 <Row type="flex" style={{ marginBottom: '1em' }}>
-                    <Statistic title='State' valueRender={() => <RenderGroupState group={group} />} />
+                    <Statistic title='State' valueRender={() => <GroupState group={group} />} />
                 </Row>
 
                 <GroupMembers group={group} />
@@ -60,14 +61,17 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 }
 
 const stateIcons = new Map<string, JSX.Element>([
-    ['dead', <Badge status='processing' color='red' />],
-    ['stable', <Badge status='processing' color='green' />],
+    ['dead', <Icon type="fire" theme='twoTone' twoToneColor='orangered' />],
+    ['empty', <Icon type="warning" theme='twoTone' twoToneColor='orange' />],
+    ['stable', <Icon type="check-circle" theme='twoTone' twoToneColor='#52c41a' />],
 ]);
-const RenderGroupState = (p: { group: GroupDescription }) => {
+const GroupState = (p: { group: GroupDescription }) => {
     const state = p.group.state.toLowerCase();
+    const icon = stateIcons.get(state);
     // todo...
     return <>
-        <span>{p.group.state}</span>
+        <span> {p.group.state} </span>
+        {icon}
     </>
 }
 
@@ -85,7 +89,7 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
         rowKey={r => r.id}
         rowClassName={() => 'pureDisplayRow'}
         columns={[
-            { title: 'ID', dataIndex: 'id' },
+            { title: <span>ID <Text type='secondary'>(Group Name)</Text></span>, dataIndex: 'id' },
             { title: 'ClientID', dataIndex: 'clientId' },
             { title: 'Client Host', dataIndex: 'clientHost' },
             { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t) },
