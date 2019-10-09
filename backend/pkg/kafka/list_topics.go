@@ -71,7 +71,7 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 
 		topicsByName[topic.Name] = &TopicDetail{
 			TopicName:         topic.Name,
-			IsInternal:        topic.IsInternal || strings.HasPrefix(topic.Name, "__"),
+			IsInternal:        topic.IsInternal || strings.HasPrefix(topic.Name, "_"),
 			Partitions:        partitions,
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
 		}
