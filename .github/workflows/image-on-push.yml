@@ -12,6 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
+      - name: Extract ref/branch name
+        shell: bash
+        run: echo "##[set-output name=ref;]$(echo ${GITHUB_REF##*/})"
+        id: extract_ref
+
       - name: Login to GitHub Package Registry
         env:
           GITHUB_PACKAGE_REGISTRY_TOKEN: ${{ secrets.GITHUB_PACKAGE_REGISTRY_TOKEN }}

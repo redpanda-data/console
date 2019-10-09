@@ -17,6 +17,7 @@ import (
 
 var (
 	commitSha string
+	version   string
 )
 
 func main() {
@@ -30,6 +31,7 @@ func main() {
 	if commitSha = os.Getenv("COMMIT_SHA"); commitSha == "" {
 		commitSha = "DEV"
 	}
+	version = os.Getenv("GITHUB_REF") // ignore empty
 
 	//
 	// 2. Logger
