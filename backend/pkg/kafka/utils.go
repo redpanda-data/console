@@ -2,8 +2,8 @@ package kafka
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
+	"sync"
 
 	"github.com/Shopify/sarama"
 )
@@ -18,79 +18,75 @@ func (s *Service) findAnyBroker() (*sarama.Broker, error) {
 }
 
 type waterMark struct {
-	Low  int64
-	High int64
+	PartitionID int32
+	Low         int64
+	High        int64
 }
 
-// todo: if it turns out that topicWaterMarks is not (or rarely) used other than for listing topics,
-// we should merge it with this method so it can be optimized much better
-func (s *Service) topicPartitions(topicName string, partitions []*sarama.PartitionMetadata) ([]TopicPartition, error) {
-
-	// since go doesn't have enumerables/iterators...
-	// Create array of partitionIDs
-	partitionIDs := make([]int32, len(partitions))
-	for i, p := range partitions {
-		partitionIDs[i] = p.ID
+// waterMarks returns a map of: partitionID -> waterMark
+func (s *Service) waterMarks(topicName string, partitionIDs []int32) (map[int32]*waterMark, error) {
+	// 1. Generate offset requests for all partitions
+	oldestReq := &sarama.OffsetRequest{}
+	newestReq := &sarama.OffsetRequest{}
+	for _, partitionID := range partitionIDs {
+		oldestReq.AddBlock(topicName, partitionID, sarama.OffsetOldest, 1)
+		newestReq.AddBlock(topicName, partitionID, sarama.OffsetNewest, 1)
 	}
 
-	// Get watermarks
-	waterMarks, err := s.topicWaterMarks(topicName, partitionIDs)
+	// 2. Fetch offsets in parallel
+	broker, err := s.findAnyBroker()
 	if err != nil {
 		return nil, err
 	}
+	offsetResCh := make(chan *sarama.OffsetResponse, 2)
+	errCh := make(chan error, 2)
+	wg := sync.WaitGroup{}
 
-	// Create result array
-	topicPartitions := make([]TopicPartition, len(partitions))
-	for i, p := range partitions {
-		w := waterMarks[p.ID]
-		topicPartitions[i] = TopicPartition{ID: p.ID, WaterMarkLow: w.Low, WaterMarkHigh: w.High}
-	}
-
-	return topicPartitions, nil
-}
-
-// topicWaterMarks returns a map of: partitionID -> WaterMark
-func (s *Service) topicWaterMarks(topicName string, partitionIDs []int32) (map[int32]waterMark, error) {
-	if s.Client.Closed() {
-		return nil, fmt.Errorf("Could not get water marks for topic '%s' because sarama client is closed", topicName)
-	}
-
-	// getOffset refreshes topic metadata once to retry if Client.GetOffset fails
-	// todo: we should have a custom error type here that lists both errors: the firstTry and the error while refreshing (or retrying)
-	getOffset := func(partitionID int32, offset int64) (int64, error) {
-		offset, errFirstTry := s.Client.GetOffset(topicName, partitionID, offset)
-		if errFirstTry != nil {
-			// Errors should only happen if metadata is out of date, so let's retry
-			if errRefresh := s.Client.RefreshMetadata(topicName); errRefresh != nil {
-				return 0, errRefresh // refresh failed
-			}
-
-			var errRetry error
-			offset, errRetry = s.Client.GetOffset(topicName, partitionID, offset)
-			if errRetry != nil {
-				return 0, errRetry // retry failed
-			}
+	fetchOffsets := func(b *sarama.Broker, req *sarama.OffsetRequest) {
+		defer wg.Done()
+		res, err := b.GetAvailableOffsets(req)
+		if err != nil {
+			errCh <- err
+			return
 		}
-
-		return offset, nil
+		offsetResCh <- res
 	}
 
-	offsets := make(map[int32]waterMark, len(partitionIDs))
+	wg.Add(2)
+	go fetchOffsets(broker, oldestReq)
+	go fetchOffsets(broker, newestReq)
+	wg.Wait()
+	close(errCh)
+	close(offsetResCh)
 
-	for _, partitionID := range partitionIDs {
-
-		// todo: do some golang research, figure out a way to avoid this insane syntax; this loop could be much shorter...
-		low, err := getOffset(partitionID, sarama.OffsetOldest)
+	// 3. Process results and construct desired response
+	waterMarks := make(map[int32]*waterMark)
+	for err := range errCh {
 		if err != nil {
 			return nil, err
 		}
-		high, err := getOffset(partitionID, sarama.OffsetNewest)
-		if err != nil {
-			return nil, err
-		}
-
-		offsets[partitionID] = waterMark{low, high}
 	}
 
-	return offsets, nil
+	// Iterate on returned offsets and put them into our response map
+	for r := range offsetResCh {
+		for _, blockByPartition := range r.Blocks {
+			for partition, block := range blockByPartition {
+				if block.Err != sarama.ErrNoError {
+					return nil, block.Err
+				}
+
+				if _, ok := waterMarks[partition]; !ok {
+					waterMarks[partition] = &waterMark{PartitionID: partition}
+				}
+				if block.Offset == sarama.OffsetNewest {
+					waterMarks[partition].High = block.Offset
+				}
+				if block.Offset == sarama.OffsetOldest {
+					waterMarks[partition].Low = block.Offset
+				}
+			}
+		}
+	}
+
+	return waterMarks, nil
 }

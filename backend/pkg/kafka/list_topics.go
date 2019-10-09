@@ -11,21 +11,10 @@ import (
 
 // TopicDetail is all information we get when listing Kafka topics
 type TopicDetail struct {
-	TopicName         string           `json:"topicName"`
-	IsInternal        bool             `json:"isInternal"`
-	Partitions        []TopicPartition `json:"partitions"`
-	ReplicationFactor int              `json:"replicationFactor"`
-	CleanupPolicy     string           `json:"cleanupPolicy"`
-}
-
-// TopicPartition consists of some (not all) information about a partition of a topic.
-// Only data relevant to the 'partition table' in the frontend is included.
-// **This struct is passed around by-value since it is still small enough (and allocations+gc would hurt more than help)**
-type TopicPartition struct {
-	ID            int32 `json:"id"`
-	WaterMarkLow  int64 `json:"waterMarkLow"`
-	WaterMarkHigh int64 `json:"waterMarkHigh"`
-	//Lag           int64 `json:"lag"` // todo: later...
+	TopicName         string `json:"topicName"`
+	IsInternal        bool   `json:"isInternal"`
+	ReplicationFactor int    `json:"replicationFactor"`
+	CleanupPolicy     string `json:"cleanupPolicy"`
 }
 
 // ListTopics returns a List of all topics in a kafka cluster.
@@ -61,18 +50,9 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 			return nil, topic.Err
 		}
 
-		partitions, err := s.topicPartitions(topic.Name, topic.Partitions)
-		if err != nil {
-			s.Logger.Error("Failed to get watermarks for topic",
-				zap.String("topic_name", topic.Name), // todo: maybe use logger.with()?
-				zap.Error(err))
-			return nil, err
-		}
-
 		topicsByName[topic.Name] = &TopicDetail{
 			TopicName:         topic.Name,
 			IsInternal:        topic.IsInternal || strings.HasPrefix(topic.Name, "__"),
-			Partitions:        partitions,
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
 		}
 
@@ -118,28 +98,4 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 	}
 
 	return response, nil
-}
-
-// TODO: Currently unused
-func (s *Service) highWaterMarksBulk(topicName string, partitionIDs []int32) (map[int32]*sarama.OffsetResponseBlock, error) {
-	broker, err := s.findAnyBroker()
-	if err != nil {
-		return nil, err
-	}
-
-	req := &sarama.OffsetRequest{}
-	for _, partitionID := range partitionIDs {
-		req.AddBlock(topicName, partitionID, sarama.OffsetNewest, 1)
-	}
-
-	offsets, err := broker.GetAvailableOffsets(req)
-	if err != nil {
-		return nil, err
-	}
-	block, exists := offsets.Blocks[topicName]
-	if !exists {
-		return nil, fmt.Errorf("The requested topic '%v' does not exist", topicName)
-	}
-
-	return block, nil
 }

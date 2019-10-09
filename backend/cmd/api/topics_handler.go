@@ -95,6 +95,35 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 	}
 }
 
+// handleGetPartitions returns an overview of all partitions and their watermarks in the given topic
+func (api *API) handleGetPartitions() http.HandlerFunc {
+	type response struct {
+		TopicName  string                 `json:"topicName"`
+		Partitions []kafka.TopicPartition `json:"partitions"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		topicName := chi.URLParam(r, "topicName")
+		partitions, err := api.kafkaSvc.ListTopicPartitions(topicName)
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusInternalServerError,
+				Message:  "Could not list topic partitions for requested topic",
+				IsSilent: false,
+			}
+			api.restHelper.SendRESTError(w, r, restErr)
+			return
+		}
+
+		res := response{
+			TopicName:  topicName,
+			Partitions: partitions,
+		}
+		api.restHelper.SendResponse(w, r, http.StatusOK, res)
+	}
+}
+
 // handleGetTopicConfig returns all set configuration options for a specific topic
 func (api *API) handleGetTopicConfig() http.HandlerFunc {
 	type response struct {
