@@ -98,6 +98,8 @@ const DataAgeInfo = observer(() => {
         </div>
     */}
 
+    // maybe we need to use the same 'no vertical expansion' trick:
+    // <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
     return (
         <div style={{ marginLeft: '1em' }}>
             <div className='fadeIn' style={{ color: 'hsl(205, 100%, 50%)', display: 'flex', alignContent: 'center', transform: 'translateY(-1px)' }}>
@@ -126,9 +128,9 @@ const AppPageHeader = observer(() => {
             style={{ paddingLeft: 0, paddingRight: 0 }}
             breadcrumb={{ routes: breadcrumbs, itemRender: itemRender, separator: '>' }}
             // onBack={onBack}
-            title={<Title level={3}>{uiState.pageTitle}</Title>}
-            subTitle={<></>}
-            footer={<DataAgeInfo />}
+            title={<><Title level={3}>{uiState.pageTitle}</Title></>}
+            subTitle={<span style={{ display: 'flex', marginTop: '.2em' }}><DataAgeInfo /></span>}
+            footer={<></>}
             extra={uiState.pageHeaderExtra()} // right sider
         />
     </MotionDiv>
