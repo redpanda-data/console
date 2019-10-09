@@ -24,6 +24,7 @@ import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { TopicQuickInfoStatistic } from "./Topic.QuickInfo";
 import { TopicConfiguration } from "./Topic.Config";
 import { TopicMessageView } from "./Topic.Messages";
+import { appGlobal } from "../../../state/appGlobal";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -50,7 +51,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         if (!api.Topics) return skeleton;
         const topic = api.Topics.find(e => e.topicName == topicName);
-        if (!topic) return skeleton;
+        if (!topic) return this.topicNotFound(topicName);
         const topicConfig = api.TopicConfig.get(topicName);
         if (!topicConfig) return skeleton;
 
@@ -77,6 +78,14 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         );
     }
 
+    topicNotFound(name: string) {
+        return <Result
+            status="404"
+            title="404"
+            subTitle={<>The topic <Text code>{name}</Text> does not exist.</>}
+            extra={<Button type="primary" onClick={() => appGlobal.history.goBack()}>Go Back</Button>}
+        />
+    }
 }
 
 const skeleton = <>
