@@ -59,66 +59,6 @@ func (m *DirectEmbedding) MarshalJSON() ([]byte, error) {
 	return m.Value, nil
 }
 
-// TopicHighWaterMarks returns the topic's highest offset for each requested partition in a map where
-// the partitionID is the key and the offset the value.
-func (s *Service) TopicHighWaterMarks(topicName string, partitionIDs []int32) (map[int32]int64, error) {
-	if s.Client.Closed() {
-		return nil, fmt.Errorf("Could not get topic high water marks because sarama client is closed")
-	}
-
-	offsets := make(map[int32]int64)
-	for _, partitionID := range partitionIDs {
-		offset, err := s.Client.GetOffset(topicName, partitionID, sarama.OffsetNewest)
-		if err != nil {
-			// Errors should only happen if metadata is out of date, so let us retry then
-			if err := s.Client.RefreshMetadata(topicName); err != nil {
-				return nil, err
-			}
-
-			// Retry
-			var errRetry error
-			offset, errRetry = s.Client.GetOffset(topicName, partitionID, sarama.OffsetNewest)
-			if errRetry != nil {
-				return nil, errRetry
-			}
-		}
-
-		offsets[partitionID] = offset
-	}
-
-	return offsets, nil
-}
-
-// TopicLowWaterMarks returns the topic's lowest offset for each requested partition in a map where
-// the partitionID is the key and the offset the value.
-func (s *Service) TopicLowWaterMarks(topicName string, partitionIDs []int32) (map[int32]int64, error) {
-	if s.Client.Closed() {
-		return nil, fmt.Errorf("Could not get topic low water marks because sarama client is closed")
-	}
-
-	offsets := make(map[int32]int64)
-	for _, partitionID := range partitionIDs {
-		offset, err := s.Client.GetOffset(topicName, partitionID, sarama.OffsetOldest)
-		if err != nil {
-			// Errors should only happen if metadata is out of date, so let us retry then
-			if err := s.Client.RefreshMetadata(topicName); err != nil {
-				return nil, err
-			}
-
-			// Retry
-			var errRetry error
-			offset, errRetry = s.Client.GetOffset(topicName, partitionID, sarama.OffsetOldest)
-			if errRetry != nil {
-				return nil, errRetry
-			}
-		}
-
-		offsets[partitionID] = offset
-	}
-
-	return offsets, nil
-}
-
 // ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
 // (which runs in it's own goroutine) for each partition and funneling all the data to eventually
 // return it. The second return parameter is a bool which indicates whether the requested topic exists.
@@ -156,12 +96,7 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 		partitionIDs = append(partitionIDs, req.PartitionID)
 	}
 
-	highMarks, err := s.TopicHighWaterMarks(req.TopicName, partitionIDs)
-	if err != nil {
-		return nil, err
-	}
-
-	lowMarks, err := s.TopicLowWaterMarks(req.TopicName, partitionIDs)
+	marks, err := s.topicWaterMarks(req.TopicName, partitionIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -174,8 +109,8 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 
 	for _, partitionID := range partitionIDs {
 		// Calculate start and end offset for current partition
-		highWaterMark := highMarks[partitionID]
-		lowWaterMark := lowMarks[partitionID]
+		highWaterMark := marks[partitionID].High
+		lowWaterMark := marks[partitionID].Low
 		hasMessages := highWaterMark-lowWaterMark > 0
 		if !hasMessages {
 			continue

@@ -11,17 +11,28 @@ import (
 
 // TopicDetail is all information we get when listing Kafka topics
 type TopicDetail struct {
-	TopicName         string `json:"topicName"`
-	IsInternal        bool   `json:"isInternal"`
-	PartitionCount    int    `json:"partitionCount"`
-	ReplicationFactor int    `json:"replicationFactor"`
-	CleanupPolicy     string `json:"cleanupPolicy"`
+	TopicName         string           `json:"topicName"`
+	IsInternal        bool             `json:"isInternal"`
+	Partitions        []TopicPartition `json:"partitions"`
+	ReplicationFactor int              `json:"replicationFactor"`
+	CleanupPolicy     string           `json:"cleanupPolicy"`
+}
+
+// TopicPartition consists of some (not all) information about a partition of a topic.
+// Only data relevant to the 'partition table' in the frontend is included.
+// **This struct is passed around by-value since it is still small enough (and allocations+gc would hurt more than help)**
+type TopicPartition struct {
+	ID            int32 `json:"id"`
+	WaterMarkLow  int64 `json:"waterMarkLow"`
+	WaterMarkHigh int64 `json:"waterMarkHigh"`
+	//Lag           int64 `json:"lag"` // todo: later...
 }
 
 // ListTopics returns a List of all topics in a kafka cluster.
 // Each topic entry contains details like ReplicationFactor, Cleanup Policy
 func (s *Service) ListTopics() ([]*TopicDetail, error) {
-	// 1. Get a random broker and connect to it
+	//
+	// 1. Connect to random broker
 	broker, err := s.findAnyBroker()
 	if err != nil {
 		return nil, err
@@ -31,15 +42,16 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 		s.Logger.Warn("opening the broker connection failed", zap.Error(err))
 	}
 
+	//
 	// 2. Refresh metadata to ensure we get an up to date list of available topics
 	metadata, err := broker.GetMetadata(&sarama.MetadataRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	topicsByName := make(map[string]*TopicDetail, len(metadata.Topics))
-
+	//
 	// 3. Create config resources request objects for all topics
+	topicsByName := make(map[string]*TopicDetail, len(metadata.Topics))
 	describeCfgResources := make([]*sarama.ConfigResource, len(metadata.Topics))
 	for i, topic := range metadata.Topics {
 		if topic.Err != sarama.ErrNoError {
@@ -49,19 +61,26 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 			return nil, topic.Err
 		}
 
+		partitions, err := s.topicPartitions(topic.Name, topic.Partitions)
+		if err != nil {
+			s.Logger.Error("Failed to get watermarks for topic",
+				zap.String("topic_name", topic.Name), // todo: maybe use logger.with()?
+				zap.Error(err))
+			return nil, err
+		}
+
 		topicsByName[topic.Name] = &TopicDetail{
 			TopicName:         topic.Name,
 			IsInternal:        topic.IsInternal || strings.HasPrefix(topic.Name, "__"),
-			PartitionCount:    len(topic.Partitions),
+			Partitions:        partitions,
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
 		}
 
-		topicResource := &sarama.ConfigResource{
+		describeCfgResources[i] = &sarama.ConfigResource{
 			Type:        sarama.TopicResource,
 			Name:        topic.Name,
-			ConfigNames: []string{"cleanup.policy"},
+			ConfigNames: []string{"cleanup.policy"}, // todo: allow frontend to specify entries
 		}
-		describeCfgResources[i] = topicResource
 	}
 
 	// 4. Get topics' config entries

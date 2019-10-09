@@ -10,8 +10,8 @@ export class TopicDetail {
 
 export interface Partition {
     id: number;
-    lowWaterMark: number;
-    highWaterMark: number;
+    waterMarkLow: number;
+    waterMarkHigh: number;
     lag: number;
     messageCount: number;
 }
