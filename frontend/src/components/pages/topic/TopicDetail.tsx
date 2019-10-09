@@ -25,6 +25,7 @@ import { TopicQuickInfoStatistic } from "./Topic.QuickInfo";
 import { TopicConfiguration } from "./Topic.Config";
 import { TopicMessageView } from "./Topic.Messages";
 import { appGlobal } from "../../../state/appGlobal";
+import { TopicPartitions } from "./Topic.Partitions";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -64,15 +65,19 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
                 {/* Tabs:  Messages, Configuration */}
                 <Tabs style={{ overflow: 'visible' }} animated={false}
-                    activeKey={uiState.topicDetails.activeTabKey || '1'}
+                    activeKey={uiState.topicDetails.activeTabKey || '0'}
                     onChange={e => uiState.topicDetails.activeTabKey = e}
                 >
+                    <Tabs.TabPane key="0" tab="Partitions">
+                        <TopicPartitions topic={topic} />
+                    </Tabs.TabPane>
+
                     <Tabs.TabPane key="1" tab="Messages">
                         <TopicMessageView topic={topic} />
                     </Tabs.TabPane>
 
                     <Tabs.TabPane key="2" tab="Configuration">
-                        <ConfigDisplaySettings />
+                        <ConfigDisplaySettings /> {/* todo: move into TopicConfiguration */}
                         <TopicConfiguration config={topicConfig} />
                     </Tabs.TabPane>
                 </Tabs>

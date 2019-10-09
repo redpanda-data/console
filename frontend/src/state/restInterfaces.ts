@@ -12,8 +12,6 @@ export interface Partition {
     id: number;
     waterMarkLow: number;
     waterMarkHigh: number;
-    lag: number;
-    messageCount: number;
 }
 
 export class GetTopicsResponse {
