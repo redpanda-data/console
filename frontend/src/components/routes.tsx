@@ -8,7 +8,7 @@ import { queryToObj } from "../utils/queryHelper";
 import { PageComponentType, PageProps } from "./pages/Page";
 import { uiSettings } from "../state/ui";
 import TopicList from "./pages/TopicList";
-import TopicDetails from "./pages/TopicDetail";
+import TopicDetails from "./pages/topic/TopicDetail";
 import { observer } from "mobx-react";
 import GroupList from "./pages/GroupList";
 import GroupDetails from "./pages/GroupDetails";
