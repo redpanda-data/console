@@ -16,7 +16,7 @@ const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', pad
 @observer
 class BrokerList extends PageComponent {
 
-    pageConfig = makePaginationConfig(uiSettings.brokers.pageSize);
+    pageConfig = makePaginationConfig(uiSettings.brokerList.pageSize);
 
     @observable filteredBrokers: Broker[];
 
@@ -26,8 +26,8 @@ class BrokerList extends PageComponent {
         p.addBreadcrumb('Brokers', '/brokers');
         p.extraContent = () => <>
             <Checkbox
-                checked={uiSettings.brokers.hideEmptyColumns}
-                onChange={e => uiSettings.brokers.hideEmptyColumns = e.target.checked}
+                checked={uiSettings.brokerList.hideEmptyColumns}
+                onChange={e => uiSettings.brokerList.hideEmptyColumns = e.target.checked}
             >Hide empty columns</Checkbox>
         </>;
 
@@ -48,7 +48,7 @@ class BrokerList extends PageComponent {
         const columns: ColumnProps<Broker>[] = [
             { title: 'ID', dataIndex: 'brokerId' },
             { title: 'Address', dataIndex: 'address' },
-            (uiSettings.brokers.hideEmptyColumns && !hasRack) ? null : { title: 'Rack', dataIndex: 'rack', width: 1 },
+            (uiSettings.brokerList.hideEmptyColumns && !hasRack) ? null : { title: 'Rack', dataIndex: 'rack', width: 1 },
         ].filter(c => c != null).map(c => c!);
 
         return <>
@@ -65,7 +65,7 @@ class BrokerList extends PageComponent {
                 <Table
                     style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
                     pagination={this.pageConfig}
-                    onChange={x => { if (x.pageSize) { uiSettings.brokers.pageSize = x.pageSize } }}
+                    onChange={x => { if (x.pageSize) { uiSettings.brokerList.pageSize = x.pageSize } }}
                     dataSource={brokers}
                     rowKey={x => x.brokerId.toString()}
                     rowClassName={() => 'pureDisplayRow'}

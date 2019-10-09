@@ -127,7 +127,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     @computed
     get activeTags() {
-        return uiSettings.topics.previewTags.filter(t => t.active).map(t => t.value);
+        return uiSettings.topicList.previewTags.filter(t => t.active).map(t => t.value);
     }
 
     MessageTable = observer(() => {
@@ -201,7 +201,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     <Text>You can turn off/on properties you've created by clicking on them.</Text>
                 </Paragraph>
                 <div style={{ padding: '1em', border: 'solid 1px #0001', borderRadius: '6px' }}>
-                    <CustomTagList tags={uiSettings.topics.previewTags} allCurrentKeys={this.allCurrentKeys} />
+                    <CustomTagList tags={uiSettings.topicList.previewTags} allCurrentKeys={this.allCurrentKeys} />
                 </div>
 
             </Drawer>
@@ -304,7 +304,7 @@ class InnerSearchParametersForm extends Component<SearchParametersProps> {
                     <Form.Item>
                         <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }}>
                             <Select.Option key='all' value={-1}>All Partitions</Select.Option>
-                            {range(0, topic.partitionCount).map(i =>
+                            {range(0, topic.partitions.length).map(i =>
                                 <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
                         </Select>
                     </Form.Item>

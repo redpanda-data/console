@@ -23,12 +23,13 @@ const uiSettings = observable({
     selectedClusterIndex: 0,
     allTopicsDetails: new Map<string, TopicDetailsSettings>(),
 
-    brokers: {
+    // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
+    brokerList: {
         hideEmptyColumns: false,
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
     },
 
-    topics: {
+    topicList: {
         onlyShowChanged: false,
         valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
         hideInternalTopics: true,
@@ -40,7 +41,7 @@ const uiSettings = observable({
         pageSize: 20,
     },
 
-    consumerGroups: {
+    consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
     },
 

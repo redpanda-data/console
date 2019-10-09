@@ -17,15 +17,15 @@ import { appGlobal } from "../../state/appGlobal";
 @observer
 class TopicList extends PageComponent {
 
-    pageConfig = makePaginationConfig(uiSettings.topics.pageSize);
+    pageConfig = makePaginationConfig(uiSettings.topicList.pageSize);
 
     initPage(p: PageInitHelper): void {
         p.title = 'Topics';
         p.addBreadcrumb('Topics', '/topics');
         p.extraContent = () => <>
             <Checkbox
-                checked={uiSettings.topics.hideInternalTopics}
-                onChange={e => uiSettings.topics.hideInternalTopics = e.target.checked}
+                checked={uiSettings.topicList.hideInternalTopics}
+                onChange={e => uiSettings.topicList.hideInternalTopics = e.target.checked}
             >Hide internal topics</Checkbox>
         </>
 
@@ -36,7 +36,7 @@ class TopicList extends PageComponent {
         if (!api.Topics) return this.skeleton;
         if (api.Topics.length == 0) return <Empty />
 
-        const topics = api.Topics.filter(t => uiSettings.topics.hideInternalTopics && t.isInternal ? false : true);
+        const topics = api.Topics.filter(t => uiSettings.topicList.hideInternalTopics && t.isInternal ? false : true);
 
         return (
             <motion.div {...animProps}>
@@ -46,14 +46,14 @@ class TopicList extends PageComponent {
                         ({
                             onClick: event => appGlobal.history.push('/topics/' + record.topicName),
                         })}
-                    onChange={x => { if (x.pageSize) { uiSettings.topics.pageSize = x.pageSize } }}
+                    onChange={x => { if (x.pageSize) { uiSettings.topicList.pageSize = x.pageSize } }}
                     rowClassName={() => 'hoverLink'}
                     pagination={this.pageConfig}
                     dataSource={topics}
                     rowKey={x => x.topicName}
                     columns={[
                         { title: 'Name', dataIndex: 'topicName', sorter: sortField('topicName') },
-                        { title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount'), width: 1 },
+                        { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitions.length, sorter: (a, b) => a.partitions.length - b.partitions.length, width: 1 },
                         { title: 'Replication', dataIndex: 'replicationFactor', width: 1 },
                         { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1 },
                     ]} />

@@ -16,7 +16,7 @@ import { appGlobal } from "../../state/appGlobal";
 @observer
 class GroupList extends PageComponent {
 
-    pageConfig = makePaginationConfig(uiSettings.consumerGroups.pageSize);
+    pageConfig = makePaginationConfig(uiSettings.consumerGroupList.pageSize);
 
     initPage(p: PageInitHelper): void {
         p.title = 'Consumer Groups';
@@ -40,7 +40,7 @@ class GroupList extends PageComponent {
                         ({
                             onClick: () => appGlobal.history.push('/groups/' + record.groupId),
                         })}
-                    onChange={x => { if (x.pageSize) { uiSettings.consumerGroups.pageSize = x.pageSize } }}
+                    onChange={x => { if (x.pageSize) { uiSettings.consumerGroupList.pageSize = x.pageSize } }}
                     rowClassName={() => 'hoverLink'}
                     dataSource={groups}
                     rowKey={x => x.groupId}

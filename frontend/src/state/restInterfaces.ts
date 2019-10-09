@@ -3,10 +3,19 @@
 export class TopicDetail {
     topicName: string;
     isInternal: boolean;
-    partitionCount: number;
+    partitions: Partition[];
     replicationFactor: number;
     cleanupPolicy: string;
 }
+
+export interface Partition {
+    id: number;
+    lowWaterMark: number;
+    highWaterMark: number;
+    lag: number;
+    messageCount: number;
+}
+
 export class GetTopicsResponse {
     topics: TopicDetail[];
 }

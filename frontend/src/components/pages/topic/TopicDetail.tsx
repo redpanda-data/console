@@ -49,11 +49,13 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     render() {
         const topicName = this.props.topicName;
 
-        if (!api.Topics) return skeleton;
+        // todo: we shouldn't prepare data here. Instead we should create actions that obtain
+        // the data and pass those to the components, they should be responsible to handle 'undefined' themselves.
+        if (!api.Topics) return this.skeleton;
         const topic = api.Topics.find(e => e.topicName == topicName);
         if (!topic) return this.topicNotFound(topicName);
         const topicConfig = api.TopicConfig.get(topicName);
-        if (!topicConfig) return skeleton;
+        if (!topicConfig) return this.skeleton;
 
         return (
             <motion.div {...animProps} key={'b'}>
@@ -86,13 +88,13 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             extra={<Button type="primary" onClick={() => appGlobal.history.goBack()}>Go Back</Button>}
         />
     }
-}
 
-const skeleton = <>
-    <motion.div {...animProps} key={'loader'}>
-        <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-    </motion.div>
-</>
+    skeleton = <>
+        <motion.div {...animProps} key={'loader'}>
+            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
+        </motion.div>
+    </>
+}
 
 
 
@@ -100,7 +102,7 @@ const ConfigDisplaySettings = observer(() =>
     <div style={{ marginTop: '1em', marginBottom: '1em' }}>
 
         <Row>
-            <Radio.Group value={uiSettings.topics.valueDisplay} onChange={(e) => uiSettings.topics.valueDisplay = e.target.value} size='small'>
+            <Radio.Group value={uiSettings.topicList.valueDisplay} onChange={(e) => uiSettings.topicList.valueDisplay = e.target.value} size='small'>
                 <Radio.Button value="friendly">Friendly</Radio.Button>
                 <Radio.Button value="raw">Raw</Radio.Button>
                 {/* <Radio.Button value="both">Both</Radio.Button> */}
@@ -108,7 +110,7 @@ const ConfigDisplaySettings = observer(() =>
 
             <span> </span>
 
-            <Checkbox onChange={(e) => uiSettings.topics.onlyShowChanged = e.target.checked} checked={uiSettings.topics.onlyShowChanged}>Only show changed</Checkbox>
+            <Checkbox onChange={(e) => uiSettings.topicList.onlyShowChanged = e.target.checked} checked={uiSettings.topicList.onlyShowChanged}>Only show changed</Checkbox>
 
         </Row>
     </div>);

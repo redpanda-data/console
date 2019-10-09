@@ -31,7 +31,7 @@ const InputGroup = Input.Group;
 export const TopicConfiguration = observer((p: { config: TopicConfigEntry[] }) =>
     <Descriptions bordered size='small' colon={true} layout='horizontal' column={1} style={{ display: 'inline-block' }}>
         {
-            p.config.filter(e => uiSettings.topics.onlyShowChanged ? !e.isDefault : true).map((e) =>
+            p.config.filter(e => uiSettings.topicList.onlyShowChanged ? !e.isDefault : true).map((e) =>
                 <Descriptions.Item key={e.name} label={DataName(e)} >{DataValue(e)}</Descriptions.Item>
             )
         }
@@ -99,7 +99,7 @@ export function FormatValue(configEntry: TopicConfigEntry): string {
     const value = configEntry.value;
     let suffix: string;
 
-    switch (uiSettings.topics.valueDisplay) {
+    switch (uiSettings.topicList.valueDisplay) {
         case 'friendly': suffix = ''; break;
         case 'both': suffix = ' (' + value + ')'; break;
 
