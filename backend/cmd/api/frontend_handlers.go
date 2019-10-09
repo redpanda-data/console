@@ -23,6 +23,10 @@ func (api *API) getIndexFile(filePath string) []byte {
 
 	index = []byte(strings.Replace(string(index), "__COMMIT_SHA__", commitSha, 1))
 
+	if len(version) > 0 {
+		index = []byte(strings.Replace(string(index), "__VERSION__", version, 1))
+	}
+
 	return index
 }
 
