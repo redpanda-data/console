@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Empty, Skeleton, Checkbox } from "antd";
+import { Table, Empty, Skeleton, Checkbox, Row, Statistic } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
 import { appGlobal } from "../../state/appGlobal";
 
+const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
 @observer
 class TopicList extends PageComponent {
@@ -40,6 +41,11 @@ class TopicList extends PageComponent {
 
         return (
             <motion.div {...animProps}>
+                <Row type="flex" style={{ marginBottom: '1em' }}>
+                    <Statistic title='Total Topics' value={topics.length} style={statisticStyle} />
+                    <Statistic title='Total Partitions' value={topics.map(x => x.partitionCount).reduce((p, c) => p + c)} style={statisticStyle} />
+                </Row>
+
                 <Table
                     style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
                     onRow={(record, rowIndex) =>
