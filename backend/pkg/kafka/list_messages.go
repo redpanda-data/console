@@ -96,7 +96,7 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 		partitionIDs = append(partitionIDs, req.PartitionID)
 	}
 
-	marks, err := s.topicWaterMarks(req.TopicName, partitionIDs)
+	marks, err := s.waterMarks(req.TopicName, partitionIDs)
 	if err != nil {
 		return nil, err
 	}

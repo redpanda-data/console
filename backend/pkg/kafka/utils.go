@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 
 	"github.com/Shopify/sarama"
@@ -18,79 +17,92 @@ func (s *Service) findAnyBroker() (*sarama.Broker, error) {
 }
 
 type waterMark struct {
-	Low  int64
-	High int64
+	PartitionID int32
+	Low         int64
+	High        int64
 }
 
-// todo: if it turns out that topicWaterMarks is not (or rarely) used other than for listing topics,
-// we should merge it with this method so it can be optimized much better
-func (s *Service) topicPartitions(topicName string, partitions []*sarama.PartitionMetadata) ([]TopicPartition, error) {
+// waterMarks returns a map of: partitionID -> *waterMark
+func (s *Service) waterMarks(topic string, partitionIDs []int32) (map[int32]*waterMark, error) {
+	// 1. Generate an OffsetRequest for each topic:partition and bucket it to the leader broker
+	brokers := make(map[int32]*sarama.Broker)
 
-	// since go doesn't have enumerables/iterators...
-	// Create array of partitionIDs
-	partitionIDs := make([]int32, len(partitions))
-	for i, p := range partitions {
-		partitionIDs[i] = p.ID
-	}
-
-	// Get watermarks
-	waterMarks, err := s.topicWaterMarks(topicName, partitionIDs)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create result array
-	topicPartitions := make([]TopicPartition, len(partitions))
-	for i, p := range partitions {
-		w := waterMarks[p.ID]
-		topicPartitions[i] = TopicPartition{ID: p.ID, WaterMarkLow: w.Low, WaterMarkHigh: w.High}
-	}
-
-	return topicPartitions, nil
-}
-
-// topicWaterMarks returns a map of: partitionID -> WaterMark
-func (s *Service) topicWaterMarks(topicName string, partitionIDs []int32) (map[int32]waterMark, error) {
-	if s.Client.Closed() {
-		return nil, fmt.Errorf("Could not get water marks for topic '%s' because sarama client is closed", topicName)
-	}
-
-	// getOffset refreshes topic metadata once to retry if Client.GetOffset fails
-	// todo: we should have a custom error type here that lists both errors: the firstTry and the error while refreshing (or retrying)
-	getOffset := func(partitionID int32, offset int64) (int64, error) {
-		offset, errFirstTry := s.Client.GetOffset(topicName, partitionID, offset)
-		if errFirstTry != nil {
-			// Errors should only happen if metadata is out of date, so let's retry
-			if errRefresh := s.Client.RefreshMetadata(topicName); errRefresh != nil {
-				return 0, errRefresh // refresh failed
-			}
-
-			var errRetry error
-			offset, errRetry = s.Client.GetOffset(topicName, partitionID, offset)
-			if errRetry != nil {
-				return 0, errRetry // retry failed
-			}
-		}
-
-		return offset, nil
-	}
-
-	offsets := make(map[int32]waterMark, len(partitionIDs))
-
+	// Create two separate buckets for oldest and newest offset requests grouped by brokerID
+	// It requires separate buckets because only one offset can concurrently be queried for the same partition
+	oldestReqs := make(map[int32]*sarama.OffsetRequest)
+	newestReqs := make(map[int32]*sarama.OffsetRequest)
 	for _, partitionID := range partitionIDs {
-
-		// todo: do some golang research, figure out a way to avoid this insane syntax; this loop could be much shorter...
-		low, err := getOffset(partitionID, sarama.OffsetOldest)
+		broker, err := s.Client.Leader(topic, partitionID)
 		if err != nil {
 			return nil, err
 		}
-		high, err := getOffset(partitionID, sarama.OffsetNewest)
-		if err != nil {
-			return nil, err
+		id := broker.ID()
+		brokers[id] = broker
+
+		// Ensure offset request is initialized for this brokerID
+		if _, ok := oldestReqs[id]; !ok {
+			oldestReqs[id] = &sarama.OffsetRequest{}
+		}
+		if _, ok := newestReqs[id]; !ok {
+			newestReqs[id] = &sarama.OffsetRequest{}
 		}
 
-		offsets[partitionID] = waterMark{low, high}
+		oldestReqs[id].AddBlock(topic, partitionID, sarama.OffsetOldest, 1)
+		newestReqs[id].AddBlock(topic, partitionID, sarama.OffsetNewest, 1)
 	}
 
-	return offsets, nil
+	// 2. Fetch offsets in parallel
+	type response struct {
+		Error      error
+		Offsets    *sarama.OffsetResponse
+		OffsetType int64 // sarama.OffsetOldest || sarama.OffsetNewest
+	}
+	ch := make(chan response, len(oldestReqs)+len(newestReqs))
+
+	fetchOffsets := func(b *sarama.Broker, req *sarama.OffsetRequest, offsetType int64) {
+		res, err := b.GetAvailableOffsets(req)
+		if err != nil {
+			ch <- response{Error: err}
+			return
+		}
+		ch <- response{Offsets: res, OffsetType: offsetType}
+	}
+
+	for brokerID, req := range oldestReqs {
+		go fetchOffsets(brokers[brokerID], req, sarama.OffsetOldest)
+	}
+	for brokerID, req := range newestReqs {
+		go fetchOffsets(brokers[brokerID], req, sarama.OffsetNewest)
+	}
+
+	// 3. Process results and construct desired response
+	waterMarks := make(map[int32]*waterMark)
+
+	// Iterate on returned offsets and put them into our response map
+	for i := 0; i < cap(ch); i++ {
+		r := <-ch
+		if r.Error != nil {
+			return nil, r.Error
+		}
+
+		for _, blockByPartition := range r.Offsets.Blocks {
+			for partition, block := range blockByPartition {
+				if block.Err != sarama.ErrNoError {
+					return nil, block.Err
+				}
+
+				if _, ok := waterMarks[partition]; !ok {
+					waterMarks[partition] = &waterMark{PartitionID: partition}
+				}
+				if r.OffsetType == sarama.OffsetNewest {
+					waterMarks[partition].High = block.Offsets[0]
+				}
+				if r.OffsetType == sarama.OffsetOldest {
+					waterMarks[partition].Low = block.Offsets[0]
+				}
+			}
+		}
+	}
+
+	return waterMarks, nil
 }

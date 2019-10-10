@@ -44,6 +44,7 @@ func (api *API) routes() *chi.Mux {
 	router.Route("/api", func(r chi.Router) {
 		r.Get("/cluster", api.handleDescribeCluster())
 		r.Get("/topics", api.handleGetTopics())
+		r.Get("/topics/{topicName}/partitions", api.handleGetPartitions())
 		r.Get("/topics/{topicName}/messages", api.handleGetMessages())
 		r.Get("/topics/{topicName}/configuration", api.handleGetTopicConfig())
 		r.Get("/consumer-groups", api.handleGetConsumerGroups())
