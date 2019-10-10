@@ -1,26 +1,13 @@
-import { Component, ReactNode } from "react";
 import React from "react";
-import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
+import { Row, Tabs, Skeleton, Radio, Checkbox, Button, Select, Input, Typography, Result } from "antd";
 import { observer } from "mobx-react";
-import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
-import { uiSettings, PreviewTag } from "../../../state/ui";
-import ReactJson, { CollapsedFieldProps } from 'react-json-view'
+import { api } from "../../../state/backendApi";
+import { uiSettings } from "../../../state/ui";
 import { PageComponent, PageInitHelper } from "../Page";
-import prettyMilliseconds from 'pretty-ms';
-import prettyBytes from 'pretty-bytes';
-import topicConfigInfo from '../../../assets/topicConfigInfo.json'
-import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
-import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction } from "mobx";
-import { findElementDeep, cullText, getAllKeys } from "../../../utils/utils";
-import { FormComponentProps } from "antd/lib/form";
-import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
-import Paragraph from "antd/lib/typography/Paragraph";
-import { ColumnProps } from "antd/lib/table";
+import { motion } from "framer-motion";
+import { animProps } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { TopicQuickInfoStatistic } from "./Topic.QuickInfo";
 import { TopicConfiguration } from "./Topic.Config";
 import { TopicMessageView } from "./Topic.Messages";
@@ -28,8 +15,6 @@ import { appGlobal } from "../../../state/appGlobal";
 import { TopicPartitions } from "./Topic.Partitions";
 
 const { Text } = Typography;
-const { Option } = Select;
-const InputGroup = Input.Group;
 
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {

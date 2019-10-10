@@ -5,9 +5,6 @@ import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { PageComponent, PageInitHelper } from "../Page";
-import { CompareFn } from "antd/lib/table";
-import { PaginationConfig } from "antd/lib/pagination";
-import { NavLink } from "react-router-dom";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
@@ -48,9 +45,9 @@ class TopicList extends PageComponent {
 
                 <Table
                     style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
-                    onRow={(record, rowIndex) =>
+                    onRow={(record) =>
                         ({
-                            onClick: event => appGlobal.history.push('/topics/' + record.topicName),
+                            onClick: () => appGlobal.history.push('/topics/' + record.topicName),
                         })}
                     onChange={x => { if (x.pageSize) { uiSettings.topicList.pageSize = x.pageSize } }}
                     rowClassName={() => 'hoverLink'}
