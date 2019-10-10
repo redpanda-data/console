@@ -13,6 +13,7 @@ import (
 type TopicDetail struct {
 	TopicName         string `json:"topicName"`
 	IsInternal        bool   `json:"isInternal"`
+	PartitionCount    int    `json:"partitionCount"`
 	ReplicationFactor int    `json:"replicationFactor"`
 	CleanupPolicy     string `json:"cleanupPolicy"`
 }
@@ -52,6 +53,7 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 
 		topicsByName[topic.Name] = &TopicDetail{
 			TopicName:         topic.Name,
+			PartitionCount:    len(topic.Partitions),
 			IsInternal:        topic.IsInternal || strings.HasPrefix(topic.Name, "_"),
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
 		}
