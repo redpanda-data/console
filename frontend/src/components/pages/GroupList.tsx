@@ -32,14 +32,13 @@ class GroupList extends PageComponent {
 
         const groups = api.ConsumerGroups;
 
-        const stateGroups = groups.groupBy(g => g.state);
-        const stateCounts = Array.from(stateGroups).map(v => ({ state: v[0], count: v[1].length }));
+        const stateGroups = groups.groupInto(g => g.state);
 
         return (
             <motion.div {...animProps}>
                 <Row type="flex" style={{ marginBottom: '1em' }}>
                     <Statistic title='Total Groups' value={groups.length} style={statisticStyle} />
-                    {stateCounts.map(sc => <Statistic title={sc.state} value={sc.count} style={statisticStyle} />)}
+                    {stateGroups.map(g => <Statistic title={g.key} value={g.items.length} style={statisticStyle} />)}
                 </Row>
 
 

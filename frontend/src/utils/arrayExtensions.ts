@@ -9,6 +9,7 @@ declare global {
         any<T>(this: T[], selector: (x: T) => boolean): boolean;
         all<T>(this: T[], selector: (x: T) => boolean): boolean;
         groupBy<T, K>(this: T[], selector: (x: T) => K): Map<K, T[]>;
+        groupInto<T, K>(this: T[], selector: (x: T) => K): { key: K, items: T[] }[];
         distinct<T>(this: T[], keySelector?: ((x: T) => any)): T[];
     }
 }
@@ -63,6 +64,18 @@ Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) 
         }
     });
     return map;
+};
+
+
+Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x: T) => K): { key: K, items: T[] }[] {
+    const map = this.groupBy(keySelector);
+
+    const ar: { key: K, items: T[] }[] = [];
+    map.forEach((items, key) => {
+        ar.push({ key, items });
+    })
+
+    return ar;
 };
 
 
