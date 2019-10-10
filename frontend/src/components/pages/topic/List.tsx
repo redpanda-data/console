@@ -2,16 +2,16 @@ import React from "react";
 import { Table, Empty, Skeleton, Checkbox, Row, Statistic } from "antd";
 import { observer } from "mobx-react";
 
-import { api } from "../../state/backendApi";
-import { uiSettings } from "../../state/ui";
-import { PageComponent, PageInitHelper } from "./Page";
+import { api } from "../../../state/backendApi";
+import { uiSettings } from "../../../state/ui";
+import { PageComponent, PageInitHelper } from "../Page";
 import { CompareFn } from "antd/lib/table";
 import { PaginationConfig } from "antd/lib/pagination";
 import { NavLink } from "react-router-dom";
-import { makePaginationConfig, sortField } from "../misc/common";
+import { makePaginationConfig, sortField } from "../../misc/common";
 import { motion } from "framer-motion";
-import { animProps } from "../../utils/animationProps";
-import { appGlobal } from "../../state/appGlobal";
+import { animProps } from "../../../utils/animationProps";
+import { appGlobal } from "../../../state/appGlobal";
 
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
