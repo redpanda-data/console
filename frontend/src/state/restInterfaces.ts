@@ -3,9 +3,13 @@
 export class TopicDetail {
     topicName: string;
     isInternal: boolean;
-    partitions: Partition[];
+    partitionCount: number;
     replicationFactor: number;
     cleanupPolicy: string;
+}
+
+export class GetTopicsResponse {
+    topics: TopicDetail[];
 }
 
 export interface Partition {
@@ -14,8 +18,9 @@ export interface Partition {
     waterMarkHigh: number;
 }
 
-export class GetTopicsResponse {
-    topics: TopicDetail[];
+export interface GetPartitionsResponse {
+    topicName: string;
+    partitions: Partition[];
 }
 
 

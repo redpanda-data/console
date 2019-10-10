@@ -304,7 +304,7 @@ class InnerSearchParametersForm extends Component<SearchParametersProps> {
                     <Form.Item>
                         <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }}>
                             <Select.Option key='all' value={-1}>All Partitions</Select.Option>
-                            {range(0, topic.partitions.length).map(i =>
+                            {range(0, topic.partitionCount).map(i =>
                                 <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
                         </Select>
                     </Form.Item>

@@ -1,6 +1,6 @@
 import { Component, ReactNode } from "react";
 import React from "react";
-import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
+import { TopicDetail, TopicConfigEntry, TopicMessage, Partition } from "../../../state/restInterfaces";
 import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
@@ -35,8 +35,17 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
 
     pageConfig = makePaginationConfig(100); // makePaginationConfig(uiSettings.topics.partitionPageSize);
 
+    constructor(p: any) {
+        super(p);
+        api.refreshTopicPartitions(this.props.topic.topicName);
+    }
+
     render() {
         const topic = this.props.topic;
+        let partitions = api.TopicPartitions.get(topic.topicName);
+        if (!partitions) {
+            return this.skeleton;
+        }
 
         let warning: JSX.Element = <></>
         if (topic.cleanupPolicy.toLowerCase() == 'compact')
@@ -46,7 +55,7 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
             size={'small'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={true}
             pagination={this.pageConfig}
             onChange={x => { if (x.pageSize) { /* todo    uiSettings.top.pageSize = x.pageSize*/ } }}
-            dataSource={topic.partitions}
+            dataSource={partitions}
             rowKey={x => x.id.toString()}
             columns={[
                 { width: 1, title: 'Partition ID', dataIndex: 'id', sorter: sortField('id'), defaultSortOrder: 'ascend' },
@@ -61,4 +70,10 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
             {table}
         </MotionAlways>
     }
+
+    skeleton = <>
+        <motion.div {...animProps} key={'loader'}>
+            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
+        </motion.div>
+    </>
 }

@@ -114,7 +114,7 @@ function renderAssignments(value: GroupMemberAssignment[]): React.ReactNode {
             var topic = api.Topics.find(t => t.topicName == topicName);
             if (topic) {
                 // All partitions?
-                if (topic.partitions.length == assignedIds.length) {
+                if (topic.partitionCount == assignedIds.length) {
                     jsx.push(<span style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: <Tag color="geekblue">All partitions</Tag><b>({assignedIds.length})</b></Tag></span>);
                     continue;
                 }

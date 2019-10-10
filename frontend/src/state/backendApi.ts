@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse
+    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition
 } from "./restInterfaces";
 import { observable, autorun, computed } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -112,6 +112,7 @@ const apiStore = {
     Topics: null as (TopicDetail[] | null),
     ConsumerGroups: null as (GroupDescription[] | null),
     TopicConfig: new Map<string, TopicConfigEntry[]>(),
+    TopicPartitions: new Map<string, Partition[]>(),
     ClusterInfo: null as (ClusterInfo | null),
 
     // Make currently running requests observable
@@ -179,6 +180,11 @@ const apiStore = {
     refreshTopicConfig(topicName: string) {
         cachedApiRequest<TopicConfigResponse>(`/api/topics/${topicName}/configuration`)
             .then(v => this.TopicConfig.set(v.topicDescription.topicName, v.topicDescription.configEntries), addError);
+    },
+
+    refreshTopicPartitions(topicName: string) {
+        cachedApiRequest<GetPartitionsResponse>(`/api/topics/${topicName}/partitions`)
+            .then(v => this.TopicPartitions.set(v.topicName, v.partitions), addError);
     },
 
     refreshCluster() {
