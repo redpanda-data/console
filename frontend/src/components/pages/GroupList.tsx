@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Empty, Skeleton } from "antd";
+import { Table, Empty, Skeleton, Row, Statistic } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -11,6 +11,7 @@ import { makePaginationConfig, sortField } from "../misc/common";
 import { uiSettings } from "../../state/ui";
 import { appGlobal } from "../../state/appGlobal";
 
+const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
 
 @observer
@@ -31,8 +32,17 @@ class GroupList extends PageComponent {
 
         const groups = api.ConsumerGroups;
 
+        const stateGroups = groups.groupBy(g => g.state);
+        const stateCounts = Array.from(stateGroups).map(v => ({ state: v[0], count: v[1].length }));
+
         return (
             <motion.div {...animProps}>
+                <Row type="flex" style={{ marginBottom: '1em' }}>
+                    <Statistic title='Total Groups' value={groups.length} style={statisticStyle} />
+                    {stateCounts.map(sc => <Statistic title={sc.state} value={sc.count} style={statisticStyle} />)}
+                </Row>
+
+
                 <Table
                     style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
                     pagination={this.pageConfig}
