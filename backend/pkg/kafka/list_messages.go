@@ -164,6 +164,7 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 	// Priority list of actions
 	// since we need to process cases by their priority, we must check them individually and
 	// can't rely on 'select' since it picks a random case if multiple are ready.
+Loop:
 	for {
 		//
 		// 1. Cancelled?
@@ -172,7 +173,7 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 			s.Logger.Error("Request was cancelled while waiting for messages from workers (probably timeout)",
 				zap.Int("completedWorkers", completedWorkers), zap.Int("startedWorkers", startedWorkers), zap.Uint16("fetchedMessages", fetchedMessages))
 			isCancelled = true
-			goto breakLoop // request cancelled
+			break Loop // request cancelled
 		default:
 		}
 
@@ -185,7 +186,7 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 				msgs = append(msgs, msg)
 				fetchedMessages++
 				if fetchedMessages == req.MessageCount {
-					goto breakLoop // request complete
+					break Loop // request complete
 				}
 			default:
 				keepDraining = false
@@ -196,7 +197,7 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 		// 3. All workers done?
 		if allWorkersDone {
 			// That means we'll get no more messages, and since we've just drained the channel we can exit
-			goto breakLoop
+			break Loop
 		}
 
 		//
@@ -218,7 +219,6 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 		// Throttle so we don't spin-wait
 		<-time.After(15 * time.Millisecond)
 	}
-breakLoop:
 
 	return &ListMessageResponse{
 		ElapsedMs:       time.Since(start).Seconds() * 1000,
