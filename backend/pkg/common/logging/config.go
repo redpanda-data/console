@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Config for a HTTP server
+// Config for a zap logger
 type Config struct {
 	LogLevelInput string
 	LogLevel      zap.AtomicLevel

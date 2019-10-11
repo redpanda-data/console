@@ -18,5 +18,6 @@ require (
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.2.0 // indirect
 	go.uber.org/zap v1.10.0
+	golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd0
 	gopkg.in/jcmturner/goidentity.v3 v3.0.0 // indirect
 )

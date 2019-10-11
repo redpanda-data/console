@@ -3,7 +3,10 @@ package main
 import (
 	"time"
 
+	"golang.org/x/time/rate"
+
 	health "github.com/AppsFlyer/go-sundheit"
+	"github.com/Shopify/sarama"
 	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
 	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 	"go.uber.org/zap"
@@ -23,13 +26,54 @@ func (api *API) Start() {
 	api.kafkaSvc.RegisterMetrics()
 
 	// Custom keep alive for Kafka, because: https://github.com/Shopify/sarama/issues/1487
+	// The KeepAlive property in sarama doesn't work either, because of golang's buggy net module: https://github.com/golang/go/issues/31490
 	go func() {
+		log := api.logger
+		wasHealthy := false
+		warningLimit := rate.NewLimiter(rate.Every(30*time.Second), 1)
 		for {
-			_, err := api.kafkaSvc.ListTopics()
-			if err != nil {
-				api.logger.Warn("Keep alive has errored", zap.Error(err))
+			// Normal keepalive interval is 3 seconds
+			time.Sleep(3 * time.Second)
+
+			brokers := api.kafkaSvc.Client.Brokers()
+			//log.Info("Kafka Keepalive", zap.Int("brokers", len(brokers)))
+			connectedCount := 0
+
+			for _, b := range brokers {
+
+				connected, _ := b.Connected()
+				if !connected {
+					err := b.Open(api.kafkaSvc.Client.Config())
+					if err != nil {
+						log.Warn("could not open connection to broker", zap.String("broker", b.Addr()), zap.Error(err))
+					} else {
+						log.Info("connecting to broker...", zap.String("broker", b.Addr()))
+					}
+					continue
+				}
+				connectedCount++
+
+				_, err := b.GetMetadata(&sarama.MetadataRequest{})
+
+				if err != nil {
+					log.Warn("Heartbeat to broker has errored", zap.Error(err), zap.String("broker", b.Addr()), zap.Int32("id", b.ID()))
+
+					b.Close()
+					b.Open(api.kafkaSvc.Client.Config())
+				}
 			}
-			time.Sleep(30 * time.Second)
+
+			if connectedCount == len(brokers) {
+				if !wasHealthy {
+					log.Info("connection to all brokers healthy", zap.Int("brokers", connectedCount))
+				}
+				wasHealthy = true
+			} else {
+				if warningLimit.Allow() {
+					log.Info("not connected to all brokers", zap.Int("connected", connectedCount), zap.Int("brokers", len(brokers)))
+				}
+				wasHealthy = false
+			}
 		}
 	}()
 
