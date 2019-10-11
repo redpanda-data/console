@@ -21,5 +21,6 @@ export const animProps = {
     exit: { opacity: 0, x: dx[2], position: 'absolute' as PositionProperty, width: 'auto' },
 };
 
-export const MotionAlways: FC = (p: { children?: React.ReactNode, style?: CSSProperties }) => <motion.div {...animProps} {...p} key={alwaysChanging()}/>;
+export const MotionAlways: FC = (p: { children?: React.ReactNode, style?: CSSProperties }) => <motion.div {...animProps} {...p} key={alwaysChanging()} />;
 export const MotionDiv: FC<{ identityKey?: any }> = (p) => <motion.div {...animProps} key={p.identityKey}>{p.children}</motion.div>;
+export const MotionSpan: FC<{ identityKey?: any }> = (p) => <motion.span {...animProps} key={p.identityKey}>{p.children}</motion.span>;

@@ -1,4 +1,4 @@
-import { observable, autorun, IReactionDisposer, computed } from "mobx";
+import { observable, autorun, IReactionDisposer, computed, transaction, action } from "mobx";
 
 /*
     Intended use:
@@ -12,10 +12,10 @@ export class FilterableDataSource<T> {
 
     @observable filterText: string = ''; // set by the user (from an input field or so, can be read/write)
 
-    @observable.ref private resultData: T[]; // set by this class (so only exposed through computed prop)
-    @computed get data(): T[] {
-        return this.resultData;
-    }
+    @observable private _lastFilterText: string = '';
+    @computed get lastFilterText() { return this._lastFilterText; }
+    @observable.ref private resultData: T[] = []; // set by this class (so only exposed through computed prop)
+    @computed get data(): T[] { return this.resultData; }
 
     constructor(
         private dataSource: () => T[] | undefined,
@@ -27,15 +27,18 @@ export class FilterableDataSource<T> {
     }
 
     private update() {
-        const source = this.dataSource();
-        const filterText = this.filterText;
-        if (source) {
-            this.resultData = source.filter(x => this.filter(filterText, x));
-            console.log('updating filterableDataSource: ...');
-        } else {
-            this.resultData = [];
-            console.log('updating filterableDataSource: source == undefined|null');
-        }
+        transaction(() => {
+            const source = this.dataSource();
+            const filterText = this.filterText;
+            if (source) {
+                this.resultData = source.filter(x => this.filter(filterText, x));
+                //console.log('updating filterableDataSource: ...');
+            } else {
+                this.resultData = [];
+                //console.log('updating filterableDataSource: source == undefined|null');
+            }
+            this._lastFilterText = this.filterText;
+        })
     }
 
     dispose() {
