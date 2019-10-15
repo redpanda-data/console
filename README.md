@@ -9,6 +9,22 @@ Kafka Owl is a Web UI which helps you to explore messages in your cluster's topi
 
 ![preview](docs/assets/preview.gif)
 
+## Features
+
+- [x] Supports Kafka 0.11.0.2 - 2.3.x (last updated 15th Oct 2019)
+- [x] Fetch messages from Kafka Topics so that they can be comfortably previewed (JSON only for now, further formats coming soon)
+- [x] Show Topic configuration with highlighted rows which have been modified
+- [x] List all Topics' Low & High Watermarks
+- [x] Performant & lightweight (e. g. fetching messages from one or across multiple partitions takes a few milliseconds)
+- [x] Consumer group overview along with their members, member state & partition assignments
+
+## Roadmap
+
+- [ ] Add support for more message formats (key+value). Planned: XML, Avro, ...
+- [ ] Authentication layer with SSO support
+- [ ] Editing features such as editing consumer group offsets
+- [ ] ACL support for listing/editing/creating/deleting topics, consumer groups, ...
+
 ## Install
 
 ### Arguments
