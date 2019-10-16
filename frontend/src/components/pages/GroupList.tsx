@@ -56,7 +56,7 @@ class GroupList extends PageComponent {
                     columns={[
                         { title: 'ID', dataIndex: 'groupId', sorter: sortField('groupId') },
                         { title: 'State', dataIndex: 'state', width: 1, sorter: sortField('state') },
-                        { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: sortField('members') },
+                        { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
                     ]} />
             </motion.div>
         );
