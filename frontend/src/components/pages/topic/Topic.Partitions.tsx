@@ -49,7 +49,7 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
 
         let warning: JSX.Element = <></>
         if (topic.cleanupPolicy.toLowerCase() == 'compact')
-            warning = <Alert type="warning" message="Topic cleanupPolicy is 'compact'. Low Water Mark and Message Count are estimates!" showIcon />
+            warning = <Alert type="warning" message="Topic cleanupPolicy is 'compact'. Low Water Mark and Message Count are estimates!" showIcon style={{ marginBottom: '1em' }} />
 
         const table = <Table
             size={'small'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={true}
