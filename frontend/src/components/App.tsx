@@ -17,6 +17,7 @@ import Title from 'antd/lib/typography/Title';
 
 import logo from '../assets/logo.png';
 import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
+import { ErrorBoundary } from './misc/ErrorBoundary';
 
 const { Content, Footer, Sider } = Layout;
 const { Option } = Select;
@@ -197,10 +198,12 @@ const AppContent = observer(() =>
 class App extends PureComponent {
     render() {
         return (
-            <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
-                <AppSide />
-                <AppContent />
-            </Layout>
+            <ErrorBoundary>
+                <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
+                    <AppSide />
+                    <AppContent />
+                </Layout>
+            </ErrorBoundary>
         );
     }
 }
