@@ -255,6 +255,18 @@ span>.icon-container~span {
     color: hsla(205, 100%, 66%, 40%);
     font-size: 80%;
     margin: .5em auto;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.version .repo {
+    opacity: 0.1;
+    padding: 4px;
+}
+
+.version .repo:hover {
+    opacity: .8;
 }
 
 .hoverBorder {

@@ -11,10 +11,12 @@ import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
 import { MotionAlways, MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import prettyMilliseconds from 'pretty-ms';
-import logo from '../assets/logo.png';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
 import Title from 'antd/lib/typography/Title';
+
+import logo from '../assets/logo.png';
+import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
 
 const { Content, Footer, Sider } = Layout;
 const { Option } = Select;
@@ -50,7 +52,11 @@ const SideBar = observer(() =>
             </Menu>
         </Content>
 
-        <span className='version'>{(window as any).VERSION} ({(window as any).COMMIT_SHA})</span>
+        <div className='version'>
+            <div className='repo'><a title="Visit Kafka-Owl's GitHub repository" href="https://github.com/kafka-owl/kafka-owl"><img src={gitHubLogo} /></a></div>
+            <div>{(window as any).VERSION} ({(window as any).COMMIT_SHA})</div>
+        </div>
+
 
         {/* Toggle */}
         <Footer style={{
