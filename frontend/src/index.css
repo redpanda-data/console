@@ -280,3 +280,7 @@ span>.icon-container~span {
 .ant-result {
     padding: 1em 2em;
 }
+
+.ant-table-column-title {
+    white-space: nowrap;
+}
