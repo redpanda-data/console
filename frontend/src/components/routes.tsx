@@ -67,7 +67,7 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
         else {
             // Group
             return (
-                <Menu.ItemGroup key={entry.title} title={<MenuGroupTitle title={entry.title} />}>
+                <Menu.ItemGroup key={entry.title} title={entry.title}>
                     {CreateRouteMenuItems(entry.children)}
                 </Menu.ItemGroup>
             );
