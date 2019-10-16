@@ -169,7 +169,13 @@ const apiStore = {
 
     refreshTopics() {
         cachedApiRequest<GetTopicsResponse>('/api/topics')
-            .then(v => this.Topics = v.topics, addError);
+            .then(v => {
+                for (let t of v.topics) {
+                    // t.messageCount = ...
+                }
+
+                this.Topics = v.topics;
+            }, addError);
     },
 
     refreshConsumerGroups() {

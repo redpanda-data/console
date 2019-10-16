@@ -67,7 +67,7 @@ const stateIcons = new Map<string, JSX.Element>([
     ['empty', <Icon type="warning" theme='twoTone' twoToneColor='orange' />],
     ['stable', <Icon type="check-circle" theme='twoTone' twoToneColor='#52c41a' />],
 ]);
-const GroupState = (p: { group: GroupDescription }) => {
+export const GroupState = (p: { group: GroupDescription }) => {
     const state = p.group.state.toLowerCase();
     const icon = stateIcons.get(state);
     // todo...
