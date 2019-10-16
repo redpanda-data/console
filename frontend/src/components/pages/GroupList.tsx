@@ -10,6 +10,7 @@ import { animProps } from "../../utils/animationProps";
 import { makePaginationConfig, sortField } from "../misc/common";
 import { uiSettings } from "../../state/ui";
 import { appGlobal } from "../../state/appGlobal";
+import { GroupState } from "./GroupDetails";
 
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -54,8 +55,8 @@ class GroupList extends PageComponent {
                     dataSource={groups}
                     rowKey={x => x.groupId}
                     columns={[
+                        { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
                         { title: 'ID', dataIndex: 'groupId', sorter: sortField('groupId') },
-                        { title: 'State', dataIndex: 'state', width: 1, sorter: sortField('state') },
                         { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
                     ]} />
             </motion.div>

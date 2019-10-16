@@ -6,6 +6,9 @@ export class TopicDetail {
     partitionCount: number;
     replicationFactor: number;
     cleanupPolicy: string;
+
+    // Added by frontend
+    // messageCount: number;
 }
 
 export class GetTopicsResponse {
