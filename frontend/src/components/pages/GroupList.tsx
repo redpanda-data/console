@@ -39,7 +39,7 @@ class GroupList extends PageComponent {
             <motion.div {...animProps}>
                 <Row type="flex" style={{ marginBottom: '1em' }}>
                     <Statistic title='Total Groups' value={groups.length} style={statisticStyle} />
-                    {stateGroups.map(g => <Statistic title={g.key} value={g.items.length} style={statisticStyle} />)}
+                    {stateGroups.map(g => <Statistic key={g.key} title={g.key} value={g.items.length} style={statisticStyle} />)}
                 </Row>
 
 
