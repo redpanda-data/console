@@ -15,6 +15,7 @@ import GroupDetails from "./pages/GroupDetails";
 import BrokerList from "./pages/BrokerList";
 import { AnimatePresence } from "framer-motion";
 import { uiState } from "../state/uiState";
+import { SettingsPage } from "./pages/Settings";
 
 //
 //	Route Types
@@ -176,7 +177,8 @@ export const APP_ROUTES: IRouteEntry[] = [
 
     //separator,
 
+    //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
+
     //MakeRoute<{}>('/users', UrlTestPage, 'Users', 'user'),
-    //MakeRoute<{}>('/settings', UrlTestPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
     //MakeRoute<{}>('/license', UrlTestPage, 'License', 'copyright'),
 ];
