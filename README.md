@@ -3,7 +3,7 @@
 ![License](https://img.shields.io/github/license/cloudworkz/kafka-minion.svg?color=blue)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kafka-owl/kafka-owl)](https://goreportcard.com/report/github.com/kafka-owl/kafka-owl)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kafka-owl/kafka-owl?sort=semver)
-[![Docker image](https://img.shields.io/badge/docker%20image-ready-green)](https://github.com/kafka-owl/kafka-owl/packages/32621/versions)
+[![Docker Repository on Quay](https://quay.io/repository/kafka-owl/kafka-owl/status "Docker Repository on Quay")](https://quay.io/repository/kafka-owl/kafka-owl)
 
 Kafka Owl is a Web UI which helps you to explore messages in your cluster's topics in the most comfortable way.
 
