@@ -436,7 +436,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
 
         return <>
             <AnimatePresence>
-                <motion.div positionTransition style={{ padding: '.3em' }}>
+                <MotionDiv positionTransition style={{ padding: '.3em' }}>
 
                     {this.props.tags.map(v => <CustomTag key={v.value} tag={v} tagList={this} />)}
 
@@ -475,7 +475,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
                         )}
                     </Select>
 
-                </motion.div>
+                </MotionDiv>
             </AnimatePresence>
         </>
     }

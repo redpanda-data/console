@@ -46,6 +46,10 @@ const uiSettings = observable({
     },
 
     previewNotificationHideUntil: 0, // utc seconds
+
+    userDefaults: {
+        paginationPosition: 'bottom' as ('bottom' | 'top' | 'both'),
+    }
 });
 export { uiSettings };
 
