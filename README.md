@@ -27,6 +27,10 @@ Kafka Owl is a Web UI which helps you to explore messages in your cluster's topi
 
 ## Install
 
+### Helm chart
+
+Kubernetes users may want to use the Helm chart to deploy Kafka owl: https://github.com/kafka-owl/helm-chart
+
 ### Arguments
 
 | Argument | Description | Default |
