@@ -36,9 +36,12 @@ export interface TopicMessage {
     partitionID: number,
     key: string, // base64 encoded key of the message
     value: any, // json representation of the message value (xml, avro, etc will get converted)
+    valueType: 'json' | 'xml' | 'avro' | 'text' | 'binary', // actual format the message (before being converted to json)
     size: number, // size in bytes of the kafka message
 
-    valueJson: string, // a helper prop we populate after receiving the response; not part of the response
+    // Added by the frontend (sometimes)
+    valueJson: string,
+    valueBinHexPreview: string,
 }
 
 export interface ListMessageResponse {
