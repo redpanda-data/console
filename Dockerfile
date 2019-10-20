@@ -1,5 +1,5 @@
 # Backend Build
-FROM golang:1.12-alpine as builder
+FROM golang:1.13-alpine as builder
 RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificates
 
 WORKDIR /app
