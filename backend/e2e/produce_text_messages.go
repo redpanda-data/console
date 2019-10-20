@@ -7,8 +7,13 @@ import (
 )
 
 func produceTextMessages(producer sarama.SyncProducer, count int) error {
-	for i := 0; i < count; i++ {
-		text := "hello123 test message, could literally be any {} random string, including special chars äöü@!"
+	textMsgs := []string{
+		"hello123 test message, could literally be any {} random string, including special chars äöü@!",
+		"<XML>Just faked</XML>",
+		"{\"fake\": json}",
+		"[{\"alsofaked\":}]",
+	}
+	for _, text := range textMsgs {
 		msg := &sarama.ProducerMessage{
 			Topic: "text-messages",
 			Value: sarama.ByteEncoder(text),
