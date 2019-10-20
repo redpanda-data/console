@@ -29,4 +29,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	err = produceTextMessages(producer, 100)
+	if err != nil {
+		panic(err)
+	}
 }
