@@ -33,30 +33,10 @@ type TopicMessage struct {
 	Timestamp   int64  `json:"timestamp"`
 	Key         []byte `json:"key"`
 
-	// Value       []byte `json:"value"`
-	// Value interface{} `json:"value"`
-	Value DirectEmbedding `json:"value"`
+	Value     DirectEmbedding `json:"value"`
+	ValueType string          `json:"valueType"`
 
 	Size int `json:"size"`
-}
-
-// DirectEmbedding consists of a byte array that will be used as-is without any conversion
-type DirectEmbedding struct {
-	Value []byte `json:"value"`
-}
-
-// MarshalJSON implements the 'Marshaller' interface for DirectEmbedding
-func (m *DirectEmbedding) MarshalJSON() ([]byte, error) {
-	// todo: check if the embedding is valid json.
-	// If it isn't: detect format (XML, Avro, simple string, ...), parse into map, re-encode to json, add a marker like "format":"xml"
-	// on conversion errors:
-	// return []byte("[ \"Failed to parse/convert the message value as json\" ]"), nil
-
-	if m.Value == nil || len(m.Value) == 0 {
-		return []byte("{}"), nil
-	}
-
-	return m.Value, nil
 }
 
 // ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
