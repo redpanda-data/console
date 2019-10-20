@@ -29,7 +29,7 @@ func (d *DirectEmbedding) MarshalJSON() ([]byte, error) {
 		return []byte("{}"), nil
 	}
 
-	if d.ValueType == valueTypeText {
+	if d.ValueType == valueTypeText || d.ValueType == valueTypeBinary {
 		return json.Marshal(string(d.Value))
 	}
 
