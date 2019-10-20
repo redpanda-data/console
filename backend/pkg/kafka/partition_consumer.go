@@ -119,7 +119,7 @@ func (p *partitionConsumer) getValue(value []byte) (valueType, DirectEmbedding) 
 	// 3. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(value)
 	if isUTF8 {
-		return valueTypeText, DirectEmbedding{ValueType: valueTypeXML, Value: value}
+		return valueTypeText, DirectEmbedding{ValueType: valueTypeText, Value: value}
 	}
 
 	b64 := []byte(base64.StdEncoding.EncodeToString(value))
