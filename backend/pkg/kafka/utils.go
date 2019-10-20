@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"encoding/json"
 	"errors"
 	"math/rand"
 
@@ -26,6 +27,10 @@ type DirectEmbedding struct {
 func (d *DirectEmbedding) MarshalJSON() ([]byte, error) {
 	if d.Value == nil || len(d.Value) == 0 {
 		return []byte("{}"), nil
+	}
+
+	if d.ValueType == valueTypeText {
+		return json.Marshal(string(d.Value))
 	}
 
 	return d.Value, nil
