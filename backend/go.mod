@@ -11,6 +11,7 @@ require (
 	github.com/InVisionApp/go-logger v1.0.1
 	github.com/Shopify/sarama v1.24.0
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
+	github.com/basgys/goxml2json v1.1.0
 	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/deathowl/go-metrics-prometheus v0.0.0-20190530215645-35bace25558f
@@ -40,6 +41,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563 // indirect
 	github.com/rogpeppe/go-internal v1.5.0 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/valyala/fastjson v1.4.1
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.2.0 // indirect
 	go.uber.org/zap v1.10.0

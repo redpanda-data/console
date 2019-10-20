@@ -16,6 +16,21 @@ func (s *Service) findAnyBroker() (*sarama.Broker, error) {
 	return nil, errors.New("no available broker")
 }
 
+// DirectEmbedding consists of a byte array that will be used as-is without any conversion
+type DirectEmbedding struct {
+	Value     []byte
+	ValueType valueType
+}
+
+// MarshalJSON implements the 'Marshaller' interface for DirectEmbedding
+func (d *DirectEmbedding) MarshalJSON() ([]byte, error) {
+	if d.Value == nil || len(d.Value) == 0 {
+		return []byte("{}"), nil
+	}
+
+	return d.Value, nil
+}
+
 type waterMark struct {
 	PartitionID int32
 	Low         int64

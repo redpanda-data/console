@@ -1,10 +1,25 @@
 package kafka
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/Shopify/sarama"
+	xj "github.com/basgys/goxml2json"
+	"github.com/valyala/fastjson"
 	"go.uber.org/zap"
+)
+
+type valueType string
+
+const (
+	valueTypeJSON   valueType = "json"
+	valueTypeXML    valueType = "xml"
+	valueTypeText   valueType = "text"
+	valueTypeBinary valueType = "binary"
 )
 
 type partitionConsumer struct {
@@ -49,7 +64,16 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 				return
 			}
 
-			topicMessage := &TopicMessage{m.Partition, m.Offset, m.Timestamp.Unix(), m.Key, DirectEmbedding{m.Value}, len(m.Value)}
+			vType, value := p.getValue(m.Value)
+			topicMessage := &TopicMessage{
+				PartitionID: m.Partition,
+				Offset:      m.Offset,
+				Timestamp:   m.Timestamp.Unix(),
+				Key:         m.Key,
+				Value:       value,
+				ValueType:   string(vType),
+				Size:        len(m.Value),
+			}
 			p.messageCh <- topicMessage
 			if m.Offset >= p.endOffset {
 				return
@@ -58,4 +82,46 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 			return
 		}
 	}
+}
+
+// getValue returns the valueType along with it's DirectEmbedding which implements a custom Marshaller,
+// so that it can return a string in the desired representation, regardless whether it's binary, text, xml
+// or JSON data.
+func (p *partitionConsumer) getValue(value []byte) (valueType, DirectEmbedding) {
+	if len(value) == 0 {
+		return "", DirectEmbedding{ValueType: "", Value: value}
+	}
+
+	trimmed := bytes.TrimLeft(value, " \t\r\n")
+	if len(trimmed) == 0 {
+		return valueTypeText, DirectEmbedding{ValueType: valueTypeText, Value: value}
+	}
+
+	// 1. Test for valid JSON
+	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
+	if startsWithJSON {
+		err := fastjson.Validate(string(trimmed))
+		if err == nil {
+			return valueTypeJSON, DirectEmbedding{ValueType: valueTypeJSON, Value: trimmed}
+		}
+	}
+
+	// 2. Test for valid XML
+	startsWithXML := trimmed[0] == '<'
+	if startsWithXML {
+		r := strings.NewReader(string(trimmed))
+		json, err := xj.Convert(r)
+		if err == nil {
+			return valueTypeXML, DirectEmbedding{ValueType: valueTypeXML, Value: json.Bytes()}
+		}
+	}
+
+	// 3. Test for UTF-8 validity
+	isUTF8 := utf8.Valid(value)
+	if isUTF8 {
+		return valueTypeText, DirectEmbedding{ValueType: valueTypeXML, Value: value}
+	}
+
+	b64 := []byte(base64.StdEncoding.EncodeToString(value))
+	return valueTypeBinary, DirectEmbedding{ValueType: valueTypeBinary, Value: b64}
 }
