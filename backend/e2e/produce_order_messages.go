@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 
 	"github.com/Shopify/sarama"
@@ -30,7 +31,7 @@ type CreditCard struct {
 	Number    string `faker:"cc_number"`
 }
 
-func produceOrderMessages(producer sarama.SyncProducer, count int) error {
+func produceOrderMessagesJSON(producer sarama.SyncProducer, count int) error {
 	var o Order
 
 	for i := 0; i < count; i++ {
@@ -45,14 +46,42 @@ func produceOrderMessages(producer sarama.SyncProducer, count int) error {
 		}
 
 		msg := &sarama.ProducerMessage{
-			Topic: "orders",
+			Topic: "orders-json",
 			Value: sarama.ByteEncoder(encoded),
 		}
 		partition, offset, err := producer.SendMessage(msg)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Produced message on topic '%v', partition '%d', offset '%d'\n", "orders", partition, offset)
+		fmt.Printf("Produced message on topic '%v', partition '%d', offset '%d'\n", "orders-json", partition, offset)
+	}
+
+	return nil
+}
+
+func produceOrderMessagesXML(producer sarama.SyncProducer, count int) error {
+	var o Order
+
+	for i := 0; i < count; i++ {
+		err := faker.FakeData(&o)
+		if err != nil {
+			return err
+		}
+
+		encoded, err := xml.Marshal(o)
+		if err != nil {
+			return err
+		}
+
+		msg := &sarama.ProducerMessage{
+			Topic: "orders-xml",
+			Value: sarama.ByteEncoder(encoded),
+		}
+		partition, offset, err := producer.SendMessage(msg)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Produced message on topic '%v', partition '%d', offset '%d'\n", "orders-xml", partition, offset)
 	}
 
 	return nil
