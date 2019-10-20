@@ -34,4 +34,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	err = produceBinaryMessages(producer, 100)
+	if err != nil {
+		panic(err)
+	}
 }
