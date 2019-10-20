@@ -19,5 +19,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	produceOrderMessages(producer, 100)
+
+	err = produceOrderMessagesJSON(producer, 100)
+	if err != nil {
+		panic(err)
+	}
+
+	err = produceOrderMessagesXML(producer, 100)
+	if err != nil {
+		panic(err)
+	}
 }
