@@ -414,6 +414,36 @@ function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
         if (!msg || !msg.value) return <code>null</code>
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
+        if (msg.valueType == 'binary') {
+            const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
+            if (mode == 'raw') {
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{msg.value}</code>
+            }
+            else if (mode == 'hex') {
+                const str = msg.value as string;
+                var hex = '';
+                for (var i = 0; i < str.length; i++) {
+                    let n = str.charCodeAt(i).toString(16);
+                    if (n.length == 1) n = '0' + n;
+                    hex += n + ' ';
+                }
+
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>
+            }
+            else {
+                const str = msg.value as string;
+                var result = '';
+                const isPrintable = /[\x20-\x7E]/;
+                for (var i = 0; i < str.length; i++) {
+                    let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
+                    ch = isPrintable.test(ch) ? ch : '. ';
+                    result += ch + ' ';
+                }
+
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>
+            }
+        }
+
         return (
             <>
                 {/* <Affix offsetTop={30}>
