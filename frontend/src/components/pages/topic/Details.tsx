@@ -32,9 +32,33 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         p.addBreadcrumb(topicName, '/topics/' + topicName);
     }
 
+    get tabPageKey() {
+        const tabs = ['partitions', 'messages', 'configuration'];
+
+        // use url anchor if possible
+        let key = (appGlobal.history.location.hash).replace("#", "");
+        if (tabs.includes(key)) return key;
+
+        // use settings (last visited tab)
+        key = uiState.topicDetails.activeTabKey!;
+        if (tabs.includes(key)) return key;
+
+        // default to partitions
+        return 'partitions'
+    }
+
+    componentDidMount() {
+        // fix anchor
+        const anchor = '#' + this.tabPageKey;
+        const location = appGlobal.history.location;
+        if (location.hash !== anchor) {
+            location.hash = anchor;
+            appGlobal.history.replace(location);
+        }
+    }
+
     render() {
         const topicName = this.props.topicName;
-
         // todo: we shouldn't prepare data here. Instead we should create actions that obtain
         // the data and pass those to the components, they should be responsible to handle 'undefined' themselves.
         if (!api.Topics) return this.skeleton;
@@ -50,24 +74,32 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
                 {/* Tabs:  Messages, Configuration */}
                 <Tabs style={{ overflow: 'visible' }} animated={false}
-                    activeKey={uiState.topicDetails.activeTabKey || '0'}
-                    onChange={e => uiState.topicDetails.activeTabKey = e}
+                    activeKey={this.tabPageKey}
+                    onChange={this.setTabPage}
                 >
-                    <Tabs.TabPane key="0" tab="Partitions">
+                    <Tabs.TabPane key="partitions" tab="Partitions">
                         <TopicPartitions topic={topic} />
                     </Tabs.TabPane>
 
-                    <Tabs.TabPane key="1" tab="Messages">
+                    <Tabs.TabPane key="messages" tab="Messages">
                         <TopicMessageView topic={topic} />
                     </Tabs.TabPane>
 
-                    <Tabs.TabPane key="2" tab="Configuration">
+                    <Tabs.TabPane key="configuration" tab="Configuration">
                         <ConfigDisplaySettings /> {/* todo: move into TopicConfiguration */}
                         <TopicConfiguration config={topicConfig} />
                     </Tabs.TabPane>
                 </Tabs>
             </motion.div>
         );
+    }
+
+    setTabPage = (activeKey: string): void => {
+        uiState.topicDetails.activeTabKey = activeKey;
+
+        const loc = appGlobal.history.location;
+        loc.hash = activeKey;
+        appGlobal.history.replace(loc);
     }
 
     topicNotFound(name: string) {
