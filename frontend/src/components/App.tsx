@@ -53,11 +53,14 @@ const SideBar = observer(() =>
             </Menu>
         </Content>
 
+        {/* Version */}
         <div className='version'>
             <div className='repo'><a title="Visit Kafka-Owl's GitHub repository" href="https://github.com/kafka-owl/kafka-owl"><img src={gitHubLogo} /></a></div>
             <div>{(window as any).VERSION} ({(window as any).COMMIT_SHA})</div>
+            <div>env.version = {process.env.VERSION}</div>
+            <div>nodeEnv = {process.env.NODE_ENV}</div>
+            <div>reactAppVersion = {process.env.REACT_APP_VERSION}</div>
         </div>
-
 
         {/* Toggle */}
         <Footer style={{

@@ -154,6 +154,19 @@ const apiStore = {
                 m.key = atob(m.key); // unpack base64 encoded key
 
             m.valueJson = JSON.stringify(m.value);
+
+            if (m.valueType == 'binary') {
+                m.value = atob(m.value);
+
+                const str = m.value as string;
+                var hex = '';
+                for (var i = 0; i < str.length && i < 50; i++) {
+                    let n = str.charCodeAt(i).toString(16);
+                    if (n.length == 1) n = '0' + n;
+                    hex += n + ' ';
+                }
+                m.valueBinHexPreview = hex;
+            }
         }
         this.MessageResponse = response.kafkaMessages;
         this.Messages = response.kafkaMessages.messages;

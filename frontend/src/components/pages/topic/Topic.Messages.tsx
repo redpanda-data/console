@@ -245,10 +245,14 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             </Text>
         </>
 
+        const typeTags = api.MessageResponse.messages.map(m => m.valueType).distinct().map(t => this.formatTypeToTag(t));
+
         const normalDisplay = () => <>
             <Text type='secondary'>
-                <b>{api.MessageResponse.fetchedMessages}</b> messages in <b>{formatTime(api.MessageResponse.elapsedMs)}</b>
+                <b>{api.MessageResponse.fetchedMessages}</b> messages (in <b>{formatTime(api.MessageResponse.elapsedMs)}</b>)
             </Text>
+            <Divider type='vertical' />
+            {typeTags}
         </>
 
         return <MotionAlways>
@@ -259,14 +263,24 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         </MotionAlways>
     })
 
+    formatTypeToTag(type: string) {
+        type = String(type);
+        switch (type) {
+            case 'json': return <Tag color='orange'>JSON</Tag>
+            case 'xml': return <Tag color='green'>XML</Tag>
+            case 'avro': return <Tag color='blue'>Avro</Tag>
+            case 'binary': return <Tag color='red'>Binary</Tag>
+            case 'text': return <Tag color='gold'>Text</Tag>
+        }
+        return <Tag color='black'>Unknown: {type}</Tag>
+    }
+
     empty = () => <Empty description={<>
         <Text type='secondary' strong style={{ fontSize: '125%' }}>No messages</Text>
         <br />
         <span>Either the selected topic/partition did not contain any messages</span>
     </>} />
 }
-
-
 
 interface SearchParametersProps extends FormComponentProps {
     searchParams: TopicMessageSearchParameters;
@@ -365,6 +379,12 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 
             if (!value) { // 1. handle 'null'
                 text = <code>null</code>
+            }
+            else if (msg.valueType == 'text') {
+                text = value;
+            }
+            else if (msg.valueType == 'binary') {
+                text = msg.valueBinHexPreview;
             }
             else if (fields.length > 0) { // 2. try preview fields
                 const previewObj: any = {};
