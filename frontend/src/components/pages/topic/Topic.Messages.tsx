@@ -266,13 +266,13 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     formatTypeToTag(type: string) {
         type = String(type);
         switch (type) {
-            case 'json': return <Tag color='orange'>JSON</Tag>
-            case 'xml': return <Tag color='green'>XML</Tag>
-            case 'avro': return <Tag color='blue'>Avro</Tag>
-            case 'binary': return <Tag color='red'>Binary</Tag>
-            case 'text': return <Tag color='gold'>Text</Tag>
+            case 'json': return <Tag key={1} color='orange'>JSON</Tag>
+            case 'xml': return <Tag key={2} color='green'>XML</Tag>
+            case 'avro': return <Tag key={3} color='blue'>Avro</Tag>
+            case 'binary': return <Tag key={4} color='red'>Binary</Tag>
+            case 'text': return <Tag key={5} color='gold'>Text</Tag>
         }
-        return <Tag color='black'>Unknown: {type}</Tag>
+        return <Tag key={6} color='black'>Unknown: {type}</Tag>
     }
 
     empty = () => <Empty description={<>
