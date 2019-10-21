@@ -67,7 +67,7 @@ class TopicList extends PageComponent {
                         ({
                             onClick: () => appGlobal.history.push('/topics/' + record.topicName),
                         })}
-                    onChange={x => { if (x.pageSize) { uiSettings.topicList.pageSize = x.pageSize } }}
+                    onChange={x => { if (x.pageSize) { uiSettings.topicList.pageSize = x.pageSize; this.pageConfig.pageSize = x.pageSize; } }}
                     rowClassName={() => 'hoverLink'}
                     pagination={this.pageConfig}
                     dataSource={data}
