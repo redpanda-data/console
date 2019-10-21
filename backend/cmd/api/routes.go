@@ -26,14 +26,15 @@ func (api *API) routes() *chi.Mux {
 	instrument := middleware.NewInstrument(api.cfg.MetricsNamespace)
 	recoverer := middleware.Recoverer{RestHelper: api.restHelper}
 
-	router.Use(middleware.Intercept)
-	router.Use(recoverer.Wrap)
-	router.Use(chimiddleware.RealIP)
-	router.Use(chimiddleware.URLFormat)
 	if api.cfg.REST.CompressionLevel > 0 {
 		api.logger.Info("using compression for all http routes", zap.Int("level", api.cfg.REST.CompressionLevel))
 		router.Use(chimiddleware.Compress(api.cfg.REST.CompressionLevel))
 	}
+	router.Use(middleware.Intercept)
+	router.Use(recoverer.Wrap)
+	router.Use(chimiddleware.RealIP)
+	router.Use(chimiddleware.URLFormat)
+
 	router.Use(instrument.Wrap)
 	router.Use(chimiddleware.Timeout(15 * time.Second))
 
