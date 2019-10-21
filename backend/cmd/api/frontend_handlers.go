@@ -12,22 +12,21 @@ import (
 // getIndexFile loads and prepares the template index.html.
 // Before returning, this method injects the needed server variables (like
 // for example __COMMIT_SHA__) so the file is ready to be sent to a connecting browser.
-// If the file is missing, we'll log a fatal error and exit with an error code.
-func (api *API) getIndexFile(filePath string) []byte {
+func (api *API) getIndexFile(filePath string) ([]byte, error) {
 	indexPath := filePath + "/index.html"
 	index, err := ioutil.ReadFile(indexPath)
 	if err != nil {
-		api.logger.Fatal("cannot read index.html", zap.String("path", indexPath), zap.Error(err))
-		os.Exit(1)
+		return nil, err
 	}
 
+	// todo: when issues with github/quay are fixed, the version/sha should be baked into the frontend files during/after the build process, not here.
 	index = []byte(strings.Replace(string(index), "__COMMIT_SHA__", commitSha, 1))
 
 	if len(version) > 0 {
 		index = []byte(strings.Replace(string(index), "__VERSION__", version, 1))
 	}
 
-	return index
+	return index, nil
 }
 
 // handleGetStaticFile tries to open the requested file. If this file does not exist it will return the

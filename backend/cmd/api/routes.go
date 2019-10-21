@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 
@@ -29,6 +30,10 @@ func (api *API) routes() *chi.Mux {
 	router.Use(recoverer.Wrap)
 	router.Use(chimiddleware.RealIP)
 	router.Use(chimiddleware.URLFormat)
+	if api.cfg.REST.CompressionLevel > 0 {
+		api.logger.Info("using compression for all http routes", zap.Int("level", api.cfg.REST.CompressionLevel))
+		router.Use(chimiddleware.Compress(api.cfg.REST.CompressionLevel))
+	}
 	router.Use(instrument.Wrap)
 	router.Use(chimiddleware.Timeout(15 * time.Second))
 
@@ -50,8 +55,8 @@ func (api *API) routes() *chi.Mux {
 		r.Get("/consumer-groups", api.handleGetConsumerGroups())
 	})
 
-	if api.cfg.ServeFrontend {
-		// Check if the build directory exists
+	if api.cfg.REST.ServeFrontend {
+		// Check if the frontend directory 'build' exists
 		dir, err := filepath.Abs("./build")
 		if err != nil {
 			api.logger.Fatal("given frontend directory is invalid", zap.String("directory", dir), zap.Error(err))
@@ -59,7 +64,11 @@ func (api *API) routes() *chi.Mux {
 		}
 
 		// SPA Files
-		index := api.getIndexFile(dir)
+		index, err := api.getIndexFile(dir)
+		if err != nil {
+			api.logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
+			os.Exit(1)
+		}
 		router.Group(func(router chi.Router) {
 			router.Use(cache)
 
