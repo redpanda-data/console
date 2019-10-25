@@ -21,12 +21,13 @@ type API struct {
 	health     health.Health
 }
 
-// Start the REST server
+// Start the API server and block
 func (api *API) Start() {
 	api.kafkaSvc.RegisterMetrics()
 
 	// Custom keep alive for Kafka, because: https://github.com/Shopify/sarama/issues/1487
 	// The KeepAlive property in sarama doesn't work either, because of golang's buggy net module: https://github.com/golang/go/issues/31490
+	// todo: this should definitely be in its own file (and also in /pkg/kafka/)
 	go func() {
 		log := api.logger
 		wasHealthy := false
