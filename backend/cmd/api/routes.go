@@ -56,6 +56,11 @@ func (api *API) routes() *chi.Mux {
 		r.Get("/consumer-groups", api.handleGetConsumerGroups())
 	})
 
+	// OAuth
+	// auth := NewAuth(api.logger)
+	// auth.AddRoutes(router)
+	// router.HandleFunc("/oauth2callback", auth.oAuthCallback)
+
 	if api.cfg.REST.ServeFrontend {
 		// Check if the frontend directory 'build' exists
 		dir, err := filepath.Abs("./build")

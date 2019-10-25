@@ -15,9 +15,12 @@ require (
 	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/deathowl/go-metrics-prometheus v0.0.0-20190530215645-35bace25558f
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/frankban/quicktest v1.5.0 // indirect
 	github.com/go-chi/chi v4.0.2+incompatible
+	github.com/go-chi/jwtauth v4.0.3+incompatible
+	github.com/go-chi/render v1.0.1
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/google/pprof v0.0.0-20191016141926-35da2c455f8f // indirect
 	github.com/gorilla/schema v1.1.0
@@ -50,11 +53,13 @@ require (
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/mobile v0.0.0-20191002175909-6d0d39b2ca82 // indirect
 	golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582 // indirect
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20191018095205-727590c5006e // indirect
 	golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd0
 	golang.org/x/tools v0.0.0-20191018212557-ed542cd5b28a // indirect
 	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
+	google.golang.org/api v0.11.0
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/grpc v1.24.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
