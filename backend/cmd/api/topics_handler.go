@@ -29,6 +29,8 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 			return
 		}
 
+		api.hooks.Topic.FilterTopics(r.Context(), topics)
+
 		response := response{
 			Topics: topics,
 		}

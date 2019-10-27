@@ -27,7 +27,7 @@ func (api *API) routes() *chi.Mux {
 	recoverer := middleware.Recoverer{RestHelper: api.restHelper}
 
 	if api.cfg.REST.CompressionLevel > 0 {
-		api.logger.Info("using compression for all http routes", zap.Int("level", api.cfg.REST.CompressionLevel))
+		api.logger.Debug("using compression for all http routes", zap.Int("level", api.cfg.REST.CompressionLevel))
 		router.Use(chimiddleware.Compress(api.cfg.REST.CompressionLevel))
 	}
 	router.Use(middleware.Intercept)
