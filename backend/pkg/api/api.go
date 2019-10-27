@@ -14,31 +14,33 @@ import (
 
 // API represents the server and all it's dependencies to serve incoming user requests
 type API struct {
-	cfg        *Config
-	logger     *zap.Logger
+	cfg *Config
+
+	Logger   *zap.Logger
+	KafkaSvc *kafka.Service
+
 	restHelper *rest.Helper
-	kafkaSvc   *kafka.Service
 	health     health.Health
 
-	hooks *apiHooks
+	hooks *Hooks
 }
 
 // Start the API server and block
 func (api *API) Start() {
-	api.kafkaSvc.RegisterMetrics()
+	api.KafkaSvc.RegisterMetrics()
 
 	// Custom keep alive for Kafka, because: https://github.com/Shopify/sarama/issues/1487
 	// The KeepAlive property in sarama doesn't work either, because of golang's buggy net module: https://github.com/golang/go/issues/31490
 	// todo: this should definitely be in its own file (and also in /pkg/kafka/)
 	go func() {
-		log := api.logger
+		log := api.Logger
 		wasHealthy := false
 		warningLimit := rate.NewLimiter(rate.Every(30*time.Second), 1)
 		for {
 			// Normal keepalive interval is 3 seconds
 			time.Sleep(3 * time.Second)
 
-			brokers := api.kafkaSvc.Client.Brokers()
+			brokers := api.KafkaSvc.Client.Brokers()
 			//log.Info("Kafka Keepalive", zap.Int("brokers", len(brokers)))
 			connectedCount := 0
 
@@ -46,7 +48,7 @@ func (api *API) Start() {
 
 				connected, _ := b.Connected()
 				if !connected {
-					err := b.Open(api.kafkaSvc.Client.Config())
+					err := b.Open(api.KafkaSvc.Client.Config())
 					if err != nil {
 						log.Warn("could not open connection to broker", zap.String("broker", b.Addr()), zap.Error(err))
 					} else {
@@ -62,7 +64,7 @@ func (api *API) Start() {
 					log.Warn("Heartbeat to broker has errored", zap.Error(err), zap.String("broker", b.Addr()), zap.Int32("id", b.ID()))
 
 					b.Close()
-					b.Open(api.kafkaSvc.Client.Config())
+					b.Open(api.KafkaSvc.Client.Config())
 				}
 			}
 
@@ -84,20 +86,20 @@ func (api *API) Start() {
 	// Start automatic health checks that will be reported on our '/health' route
 	// TODO: we should wait until the connection to all brokers is established
 	api.health = health.New()
-	api.health.WithLogger(newZapShim(api.logger.With(zap.String("source", "health"))))
+	api.health.WithLogger(newZapShim(api.Logger.With(zap.String("source", "health"))))
 
 	api.health.RegisterCheck(&health.Config{
 		Check: &KafkaHealthCheck{
-			kafkaService: api.kafkaSvc,
+			kafkaService: api.KafkaSvc,
 		},
 		InitialDelay:    3 * time.Second,
 		ExecutionPeriod: 25 * time.Second,
 	})
 
 	// Server
-	server := rest.NewServer(&api.cfg.REST, api.logger, api.routes())
+	server := rest.NewServer(&api.cfg.REST, api.Logger, api.routes())
 	err := server.Start()
 	if err != nil {
-		api.logger.Fatal("REST Server returned an error", zap.Error(err))
+		api.Logger.Fatal("REST Server returned an error", zap.Error(err))
 	}
 }

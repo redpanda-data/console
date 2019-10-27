@@ -13,7 +13,7 @@ func (api *API) handleDescribeCluster() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		clusterInfo, err := api.kafkaSvc.DescribeCluster()
+		clusterInfo, err := api.KafkaSvc.DescribeCluster()
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

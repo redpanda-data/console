@@ -24,11 +24,11 @@ type apiBuilder struct {
 
 	kafkaService *kafka.Service
 	api          *API
-	hooks        *apiHooks
+	hooks        *Hooks
 }
 
 // NewAPIBuilder builds an 'API' instance from the commandline arguments, and allows further customization
-func NewAPIBuilder() *apiBuilder {
+func NewAPIBuilder() (*apiBuilder, *zap.Logger) {
 	if commitSha == "" {
 		if commitSha = os.Getenv("COMMIT_SHA"); commitSha == "" {
 			commitSha = "DEV"
@@ -52,7 +52,7 @@ func NewAPIBuilder() *apiBuilder {
 	// Setup KafkaService
 	builder.setupKafkaService()
 
-	return builder
+	return builder, builder.logger
 }
 
 func (b *apiBuilder) setupKafkaService() {
@@ -81,7 +81,7 @@ func (b *apiBuilder) setupKafkaService() {
 	if err != nil {
 		log.Fatal("Failed to create kafka client", zap.Error(err))
 	}
-	log.Info("Successfully connected to kafka", zap.Strings("kafka_brokers", cfg.Kafka.Brokers))
+	log.Info("Connected to kafka")
 
 	//
 	// Kafka Service
@@ -92,7 +92,7 @@ func (b *apiBuilder) setupKafkaService() {
 }
 
 // WithHooks sets api hooks
-func (b *apiBuilder) WithHooks(hooks *apiHooks) *apiBuilder {
+func (b *apiBuilder) WithHooks(hooks *Hooks) *apiBuilder {
 	b.hooks = hooks
 	return b
 }
@@ -101,9 +101,9 @@ func (b *apiBuilder) WithHooks(hooks *apiHooks) *apiBuilder {
 func (b *apiBuilder) Build() *API {
 	return &API{
 		cfg:        b.cfg,
-		logger:     b.logger,
+		Logger:     b.logger,
 		restHelper: &rest.Helper{Logger: b.logger},
-		kafkaSvc:   b.kafkaService,
+		KafkaSvc:   b.kafkaService,
 		hooks:      b.hooks,
 	}
 }

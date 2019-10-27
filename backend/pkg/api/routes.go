@@ -27,7 +27,7 @@ func (api *API) routes() *chi.Mux {
 	recoverer := middleware.Recoverer{RestHelper: api.restHelper}
 
 	if api.cfg.REST.CompressionLevel > 0 {
-		api.logger.Debug("using compression for all http routes", zap.Int("level", api.cfg.REST.CompressionLevel))
+		api.Logger.Debug("using compression for all http routes", zap.Int("level", api.cfg.REST.CompressionLevel))
 		router.Use(chimiddleware.Compress(api.cfg.REST.CompressionLevel))
 	}
 	router.Use(middleware.Intercept)
@@ -48,12 +48,13 @@ func (api *API) routes() *chi.Mux {
 
 	// REST API Endpoints
 	router.Route("/api", func(r chi.Router) {
-		r.Get("/cluster", api.handleDescribeCluster())
-		r.Get("/topics", api.handleGetTopics())
-		r.Get("/topics/{topicName}/partitions", api.handleGetPartitions())
-		r.Get("/topics/{topicName}/messages", api.handleGetMessages())
-		r.Get("/topics/{topicName}/configuration", api.handleGetTopicConfig())
-		r.Get("/consumer-groups", api.handleGetConsumerGroups())
+		h := api.hooks.Route.RegisterFunc
+		r.Get(h("/cluster", api.handleDescribeCluster()))
+		r.Get(h("/topics", api.handleGetTopics()))
+		r.Get(h("/topics/{topicName}/partitions", api.handleGetPartitions()))
+		r.Get(h("/topics/{topicName}/messages", api.handleGetMessages()))
+		r.Get(h("/topics/{topicName}/configuration", api.handleGetTopicConfig()))
+		r.Get(h("/consumer-groups", api.handleGetConsumerGroups()))
 	})
 
 	// OAuth
@@ -65,14 +66,14 @@ func (api *API) routes() *chi.Mux {
 		// Check if the frontend directory 'build' exists
 		dir, err := filepath.Abs("./build")
 		if err != nil {
-			api.logger.Fatal("given frontend directory is invalid", zap.String("directory", dir), zap.Error(err))
+			api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", dir), zap.Error(err))
 			return router
 		}
 
 		// SPA Files
 		index, err := api.getIndexFile(dir)
 		if err != nil {
-			api.logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
+			api.Logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
 			os.Exit(1)
 		}
 		router.Group(func(router chi.Router) {
@@ -82,7 +83,7 @@ func (api *API) routes() *chi.Mux {
 			router.Get("/*", api.handleGetStaticFile(index, dir))
 		})
 	} else {
-		api.logger.Info("no static files will be served as serving the frontend has been disabled")
+		api.Logger.Info("no static files will be served as serving the frontend has been disabled")
 	}
 
 	return router
