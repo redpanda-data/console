@@ -19,6 +19,8 @@ type API struct {
 	restHelper *rest.Helper
 	kafkaSvc   *kafka.Service
 	health     health.Health
+
+	hooks *apiHooks
 }
 
 // Start the API server and block
@@ -77,6 +79,20 @@ func (api *API) Start() {
 			}
 		}
 	}()
+
+	//
+	// Start automatic health checks that will be reported on our '/health' route
+	// TODO: we should wait until the connection to all brokers is established
+	api.health = health.New()
+	api.health.WithLogger(newZapShim(api.logger.With(zap.String("source", "health"))))
+
+	api.health.RegisterCheck(&health.Config{
+		Check: &KafkaHealthCheck{
+			kafkaService: api.kafkaSvc,
+		},
+		InitialDelay:    3 * time.Second,
+		ExecutionPeriod: 25 * time.Second,
+	})
 
 	// Server
 	server := rest.NewServer(&api.cfg.REST, api.logger, api.routes())
