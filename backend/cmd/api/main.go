@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	build := api.NewAPIBuilder()
+	build, _ := api.NewAPIBuilder()
 	api := build.Build()
 	api.Start()
 }

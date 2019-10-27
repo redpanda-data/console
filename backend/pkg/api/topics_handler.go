@@ -17,7 +17,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		topics, err := api.kafkaSvc.ListTopics()
+		topics, err := api.KafkaSvc.ListTopics()
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
@@ -78,7 +78,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 		ctx, cancelCtx := context.WithTimeout(r.Context(), 18*time.Second)
 		defer cancelCtx()
-		messages, err := api.kafkaSvc.ListMessages(ctx, listReq)
+		messages, err := api.KafkaSvc.ListMessages(ctx, listReq)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
@@ -106,7 +106,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := chi.URLParam(r, "topicName")
-		partitions, err := api.kafkaSvc.ListTopicPartitions(topicName)
+		partitions, err := api.KafkaSvc.ListTopicPartitions(topicName)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
@@ -134,7 +134,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := chi.URLParam(r, "topicName")
-		description, err := api.kafkaSvc.DescribeTopicConfigs(topicName)
+		description, err := api.KafkaSvc.DescribeTopicConfigs(topicName)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

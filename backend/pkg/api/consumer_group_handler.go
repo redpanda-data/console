@@ -14,7 +14,7 @@ type GetConsumerGroupsResponse struct {
 
 func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		groups, err := api.kafkaSvc.ListConsumerGroups(r.Context())
+		groups, err := api.KafkaSvc.ListConsumerGroups(r.Context())
 		if err != nil {
 			rerr := &rest.Error{
 				Err:      err,
@@ -26,7 +26,7 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 			return
 		}
 
-		describedGroups, err := api.kafkaSvc.DescribeConsumerGroups(r.Context(), groups)
+		describedGroups, err := api.KafkaSvc.DescribeConsumerGroups(r.Context(), groups)
 		if err != nil {
 			rerr := &rest.Error{
 				Err:      err,
