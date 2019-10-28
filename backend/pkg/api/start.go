@@ -36,31 +36,22 @@ func NewAPIBuilder() (*apiBuilder, *zap.Logger) {
 		version = os.Getenv("GITHUB_REF") // ignore empty
 	}
 
-	//
 	// Load Config
 	cfg := &Config{}
 	flagext.RegisterFlags(cfg)
 	flag.Parse()
 
 	builder := &apiBuilder{cfg: cfg, hooks: newEmptyHooks()}
-
-	//
-	// Setup Logger
 	builder.logger = logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
-
-	//
-	// Setup KafkaService
 	builder.setupKafkaService()
 
 	return builder, builder.logger
 }
 
 func (b *apiBuilder) setupKafkaService() {
-
 	log := b.logger
 	cfg := b.cfg
 
-	//
 	// Create separate logger for sarama
 	saramaLogger, err := zap.NewStdLogAt(log.With(zap.String("source", "sarama")), zapcore.DebugLevel)
 	if err != nil {
@@ -68,14 +59,12 @@ func (b *apiBuilder) setupKafkaService() {
 	}
 	sarama.Logger = saramaLogger
 
-	//
 	// Sarama Config
 	saramaConfig, err := kafka.NewSaramaConfig(&cfg.Kafka)
 	if err != nil {
 		log.Fatal("Failed to create a valid sarama config", zap.Error(err))
 	}
 
-	//
 	// Sarama Client
 	client, err := sarama.NewClient(cfg.Kafka.Brokers, saramaConfig)
 	if err != nil {
@@ -83,7 +72,6 @@ func (b *apiBuilder) setupKafkaService() {
 	}
 	log.Info("Connected to kafka")
 
-	//
 	// Kafka Service
 	b.kafkaService = &kafka.Service{
 		Client: client,
