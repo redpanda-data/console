@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	commitSha string
-	version   string
+	//commitSha string
+	version string
 )
 
 type apiBuilder struct {
@@ -29,11 +29,8 @@ type apiBuilder struct {
 
 // NewAPIBuilder builds an 'API' instance from the commandline arguments, and allows further customization
 func NewAPIBuilder() (*apiBuilder, *zap.Logger) {
-	if commitSha == "" {
-		if commitSha = os.Getenv("COMMIT_SHA"); commitSha == "" {
-			commitSha = "DEV"
-		}
-		version = os.Getenv("GITHUB_REF") // ignore empty
+	if version == "" {
+		version = os.Getenv("VERSION") // ignore empty
 	}
 
 	// Load Config
