@@ -89,7 +89,11 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 func convertSaramaGroupDescriptions(descriptions []*sarama.GroupDescription) ([]*GroupDescription, error) {
 	response := make([]*GroupDescription, len(descriptions))
 	for i, d := range descriptions {
-		members, err := convertGroupMembers(d.Members)
+		if d.Err != sarama.ErrNoError {
+			return nil, d.Err
+		}
+
+		members, err := convertGroupMembers(d.Members, d.ProtocolType)
 		if err != nil {
 			return nil, err
 		}
@@ -105,25 +109,35 @@ func convertSaramaGroupDescriptions(descriptions []*sarama.GroupDescription) ([]
 	return response, nil
 }
 
-func convertGroupMembers(members map[string]*sarama.GroupMemberDescription) ([]*GroupMemberDescription, error) {
+func convertGroupMembers(members map[string]*sarama.GroupMemberDescription, protocolType string) ([]*GroupMemberDescription, error) {
 	response := make([]*GroupMemberDescription, len(members))
 
 	counter := 0
 	for id, m := range members {
-		assignments, err := m.GetMemberAssignment()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to decode member assignments")
-		}
+		// MemberAssignments is a byte array which will be set by kafka clients. All clients which use protocol
+		// type "consumer" are supposed to follow a schema which we will try to parse below. If the protocol type
+		// is different we won't even try to deserialize the byte array as this will likely fail.
+		//
+		// Confluent's Schema registry for instance does not follow that schema and does therefore set a different
+		// protocol type.
+		// see: https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol
 
-		resultAssignments := make([]*GroupMemberAssignment, 0, len(assignments.Topics))
-		for topic, partitionIDs := range assignments.Topics {
-			sort.Slice(partitionIDs, func(i, j int) bool { return partitionIDs[i] < partitionIDs[j] })
-
-			a := &GroupMemberAssignment{
-				TopicName:    topic,
-				PartitionIDs: partitionIDs,
+		resultAssignments := make([]*GroupMemberAssignment, 0)
+		if protocolType == "consumer" {
+			assignments, err := m.GetMemberAssignment()
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to decode member assignments")
 			}
-			resultAssignments = append(resultAssignments, a)
+
+			for topic, partitionIDs := range assignments.Topics {
+				sort.Slice(partitionIDs, func(i, j int) bool { return partitionIDs[i] < partitionIDs[j] })
+
+				a := &GroupMemberAssignment{
+					TopicName:    topic,
+					PartitionIDs: partitionIDs,
+				}
+				resultAssignments = append(resultAssignments, a)
+			}
 		}
 
 		// Sort all assignments by topicname

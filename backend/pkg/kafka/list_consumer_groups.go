@@ -13,7 +13,7 @@ import (
 type GroupDescription struct {
 	GroupID      string                    `json:"groupId"`
 	State        string                    `json:"state"`
-	ProtocolType string                    `json:"-"`
+	ProtocolType string                    `json:"protocolType"`
 	Protocol     string                    `json:"-"`
 	Members      []*GroupMemberDescription `json:"members"`
 }
