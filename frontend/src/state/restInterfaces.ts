@@ -125,6 +125,7 @@ export interface ClusterInfoResponse {
 
 export interface UserData {
     UserName: string,
+    PictureUrl: string,
 }
 
 

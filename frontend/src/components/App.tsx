@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { observer } from "mobx-react"
-import { Layout, Menu, Icon, Select, PageHeader, Alert } from 'antd';
+import { Layout, Menu, Icon, Select, PageHeader, Alert, Button, Avatar } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, APP_ROUTES, RouteView, } from './routes';
 import { RenderTrap, Spacer } from './misc/common';
@@ -18,8 +18,10 @@ import Title from 'antd/lib/typography/Title';
 import logo from '../assets/logo.png';
 import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
+import { IsDevelopment } from '../utils/isProd';
+import { TopBar } from './misc/TopBar';
 
-const { Content, Footer, Sider } = Layout;
+const { Content, Footer, Sider, Header } = Layout;
 const { Option } = Select;
 
 let siderCollapsedWidth = 80;
@@ -56,10 +58,7 @@ const SideBar = observer(() =>
         {/* Version */}
         <div className='version'>
             <div className='repo'><a title="Visit Kafka-Owl's GitHub repository" href="https://github.com/kafka-owl/kafka-owl"><img src={gitHubLogo} /></a></div>
-            <div>{(window as any).VERSION} ({(window as any).COMMIT_SHA})</div>
-            <div>env.version = {process.env.VERSION}</div>
-            <div>nodeEnv = {process.env.NODE_ENV}</div>
-            <div>reactAppVersion = {process.env.REACT_APP_VERSION}</div>
+            <div>KafkaOwl - {(window as any).VERSION}</div>
         </div>
 
         {/* Toggle */}
@@ -78,20 +77,6 @@ const AppSide = observer(() => (
     </Sider>
 ))
 
-
-
-const ClusterSelect = observer(() =>
-    <Select<number>
-        value={uiSettings.selectedClusterIndex >= 0 ? uiSettings.selectedClusterIndex : undefined}
-        placeholder='Select Cluster'
-        style={{ width: 200 }}
-        onChange={(v) => { uiSettings.selectedClusterIndex = v }}
-    >
-        {api.Clusters.map((v, i) =>
-            <Option key={v} value={i}>{v}</Option>
-        )}
-    </Select>
-)
 
 
 const DataAgeInfo = observer(() => {
@@ -146,6 +131,7 @@ const AppPageHeader = observer(() => {
     </MotionDiv>
 });
 
+
 const PreviewBanner = () => {
 
     const timeUntilNotification = uiSettings.previewNotificationHideUntil - new Date().getTime();
@@ -182,10 +168,8 @@ const AppContent = observer(() =>
 
         <PreviewBanner />
 
-        {/* Cluster, User */}    {/* zIndex is needed for the boxShadow to show */}
-        {/* <Header style={{ height: 'auto', padding: '1em 1em', background: 'white', lineHeight: '2em', boxShadow: 'rgba(0, 0, 0, 0.2) 0em 0em 8px', zIndex: 10 }}>
-            <TitleBarContent />
-        </Header> */}
+        {/* Cluster, User */}
+        <TopBar />
 
         {/* Page */}
         <Content style={{ display: 'flex', flexDirection: 'column', overflow: 'overlay', overflowX: 'hidden', background: 'white', padding: '1em 2em', zIndex: 1 }}>

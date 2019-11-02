@@ -9,11 +9,12 @@
     <meta name="description" content="WebApp to explore Kafka Messages, Topics, ..." />
     <title>Kafka Owl</title>
     <script>
-        { // Don't leak stuff below into global scope
+        // Don't leak things below into global scope
+        {
             // Define server vars
             const vars = {
-                COMMIT_SHA: ['__COMMIT_SHA__', 'DEV'],
-                VERSION: ['__VERSION__', 'dev version'],
+                VERSION: ['__VERSION__', 'dev'],
+                EXTENDED_FEATURES: ['__EXTENDED_FEATURES__', 'false'],
             }
 
             // Set them on 'window' if
