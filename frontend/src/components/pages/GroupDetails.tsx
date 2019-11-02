@@ -49,7 +49,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
                 <Row type="flex" style={{ marginBottom: '1em' }}>
                     <Statistic title='State' valueRender={() => <GroupState group={group} />} style={{ marginRight: '2em' }} />
-                    <Statistic title='Consumers' value={group.members.length} />
+                    <Statistic title='Consumers' value={group.members.length} style={{ marginRight: '2em' }} />
+                    <ProtocolType group={group}/>
                 </Row>
 
                 <GroupMembers group={group} />
@@ -75,6 +76,12 @@ export const GroupState = (p: { group: GroupDescription }) => {
         {icon}
         <span> {p.group.state}</span>
     </>
+}
+const ProtocolType = (p: { group: GroupDescription }) => {
+    const protocol = p.group.protocolType;
+    if(protocol == 'consumer') return null;
+
+    return <Statistic title='Protocol' value={protocol} />
 }
 
 

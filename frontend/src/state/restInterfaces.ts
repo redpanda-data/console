@@ -77,25 +77,26 @@ export interface TopicConfigResponse {
 
 
 
-export class GroupMemberAssignment {
+export interface GroupMemberAssignment {
     topicName: string;
     partitionIds: number[];
 
 }
-export class GroupMemberDescription {
+export interface GroupMemberDescription {
     id: string; // unique ID assigned to the member after login
     clientId: string; // custom id reported by the member
     clientHost: string; // address/host of the connection
     assignments: GroupMemberAssignment[]; // topics+partitions that the worker is assigned to
 
 }
-export class GroupDescription {
+export interface GroupDescription {
     groupId: string; // name of the group
     state: string; // Dead, Initializing, Rebalancing, Stable
     members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
+    protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
 }
 
-export class GetConsumerGroupsResponse {
+export interface GetConsumerGroupsResponse {
     consumerGroups: GroupDescription[];
 }
 
