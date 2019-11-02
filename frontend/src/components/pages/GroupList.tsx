@@ -1,10 +1,10 @@
 import React from "react";
-import { Table, Empty, Skeleton, Row, Statistic } from "antd";
+import { Table, Empty, Skeleton, Row, Statistic, Tag } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
 import { PageComponent, PageInitHelper } from "./Page";
-import { GroupMemberDescription } from "../../state/restInterfaces";
+import { GroupMemberDescription, GroupDescription } from "../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
 import { makePaginationConfig, sortField } from "../misc/common";
@@ -56,11 +56,22 @@ class GroupList extends PageComponent {
                     rowKey={x => x.groupId}
                     columns={[
                         { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
-                        { title: 'ID', dataIndex: 'groupId', sorter: sortField('groupId') },
+                        { title: 'ID', dataIndex: 'groupId', sorter: sortField('groupId'), render: (t,r) => <this.GroupId group={r}/> },
                         { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
                     ]} />
             </motion.div>
         );
+    }
+
+    GroupId = (p: { group: GroupDescription }) => {
+        const protocol = p.group.protocolType;
+
+        if(protocol == 'consumer') return <>{p.group.groupId}</>;
+
+        return <>
+            <Tag>Protocol: {protocol}</Tag>
+            <span> {p.group.groupId}</span>
+        </>
     }
 
     skeleton = <>
