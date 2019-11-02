@@ -2,8 +2,8 @@ package api
 
 import (
 	"context"
-	"net/http"
 
+	"github.com/go-chi/chi"
 	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 )
 
@@ -15,8 +15,9 @@ type Hooks struct {
 
 // RouteHooks -
 type RouteHooks interface {
-	RegisterHandler(pattern string, h http.Handler) (string, http.Handler)
-	RegisterFunc(pattern string, h http.HandlerFunc) (string, http.HandlerFunc)
+	ConfigPublicRouter(router chi.Router)
+	ConfigAPIRouter(router chi.Router)
+	ConfigFrontendRouter(router chi.Router)
 }
 
 // TopicHooks -
@@ -39,12 +40,9 @@ func newEmptyHooks() *Hooks {
 }
 
 // Route
-func (*emptyHooks) RegisterHandler(pattern string, h http.Handler) (string, http.Handler) {
-	return pattern, h
-}
-func (*emptyHooks) RegisterFunc(pattern string, h http.HandlerFunc) (string, http.HandlerFunc) {
-	return pattern, h
-}
+func (*emptyHooks) ConfigPublicRouter(router chi.Router)   {}
+func (*emptyHooks) ConfigAPIRouter(router chi.Router)      {}
+func (*emptyHooks) ConfigFrontendRouter(router chi.Router) {}
 
 // Topic
 func (*emptyHooks) FilterTopics(ctx context.Context, topics []*kafka.TopicDetail) {}

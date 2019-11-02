@@ -19,11 +19,11 @@ func (api *API) getIndexFile(filePath string) ([]byte, error) {
 		return nil, err
 	}
 
-	// todo: when issues with github/quay are fixed, the version/sha should be baked into the frontend files during/after the build process, not here.
-	index = []byte(strings.Replace(string(index), "__COMMIT_SHA__", commitSha, 1))
-
 	if len(version) > 0 {
 		index = []byte(strings.Replace(string(index), "__VERSION__", version, 1))
+	}
+	if api.ExtendedFeatures {
+		index = []byte(strings.Replace(string(index), "__EXTENDED_FEATURES__", "true", 1))
 	}
 
 	return index, nil

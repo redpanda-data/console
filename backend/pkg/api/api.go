@@ -23,6 +23,8 @@ type API struct {
 	health     health.Health
 
 	hooks *Hooks
+
+	ExtendedFeatures bool // enable cluster select, user display, logout button, etc.
 }
 
 // Start the API server and block
