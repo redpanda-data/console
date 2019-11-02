@@ -9,7 +9,7 @@ require (
 	github.com/AppsFlyer/go-sundheit v0.0.11
 	github.com/DataDog/zstd v1.4.1 // indirect
 	github.com/InVisionApp/go-logger v1.0.1
-	github.com/Shopify/sarama v1.24.0
+	github.com/Shopify/sarama v1.24.1
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bxcodec/faker v2.0.1+incompatible
@@ -28,12 +28,10 @@ require (
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
-	github.com/klauspost/compress v1.8.6 // indirect
+	github.com/klauspost/compress v1.9.1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pty v1.1.8 // indirect
 	github.com/linkedin/goavro/v2 v2.9.7
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
@@ -48,11 +46,11 @@ require (
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.2.0 // indirect
 	go.uber.org/zap v1.10.0
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
+	golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf // indirect
 	golang.org/x/exp v0.0.0-20191014171548-69215a2ee97e // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/mobile v0.0.0-20191002175909-6d0d39b2ca82 // indirect
-	golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582 // indirect
+	golang.org/x/net v0.0.0-20191101175033-0deb6923b6d9 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20191018095205-727590c5006e // indirect
