@@ -122,13 +122,17 @@ const apiStore = {
     Errors: [] as any[],
 
 
-
     //
     // Helper methods
     get userName() {
         return this.UserData
             ? this.UserData.UserName
             : 'UserName'
+    },
+    get pictureUrl() {
+        return this.UserData
+            ? this.UserData.PictureUrl
+            : ''
     },
 
 
