@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/Shopify/sarama"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -86,7 +85,7 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 				groupsCh = nil
 				break
 			}
-			converted, err := convertSaramaGroupDescriptions(d)
+			converted, err := convertSaramaGroupDescriptions(s.Logger, d)
 			if err != nil {
 				return nil, err
 			}
@@ -109,14 +108,14 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 	return descriptions, nil
 }
 
-func convertSaramaGroupDescriptions(descriptions []*sarama.GroupDescription) ([]*GroupDescription, error) {
+func convertSaramaGroupDescriptions(logger *zap.Logger, descriptions []*sarama.GroupDescription) ([]*GroupDescription, error) {
 	response := make([]*GroupDescription, len(descriptions))
 	for i, d := range descriptions {
 		if d.Err != sarama.ErrNoError {
 			return nil, d.Err
 		}
 
-		members, err := convertGroupMembers(d.Members, d.ProtocolType)
+		members, err := convertGroupMembers(logger, d.Members, d.ProtocolType)
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +131,7 @@ func convertSaramaGroupDescriptions(descriptions []*sarama.GroupDescription) ([]
 	return response, nil
 }
 
-func convertGroupMembers(members map[string]*sarama.GroupMemberDescription, protocolType string) ([]*GroupMemberDescription, error) {
+func convertGroupMembers(logger *zap.Logger, members map[string]*sarama.GroupMemberDescription, protocolType string) ([]*GroupMemberDescription, error) {
 	response := make([]*GroupMemberDescription, len(members))
 
 	counter := 0
@@ -149,7 +148,7 @@ func convertGroupMembers(members map[string]*sarama.GroupMemberDescription, prot
 		if protocolType == "consumer" {
 			assignments, err := m.GetMemberAssignment()
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to decode member assignments")
+				logger.Warn("failed to decode member assignments", zap.String("client_id", m.ClientId), zap.Error(err))
 			}
 
 			for topic, partitionIDs := range assignments.Topics {
