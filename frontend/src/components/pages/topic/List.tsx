@@ -75,8 +75,8 @@ class TopicList extends PageComponent {
                     columns={[
                         { title: 'Name', dataIndex: 'topicName', sorter: sortField('topicName') },
                         { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
-                        { title: 'Replication', dataIndex: 'replicationFactor', width: 1 },
-                        { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1 },
+                        { title: 'Replication', dataIndex: 'replicationFactor', width: 1, className: 'noLineBreak' },
+                        { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1, className: 'noLineBreak' },
                     ]} />
             </motion.div>
         );
