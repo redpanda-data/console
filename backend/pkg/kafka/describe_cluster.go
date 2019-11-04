@@ -28,7 +28,10 @@ func (s *Service) DescribeCluster() (*ClusterInfo, error) {
 		return nil, err
 	}
 
-	req := &sarama.MetadataRequest{Topics: []string{}}
+	req := &sarama.MetadataRequest{
+		Version: 1, // Version 1 is required to fetch the ControllerID & RackID
+		Topics:  []string{},
+	}
 	response, err := controller.GetMetadata(req)
 	if err != nil {
 		s.Logger.Error("failed to get cluster metadata from client", zap.Error(err))
@@ -48,7 +51,7 @@ func (s *Service) DescribeCluster() (*ClusterInfo, error) {
 	})
 
 	return &ClusterInfo{
-		ControllerID: controller.ID(),
+		ControllerID: response.ControllerID,
 		Brokers:      brokers,
 	}, nil
 }
