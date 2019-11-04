@@ -3,7 +3,6 @@ package kafka
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
@@ -32,7 +31,7 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 	}
 
 	// 2. Refresh metadata to ensure we get an up to date list of available topics
-	metadata, err := broker.GetMetadata(&sarama.MetadataRequest{})
+	metadata, err := broker.GetMetadata(&sarama.MetadataRequest{Version: 1})
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +50,7 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 		topicsByName[topic.Name] = &TopicDetail{
 			TopicName:         topic.Name,
 			PartitionCount:    len(topic.Partitions),
-			IsInternal:        topic.IsInternal || strings.HasPrefix(topic.Name, "_"),
+			IsInternal:        topic.IsInternal,
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
 		}
 
