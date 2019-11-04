@@ -284,3 +284,7 @@ span>.icon-container~span {
 .ant-table-column-title {
     white-space: nowrap;
 }
+
+.noLineBreak {
+    white-space: nowrap;
+}
