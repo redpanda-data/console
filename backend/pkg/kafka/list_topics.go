@@ -63,7 +63,6 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 
 	// 4. Get topics' config entries
 	describeConfigsReq := &sarama.DescribeConfigsRequest{
-		// TODO: Use version 1 if Kafka version allows so. Otherwise IsInternal is not used
 		Resources: describeCfgResources,
 	}
 	describeConfigsResp, err := broker.DescribeConfigs(describeConfigsReq)
