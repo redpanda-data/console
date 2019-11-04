@@ -9,29 +9,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// GroupDescription for a Kafka Consumer Group
-type GroupDescription struct {
-	GroupID      string                    `json:"groupId"`
-	State        string                    `json:"state"`
-	ProtocolType string                    `json:"protocolType"`
-	Protocol     string                    `json:"-"`
-	Members      []*GroupMemberDescription `json:"members"`
-}
-
-// GroupMemberDescription is a member (e. g. connected host) of a Consumer Group
-type GroupMemberDescription struct {
-	ID          string                   `json:"id"`
-	ClientID    string                   `json:"clientId"`
-	ClientHost  string                   `json:"clientHost"`
-	Assignments []*GroupMemberAssignment `json:"assignments"`
-}
-
-// GroupMemberAssignment represents a partition assignment for a group member
-type GroupMemberAssignment struct {
-	TopicName    string  `json:"topicName"`
-	PartitionIDs []int32 `json:"partitionIds"`
-}
-
 // ListConsumerGroups returns an array of consumer group ids
 func (s *Service) ListConsumerGroups(ctx context.Context) ([]string, error) {
 	// Query all brokers in the cluster in parallel in order to get all Consumer Groups
