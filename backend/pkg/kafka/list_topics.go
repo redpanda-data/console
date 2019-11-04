@@ -21,7 +21,6 @@ type TopicDetail struct {
 // ListTopics returns a List of all topics in a kafka cluster.
 // Each topic entry contains details like ReplicationFactor, Cleanup Policy
 func (s *Service) ListTopics() ([]*TopicDetail, error) {
-	//
 	// 1. Connect to random broker
 	broker, err := s.findAnyBroker()
 	if err != nil {
@@ -32,14 +31,12 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 		s.Logger.Warn("opening the broker connection failed", zap.Error(err))
 	}
 
-	//
 	// 2. Refresh metadata to ensure we get an up to date list of available topics
 	metadata, err := broker.GetMetadata(&sarama.MetadataRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	//
 	// 3. Create config resources request objects for all topics
 	topicsByName := make(map[string]*TopicDetail, len(metadata.Topics))
 	describeCfgResources := make([]*sarama.ConfigResource, len(metadata.Topics))
