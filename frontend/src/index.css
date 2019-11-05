@@ -281,10 +281,10 @@ span>.icon-container~span {
     padding: 1em 2em;
 }
 
-.ant-table-column-title {
+.ant-table {
     white-space: nowrap;
 }
 
-.noLineBreak {
-    white-space: nowrap;
+.whiteSpaceDefault {
+    white-space: normal;
 }

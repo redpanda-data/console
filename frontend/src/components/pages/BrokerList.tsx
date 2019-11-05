@@ -46,7 +46,7 @@ class BrokerList extends PageComponent {
         let hasRack = brokers.any(b => b.rack ? true : false);
 
         const columns: ColumnProps<Broker>[] = [
-            { title: 'ID', dataIndex: 'brokerId' },
+            { title: 'ID', dataIndex: 'brokerId', width: 1 },
             { title: 'Address', dataIndex: 'address' },
             (uiSettings.brokerList.hideEmptyColumns && !hasRack) ? null : { title: 'Rack', dataIndex: 'rack', width: 1 },
         ].filter(c => c != null).map(c => c!);
