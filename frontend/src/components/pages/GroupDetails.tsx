@@ -50,7 +50,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 <Row type="flex" style={{ marginBottom: '1em' }}>
                     <Statistic title='State' valueRender={() => <GroupState group={group} />} style={{ marginRight: '2em' }} />
                     <Statistic title='Consumers' value={group.members.length} style={{ marginRight: '2em' }} />
-                    <ProtocolType group={group}/>
+                    <ProtocolType group={group} />
                 </Row>
 
                 <GroupMembers group={group} />
@@ -79,7 +79,7 @@ export const GroupState = (p: { group: GroupDescription }) => {
 }
 const ProtocolType = (p: { group: GroupDescription }) => {
     const protocol = p.group.protocolType;
-    if(protocol == 'consumer') return null;
+    if (protocol == 'consumer') return null;
 
     return <Statistic title='Protocol' value={protocol} />
 }
@@ -96,11 +96,11 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
         pagination={pageConfig}
         dataSource={p.group.members}
         rowKey={r => r.id}
-        rowClassName={() => 'pureDisplayRow'}
+        rowClassName={() => 'pureDisplayRow whiteSpaceDefault'}
         columns={[
             { title: <span>ID</span>, dataIndex: 'id' },
-            { title: 'ClientID', dataIndex: 'clientId' },
-            { width: 1, title: 'Client Host', dataIndex: 'clientHost' },
+            { width: '150px', title: 'ClientID', dataIndex: 'clientId' },
+            { width: '150px', title: 'Client Host', dataIndex: 'clientHost' },
             { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t) },
         ]} />
 })

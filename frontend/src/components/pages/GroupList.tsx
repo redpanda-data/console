@@ -56,7 +56,7 @@ class GroupList extends PageComponent {
                     rowKey={x => x.groupId}
                     columns={[
                         { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
-                        { title: 'ID', dataIndex: 'groupId', sorter: sortField('groupId'), render: (t,r) => <this.GroupId group={r}/> },
+                        { title: 'ID', dataIndex: 'groupId', sorter: sortField('groupId'), render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault' },
                         { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
                     ]} />
             </motion.div>
@@ -66,7 +66,7 @@ class GroupList extends PageComponent {
     GroupId = (p: { group: GroupDescription }) => {
         const protocol = p.group.protocolType;
 
-        if(protocol == 'consumer') return <>{p.group.groupId}</>;
+        if (protocol == 'consumer') return <>{p.group.groupId}</>;
 
         return <>
             <Tag>Protocol: {protocol}</Tag>

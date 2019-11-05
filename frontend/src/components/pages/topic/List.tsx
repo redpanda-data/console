@@ -62,7 +62,7 @@ class TopicList extends PageComponent {
                 <SearchBar<TopicDetail> dataSource={this.getTopics} isFilterMatch={this.isFilterMatch} ref={this.searchBar} />
 
                 <Table
-                    style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
+                    style={{ margin: '0', padding: '0' }} bordered={true} size='middle'
                     onRow={(record) =>
                         ({
                             onClick: () => appGlobal.history.push('/topics/' + record.topicName),
@@ -73,10 +73,10 @@ class TopicList extends PageComponent {
                     dataSource={data}
                     rowKey={x => x.topicName}
                     columns={[
-                        { title: 'Name', dataIndex: 'topicName', sorter: sortField('topicName') },
+                        { title: 'Name', dataIndex: 'topicName', sorter: sortField('topicName'), className: 'whiteSpaceDefault' },
                         { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
-                        { title: 'Replication', dataIndex: 'replicationFactor', width: 1, className: 'noLineBreak' },
-                        { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1, className: 'noLineBreak' },
+                        { title: 'Replication', dataIndex: 'replicationFactor', width: 1 },
+                        { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1 },
                     ]} />
             </motion.div>
         );
