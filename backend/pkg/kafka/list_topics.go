@@ -15,6 +15,7 @@ type TopicDetail struct {
 	PartitionCount    int    `json:"partitionCount"`
 	ReplicationFactor int    `json:"replicationFactor"`
 	CleanupPolicy     string `json:"cleanupPolicy"`
+	LogDirSize        int64  `json:"logDirSize"`
 }
 
 // ListTopics returns a List of all topics in a kafka cluster.
@@ -36,6 +37,12 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 		return nil, err
 	}
 
+	// 3. Get log dir sizes for each topic
+	sizeByTopic, err := s.logDirSizeByTopic()
+	if err != nil {
+		return nil, err
+	}
+
 	// 3. Create config resources request objects for all topics
 	topicsByName := make(map[string]*TopicDetail, len(metadata.Topics))
 	describeCfgResources := make([]*sarama.ConfigResource, len(metadata.Topics))
@@ -47,11 +54,17 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 			return nil, topic.Err
 		}
 
+		size := int64(-1)
+		if value, ok := sizeByTopic[topic.Name]; ok {
+			size = value
+		}
+
 		topicsByName[topic.Name] = &TopicDetail{
 			TopicName:         topic.Name,
 			PartitionCount:    len(topic.Partitions),
 			IsInternal:        topic.IsInternal,
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
+			LogDirSize:        size,
 		}
 
 		describeCfgResources[i] = &sarama.ConfigResource{

@@ -15,9 +15,10 @@ type ClusterInfo struct {
 
 // Broker described by some basic broker properties
 type Broker struct {
-	BrokerID int32  `json:"brokerId"`
-	Address  string `json:"address"`
-	Rack     string `json:"rack"`
+	BrokerID   int32  `json:"brokerId"`
+	LogDirSize int64  `json:"logDirSize"`
+	Address    string `json:"address"`
+	Rack       string `json:"rack"`
 }
 
 // DescribeCluster returns some general information about the brokers in the given cluster
@@ -38,12 +39,18 @@ func (s *Service) DescribeCluster() (*ClusterInfo, error) {
 		return nil, err
 	}
 
+	sizeByBroker, err := s.logDirSizeByBroker()
+	if err != nil {
+		return nil, err
+	}
+
 	brokers := make([]*Broker, len(response.Brokers))
 	for i, broker := range response.Brokers {
 		brokers[i] = &Broker{
-			BrokerID: broker.ID(),
-			Address:  broker.Addr(),
-			Rack:     broker.Rack(),
+			BrokerID:   broker.ID(),
+			LogDirSize: sizeByBroker[broker.ID()],
+			Address:    broker.Addr(),
+			Rack:       broker.Rack(),
 		}
 	}
 	sort.Slice(brokers, func(i, j int) bool {
