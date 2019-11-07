@@ -34,7 +34,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     @observable requestInProgress = false;
     @observable searchParams: TopicMessageSearchParameters = {
         _offsetMode: TopicMessageOffset.End,
-        startOffset: -1, partitionID: 0, pageSize: 50,
+        startOffset: -1, partitionID: -1, pageSize: 50,
         sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset
     };
     @observable previewDisplay: string[] = [];
@@ -98,9 +98,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     }
 
     isFilterMatch(str: string, m: TopicMessage) {
-        if (m.offset.toString().includes(str)) return true;
-        if (m.key && m.key.includes(str)) return true;
-        if (m.valueJson && m.valueJson.includes(str)) return true;
+        str = str.toLowerCase();
+        if (m.offset.toString().toLowerCase().includes(str)) return true;
+        if (m.key && m.key.toLowerCase().includes(str)) return true;
+        if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
         return false;
     }
 
