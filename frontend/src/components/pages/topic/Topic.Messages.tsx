@@ -170,7 +170,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
                     bordered={true} size='small'
                     pagination={this.pageConfig}
-                    onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize } }}
+                    onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize;  this.pageConfig.pageSize = x.pageSize; } }}
                     dataSource={this.messageSource.data}
                     loading={this.requestInProgress}
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
