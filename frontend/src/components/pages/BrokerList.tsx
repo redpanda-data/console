@@ -47,10 +47,10 @@ class BrokerList extends PageComponent {
         let hasRack = brokers.any(b => b.rack ? true : false);
 
         const columns: ColumnProps<Broker>[] = [
-            { title: 'ID', dataIndex: 'brokerId', width: 1 },
+            { title: 'ID', dataIndex: 'brokerId', width: '100px' },
             { title: 'Address', dataIndex: 'address' },
             { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytes(t), width: '140px' },
-            (uiSettings.brokerList.hideEmptyColumns && !hasRack) ? null : { title: 'Rack', dataIndex: 'rack', width: 1 },
+            (uiSettings.brokerList.hideEmptyColumns && !hasRack) ? null : { title: 'Rack', dataIndex: 'rack', width: '100px' },
         ].filter(c => c != null).map(c => c!);
 
         return <>
