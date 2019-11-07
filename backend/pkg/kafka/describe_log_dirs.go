@@ -98,7 +98,7 @@ func (s *Service) describeLogDirs() (map[int32]LogDir, error) {
 		}
 		for _, dir := range r.Res.LogDirs {
 			if dir.ErrorCode != sarama.ErrNoError {
-				return nil, fmt.Errorf("LogDir request has failed with error code '%v'", dir.ErrorCode)
+				return nil, fmt.Errorf("LogDir request has failed with error code '%v' - %s", dir.ErrorCode, dir.ErrorCode.Error())
 			}
 
 			for _, topic := range dir.Topics {
