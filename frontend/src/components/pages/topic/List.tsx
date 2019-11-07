@@ -11,6 +11,7 @@ import { appGlobal } from "../../../state/appGlobal";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { TopicDetail } from "../../../state/restInterfaces";
 import { observable } from "mobx";
+import prettyBytes from "pretty-bytes";
 const { Text } = Typography
 
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
@@ -77,6 +78,7 @@ class TopicList extends PageComponent {
                         { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
                         { title: 'Replication', dataIndex: 'replicationFactor', width: 1 },
                         { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1 },
+                        { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytes(t), sorter: (a, b) => a.logDirSize - b.logDirSize, width: '140px' },
                     ]} />
             </motion.div>
         );

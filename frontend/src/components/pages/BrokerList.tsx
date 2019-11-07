@@ -10,6 +10,7 @@ import { Broker } from "../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
 import { observable } from "mobx";
+import prettyBytes from "pretty-bytes";
 
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -48,6 +49,7 @@ class BrokerList extends PageComponent {
         const columns: ColumnProps<Broker>[] = [
             { title: 'ID', dataIndex: 'brokerId', width: 1 },
             { title: 'Address', dataIndex: 'address' },
+            { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytes(t), width: '140px' },
             (uiSettings.brokerList.hideEmptyColumns && !hasRack) ? null : { title: 'Rack', dataIndex: 'rack', width: 1 },
         ].filter(c => c != null).map(c => c!);
 

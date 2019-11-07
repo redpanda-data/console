@@ -6,6 +6,7 @@ export class TopicDetail {
     partitionCount: number;
     replicationFactor: number;
     cleanupPolicy: string;
+    logDirSize: number; // how much space this topic takes up (files in its log dir)
 
     // Added by frontend
     // messageCount: number;
@@ -115,6 +116,7 @@ export interface Broker {
 export interface ClusterInfo {
     controllerId: number;
     brokers: Broker[];
+    logDirSize: number; // bytes of the whole directory
 }
 
 export interface ClusterInfoResponse {
