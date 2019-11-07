@@ -70,7 +70,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         return (
             <motion.div {...animProps} key={'b'}>
                 {/* QuickInfo */}
-                <TopicQuickInfoStatistic config={topicConfig} />
+                <TopicQuickInfoStatistic config={topicConfig}  size={topic.logDirSize}/>
 
                 {/* Tabs:  Messages, Configuration */}
                 <Tabs style={{ overflow: 'visible' }} animated={false}
