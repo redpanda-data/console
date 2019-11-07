@@ -1,4 +1,4 @@
-import { Component, ReactNode } from "react";
+import { Component, ReactNode, CSSProperties } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
 import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
@@ -27,12 +27,17 @@ const { Text } = Typography;
 const { Option } = Select;
 const InputGroup = Input.Group;
 
+const statsStyle: CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
+
 // todo: rename QuickInfo
-export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[] }) =>
+export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[], size: number }) =>
     <Row type="flex" style={{ marginBottom: '1em' }}>
+
+        <Statistic title='Size' value={prettyBytes(p.size)} style={statsStyle}/>
+
         {p.config.filter(e => uiState.topicDetails.favConfigEntries.includes(e.name)).map((e) =>
             FavoritePopover(e, (
-                <div style={{ margin: 0, marginRight: '2em', padding: '.2em' }}>
+                <div style={statsStyle}>
                     <Statistic title={(e.name)} value={FormatValue(e)} />
                 </div>
             ))
