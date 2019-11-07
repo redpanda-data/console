@@ -23,6 +23,7 @@
                 const defaultVal = vars[name][1];
                 const value = injected.startsWith('__') && injected.endsWith('__') ? defaultVal : injected;
                 window[name] = value;
+                console.log('['+name+']: ' + value);
             }
         }
     </script>
