@@ -31,7 +31,7 @@ type Config struct {
 // RegisterFlags registers all nested config flags.
 func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	f.Var(&c.Brokers, "kafka.brokers", "Kafka Broker addresses (comma separated)")
-	f.StringVar(&c.KafkaVersion, "kafka.version", "0.11.0.2", "The kafka cluster's version (e. g. \"2.3.0\")")
+	f.StringVar(&c.KafkaVersion, "kafka.version", "1.0.0", "The kafka cluster's version (e. g. \"2.3.0\")")
 	f.StringVar(&c.ClientID, "kafka.client-id", "kafka-owl", "ClientID to identify the consumer")
 
 	// TLS
