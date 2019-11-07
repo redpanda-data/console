@@ -39,7 +39,6 @@ Kubernetes users may want to use the Helm chart to deploy Kafka owl: https://git
 | --server.http.idle-timeout | Idle timeout for HTTP server | 120s |
 | --logging.level | Log granularity (debug, info, warn, error, fatal, panic) | info |
 | --kafka.brokers | Array of broker addresses, delimited by comma (e. g. "kafka-1:9092, kafka-2:9092") | (No default) |
-| --kafka.version | The kafka cluster's version (e. g. \"2.3.0\") | "0.11.0.2" |
 | --kafka.client-id | ClientID to identify the consumer | "kafka-owl" |
 | --kafka.sasl.enabled | Bool to enable/disable SASL authentication (only SASL_PLAINTEXT is supported) | false |
 | --kafka.sasl.use-handshake | Whether or not to send the Kafka SASL handshake first | true |
