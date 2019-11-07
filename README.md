@@ -1,9 +1,6 @@
 # Kafka Owl
 
-![License](https://img.shields.io/github/license/cloudworkz/kafka-minion.svg?color=blue)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kafka-owl/kafka-owl)](https://goreportcard.com/report/github.com/kafka-owl/kafka-owl)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kafka-owl/kafka-owl?sort=semver)
-[![Docker Repository on Quay](https://quay.io/repository/kafka-owl/kafka-owl/status "Docker Repository on Quay")](https://quay.io/repository/kafka-owl/kafka-owl)
+![License](https://img.shields.io/github/license/cloudworkz/kafka-minion.svg?color=blue) [![Go Report Card](https://goreportcard.com/badge/github.com/kafka-owl/kafka-owl)](https://goreportcard.com/report/github.com/kafka-owl/kafka-owl) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kafka-owl/kafka-owl?sort=semver) [![Docker Repository on Quay](https://quay.io/repository/kafka-owl/kafka-owl/status "Docker Repository on Quay")](https://quay.io/repository/kafka-owl/kafka-owl)
 
 Kafka Owl is a Web UI which helps you to explore messages in your cluster's topics in the most comfortable way.
 
@@ -11,7 +8,7 @@ Kafka Owl is a Web UI which helps you to explore messages in your cluster's topi
 
 ## Features
 
-- [x] Supports Kafka 0.11.0.2 - 2.3.x (last updated 15th Oct 2019)
+- [x] Supports Kafka 1.0.0+
 - [x] Fetch messages from Kafka Topics so that they can be comfortably previewed (JSON, XML, Text, Binary)
 - [x] Show Topic configuration with highlighted rows which have been modified
 - [x] List all Topics' Low & High Watermarks
@@ -42,7 +39,6 @@ Kubernetes users may want to use the Helm chart to deploy Kafka owl: https://git
 | --server.http.idle-timeout | Idle timeout for HTTP server | 120s |
 | --logging.level | Log granularity (debug, info, warn, error, fatal, panic) | info |
 | --kafka.brokers | Array of broker addresses, delimited by comma (e. g. "kafka-1:9092, kafka-2:9092") | (No default) |
-| --kafka.version | The kafka cluster's version (e. g. \"2.3.0\") | "0.11.0.2" |
 | --kafka.client-id | ClientID to identify the consumer | "kafka-owl" |
 | --kafka.sasl.enabled | Bool to enable/disable SASL authentication (only SASL_PLAINTEXT is supported) | false |
 | --kafka.sasl.use-handshake | Whether or not to send the Kafka SASL handshake first | true |
