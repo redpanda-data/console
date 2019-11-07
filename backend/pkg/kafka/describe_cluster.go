@@ -46,9 +46,14 @@ func (s *Service) DescribeCluster() (*ClusterInfo, error) {
 
 	brokers := make([]*Broker, len(response.Brokers))
 	for i, broker := range response.Brokers {
+		size := int64(-1)
+		if value, ok := sizeByBroker[broker.ID()]; ok {
+			size = value
+		}
+
 		brokers[i] = &Broker{
 			BrokerID:   broker.ID(),
-			LogDirSize: sizeByBroker[broker.ID()],
+			LogDirSize: size,
 			Address:    broker.Addr(),
 			Rack:       broker.Rack(),
 		}
