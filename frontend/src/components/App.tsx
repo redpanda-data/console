@@ -166,7 +166,7 @@ const AppContent = observer(() =>
 
         <RenderTrap name='AppContentLayout' />
 
-        <PreviewBanner />
+        {/* <PreviewBanner /> */}
 
         {/* Cluster, User */}
         <TopBar />
