@@ -96,12 +96,12 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
         pagination={pageConfig}
         dataSource={p.group.members}
         rowKey={r => r.id}
-        rowClassName={() => 'pureDisplayRow whiteSpaceDefault'}
+        rowClassName={() => 'pureDisplayRow'}
         columns={[
-            { title: <span>ID</span>, dataIndex: 'id' },
+            { title: <span>ID</span>, dataIndex: 'id', className:'whiteSpaceDefault' },
             { width: '150px', title: 'ClientID', dataIndex: 'clientId' },
             { width: '150px', title: 'Client Host', dataIndex: 'clientHost' },
-            { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t) },
+            { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t), className:'whiteSpaceDefault' },
         ]} />
 })
 
