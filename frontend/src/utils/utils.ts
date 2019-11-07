@@ -1,5 +1,6 @@
 import React, { memo, ReactNode, PureComponent, FunctionComponent, ReactElement, Component, Fragment, ReactNodeArray } from "react";
 import { observable } from "mobx";
+import prettyBytes from "pretty-bytes";
 
 
 
@@ -351,5 +352,8 @@ export function groupConsecutive(ar: number[]): number[][] {
     return groups;
 }
 
-
+export const prettyBytesOrNA = function(n: number) {
+    if(n == -1) return "N/A";
+    return prettyBytes(n);
+}
 
