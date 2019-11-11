@@ -19,8 +19,8 @@ func (api *API) getIndexFile(filePath string) ([]byte, error) {
 		return nil, err
 	}
 
-	if len(version) > 0 {
-		index = []byte(strings.Replace(string(index), "__VERSION__", version, 1))
+	if len(api.Version) > 0 {
+		index = []byte(strings.Replace(string(index), "__VERSION__", api.Version, 1))
 	}
 	if api.ExtendedFeatures {
 		index = []byte(strings.Replace(string(index), "__EXTENDED_FEATURES__", "true", 1))
