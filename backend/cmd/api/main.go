@@ -13,7 +13,6 @@ func main() {
 	flagext.RegisterFlags(cfg)
 	flag.Parse()
 
-	build := api.NewAPIBuilder(cfg)
-	api := build.Build()
+	api := api.New(cfg)
 	api.Start()
 }
