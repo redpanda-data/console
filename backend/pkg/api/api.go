@@ -71,7 +71,7 @@ func (api *API) Start() {
 	api.KafkaSvc.Start()
 
 	// Start automatic health checks that will be reported on our '/health' route
-	// TODO: we should wait until the connection to all brokers is established
+	// TODO: Implement startup/readiness/liveness probe, might be blocked by: https://github.com/AppsFlyer/go-sundheit/issues/16
 	api.health = health.New()
 	api.health.WithLogger(newZapShim(api.Logger.With(zap.String("source", "health"))))
 
