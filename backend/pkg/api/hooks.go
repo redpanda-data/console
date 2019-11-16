@@ -7,7 +7,9 @@ import (
 	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 )
 
-// Hooks -
+// Hooks are a way to extend the Kafka Owl functionality from the outside. By default all hooks have no
+// additional functionality. In order to run your own Hooks you must construct an Hooks instance and
+// run your own instance of api.
 type Hooks struct {
 	Route RouteHooks
 	Topic TopicHooks
@@ -15,7 +17,6 @@ type Hooks struct {
 
 // RouteHooks -
 type RouteHooks interface {
-	ConfigPublicRouter(router chi.Router)
 	ConfigAPIRouter(router chi.Router)
 	ConfigFrontendRouter(router chi.Router)
 }
@@ -25,9 +26,7 @@ type TopicHooks interface {
 	FilterTopics(ctx context.Context, topics []*kafka.TopicDetail)
 }
 
-//
 // Empty Hooks
-//
 type emptyHooks struct {
 }
 
