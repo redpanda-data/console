@@ -39,15 +39,18 @@ func (api *API) routes() *chi.Mux {
 	rootRouter.Use(instrument.Wrap)
 	rootRouter.Use(chimiddleware.Timeout(15 * time.Second))
 
-	// Public routes
-	rootRouter.Group(func(r chi.Router) {
-		api.hooks.Route.ConfigPublicRouter(r)
+	if api.cfg.Logger.PrintAccessLogs {
+		a := middleware.NewAccessLog(api.Logger)
+		rootRouter.Use(a.Wrap)
+	}
 
-		// Admin routes - only accessible from within Kubernetes or a protected ingress
+	// Private routes - these should only be accessible from within Kubernetes or a protected ingress
+	rootRouter.Group(func(r chi.Router) {
 		r.Route("/admin", func(r chi.Router) {
 			r.Handle("/metrics", promhttp.Handler())
 			r.Handle("/health", healthhttp.HandleHealthJSON(api.health))
 		})
+
 		// Path must be prefixed with /debug otherwise it will be overriden, see: https://golang.org/pkg/net/http/pprof/
 		r.Mount("/debug", chimiddleware.Profiler())
 	})
