@@ -1,7 +1,6 @@
 package api
 
 import (
-	"os"
 	"path/filepath"
 	"time"
 
@@ -71,14 +70,12 @@ func (api *API) routes() *chi.Mux {
 		dir, err := filepath.Abs("./build")
 		if err != nil {
 			api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", dir), zap.Error(err))
-			os.Exit(1)
 		}
 
 		// SPA Files
 		index, err := api.getIndexFile(dir)
 		if err != nil {
 			api.Logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
-			os.Exit(1)
 		}
 		router.Group(func(r chi.Router) {
 			api.hooks.Route.ConfigFrontendRouter(r)
