@@ -90,13 +90,13 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 
 	// 3. Fetch all group description responses and convert them so that they match our desired response format
 	descriptions := make([]*GroupDescription, 0)
-
+Loop:
 	for {
 		select {
 		case d, ok := <-resCh:
 			if !ok {
 				// If channel has been closed we're done, so let's exit the loop
-				goto Exit
+				break Loop
 			}
 			if d.Err != nil {
 				return nil, fmt.Errorf("broker with id '%v' failed to describe the consumer groups: %v", d.BrokerID, d.Err)
@@ -112,7 +112,6 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 			return nil, fmt.Errorf("context has been cancelled")
 		}
 	}
-Exit:
 
 	sort.Slice(descriptions, func(i, j int) bool { return descriptions[i].GroupID < descriptions[j].GroupID })
 
