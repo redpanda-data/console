@@ -50,59 +50,70 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 	}
 
 	// 2. Describe groups in bulk for each broker
-	errCh := make(chan error)
-	groupsCh := make(chan []*sarama.GroupDescription)
+	type response struct {
+		Err      error
+		Groups   []*sarama.GroupDescription
+		BrokerID int32
+	}
+	resCh := make(chan response, len(groupsByBrokerID))
 	wg := sync.WaitGroup{}
+
 	for id, groups := range groupsByBrokerID {
 		b := brokersByID[id]
-		wg.Add(1)
 
+		wg.Add(1)
 		go func(broker *sarama.Broker, grps []string) {
 			defer wg.Done()
 
 			req := &sarama.DescribeGroupsRequest{Groups: grps}
-			response, err := broker.DescribeGroups(req)
+			r, err := broker.DescribeGroups(req)
 			if err != nil {
-				errCh <- err
+				resCh <- response{
+					Err:      err,
+					Groups:   nil,
+					BrokerID: b.ID(),
+				}
 				return
 			}
-			groupsCh <- response.Groups
+			resCh <- response{
+				Err:      nil,
+				Groups:   r.Groups,
+				BrokerID: b.ID(),
+			}
 		}(b, groups)
 	}
 
 	go func() {
 		wg.Wait()
-		close(groupsCh)
-		close(errCh)
+		close(resCh)
 	}()
 
 	// 3. Fetch all group description responses and convert them so that they match our desired response format
 	descriptions := make([]*GroupDescription, 0)
+
 	for {
 		select {
-		case d, ok := <-groupsCh:
+		case d, ok := <-resCh:
 			if !ok {
-				groupsCh = nil
-				break
+				// If channel has been closed we're done, so let's exit the loop
+				goto Exit
 			}
-			converted, err := convertSaramaGroupDescriptions(s.Logger, d)
+			if d.Err != nil {
+				return nil, fmt.Errorf("broker with id '%v' failed to describe the consumer groups: %v", d.BrokerID, d.Err)
+			}
+
+			converted, err := convertSaramaGroupDescriptions(s.Logger, d.Groups)
 			if err != nil {
 				return nil, err
 			}
 			descriptions = append(descriptions, converted...)
-		case err, ok := <-errCh:
-			if ok {
-				return nil, fmt.Errorf("one of the brokers failed to describe the consumer groups: %v", err)
-			}
 		case <-ctx.Done():
 			s.Logger.Error("context has been cancelled", zap.String("method", "list_consumer_groups"))
 			return nil, fmt.Errorf("context has been cancelled")
 		}
-
-		if groupsCh == nil {
-			break
-		}
 	}
+Exit:
+
 	sort.Slice(descriptions, func(i, j int) bool { return descriptions[i].GroupID < descriptions[j].GroupID })
 
 	return descriptions, nil
