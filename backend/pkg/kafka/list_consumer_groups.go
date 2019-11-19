@@ -56,12 +56,13 @@ func (s *Service) ListConsumerGroups(ctx context.Context) ([]string, error) {
 
 	// Fetch all groupIDs from channels until channels are closed or context is Done
 	groupIDs := make([]string, 0)
+Loop:
 	for {
 		select {
 		case res, ok := <-resCh:
 			if !ok {
 				// If channel has been closed we're done, so let's exit the loop
-				goto Exit
+				break Loop
 			}
 			if res.Err != nil {
 				return nil, fmt.Errorf("broker with id '%v' failed to return a list of consumer groups: %v", res.BrokerID, res.Err)
@@ -75,7 +76,6 @@ func (s *Service) ListConsumerGroups(ctx context.Context) ([]string, error) {
 			return nil, fmt.Errorf("context has been cancelled")
 		}
 	}
-Exit:
 
 	return groupIDs, nil
 }
