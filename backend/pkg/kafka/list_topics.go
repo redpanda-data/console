@@ -70,7 +70,7 @@ func (s *Service) ListTopics() ([]*TopicDetail, error) {
 		describeCfgResources[i] = &sarama.ConfigResource{
 			Type:        sarama.TopicResource,
 			Name:        topic.Name,
-			ConfigNames: []string{"cleanup.policy"}, // todo: allow frontend to specify entries
+			ConfigNames: []string{"cleanup.policy"},
 		}
 	}
 

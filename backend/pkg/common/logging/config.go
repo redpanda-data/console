@@ -10,14 +10,16 @@ import (
 
 // Config for a zap logger
 type Config struct {
-	LogLevelInput string
-	LogLevel      zap.AtomicLevel
+	LogLevelInput   string
+	LogLevel        zap.AtomicLevel
+	PrintAccessLogs bool
 }
 
 // RegisterFlags adds the flags required to config the server
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.Set("info")
 	f.Var(cfg, "logging.level", "Only log messages with the given severity or above. Valid levels: [debug, info, warn, error]")
+	f.BoolVar(&cfg.PrintAccessLogs, "logging.print-access-logs", false, "Whether or not to print access log for each HTTP invocation")
 }
 
 // String implements the flag.Value interface
