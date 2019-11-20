@@ -1,7 +1,6 @@
 package api
 
 import (
-	"os"
 	"path/filepath"
 	"time"
 
@@ -15,48 +14,47 @@ import (
 
 // All the routes for the application are defined in one place.
 func (api *API) routes() *chi.Mux {
+	router := chi.NewRouter()
+	router.NotFound(api.restHelper.HandleNotFound())
+	router.MethodNotAllowed(api.restHelper.HandleMethodNotAllowed())
 
-	// Set up the router
-	mux := chi.NewRouter()
-	mux.NotFound(api.restHelper.HandleNotFound())
-	mux.MethodNotAllowed(api.restHelper.HandleMethodNotAllowed())
-	var rootRouter chi.Router = mux
-
-	// Init middlewares
-	// Do any set up of shared/third-party middleware and handlers
-	instrument := middleware.NewInstrument(api.cfg.MetricsNamespace)
-	recoverer := middleware.Recoverer{RestHelper: api.restHelper}
-
+	// Init middlewares - Do any set up of shared/third-party middleware and handlers
 	if api.cfg.REST.CompressionLevel > 0 {
 		api.Logger.Debug("using compression for all http routes", zap.Int("level", api.cfg.REST.CompressionLevel))
-		rootRouter.Use(chimiddleware.Compress(api.cfg.REST.CompressionLevel))
+		router.Use(chimiddleware.Compress(api.cfg.REST.CompressionLevel))
 	}
-	rootRouter.Use(middleware.Intercept)
-	rootRouter.Use(recoverer.Wrap)
-	rootRouter.Use(chimiddleware.RealIP)
-	rootRouter.Use(chimiddleware.URLFormat)
 
-	rootRouter.Use(instrument.Wrap)
-	rootRouter.Use(chimiddleware.Timeout(15 * time.Second))
+	instrument := middleware.NewInstrument(api.cfg.MetricsNamespace)
+	recoverer := middleware.Recoverer{RestHelper: api.restHelper}
+	router.Use(
+		middleware.Intercept,
+		recoverer.Wrap,
+		chimiddleware.RealIP,
+		chimiddleware.URLFormat,
+		instrument.Wrap,
+		chimiddleware.Timeout(15*time.Second),
+	)
 
-	// Public routes
-	rootRouter.Group(func(r chi.Router) {
-		api.hooks.Route.ConfigPublicRouter(r)
+	if api.cfg.Logger.PrintAccessLogs {
+		a := middleware.NewAccessLog(api.Logger)
+		router.Use(a.Wrap)
+	}
 
-		// Admin routes - only accessible from within Kubernetes or a protected ingress
+	// Private routes - these should only be accessible from within Kubernetes or a protected ingress
+	router.Group(func(r chi.Router) {
 		r.Route("/admin", func(r chi.Router) {
 			r.Handle("/metrics", promhttp.Handler())
 			r.Handle("/health", healthhttp.HandleHealthJSON(api.health))
 		})
+
 		// Path must be prefixed with /debug otherwise it will be overriden, see: https://golang.org/pkg/net/http/pprof/
 		r.Mount("/debug", chimiddleware.Profiler())
 	})
 
 	// API routes
-	rootRouter.Group(func(r chi.Router) {
+	router.Group(func(r chi.Router) {
 		api.hooks.Route.ConfigAPIRouter(r)
 
-		// REST API Endpoints
 		r.Route("/api", func(r chi.Router) {
 			r.Get("/cluster", api.handleDescribeCluster())
 			r.Get("/topics", api.handleGetTopics())
@@ -72,16 +70,14 @@ func (api *API) routes() *chi.Mux {
 		dir, err := filepath.Abs("./build")
 		if err != nil {
 			api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", dir), zap.Error(err))
-			os.Exit(1)
 		}
 
 		// SPA Files
 		index, err := api.getIndexFile(dir)
 		if err != nil {
 			api.Logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
-			os.Exit(1)
 		}
-		rootRouter.Group(func(r chi.Router) {
+		router.Group(func(r chi.Router) {
 			api.hooks.Route.ConfigFrontendRouter(r)
 			r.Use(cache)
 
@@ -92,5 +88,5 @@ func (api *API) routes() *chi.Mux {
 		api.Logger.Info("no static files will be served as serving the frontend has been disabled")
 	}
 
-	return mux
+	return router
 }
