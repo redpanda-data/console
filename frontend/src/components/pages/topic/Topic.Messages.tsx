@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
+import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider, Modal } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
@@ -170,7 +170,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
                     bordered={true} size='small'
                     pagination={this.pageConfig}
-                    onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize;  this.pageConfig.pageSize = x.pageSize; } }}
+                    onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize; this.pageConfig.pageSize = x.pageSize; } }}
                     dataSource={this.messageSource.data}
                     loading={this.requestInProgress}
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
@@ -192,21 +192,31 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     }
 
     PreviewSettings = observer(() => {
-        return (
-            <Drawer title='Properties to show in preview' placement='top'
-                visible={this.showPreviewSettings} onClose={() => this.showPreviewSettings = false}
-                getContainer={false} closable={false}>
+        // const info = Modal.info({  visible:this.showPreviewSettings,  getContainer:false,  })
 
-                <Paragraph>
-                    <Text>Add any name to this list. If it exists in the message, then it will be shown in the preview.</Text>
-                    <Text>You can turn off/on properties you've created by clicking on them.</Text>
-                </Paragraph>
-                <div style={{ padding: '1em', border: 'solid 1px #0001', borderRadius: '6px' }}>
-                    <CustomTagList tags={uiSettings.topicList.previewTags} allCurrentKeys={this.allCurrentKeys} />
-                </div>
+        const content = <>
+            <Paragraph>
+                <Text>Add any name to this list. If it exists in the message, then it will be shown in the preview.</Text><br />
+                <Text>After you've added some fields, you can click on them to toggle them on/off.</Text>
+            </Paragraph>
+            <div style={{ padding: '1em', border: 'solid 1px #0001', borderRadius: '6px' }}>
+                <CustomTagList tags={uiSettings.topicList.previewTags} allCurrentKeys={this.allCurrentKeys} />
+            </div>
+        </>
 
-            </Drawer>
-        );
+        if (this.showPreviewSettings) {
+            Modal.info({
+                title: 'Preview Fields',
+                visible: this.showPreviewSettings,
+                getContainer: false,
+                content: content,
+                onOk: () => this.showPreviewSettings = false,
+                width: 1000,
+                okText:'Close',
+            });
+        }
+
+        return null;
     })
 
 
@@ -517,14 +527,14 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
 
                     <br />
 
-                    <Select<string> mode='tags'
+                    {/* <Select<string> mode='tags'
                         style={{ minWidth: '26em' }} size='large'
                         placeholder='Enter properties for preview'
                     >
                         {tagSuggestions.map(k =>
                             <Select.Option key={k} value={k}>{k}</Select.Option>
                         )}
-                    </Select>
+                    </Select> */}
 
                 </MotionDiv>
             </AnimatePresence>
