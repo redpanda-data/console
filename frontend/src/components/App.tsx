@@ -111,7 +111,8 @@ const AppPageHeader = observer(() => {
 
     const selectedClusterName = uiState.selectedClusterName;
     if (selectedClusterName) {
-        const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: selectedClusterName };
+        //const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: selectedClusterName };
+        const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: 'Cluster' };
         breadcrumbs.unshift(rootBreadcrumb);
     }
 
