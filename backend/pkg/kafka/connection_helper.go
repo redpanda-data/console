@@ -36,38 +36,34 @@ func NewSaramaConfig(cfg *Config) (*sarama.Config, error) {
 	// Configure TLS
 	if cfg.TLSEnabled {
 		sConfig.Net.TLS.Enable = true
+		sConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: cfg.TLSInsecureSkipTLSVerify}
 
-		if cfg.TLSCaFilePath == "" {
-			sConfig.Net.TLS.Config = &tls.Config{}
-		}
-
-		sConfig.Net.TLS.Config = &tls.Config{
-			RootCAs:            x509.NewCertPool(),
-			InsecureSkipVerify: cfg.TLSInsecureSkipTLSVerify,
-		}
-
-		// Load CA file
 		if cfg.TLSCaFilePath != "" {
-			ca, err := ioutil.ReadFile(cfg.TLSCaFilePath)
-			if err != nil {
-				return nil, err
-			}
-			sConfig.Net.TLS.Config.RootCAs.AppendCertsFromPEM(ca)
-		}
-
-		// Load TLS / Key files
-		if cfg.TLSCertFilePath != "" || cfg.TLSKeyFilePath != "" {
-			err := canReadCertAndKey(cfg.TLSCertFilePath, cfg.TLSKeyFilePath)
-			if err != nil {
-				return nil, err
+			// Load CA file
+			if cfg.TLSCaFilePath != "" {
+				ca, err := ioutil.ReadFile(cfg.TLSCaFilePath)
+				if err != nil {
+					return nil, err
+				}
+				caCertPool := x509.NewCertPool()
+				caCertPool.AppendCertsFromPEM(ca)
+				sConfig.Net.TLS.Config.RootCAs = caCertPool
 			}
 
-			// Load Cert files and if necessary it decrypt it too
-			cert, err := parseCerts(cfg.TLSCertFilePath, cfg.TLSKeyFilePath, cfg.TLSPassphrase)
-			if err != nil {
-				return nil, err
+			// Load TLS / Key files
+			if cfg.TLSCertFilePath != "" && cfg.TLSKeyFilePath != "" {
+				err := canReadCertAndKey(cfg.TLSCertFilePath, cfg.TLSKeyFilePath)
+				if err != nil {
+					return nil, err
+				}
+
+				// Load Cert files and if necessary it decrypt it too
+				cert, err := parseCerts(cfg.TLSCertFilePath, cfg.TLSKeyFilePath, cfg.TLSPassphrase)
+				if err != nil {
+					return nil, err
+				}
+				sConfig.Net.TLS.Config.Certificates = cert
 			}
-			sConfig.Net.TLS.Config.Certificates = cert
 		}
 	}
 
