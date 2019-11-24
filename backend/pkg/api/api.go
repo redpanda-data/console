@@ -73,7 +73,6 @@ func (api *API) Start() {
 	// Start automatic health checks that will be reported on our '/health' route
 	// TODO: Implement startup/readiness/liveness probe, might be blocked by: https://github.com/AppsFlyer/go-sundheit/issues/16
 	api.health = health.New()
-	api.health.WithLogger(newZapShim(api.Logger.With(zap.String("source", "health"))))
 
 	api.health.RegisterCheck(&health.Config{
 		Check: &KafkaHealthCheck{
