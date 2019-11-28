@@ -25,16 +25,16 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 				Message:  "Could not list topics from Kafka cluster",
 				IsSilent: false,
 			}
-			api.restHelper.SendRESTError(w, r, restErr)
+			api.RestHelper.SendRESTError(w, r, restErr)
 			return
 		}
 
-		api.hooks.Topic.FilterTopics(r.Context(), topics)
+		api.Hooks.Topic.FilterTopics(r.Context(), topics)
 
 		response := response{
 			Topics: topics,
 		}
-		api.restHelper.SendResponse(w, r, http.StatusOK, response)
+		api.RestHelper.SendResponse(w, r, http.StatusOK, response)
 	}
 }
 
@@ -65,7 +65,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 				Message:  "The given query parameters are invalid",
 				IsSilent: false,
 			}
-			api.restHelper.SendRESTError(w, r, restErr)
+			api.RestHelper.SendRESTError(w, r, restErr)
 			return
 		}
 
@@ -86,14 +86,14 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 				Message:  "Could not list messages for requested topic",
 				IsSilent: false,
 			}
-			api.restHelper.SendRESTError(w, r, restErr)
+			api.RestHelper.SendRESTError(w, r, restErr)
 			return
 		}
 
 		response := &GetTopicMessagesResponse{
 			KafkaMessages: messages,
 		}
-		api.restHelper.SendResponse(w, r, http.StatusOK, response)
+		api.RestHelper.SendResponse(w, r, http.StatusOK, response)
 	}
 }
 
@@ -114,7 +114,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 				Message:  "Could not list topic partitions for requested topic",
 				IsSilent: false,
 			}
-			api.restHelper.SendRESTError(w, r, restErr)
+			api.RestHelper.SendRESTError(w, r, restErr)
 			return
 		}
 
@@ -122,7 +122,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 			TopicName:  topicName,
 			Partitions: partitions,
 		}
-		api.restHelper.SendResponse(w, r, http.StatusOK, res)
+		api.RestHelper.SendResponse(w, r, http.StatusOK, res)
 	}
 }
 
@@ -142,13 +142,13 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 				Message:  "Could not list topic config for requested topic",
 				IsSilent: false,
 			}
-			api.restHelper.SendRESTError(w, r, restErr)
+			api.RestHelper.SendRESTError(w, r, restErr)
 			return
 		}
 
 		res := response{
 			TopicDescription: description,
 		}
-		api.restHelper.SendResponse(w, r, http.StatusOK, res)
+		api.RestHelper.SendResponse(w, r, http.StatusOK, res)
 	}
 }

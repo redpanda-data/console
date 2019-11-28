@@ -21,13 +21,13 @@ func (api *API) handleDescribeCluster() http.HandlerFunc {
 				Message:  "Could not describe cluster",
 				IsSilent: false,
 			}
-			api.restHelper.SendRESTError(w, r, restErr)
+			api.RestHelper.SendRESTError(w, r, restErr)
 			return
 		}
 
 		response := response{
 			ClusterInfo: clusterInfo,
 		}
-		api.restHelper.SendResponse(w, r, http.StatusOK, response)
+		api.RestHelper.SendResponse(w, r, http.StatusOK, response)
 	}
 }

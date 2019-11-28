@@ -15,17 +15,17 @@ import (
 // All the routes for the application are defined in one place.
 func (api *API) routes() *chi.Mux {
 	router := chi.NewRouter()
-	router.NotFound(api.restHelper.HandleNotFound())
-	router.MethodNotAllowed(api.restHelper.HandleMethodNotAllowed())
+	router.NotFound(api.RestHelper.HandleNotFound())
+	router.MethodNotAllowed(api.RestHelper.HandleMethodNotAllowed())
 
 	// Init middlewares - Do any set up of shared/third-party middleware and handlers
-	if api.cfg.REST.CompressionLevel > 0 {
-		api.Logger.Debug("using compression for all http routes", zap.Int("level", api.cfg.REST.CompressionLevel))
-		router.Use(chimiddleware.Compress(api.cfg.REST.CompressionLevel))
+	if api.Cfg.REST.CompressionLevel > 0 {
+		api.Logger.Debug("using compression for all http routes", zap.Int("level", api.Cfg.REST.CompressionLevel))
+		router.Use(chimiddleware.Compress(api.Cfg.REST.CompressionLevel))
 	}
 
-	instrument := middleware.NewInstrument(api.cfg.MetricsNamespace)
-	recoverer := middleware.Recoverer{RestHelper: api.restHelper}
+	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
+	recoverer := middleware.Recoverer{RestHelper: api.RestHelper}
 	router.Use(
 		middleware.Intercept,
 		recoverer.Wrap,
@@ -35,7 +35,7 @@ func (api *API) routes() *chi.Mux {
 		chimiddleware.Timeout(15*time.Second),
 	)
 
-	if api.cfg.Logger.PrintAccessLogs {
+	if api.Cfg.Logger.PrintAccessLogs {
 		a := middleware.NewAccessLog(api.Logger)
 		router.Use(a.Wrap)
 	}
@@ -53,7 +53,7 @@ func (api *API) routes() *chi.Mux {
 
 	// API routes
 	router.Group(func(r chi.Router) {
-		api.hooks.Route.ConfigAPIRouter(r)
+		api.Hooks.Route.ConfigAPIRouter(r)
 
 		r.Route("/api", func(r chi.Router) {
 			r.Get("/cluster", api.handleDescribeCluster())
@@ -65,7 +65,7 @@ func (api *API) routes() *chi.Mux {
 		})
 	})
 
-	if api.cfg.REST.ServeFrontend {
+	if api.Cfg.REST.ServeFrontend {
 		// Check if the frontend directory 'build' exists
 		dir, err := filepath.Abs("./build")
 		if err != nil {
@@ -78,7 +78,7 @@ func (api *API) routes() *chi.Mux {
 			api.Logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
 		}
 		router.Group(func(r chi.Router) {
-			api.hooks.Route.ConfigFrontendRouter(r)
+			api.Hooks.Route.ConfigFrontendRouter(r)
 			r.Use(cache)
 
 			r.Get("/", api.handleGetIndex(index))

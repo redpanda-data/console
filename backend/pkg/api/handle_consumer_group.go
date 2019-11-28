@@ -22,7 +22,7 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 				Message:  "Could not list consumer groups from Kafka cluster",
 				IsSilent: false,
 			}
-			api.restHelper.SendRESTError(w, r, rerr)
+			api.RestHelper.SendRESTError(w, r, rerr)
 			return
 		}
 
@@ -34,13 +34,13 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 				Message:  "Could not describe consumer groups in the Kafka cluster",
 				IsSilent: false,
 			}
-			api.restHelper.SendRESTError(w, r, rerr)
+			api.RestHelper.SendRESTError(w, r, rerr)
 			return
 		}
 
 		response := GetConsumerGroupsResponse{
 			ConsumerGroups: describedGroups,
 		}
-		api.restHelper.SendResponse(w, r, http.StatusOK, response)
+		api.RestHelper.SendResponse(w, r, http.StatusOK, response)
 	}
 }

@@ -16,18 +16,17 @@ import (
 
 // API represents the server and all it's dependencies to serve incoming user requests
 type API struct {
-	cfg *Config
+	Cfg *Config
 
 	Logger   *zap.Logger
 	KafkaSvc *kafka.Service
 	Version  string
 
-	restHelper *rest.Helper
+	RestHelper *rest.Helper
 	health     health.Health
 
-	hooks *Hooks
-
-	ExtendedFeatures bool // enable cluster select, user display, logout button, etc.
+	Hooks            *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
+	ExtendedFeatures bool   // enable cluster select, user display, logout button, etc.
 }
 
 // New creates a new API instance
@@ -55,12 +54,12 @@ func New(cfg *Config) *API {
 	logger.Info("Connected to kafka")
 
 	return &API{
-		cfg:              cfg,
+		Cfg:              cfg,
 		Logger:           logger,
-		restHelper:       &rest.Helper{Logger: logger},
+		RestHelper:       &rest.Helper{Logger: logger},
 		KafkaSvc:         &kafka.Service{Client: client, Logger: logger},
 		Version:          os.Getenv("VERSION"),
-		hooks:            newEmptyHooks(),
+		Hooks:            newEmptyHooks(),
 		ExtendedFeatures: len(os.Getenv("EXTENDED_FEATURES")) > 0,
 	}
 }
@@ -83,7 +82,7 @@ func (api *API) Start() {
 	})
 
 	// Server
-	server := rest.NewServer(&api.cfg.REST, api.Logger, api.routes())
+	server := rest.NewServer(&api.Cfg.REST, api.Logger, api.routes())
 	err := server.Start()
 	if err != nil {
 		api.Logger.Fatal("REST Server returned an error", zap.Error(err))
