@@ -1,14 +1,15 @@
 import React from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon, Tree, Button, List, Collapse } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
 import { PageComponent, PageInitHelper } from "./Page";
 import { makePaginationConfig } from "../misc/common";
 import { MotionDiv } from "../../utils/animationProps";
-import { GroupDescription, GroupMemberDescription, GroupMemberAssignment } from "../../state/restInterfaces";
+import { GroupDescription, GroupMemberDescription, GroupMemberAssignment, TopicLag } from "../../state/restInterfaces";
 import { groupConsecutive } from "../../utils/utils";
 const { Text } = Typography;
+const { TreeNode } = Tree;
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
@@ -89,21 +90,51 @@ const ProtocolType = (p: { group: GroupDescription }) => {
 const GroupMembers = observer((p: { group: GroupDescription }) => {
 
     const pageConfig = makePaginationConfig();
+    const topicLags = p.group.lag.topicLags;
 
     return <Table
         style={{ margin: '0', padding: '0', whiteSpace: 'normal' }}
         bordered={true} size={'middle'}
+
+        //expandRowByClick={false}
+        expandIconAsCell={false}
+        expandIconColumnIndex={0}
+        expandedRowRender={(record: GroupMemberDescription) => <ExpandedGroupMember groupId={p.group.groupId} topicLags={topicLags} member={record} />}
+
         pagination={pageConfig}
         dataSource={p.group.members}
         rowKey={r => r.id}
         rowClassName={() => 'pureDisplayRow'}
         columns={[
-            { title: <span>ID</span>, dataIndex: 'id', className:'whiteSpaceDefault' },
+            { title: <span>ID</span>, dataIndex: 'id', className: 'whiteSpaceDefault' },
             { width: '150px', title: 'ClientID', dataIndex: 'clientId' },
             { width: '150px', title: 'Client Host', dataIndex: 'clientHost' },
-            { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t), className:'whiteSpaceDefault' },
+            { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t), className: 'whiteSpaceDefault' },
         ]} />
 })
+
+const ExpandedGroupMember = observer((p: { groupId: string, topicLags: TopicLag[], member: GroupMemberDescription }) => {
+
+    const renderPartitionLag = (pp: { topicLag: TopicLag, partitionId: number }) => {
+        const lag = pp.topicLag.partitionLags.find(lag => lag.partitionId == pp.partitionId);
+        return <div><Tag>Partition{pp.partitionId}: {lag? lag.lag : '??'}</Tag></div>
+    };
+
+    const assignments = p.member.assignments.map((assignment: GroupMemberAssignment, index) => {
+        const topicLag = p.topicLags.find(tl => tl.topic == assignment.topicName);
+        if (!topicLag) return <div>Backend provided no lag information for topic "<code>{assignment.topicName}</code>"</div>;
+
+        return <Collapse.Panel key={index} header={assignment.topicName}>
+            <div>Lag in each partition:</div>
+            <div>This is just a placeholder UI for lag per partition/per topic. It will be redone later.</div>
+            {assignment.partitionIds.map(id => renderPartitionLag({ topicLag: topicLag, partitionId: id }))}
+        </Collapse.Panel>
+    });
+
+    return <Collapse bordered={false} defaultActiveKey={[0]}>
+        {assignments}
+    </Collapse>
+});
 
 const margin1Px = { margin: '1px' };
 const margin2PxLine = { margin: '2px 0' };
