@@ -95,6 +95,20 @@ export interface GroupDescription {
     state: string; // Dead, Initializing, Rebalancing, Stable
     members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
+    coordinatorId: number;
+    lag: GroupLagDescription;
+}
+
+export interface GroupLagDescription {
+    groupId: string;
+    topicLags: TopicLag[];
+}
+
+export interface TopicLag {
+    topic: string; // name
+    summedLag: number;
+    consumesAllPartitions: boolean;
+    partitionLags: {lag:number, partitionId:number}[]
 }
 
 export interface GetConsumerGroupsResponse {
