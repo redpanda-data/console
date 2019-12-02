@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-chi/chi"
-	"github.com/kafka-owl/kafka-owl/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/owl"
 )
 
 // Hooks are a way to extend the Kafka Owl functionality from the outside. By default all hooks have no
@@ -23,7 +23,7 @@ type RouteHooks interface {
 
 // TopicHooks -
 type TopicHooks interface {
-	FilterTopics(ctx context.Context, topics []*kafka.TopicDetail)
+	FilterTopics(ctx context.Context, topics []*owl.TopicOverview)
 }
 
 // Empty Hooks
@@ -44,4 +44,4 @@ func (*emptyHooks) ConfigAPIRouter(router chi.Router)      {}
 func (*emptyHooks) ConfigFrontendRouter(router chi.Router) {}
 
 // Topic
-func (*emptyHooks) FilterTopics(ctx context.Context, topics []*kafka.TopicDetail) {}
+func (*emptyHooks) FilterTopics(ctx context.Context, topics []*owl.TopicOverview) {}

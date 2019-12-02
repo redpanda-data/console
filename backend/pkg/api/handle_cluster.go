@@ -4,16 +4,16 @@ import (
 	"net/http"
 
 	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
-	"github.com/kafka-owl/kafka-owl/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/owl"
 )
 
 func (api *API) handleDescribeCluster() http.HandlerFunc {
 	type response struct {
-		ClusterInfo *kafka.ClusterInfo `json:"clusterInfo"`
+		ClusterInfo *owl.ClusterInfo `json:"clusterInfo"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		clusterInfo, err := api.KafkaSvc.DescribeCluster()
+		clusterInfo, err := api.OwlSvc.GetClusterInfo(r.Context())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

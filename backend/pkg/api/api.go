@@ -9,6 +9,7 @@ import (
 	"github.com/kafka-owl/kafka-owl/pkg/common/logging"
 	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
 	"github.com/kafka-owl/kafka-owl/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/owl"
 	"github.com/prometheus/common/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -20,6 +21,7 @@ type API struct {
 
 	Logger   *zap.Logger
 	KafkaSvc *kafka.Service
+	OwlSvc   *owl.Service
 	Version  string
 
 	RestHelper *rest.Helper
@@ -53,11 +55,14 @@ func New(cfg *Config) *API {
 	}
 	logger.Info("Connected to kafka")
 
+	kafkaSvc := &kafka.Service{Client: client, Logger: logger}
+
 	return &API{
 		Cfg:              cfg,
 		Logger:           logger,
 		RestHelper:       &rest.Helper{Logger: logger},
-		KafkaSvc:         &kafka.Service{Client: client, Logger: logger},
+		KafkaSvc:         kafkaSvc,
+		OwlSvc:           &owl.Service{KafkaSvc: kafkaSvc, Logger: logger},
 		Version:          os.Getenv("VERSION"),
 		Hooks:            newEmptyHooks(),
 		ExtendedFeatures: len(os.Getenv("EXTENDED_FEATURES")) > 0,

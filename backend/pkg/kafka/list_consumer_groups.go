@@ -11,7 +11,7 @@ import (
 
 // ListConsumerGroups returns an array of consumer group ids
 func (s *Service) ListConsumerGroups(ctx context.Context) ([]string, error) {
-	// Query all brokers in the cluster in parallel in order to get all Consumer Groups
+	// 1. Query all brokers in the cluster in parallel in order to get all Consumer Groups
 	brokers := s.Client.Brokers()
 	wg := sync.WaitGroup{}
 	type response struct {
