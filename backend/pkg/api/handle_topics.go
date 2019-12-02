@@ -9,15 +9,16 @@ import (
 	"github.com/gorilla/schema"
 	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
 	"github.com/kafka-owl/kafka-owl/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/owl"
 )
 
 func (api *API) handleGetTopics() http.HandlerFunc {
 	type response struct {
-		Topics []*kafka.TopicDetail `json:"topics"`
+		Topics []*owl.TopicOverview `json:"topics"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		topics, err := api.KafkaSvc.ListTopics()
+		topics, err := api.OwlSvc.GetTopicsOverview()
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
@@ -129,12 +130,12 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 // handleGetTopicConfig returns all set configuration options for a specific topic
 func (api *API) handleGetTopicConfig() http.HandlerFunc {
 	type response struct {
-		TopicDescription *kafka.TopicDescription `json:"topicDescription"`
+		TopicDescription *owl.TopicConfigs `json:"topicDescription"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := chi.URLParam(r, "topicName")
-		description, err := api.KafkaSvc.DescribeTopicConfigs(topicName)
+		description, err := api.OwlSvc.GetTopicConfigs(topicName, []string{})
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

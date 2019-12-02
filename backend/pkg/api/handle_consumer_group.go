@@ -4,29 +4,17 @@ import (
 	"net/http"
 
 	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
-	"github.com/kafka-owl/kafka-owl/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/owl"
 )
 
 // GetConsumerGroupsResponse represents the data which is returned for listing topics
 type GetConsumerGroupsResponse struct {
-	ConsumerGroups []*kafka.GroupDescription `json:"consumerGroups"`
+	ConsumerGroups []*owl.ConsumerGroupOverview `json:"consumerGroups"`
 }
 
 func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		groups, err := api.KafkaSvc.ListConsumerGroups(r.Context())
-		if err != nil {
-			rerr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  "Could not list consumer groups from Kafka cluster",
-				IsSilent: false,
-			}
-			api.RestHelper.SendRESTError(w, r, rerr)
-			return
-		}
-
-		describedGroups, err := api.KafkaSvc.DescribeConsumerGroups(r.Context(), groups)
+		describedGroups, err := api.OwlSvc.GetConsumerGroupsOverview(r.Context())
 		if err != nil {
 			rerr := &rest.Error{
 				Err:      err,
