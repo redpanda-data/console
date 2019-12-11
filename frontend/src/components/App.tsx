@@ -97,7 +97,7 @@ const DataAgeInfo = observer(() => {
                 ?
                 <>
                     <Button icon='reload' shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)' }} onClick={() => appGlobal.onRefresh()} />
-                    <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span>
+                    {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
                 </>
                 :
                 <>
