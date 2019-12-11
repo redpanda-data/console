@@ -81,27 +81,30 @@ const AppSide = observer(() => (
 
 const DataAgeInfo = observer(() => {
     const size = '19px'
-    if (api.ActiveRequests.length == 0) return null;
 
     DebugTimerStore.Instance.useFrame();
 
-    const maxFetchTime = api.ActiveRequests.map(r => r.requestTime).reduce((p, c) => Math.max(p, c));
-    if (maxFetchTime < 0.1) return null;
-
-    {/* <div style={{ marginTop: '0.2em', color: 'hsl(205, 100%, 50%)', cursor: 'pointer' }}>
-            <span>Displayed data is <b>1 min</b> old</span>
-        </div>
-    */}
+    const maxFetchTime = api.ActiveRequests.length == 0
+        ? 0
+        : api.ActiveRequests.map(r => r.requestTime).reduce((p, c) => Math.max(p, c));
 
     // maybe we need to use the same 'no vertical expansion' trick:
-    // <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
+    // <span >
     return (
-        <div style={{ marginLeft: '1em' }}>
-            <div className='fadeIn' style={{ color: 'hsl(205, 100%, 50%)', display: 'flex', alignContent: 'center', transform: 'translateY(-1px)' }}>
-                <span className='spinner' style={{ width: size, height: size }} />
-                <span className='pulsating' style={{ paddingLeft: '.4em' }}>Fetching data...</span>
-            </div>
-        </div>
+        <div style={{ color: 'hsl(205, 100%, 50%)', display: 'flex', alignItems: 'center', height:'2em' }} className='fadeIn' >
+
+            {maxFetchTime < 0.1
+                ?
+                <>
+                    <Button icon='reload' shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)' }} onClick={() => appGlobal.onRefresh()} />
+                    <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span>
+                </>
+                :
+                <>
+                    <span className='spinner' style={{ marginLeft:'.5em', width: size, height: size }} />
+                    <span className='pulsating' style={{ paddingLeft: '0.8em', fontSize: '80%' }}>Fetching data...</span>
+                </>
+            } </div>
     )
 })
 
@@ -125,7 +128,7 @@ const AppPageHeader = observer(() => {
             breadcrumb={{ routes: breadcrumbs, itemRender: itemRender, separator: '>' }}
             // onBack={onBack}
             title={<><Title level={3}>{uiState.pageTitle}</Title></>}
-            subTitle={<span style={{ display: 'flex', marginTop: '.2em' }}><DataAgeInfo /></span>}
+            subTitle={<DataAgeInfo />}
             footer={<></>}
             extra={uiState.pageHeaderExtra()} // right sider
         />
