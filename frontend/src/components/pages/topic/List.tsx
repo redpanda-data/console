@@ -33,7 +33,12 @@ class TopicList extends PageComponent {
             >Hide internal topics</Checkbox>
         </>
 
-        api.refreshTopics();
+        this.refreshData(false);
+        appGlobal.onRefresh = () => this.refreshData(true);
+    }
+
+    refreshData(force:boolean){
+        api.refreshTopics(force);
     }
 
     getTopics() {
