@@ -288,3 +288,17 @@ span>.icon-container~span {
 .whiteSpaceDefault {
     white-space: normal;
 }
+
+.consumerGroupSuffix {
+    opacity: 0.4;
+}
+
+.groupLagDisplayLine {
+    font-size: 85%;
+    margin-bottom: .2em;
+}
+
+.groupLagDisplayLine:not(:last-child) {
+    padding-bottom:0.2em;
+    border-bottom: 1px solid #eee;
+}
