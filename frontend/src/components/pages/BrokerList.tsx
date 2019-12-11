@@ -12,6 +12,7 @@ import { animProps } from "../../utils/animationProps";
 import { observable } from "mobx";
 import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../utils/utils";
+import { appGlobal } from "../../state/appGlobal";
 
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -33,10 +34,15 @@ class BrokerList extends PageComponent {
             >Hide empty columns</Checkbox>
         </>;
 
-        api.refreshCluster();
+        this.refreshData(false);
+        appGlobal.onRefresh = () => this.refreshData(true);
 
         this.isMatch = this.isMatch.bind(this);
         this.setResult = this.setResult.bind(this);
+    }
+
+    refreshData(force:boolean){
+        api.refreshCluster(force);
     }
 
     render() {

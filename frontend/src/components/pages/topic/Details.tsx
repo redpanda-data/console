@@ -22,14 +22,20 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     initPage(p: PageInitHelper): void {
         const topicName = this.props.topicName;
         uiState.currentTopicName = topicName;
-        api.clearMessageCache();
-        api.refreshTopics();
-        api.refreshTopicConfig(topicName);
 
+        api.clearMessageCache();
+        this.refreshData(false);
+        appGlobal.onRefresh = () => this.refreshData(true);
 
         p.title = topicName;
         p.addBreadcrumb('Topics', '/topics');
         p.addBreadcrumb(topicName, '/topics/' + topicName);
+    }
+
+    refreshData(force: boolean) {
+
+        api.refreshTopics(force);
+        api.refreshTopicConfig(this.props.topicName, force);
     }
 
     get tabPageKey() {
@@ -70,7 +76,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         return (
             <motion.div {...animProps} key={'b'}>
                 {/* QuickInfo */}
-                <TopicQuickInfoStatistic config={topicConfig}  size={topic.logDirSize}/>
+                <TopicQuickInfoStatistic config={topicConfig} size={topic.logDirSize} />
 
                 {/* Tabs:  Messages, Configuration */}
                 <Tabs style={{ overflow: 'visible' }} animated={false}
