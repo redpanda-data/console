@@ -12,16 +12,16 @@ type partitionOffsets map[int32]int64
 
 // ConsumerGroupLag describes the kafka lag for all topics/partitions for a single consumer group
 type ConsumerGroupLag struct {
-	GroupID   string              `json:"groupId"`
-	TopicLags map[string]TopicLag `json:"topicLags"`
+	GroupID   string      `json:"groupId"`
+	TopicLags []*TopicLag `json:"topicLags"`
 }
 
 // TopicLag describes the kafka lag for a single topic and it's partitions for a single consumer group
 type TopicLag struct {
-	Topic                 string                 `json:"topic"`
-	SummedLag             int64                  `json:"summedLag"`             // Sums all partition lags (non consumed partitions are not considered)
-	ConsumesAllPartitions bool                   `json:"consumesAllPartitions"` // Whether the consumer group has at least one active offset for all partitions or not
-	PartitionLags         map[int32]PartitionLag `json:"partitionLags"`
+	Topic                 string         `json:"topic"`
+	SummedLag             int64          `json:"summedLag"`             // Sums all partition lags (non consumed partitions are not considered)
+	ConsumesAllPartitions bool           `json:"consumesAllPartitions"` // Whether the consumer group has at least one active offset for all partitions or not
+	PartitionLags         []PartitionLag `json:"partitionLags"`
 }
 
 // PartitionLag describes the kafka lag for a partition for a single consumer group
@@ -86,7 +86,7 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 	// 4. Now that we've got all partition high water marks as well as the consumer group offsets we can calculate the lags
 	res := make(map[string]*ConsumerGroupLag, len(groups))
 	for _, group := range groups {
-		topicLags := make(map[string]TopicLag, len(offsetsByGroup[group]))
+		topicLags := make([]*TopicLag, 0)
 		for topic, partitionOffsets := range offsetsByGroup[group] {
 			// In this scope we iterate on a single group's, single topic's offset
 			subLogger := s.Logger.With(zap.String("group", group), zap.String("topic", topic))
@@ -103,7 +103,7 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 				Topic:                 topic,
 				SummedLag:             0,
 				ConsumesAllPartitions: true,
-				PartitionLags:         make(map[int32]PartitionLag),
+				PartitionLags:         make([]PartitionLag, 0),
 			}
 			for pID, watermark := range partitionWaterMarks {
 				groupOffset, ok := partitionOffsets[pID]
@@ -118,9 +118,9 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 					lag = 0
 				}
 				t.SummedLag += lag
-				t.PartitionLags[pID] = PartitionLag{PartitionID: pID, Lag: lag}
+				t.PartitionLags = append(t.PartitionLags, PartitionLag{PartitionID: pID, Lag: lag})
 			}
-			topicLags[topic] = t
+			topicLags = append(topicLags, &t)
 		}
 
 		res[group] = &ConsumerGroupLag{

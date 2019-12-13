@@ -184,8 +184,8 @@ const apiStore = {
 
 
 
-    refreshTopics() {
-        cachedApiRequest<GetTopicsResponse>('/api/topics')
+    refreshTopics(force?: boolean) {
+        cachedApiRequest<GetTopicsResponse>('/api/topics',force)
             .then(v => {
                 for (let t of v.topics) {
                     // t.messageCount = ...
@@ -195,23 +195,23 @@ const apiStore = {
             }, addError);
     },
 
-    refreshConsumerGroups() {
-        cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups')
+    refreshConsumerGroups(force?: boolean) {
+        cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
             .then(v => this.ConsumerGroups = v.consumerGroups, addError);
     },
 
-    refreshTopicConfig(topicName: string) {
-        cachedApiRequest<TopicConfigResponse>(`/api/topics/${topicName}/configuration`)
+    refreshTopicConfig(topicName: string, force?: boolean) {
+        cachedApiRequest<TopicConfigResponse>(`/api/topics/${topicName}/configuration`, force)
             .then(v => this.TopicConfig.set(v.topicDescription.topicName, v.topicDescription.configEntries), addError);
     },
 
-    refreshTopicPartitions(topicName: string) {
-        cachedApiRequest<GetPartitionsResponse>(`/api/topics/${topicName}/partitions`)
+    refreshTopicPartitions(topicName: string, force?: boolean) {
+        cachedApiRequest<GetPartitionsResponse>(`/api/topics/${topicName}/partitions`, force)
             .then(v => this.TopicPartitions.set(v.topicName, v.partitions), addError);
     },
 
-    refreshCluster() {
-        cachedApiRequest<ClusterInfoResponse>(`/api/cluster`)
+    refreshCluster(force?: boolean) {
+        cachedApiRequest<ClusterInfoResponse>(`/api/cluster`, force)
             .then(v => this.ClusterInfo = v.clusterInfo, addError);
     },
 }

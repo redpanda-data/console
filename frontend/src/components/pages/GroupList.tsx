@@ -24,7 +24,13 @@ class GroupList extends PageComponent {
         p.title = 'Consumer Groups';
         p.addBreadcrumb('Consumer Groups', '/groups');
 
-        api.refreshConsumerGroups();
+        this.refreshData(false);
+        appGlobal.onRefresh = () => this.refreshData(true);
+
+    }
+
+    refreshData(force:boolean){
+        api.refreshConsumerGroups(force);
     }
 
     render() {
@@ -58,6 +64,7 @@ class GroupList extends PageComponent {
                         { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
                         { title: 'ID', dataIndex: 'groupId', sorter: sortField('groupId'), render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault' },
                         { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
+                        { title: 'Lag (Sum)', dataIndex:'lag', render:(text,record:GroupDescription,index)=> record.lag.topicLags.map(t => t.summedLag).reduce((a,b) => a+b, 0) },
                     ]} />
             </motion.div>
         );

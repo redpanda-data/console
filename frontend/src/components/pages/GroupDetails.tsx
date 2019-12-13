@@ -1,14 +1,17 @@
-import React from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon } from "antd";
+import React, { Component } from "react";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon, Tree, Button, List, Collapse, Card, Col, Checkbox } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
 import { PageComponent, PageInitHelper } from "./Page";
 import { makePaginationConfig } from "../misc/common";
 import { MotionDiv } from "../../utils/animationProps";
-import { GroupDescription, GroupMemberDescription, GroupMemberAssignment } from "../../state/restInterfaces";
+import { GroupDescription, GroupMemberDescription, GroupMemberAssignment, TopicLag } from "../../state/restInterfaces";
 import { groupConsecutive } from "../../utils/utils";
+import { observable, autorun } from "mobx";
+import { appGlobal } from "../../state/appGlobal";
 const { Text } = Typography;
+const { TreeNode } = Tree;
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
@@ -20,9 +23,22 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         p.addBreadcrumb('Consumer Groups', '/groups');
         if (group) p.addBreadcrumb(group, '/' + group);
 
-        api.refreshConsumerGroups();
-        api.refreshTopics(); // we also need the topics, so we know how many partitions each topic has
+        this.refreshData(false);
+
+        autorun(() => {
+            if (api.ConsumerGroups)
+                for (let g of api.ConsumerGroups)
+                    console.log(g.groupId + ': ' + g.lag.topicLags.sum(l => l.partitionLags.sum(x => x.lag)));
+        });
+
+        appGlobal.onRefresh = () => this.refreshData(true);
     }
+
+    refreshData(force: boolean) {
+        console.log('GroupDetails.Refresh()');
+        api.refreshConsumerGroups(force);
+        api.refreshTopics(force); // we also need the topics, so we know how many partitions each topic has
+    };
 
     render() {
         // Get info about the group
@@ -51,6 +67,9 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                     <Statistic title='State' valueRender={() => <GroupState group={group} />} style={{ marginRight: '2em' }} />
                     <Statistic title='Consumers' value={group.members.length} style={{ marginRight: '2em' }} />
                     <ProtocolType group={group} />
+                </Row>
+                <Row type="flex" style={{ marginBottom: '1em' }}>
+                    <Checkbox checked={true}>Merge ClientID with Identifier</Checkbox>
                 </Row>
 
                 <GroupMembers group={group} />
@@ -89,21 +108,37 @@ const ProtocolType = (p: { group: GroupDescription }) => {
 const GroupMembers = observer((p: { group: GroupDescription }) => {
 
     const pageConfig = makePaginationConfig();
+    const topicLags = p.group.lag.topicLags;
+
+    // console.log('rendering group members')
 
     return <Table
         style={{ margin: '0', padding: '0', whiteSpace: 'normal' }}
         bordered={true} size={'middle'}
+
+        //expandRowByClick={false}
+        expandIconAsCell={false}
+        expandIconColumnIndex={0}
+        expandedRowRender={(record: GroupMemberDescription) => <ExpandedGroupMember groupId={p.group.groupId} topicLags={topicLags} member={record} />}
+
         pagination={pageConfig}
         dataSource={p.group.members}
         rowKey={r => r.id}
         rowClassName={() => 'pureDisplayRow'}
         columns={[
-            { title: <span>ID</span>, dataIndex: 'id', className:'whiteSpaceDefault' },
-            { width: '150px', title: 'ClientID', dataIndex: 'clientId' },
+            { title: <span>ID</span>, dataIndex: 'id', className: 'whiteSpaceDefault', render: renderMergedID },
+            //{ width: '150px', title: 'ClientID', dataIndex: 'clientId' },
             { width: '150px', title: 'Client Host', dataIndex: 'clientHost' },
-            { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t), className:'whiteSpaceDefault' },
+            { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t), className: 'whiteSpaceDefault' },
         ]} />
 })
+
+const renderMergedID = (text: string, record: GroupMemberDescription) => {
+    if (record.id.startsWith(record.clientId)) { // should always be true...
+        const suffix = record.id.substring(record.clientId.length);
+        return <>{record.clientId}<span className='consumerGroupSuffix'>{suffix}</span></>
+    }
+};
 
 const margin1Px = { margin: '1px' };
 const margin2PxLine = { margin: '2px 0' };
@@ -143,6 +178,75 @@ function renderAssignments(value: GroupMemberAssignment[]): React.ReactNode {
     }
 
     return jsx;
+}
+
+
+const ExpandedGroupMember = observer((p: { groupId: string, topicLags: TopicLag[], member: GroupMemberDescription }) => {
+
+    // For debugging:
+    ///////////
+    //const sourceAssignments = [...p.member.assignments];
+    // sourceAssignments.push({ ...sourceAssignments[0]});
+    // sourceAssignments.push({ ...sourceAssignments[0]});
+    // sourceAssignments.push({ ...sourceAssignments[0]});
+    // sourceAssignments.push({ ...sourceAssignments[0]});
+    // sourceAssignments.push({ ...sourceAssignments[0]});
+    const sourceAssignments = p.member.assignments;
+    ///////////
+
+    const assignments = sourceAssignments.map((assignment: GroupMemberAssignment, index) => {
+        const topicLag = p.topicLags.find(tl => tl.topic == assignment.topicName);
+        if (!topicLag) {
+            console.log('Backend provided no lag information for topic: ' + assignment.topicName);
+            return null;
+        }
+        return <TopicLags key={assignment.topicName} name={assignment.topicName} partitions={assignment.partitionIds} topicLag={topicLag} />
+    });
+
+    return <Row gutter={[16, 16]}>
+        {assignments}
+    </Row>
+});
+
+@observer
+class TopicLags extends Component<{ name: string, partitions: number[], topicLag: TopicLag }> {
+
+    @observable isExpanded = false;
+
+    render() {
+        const p = this.props;
+
+        const renderPartitionLag = (p: { id: number, lag: number }) => {
+            // <div className='lagIndicatorBg'><div className='lagIndicatorFill' style={{ width: '%' }}></div></div>
+            return <div className='groupLagDisplayLine'>Partition{p.id}: {p.lag}</div>
+        };
+
+        const expandBtn = <a onClick={() => this.isExpanded = !this.isExpanded}>{this.isExpanded ? 'Less' : 'More'}</a>
+
+        let partitionLags = p.partitions
+            .map(id => {
+                const pLag = p.topicLag.partitionLags.find(lag => lag.partitionId == id);
+                return { id: id, lag: pLag ? pLag.lag : 0 };
+            })
+            .sort((a, b) => b.lag - a.lag);
+
+        const isAllZeroLag = !this.isExpanded && (partitionLags.length == 0 || partitionLags.all(l => l.lag == 0));
+
+        if (!this.isExpanded) // In small view: show only non-zero, and only top5
+            partitionLags = partitionLags.filter(l => l.lag > 0).slice(0, 5);
+
+        return <MotionDiv positionTransition>
+            <Col xs={24} sm={24} md={24} lg={12} xl={8} xxl={6}>
+                <Card size="small" title={p.name} extra={expandBtn} style={{ marginBottom: '1em' }}>
+                    {
+                        isAllZeroLag
+                            ? <span>No lag on any partition</span>
+                            : partitionLags.map(lag => renderPartitionLag(lag))
+                    }
+                </Card>
+            </Col>
+        </MotionDiv>
+    }
 }
 
 
