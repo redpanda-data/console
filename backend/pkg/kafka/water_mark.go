@@ -5,14 +5,15 @@ import (
 	"go.uber.org/zap"
 )
 
-type waterMark struct {
+// WaterMark is a partitionID along with it's highest and lowest message index
+type WaterMark struct {
 	PartitionID int32
 	Low         int64
 	High        int64
 }
 
-// waterMarks returns a map of: partitionID -> *waterMark
-func (s *Service) waterMarks(topic string, partitionIDs []int32) (map[int32]*waterMark, error) {
+// WaterMarks returns a map of: partitionID -> *waterMark
+func (s *Service) WaterMarks(topic string, partitionIDs []int32) (map[int32]*WaterMark, error) {
 	// 1. Generate an OffsetRequest for each topic:partition and bucket it to the leader broker
 	brokers := make(map[int32]*sarama.Broker)
 
@@ -65,7 +66,7 @@ func (s *Service) waterMarks(topic string, partitionIDs []int32) (map[int32]*wat
 	}
 
 	// 3. Process results and construct desired response
-	waterMarks := make(map[int32]*waterMark)
+	waterMarks := make(map[int32]*WaterMark)
 
 	// Iterate on returned offsets and put them into our response map
 	for i := 0; i < cap(ch); i++ {
@@ -81,7 +82,7 @@ func (s *Service) waterMarks(topic string, partitionIDs []int32) (map[int32]*wat
 				}
 
 				if _, ok := waterMarks[partition]; !ok {
-					waterMarks[partition] = &waterMark{PartitionID: partition}
+					waterMarks[partition] = &WaterMark{PartitionID: partition}
 				}
 				if r.OffsetType == sarama.OffsetNewest {
 					waterMarks[partition].High = block.Offsets[0]

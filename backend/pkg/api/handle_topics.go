@@ -101,13 +101,13 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 // handleGetPartitions returns an overview of all partitions and their watermarks in the given topic
 func (api *API) handleGetPartitions() http.HandlerFunc {
 	type response struct {
-		TopicName  string                 `json:"topicName"`
-		Partitions []kafka.TopicPartition `json:"partitions"`
+		TopicName  string               `json:"topicName"`
+		Partitions []owl.TopicPartition `json:"partitions"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := chi.URLParam(r, "topicName")
-		partitions, err := api.KafkaSvc.ListTopicPartitions(topicName)
+		partitions, err := api.OwlSvc.ListTopicPartitions(topicName)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
