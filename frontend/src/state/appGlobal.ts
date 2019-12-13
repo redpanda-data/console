@@ -21,5 +21,7 @@ class AppGlobal {
         });
         uiState.pathName = h.location.pathname;
     };
+
+    onRefresh: (()=>void) = () => {};
 }
 export const appGlobal = new AppGlobal();
