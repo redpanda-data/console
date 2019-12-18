@@ -39,8 +39,17 @@ func (s *Service) GetTopicConfigs(topicName string, configNames []string) (*Topi
 
 // GetTopicsConfigs fetches all topic config options for the given set of topic names and config names and converts
 // that information so that it is handy to use. Provide an empty array for configNames to describe all config entries.
-func (s *Service) GetTopicsConfigs(topicNames []string, configNames []string) (map[string]*TopicConfigs, error) {
-	response, err := s.KafkaSvc.DescribeTopicsConfigs(topicNames, configNames)
+func (s *Service) GetTopicsConfigs(requestedTopicNames []string, configNames []string) (map[string]*TopicConfigs, error) {
+
+	topicNames := make([]string, 0, len(requestedTopicNames))
+	for _, topicName := range requestedTopicNames {
+		_, isBlacklisted := s.topicsBlacklist[topicName]
+		if !isBlacklisted {
+			topicNames = append(topicNames, topicName)
+		}
+	}
+
+	response, err := s.kafkaSvc.DescribeTopicsConfigs(topicNames, configNames)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +58,7 @@ func (s *Service) GetTopicsConfigs(topicNames []string, configNames []string) (m
 	converted := make(map[string]*TopicConfigs, len(topicNames))
 	for _, res := range response.Resources {
 		if res.ErrorMsg != "" {
-			s.Logger.Error("config response resource has an error", zap.String("resource_name", res.Name), zap.Error(err))
+			s.logger.Error("config response resource has an error", zap.String("resource_name", res.Name), zap.Error(err))
 			return nil, err
 		}
 

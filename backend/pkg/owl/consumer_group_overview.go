@@ -35,12 +35,12 @@ type GroupMemberAssignment struct {
 
 // GetConsumerGroupsOverview returns a ConsumerGroupOverview for all available consumer groups
 func (s *Service) GetConsumerGroupsOverview(ctx context.Context) ([]*ConsumerGroupOverview, error) {
-	groups, err := s.KafkaSvc.ListConsumerGroups(ctx)
+	groups, err := s.kafkaSvc.ListConsumerGroups(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	describedGroups, err := s.KafkaSvc.DescribeConsumerGroups(ctx, groups)
+	describedGroups, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groups)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (s *Service) convertGroupMembers(members map[string]*sarama.GroupMemberDesc
 		if protocolType == "consumer" {
 			assignments, err := m.GetMemberAssignment()
 			if err != nil {
-				s.Logger.Warn("failed to decode member assignments", zap.String("client_id", m.ClientId), zap.Error(err))
+				s.logger.Warn("failed to decode member assignments", zap.String("client_id", m.ClientId), zap.Error(err))
 			}
 
 			for topic, partitionIDs := range assignments.Topics {

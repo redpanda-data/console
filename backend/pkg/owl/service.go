@@ -8,6 +8,23 @@ import (
 // Service offers all methods to serve the responses for the REST API. This usually only involves fetching
 // serveral responses from Kafka concurrently and constructing them so, that they are
 type Service struct {
-	KafkaSvc *kafka.Service
-	Logger   *zap.Logger
+	kafkaSvc        *kafka.Service
+	logger          *zap.Logger
+	cfg             *Config
+	topicsBlacklist map[string]interface{}
+}
+
+func NewService(kafkaSvc *kafka.Service, logger *zap.Logger, cfg *Config) *Service {
+	topicsBlacklist := make(map[string]interface{}, len(cfg.TopicsBlacklist))
+
+	for _, blTopic := range cfg.TopicsBlacklist {
+		topicsBlacklist[blTopic] = nil
+	}
+
+	return &Service{
+		kafkaSvc:        kafkaSvc,
+		logger:          logger,
+		cfg:             cfg,
+		topicsBlacklist: topicsBlacklist,
+	}
 }

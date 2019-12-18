@@ -51,3 +51,4 @@ Kubernetes users may want to use the Helm chart to deploy Kafka owl: https://git
 | --kafka.tls.cert-file-path | Path to the TLS cert file | (No default) |
 | --kafka.tls.insecure-skip-verify | If true, TLS accepts any certificate presented by the server and any host name in that certificate. | false |
 | --kafka.tls.passphrase | Passphrase to decrypt the TLS key (leave empty for unencrypted key files) | (No default) |
+| --owl.topics.blacklist | Topics blacklist (comma separated) to configure access restrictions | (No default)

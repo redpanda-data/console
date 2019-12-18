@@ -48,9 +48,9 @@ func convertOffsets(offsets *sarama.OffsetFetchResponse) map[string]partitionOff
 // getConsumerGroupLags returns a nested map with the following key nestings: groupID -> topicName -> partitionID
 func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (map[string]*ConsumerGroupLag, error) {
 	// 1. Fetch all Consumer Group Offsets for each Topic
-	offsets, err := s.KafkaSvc.ListConsumerGroupOffsetsBulk(ctx, groups)
+	offsets, err := s.kafkaSvc.ListConsumerGroupOffsetsBulk(ctx, groups)
 	if err != nil {
-		s.Logger.Error("failed to list consumer group offsets in bulk", zap.Error(err))
+		s.logger.Error("failed to list consumer group offsets in bulk", zap.Error(err))
 		return nil, fmt.Errorf("failed to list consumer group offsets in bulk")
 	}
 
@@ -70,15 +70,15 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 
 	topicPartitions := make(map[string][]int32, len(topics))
 	for _, topic := range topics {
-		partitions, err := s.KafkaSvc.Client.Partitions(topic)
+		partitions, err := s.kafkaSvc.Client.Partitions(topic)
 		if err != nil {
-			s.Logger.Error("failed to fetch partition list for calculating the group lags", zap.String("topic", topic), zap.Error(err))
+			s.logger.Error("failed to fetch partition list for calculating the group lags", zap.String("topic", topic), zap.Error(err))
 			return nil, fmt.Errorf("failed to fetch partition list for calculating the group lags")
 		}
 		topicPartitions[topic] = partitions
 	}
 
-	waterMarks, err := s.KafkaSvc.HighWaterMarks(topicPartitions)
+	waterMarks, err := s.kafkaSvc.HighWaterMarks(topicPartitions)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 		topicLags := make([]*TopicLag, 0)
 		for topic, partitionOffsets := range offsetsByGroup[group] {
 			// In this scope we iterate on a single group's, single topic's offset
-			subLogger := s.Logger.With(zap.String("group", group), zap.String("topic", topic))
+			subLogger := s.logger.With(zap.String("group", group), zap.String("topic", topic))
 
 			partitionWaterMarks, ok := waterMarks[topic]
 			if !ok {
