@@ -9,7 +9,7 @@ import (
 // LogDirSizeByBroker returns a map where the BrokerID is the key and the summed bytes of all log dirs of
 // the respective broker is the value.
 func (s *Service) logDirSizeByBroker() (map[int32]int64, error) {
-	responses, err := s.KafkaSvc.DescribeLogDirs()
+	responses, err := s.kafkaSvc.DescribeLogDirs()
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func (s *Service) logDirSizeByBroker() (map[int32]int64, error) {
 // LogDirSizeByTopic returns a map where the Topicname is the key and the summed bytes of all log dirs of
 // the respective topic is the value.
 func (s *Service) logDirSizeByTopic() (map[string]int64, error) {
-	responses, err := s.KafkaSvc.DescribeLogDirs()
+	responses, err := s.kafkaSvc.DescribeLogDirs()
 	if err != nil {
 		return nil, err
 	}
