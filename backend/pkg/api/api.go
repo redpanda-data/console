@@ -62,7 +62,7 @@ func New(cfg *Config) *API {
 		Logger:           logger,
 		RestHelper:       &rest.Helper{Logger: logger},
 		KafkaSvc:         kafkaSvc,
-		OwlSvc:           &owl.Service{KafkaSvc: kafkaSvc, Logger: logger},
+		OwlSvc:           owl.NewService(kafkaSvc, logger, &cfg.Owl),
 		Version:          os.Getenv("VERSION"),
 		Hooks:            newEmptyHooks(),
 		ExtendedFeatures: len(os.Getenv("EXTENDED_FEATURES")) > 0,

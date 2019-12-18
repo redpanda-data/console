@@ -6,6 +6,7 @@ import (
 	"github.com/kafka-owl/kafka-owl/pkg/common/logging"
 	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
 	"github.com/kafka-owl/kafka-owl/pkg/kafka"
+	"github.com/kafka-owl/kafka-owl/pkg/owl"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
@@ -14,6 +15,7 @@ type Config struct {
 	REST             rest.Config
 	Kafka            kafka.Config
 	Logger           logging.Config
+	Owl              owl.Config
 }
 
 // RegisterFlags for all (sub)configs
@@ -23,4 +25,5 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	c.REST.RegisterFlags(f)
 	c.Kafka.RegisterFlags(f)
 	c.Logger.RegisterFlags(f)
+	c.Owl.RegisterFlags(f)
 }

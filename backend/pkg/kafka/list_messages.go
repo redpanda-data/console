@@ -42,6 +42,7 @@ type TopicMessage struct {
 // ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
 // (which runs in it's own goroutine) for each partition and funneling all the data to eventually
 // return it. The second return parameter is a bool which indicates whether the requested topic exists.
+// TODO: refactor to owl and add topic blacklisting
 func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*ListMessageResponse, error) {
 	start := time.Now()
 

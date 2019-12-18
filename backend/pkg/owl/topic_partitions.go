@@ -12,13 +12,18 @@ type TopicPartition struct {
 
 // ListTopicPartitions returns the partition in the topic along with their watermarks
 func (s *Service) ListTopicPartitions(topicName string) ([]TopicPartition, error) {
-	partitions, err := s.KafkaSvc.ListPartitions(topicName)
+	_, isBlacklisted := s.topicsBlacklist[topicName]
+	if isBlacklisted {
+		return nil, fmt.Errorf("cannot list partitions of blacklisted topic %v", topicName)
+	}
+
+	partitions, err := s.kafkaSvc.ListPartitions(topicName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get partitions for topic '%v': %v", topicName, err)
 	}
 
 	// Get watermarks
-	waterMarks, err := s.KafkaSvc.WaterMarks(topicName, partitions)
+	waterMarks, err := s.kafkaSvc.WaterMarks(topicName, partitions)
 	if err != nil {
 		return nil, err
 	}
