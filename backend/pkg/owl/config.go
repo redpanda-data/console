@@ -3,7 +3,7 @@ package owl
 import (
 	"flag"
 
-	"github.com/kafka-owl/kafka-owl/pkg/common/flagext"
+	"github.com/kafka-owl/common/flagext"
 )
 
 // Config holds all (subdependency)Configs needed to run the API

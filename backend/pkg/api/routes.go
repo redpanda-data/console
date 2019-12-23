@@ -7,7 +7,8 @@ import (
 	healthhttp "github.com/AppsFlyer/go-sundheit/http"
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
-	"github.com/kafka-owl/kafka-owl/pkg/common/middleware"
+	"github.com/kafka-owl/common/middleware"
+	"github.com/kafka-owl/common/rest"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
@@ -15,8 +16,8 @@ import (
 // All the routes for the application are defined in one place.
 func (api *API) routes() *chi.Mux {
 	router := chi.NewRouter()
-	router.NotFound(api.RestHelper.HandleNotFound())
-	router.MethodNotAllowed(api.RestHelper.HandleMethodNotAllowed())
+	router.NotFound(rest.HandleNotFound(api.Logger))
+	router.MethodNotAllowed(rest.HandleMethodNotAllowed(api.Logger))
 
 	// Init middlewares - Do any set up of shared/third-party middleware and handlers
 	if api.Cfg.REST.CompressionLevel > 0 {
@@ -25,7 +26,7 @@ func (api *API) routes() *chi.Mux {
 	}
 
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
-	recoverer := middleware.Recoverer{RestHelper: api.RestHelper}
+	recoverer := middleware.Recoverer{Logger: api.Logger}
 	router.Use(
 		middleware.Intercept,
 		recoverer.Wrap,
@@ -35,7 +36,7 @@ func (api *API) routes() *chi.Mux {
 		chimiddleware.Timeout(15*time.Second),
 	)
 
-	if api.Cfg.Logger.PrintAccessLogs {
+	if api.Cfg.PrintAccessLogs {
 		a := middleware.NewAccessLog(api.Logger)
 		router.Use(a.Wrap)
 	}

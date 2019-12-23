@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
-	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
+	"github.com/kafka-owl/common/rest"
 	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 	"github.com/kafka-owl/kafka-owl/pkg/owl"
 )
@@ -16,8 +16,8 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 	type response struct {
 		Topics []*owl.TopicOverview `json:"topics"`
 	}
-	return func(w http.ResponseWriter, r *http.Request) {
 
+	return func(w http.ResponseWriter, r *http.Request) {
 		topics, err := api.OwlSvc.GetTopicsOverview()
 		if err != nil {
 			restErr := &rest.Error{
@@ -26,7 +26,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 				Message:  "Could not list topics from Kafka cluster",
 				IsSilent: false,
 			}
-			api.RestHelper.SendRESTError(w, r, restErr)
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
@@ -35,7 +35,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 		response := response{
 			Topics: topics,
 		}
-		api.RestHelper.SendResponse(w, r, http.StatusOK, response)
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
 }
 
@@ -66,7 +66,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 				Message:  "The given query parameters are invalid",
 				IsSilent: false,
 			}
-			api.RestHelper.SendRESTError(w, r, restErr)
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
@@ -87,14 +87,14 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 				Message:  "Could not list messages for requested topic",
 				IsSilent: false,
 			}
-			api.RestHelper.SendRESTError(w, r, restErr)
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
 		response := &GetTopicMessagesResponse{
 			KafkaMessages: messages,
 		}
-		api.RestHelper.SendResponse(w, r, http.StatusOK, response)
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
 }
 
@@ -115,7 +115,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 				Message:  "Could not list topic partitions for requested topic",
 				IsSilent: false,
 			}
-			api.RestHelper.SendRESTError(w, r, restErr)
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
@@ -123,7 +123,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 			TopicName:  topicName,
 			Partitions: partitions,
 		}
-		api.RestHelper.SendResponse(w, r, http.StatusOK, res)
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
 
@@ -143,13 +143,13 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 				Message:  "Could not list topic config for requested topic",
 				IsSilent: false,
 			}
-			api.RestHelper.SendRESTError(w, r, restErr)
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
 		res := response{
 			TopicDescription: description,
 		}
-		api.RestHelper.SendResponse(w, r, http.StatusOK, res)
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }

@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
+	"github.com/kafka-owl/common/rest"
 	"github.com/kafka-owl/kafka-owl/pkg/owl"
 )
 
@@ -21,13 +21,13 @@ func (api *API) handleDescribeCluster() http.HandlerFunc {
 				Message:  "Could not describe cluster",
 				IsSilent: false,
 			}
-			api.RestHelper.SendRESTError(w, r, restErr)
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
 		response := response{
 			ClusterInfo: clusterInfo,
 		}
-		api.RestHelper.SendResponse(w, r, http.StatusOK, response)
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
 }
