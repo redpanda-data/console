@@ -6,8 +6,8 @@ import (
 
 	health "github.com/AppsFlyer/go-sundheit"
 	"github.com/Shopify/sarama"
-	"github.com/kafka-owl/kafka-owl/pkg/common/logging"
-	"github.com/kafka-owl/kafka-owl/pkg/common/rest"
+	"github.com/kafka-owl/common/logging"
+	"github.com/kafka-owl/common/rest"
 	"github.com/kafka-owl/kafka-owl/pkg/kafka"
 	"github.com/kafka-owl/kafka-owl/pkg/owl"
 	"github.com/prometheus/common/log"
@@ -24,7 +24,6 @@ type API struct {
 	OwlSvc   *owl.Service
 	Version  string
 
-	RestHelper *rest.Helper
 	health     health.Health
 
 	Hooks            *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
@@ -60,7 +59,6 @@ func New(cfg *Config) *API {
 	return &API{
 		Cfg:              cfg,
 		Logger:           logger,
-		RestHelper:       &rest.Helper{Logger: logger},
 		KafkaSvc:         kafkaSvc,
 		OwlSvc:           owl.NewService(kafkaSvc, logger, &cfg.Owl),
 		Version:          os.Getenv("VERSION"),
