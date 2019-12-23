@@ -14,6 +14,7 @@ type Service struct {
 	topicsBlacklist map[string]interface{}
 }
 
+// NewService for the Owl package
 func NewService(kafkaSvc *kafka.Service, logger *zap.Logger, cfg *Config) *Service {
 	topicsBlacklist := make(map[string]interface{}, len(cfg.TopicsBlacklist))
 
