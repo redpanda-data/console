@@ -302,3 +302,27 @@ span>.icon-container~span {
     padding-bottom:0.2em;
     border-bottom: 1px solid #eee;
 }
+
+.login {
+    display: flex;
+    place-content: center;
+    place-items: center;
+    height: 100vh;
+}
+
+.loginContent {
+    padding: 3em;
+    padding-bottom: 2em;
+    background: rgba(0,0,0, 0.02);
+    box-shadow: 0px 0px 12px 1px rgba(0,0,0, 0.1);
+}
+
+.login h1,h2,h3 {
+    color: #444;
+    margin-bottom: 1em;
+}
+.login ul {
+    /* background: rgba(0,0,0, 0.03); */
+    padding: 1em;
+
+}

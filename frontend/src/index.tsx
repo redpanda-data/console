@@ -9,7 +9,9 @@ import './index.css';
 import App from './components/App';
 import { appGlobal } from './state/appGlobal';
 
-
+// True for 'KafkaOwl Business'
+// Enables the top bar and its features: cluster select, login
+export const isBusinessVersion = true;
 
 const HistorySetter = withRouter((p: RouteComponentProps) => { appGlobal.history = p.history; return <></>; });
 
