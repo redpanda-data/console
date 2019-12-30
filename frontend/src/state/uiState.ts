@@ -46,7 +46,6 @@ export class TopicDetailsSettings {
                 );
                 break;
         }
-        console.log("setAvailableFavs: " + this.favConfigEntries);
     }
 }
 

@@ -46,7 +46,6 @@ const markerIcon = <Icon type="highlight" theme="twoTone" twoToneColor="#1890ff"
 export const FavoritePopover = (configEntry: TopicConfigEntry, children: React.ReactNode) => {
 
     const name = configEntry.name;
-    console.log("popover: " + uiState.topicDetails.favConfigEntries);
     const favs = uiState.topicDetails.favConfigEntries;
     const isFav = favs.includes(name);
     const toggleFav = isFav
