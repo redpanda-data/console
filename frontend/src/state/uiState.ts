@@ -15,22 +15,30 @@ export class TopicDetailsSettings {
     @observable activeTabKey: string | undefined = undefined;
     @observable favConfigEntries: Array<string> = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
 
+    private pushIfNotPresent(...items: string[]): void {
+        items.forEach(item => {
+            if (!this.favConfigEntries.find(i => i === item)) {
+                this.favConfigEntries.push(item);
+            }
+        });
+    }
+
     public setAvailableFavs(cleanupPolicy: string): void {
         switch (cleanupPolicy) {
             case "delete":
-                this.favConfigEntries.push(
+                this.pushIfNotPresent(
                     'retention.ms',
                     'retention.bytes',
                 );
                 break;
             case "compact":
-                this.favConfigEntries.push(
+                this.pushIfNotPresent(
                     'min.cleanable.dirty.ratio',
                     'delete.retention.ms',
                 );
                 break;
             case "compact,delete":
-                this.favConfigEntries.push(
+                this.pushIfNotPresent(
                     'retention.ms',
                     'retention.bytes',
                     'min.cleanable.dirty.ratio',
@@ -38,6 +46,7 @@ export class TopicDetailsSettings {
                 );
                 break;
         }
+        console.log("setAvailableFavs: " + this.favConfigEntries);
     }
 }
 
