@@ -30,18 +30,25 @@ const InputGroup = Input.Group;
 const statsStyle: CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
 // todo: rename QuickInfo
-export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[], size: number }) =>
-    <Row type="flex" style={{ marginBottom: '1em' }}>
+export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[], size: number }) => {
+    const cleanupPolicy = p.config.find(e => e.name === 'cleanup.policy');
 
-        <Statistic title='Size' value={prettyBytes(p.size)} style={statsStyle}/>
+    uiState.topicDetails.setAvailableFavs(cleanupPolicy ? cleanupPolicy.value : "");
 
-        {p.config.filter(e => uiState.topicDetails.favConfigEntries.includes(e.name)).map((e) =>
-            FavoritePopover(e, (
-                <div style={statsStyle}>
-                    <Statistic title={(e.name)} value={FormatValue(e)} />
-                </div>
-            ))
-        )
+    return <Row type="flex" style={{ marginBottom: '1em' }}>
+
+        <Statistic title='Size' value={prettyBytes(p.size)} style={statsStyle} />
+
+        {
+            p.config
+                .filter(e => uiState.topicDetails.favConfigEntries.includes(e.name))
+                .map((e) =>
+                    FavoritePopover(e, (
+                        <div style={statsStyle}>
+                            <Statistic title={(e.name)} value={FormatValue(e)} />
+                        </div>
+                    ))
+                )
         }
     </Row>
-)
+})
