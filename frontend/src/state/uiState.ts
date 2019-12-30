@@ -13,7 +13,32 @@ export class TopicDetailsSettings {
 
     // per topic
     @observable activeTabKey: string | undefined = undefined;
-    @observable favConfigEntries: Array<string> = ['cleanup.policy', 'retention.ms', 'segment.bytes', 'segment.ms'];
+    @observable favConfigEntries: Array<string> = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
+
+    public setAvailableFavs(cleanupPolicy: string): void {
+        switch (cleanupPolicy) {
+            case "delete":
+                this.favConfigEntries.push(
+                    'retention.ms',
+                    'retention.bytes',
+                );
+                break;
+            case "compact":
+                this.favConfigEntries.push(
+                    'min.cleanable.dirty.ratio',
+                    'delete.retention.ms',
+                );
+                break;
+            case "compact,delete":
+                this.favConfigEntries.push(
+                    'retention.ms',
+                    'retention.bytes',
+                    'min.cleanable.dirty.ratio',
+                    'delete.retention.ms',
+                );
+                break;
+        }
+    }
 }
 
 class UIState {
