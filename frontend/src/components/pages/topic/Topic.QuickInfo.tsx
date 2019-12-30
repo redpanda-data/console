@@ -32,7 +32,6 @@ const statsStyle: CSSProperties = { margin: 0, marginRight: '2em', padding: '.2e
 // todo: rename QuickInfo
 export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[], size: number }) => {
     const cleanupPolicy = p.config.find(e => e.name === 'cleanup.policy');
-
     uiState.topicDetails.setAvailableFavs(cleanupPolicy ? cleanupPolicy.value : "");
 
     return <Row type="flex" style={{ marginBottom: '1em' }}>
