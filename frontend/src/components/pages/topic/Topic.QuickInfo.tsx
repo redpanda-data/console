@@ -39,12 +39,13 @@ export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[]
         <Statistic title='Size' value={prettyBytes(p.size)} style={statsStyle} />
 
         {
-            p.config
-                .filter(e => uiState.topicDetails.favConfigEntries.includes(e.name))
-                .map((e) =>
-                    FavoritePopover(e, (
+            uiState.topicDetails.favConfigEntries
+                .map(fce => p.config.find(tce => tce.name === fce))
+                .filter(tce => !!tce)
+                .map(tce =>
+                    FavoritePopover(tce!, (
                         <div style={statsStyle}>
-                            <Statistic title={(e.name)} value={FormatValue(e)} />
+                            <Statistic title={(tce!.name)} value={FormatValue(tce!)} />
                         </div>
                     ))
                 )
