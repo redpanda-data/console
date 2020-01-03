@@ -38,6 +38,6 @@ COPY --from=builder /app/bin/kafka-owl /app/kafka-owl
 COPY --from=frontendBuilder /app/build/ /app/build
 
 
-ENV VERSION "1.1.0"
+ENV VERSION "1.1.1"
 
 ENTRYPOINT ["./kafka-owl"]
