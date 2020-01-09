@@ -3,7 +3,7 @@ package kafka
 import (
 	"flag"
 
-	"github.com/kafka-owl/common/flagext"
+	"github.com/cloudhut/common/flagext"
 )
 
 // Config required for opening a connection to Kafka
