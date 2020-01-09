@@ -30,8 +30,8 @@ github.com/bxcodec/faker v2.0.1+incompatible/go.mod h1:BNzfpVdTwnFJ6GtfYTcQu6l6r
 github.com/cespare/xxhash/v2 v2.1.1 h1:6MnRN8NT7+YBpUIWxHtefFZOKTAPgGjpQSxqLNn0+qY=
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
-github.com/cloudhut/common v0.1.2 h1:WHmGryoZ4Qz94guvipIsj/cpywpGxh41mWrCc1K4+kc=
-github.com/cloudhut/common v0.1.2/go.mod h1:OXuk14XE3v7rsc1BxUhT/F31nqIUYjhg7VzWMi7TlqM=
+github.com/cloudhut/common v0.2.0 h1:IRlzWgbb8ZXeQOQbTxU32I41i1jh5x86gzyY1TdBZMo=
+github.com/cloudhut/common v0.2.0/go.mod h1:OXuk14XE3v7rsc1BxUhT/F31nqIUYjhg7VzWMi7TlqM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
