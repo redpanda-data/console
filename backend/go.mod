@@ -7,11 +7,16 @@ require (
 	github.com/InVisionApp/go-logger v1.0.1
 	github.com/Shopify/sarama v1.24.1
 	github.com/basgys/goxml2json v1.1.0
+	github.com/bitly/go-simplejson v0.5.0 // indirect
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bxcodec/faker v2.0.1+incompatible
+	github.com/cloudhut/common v0.1.2
 	github.com/deathowl/go-metrics-prometheus v0.0.0-20190530215645-35bace25558f
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/gorilla/schema v1.1.0
-	github.com/cloudhut/common v0.1.0
+	github.com/klauspost/cpuid v1.2.2 // indirect
+	github.com/onsi/ginkgo v1.11.0 // indirect
+	github.com/onsi/gomega v1.8.1 // indirect
 	github.com/prometheus/client_golang v1.3.0
 	github.com/prometheus/common v0.7.0
 	github.com/valyala/fastjson v1.4.1
