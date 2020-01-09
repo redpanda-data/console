@@ -6,10 +6,10 @@ import (
 
 	health "github.com/AppsFlyer/go-sundheit"
 	"github.com/Shopify/sarama"
-	"github.com/kafka-owl/common/logging"
-	"github.com/kafka-owl/common/rest"
-	"github.com/kafka-owl/kafka-owl/pkg/kafka"
-	"github.com/kafka-owl/kafka-owl/pkg/owl"
+	"github.com/cloudhut/common/logging"
+	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kafka-owl/pkg/kafka"
+	"github.com/cloudhut/kafka-owl/pkg/owl"
 	"github.com/prometheus/common/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -24,7 +24,7 @@ type API struct {
 	OwlSvc   *owl.Service
 	Version  string
 
-	health     health.Health
+	health health.Health
 
 	Hooks            *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
 	ExtendedFeatures bool   // enable cluster select, user display, logout button, etc.

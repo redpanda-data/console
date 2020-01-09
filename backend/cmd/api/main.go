@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 
-	"github.com/kafka-owl/common/flagext"
-	"github.com/kafka-owl/kafka-owl/pkg/api"
+	"github.com/cloudhut/common/flagext"
+	"github.com/cloudhut/kafka-owl/pkg/api"
 )
 
 func main() {

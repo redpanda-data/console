@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-chi/chi"
-	"github.com/kafka-owl/kafka-owl/pkg/owl"
+	"github.com/cloudhut/kafka-owl/pkg/owl"
 )
 
 // Hooks are a way to extend the Kafka Owl functionality from the outside. By default all hooks have no
