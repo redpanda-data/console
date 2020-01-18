@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kafka-owl/pkg/owl"
+	"github.com/cloudhut/kafka-owl/backend/pkg/owl"
 )
 
 // GetConsumerGroupsResponse represents the data which is returned for listing topics
