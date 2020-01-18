@@ -5,14 +5,14 @@ import (
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kafka-owl/pkg/kafka"
-	"github.com/cloudhut/kafka-owl/pkg/owl"
+	"github.com/cloudhut/kafka-owl/backend/pkg/kafka"
+	"github.com/cloudhut/kafka-owl/backend/pkg/owl"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
 type Config struct {
 	MetricsNamespace            string
-	
+
 	PrintAccessLogs             bool   // When true, will log every accessed REST route along with many headers to the console.
 	AccessLogExtraHeader        string // An additional header that will be included, for example: https://cloud.google.com/iap/docs/identity-howto
 	BlockWhenExtraHeaderMissing bool   // When the extra header is given in the config, but missing in an incoming request, the request will be blocked (returning a 401)

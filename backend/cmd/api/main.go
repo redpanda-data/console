@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/cloudhut/common/flagext"
-	"github.com/cloudhut/kafka-owl/pkg/api"
+	"github.com/cloudhut/kafka-owl/backend/pkg/api"
 )
 
 func main() {

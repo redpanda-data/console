@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/cloudhut/kafka-owl/pkg/kafka"
+	"github.com/cloudhut/kafka-owl/backend/pkg/kafka"
 )
 
 // KafkaHealthCheck implements the gosundheit HealthCheck interface
