@@ -6,7 +6,7 @@ import { CreateRouteMenuItems, APP_ROUTES, RouteView, } from './routes';
 import { RenderTrap, Spacer } from './misc/common';
 import { DebugTimerStore, hoursToMilliseconds } from '../utils/utils';
 import { api } from '../state/backendApi';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
 import { MotionAlways, MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
@@ -18,8 +18,13 @@ import Title from 'antd/lib/typography/Title';
 import logo from '../assets/logo.png';
 import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsDevelopment } from '../utils/isProd';
+import { IsDevelopment, IsProduction } from '../utils/isProd';
 import { TopBar } from './misc/TopBar';
+import { isBusinessVersion } from '..';
+import fetchWithTimeout from '../utils/fetchWithTimeout';
+import { UserData } from '../state/restInterfaces';
+import Login from './misc/login';
+import LoginCompletePage from './misc/login-complete';
 
 const { Content, Footer, Sider, Header } = Layout;
 const { Option } = Select;
@@ -91,7 +96,7 @@ const DataAgeInfo = observer(() => {
     // maybe we need to use the same 'no vertical expansion' trick:
     // <span >
     return (
-        <div style={{ color: 'hsl(205, 100%, 50%)', display: 'flex', alignItems: 'center', height:'2em' }} className='fadeIn' >
+        <div style={{ color: 'hsl(205, 100%, 50%)', display: 'flex', alignItems: 'center', height: '2em' }} className='fadeIn' >
 
             {maxFetchTime < 0.1
                 ?
@@ -101,7 +106,7 @@ const DataAgeInfo = observer(() => {
                 </>
                 :
                 <>
-                    <span className='spinner' style={{ marginLeft:'.5em', width: size, height: size }} />
+                    <span className='spinner' style={{ marginLeft: '.5em', width: size, height: size }} />
                     <span className='pulsating' style={{ paddingLeft: '0.8em', fontSize: '80%' }}>Fetching data...</span>
                 </>
             } </div>
@@ -170,10 +175,8 @@ const AppContent = observer(() =>
 
         <RenderTrap name='AppContentLayout' />
 
-        {/* <PreviewBanner /> */}
-
         {/* Cluster, User */}
-        <TopBar />
+        {isBusinessVersion && <TopBar />}
 
         {/* Page */}
         <Content style={{ display: 'flex', flexDirection: 'column', overflow: 'overlay', overflowX: 'hidden', background: 'white', padding: '1em 2em', zIndex: 1 }}>
@@ -187,15 +190,54 @@ const AppContent = observer(() =>
 );
 
 class App extends PureComponent {
+
     render() {
+        this.loginHandling(); // Complete login, or fetch user if needed
+
         return (
             <ErrorBoundary>
-                <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
-                    <AppSide />
-                    <AppContent />
-                </Layout>
+                <Switch>
+                    {/* Login (and callbacks) */}
+                    <Route exact path='/login' component={Login}/>
+                    <Route exact path='/login/callbacks/google'><LoginCompletePage provider='google' /></Route>
+
+                    {/* Default View */}
+                    <Route path="*">
+                        <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
+                            <AppSide />
+                            <AppContent />
+                        </Layout>
+                    </Route>
+                </Switch>
             </ErrorBoundary>
         );
+    }
+
+    loginHandling() {
+
+        if (!isBusinessVersion) return;
+
+        const isDev = !IsProduction;
+        const devPrint = function (str: string) { if (isDev) console.log(str); }
+        devPrint('loginHandling: path=' + window.location.pathname);
+
+
+        if (window.location.pathname.startsWith('/login/callbacks/')) {
+            devPrint('loginHandling: completing callback...');
+        } else if (!api.UserData) {
+            devPrint('loginHandling: user is null, fetching');
+
+            fetchWithTimeout('/api/users/me', 10 * 1000).then(async r => {
+                if (r.ok) {
+                    api.UserData = await r.json() as UserData;
+                    devPrint('loginHandling: fetched user successfully');
+                } else if (r.status == 401) {
+                    devPrint('loginHandling: status=401, meaning we are not logged in');
+                }
+            });
+        } else {
+            devPrint('loginHandling: user is set: ' + JSON.stringify(api.UserData));
+        }
     }
 }
 export default App;

@@ -17,10 +17,10 @@ jobs:
         run: echo "##[set-output name=ref;]$(echo ${GITHUB_REF##*/})"
         id: extract_ref
 
-      - name: Login to GitHub Package Registry
-        env:
-          GITHUB_PACKAGE_REGISTRY_TOKEN: ${{ secrets.GITHUB_PACKAGE_REGISTRY_TOKEN }}
-        run: docker login docker.pkg.github.com -u rikimaru0345 -p ${GITHUB_PACKAGE_REGISTRY_TOKEN}
+      # - name: Login to GitHub Package Registry
+      #   env:
+      #     GITHUB_PACKAGE_REGISTRY_TOKEN: ${{ secrets.GITHUB_PACKAGE_REGISTRY_TOKEN }}
+      #   run: docker login docker.pkg.github.com -u rikimaru0345 -p ${GITHUB_PACKAGE_REGISTRY_TOKEN}
 
       - name: Build Docker Image
         run:
@@ -30,6 +30,6 @@ jobs:
           -t docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:master
           .
 
-      - name: Push Image
-        run: |
-          docker push docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:master
+      # - name: Push Image
+      #   run: |
+      #     docker push docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:master

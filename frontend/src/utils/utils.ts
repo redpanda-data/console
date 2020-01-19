@@ -273,22 +273,31 @@ export function assignDeep(target: any, source: any) {
 
 }
 
-export function findElementDeep(target: any, name: string): any {
-    for (let key in target) {
+const collator = new Intl.Collator(undefined, {
+    usage: 'search',
+    sensitivity: 'base',
+});
+// todo: this only finds the first match, what if we want to find all?
+export function findElementDeep(obj: any, name: string, caseSensitive: boolean): any {
+    for (let key in obj) {
 
-        const value = target[key];
+        const value = obj[key];
 
-        // match
-        if (key === name) {
+        // property match?
+        const isMatch = caseSensitive
+            ? key === name
+            : collator.compare(name, key) === 0;
+
+        //console.log(`[${key}] match=${isMatch} type=${typeof value} value=${value}`);
+
+        if (isMatch)
             return value;
-        }
 
-        // try to descend
+        // descend into object
         if (typeof value === 'object') {
-            var innerValue = findElementDeep(value, name);
-            if (innerValue != undefined) {
-                return innerValue;
-            }
+            const childResult = findElementDeep(value, name, caseSensitive);
+            if (childResult !== undefined)
+                return childResult;
         }
     }
 
@@ -352,8 +361,8 @@ export function groupConsecutive(ar: number[]): number[][] {
     return groups;
 }
 
-export const prettyBytesOrNA = function(n: number) {
-    if(n == -1) return "N/A";
+export const prettyBytesOrNA = function (n: number) {
+    if (n == -1) return "N/A";
     return prettyBytes(n);
 }
 

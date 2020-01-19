@@ -15,8 +15,8 @@ const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 20;
 const REST_CACHE_DURATION_SEC = 20;
 
 
-async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC): Promise<T> {
-    const res = await fetchWithTimeout(url, timeoutSec * 1000);
+export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T> {
+    const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
     if (!res.ok)
         throw new Error("(" + res.status + ") " + res.statusText);
 
@@ -25,6 +25,7 @@ async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC): Prom
     const data = (JSON.parse(str) as T);
     return data;
 }
+
 
 const cache = new LazyMap<string, CacheEntry>(u => new CacheEntry(u));
 class CacheEntry {
@@ -108,32 +109,23 @@ const apiStore = {
 
     // Data
     Clusters: ['BigData Prod', 'BigData Staging', 'BigData Dev'],
-    UserData: null as (UserData | null),
     Topics: null as (TopicDetail[] | null),
     ConsumerGroups: null as (GroupDescription[] | null),
     TopicConfig: new Map<string, TopicConfigEntry[]>(),
     TopicPartitions: new Map<string, Partition[]>(),
     ClusterInfo: null as (ClusterInfo | null),
 
+    UserData: null as (UserData | null),
+    async logout() {
+        await fetch('/logout');
+        this.UserData = null;
+    },
+
     // Make currently running requests observable
     ActiveRequests: [] as CacheEntry[],
 
     // Fetch errors
     Errors: [] as any[],
-
-
-    //
-    // Helper methods
-    get userName() {
-        return this.UserData
-            ? this.UserData.UserName
-            : 'UserName'
-    },
-    get pictureUrl() {
-        return this.UserData
-            ? this.UserData.PictureUrl
-            : ''
-    },
 
 
     MessagesFor: '', // for what topic?

@@ -32,6 +32,8 @@ const TopBar = observer(() => {
 
     if (!extendedFeatures && !IsDevelopment) return null;
 
+    if(!api.UserData || !api.UserData.UserName) return null; // not logged in, or data not fetched yet...
+
     return (
         // zIndex is needed for the boxShadow to show
         <Header style={{ height: 'auto', padding: '1em 1em', background: 'white', lineHeight: '2em', boxShadow: 'rgba(0, 0, 0, 0.2) 0em 0em 8px', zIndex: 10 }}>
@@ -46,13 +48,13 @@ const TopBar = observer(() => {
                 {/* Spacer */}
                 <Spacer />
 
-                {/* User Avatar */}
+                {/* User Button */}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}> {/* user column */}
-                    <Popconfirm title='Do you want to logout?' onConfirm={() => window.location.assign("/logout")} placement='left' okText='Yes' cancelText='No'>
+                    <Popconfirm title='Do you want to logout?' onConfirm={() => api.logout()} placement='left' okText='Yes' cancelText='No'>
                         <Button style={{ height: 'auto', padding: 0, paddingLeft: '.5em', margin: 0 }} className='hoverButton'>
                             <span style={{ display: 'flex', alignItems: 'center' }}> {/* text+img row */}
-                                <span style={{ verticalAlign: 'middle' }}><b>{api.userName}</b></span>
-                                <Avatar shape="square" size='default' icon="user" src={api.pictureUrl} style={{ marginLeft: '.5em' }} />
+                                <span style={{ verticalAlign: 'middle' }}><b>{api.UserData.UserName}</b></span>
+                                <Avatar shape="square" size='default' icon="user" src={api.UserData.PictureUrl} style={{ marginLeft: '.5em' }} />
                             </span>
                         </Button>
                     </Popconfirm>
