@@ -175,7 +175,11 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
                     bordered={true} size='small'
                     pagination={this.pageConfig}
-                    onChange={x => { if (x.pageSize) { uiSettings.topicMessages.pageSize = x.pageSize; this.pageConfig.pageSize = x.pageSize; } }}
+                    onChange={(pagination, filters, sorter, extra) => {
+                        if (pagination.pageSize) uiSettings.topicMessages.pageSize = pagination.pageSize;
+                        this.pageConfig.current = pagination.current;
+                        this.pageConfig.pageSize = pagination.pageSize;
+                    }}
                     dataSource={this.messageSource.data}
                     loading={this.requestInProgress}
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
@@ -252,7 +256,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 this.fetchError = null;
                 this.requestInProgress = true;
                 await api.searchTopicMessages(this.props.topic.topicName, searchParams);
-                this.allCurrentKeys = Array.from(getAllKeys(this.messageSource.data));
+                this.allCurrentKeys = Array.from(getAllKeys(this.messageSource.data)); // cache array of every single key
+                this.pageConfig.current = undefined;
             } catch (error) {
                 console.error('error in searchTopicMessages: ' + error.toString());
                 this.fetchError = error;
