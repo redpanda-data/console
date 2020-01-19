@@ -34,11 +34,13 @@ const uiSettings = observable({
         valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
         hideInternalTopics: true,
         previewTags: [] as PreviewTag[],
-        pageSize: DEFAULT_TABLE_PAGE_SIZE,
+        previewTagsCaseSensitive: false,
+        previewShowEmptyMessages: true,
+        pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
     },
 
     topicMessages: {
-        pageSize: 20,
+        pageSize: 20, // how many messages to show
     },
 
     consumerGroupList: {
