@@ -152,9 +152,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 title: valueTitle,
                 dataIndex: 'value',
                 render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activeTags} />,
-
-                filteredValue: ['?'],
-                onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
+                //filteredValue: ['?'],
+                //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
             { width: 1, title: 'Size (≈)', dataIndex: 'size', align: 'right', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) } },
             {
