@@ -428,7 +428,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 const previewObj: any = {};
                 for (let f of fields) {
                     var x = findElementDeep(value, f, uiSettings.topicList.previewTagsCaseSensitive);
-                    if (x) {
+                    if (x !== undefined) {
                         previewObj[f] = x;
                     }
                 }
