@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/kafka-owl/common/rest"
-	"github.com/kafka-owl/kafka-owl/pkg/owl"
+	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kafka-owl/backend/pkg/owl"
 )
 
 func (api *API) handleDescribeCluster() http.HandlerFunc {

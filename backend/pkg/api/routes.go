@@ -7,8 +7,8 @@ import (
 	healthhttp "github.com/AppsFlyer/go-sundheit/http"
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
-	"github.com/kafka-owl/common/middleware"
-	"github.com/kafka-owl/common/rest"
+	"github.com/cloudhut/common/middleware"
+	"github.com/cloudhut/common/rest"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
@@ -37,7 +37,7 @@ func (api *API) routes() *chi.Mux {
 	)
 
 	if api.Cfg.PrintAccessLogs {
-		a := middleware.NewAccessLog(api.Logger)
+		a := middleware.NewAccessLog(api.Logger, api.Cfg.AccessLogExtraHeader, api.Cfg.BlockWhenExtraHeaderMissing)
 		router.Use(a.Wrap)
 	}
 

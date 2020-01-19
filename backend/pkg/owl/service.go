@@ -1,7 +1,7 @@
 package owl
 
 import (
-	"github.com/kafka-owl/kafka-owl/pkg/kafka"
+	"github.com/cloudhut/kafka-owl/backend/pkg/kafka"
 	"go.uber.org/zap"
 )
 

@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider, Modal } from "antd";
+import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
@@ -9,7 +9,6 @@ import ReactJson, { CollapsedFieldProps } from 'react-json-view'
 import { PageComponent, PageInitHelper } from "../Page";
 import prettyMilliseconds from 'pretty-ms';
 import prettyBytes from 'pretty-bytes';
-import topicConfigInfo from '../../../assets/topicConfigInfo.json'
 import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed, transaction } from "mobx";
@@ -19,8 +18,8 @@ import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProp
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
-import { uiState } from "../../../state/uiState";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
+import { ModalFunc } from "antd/lib/modal/Modal";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -134,9 +133,13 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     MessageTable = observer(() => {
 
         const valueTitle = <>
-            <span>Value (Preview)</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px', transform: 'translateY(1px)' }}>
-                <Button icon='setting' shape='circle' className='hoverBorder' onClick={() => this.showPreviewSettings = true} />
+            <span>Value
+                <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
+                    <Button shape='round' className='hoverBorder' onClick={() => this.showPreviewSettings = true} style={{ color: '#1890ff', padding: '0 0.5em' }}>
+                        <Icon type='setting' style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
+                        <span style={{ marginLeft: '.3em' }}>Preview</span>
+                    </Button>
+                </span>
             </span>
         </>
 
@@ -149,6 +152,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 title: valueTitle,
                 dataIndex: 'value',
                 render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activeTags} />,
+                //filteredValue: ['?'],
+                //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
             { width: 1, title: 'Size (≈)', dataIndex: 'size', align: 'right', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) } },
             {
@@ -179,7 +184,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     expandedRowRender={record => RenderExpandedMessage(record)}
                     expandIconAsCell={false}
                     expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
-                    columns={columns} />
+                    columns={columns}
+                />
 
                 {(this.messageSource.data && this.messageSource.data.length > 0) && <this.PreviewSettings />}
             </ConfigProvider>
@@ -191,33 +197,48 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         message.success('Message content (JSON) copied to clipboard', 5);
     }
 
+    previewSettingsModal: (ReturnType<ModalFunc> | null) = null;
+
     PreviewSettings = observer(() => {
-        // const info = Modal.info({  visible:this.showPreviewSettings,  getContainer:false,  })
 
         const content = <>
             <Paragraph>
-                <Text>Add any name to this list. If it exists in the message, then it will be shown in the preview.</Text><br />
-                <Text>After you've added some fields, you can click on them to toggle them on/off.</Text>
+                <Text>
+                    When viewing large messages we're often only interested in a few specific fields.
+                    To make the preview more helpful, add all the json keys you want to see.<br />
+                    Click on an existing tag to toggle it on/off, or <b>x</b> to remove it.<br />
+                </Text>
             </Paragraph>
-            <div style={{ padding: '1em', border: 'solid 1px #0001', borderRadius: '6px' }}>
+            <div style={{ padding: '1.5em 1em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px' }}>
                 <CustomTagList tags={uiSettings.topicList.previewTags} allCurrentKeys={this.allCurrentKeys} />
+            </div>
+            <div style={{ marginTop: '1em' }}>
+                <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
+                <Checkbox
+                    checked={uiSettings.topicList.previewTagsCaseSensitive}
+                    onChange={e => uiSettings.topicList.previewTagsCaseSensitive = e.target.checked}
+                >Case Sensitive</Checkbox>
+                {/* todo... */}
+                {/* <Checkbox
+                    checked={uiSettings.topicList.previewShowEmptyMessages}
+                    onChange={e => uiSettings.topicList.previewShowEmptyMessages = e.target.checked}
+                >Show Empty Messages</Checkbox> */}
             </div>
         </>
 
-        if (this.showPreviewSettings) {
-            Modal.info({
-                title: 'Preview Fields',
-                visible: this.showPreviewSettings,
-                getContainer: false,
-                content: content,
-                onOk: () => this.showPreviewSettings = false,
-                width: 1000,
-                okText:'Close',
-            });
-        }
-
-        return null;
-    })
+        return <Modal
+            title={<span><Icon type="filter" style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
+            visible={this.showPreviewSettings}
+            onOk={() => this.showPreviewSettings = false}
+            width={750}
+            okText='Close'
+            cancelButtonProps={{ style: { display: 'none' } }}
+            closable={false}
+            maskClosable={true}
+        >
+            {content}
+        </Modal>;
+    });
 
 
     async executeMessageSearch(): Promise<void> {
@@ -388,26 +409,33 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         try {
             let text: ReactNode = <></>;
 
-            if (!value) { // 1. handle 'null'
+            if (!value) {
+                // null: must be a tombstone (maybe? what if other fields are not null?)
+                // todo: render tombstones in a better way!
                 text = <code>null</code>
             }
             else if (msg.valueType == 'text') {
+                // Raw Text (wtf :P)
                 text = value;
             }
             else if (msg.valueType == 'binary') {
+                // Binary data is displayed as hex dump
                 text = msg.valueBinHexPreview;
             }
-            else if (fields.length > 0) { // 2. try preview fields
+            else if (fields.length > 0) {
+                // Json!
+                // Construct our preview object
                 const previewObj: any = {};
                 for (let f of fields) {
-                    var x = findElementDeep(value, f);
-                    if (x) {
+                    var x = findElementDeep(value, f, uiSettings.topicList.previewTagsCaseSensitive);
+                    if (x !== undefined) {
                         previewObj[f] = x;
                     }
                 }
                 text = cullText(JSON.stringify(previewObj), 100);
             }
-            else { // 3. just stringify the whole object
+            else {
+                // Normal display (json, no filters). Just stringify the whole object
                 text = cullText(JSON.stringify(value), 100);
             }
 
@@ -497,7 +525,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
 
         return <>
             <AnimatePresence>
-                <MotionDiv positionTransition style={{ padding: '.3em' }}>
+                <MotionDiv positionTransition>
 
                     {this.props.tags.map(v => <CustomTag key={v.value} tag={v} tagList={this} />)}
 
