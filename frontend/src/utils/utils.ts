@@ -288,15 +288,17 @@ export function findElementDeep(obj: any, name: string, caseSensitive: boolean):
             ? key === name
             : collator.compare(name, key) === 0;
 
-        //console.log(`isMatch=${isMatch} ignoreCase=${caseSensitive} key=${key} name=${name}`);
+        //console.log(`[${key}] match=${isMatch} type=${typeof value} value=${value}`);
 
         if (isMatch)
             return value;
 
-
         // descend into object
-        if (typeof value === 'object')
-            return findElementDeep(value, name, caseSensitive);
+        if (typeof value === 'object') {
+            const childResult = findElementDeep(value, name, caseSensitive);
+            if (childResult !== undefined)
+                return childResult;
+        }
     }
 
     return undefined;
