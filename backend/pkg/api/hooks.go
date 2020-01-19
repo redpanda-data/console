@@ -9,39 +9,42 @@ import (
 
 // Hooks are a way to extend the Kafka Owl functionality from the outside. By default all hooks have no
 // additional functionality. In order to run your own Hooks you must construct an Hooks instance and
-// run your own instance of api.
+// run attach them to your own instance of Api.
 type Hooks struct {
 	Route RouteHooks
-	Topic TopicHooks
+	Owl   OwlHooks
 }
 
-// RouteHooks -
+// RouteHooks allow you to modify the Router
 type RouteHooks interface {
+	// ConfigAPIRouter allows you to modify the router responsible for all /api routes
 	ConfigAPIRouter(router chi.Router)
+
+	// ConfigFrontendRouter allows you to modify the router responsible for all non /api and non /admin routes.
+	// By default we serve the frontend on these routes.
 	ConfigFrontendRouter(router chi.Router)
 }
 
-// TopicHooks -
-type TopicHooks interface {
+// OwlHooks include all functions which allow you to modify
+type OwlHooks interface {
 	FilterTopics(ctx context.Context, topics []*owl.TopicOverview)
 }
 
-// Empty Hooks
-type emptyHooks struct {
+// defaultHooks is the default hook which is used if you don't attach your own hooks
+type defaultHooks struct {
 }
 
-func newEmptyHooks() *Hooks {
-	empty := &emptyHooks{}
+func newDefaultHooks() *Hooks {
+	d := &defaultHooks{}
 	return &Hooks{
-		Route: empty,
-		Topic: empty,
+		Route: d,
+		Owl:   d,
 	}
 }
 
-// Route
-func (*emptyHooks) ConfigPublicRouter(router chi.Router)   {}
-func (*emptyHooks) ConfigAPIRouter(router chi.Router)      {}
-func (*emptyHooks) ConfigFrontendRouter(router chi.Router) {}
+// Router Hooks
+func (*defaultHooks) ConfigAPIRouter(router chi.Router)      {}
+func (*defaultHooks) ConfigFrontendRouter(router chi.Router) {}
 
-// Topic
-func (*emptyHooks) FilterTopics(ctx context.Context, topics []*owl.TopicOverview) {}
+// Owl Hooks
+func (*defaultHooks) FilterTopics(ctx context.Context, topics []*owl.TopicOverview) {}
