@@ -62,7 +62,7 @@ func New(cfg *Config) *API {
 		KafkaSvc:         kafkaSvc,
 		OwlSvc:           owl.NewService(kafkaSvc, logger, &cfg.Owl),
 		Version:          os.Getenv("VERSION"),
-		Hooks:            newEmptyHooks(),
+		Hooks:            newDefaultHooks(),
 		ExtendedFeatures: len(os.Getenv("EXTENDED_FEATURES")) > 0,
 	}
 }
