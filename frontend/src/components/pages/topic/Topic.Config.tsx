@@ -114,11 +114,14 @@ export function FormatValue(configEntry: TopicConfigEntry): string {
 
 
     // Special cases for known configuration entries
-    if (configEntry.name == 'flush.messages' && num > Math.pow(2, 60))
+    if (configEntry.name == 'flush.messages' && num > Math.pow(2, 60)) // messages between each fsync
         return 'Never' + suffix;
 
+    if (configEntry.name == 'retention.bytes' && num < 0) // max bytes to keep before discarding old log segments
+        return 'Infinite' + suffix;
+
     // Don't modify zero at all
-    if (value === '0')
+    if (value == '0')
         return value;
 
     // Time
