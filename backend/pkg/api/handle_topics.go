@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/gorilla/schema"
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kafka-owl/backend/pkg/kafka"
 	"github.com/cloudhut/kafka-owl/backend/pkg/owl"
+	"github.com/go-chi/chi"
+	"github.com/gorilla/schema"
 )
 
 func (api *API) handleGetTopics() http.HandlerFunc {
@@ -30,7 +30,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 			return
 		}
 
-		api.Hooks.Topic.FilterTopics(r.Context(), topics)
+		api.Hooks.Owl.FilterTopics(r.Context(), topics)
 
 		response := response{
 			Topics: topics,
