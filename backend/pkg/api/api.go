@@ -24,7 +24,7 @@ type API struct {
 	OwlSvc   *owl.Service
 	Version  string
 
-	health     health.Health
+	health health.Health
 
 	Hooks            *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
 	ExtendedFeatures bool   // enable cluster select, user display, logout button, etc.
@@ -62,7 +62,7 @@ func New(cfg *Config) *API {
 		KafkaSvc:         kafkaSvc,
 		OwlSvc:           owl.NewService(kafkaSvc, logger, &cfg.Owl),
 		Version:          os.Getenv("VERSION"),
-		Hooks:            newEmptyHooks(),
+		Hooks:            newDefaultHooks(),
 		ExtendedFeatures: len(os.Getenv("EXTENDED_FEATURES")) > 0,
 	}
 }
