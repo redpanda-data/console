@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Empty, Skeleton, Row, Statistic, Tag } from "antd";
+import { Table, Empty, Skeleton, Row, Statistic, Tag, Input } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -11,9 +11,10 @@ import { makePaginationConfig, sortField } from "../misc/common";
 import { uiSettings } from "../../state/ui";
 import { appGlobal } from "../../state/appGlobal";
 import { GroupState } from "./GroupDetails";
+import { observable } from "mobx";
+import { containsIgnoreCase } from "../../utils/utils";
 
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
-
 
 @observer
 class GroupList extends PageComponent {
@@ -29,7 +30,7 @@ class GroupList extends PageComponent {
 
     }
 
-    refreshData(force:boolean){
+    refreshData(force: boolean) {
         api.refreshConsumerGroups(force);
     }
 
@@ -38,7 +39,6 @@ class GroupList extends PageComponent {
         if (api.ConsumerGroups.length == 0) return <Empty />
 
         const groups = api.ConsumerGroups;
-
         const stateGroups = groups.groupInto(g => g.state);
 
         return (
@@ -48,6 +48,7 @@ class GroupList extends PageComponent {
                     {stateGroups.map(g => <Statistic key={g.key} title={g.key} value={g.items.length} style={statisticStyle} />)}
                 </Row>
 
+                <this.SearchBar />
 
                 <Table
                     style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
@@ -62,13 +63,38 @@ class GroupList extends PageComponent {
                     rowKey={x => x.groupId}
                     columns={[
                         { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
-                        { title: 'ID', dataIndex: 'groupId', sorter: sortField('groupId'), render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault' },
+                        {
+                            title: 'ID', dataIndex: 'groupId',
+                            sorter: sortField('groupId'),
+                            filteredValue: [this.quickFilter],
+                            onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, filterValue),
+                            render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
+                        },
                         { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
-                        { title: 'Lag (Sum)', dataIndex:'lag', render:(text,record:GroupDescription,index)=> record.lag.topicLags.map(t => t.summedLag).reduce((a,b) => a+b, 0) },
+                        { title: 'Lag (Sum)', dataIndex: 'lag', render: (text, record: GroupDescription, index) => record.lag.topicLags.map(t => t.summedLag).reduce((a, b) => a + b, 0) },
                     ]} />
             </motion.div>
         );
     }
+
+    @observable quickFilter: string = '';
+
+    SearchBar = observer(() => {
+
+        return <div style={{ marginBottom: '1em', padding: '0', whiteSpace: 'nowrap' }}>
+
+            <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: 'auto' }}
+                onChange={e => this.quickFilter = e.target.value}
+            // addonAfter={
+            //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
+            //         <Icon type='setting' style={{ color: '#0006' }} />
+            //     </Popover>
+            // }
+            />
+
+            {/* <this.FilterSummary /> */}
+        </div>
+    })
 
     GroupId = (p: { group: GroupDescription }) => {
         const protocol = p.group.protocolType;
