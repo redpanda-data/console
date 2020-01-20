@@ -273,10 +273,15 @@ export function assignDeep(target: any, source: any) {
 
 }
 
+export function containsIgnoreCase(str: string, search: string): boolean {
+    return str.toLowerCase().indexOf(search.toLowerCase()) >= 0;
+}
+
 const collator = new Intl.Collator(undefined, {
     usage: 'search',
     sensitivity: 'base',
 });
+
 // todo: this only finds the first match, what if we want to find all?
 export function findElementDeep(obj: any, name: string, caseSensitive: boolean): any {
     for (let key in obj) {
