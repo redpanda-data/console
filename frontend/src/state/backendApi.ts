@@ -135,7 +135,7 @@ const apiStore = {
     async searchTopicMessages(topicName: string, searchParams: TopicMessageSearchParameters): Promise<void> {
         const clone = JSON.parse(JSON.stringify(searchParams)) as TopicMessageSearchParameters;
         (clone as any)._offsetMode = undefined;
-        const queryString = objToQuery(searchParams);
+        const queryString = objToQuery(clone);
 
 
         this.clearMessageCache();
@@ -177,7 +177,7 @@ const apiStore = {
 
 
     refreshTopics(force?: boolean) {
-        cachedApiRequest<GetTopicsResponse>('/api/topics',force)
+        cachedApiRequest<GetTopicsResponse>('/api/topics', force)
             .then(v => {
                 for (let t of v.topics) {
                     // t.messageCount = ...

@@ -37,7 +37,7 @@ class TopicList extends PageComponent {
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
-    refreshData(force:boolean){
+    refreshData(force: boolean) {
         api.refreshTopics(force);
     }
 
@@ -114,6 +114,7 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
     constructor(p: any) {
         super(p);
         this.filteredSource = new FilterableDataSource<TItem>(this.props.dataSource, this.props.isFilterMatch);
+        this.filteredSource.filterText = uiSettings.topicList.quickSearch;
     }
 
     componentWillUnmount() {
@@ -128,7 +129,8 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
                 dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
             > */}
             <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: 'auto' }}
-                onChange={e => this.filteredSource.filterText = e.target.value}
+                onChange={e => this.filteredSource.filterText = uiSettings.topicList.quickSearch = e.target.value}
+                value={uiSettings.topicList.quickSearch}
             // addonAfter={
             //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
             //         <Icon type='setting' style={{ color: '#0006' }} />

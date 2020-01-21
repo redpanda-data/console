@@ -37,6 +37,7 @@ const uiSettings = observable({
         previewTagsCaseSensitive: false,
         previewShowEmptyMessages: true,
         pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
+        quickSearch: '',
     },
 
     topicMessages: {
@@ -45,6 +46,7 @@ const uiSettings = observable({
 
     consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
+        quickSearch: '',
     },
 
     previewNotificationHideUntil: 0, // utc seconds
