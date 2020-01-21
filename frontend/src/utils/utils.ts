@@ -319,16 +319,17 @@ export function getAllKeys(target: any): Set<string> {
 }
 
 function getAllKeysRecursive(target: any, keys: Set<string>) {
-    const targetIsAr = Array.isArray(target);
+    const isArray = Array.isArray(target);
     for (let key in target) {
 
+        // Add key name (but not array indices)
+        if (!isArray) {
+            keys.add(key);
+        }
+
+        // Descend into properties / elements
         const value = target[key];
         if (typeof value == 'object') {
-            // Add key name (but not for arrays)
-            if (!targetIsAr) {
-                keys.add(key);
-            }
-            // Descend into properties / elements
             getAllKeysRecursive(value, keys);
         }
     }

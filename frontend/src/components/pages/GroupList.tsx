@@ -66,7 +66,7 @@ class GroupList extends PageComponent {
                         {
                             title: 'ID', dataIndex: 'groupId',
                             sorter: sortField('groupId'),
-                            filteredValue: [this.quickFilter],
+                            filteredValue: [uiSettings.consumerGroupList.quickSearch],
                             onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, filterValue),
                             render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
                         },
@@ -77,14 +77,13 @@ class GroupList extends PageComponent {
         );
     }
 
-    @observable quickFilter: string = '';
-
     SearchBar = observer(() => {
 
         return <div style={{ marginBottom: '1em', padding: '0', whiteSpace: 'nowrap' }}>
 
             <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: 'auto' }}
-                onChange={e => this.quickFilter = e.target.value}
+                onChange={e => uiSettings.consumerGroupList.quickSearch = e.target.value}
+                value={uiSettings.consumerGroupList.quickSearch}
             // addonAfter={
             //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
             //         <Icon type='setting' style={{ color: '#0006' }} />

@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal } from "antd";
+import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
@@ -138,6 +138,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     <Button shape='round' className='hoverBorder' onClick={() => this.showPreviewSettings = true} style={{ color: '#1890ff', padding: '0 0.5em' }}>
                         <Icon type='setting' style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                         <span style={{ marginLeft: '.3em' }}>Preview</span>
+                        {(() => {
+                            const count = uiSettings.topicList.previewTags.sum(t => t.active ? 1 : 0);
+                            if (count > 0)
+                                return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>
+                            return <></>;
+                        })()}
                     </Button>
                 </span>
             </span>
@@ -183,6 +189,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     dataSource={this.messageSource.data}
                     loading={this.requestInProgress}
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
+                    rowClassName={(r: TopicMessage) => (!r.value) ? 'tombstone' : ''}
 
                     expandRowByClick={false}
                     expandedRowRender={record => RenderExpandedMessage(record)}
@@ -256,7 +263,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 this.fetchError = null;
                 this.requestInProgress = true;
                 await api.searchTopicMessages(this.props.topic.topicName, searchParams);
-                this.allCurrentKeys = Array.from(getAllKeys(this.messageSource.data)); // cache array of every single key
+                this.allCurrentKeys = Array.from(getAllKeys(api.Messages.map(m => m.value))); // cache array of every single key
                 this.pageConfig.current = undefined;
             } catch (error) {
                 console.error('error in searchTopicMessages: ' + error.toString());
@@ -417,7 +424,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             if (!value) {
                 // null: must be a tombstone (maybe? what if other fields are not null?)
                 // todo: render tombstones in a better way!
-                text = <code>null</code>
+                text = <><Icon type='delete' style={{ fontSize: 16, color: 'rgba(0,0,0, 0.4)', verticalAlign: 'text-bottom', marginRight: '4px' }} /><code>Tombstone</code></>
             }
             else if (msg.valueType == 'text') {
                 // Raw Text (wtf :P)
@@ -536,7 +543,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
 
                     {this.inputVisible &&
                         <motion.span positionTransition>
-                            <Input
+                            {/* <Input
                                 ref={r => { if (r) { r.focus(); } }}
                                 type="text"
                                 size="small"
@@ -545,7 +552,25 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
                                 onChange={e => this.inputValue = e.target.value}
                                 onBlur={this.handleInputConfirm}
                                 onPressEnter={this.handleInputConfirm}
-                            />
+                            /> */}
+                            <span onKeyDown={e => {
+                                if (e.key == 'Enter') this.handleInputConfirm();
+                                if (e.key == 'Escape') { this.inputValue = ''; this.handleInputConfirm(); }
+                            }}>
+                                <AutoComplete
+                                    ref={r => { if (r) { r.focus(); } }}
+
+                                    dataSource={tagSuggestions}
+
+                                    size="small"
+                                    style={{ width: 130 }}
+                                    value={this.inputValue}
+                                    onChange={e => this.inputValue = e.toString()}
+                                    onBlur={() => { this.inputValue = ''; this.handleInputConfirm(); }}
+                                    filterOption={true}
+                                />
+                            </span>
+
                         </motion.span>
                     }
 
