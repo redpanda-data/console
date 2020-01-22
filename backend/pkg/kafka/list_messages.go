@@ -36,7 +36,8 @@ type TopicMessage struct {
 	Value     DirectEmbedding `json:"value"`
 	ValueType string          `json:"valueType"`
 
-	Size int `json:"size"`
+	Size        int  `json:"size"`
+	IsValueNull bool `json:"isValueNull"`
 }
 
 // ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
