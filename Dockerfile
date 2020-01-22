@@ -30,7 +30,7 @@ RUN npm run build
 
 
 # Create executable image
-FROM alpine:3.10
+FROM alpine:3.11
 WORKDIR /app
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/bin/kafka-owl /app/kafka-owl
