@@ -16,21 +16,26 @@ jobs:
         run: echo "##[set-output name=ref;]$(echo ${GITHUB_REF##*/})"
         id: extract_ref
 
-      # - name: Login to GitHub Package Registry
-      #   env:
-      #     GITHUB_PACKAGE_REGISTRY_TOKEN: ${{ secrets.GITHUB_PACKAGE_REGISTRY_TOKEN }}
-      #   run: docker login docker.pkg.github.com -u rikimaru0345 -p ${GITHUB_PACKAGE_REGISTRY_TOKEN}
+      - name: Set timestamp
+        shell: bash
+        run: echo "::set-output name=time::$(echo date +%s)"
+        id: set_timestamp
+
+      - name: Login to Quay
+        QUAY_ENCRYPTED_PASS: ${{ secrets.QUAY_ENCRYPTED_PASS }}
+        run: docker login -u="cloudhut+github_push" -p=${QUAY_ENCRYPTED_PASS} quay.io
 
       - name: Build Docker Image
         run:
           docker build
           --build-arg "COMMIT_SHA=${GITHUB_SHA}"
           --build-arg "GITHUB_REF=${{ steps.extract_ref.outputs.ref }}"
-          -t docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:${{ steps.extract_ref.outputs.ref }}
-          -t docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:latest
+          --build-arg "TIMESTAMP=${{ steps.set_timestamp.outputs.time }}"
+          -t quay.io/cloudhut/kafka-owl:latest
+          -t quay.io/cloudhut/kafka-owl:${{ steps.extract_ref.outputs.ref }}
           .
 
-      # - name: Push Image
-      #   run: |
-      #     docker push docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:${{ steps.extract_ref.outputs.ref }}
-      #     docker push docker.pkg.github.com/kafka-owl/kafka-owl/kafka-owl:latest
+      - name: Push Image
+        run: |
+          docker push quay.io/cloudhut/kafka-owl:latest
+          docker push quay.io/cloudhut/kafka-owl:${{ steps.extract_ref.outputs.ref }}
