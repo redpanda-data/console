@@ -73,6 +73,7 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 				Value:       value,
 				ValueType:   string(vType),
 				Size:        len(m.Value),
+				IsValueNull: m.Value == nil,
 			}
 			p.messageCh <- topicMessage
 			if m.Offset >= p.endOffset {

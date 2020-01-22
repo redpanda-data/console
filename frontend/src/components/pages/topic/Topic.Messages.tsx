@@ -163,9 +163,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             },
             { width: 1, title: 'Size (≈)', dataIndex: 'size', align: 'right', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) } },
             {
-                width: 1,
-                title: 'Action',
-                key: 'action',
+                width: 1, title: 'Action', key: 'action',
                 render: (text, record) => (
                     <span>
                         <Button type='link' size='small' onClick={() => this.copyMessage(record)}>Copy</Button>
@@ -189,7 +187,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     dataSource={this.messageSource.data}
                     loading={this.requestInProgress}
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
-                    rowClassName={(r: TopicMessage) => (!r.value) ? 'tombstone' : ''}
+                    rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
 
                     expandRowByClick={false}
                     expandedRowRender={record => RenderExpandedMessage(record)}
@@ -289,7 +287,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             </Text>
         </>
 
-        const typeTags = api.MessageResponse.messages.map(m => m.valueType).distinct().map(t => this.formatTypeToTag(t));
+        const typeTags = api.MessageResponse.messages.map(m => m.valueType).distinct().map(t => this.formatTypeToTag(t)).filter(t => t != null);
 
         const normalDisplay = () => <>
             <Text type='secondary'>
@@ -315,6 +313,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             case 'avro': return <Tag key={3} color='blue'>Avro</Tag>
             case 'binary': return <Tag key={4} color='red'>Binary</Tag>
             case 'text': return <Tag key={5} color='gold'>Text</Tag>
+            case '': return null;
         }
         return <Tag key={6} color='black'>Unknown: {type}</Tag>
     }
