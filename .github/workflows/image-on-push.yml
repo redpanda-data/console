@@ -19,7 +19,7 @@ jobs:
 
       - name: Set timestamp
         shell: bash
-        run: echo "::set-output name=time::$(echo date +%s)"
+        run: echo "::set-output name=time::$(date +%s)"
         id: set_timestamp
 
       - name: Login to Quay
