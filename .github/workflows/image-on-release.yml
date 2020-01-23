@@ -5,6 +5,7 @@ on:
   release:
     types: [published] # we could also use: created, or prereleased
 
+
 jobs:
   build:
     runs-on: ubuntu-latest

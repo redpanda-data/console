@@ -164,7 +164,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             { width: 1, title: 'Size (≈)', dataIndex: 'size', align: 'right', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) } },
             {
                 width: 1, title: 'Action', key: 'action',
-                render: (text, record) => (
+                render: (text, record) => !record.isValueNull && (
                     <span>
                         <Button type='link' size='small' onClick={() => this.copyMessage(record)}>Copy</Button>
                         {/* <Divider type="vertical" /> */}
@@ -420,10 +420,10 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         try {
             let text: ReactNode = <></>;
 
-            if (!value) {
+            if (!value || msg.isValueNull) {
                 // null: must be a tombstone (maybe? what if other fields are not null?)
                 // todo: render tombstones in a better way!
-                text = <><Icon type='delete' style={{ fontSize: 16, color: 'rgba(0,0,0, 0.4)', verticalAlign: 'text-bottom', marginRight: '4px' }} /><code>Tombstone</code></>
+                text = <><Icon type='delete' style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
             }
             else if (msg.valueType == 'text') {
                 // Raw Text (wtf :P)
