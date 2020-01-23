@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 
 	"go.uber.org/zap"
 )
@@ -18,14 +17,6 @@ func (api *API) getIndexFile(filePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if len(api.Version) > 0 {
-		index = []byte(strings.Replace(string(index), "__VERSION__", api.Version, 1))
-	}
-	if api.ExtendedFeatures {
-		index = []byte(strings.Replace(string(index), "__EXTENDED_FEATURES__", "true", 1))
-	}
-
 	return index, nil
 }
 
