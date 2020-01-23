@@ -23,7 +23,8 @@ jobs:
         id: set_timestamp
 
       - name: Login to Quay
-        QUAY_ENCRYPTED_PASS: ${{ secrets.QUAY_ENCRYPTED_PASS }}
+        env:
+          QUAY_ENCRYPTED_PASS: ${{ secrets.QUAY_ENCRYPTED_PASS }}
         run: docker login -u="cloudhut+github_push" -p=${QUAY_ENCRYPTED_PASS} quay.io
 
       - name: Build Docker Image
