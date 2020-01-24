@@ -13,6 +13,7 @@ import { TopicConfiguration } from "./Topic.Config";
 import { TopicMessageView } from "./Topic.Messages";
 import { appGlobal } from "../../../state/appGlobal";
 import { TopicPartitions } from "./Topic.Partitions";
+import { TopicConfigEntry } from "../../../state/restInterfaces";
 
 const { Text } = Typography;
 
@@ -46,7 +47,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         if (tabs.includes(key)) return key;
 
         // use settings (last visited tab)
-        key = uiState.topicDetails.activeTabKey!;
+        key = uiState.topicSettings.activeTabKey!;
         if (tabs.includes(key)) return key;
 
         // default to partitions
@@ -72,6 +73,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         if (!topic) return this.topicNotFound(topicName);
         const topicConfig = api.TopicConfig.get(topicName);
         if (!topicConfig) return this.skeleton;
+
+        this.addBaseFavs(topicConfig);
 
         return (
             <motion.div {...animProps} key={'b'}>
@@ -100,8 +103,37 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         );
     }
 
+    // depending on the cleanupPolicy we want to show specific config settings at the top
+    addBaseFavs(topicConfig: TopicConfigEntry[]): void {
+        const cleanupPolicy = topicConfig.find(e => e.name === 'cleanup.policy')?.value;
+        const favs = uiState.topicSettings.favConfigEntries;
+
+        switch (cleanupPolicy) {
+            case "delete":
+                favs.pushDistinct(
+                    'retention.ms',
+                    'retention.bytes',
+                );
+                break;
+            case "compact":
+                favs.pushDistinct(
+                    'min.cleanable.dirty.ratio',
+                    'delete.retention.ms',
+                );
+                break;
+            case "compact,delete":
+                favs.pushDistinct(
+                    'retention.ms',
+                    'retention.bytes',
+                    'min.cleanable.dirty.ratio',
+                    'delete.retention.ms',
+                );
+                break;
+        }
+    }
+
     setTabPage = (activeKey: string): void => {
-        uiState.topicDetails.activeTabKey = activeKey;
+        uiState.topicSettings.activeTabKey = activeKey;
 
         const loc = appGlobal.history.location;
         loc.hash = activeKey;

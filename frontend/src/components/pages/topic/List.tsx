@@ -13,6 +13,7 @@ import { TopicDetail } from "../../../state/restInterfaces";
 import { observable } from "mobx";
 import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../../utils/utils";
+import { uiState } from "../../../state/uiState";
 const { Text } = Typography;
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -114,7 +115,7 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
     constructor(p: any) {
         super(p);
         this.filteredSource = new FilterableDataSource<TItem>(this.props.dataSource, this.props.isFilterMatch);
-        this.filteredSource.filterText = uiSettings.topicList.quickSearch;
+        this.filteredSource.filterText = uiState.topicSettings.quickSearch;
     }
 
     componentWillUnmount() {
@@ -129,8 +130,8 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
                 dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
             > */}
             <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: 'auto' }}
-                onChange={e => this.filteredSource.filterText = uiSettings.topicList.quickSearch = e.target.value}
-                value={uiSettings.topicList.quickSearch}
+                onChange={e => this.filteredSource.filterText = uiState.topicSettings.quickSearch = e.target.value}
+                value={uiState.topicSettings.quickSearch}
             // addonAfter={
             //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
             //         <Icon type='setting' style={{ color: '#0006' }} />

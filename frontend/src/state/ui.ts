@@ -1,6 +1,5 @@
 import { observable, autorun } from "mobx";
 import { touch, assignDeep } from "../utils/utils";
-import { TopicDetailsSettings } from "./uiState";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 
 const settingsName = 'uiSettings';
@@ -12,16 +11,30 @@ const settingsName = 'uiSettings';
 	- topic: message filter, display settings, ...
 */
 
-
 export interface PreviewTag {
     value: string;
     active: boolean;
 }
 
+// Settings for an individual topic
+export class TopicDetailsSettings {
+    topicName: string;
+
+    @observable pageSize = 20;
+    @observable activeTabKey: string | undefined = undefined;
+    @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
+
+    @observable previewTags = [] as PreviewTag[];
+    @observable previewTagsCaseSensitive = false;
+    @observable previewShowEmptyMessages = true;
+    @observable quickSearch = '';
+}
+
+
 const uiSettings = observable({
     sideBarOpen: true,
     selectedClusterIndex: 0,
-    allTopicsDetails: new Map<string, TopicDetailsSettings>(),
+    perTopicSettings: [] as TopicDetailsSettings[], // don't use directly, instead use uiState.topicDetails
 
     // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
     brokerList: {
@@ -33,15 +46,7 @@ const uiSettings = observable({
         onlyShowChanged: false,
         valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
         hideInternalTopics: true,
-        previewTags: [] as PreviewTag[],
-        previewTagsCaseSensitive: false,
-        previewShowEmptyMessages: true,
         pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
-        quickSearch: '',
-    },
-
-    topicMessages: {
-        pageSize: 20, // how many messages to show
     },
 
     consumerGroupList: {

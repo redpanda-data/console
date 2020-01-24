@@ -20,6 +20,7 @@ import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { ModalFunc } from "antd/lib/modal/Modal";
+import { uiState } from "../../../state/uiState";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -42,7 +43,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     @observable fetchError = null as Error | null;
 
-    pageConfig = makePaginationConfig(uiSettings.topicMessages.pageSize);
+    pageConfig = makePaginationConfig(uiState.topicSettings.pageSize);
     messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch);
 
     constructor(props: { topic: TopicDetail }) {
@@ -127,7 +128,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     @computed
     get activeTags() {
-        return uiSettings.topicList.previewTags.filter(t => t.active).map(t => t.value);
+        return uiState.topicSettings.previewTags.filter(t => t.active).map(t => t.value);
     }
 
     MessageTable = observer(() => {
@@ -139,7 +140,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         <Icon type='setting' style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                         <span style={{ marginLeft: '.3em' }}>Preview</span>
                         {(() => {
-                            const count = uiSettings.topicList.previewTags.sum(t => t.active ? 1 : 0);
+                            const count = uiState.topicSettings.previewTags.sum(t => t.active ? 1 : 0);
                             if (count > 0)
                                 return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>
                             return <></>;
@@ -180,7 +181,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     bordered={true} size='small'
                     pagination={this.pageConfig}
                     onChange={(pagination, filters, sorter, extra) => {
-                        if (pagination.pageSize) uiSettings.topicMessages.pageSize = pagination.pageSize;
+                        if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;
                         this.pageConfig.current = pagination.current;
                         this.pageConfig.pageSize = pagination.pageSize;
                     }}
@@ -219,13 +220,13 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 </Text>
             </Paragraph>
             <div style={{ padding: '1.5em 1em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px' }}>
-                <CustomTagList tags={uiSettings.topicList.previewTags} allCurrentKeys={this.allCurrentKeys} />
+                <CustomTagList tags={uiState.topicSettings.previewTags} allCurrentKeys={this.allCurrentKeys} />
             </div>
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
                 <Checkbox
-                    checked={uiSettings.topicList.previewTagsCaseSensitive}
-                    onChange={e => uiSettings.topicList.previewTagsCaseSensitive = e.target.checked}
+                    checked={uiState.topicSettings.previewTagsCaseSensitive}
+                    onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e.target.checked}
                 >Case Sensitive</Checkbox>
                 {/* todo... */}
                 {/* <Checkbox
@@ -438,7 +439,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 // Construct our preview object
                 const previewObj: any = {};
                 for (let f of fields) {
-                    var x = findElementDeep(value, f, uiSettings.topicList.previewTagsCaseSensitive);
+                    var x = findElementDeep(value, f, uiState.topicSettings.previewTagsCaseSensitive);
                     if (x !== undefined) {
                         previewObj[f] = x;
                     }

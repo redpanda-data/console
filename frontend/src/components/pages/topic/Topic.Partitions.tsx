@@ -54,7 +54,10 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
         const table = <Table
             size={'small'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={true}
             pagination={this.pageConfig}
-            onChange={x => { if (x.pageSize) { /* todo    uiSettings.top.pageSize = x.pageSize*/ } }}
+            onChange={(pagination, filter, sorter) => {
+                if (pagination.pageSize) { /* todo    uiSettings.top.pageSize = x.pageSize*/ }
+                console.dir({ pagination, sorter });
+            }}
             dataSource={partitions}
             rowKey={x => x.id.toString()}
             columns={[
@@ -62,7 +65,7 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
                 { width: 1, title: 'Low Water Mark', dataIndex: 'waterMarkLow', render: (t) => t.toLocaleString() },
                 { width: 1, title: 'High Water Mark', dataIndex: 'waterMarkHigh', render: (t) => t.toLocaleString() },
                 {
-                    width: 1, title: 'Message Count', render: (t, r) => (r.waterMarkHigh - r.waterMarkLow).toLocaleString(),
+                    width: 1, title: 'Message Count', key: 'msgCount', render: (t, r) => (r.waterMarkHigh - r.waterMarkLow).toLocaleString(),
                     sorter: (p1, p2) => (p1.waterMarkHigh - p1.waterMarkLow) - (p2.waterMarkHigh - p2.waterMarkLow)
                 },
                 // todo: lag (sum of lag over all consumer groups)

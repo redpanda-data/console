@@ -11,6 +11,7 @@ declare global {
         groupBy<T, K>(this: T[], selector: (x: T) => K): Map<K, T[]>;
         groupInto<T, K>(this: T[], selector: (x: T) => K): { key: K, items: T[] }[];
         distinct<T>(this: T[], keySelector?: ((x: T) => any)): T[];
+        pushDistinct<T>(this: T[], ...elements: T[]): void;
     }
 }
 
@@ -94,4 +95,10 @@ Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) 
     });
 
     return ar;
+};
+
+Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: T[]): void {
+    for (let e of elements)
+        if (!this.includes(e))
+            this.push(e);
 };
