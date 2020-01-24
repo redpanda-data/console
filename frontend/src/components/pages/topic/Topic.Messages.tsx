@@ -49,7 +49,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     constructor(props: { topic: TopicDetail }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
-        //this.updateFilter = this.updateFilter.bind(this);
+        this.messageSource.filterText = uiState.topicSettings.quickSearch;
     }
 
     componentDidMount() {
@@ -82,7 +82,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                         <Input placeholder='Quick Search' allowClear={true} size='large'
                             style={{ marginRight: '1em', width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
-                            onChange={e => this.messageSource.filterText = e.target.value}
+                            value={uiState.topicSettings.quickSearch}
+                            onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
                             addonAfter={null}
                         />
                         <this.FilterSummary />
@@ -228,7 +229,20 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     checked={uiState.topicSettings.previewTagsCaseSensitive}
                     onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e.target.checked}
                 >Case Sensitive</Checkbox>
-                {/* todo... */}
+                {/* todo:
+
+                    - Show Empty Messages: when unchecked, and the field-filters don't find anything, the whole message will be hidden instead of showing an empty "{}"
+                    - JS filters! You get a small textbox where you can type in something like those examples:
+                        Example 1 | // the bool result is simply interpreted as "show field?", pretty much like what we already have
+                                  | return prop.key == 'name'
+
+                        Example 2 | // instead of a simple bool, the result could also be 'HIDE', or 'COLLECT', ...
+                                  | // 'HIDE' would simply filter the whole messages (skipping all further fields)
+                                  | // 'COLLECT' would collects the property and continues searching the object, in case there are additional matches
+                                  | if (prop.key == 'score' && prop.value < 5) return 'HIDE';
+
+                    - JS filters could also be submitted to the backend, so it can do the filtering there already
+                 */}
                 {/* <Checkbox
                     checked={uiSettings.topicList.previewShowEmptyMessages}
                     onChange={e => uiSettings.topicList.previewShowEmptyMessages = e.target.checked}
