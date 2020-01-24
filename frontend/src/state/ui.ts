@@ -47,6 +47,7 @@ const uiSettings = observable({
         valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
         hideInternalTopics: true,
         pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
+        quickSearch: '',
     },
 
     consumerGroupList: {
