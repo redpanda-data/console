@@ -3,16 +3,25 @@ package kafka
 import (
 	"encoding/json"
 	"errors"
-	"math/rand"
 
 	"github.com/Shopify/sarama"
 )
 
+var (
+	brokerIndex = 0
+)
+
 func (s *Service) findAnyBroker() (*sarama.Broker, error) {
 	brokers := s.Client.Brokers()
-	if len(brokers) > 0 {
-		index := rand.Intn(len(brokers))
-		return brokers[index], nil
+
+	for i := 0; i < len(brokers); i++ {
+		brokerIndex++
+		actualIndex := brokerIndex % len(brokers)
+		broker := brokers[actualIndex]
+		isConnected, _ := broker.Connected()
+		if isConnected {
+			return brokers[actualIndex], nil
+		}
 	}
 	return nil, errors.New("no available broker")
 }
