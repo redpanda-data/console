@@ -49,7 +49,6 @@ func New(cfg *Config) *API {
 	if err != nil {
 		logger.Fatal("Failed to create kafka client", zap.Error(err))
 	}
-	logger.Info("Connected to kafka")
 
 	kafkaSvc := &kafka.Service{Client: client, Logger: logger}
 
