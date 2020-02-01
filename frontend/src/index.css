@@ -328,8 +328,8 @@ span>.icon-container~span {
 }
 
 tr.tombstone {
-    background: rgba(200, 200, 200, 0.15);
-    color: rgba(0, 0, 0, 0.4);
+    /* background: rgba(200, 200, 200, 0.09); */
+    color: rgba(0, 0, 0, 0.25);
 }
 
 tr.tombstone .ant-table-row-expand-icon {

@@ -13,6 +13,7 @@ import { TopicDetail } from "../../../state/restInterfaces";
 import { observable } from "mobx";
 import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../../utils/utils";
+import { uiState } from "../../../state/uiState";
 const { Text } = Typography;
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -98,6 +99,8 @@ class TopicList extends PageComponent {
 }
 
 
+// todo: extract out where the filterText is retreived from / saved.
+//       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
 @observer
 class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMatch: (filter: string, item: TItem) => boolean }> {
 

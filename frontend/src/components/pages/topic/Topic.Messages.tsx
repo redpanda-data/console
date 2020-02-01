@@ -20,6 +20,7 @@ import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { ModalFunc } from "antd/lib/modal/Modal";
+import { uiState } from "../../../state/uiState";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -42,13 +43,13 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     @observable fetchError = null as Error | null;
 
-    pageConfig = makePaginationConfig(uiSettings.topicMessages.pageSize);
+    pageConfig = makePaginationConfig(uiState.topicSettings.pageSize);
     messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch);
 
     constructor(props: { topic: TopicDetail }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
-        //this.updateFilter = this.updateFilter.bind(this);
+        this.messageSource.filterText = uiState.topicSettings.quickSearch;
     }
 
     componentDidMount() {
@@ -81,7 +82,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                         <Input placeholder='Quick Search' allowClear={true} size='large'
                             style={{ marginRight: '1em', width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
-                            onChange={e => this.messageSource.filterText = e.target.value}
+                            value={uiState.topicSettings.quickSearch}
+                            onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
                             addonAfter={null}
                         />
                         <this.FilterSummary />
@@ -127,7 +129,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     @computed
     get activeTags() {
-        return uiSettings.topicList.previewTags.filter(t => t.active).map(t => t.value);
+        return uiState.topicSettings.previewTags.filter(t => t.active).map(t => t.value);
     }
 
     MessageTable = observer(() => {
@@ -139,7 +141,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         <Icon type='setting' style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                         <span style={{ marginLeft: '.3em' }}>Preview</span>
                         {(() => {
-                            const count = uiSettings.topicList.previewTags.sum(t => t.active ? 1 : 0);
+                            const count = uiState.topicSettings.previewTags.sum(t => t.active ? 1 : 0);
                             if (count > 0)
                                 return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>
                             return <></>;
@@ -164,7 +166,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             { width: 1, title: 'Size (≈)', dataIndex: 'size', align: 'right', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) } },
             {
                 width: 1, title: 'Action', key: 'action',
-                render: (text, record) => (
+                render: (text, record) => !record.isValueNull && (
                     <span>
                         <Button type='link' size='small' onClick={() => this.copyMessage(record)}>Copy</Button>
                         {/* <Divider type="vertical" /> */}
@@ -180,7 +182,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     bordered={true} size='small'
                     pagination={this.pageConfig}
                     onChange={(pagination, filters, sorter, extra) => {
-                        if (pagination.pageSize) uiSettings.topicMessages.pageSize = pagination.pageSize;
+                        if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;
                         this.pageConfig.current = pagination.current;
                         this.pageConfig.pageSize = pagination.pageSize;
                     }}
@@ -219,15 +221,28 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 </Text>
             </Paragraph>
             <div style={{ padding: '1.5em 1em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px' }}>
-                <CustomTagList tags={uiSettings.topicList.previewTags} allCurrentKeys={this.allCurrentKeys} />
+                <CustomTagList tags={uiState.topicSettings.previewTags} allCurrentKeys={this.allCurrentKeys} />
             </div>
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
                 <Checkbox
-                    checked={uiSettings.topicList.previewTagsCaseSensitive}
-                    onChange={e => uiSettings.topicList.previewTagsCaseSensitive = e.target.checked}
+                    checked={uiState.topicSettings.previewTagsCaseSensitive}
+                    onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e.target.checked}
                 >Case Sensitive</Checkbox>
-                {/* todo... */}
+                {/* todo:
+
+                    - Show Empty Messages: when unchecked, and the field-filters don't find anything, the whole message will be hidden instead of showing an empty "{}"
+                    - JS filters! You get a small textbox where you can type in something like those examples:
+                        Example 1 | // the bool result is simply interpreted as "show field?", pretty much like what we already have
+                                  | return prop.key == 'name'
+
+                        Example 2 | // instead of a simple bool, the result could also be 'HIDE', or 'COLLECT', ...
+                                  | // 'HIDE' would simply filter the whole messages (skipping all further fields)
+                                  | // 'COLLECT' would collects the property and continues searching the object, in case there are additional matches
+                                  | if (prop.key == 'score' && prop.value < 5) return 'HIDE';
+
+                    - JS filters could also be submitted to the backend, so it can do the filtering there already
+                 */}
                 {/* <Checkbox
                     checked={uiSettings.topicList.previewShowEmptyMessages}
                     onChange={e => uiSettings.topicList.previewShowEmptyMessages = e.target.checked}
@@ -420,10 +435,10 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         try {
             let text: ReactNode = <></>;
 
-            if (!value) {
+            if (!value || msg.isValueNull) {
                 // null: must be a tombstone (maybe? what if other fields are not null?)
                 // todo: render tombstones in a better way!
-                text = <><Icon type='delete' style={{ fontSize: 16, color: 'rgba(0,0,0, 0.4)', verticalAlign: 'text-bottom', marginRight: '4px' }} /><code>Tombstone</code></>
+                text = <><Icon type='delete' style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
             }
             else if (msg.valueType == 'text') {
                 // Raw Text (wtf :P)
@@ -438,7 +453,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 // Construct our preview object
                 const previewObj: any = {};
                 for (let f of fields) {
-                    var x = findElementDeep(value, f, uiSettings.topicList.previewTagsCaseSensitive);
+                    var x = findElementDeep(value, f, uiState.topicSettings.previewTagsCaseSensitive);
                     if (x !== undefined) {
                         previewObj[f] = x;
                     }
