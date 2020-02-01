@@ -25,6 +25,7 @@ import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
+import env, { getBuildDate } from '../utils/env';
 
 const { Content, Footer, Sider, Header } = Layout;
 const { Option } = Select;
@@ -63,7 +64,8 @@ const SideBar = observer(() =>
         {/* Version */}
         <div className='version'>
             <div className='repo'><a title="Visit Kafka-Owl's GitHub repository" href="https://github.com/kafka-owl/kafka-owl"><img src={gitHubLogo} /></a></div>
-            <div>KafkaOwl - {(window as any).VERSION}</div>
+            <div>KafkaOwl - {env.REACT_APP_GIT_REF || 'dev'}-{env.REACT_APP_GIT_SHA.slice(0, 8) || '??'}</div>
+            <div>Built {getBuildDate()}</div>
         </div>
 
         {/* Toggle */}
@@ -198,7 +200,7 @@ class App extends PureComponent {
             <ErrorBoundary>
                 <Switch>
                     {/* Login (and callbacks) */}
-                    <Route exact path='/login' component={Login}/>
+                    <Route exact path='/login' component={Login} />
                     <Route exact path='/login/callbacks/google'><LoginCompletePage provider='google' /></Route>
 
                     {/* Default View */}

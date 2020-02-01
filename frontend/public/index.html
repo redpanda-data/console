@@ -8,25 +8,6 @@
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="WebApp to explore Kafka Messages, Topics, ..." />
     <title>Kafka Owl</title>
-    <script>
-        // Don't leak things below into global scope
-        {
-            // Define server vars
-            const vars = {
-                VERSION: ['__VERSION__', 'dev'],
-                EXTENDED_FEATURES: ['__EXTENDED_FEATURES__', 'false'],
-            }
-
-            // Set them on 'window' if
-            for (let name in vars) {
-                const injected = vars[name][0];
-                const defaultVal = vars[name][1];
-                const value = injected.startsWith('__') && injected.endsWith('__') ? defaultVal : injected;
-                window[name] = value;
-                console.log('['+name+']: ' + value);
-            }
-        }
-    </script>
     <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/

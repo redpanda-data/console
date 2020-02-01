@@ -1,30 +1,16 @@
-import { Component, ReactNode } from "react";
 import React from "react";
-import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
+import { TopicConfigEntry } from "../../../state/restInterfaces";
+import { Tooltip, Icon, Descriptions, Popover, Checkbox, Select, Input, Typography } from "antd";
 import { observer } from "mobx-react";
-import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
-import { uiSettings, PreviewTag } from "../../../state/ui";
-import ReactJson, { CollapsedFieldProps } from 'react-json-view'
-import { PageComponent, PageInitHelper } from "../Page";
+import { uiSettings } from "../../../state/ui";
 import prettyMilliseconds from 'pretty-ms';
 import prettyBytes from 'pretty-bytes';
 import topicConfigInfo from '../../../assets/topicConfigInfo.json'
-import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
-import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction } from "mobx";
-import { findElementDeep, cullText, getAllKeys } from "../../../utils/utils";
-import { FormComponentProps } from "antd/lib/form";
-import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
-import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
 
 const { Text } = Typography;
-const { Option } = Select;
-const InputGroup = Input.Group;
 
 // todo: can we assume that config values for time and bytes will always be provided in the smallest units?
 // or is it possible we'll get something like 'segment.hours' instead of 'segment.ms'?
@@ -46,7 +32,7 @@ const markerIcon = <Icon type="highlight" theme="twoTone" twoToneColor="#1890ff"
 export const FavoritePopover = (configEntry: TopicConfigEntry, children: React.ReactNode) => {
 
     const name = configEntry.name;
-    const favs = uiState.topicDetails.favConfigEntries;
+    const favs = uiState.topicSettings.favConfigEntries;
     const isFav = favs.includes(name);
     const toggleFav = isFav
         ? () => favs.splice(favs.indexOf(name), 1)

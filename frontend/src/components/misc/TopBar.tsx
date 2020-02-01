@@ -8,6 +8,7 @@ import { DebugTimerStore, hoursToMilliseconds } from '../../utils/utils';
 import { api } from '../../state/backendApi';
 
 import { IsDevelopment } from '../../utils/isProd';
+import env from '../../utils/env';
 
 const { Content, Footer, Sider, Header } = Layout;
 const { Option } = Select;
@@ -28,11 +29,11 @@ const ClusterSelect = observer(() =>
 
 const TopBar = observer(() => {
 
-    const extendedFeatures = ((window as any).EXTENDED_FEATURES) == true;
+    const extendedFeatures = false; // TODO: (env.EXTENDED_FEATURES);
 
     if (!extendedFeatures && !IsDevelopment) return null;
 
-    if(!api.UserData || !api.UserData.UserName) return null; // not logged in, or data not fetched yet...
+    if (!api.UserData || !api.UserData.UserName) return null; // not logged in, or data not fetched yet...
 
     return (
         // zIndex is needed for the boxShadow to show

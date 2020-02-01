@@ -38,6 +38,25 @@ COPY --from=builder /app/bin/kafka-owl /app/kafka-owl
 COPY --from=frontendBuilder /app/build/ /app/build
 
 
-ENV VERSION "1.1.1"
+
+# From: https://docs.docker.com/engine/reference/builder/#using-arg-variables
+# We want to bake the commit sha into the image, or abort if the value is not set
+# ENV values are persistet in the built image, ARG instructions are not!
+
+# git sha of the commit
+ARG GIT_SHA
+RUN test -n "$GIT_SHA" || (echo "GIT_SHA must be set" && false)
+ENV REACT_APP_GIT_SHA ${GIT_SHA}
+
+# name of the git branch
+ARG GIT_REF
+RUN test -n "$GIT_REF" || (echo "GIT_REF must be set" && false)
+ENV REACT_APP_GIT_REF ${GIT_REF}
+
+# timestamp in unix seconds when the image was built
+ARG TIMESTAMP
+RUN test -n "$TIMESTAMP" || (echo "TIMESTAMP must be set" && false)
+ENV REACT_APP_TIMESTAMP ${TIMESTAMP}
+
 
 ENTRYPOINT ["./kafka-owl"]

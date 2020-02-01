@@ -1,7 +1,6 @@
 package api
 
 import (
-	"os"
 	"time"
 
 	health "github.com/AppsFlyer/go-sundheit"
@@ -22,12 +21,10 @@ type API struct {
 	Logger   *zap.Logger
 	KafkaSvc *kafka.Service
 	OwlSvc   *owl.Service
-	Version  string
 
 	health health.Health
 
-	Hooks            *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
-	ExtendedFeatures bool   // enable cluster select, user display, logout button, etc.
+	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
 }
 
 // New creates a new API instance
@@ -52,18 +49,15 @@ func New(cfg *Config) *API {
 	if err != nil {
 		logger.Fatal("Failed to create kafka client", zap.Error(err))
 	}
-	logger.Info("Connected to kafka")
 
 	kafkaSvc := &kafka.Service{Client: client, Logger: logger}
 
 	return &API{
-		Cfg:              cfg,
-		Logger:           logger,
-		KafkaSvc:         kafkaSvc,
-		OwlSvc:           owl.NewService(kafkaSvc, logger, &cfg.Owl),
-		Version:          os.Getenv("VERSION"),
-		Hooks:            newDefaultHooks(),
-		ExtendedFeatures: len(os.Getenv("EXTENDED_FEATURES")) > 0,
+		Cfg:      cfg,
+		Logger:   logger,
+		KafkaSvc: kafkaSvc,
+		OwlSvc:   owl.NewService(kafkaSvc, logger, &cfg.Owl),
+		Hooks:    newDefaultHooks(),
 	}
 }
 

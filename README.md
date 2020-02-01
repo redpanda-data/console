@@ -1,6 +1,6 @@
 # Kafka Owl
 
-![License](https://img.shields.io/github/license/cloudworkz/kafka-minion.svg?color=blue) [![Go Report Card](https://goreportcard.com/badge/github.com/kafka-owl/kafka-owl)](https://goreportcard.com/report/github.com/kafka-owl/kafka-owl) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kafka-owl/kafka-owl?sort=semver) [![Docker Repository on Quay](https://quay.io/repository/kafka-owl/kafka-owl/status "Docker Repository on Quay")](https://quay.io/repository/kafka-owl/kafka-owl)
+![License](https://img.shields.io/github/license/cloudworkz/kafka-minion.svg?color=blue) [![Go Report Card](https://goreportcard.com/badge/github.com/kafka-owl/kafka-owl)](https://goreportcard.com/report/github.com/kafka-owl/kafka-owl) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kafka-owl/kafka-owl?sort=semver) [![Docker Repository on Quay](https://quay.io/repository/cloudhut/kafka-owl/status "Docker Repository on Quay")](https://quay.io/repository/cloudhut/kafka-owl)
 
 Kafka Owl is a Web UI which helps you to explore messages in your cluster's topics in the most comfortable way.
 
@@ -54,5 +54,3 @@ Kubernetes users may want to use the Helm chart to deploy Kafka owl: https://git
 | --kafka.tls.insecure-skip-verify | If true, TLS accepts any certificate presented by the server and any host name in that certificate. | false |
 | --kafka.tls.passphrase | Passphrase to decrypt the TLS key (leave empty for unencrypted key files) | (No default) |
 | --owl.topics.blacklist | Topics blacklist (comma separated) to configure access restrictions | (No default)
-
-

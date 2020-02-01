@@ -1,52 +1,12 @@
 import { observable, computed } from "mobx";
 import { PageDefinition } from "../components/routes";
 import { api } from "./backendApi";
-import { uiSettings } from "./ui";
+import { uiSettings, TopicDetailsSettings as TopicSettings } from "./ui";
 
 
 export interface BreadcrumbEntry {
     title: string;
     linkTo: string;
-}
-
-export class TopicDetailsSettings {
-
-    // per topic
-    @observable activeTabKey: string | undefined = undefined;
-    @observable favConfigEntries: Array<string> = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
-
-    private pushIfNotPresent(...items: string[]): void {
-        items.forEach(item => {
-            if (!this.favConfigEntries.find(i => i === item)) {
-                this.favConfigEntries.push(item);
-            }
-        });
-    }
-
-    public setAvailableFavs(cleanupPolicy: string): void {
-        switch (cleanupPolicy) {
-            case "delete":
-                this.pushIfNotPresent(
-                    'retention.ms',
-                    'retention.bytes',
-                );
-                break;
-            case "compact":
-                this.pushIfNotPresent(
-                    'min.cleanable.dirty.ratio',
-                    'delete.retention.ms',
-                );
-                break;
-            case "compact,delete":
-                this.pushIfNotPresent(
-                    'retention.ms',
-                    'retention.bytes',
-                    'min.cleanable.dirty.ratio',
-                    'delete.retention.ms',
-                );
-                break;
-        }
-    }
 }
 
 class UIState {
@@ -86,24 +46,25 @@ class UIState {
     public set currentTopicName(topicName: string | undefined) {
         this._currentTopicName = topicName;
         if (topicName) {
-            if (!uiSettings.allTopicsDetails.has(topicName)) {
+            if (!uiSettings.perTopicSettings.any(s => s.topicName == topicName)) {
                 console.log('creating details for topic: ' + topicName);
-                uiSettings.allTopicsDetails.set(topicName, new TopicDetailsSettings());
+                const topicSettings = new TopicSettings();
+                topicSettings.topicName = topicName;
+                uiSettings.perTopicSettings.push(topicSettings);
             }
         }
     }
 
-    get topicDetails(): TopicDetailsSettings {
+    get topicSettings(): TopicSettings {
         const n = this.currentTopicName;
         if (!n) {
-            return new TopicDetailsSettings();
+            return new TopicSettings();
         }
 
-        if (uiSettings.allTopicsDetails.has(n)) {
-            return uiSettings.allTopicsDetails.get(n)!;
-        }
+        const topicSettings = uiSettings.perTopicSettings.find(t => t.topicName == n);
+        if (topicSettings) return topicSettings;
 
-        throw new Error('reaction was supposed to create topicDetail settings container');
+        throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
     }
 }
 
