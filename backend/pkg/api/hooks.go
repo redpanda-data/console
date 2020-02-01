@@ -2,9 +2,10 @@ package api
 
 import (
 	"context"
+	"github.com/cloudhut/common/rest"
 
-	"github.com/go-chi/chi"
 	"github.com/cloudhut/kafka-owl/backend/pkg/owl"
+	"github.com/go-chi/chi"
 )
 
 // Hooks are a way to extend the Kafka Owl functionality from the outside. By default all hooks have no
@@ -27,12 +28,11 @@ type RouteHooks interface {
 
 // OwlHooks include all functions which allow you to modify
 type OwlHooks interface {
-	FilterTopics(ctx context.Context, topics []*owl.TopicOverview)
+	FilterTopics(ctx context.Context, topics []*owl.TopicOverview) *rest.Error
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
-type defaultHooks struct {
-}
+type defaultHooks struct{}
 
 func newDefaultHooks() *Hooks {
 	d := &defaultHooks{}
@@ -43,8 +43,8 @@ func newDefaultHooks() *Hooks {
 }
 
 // Router Hooks
-func (*defaultHooks) ConfigAPIRouter(router chi.Router)      {}
-func (*defaultHooks) ConfigFrontendRouter(router chi.Router) {}
+func (*defaultHooks) ConfigAPIRouter(_ chi.Router)      {}
+func (*defaultHooks) ConfigFrontendRouter(_ chi.Router) {}
 
 // Owl Hooks
-func (*defaultHooks) FilterTopics(ctx context.Context, topics []*owl.TopicOverview) {}
+func (*defaultHooks) FilterTopics(_ context.Context, _ []*owl.TopicOverview) *rest.Error { return nil }
