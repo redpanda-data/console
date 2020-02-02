@@ -11,7 +11,7 @@ import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/uti
 import { objToQuery } from "../utils/queryHelper";
 import { IsDevelopment } from "../utils/isProd";
 
-const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 20;
+const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
 
 
