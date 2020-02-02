@@ -5,10 +5,10 @@ import (
 	"time"
 
 	healthhttp "github.com/AppsFlyer/go-sundheit/http"
-	"github.com/go-chi/chi"
-	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
+	"github.com/go-chi/chi"
+	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
@@ -66,6 +66,8 @@ func (api *API) routes() *chi.Mux {
 		})
 	})
 
+	api.Hooks.Route.ConfigRouter(router)
+
 	if api.Cfg.REST.ServeFrontend {
 		// Check if the frontend directory 'build' exists
 		dir, err := filepath.Abs("./build")
@@ -79,7 +81,6 @@ func (api *API) routes() *chi.Mux {
 			api.Logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
 		}
 		router.Group(func(r chi.Router) {
-			api.Hooks.Route.ConfigFrontendRouter(r)
 			r.Use(cache)
 
 			r.Get("/", api.handleGetIndex(index))
