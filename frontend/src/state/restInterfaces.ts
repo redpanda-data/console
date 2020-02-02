@@ -98,6 +98,9 @@ export interface GroupDescription {
     protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
     coordinatorId: number;
     lag: GroupLagDescription;
+
+    // Computed by frontend
+    lagSum: number;
 }
 
 export interface GroupLagDescription {
