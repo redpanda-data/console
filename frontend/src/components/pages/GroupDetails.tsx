@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon, Tree, Button, List, Collapse, Card, Col, Checkbox } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon, Tree, Button, List, Collapse, Card, Col, Checkbox, Tooltip } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -110,8 +110,6 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
     const pageConfig = makePaginationConfig();
     const topicLags = p.group.lag.topicLags;
 
-    // console.log('rendering group members')
-
     return <Table
         style={{ margin: '0', padding: '0', whiteSpace: 'normal' }}
         bordered={true} size={'middle'}
@@ -218,8 +216,21 @@ class TopicLags extends Component<{ name: string, partitions: number[], topicLag
 
         const renderPartitionLag = (p: { id: number, lag: number }) => {
             // <div className='lagIndicatorBg'><div className='lagIndicatorFill' style={{ width: '%' }}></div></div>
-            return <div className='groupLagDisplayLine'>Partition{p.id}: {p.lag}</div>
+            return <div className='groupLagDisplayLine'>Partition{p.id}: {p.lag} messages</div>
         };
+
+        const renderLagTable = (lags: { id: number, lag: number }[]): JSX.Element => {
+            return <table className='groupLagDisplayLine'>
+                <tr>
+                    <th>Partition</th>
+                    <th>Lag</th>
+                </tr>
+                {lags.map(l => <tr>
+                    <td>{l.id}</td>
+                    <td>{l.lag}</td>
+                </tr>)}
+            </table>
+        }
 
         const expandBtn = <a onClick={() => this.isExpanded = !this.isExpanded}>{this.isExpanded ? 'Less' : 'More'}</a>
 
@@ -241,7 +252,7 @@ class TopicLags extends Component<{ name: string, partitions: number[], topicLag
                     {
                         isAllZeroLag
                             ? <span>No lag on any partition</span>
-                            : partitionLags.map(lag => renderPartitionLag(lag))
+                            : renderLagTable(partitionLags)
                     }
                 </Card>
             </Col>
