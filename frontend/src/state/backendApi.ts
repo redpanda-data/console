@@ -11,7 +11,7 @@ import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/uti
 import { objToQuery } from "../utils/queryHelper";
 import { IsDevelopment } from "../utils/isProd";
 
-const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 20;
+const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
 
 
@@ -189,7 +189,12 @@ const apiStore = {
 
     refreshConsumerGroups(force?: boolean) {
         cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
-            .then(v => this.ConsumerGroups = v.consumerGroups, addError);
+            .then(v => {
+                for (let g of v.consumerGroups) {
+                    g.lagSum = g.lag.topicLags.map(t => t.summedLag).reduce((a, b) => a + b, 0)
+                }
+                this.ConsumerGroups = v.consumerGroups;
+            }, addError);
     },
 
     refreshTopicConfig(topicName: string, force?: boolean) {

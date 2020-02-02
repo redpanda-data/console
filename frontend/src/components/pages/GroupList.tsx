@@ -71,7 +71,7 @@ class GroupList extends PageComponent {
                             render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
                         },
                         { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
-                        { title: 'Lag (Sum)', dataIndex: 'lag', render: (text, record: GroupDescription, index) => record.lag.topicLags.map(t => t.summedLag).reduce((a, b) => a + b, 0) },
+                        { title: 'Lag (Sum)', dataIndex: 'lagSum', sorter: (a, b) => a.lagSum - b.lagSum },
                     ]} />
             </motion.div>
         );

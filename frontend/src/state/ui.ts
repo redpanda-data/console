@@ -1,8 +1,9 @@
 import { observable, autorun } from "mobx";
 import { touch, assignDeep } from "../utils/utils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
+import { TopicMessageOffset, TopicMessageDirection, TopicMessageSortBy, TopicMessageSearchParameters } from "./backendApi";
 
-const settingsName = 'uiSettings';
+const settingsName = 'uiSettings-v2';
 
 
 /*
@@ -19,6 +20,12 @@ export interface PreviewTag {
 // Settings for an individual topic
 export class TopicDetailsSettings {
     topicName: string;
+
+    @observable searchParams: TopicMessageSearchParameters = {
+        _offsetMode: TopicMessageOffset.End,
+        startOffset: -1, partitionID: -1, pageSize: 50,
+        sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset
+    };
 
     @observable pageSize = 20;
     @observable activeTabKey: string | undefined = undefined;
