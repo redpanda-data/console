@@ -32,11 +32,6 @@ const InputGroup = Input.Group;
 export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     @observable requestInProgress = false;
-    @observable searchParams: TopicMessageSearchParameters = {
-        _offsetMode: TopicMessageOffset.End,
-        startOffset: -1, partitionID: -1, pageSize: 50,
-        sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset
-    };
     @observable previewDisplay: string[] = [];
     @observable allCurrentKeys: string[] = [];
     @observable showPreviewSettings = false;
@@ -65,7 +60,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         return <>
             {/* Message Search */}
-            <SearchForm topic={topic} submit={this.executeMessageSearch} searchParams={this.searchParams} requestInProgress={this.requestInProgress} />
+            <SearchForm topic={topic} submit={this.executeMessageSearch} searchParams={uiState.topicSettings.searchParams} requestInProgress={this.requestInProgress} />
 
             {this.fetchError
                 ? <Alert
@@ -233,13 +228,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                     - Show Empty Messages: when unchecked, and the field-filters don't find anything, the whole message will be hidden instead of showing an empty "{}"
                     - JS filters! You get a small textbox where you can type in something like those examples:
-                        Example 1 | // the bool result is simply interpreted as "show field?", pretty much like what we already have
-                                  | return prop.key == 'name'
-
-                        Example 2 | // instead of a simple bool, the result could also be 'HIDE', or 'COLLECT', ...
-                                  | // 'HIDE' would simply filter the whole messages (skipping all further fields)
-                                  | // 'COLLECT' would collects the property and continues searching the object, in case there are additional matches
-                                  | if (prop.key == 'score' && prop.value < 5) return 'HIDE';
+                        Example 1 | // if the name matches, show this prop in the preview
+                                  | if (prop.key == 'name') show(prop)
 
                     - JS filters could also be submitted to the backend, so it can do the filtering there already
                  */}
@@ -266,7 +256,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
 
     async executeMessageSearch(): Promise<void> {
-        const searchParams = this.searchParams;
+        const searchParams = uiState.topicSettings.searchParams;
 
         if (searchParams._offsetMode != TopicMessageOffset.Custom)
             searchParams.startOffset = searchParams._offsetMode;
