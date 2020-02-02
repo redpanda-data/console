@@ -189,7 +189,12 @@ const apiStore = {
 
     refreshConsumerGroups(force?: boolean) {
         cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
-            .then(v => this.ConsumerGroups = v.consumerGroups, addError);
+            .then(v => {
+                for (let g of v.consumerGroups) {
+                    g.lagSum = g.lag.topicLags.map(t => t.summedLag).reduce((a, b) => a + b, 0)
+                }
+                this.ConsumerGroups = v.consumerGroups;
+            }, addError);
     },
 
     refreshTopicConfig(topicName: string, force?: boolean) {
