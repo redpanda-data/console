@@ -4,3 +4,6 @@ docker-compose/zk-single-kafka-single
 *.code-workspace
 
 .DS_Store
+
+
+notes.md
