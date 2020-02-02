@@ -21,9 +21,9 @@ type RouteHooks interface {
 	// ConfigAPIRouter allows you to modify the router responsible for all /api routes
 	ConfigAPIRouter(router chi.Router)
 
-	// ConfigFrontendRouter allows you to modify the router responsible for all non /api and non /admin routes.
+	// ConfigRouter allows you to modify the router responsible for all non /api and non /admin routes.
 	// By default we serve the frontend on these routes.
-	ConfigFrontendRouter(router chi.Router)
+	ConfigRouter(router chi.Router)
 }
 
 // OwlHooks include all functions which allow you to modify
@@ -43,8 +43,8 @@ func newDefaultHooks() *Hooks {
 }
 
 // Router Hooks
-func (*defaultHooks) ConfigAPIRouter(_ chi.Router)      {}
-func (*defaultHooks) ConfigFrontendRouter(_ chi.Router) {}
+func (*defaultHooks) ConfigAPIRouter(_ chi.Router) {}
+func (*defaultHooks) ConfigRouter(_ chi.Router)    {}
 
 // Owl Hooks
 func (*defaultHooks) FilterTopics(_ context.Context, _ []*owl.TopicOverview) *rest.Error { return nil }
