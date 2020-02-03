@@ -24,6 +24,10 @@ Kafka Owl is a Web UI which helps you to explore messages in your cluster's topi
 
 ## Install
 
+### Docker images
+
+Docker images are available on [Quay.io](https://quay.io/repository/cloudhut/kafka-owl?tab=tags). We'll automatically push a docker image with a unique tag for each new release. Additionally we build and push docker images after every push to master which can be build successfully.
+
 ### Helm chart
 
 Kubernetes users may want to use the Helm chart to deploy Kafka owl: https://github.com/kafka-owl/helm-chart
