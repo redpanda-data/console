@@ -10,6 +10,7 @@ import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/utils";
 import { objToQuery } from "../utils/queryHelper";
 import { IsDevelopment } from "../utils/isProd";
+import { appGlobal } from "./appGlobal";
 
 const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
@@ -17,6 +18,11 @@ const REST_CACHE_DURATION_SEC = 20;
 
 export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T> {
     const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
+
+    if (res.status == 401) {
+        handleUnauthorized();
+    }
+
     if (!res.ok)
         throw new Error("(" + res.status + ") " + res.statusText);
 
@@ -24,6 +30,19 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     // console.log('json: ' + str);
     const data = (JSON.parse(str) as T);
     return data;
+}
+
+function handleUnauthorized() {
+    // Logout
+    //   Clear our 'User' data if we have any
+    //   Any old/invalid JWT will be cleared by the server
+    api.UserData = null;
+
+    // Save current location url
+    // store.urlBeforeLogin = window.location.href;
+
+    // Redirect to login
+    appGlobal.history.push('/login');
 }
 
 
