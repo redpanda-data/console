@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Button, Spin } from 'antd';
+import { Button, Spin, Icon } from 'antd';
 import { observer } from 'mobx-react';
 import { observable } from 'mobx';
 
@@ -36,16 +36,26 @@ class Login extends Component {
 
         return <div className='login'>
             <div className='loginContent'>
-                <h2>You must be logged in to use Kafka-Owl</h2>
-
-                <ul>
+                <div className='loginLogo'>Kafka-Owl</div>
+                <span className='loginSeperator' />
+                <div className='loginButtonList'>
                     {ar && ar.map(p => (
-                        <li key={p.displayName}>
-                            <Button icon='right' onClick={() => window.location.replace(p.url)}>Login with {p.displayName}</Button>
-                        </li>
-                    )) || <div><Spin /> Retreiving login method from backend...</div>}
-                </ul>
+                        // <div key={p.displayName} className='loginButton' onClick={() => window.location.replace(p.url)}>
+                        //     <Icon type='google' style={{ fontSize: '26px', marginRight: '6px' }} />
+                        //     <span>
+                        //         Login with {p.displayName}
+                        //     </span>
+                        // </div>
 
+                        <div key={p.displayName} className='loginButton2' onClick={() => window.location.replace(p.url)}>
+                            <Icon type='github' style={{ marginBottom: '6px' }} />
+                            <span>
+                                {p.displayName}
+                            </span>
+                        </div>
+
+                    )) || <div><Spin />Retreiving login method from backend...</div>}
+                </div>
             </div>
         </div>
     }

@@ -308,23 +308,88 @@ span>.icon-container~span {
     place-content: center;
     place-items: center;
     height: 100vh;
+    background: linear-gradient(to top, #141e30, #243b55);
 }
 
 .loginContent {
-    padding: 3em;
-    padding-bottom: 2em;
-    background: rgba(0, 0, 0, 0.02);
-    box-shadow: 0px 0px 12px 1px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
 }
 
-.login h1, h2, h3 {
-    color: #444;
-    margin-bottom: 1em;
+.loginLogo {
+    color: #f5f5f5;
+    font-size: 2rem;
+    font-weight: 600;
+    display: flex;
+    place-items: center;
 }
 
 .login ul {
     /* background: rgba(0,0,0, 0.03); */
+    list-style-type: none;
     padding: 1em;
+}
+
+.loginButtonList {
+    display: flex;
+    place-content: center;
+    place-items: center;
+}
+
+.loginSeperator {
+    margin: 0rem 2rem;
+    width: 1px;
+    min-height: 100px;
+    background: rgba(255, 255, 255, 0.287);
+}
+
+.loginButton {
+    cursor: pointer;
+    width: 300px;
+    height: 36px;
+    font-size: 1.15em;
+    font-weight: 500;
+    color: #fffe;
+    background: hsla(5, 100%, 64%, 1);
+    border-radius: 2px;
+    display: flex;
+    place-content: center;
+    place-items: center;
+}
+
+.loginButton2 {
+    cursor: pointer;
+    width: 140px;
+    height: 110px;
+    font-size: 1.15em;
+    font-weight: 500;
+    color: rgba(255, 255, 2550.75);
+    background: hsla(5, 100%, 64%, 0.0);
+    border-radius: 2px;
+    display: flex;
+    place-content: center;
+    place-items: center;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.loginButton2 i {
+    font-size: 38px;
+    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.loginButton2:hover {
+    color: #fff;
+    background: hsla(5, 100%, 64%, 1);
+    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.loginButton2:hover i {
+    font-size: 55px;
+    color: #fff;
+    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 tr.tombstone {
