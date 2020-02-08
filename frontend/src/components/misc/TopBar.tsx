@@ -29,11 +29,11 @@ const ClusterSelect = observer(() =>
 
 const TopBar = observer(() => {
 
-    const extendedFeatures = false; // TODO: (env.EXTENDED_FEATURES);
-
-    if (!extendedFeatures && !IsDevelopment) return null;
-
-    if (!api.UserData || !api.UserData.UserName) return null; // not logged in, or data not fetched yet...
+    //console.dir(api.UserData);
+    if (!api.UserData || !api.UserData.user || !api.UserData.user.name) {
+        return null;
+    }
+    const user = api.UserData.user;
 
     return (
         // zIndex is needed for the boxShadow to show
@@ -54,8 +54,8 @@ const TopBar = observer(() => {
                     <Popconfirm title='Do you want to logout?' onConfirm={() => api.logout()} placement='left' okText='Yes' cancelText='No'>
                         <Button style={{ height: 'auto', padding: 0, paddingLeft: '.5em', margin: 0 }} className='hoverButton'>
                             <span style={{ display: 'flex', alignItems: 'center' }}> {/* text+img row */}
-                                <span style={{ verticalAlign: 'middle' }}><b>{api.UserData.UserName}</b></span>
-                                <Avatar shape="square" size='default' icon="user" src={api.UserData.PictureUrl} style={{ marginLeft: '.5em' }} />
+                                <span style={{ verticalAlign: 'middle' }}><b>{user.name}</b></span>
+                                <Avatar shape="square" size='default' icon="user" src={user.avatarUrl} style={{ marginLeft: '.5em' }} />
                             </span>
                         </Button>
                     </Popconfirm>

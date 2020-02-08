@@ -144,9 +144,23 @@ export interface ClusterInfoResponse {
 
 
 
+export interface User {
+    id: string,
+    providerName: string,
+    email: string,
+    name: string,
+    avatarUrl: string,
+    internalIdentifier: string,
+}
+export interface Seat {
+    id: string, // id of seat
+    licenseId: string, // shouldn't that be censored??
+    user: User, // user representation of firestore? should be removed...
+    lastActivity: string, // is a datetime string, should probably be a "UnixMillis"
+}
 export interface UserData {
-    UserName: string,
-    PictureUrl: string,
+    user: User,
+    seat: Seat,
 }
 
 
