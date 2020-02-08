@@ -202,6 +202,7 @@ class App extends PureComponent {
                     {/* Login (and callbacks) */}
                     <Route exact path='/login' component={Login} />
                     <Route exact path='/login/callbacks/google'><LoginCompletePage provider='google' /></Route>
+                    <Route exact path='/login/callbacks/github'><LoginCompletePage provider='github' /></Route>
 
                     {/* Default View */}
                     <Route path="*">
