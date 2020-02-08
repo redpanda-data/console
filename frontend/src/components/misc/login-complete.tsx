@@ -14,7 +14,7 @@ class LoginCompletePage extends Component<{ provider: string }> {
 
     async completeLogin(provider: string, location: Location) {
         const pathName = location.pathname;
-        const query  = location.search;
+        const query = location.search;
 
         const url = pathName + query;
 
@@ -28,13 +28,13 @@ class LoginCompletePage extends Component<{ provider: string }> {
         // } else{
         //     navigate('/');
         // }
-        appGlobal.history.replace('/');
+        window.location.assign('/');
     }
 
     render() {
-        return <div style={{ display:'flex', placeContent:'center', placeItems:'center', flexFlow:'column', height:'66%'}}>
-                <h1>Completing login...</h1>
-                <Spin/>
+        return <div style={{ display: 'flex', placeContent: 'center', placeItems: 'center', flexFlow: 'column', height: '66%' }}>
+            <h1>Completing login...</h1>
+            <Spin />
         </div>
     }
 }
