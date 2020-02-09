@@ -308,14 +308,52 @@ span>.icon-container~span {
     place-content: center;
     place-items: center;
     height: 100vh;
-    background: linear-gradient(to top, #141e30, #243b55);
+    background: rgb(233, 233, 233);
+    font-family: 'Quicksand', sans-serif;
 }
 
-.loginContent {
-    padding: 2rem;
-    border-radius: 6px;
-    background: rgba(0, 0, 0, 0.2);
+.loginContainer {
+    width: 970px;
+    height: 600px;
+    background: #fafafa;
+    overflow: overlay;
+    /* border: 15px solid rgba(0, 0, 0, 0.15); */
+    box-shadow: 8px 8px 16px 1px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
     display: flex;
+    font-size: 22px;
+    line-height: 23px;
+    /* or 107% */
+    display: flex;
+    align-items: center;
+    color: #498FC2;
+}
+
+.loginContainerRight {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    font-size: 11px;
+    color: #fafafa;
+    text-align: center;
+    font-weight: 500;
+    padding: 2rem 0;
+}
+
+.loginLeft {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 4rem;
+}
+
+.loginRight {
+    height: 100%;
+    background: linear-gradient(338.72deg, #0a64a7 0%, #08273e 94.27%);
+    background-repeat: no-repeat;
+    opacity: 0.8;
+    flex-grow: 1;
 }
 
 .loginLogo {
@@ -326,16 +364,11 @@ span>.icon-container~span {
     place-items: center;
 }
 
-.login ul {
-    /* background: rgba(0,0,0, 0.03); */
-    list-style-type: none;
-    padding: 1em;
-}
-
 .loginButtonList {
     display: flex;
     place-content: center;
     place-items: center;
+    margin-top: 1rem;
 }
 
 .loginSeperator {
@@ -345,38 +378,23 @@ span>.icon-container~span {
     background: rgba(255, 255, 255, 0.287);
 }
 
-.loginButton {
-    cursor: pointer;
-    width: 300px;
-    height: 36px;
-    font-size: 1.15em;
-    font-weight: 500;
-    color: #fffe;
-    background: hsla(5, 100%, 64%, 1);
-    border-radius: 2px;
-    display: flex;
-    place-content: center;
-    place-items: center;
-}
-
 .loginButton2 {
     cursor: pointer;
-    width: 140px;
-    height: 110px;
-    font-size: 1.15em;
-    font-weight: 500;
-    color: rgba(255, 255, 2550.75);
-    background: hsla(5, 100%, 64%, 0.0);
+    width: 130px;
+    height: 85px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: rgba(23, 23, 23);
+    background: hsla(0, 0%, 66%, 0.15);
     border-radius: 2px;
     display: flex;
     place-content: center;
     place-items: center;
     flex-direction: column;
-    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 .loginButton2 i {
-    font-size: 38px;
+    font-size: 28px;
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
@@ -387,7 +405,7 @@ span>.icon-container~span {
 }
 
 .loginButton2:hover i {
-    font-size: 55px;
+    font-size: 45px;
     color: #fff;
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
