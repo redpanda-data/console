@@ -37,7 +37,7 @@ const TopBar = observer(() => {
 
     return (
         // zIndex is needed for the boxShadow to show
-        <Header style={{ height: 'auto', padding: '1em 1em', background: 'white', lineHeight: '2em', boxShadow: 'rgba(0, 0, 0, 0.2) 0em 0em 8px', zIndex: 10 }}>
+        <Header style={{ height: 'auto', padding: '0.5em 1em', background: 'white', lineHeight: '2em', boxShadow: 'rgba(0, 0, 0, 0.2) 0em 0em 8px', zIndex: 10 }}>
             <div style={{ display: 'flex', flexDirection: 'row', alignContent: 'center', alignItems: 'center' }}>
 
                 {/* Cluster Select */}
@@ -54,8 +54,9 @@ const TopBar = observer(() => {
                     <Popconfirm title='Do you want to logout?' onConfirm={() => api.logout()} placement='left' okText='Yes' cancelText='No'>
                         <Button style={{ height: 'auto', padding: 0, paddingLeft: '.5em', margin: 0 }} className='hoverButton'>
                             <span style={{ display: 'flex', alignItems: 'center' }}> {/* text+img row */}
-                                <span style={{ verticalAlign: 'middle' }}><b>{user.name}</b></span>
-                                <Avatar shape="square" size='default' icon="user" src={user.avatarUrl} style={{ marginLeft: '.5em' }} />
+                                {/* <span style={{ verticalAlign: 'middle' }}><b>{user.name}</b></span> */}
+                                <Avatar shape="square" size='large' icon="user" src={user.avatarUrl} style={{ marginRight: '.3em' }} />
+                                <Icon type='caret-down' style={{ color: 'rgba(0,0,0,0.6)' }} />
                             </span>
                         </Button>
                     </Popconfirm>
