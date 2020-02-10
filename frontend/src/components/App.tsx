@@ -15,7 +15,7 @@ import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
 import Title from 'antd/lib/typography/Title';
 
-import logo from '../assets/logo.png';
+import logo2 from '../assets/logo2.png';
 import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
 import { IsDevelopment, IsProduction } from '../utils/isProd';
@@ -42,11 +42,31 @@ const SideBar = observer(() =>
             {/* <div style={{ background: 'none', borderRadius: 4, display: 'flex', placeItems: 'center', placeContent: 'center' }}>
                 <span style={{ fontSize: '1.5em', color: 'white' }}>PLACEHOLDER</span>
             </div> */}
-            <div>
-                <img src={logo} style={{ width: '66%', height: 'auto', display: 'block', margin: 'auto', cursor: 'pointer' }}
+            <div style={{ position: 'relative' }}>
+                <img src={logo2} style={{
+                    width: 'auto', height: '130px', display: 'block', margin: 'auto', cursor: 'pointer',
+                    opacity: 0.5, mixBlendMode: 'overlay',
+                    marginTop: '3em'
+                }}
                     onClick={() => { appGlobal.history.push('/'); }}
                 />
-                <div style={{ position: 'relative', borderTop: '1px solid #fff3', margin: '0 1em', marginBottom: '.5em' }} />
+                <div style={{
+                    position: 'absolute',
+                    top: '-40px',
+                    width: '100%',
+
+                    fontFamily: "'Quicksand', sans-serif",
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '6px',
+                    transform: 'translateX(4px)',
+                    fontSize: '1.8rem',
+                    textAlign: 'center',
+                    color: 'hsla(205, 47%, 36%, 1)',
+                }}>
+                    Kowl
+                </div>
+                <div style={{ position: 'relative', borderTop: '1px solid #fff3', margin: '.5em 1em', marginTop: '1em' }} />
             </div>
         </div>
 
@@ -73,7 +93,7 @@ const SideBar = observer(() =>
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
             height: '40px', padding: 0, background: 'rgba(0,0,0, 0.25)', cursor: 'pointer'
         }} onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen }}>
-            <Icon type={uiSettings.sideBarOpen ? 'menu-fold' : 'menu-unfold'} style={{ fontSize: '19px', color: '#eee9' }} />
+            <Icon type={uiSettings.sideBarOpen ? 'menu-fold' : 'menu-unfold'} style={{ fontSize: '19px', color: '#1f6190' }} />
         </Footer>
     </Layout>
 )
@@ -103,7 +123,7 @@ const DataAgeInfo = observer(() => {
             {maxFetchTime < 0.1
                 ?
                 <>
-                    <Button icon='reload' shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)' }} onClick={() => appGlobal.onRefresh()} />
+                    <Button icon='reload' shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
                     {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
                 </>
                 :
@@ -130,7 +150,7 @@ const AppPageHeader = observer(() => {
 
     return <MotionDiv identityKey={uiState.pageTitle}>
         <PageHeader
-            style={{ paddingLeft: 0, paddingRight: 0 }}
+            style={{ paddingLeft: '1rem', paddingRight: 0, marginBottom: '4rem' }}
             breadcrumb={{ routes: breadcrumbs, itemRender: itemRender, separator: '>' }}
             // onBack={onBack}
             title={<><Title level={3}>{uiState.pageTitle}</Title></>}
@@ -141,36 +161,6 @@ const AppPageHeader = observer(() => {
     </MotionDiv>
 });
 
-
-const PreviewBanner = () => {
-
-    const timeUntilNotification = uiSettings.previewNotificationHideUntil - new Date().getTime();
-    if (timeUntilNotification > 0) {
-        console.log('preview notification will show again in: ' + prettyMilliseconds(timeUntilNotification));
-        return null;
-    }
-
-    const setHideTime = () => {
-        const notificationDelay = hoursToMilliseconds(12);
-        const nowMs = new Date().getTime();
-        const showAgain = new Date(nowMs + notificationDelay).getTime();
-        uiSettings.previewNotificationHideUntil = showAgain;
-        console.log('preview notification closed. will show again at: ' + new Date(showAgain).toLocaleString());
-    };
-
-    return <>
-        <Alert type="info" message='Preview Version' style={{ zIndex: 50 }}
-            description={
-                <>
-                    This is an early <b>preview version</b> of KafkaOwl  -
-                    expect some rough edges here and there. <Icon type="heart" theme="twoTone" twoToneColor='hsl(340, 100%, 66%)' />
-                </>}
-            banner closable
-            afterClose={setHideTime}
-        />
-    </>
-}
-
 const AppContent = observer(() =>
     <Layout style={{ borderLeft: '1px solid #ddd', overflow: 'hidden' }}>
 
@@ -180,10 +170,13 @@ const AppContent = observer(() =>
         {isBusinessVersion && <TopBar />}
 
         {/* Page */}
-        <Content style={{ display: 'flex', flexDirection: 'column', overflow: 'overlay', overflowX: 'hidden', background: 'white', padding: '1em 2em', zIndex: 1 }}>
+        <Content style={{ display: 'flex', flexDirection: 'column', overflow: 'overlay', overflowX: 'hidden', background: '#f0f2f5', padding: '1em 2em', zIndex: 1 }}>
             <AppPageHeader />
+
             <ErrorDisplay>
-                <RouteView />
+                <div style={{ borderRadius: '3px', background: '#fff' }}>
+                    <RouteView />
+                </div>
             </ErrorDisplay>
         </Content>
 
