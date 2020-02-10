@@ -252,7 +252,7 @@ span>.icon-container~span {
 }
 
 .version {
-    color: hsla(205, 100%, 66%, 40%);
+    color: hsla(205, 32%, 46%, 0.4);
     font-size: 80%;
     margin: .5em auto;
     display: flex;
@@ -449,7 +449,7 @@ span>.icon-container~span {
     background-color: hsla(209, 75%, 60%, 1);
 }
 
-button>i.anticon {
+button>i.anticon:only-child {
     transform: translateY(-2px)
 }
 

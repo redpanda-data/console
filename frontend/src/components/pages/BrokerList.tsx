@@ -41,7 +41,7 @@ class BrokerList extends PageComponent {
         this.setResult = this.setResult.bind(this);
     }
 
-    refreshData(force:boolean){
+    refreshData(force: boolean) {
         api.refreshCluster(force);
     }
 
@@ -62,7 +62,7 @@ class BrokerList extends PageComponent {
 
         return <>
             <motion.div {...animProps}>
-                <Row type="flex" style={{ marginBottom: '1em' }}>
+                <Row type="flex" style={{ margin: '1em 1.35rem' }}>
                     <Statistic title='ControllerID' value={info.controllerId} style={statisticStyle} />
                     <Statistic title='Broker Count' value={brokers.length} style={statisticStyle} />
                 </Row>
@@ -72,7 +72,7 @@ class BrokerList extends PageComponent {
                 </Row> */}
 
                 <Table
-                    style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
+                    style={{ margin: '0 1rem', padding: '0' }} size={'middle'}
                     pagination={this.pageConfig}
                     onChange={x => { if (x.pageSize) { uiSettings.brokerList.pageSize = x.pageSize } }}
                     dataSource={brokers}
