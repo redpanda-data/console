@@ -317,9 +317,8 @@ span>.icon-container~span {
     height: 600px;
     background: #fafafa;
     overflow: overlay;
-    /* border: 15px solid rgba(0, 0, 0, 0.15); */
     box-shadow: 8px 8px 16px 1px rgba(0, 0, 0, 0.15);
-    border-radius: 8px;
+    border-radius: 4px;
     display: flex;
     font-size: 22px;
     line-height: 23px;
@@ -349,11 +348,29 @@ span>.icon-container~span {
 }
 
 .loginRight {
+    position: relative;
     height: 100%;
-    background: linear-gradient(338.72deg, #0a64a7 0%, #08273e 94.27%);
-    background-repeat: no-repeat;
+    background: linear-gradient(338.72deg, #0a64a7 0%, #08273e 94.27%) no-repeat;
     opacity: 0.8;
     flex-grow: 1;
+    /* background: url('assets/pattern.png') repeat-x;
+    background-position: bottom; */
+    /* background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('assets/pattern.png') repeat; */
+}
+
+.loginRight::after {
+    content: "";
+    background: url('assets/pattern3.png') repeat-x 330px bottom;
+    background-position-y: 115%;
+    mix-blend-mode: hard-light;
+    opacity: 35%;
+    zoom: 80%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    z-index: -1;
 }
 
 .loginLogo {
@@ -385,7 +402,7 @@ span>.icon-container~span {
     font-size: 1.5em;
     font-weight: bold;
     color: rgba(23, 23, 23);
-    background: hsla(0, 0%, 66%, 0.15);
+    background: #3a618899;
     border-radius: 2px;
     display: flex;
     place-content: center;
@@ -408,6 +425,32 @@ span>.icon-container~span {
     font-size: 45px;
     color: #fff;
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.ant-menu.ant-menu-dark .ant-menu-item-selected, .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
+    background-color: hsla(209, 72%, 59%, 0.68);
+}
+
+.ant-checkbox-checked .ant-checkbox-inner {
+    background-color: hsla(209, 75%, 66%, 1);
+    border-color: hsla(209, 50%, 55%, 1);
+}
+
+.ant-btn-primary {
+    background-color: hsla(209, 66%, 55%, 1);
+    border-color: transparent;
+}
+
+.ant-tabs-nav .ant-tabs-tab-active {
+    color: hsla(206, 80%, 55%, 1);
+}
+
+.ant-tabs-ink-bar {
+    background-color: hsla(209, 75%, 60%, 1);
+}
+
+button>i.anticon {
+    transform: translateY(-2px)
 }
 
 tr.tombstone {

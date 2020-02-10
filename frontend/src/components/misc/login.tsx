@@ -88,7 +88,7 @@ class Login extends Component {
                                         </span>
                                     </div>
 
-                                )) || <div><Spin />Retreiving login method from backend...</div>}
+                                )) || <div style={{ fontSize: '14px', marginTop: '32px', color: '#ddd' }}><Spin size='large' /><br />Retreiving login method from backend...</div>}
                             </div>
                         </div>
 
