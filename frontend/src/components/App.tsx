@@ -34,7 +34,7 @@ let siderCollapsedWidth = 80;
 
 
 const SideBar = observer(() =>
-    <Layout style={{ display: 'flex', flex: 1, height: '100vh', flexDirection: 'column', background: '#031d30' }}>
+    <Layout style={{ display: 'flex', flex: 1, height: '100vh', flexDirection: 'column', background: 'linear-gradient(180deg, hsla(206, 60%, 17%, 0.95) 0%, #08273ef5 94.27%) no-repeat' }}>
         <RenderTrap name='SideBarContent' />
 
         {/* Logo */}
@@ -125,7 +125,6 @@ const AppPageHeader = observer(() => {
         const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: 'Cluster' };
         breadcrumbs.unshift(rootBreadcrumb);
     }
-
 
     const itemRender = (r: AntBreadcrumbRoute) => <NavLink to={r.path}>{r.breadcrumbName}</NavLink>;
 

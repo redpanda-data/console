@@ -32,7 +32,7 @@ class LoginCompletePage extends Component<{ provider: string }> {
     }
 
     render() {
-        return <div style={{ height: '100vh', display: 'flex', placeContent: 'center', background: '#fafafa' }}>
+        return <div style={{ height: '100vh', display: 'flex', placeContent: 'center', background: '#f3f3f3' }}>
             <div style={{ display: 'flex', placeContent: 'center', placeItems: 'center', flexFlow: 'column' }}>
                 <span style={{ fontSize: '1.5em', color: 'rgba(0,0,0,0.75)' }}>Completing login...</span><br />
                 <Spin />
