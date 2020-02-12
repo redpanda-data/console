@@ -42,9 +42,6 @@ Kubernetes users may want to use the Helm chart to deploy Kafka owl: https://git
 | --server.http.write-timeout | Write timeout for HTTP server | 30s |
 | --server.http.idle-timeout | Idle timeout for HTTP server | 120s |
 | --logging.level | Log granularity (debug, info, warn, error, fatal, panic) | info |
-| --logging.print-access-logs | Whether or not to print access log for each HTTP invocation | false |
-| --logging.access-log-extra-header | Name of an additional header to include in the Access Logs. Intended to capture the current user that sent the request (obviously only works when there's a proxy that actually adds the header, like Googles Cloud IAP: `X-Goog-Authenticated-User-Email`) | `X-Goog-Authenticated-User-Email` |
-| --logging.block-when-extra-header-missing | When true, and an incoming request does not have a value for the header 'logging.access-log-extra-header', it will be blocked (returning 400) | false |
 | --kafka.brokers | Array of broker addresses, delimited by comma (e. g. "kafka-1:9092, kafka-2:9092") | (No default) |
 | --kafka.client-id | ClientID to identify the consumer | "kafka-owl" |
 | --kafka.sasl.enabled | Bool to enable/disable SASL authentication (only SASL_PLAINTEXT is supported) | false |
@@ -57,4 +54,4 @@ Kubernetes users may want to use the Helm chart to deploy Kafka owl: https://git
 | --kafka.tls.cert-file-path | Path to the TLS cert file | (No default) |
 | --kafka.tls.insecure-skip-verify | If true, TLS accepts any certificate presented by the server and any host name in that certificate. | false |
 | --kafka.tls.passphrase | Passphrase to decrypt the TLS key (leave empty for unencrypted key files) | (No default) |
-| --owl.topics.blacklist | Topics blacklist (comma separated) to configure access restrictions | (No default)
+| --owl.topics.blacklist | Topics blacklist (comma separated) to configure access restrictions | (No default) |
