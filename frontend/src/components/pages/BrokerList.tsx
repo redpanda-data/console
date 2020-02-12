@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table, Statistic, Row, Skeleton, Checkbox } from "antd";
+import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Icon, Tooltip } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "./Page";
 import { api } from "../../state/backendApi";
@@ -54,8 +54,17 @@ class BrokerList extends PageComponent {
         const brokers = info.brokers;
         let hasRack = brokers.any(b => b.rack ? true : false);
 
+        const renderIdColumn = (text: string, record: Broker) => {
+            if (record.brokerId != info.controllerId) return text;
+            return <>{text}
+                <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'}>
+                    <Icon type='crown' theme='filled' style={{ padding: '2px', marginLeft: '6px', fontSize: '16px', color: '#0009' }} />
+                </Tooltip>
+            </>
+        };
+
         const columns: ColumnProps<Broker>[] = [
-            { title: 'ID', dataIndex: 'brokerId', width: '100px' },
+            { title: 'ID', dataIndex: 'brokerId', width: '100px', render: renderIdColumn },
             { title: 'Address', dataIndex: 'address' },
             { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), width: '140px' },
             (uiSettings.brokerList.hideEmptyColumns && !hasRack) ? null : { title: 'Rack', dataIndex: 'rack', width: '100px' },
