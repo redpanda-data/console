@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Empty, Skeleton, Row, Statistic, Tag, Input } from "antd";
+import { Table, Empty, Skeleton, Row, Statistic, Tag, Input, Divider } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -13,8 +13,8 @@ import { appGlobal } from "../../state/appGlobal";
 import { GroupState } from "./GroupDetails";
 import { observable } from "mobx";
 import { containsIgnoreCase } from "../../utils/utils";
+import Card from "../misc/Card";
 
-const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
 @observer
 class GroupList extends PageComponent {
@@ -42,44 +42,52 @@ class GroupList extends PageComponent {
         const stateGroups = groups.groupInto(g => g.state);
 
         return (
-            <motion.div {...animProps}>
-                <Row type="flex" style={{ marginBottom: '1em' }}>
-                    <Statistic title='Total Groups' value={groups.length} style={statisticStyle} />
-                    {stateGroups.map(g => <Statistic key={g.key} title={g.key} value={g.items.length} style={statisticStyle} />)}
-                </Row>
+            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
 
-                <this.SearchBar />
+                <Card>
+                    <Row type="flex">
+                        <Statistic title='Total Groups' value={groups.length} />
+                        <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem' }} />
+                        {stateGroups.map(g => <>
+                            <Statistic style={{ marginRight: '1.5rem' }} key={g.key} title={g.key} value={g.items.length} />
+                        </>)}
+                    </Row>
+                </Card>
 
-                <Table
-                    style={{ margin: '0', padding: '0' }} bordered={true} size={'middle'}
-                    pagination={this.pageConfig}
-                    onRow={(record) =>
-                        ({
-                            onClick: () => appGlobal.history.push('/groups/' + record.groupId),
-                        })}
-                    onChange={x => { if (x.pageSize) { uiSettings.consumerGroupList.pageSize = x.pageSize } }}
-                    rowClassName={() => 'hoverLink'}
-                    dataSource={groups}
-                    rowKey={x => x.groupId}
-                    columns={[
-                        { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
-                        {
-                            title: 'ID', dataIndex: 'groupId',
-                            sorter: sortField('groupId'),
-                            filteredValue: [uiSettings.consumerGroupList.quickSearch],
-                            onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, filterValue),
-                            render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
-                        },
-                        { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
-                        { title: 'Lag (Sum)', dataIndex: 'lagSum', sorter: (a, b) => a.lagSum - b.lagSum },
-                    ]} />
+                <Card>
+                    <this.SearchBar />
+
+                    <Table
+                        style={{ margin: '0', padding: '0' }} size={'middle'}
+                        pagination={this.pageConfig}
+                        onRow={(record) =>
+                            ({
+                                onClick: () => appGlobal.history.push('/groups/' + record.groupId),
+                            })}
+                        onChange={x => { if (x.pageSize) { uiSettings.consumerGroupList.pageSize = x.pageSize } }}
+                        rowClassName={() => 'hoverLink'}
+                        dataSource={groups}
+                        rowKey={x => x.groupId}
+                        columns={[
+                            { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
+                            {
+                                title: 'ID', dataIndex: 'groupId',
+                                sorter: sortField('groupId'),
+                                filteredValue: [uiSettings.consumerGroupList.quickSearch],
+                                onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, filterValue),
+                                render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
+                            },
+                            { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
+                            { title: 'Lag (Sum)', dataIndex: 'lagSum', sorter: (a, b) => a.lagSum - b.lagSum },
+                        ]} />
+                </Card>
             </motion.div>
         );
     }
 
     SearchBar = observer(() => {
 
-        return <div style={{ marginBottom: '1em', padding: '0', whiteSpace: 'nowrap' }}>
+        return <div style={{ marginTop: '0', marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap' }}>
 
             <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: 'auto' }}
                 onChange={e => uiSettings.consumerGroupList.quickSearch = e.target.value}
@@ -107,7 +115,7 @@ class GroupList extends PageComponent {
     }
 
     skeleton = <>
-        <motion.div {...animProps} key={'loader'}>
+        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
             <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
         </motion.div>
     </>

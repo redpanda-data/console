@@ -61,8 +61,8 @@ class TopicList extends PageComponent {
         const data = this.searchBar.current ? this.searchBar.current.data : ([] as TopicDetail[]);
 
         return (
-            <motion.div {...animProps}>
-                <Row type="flex" style={{ marginBottom: '1em' }}>
+            <motion.div {...animProps} style={{ margin: '1rem' }}>
+                <Row type="flex" style={{ margin: '0 .35rem', marginBottom: '1rem' }}>
                     <Statistic title='Total Topics' value={topics.length} style={statisticStyle} />
                     <Statistic title='Total Partitions' value={topics.map(x => x.partitionCount).reduce((p, c) => p + c)} style={statisticStyle} />
                 </Row>
@@ -70,7 +70,7 @@ class TopicList extends PageComponent {
                 <SearchBar<TopicDetail> dataSource={this.getTopics} isFilterMatch={this.isFilterMatch} ref={this.searchBar} />
 
                 <Table
-                    style={{ margin: '0', padding: '0' }} bordered={true} size='middle'
+                    style={{ margin: '0', padding: '0' }} size='middle'
                     onRow={(record) =>
                         ({
                             onClick: () => appGlobal.history.push('/topics/' + record.topicName),
@@ -92,7 +92,7 @@ class TopicList extends PageComponent {
     }
 
     skeleton = <>
-        <motion.div {...animProps} key={'loader'}>
+        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
             <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
         </motion.div>
     </>

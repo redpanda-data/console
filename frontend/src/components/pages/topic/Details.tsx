@@ -150,7 +150,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
     skeleton = <>
-        <motion.div {...animProps} key={'loader'}>
+        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
             <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
         </motion.div>
     </>

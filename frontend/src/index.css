@@ -236,7 +236,7 @@ span>.icon-container~span {
 .error-list {
     padding: 2em;
     margin: 1em 0;
-    background: rgba(238, 238, 238, 0.726);
+    background: hsla(205, 15%, 90%, 1);
     border-radius: 6px;
 }
 
@@ -460,4 +460,12 @@ tr.tombstone {
 
 tr.tombstone .ant-table-row-expand-icon {
     display: none;
+}
+
+.kowlCard {
+    margin: 0;
+    margin-bottom: .75rem;
+    padding: 1rem 1.5rem;
+    background: #fff;
+    border-radius: 3px;
 }

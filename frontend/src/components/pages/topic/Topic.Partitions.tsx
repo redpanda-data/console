@@ -78,7 +78,7 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
     }
 
     skeleton = <>
-        <motion.div {...animProps} key={'loader'}>
+        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
             <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
         </motion.div>
     </>

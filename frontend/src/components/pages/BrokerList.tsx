@@ -61,8 +61,8 @@ class BrokerList extends PageComponent {
         ].filter(c => c != null).map(c => c!);
 
         return <>
-            <motion.div {...animProps}>
-                <Row type="flex" style={{ margin: '1em 1.35rem' }}>
+            <motion.div {...animProps} style={{ margin: '1rem' }}>
+                <Row type="flex" style={{ margin: '0 .35rem', marginBottom: '1rem' }}>
                     <Statistic title='ControllerID' value={info.controllerId} style={statisticStyle} />
                     <Statistic title='Broker Count' value={brokers.length} style={statisticStyle} />
                 </Row>
@@ -72,7 +72,7 @@ class BrokerList extends PageComponent {
                 </Row> */}
 
                 <Table
-                    style={{ margin: '0 1rem', padding: '0' }} size={'middle'}
+                    style={{ margin: '0', padding: '0' }} size={'middle'}
                     pagination={this.pageConfig}
                     onChange={x => { if (x.pageSize) { uiSettings.brokerList.pageSize = x.pageSize } }}
                     dataSource={brokers}
@@ -96,7 +96,7 @@ class BrokerList extends PageComponent {
 
 
     skeleton = <>
-        <motion.div {...animProps} key={'loader'}>
+        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
             <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
         </motion.div>
     </>
