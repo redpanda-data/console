@@ -13,6 +13,7 @@ import { observable } from "mobx";
 import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../utils/utils";
 import { appGlobal } from "../../state/appGlobal";
+import Card from "../misc/Card";
 
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -61,24 +62,24 @@ class BrokerList extends PageComponent {
         ].filter(c => c != null).map(c => c!);
 
         return <>
-            <motion.div {...animProps} style={{ margin: '1rem' }}>
-                <Row type="flex" style={{ margin: '0 .35rem', marginBottom: '1rem' }}>
-                    <Statistic title='ControllerID' value={info.controllerId} style={statisticStyle} />
-                    <Statistic title='Broker Count' value={brokers.length} style={statisticStyle} />
-                </Row>
+            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
+                <Card>
+                    <Row type="flex">
+                        <Statistic title='ControllerID' value={info.controllerId} style={statisticStyle} />
+                        <Statistic title='Broker Count' value={brokers.length} style={statisticStyle} />
+                    </Row>
+                </Card>
 
-                {/* <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} >
-                    <QuickSearch2 data={brokers} isMatch={this.isMatch} setResult={this.setResult} />
-                </Row> */}
-
-                <Table
-                    style={{ margin: '0', padding: '0' }} size={'middle'}
-                    pagination={this.pageConfig}
-                    onChange={x => { if (x.pageSize) { uiSettings.brokerList.pageSize = x.pageSize } }}
-                    dataSource={brokers}
-                    rowKey={x => x.brokerId.toString()}
-                    rowClassName={() => 'pureDisplayRow'}
-                    columns={columns} />
+                <Card>
+                    <Table
+                        style={{ margin: '0', padding: '0' }} size={'middle'}
+                        pagination={this.pageConfig}
+                        onChange={x => { if (x.pageSize) { uiSettings.brokerList.pageSize = x.pageSize } }}
+                        dataSource={brokers}
+                        rowKey={x => x.brokerId.toString()}
+                        rowClassName={() => 'pureDisplayRow'}
+                        columns={columns} />
+                </Card>
             </motion.div>
         </>
     }
