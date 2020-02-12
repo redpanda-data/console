@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { observer } from "mobx-react"
-import { Layout, Menu, Icon, Select, PageHeader, Alert, Button, Avatar, Popconfirm } from 'antd';
+import { Layout, Menu, Icon, Select, PageHeader, Alert, Button, Avatar, Popconfirm, Dropdown } from 'antd';
 import { uiSettings } from '../../state/ui';
 import { CreateRouteMenuItems, APP_ROUTES, RouteView, } from '.././routes';
 import { RenderTrap, Spacer } from '.././misc/common';
@@ -35,6 +35,17 @@ const TopBar = observer(() => {
     }
     const user = api.UserData.user;
 
+    const menu = <Menu className="avatarMenu">
+        <Menu.Item style={{ pointerEvents: 'none' }}>
+            Signed in as<br />
+            <span style={{ fontWeight: 'bold' }}>{user.name}</span>
+        </Menu.Item>
+        <Menu.Divider />
+        <Menu.Item key="0">Logout</Menu.Item>
+        {/* <Menu.Item key="2">Short</Menu.Item>
+        <Menu.Item key="3">Testing long text in the 3rd menu item</Menu.Item> */}
+    </Menu>
+
     return (
         // zIndex is needed for the boxShadow to show
         <div style={{ height: 'auto', padding: '0.5em 1em', background: 'white', lineHeight: '2em', boxShadow: '0 1px 5px rgba(0,21,41,.10)', zIndex: 10 }}>
@@ -51,15 +62,22 @@ const TopBar = observer(() => {
 
                 {/* User Button */}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}> {/* user column */}
+
+
+
+
                     <Popconfirm title='Do you want to logout?' onConfirm={() => api.logout()} placement='left' okText='Yes' cancelText='No'>
-                        <Button style={{ height: 'auto', padding: 0, paddingLeft: '.5em', margin: 0 }} className='hoverButton'>
-                            <span style={{ display: 'flex', alignItems: 'center' }}> {/* text+img row */}
-                                {/* <span style={{ verticalAlign: 'middle' }}><b>{user.name}</b></span> */}
+                    </Popconfirm>
+
+                    <Dropdown overlay={menu} trigger={['click']}>
+                        <div style={{ cursor: 'pointer' }}>
+                            <span style={{ display: 'flex', alignItems: 'center' }}>
                                 <Avatar shape="square" size='large' icon="user" src={user.avatarUrl} style={{ marginRight: '.3em' }} />
                                 <Icon type='caret-down' style={{ color: 'rgba(0,0,0,0.6)' }} />
                             </span>
-                        </Button>
-                    </Popconfirm>
+                        </div>
+                    </Dropdown>
+
                 </div>
             </div>
         </div>

@@ -497,3 +497,7 @@ tr.tombstone .ant-table-row-expand-icon {
     background: #fff;
     border-radius: 3px;
 }
+
+.avatarMenu {
+    min-width: 150px;
+}
