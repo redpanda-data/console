@@ -231,6 +231,10 @@ span>.icon-container~span {
     background-color: transparent;
 }
 
+.ant-table-pagination.ant-pagination {
+    margin-bottom: 4px;
+}
+
 /* .ant-pagination-item a {
     color: hsl(205, 100%, 55%)
 }
@@ -495,7 +499,8 @@ tr.tombstone .ant-table-row-expand-icon {
     margin-bottom: .75rem;
     padding: 1rem 1.5rem;
     background: #fff;
-    border-radius: 3px;
+    border-radius: 2px;
+    box-shadow: 0px 0px 2px 1px rgba(0, 0, 0, 0.02);
 }
 
 .avatarMenu {
