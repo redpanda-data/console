@@ -41,9 +41,8 @@ class GroupList extends PageComponent {
         const groups = api.ConsumerGroups;
         const stateGroups = groups.groupInto(g => g.state);
 
-        return (
+        return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-
                 <Card>
                     <Row type="flex">
                         <Statistic title='Total Groups' value={groups.length} />
@@ -82,7 +81,7 @@ class GroupList extends PageComponent {
                         ]} />
                 </Card>
             </motion.div>
-        );
+        </>
     }
 
     SearchBar = observer(() => {
