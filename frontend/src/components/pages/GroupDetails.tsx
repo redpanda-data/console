@@ -77,7 +77,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         );
     }
 
-    skeleton = <MotionDiv identityKey='loader'>
+    skeleton = <MotionDiv identityKey='loader' style={{ margin: '2rem' }}>
         <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
     </MotionDiv>
 }

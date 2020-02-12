@@ -150,7 +150,6 @@ const AppPageHeader = observer(() => {
 
     return <MotionDiv identityKey={uiState.pageTitle}>
         <PageHeader
-            style={{ paddingLeft: '1rem', paddingRight: 0, marginBottom: '4rem' }}
             breadcrumb={{ routes: breadcrumbs, itemRender: itemRender, separator: '>' }}
             // onBack={onBack}
             title={<><Title level={3}>{uiState.pageTitle}</Title></>}
@@ -162,7 +161,7 @@ const AppPageHeader = observer(() => {
 });
 
 const AppContent = observer(() =>
-    <Layout style={{ borderLeft: '1px solid #ddd', overflow: 'hidden' }}>
+    <Layout style={{ borderLeft: '1px solid #ddd', overflow: 'overlay', overflowX: 'hidden', }}>
 
         <RenderTrap name='AppContentLayout' />
 
@@ -170,13 +169,11 @@ const AppContent = observer(() =>
         {isBusinessVersion && <TopBar />}
 
         {/* Page */}
-        <Content style={{ display: 'flex', flexDirection: 'column', overflow: 'overlay', overflowX: 'hidden', background: '#f0f2f5', padding: '1em 2em', zIndex: 1 }}>
+        <Content style={{ display: 'flex', flexDirection: 'column', background: '#f0f2f5', padding: '1rem 0', zIndex: 1 }}>
             <AppPageHeader />
 
             <ErrorDisplay>
-                <div style={{ borderRadius: '3px', background: '#fff' }}>
-                    <RouteView />
-                </div>
+                <RouteView />
             </ErrorDisplay>
         </Content>
 
