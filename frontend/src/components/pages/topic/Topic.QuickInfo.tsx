@@ -32,7 +32,7 @@ const statsStyle: CSSProperties = { margin: 0, marginRight: '2em', padding: '.2e
 // todo: rename QuickInfo
 export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[], size: number }) => {
 
-    return <Row type="flex" style={{ marginBottom: '1em' }}>
+    return <Row type="flex">
 
         <Statistic title='Size' value={prettyBytes(p.size)} style={statsStyle} />
 
