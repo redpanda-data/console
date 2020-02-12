@@ -174,7 +174,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             <ConfigProvider renderEmpty={this.empty}>
                 <Table
                     style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
-                    bordered={true} size='small'
+                    size='middle'
                     pagination={this.pageConfig}
                     onChange={(pagination, filters, sorter, extra) => {
                         if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;

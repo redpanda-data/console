@@ -506,3 +506,16 @@ tr.tombstone .ant-table-row-expand-icon {
 .avatarMenu {
     min-width: 150px;
 }
+
+.ant-tabs-nav {
+    width: 100%;
+}
+
+.ant-tabs-nav>div {
+    display: flex;
+}
+
+.ant-tabs-nav .ant-tabs-tab {
+    flex: 1;
+    text-align: center;
+}

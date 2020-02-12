@@ -14,6 +14,7 @@ import { TopicMessageView } from "./Topic.Messages";
 import { appGlobal } from "../../../state/appGlobal";
 import { TopicPartitions } from "./Topic.Partitions";
 import { TopicConfigEntry } from "../../../state/restInterfaces";
+import Card from "../../misc/Card";
 
 const { Text } = Typography;
 
@@ -77,28 +78,32 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         this.addBaseFavs(topicConfig);
 
         return (
-            <motion.div {...animProps} key={'b'}>
+            <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 {/* QuickInfo */}
-                <TopicQuickInfoStatistic config={topicConfig} size={topic.logDirSize} />
+                <Card>
+                    <TopicQuickInfoStatistic config={topicConfig} size={topic.logDirSize} />
+                </Card>
 
                 {/* Tabs:  Messages, Configuration */}
-                <Tabs style={{ overflow: 'visible' }} animated={false}
-                    activeKey={this.tabPageKey}
-                    onChange={this.setTabPage}
-                >
-                    <Tabs.TabPane key="partitions" tab="Partitions">
-                        <TopicPartitions topic={topic} />
-                    </Tabs.TabPane>
+                <Card>
+                    <Tabs style={{ overflow: 'visible' }} animated={false}
+                        activeKey={this.tabPageKey}
+                        onChange={this.setTabPage}
+                    >
+                        <Tabs.TabPane key="partitions" tab="Partitions">
+                            <TopicPartitions topic={topic} />
+                        </Tabs.TabPane>
 
-                    <Tabs.TabPane key="messages" tab="Messages">
-                        <TopicMessageView topic={topic} />
-                    </Tabs.TabPane>
+                        <Tabs.TabPane key="messages" tab="Messages">
+                            <TopicMessageView topic={topic} />
+                        </Tabs.TabPane>
 
-                    <Tabs.TabPane key="configuration" tab="Configuration">
-                        <ConfigDisplaySettings /> {/* todo: move into TopicConfiguration */}
-                        <TopicConfiguration config={topicConfig} />
-                    </Tabs.TabPane>
-                </Tabs>
+                        <Tabs.TabPane key="configuration" tab="Configuration">
+                            <ConfigDisplaySettings /> {/* todo: move into TopicConfiguration */}
+                            <TopicConfiguration config={topicConfig} />
+                        </Tabs.TabPane>
+                    </Tabs>
+                </Card>
             </motion.div>
         );
     }
