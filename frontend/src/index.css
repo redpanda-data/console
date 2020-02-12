@@ -221,6 +221,26 @@ span>.icon-container~span {
     background-color: initial !important;
 }
 
+.ant-pagination-total-text {
+    font-size: 13px;
+    opacity: 80%;
+}
+
+.ant-pagination-item {
+    border-color: transparent;
+    background-color: transparent;
+}
+
+/* .ant-pagination-item a {
+    color: hsl(205, 100%, 55%)
+}
+*/
+
+.ant-pagination-item-active a {
+    font-weight: bold;
+    cursor: default;
+}
+
 .fadeIn3d {
     opacity: 1;
     transform: translateY(0) perspective(10em) rotateX(0) scale(1, 1);
