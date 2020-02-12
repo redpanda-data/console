@@ -195,6 +195,14 @@ span>.icon-container~span {
     color: inherit;
 }
 
+.ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-tbody>tr>td {
+    padding: 8px 8px;
+}
+
+.ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-thead>tr>th {
+    padding: 8px 8px;
+}
+
 .ant-table-tbody>tr:hover>td {
     transition-duration: 0s, 0s !important;
 }
