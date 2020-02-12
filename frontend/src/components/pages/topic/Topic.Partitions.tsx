@@ -52,7 +52,7 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
             warning = <Alert type="warning" message="Topic cleanupPolicy is 'compact'. Message Count is an estimate!" showIcon style={{ marginBottom: '1em' }} />
 
         const table = <Table
-            size={'small'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={true}
+            size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
             pagination={this.pageConfig}
             onChange={(pagination, filter, sorter) => {
                 if (pagination.pageSize) { /* todo    uiSettings.top.pageSize = x.pageSize*/ }

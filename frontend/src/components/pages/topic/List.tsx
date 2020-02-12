@@ -14,6 +14,7 @@ import { observable } from "mobx";
 import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../../utils/utils";
 import { uiState } from "../../../state/uiState";
+import Card from "../../misc/Card";
 const { Text } = Typography;
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -61,32 +62,36 @@ class TopicList extends PageComponent {
         const data = this.searchBar.current ? this.searchBar.current.data : ([] as TopicDetail[]);
 
         return (
-            <motion.div {...animProps} style={{ margin: '1rem' }}>
-                <Row type="flex" style={{ margin: '0 .35rem', marginBottom: '1rem' }}>
-                    <Statistic title='Total Topics' value={topics.length} style={statisticStyle} />
-                    <Statistic title='Total Partitions' value={topics.map(x => x.partitionCount).reduce((p, c) => p + c)} style={statisticStyle} />
-                </Row>
+            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
+                <Card>
+                    <Row type="flex">
+                        <Statistic title='Total Topics' value={topics.length} style={statisticStyle} />
+                        <Statistic title='Total Partitions' value={topics.map(x => x.partitionCount).reduce((p, c) => p + c)} style={statisticStyle} />
+                    </Row>
+                </Card>
 
-                <SearchBar<TopicDetail> dataSource={this.getTopics} isFilterMatch={this.isFilterMatch} ref={this.searchBar} />
+                <Card>
+                    <SearchBar<TopicDetail> dataSource={this.getTopics} isFilterMatch={this.isFilterMatch} ref={this.searchBar} />
 
-                <Table
-                    style={{ margin: '0', padding: '0' }} size='middle'
-                    onRow={(record) =>
-                        ({
-                            onClick: () => appGlobal.history.push('/topics/' + record.topicName),
-                        })}
-                    onChange={x => { if (x.pageSize) { uiSettings.topicList.pageSize = x.pageSize; this.pageConfig.pageSize = x.pageSize; } }}
-                    rowClassName={() => 'hoverLink'}
-                    pagination={this.pageConfig}
-                    dataSource={data}
-                    rowKey={x => x.topicName}
-                    columns={[
-                        { title: 'Name', dataIndex: 'topicName', sorter: sortField('topicName'), className: 'whiteSpaceDefault' },
-                        { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
-                        { title: 'Replication', dataIndex: 'replicationFactor', width: 1 },
-                        { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1 },
-                        { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), sorter: (a, b) => a.logDirSize - b.logDirSize, width: '140px' },
-                    ]} />
+                    <Table
+                        style={{ margin: '0', padding: '0' }} size='middle'
+                        onRow={(record) =>
+                            ({
+                                onClick: () => appGlobal.history.push('/topics/' + record.topicName),
+                            })}
+                        onChange={x => { if (x.pageSize) { uiSettings.topicList.pageSize = x.pageSize; this.pageConfig.pageSize = x.pageSize; } }}
+                        rowClassName={() => 'hoverLink'}
+                        pagination={this.pageConfig}
+                        dataSource={data}
+                        rowKey={x => x.topicName}
+                        columns={[
+                            { title: 'Name', dataIndex: 'topicName', sorter: sortField('topicName'), className: 'whiteSpaceDefault' },
+                            { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
+                            { title: 'Replication', dataIndex: 'replicationFactor', width: 1 },
+                            { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1 },
+                            { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), sorter: (a, b) => a.logDirSize - b.logDirSize, width: '140px' },
+                        ]} />
+                </Card>
             </motion.div>
         );
     }

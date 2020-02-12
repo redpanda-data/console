@@ -58,7 +58,8 @@ class BrokerList extends PageComponent {
             if (record.brokerId != info.controllerId) return text;
             return <>{text}
                 <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'}>
-                    <Icon type='crown' theme='filled' style={{ padding: '2px', marginLeft: '6px', fontSize: '16px', color: '#0009' }} />
+                    <Icon type='crown' theme='outlined'
+                        style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
                 </Tooltip>
             </>
         };
