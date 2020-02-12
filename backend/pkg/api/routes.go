@@ -36,11 +36,6 @@ func (api *API) routes() *chi.Mux {
 		chimiddleware.Timeout(15*time.Second),
 	)
 
-	if api.Cfg.PrintAccessLogs {
-		a := middleware.NewAccessLog(api.Logger, api.Cfg.AccessLogExtraHeader, api.Cfg.BlockWhenExtraHeaderMissing)
-		router.Use(a.Wrap)
-	}
-
 	// Private routes - these should only be accessible from within Kubernetes or a protected ingress
 	router.Group(func(r chi.Router) {
 		r.Route("/admin", func(r chi.Router) {
