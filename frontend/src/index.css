@@ -523,3 +523,11 @@ tr.tombstone .ant-table-row-expand-icon {
 .overflowYOverlay {
     overflow-y: overlay;
 }
+
+/* tr td:nth-child(1) {
+    padding-left: 30px !important;
+}
+
+tr td:nth-last-child(1) {
+    padding-right: 30px !important;
+} */
