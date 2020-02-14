@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon, Tree, Button, List, Collapse, Card, Col, Checkbox, Tooltip } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -10,6 +10,7 @@ import { GroupDescription, GroupMemberDescription, GroupMemberAssignment, TopicL
 import { groupConsecutive } from "../../utils/utils";
 import { observable, autorun } from "mobx";
 import { appGlobal } from "../../state/appGlobal";
+import Card from "../misc/Card";
 const { Text } = Typography;
 const { TreeNode } = Tree;
 
@@ -25,11 +26,11 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
         this.refreshData(false);
 
-        autorun(() => {
-            if (api.ConsumerGroups)
-                for (let g of api.ConsumerGroups)
-                    console.log(g.groupId + ': ' + g.lag.topicLags.sum(l => l.partitionLags.sum(x => x.lag)));
-        });
+        // autorun(() => {
+        //     if (api.ConsumerGroups)
+        //         for (let g of api.ConsumerGroups)
+        //             console.log(g.groupId + ': ' + g.lag.topicLags.sum(l => l.partitionLags.sum(x => x.lag)));
+        // });
 
         appGlobal.onRefresh = () => this.refreshData(true);
     }
@@ -61,18 +62,19 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
 
         return (
-            <MotionDiv>
+            <MotionDiv style={{ margin: '0 1rem' }}>
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
-                <Row type="flex" style={{ marginBottom: '1em' }}>
-                    <Statistic title='State' valueRender={() => <GroupState group={group} />} style={{ marginRight: '2em' }} />
-                    <Statistic title='Consumers' value={group.members.length} style={{ marginRight: '2em' }} />
-                    <ProtocolType group={group} />
-                </Row>
-                <Row type="flex" style={{ marginBottom: '1em' }}>
-                    <Checkbox checked={true}>Merge ClientID with Identifier</Checkbox>
-                </Row>
+                <Card>
+                    <Row type="flex">
+                        <Statistic title='State' valueRender={() => <GroupState group={group} />} style={{ marginRight: '2em' }} />
+                        <Statistic title='Consumers' value={group.members.length} style={{ marginRight: '2em' }} />
+                        <ProtocolType group={group} />
+                    </Row>
+                </Card>
 
-                <GroupMembers group={group} />
+                <Card>
+                    <GroupMembers group={group} />
+                </Card>
             </MotionDiv>
         );
     }
@@ -111,9 +113,7 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
     const topicLags = p.group.lag.topicLags;
 
     return <Table
-        style={{ margin: '0', padding: '0', whiteSpace: 'normal' }}
-        bordered={true} size={'middle'}
-
+        style={{ margin: '0', padding: '0', whiteSpace: 'normal' }} size={'middle'}
         //expandRowByClick={false}
         expandIconAsCell={false}
         expandIconColumnIndex={0}
@@ -124,10 +124,10 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
         rowKey={r => r.id}
         rowClassName={() => 'pureDisplayRow'}
         columns={[
-            { title: <span>ID</span>, dataIndex: 'id', className: 'whiteSpaceDefault', render: renderMergedID },
+            { title: <span>Consumer ID</span>, dataIndex: 'id', className: 'whiteSpaceDefault', render: renderMergedID },
             //{ width: '150px', title: 'ClientID', dataIndex: 'clientId' },
             { width: '150px', title: 'Client Host', dataIndex: 'clientHost' },
-            { title: 'AssignedTo', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t), className: 'whiteSpaceDefault' },
+            { title: 'Assignments', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t), className: 'whiteSpaceDefault' },
         ]} />
 })
 
@@ -221,14 +221,18 @@ class TopicLags extends Component<{ name: string, partitions: number[], topicLag
 
         const renderLagTable = (lags: { id: number, lag: number }[]): JSX.Element => {
             return <table className='groupLagDisplayLine'>
-                <tr>
-                    <th>Partition</th>
-                    <th>Lag</th>
-                </tr>
-                {lags.map(l => <tr>
-                    <td>{l.id}</td>
-                    <td>{l.lag}</td>
-                </tr>)}
+                <thead>
+                    <tr>
+                        <th>Partition</th>
+                        <th>Lag</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {lags.map(l => <tr>
+                        <td>{l.id}</td>
+                        <td>{l.lag}</td>
+                    </tr>)}
+                </tbody>
             </table>
         }
 
@@ -248,13 +252,13 @@ class TopicLags extends Component<{ name: string, partitions: number[], topicLag
 
         return <MotionDiv positionTransition>
             <Col xs={24} sm={24} md={24} lg={12} xl={8} xxl={6}>
-                <Card size="small" title={p.name} extra={expandBtn} style={{ marginBottom: '1em' }}>
+                <AntCard size="small" title={p.name} extra={expandBtn} style={{ marginBottom: '1em' }}>
                     {
                         isAllZeroLag
                             ? <span>No lag on any partition</span>
                             : renderLagTable(partitionLags)
                     }
-                </Card>
+                </AntCard>
             </Col>
         </MotionDiv>
     }

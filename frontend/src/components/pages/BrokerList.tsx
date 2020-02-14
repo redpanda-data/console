@@ -15,7 +15,6 @@ import { prettyBytesOrNA } from "../../utils/utils";
 import { appGlobal } from "../../state/appGlobal";
 import Card from "../misc/Card";
 
-const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
 @observer
 class BrokerList extends PageComponent {
@@ -75,8 +74,8 @@ class BrokerList extends PageComponent {
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
                     <Row type="flex">
-                        <Statistic title='ControllerID' value={info.controllerId} style={statisticStyle} />
-                        <Statistic title='Broker Count' value={brokers.length} style={statisticStyle} />
+                        <Statistic title='ControllerID' value={info.controllerId} style={{ marginRight: '2rem' }} />
+                        <Statistic title='Broker Count' value={brokers.length} style={{ marginRight: '2rem' }} />
                     </Row>
                 </Card>
 
