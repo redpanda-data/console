@@ -519,3 +519,7 @@ tr.tombstone .ant-table-row-expand-icon {
     flex: 1;
     text-align: center;
 }
+
+.overflowYOverlay {
+    overflow-y: overlay;
+}

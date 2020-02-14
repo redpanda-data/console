@@ -255,7 +255,7 @@ class TopicLags extends Component<{ name: string, partitions: number[], topicLag
                 <AntCard size="small" title={p.name} extra={expandBtn} style={{ marginBottom: '1em' }}>
                     {
                         isAllZeroLag
-                            ? <span>No lag on any partition</span>
+                            ? <span style={{ fontSize: '.75rem' }}>No lag on any partition</span>
                             : renderLagTable(partitionLags)
                     }
                 </AntCard>
