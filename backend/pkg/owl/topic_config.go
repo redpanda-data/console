@@ -39,16 +39,7 @@ func (s *Service) GetTopicConfigs(topicName string, configNames []string) (*Topi
 
 // GetTopicsConfigs fetches all topic config options for the given set of topic names and config names and converts
 // that information so that it is handy to use. Provide an empty array for configNames to describe all config entries.
-func (s *Service) GetTopicsConfigs(requestedTopicNames []string, configNames []string) (map[string]*TopicConfigs, error) {
-
-	topicNames := make([]string, 0, len(requestedTopicNames))
-	for _, topicName := range requestedTopicNames {
-		_, isBlacklisted := s.topicsBlacklist[topicName]
-		if !isBlacklisted {
-			topicNames = append(topicNames, topicName)
-		}
-	}
-
+func (s *Service) GetTopicsConfigs(topicNames []string, configNames []string) (map[string]*TopicConfigs, error) {
 	response, err := s.kafkaSvc.DescribeTopicsConfigs(topicNames, configNames)
 	if err != nil {
 		return nil, err

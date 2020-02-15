@@ -19,17 +19,9 @@ type TopicOverview struct {
 
 // GetTopicsOverview returns a TopicOverview for all Kafka Topics
 func (s *Service) GetTopicsOverview() ([]*TopicOverview, error) {
-	listedTopics, err := s.kafkaSvc.ListTopics()
+	topics, err := s.kafkaSvc.ListTopics()
 	if err != nil {
 		return nil, err
-	}
-
-	topics := make([]*sarama.TopicMetadata, 0, len(listedTopics))
-	for _, topic := range listedTopics {
-		_, isBlacklisted := s.topicsBlacklist[topic.Name]
-		if !isBlacklisted {
-			topics = append(topics, topic)
-		}
 	}
 
 	// 3. Get log dir sizes for each topic
