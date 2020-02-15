@@ -12,11 +12,6 @@ type TopicPartition struct {
 
 // ListTopicPartitions returns the partition in the topic along with their watermarks
 func (s *Service) ListTopicPartitions(topicName string) ([]TopicPartition, error) {
-	_, isBlacklisted := s.topicsBlacklist[topicName]
-	if isBlacklisted {
-		return nil, fmt.Errorf("cannot list partitions of blacklisted topic %v", topicName)
-	}
-
 	partitions, err := s.kafkaSvc.ListPartitions(topicName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get partitions for topic '%v': %v", topicName, err)
