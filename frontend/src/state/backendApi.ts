@@ -157,9 +157,13 @@ const apiStore = {
         const queryString = objToQuery(clone);
 
 
-        this.clearMessageCache();
+        let response: GetTopicMessagesResponse;
+        try {
+            response = await rest<GetTopicMessagesResponse>('/api/topics/' + topicName + '/messages' + queryString);
+        } finally {
+            this.clearMessageCache();
+        }
 
-        let response = await rest<GetTopicMessagesResponse>('/api/topics/' + topicName + '/messages' + queryString);
 
         this.MessagesFor = topicName;
         for (let m of response.kafkaMessages.messages) {

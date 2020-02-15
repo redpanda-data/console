@@ -48,7 +48,7 @@ const TopBar = observer(() => {
 
     return (
         // zIndex is needed for the boxShadow to show
-        <div style={{ height: 'auto', padding: '0.5em 1em', background: 'white', lineHeight: '2em', boxShadow: '0 1px 5px rgba(0,21,41,.10)', zIndex: 10 }}>
+        <div style={{ height: 'auto', padding: '0.5em 1.5rem', background: 'white', lineHeight: '2em', boxShadow: '0 1px 5px rgba(0,21,41,.10)', zIndex: 10 }}>
             <div style={{ display: 'flex', flexDirection: 'row', alignContent: 'center', alignItems: 'center' }}>
 
                 {/* Cluster Select */}

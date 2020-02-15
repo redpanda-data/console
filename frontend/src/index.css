@@ -500,7 +500,7 @@ tr.tombstone .ant-table-row-expand-icon {
     padding: 1rem 1.5rem;
     background: #fff;
     border-radius: 2px;
-    box-shadow: 0px 0px 2px 1px rgba(0, 0, 0, 0.02);
+    box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.02);
 }
 
 .avatarMenu {
@@ -519,3 +519,15 @@ tr.tombstone .ant-table-row-expand-icon {
     flex: 1;
     text-align: center;
 }
+
+.overflowYOverlay {
+    overflow-y: overlay;
+}
+
+/* tr td:nth-child(1) {
+    padding-left: 30px !important;
+}
+
+tr td:nth-last-child(1) {
+    padding-right: 30px !important;
+} */
