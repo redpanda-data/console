@@ -73,9 +73,9 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 />
                 : <>
                     {/* Quick Search Line */}
-                    <Row align='middle' style={{ marginBottom: '1em', display: 'flex', alignItems: 'center' }} >
+                    <Row align='middle' style={{ marginBottom: '0rem', display: 'flex', alignItems: 'center' }} >
 
-                        <Input placeholder='Quick Search' allowClear={true} size='large'
+                        <Input placeholder='Quick Search' allowClear={true} size='default'
                             style={{ marginRight: '1em', width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
                             value={uiState.topicSettings.quickSearch}
                             onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
@@ -352,9 +352,9 @@ class InnerSearchParametersForm extends Component<SearchParametersProps> {
                         <InputGroup compact>
                             <Select<TopicMessageOffset> value={searchParams._offsetMode} onChange={e => searchParams._offsetMode = e}
                                 dropdownMatchSelectWidth={false} style={{ width: '10em' }}>
-                                <Option value={TopicMessageOffset.Custom}>Custom Offset</Option>
-                                <Option value={TopicMessageOffset.Start}>Oldest Offset</Option>
                                 <Option value={TopicMessageOffset.End}>Newest Offset</Option>
+                                <Option value={TopicMessageOffset.Start}>Oldest Offset</Option>
+                                <Option value={TopicMessageOffset.Custom}>Custom Offset</Option>
                             </Select>
                             <Input style={{ width: '8em' }} maxLength={20}
                                 value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}

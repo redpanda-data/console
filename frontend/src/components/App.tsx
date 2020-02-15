@@ -161,7 +161,7 @@ const AppPageHeader = observer(() => {
 });
 
 const AppContent = observer(() =>
-    <Layout style={{ borderLeft: '1px solid #ddd' }}>
+    <Layout className='overflowYOverlay' style={{ borderLeft: '1px solid #ddd' }}>
 
         <RenderTrap name='AppContentLayout' />
 
@@ -169,7 +169,7 @@ const AppContent = observer(() =>
         {isBusinessVersion && <TopBar />}
 
         {/* Page */}
-        <Content style={{ display: 'flex', flexDirection: 'column', background: '#f0f2f5', padding: '1rem 0', zIndex: 1 }}>
+        <Content style={{ display: 'flex', flexDirection: 'column', background: '#f0f2f5', padding: '8px 6px 8px 4px', zIndex: 1 }}>
             <AppPageHeader />
 
             <ErrorDisplay>

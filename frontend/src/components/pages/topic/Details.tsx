@@ -85,7 +85,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                 </Card>
 
                 {/* Tabs:  Messages, Configuration */}
-                <Card>
+                <Card style={{ paddingTop: '0px' }}>
                     <Tabs style={{ overflow: 'visible' }} animated={false}
                         activeKey={this.tabPageKey}
                         onChange={this.setTabPage}
