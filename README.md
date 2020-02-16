@@ -15,13 +15,6 @@ Kafka Owl is a Web UI which helps you to explore messages in your cluster's topi
 - [x] Performant & lightweight (e. g. fetching messages from one or across multiple partitions takes a few milliseconds)
 - [x] Consumer group overview along with their members, member state & partition assignments
 
-## Roadmap
-
-- [ ] Add avro support for deserializing messages (key+value)
-- [ ] Authentication layer with SSO support
-- [ ] Editing features such as editing consumer group offsets
-- [ ] ACL support for listing/editing/creating/deleting topics, consumer groups, ...
-
 ## Install
 
 ### Docker images
@@ -32,26 +25,18 @@ Docker images are available on [Quay.io](https://quay.io/repository/cloudhut/kaf
 
 Kubernetes users may want to use the Helm chart to deploy Kafka owl: https://github.com/kafka-owl/helm-chart
 
-### Arguments
+### Configuration
+
+Kafka Owl can be configured using a YAML file but it also accepts few flags for sensitive inputs such as passwords. You must specify the `--config.filepath` flag which specifies the path to the YAML config file.
+
+#### Flags
 
 | Argument | Description | Default |
 | --- | --- | --- |
-| --server.graceful-shutdown-timeout | Timeout for graceful shutdowns | 30s |
-| --server.http.listen-port | HTTP server listen port | 80 |
-| --server.http.read-timeout | Read timeout for HTTP server | 30s |
-| --server.http.write-timeout | Write timeout for HTTP server | 30s |
-| --server.http.idle-timeout | Idle timeout for HTTP server | 120s |
-| --logging.level | Log granularity (debug, info, warn, error, fatal, panic) | info |
-| --kafka.brokers | Array of broker addresses, delimited by comma (e. g. "kafka-1:9092, kafka-2:9092") | (No default) |
-| --kafka.client-id | ClientID to identify the consumer | "kafka-owl" |
-| --kafka.sasl.enabled | Bool to enable/disable SASL authentication (only SASL_PLAINTEXT is supported) | false |
-| --kafka.sasl.use-handshake | Whether or not to send the Kafka SASL handshake first | true |
-| --kafka.sasl.username | SASL Username | (No default) |
+| --config.filepath | Path to the config file | (No default) |
 | --kafka.sasl.password | SASL Password | (No default) |
-| --kafka.tls.enabled | Whether or not to use TLS when connecting to the broker | false |
-| --kafka.tls.ca-file-path | Path to the TLS CA file | (No default) |
-| --kafka.tls.key-file-path | Path to the TLS key file | (No default) |
-| --kafka.tls.cert-file-path | Path to the TLS cert file | (No default) |
-| --kafka.tls.insecure-skip-verify | If true, TLS accepts any certificate presented by the server and any host name in that certificate. | false |
 | --kafka.tls.passphrase | Passphrase to decrypt the TLS key (leave empty for unencrypted key files) | (No default) |
-| --owl.topics.blacklist | Topics blacklist (comma separated) to configure access restrictions | (No default) |
+
+#### YAML Config
+
+You can find a reference of all available config options under [/docs/config/kowl.yaml](#docs/config/kowl.yaml)

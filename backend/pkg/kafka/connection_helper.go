@@ -17,7 +17,7 @@ func NewSaramaConfig(cfg *Config) (*sarama.Config, error) {
 	sConfig := sarama.NewConfig()
 
 	// Configure general Kafka settings
-	version, err := sarama.ParseKafkaVersion(cfg.KafkaVersion)
+	version, err := sarama.ParseKafkaVersion(cfg.ClusterVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -26,22 +26,23 @@ func NewSaramaConfig(cfg *Config) (*sarama.Config, error) {
 	sConfig.Net.KeepAlive = 30 * time.Second
 
 	// Configure SASL
-	if cfg.SASLEnabled {
+	if cfg.SASL.Enabled {
 		sConfig.Net.SASL.Enable = true
-		sConfig.Net.SASL.Handshake = cfg.SASLUseHandshake
-		sConfig.Net.SASL.User = cfg.SASLUsername
-		sConfig.Net.SASL.Password = cfg.SASLPassword
+		sConfig.Net.SASL.Handshake = cfg.SASL.UseHandshake
+		sConfig.Net.SASL.User = cfg.SASL.Username
+		sConfig.Net.SASL.Password = cfg.SASL.Password
 	}
 
 	// Configure TLS
-	if cfg.TLSEnabled {
+	if cfg.TLS.Enabled {
 		sConfig.Net.TLS.Enable = true
-		sConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: cfg.TLSInsecureSkipTLSVerify}
+		sConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: cfg.TLS.InsecureSkipTLSVerify}
 
-		if cfg.TLSCaFilePath != "" {
+		if cfg.TLS.CaFilepath != "" {
 			// Load CA file
-			if cfg.TLSCaFilePath != "" {
-				ca, err := ioutil.ReadFile(cfg.TLSCaFilePath)
+			// TODO: Why is that if condition here? Implement kerberos as well as shown in Kafka Minion
+			if cfg.TLS.CaFilepath != "" {
+				ca, err := ioutil.ReadFile(cfg.TLS.CaFilepath)
 				if err != nil {
 					return nil, err
 				}
@@ -51,14 +52,14 @@ func NewSaramaConfig(cfg *Config) (*sarama.Config, error) {
 			}
 
 			// Load TLS / Key files
-			if cfg.TLSCertFilePath != "" && cfg.TLSKeyFilePath != "" {
-				err := canReadCertAndKey(cfg.TLSCertFilePath, cfg.TLSKeyFilePath)
+			if cfg.TLS.CertFilepath != "" && cfg.TLS.KeyFilepath != "" {
+				err := canReadCertAndKey(cfg.TLS.CertFilepath, cfg.TLS.KeyFilepath)
 				if err != nil {
 					return nil, err
 				}
 
 				// Load Cert files and if necessary it decrypt it too
-				cert, err := parseCerts(cfg.TLSCertFilePath, cfg.TLSKeyFilePath, cfg.TLSPassphrase)
+				cert, err := parseCerts(cfg.TLS.CertFilepath, cfg.TLS.KeyFilepath, cfg.TLS.Passphrase)
 				if err != nil {
 					return nil, err
 				}
@@ -75,7 +76,7 @@ func NewSaramaConfig(cfg *Config) (*sarama.Config, error) {
 	return sConfig, nil
 }
 
-// canReadCertAndKey returns true if the certificate and key files already existsotherwise returns false
+// canReadCertAndKey returns true if the certificate and key files already exists otherwise returns false
 func canReadCertAndKey(certPath, keyPath string) error {
 	certReadable := canReadFile(certPath)
 	keyReadable := canReadFile(keyPath)

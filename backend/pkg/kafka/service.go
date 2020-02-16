@@ -10,8 +10,9 @@ import (
 
 // Service acts as interface to interact with the Kafka Cluster
 type Service struct {
-	Client sarama.Client
-	Logger *zap.Logger
+	MetricsNamespace string
+	Client           sarama.Client
+	Logger           *zap.Logger
 }
 
 // Start initializes the Kafka Service and takes care of stuff like KeepAlive
@@ -52,8 +53,8 @@ func (s *Service) keepAlive() {
 			if err != nil {
 				log.Warn("heartbeat to broker has errored", zap.Error(err), zap.String("broker", b.Addr()), zap.Int32("id", b.ID()))
 
-				b.Close()
-				b.Open(s.Client.Config())
+				_ = b.Close()
+				_ = b.Open(s.Client.Config())
 			}
 		}
 

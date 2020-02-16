@@ -2,29 +2,76 @@ package api
 
 import (
 	"flag"
-
+	"fmt"
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kafka-owl/backend/pkg/kafka"
-	"github.com/cloudhut/kafka-owl/backend/pkg/owl"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"time"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
 type Config struct {
-	MetricsNamespace string
+	ConfigFilepath   string
+	MetricsNamespace string `yaml:"metricsNamespace"`
+	ServeFrontend    bool   `yaml:"serveFrontend"`
 
-	REST   rest.Config
-	Kafka  kafka.Config
-	Logger logging.Config
-	Owl    owl.Config
+	REST   rest.Config    `yaml:"server"`
+	Kafka  kafka.Config   `yaml:"kafka"`
+	Logger logging.Config `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs
 func (c *Config) RegisterFlags(f *flag.FlagSet) {
-	f.StringVar(&c.MetricsNamespace, "api.metrics.namespace", "api", "Prefix for all prometheus metrics")
+	f.StringVar(&c.ConfigFilepath, "config.filepath", "", "Path to the config file")
 
-	c.REST.RegisterFlags(f)
+	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
-	c.Logger.RegisterFlags(f)
-	c.Owl.RegisterFlags(f)
+}
+
+func (c *Config) Validate() error {
+	err := c.Logger.Set(c.Logger.LogLevelInput) // Parses LogLevel
+	if err != nil {
+		return fmt.Errorf("failed to validate loglevel input: %w", err)
+	}
+
+	err = c.Kafka.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate Kafka config: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Config) SetDefaults() {
+	c.ServeFrontend = true
+	c.MetricsNamespace = "kowl"
+
+	c.Logger.LogLevelInput = "info"
+
+	c.REST.CompressionLevel = 4
+	c.REST.HTTPListenPort = 8080
+	c.REST.HTTPServerIdleTimeout = 30 * time.Second
+	c.REST.HTTPServerReadTimeout = 30 * time.Second
+	c.REST.HTTPServerWriteTimeout = 30 * time.Second
+
+	c.Kafka.ClusterVersion = "1.0.0"
+	c.Kafka.ClientID = "kowl"
+	c.Kafka.SASL.UseHandshake = true
+}
+
+// LoadConfig read YAML-formatted config from filename into cfg.
+func LoadConfig(filename string, cfg *Config) error {
+	buf, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("error reading config file: %w", err)
+	}
+
+	err = yaml.UnmarshalStrict(buf, cfg)
+	if err != nil {
+		return fmt.Errorf("error parsing config file: %w", err)
+	}
+
+	return nil
 }

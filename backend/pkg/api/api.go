@@ -50,13 +50,13 @@ func New(cfg *Config) *API {
 		logger.Fatal("Failed to create kafka client", zap.Error(err))
 	}
 
-	kafkaSvc := &kafka.Service{Client: client, Logger: logger}
+	kafkaSvc := &kafka.Service{Client: client, Logger: logger, MetricsNamespace: cfg.MetricsNamespace}
 
 	return &API{
 		Cfg:      cfg,
 		Logger:   logger,
 		KafkaSvc: kafkaSvc,
-		OwlSvc:   owl.NewService(kafkaSvc, logger, &cfg.Owl),
+		OwlSvc:   owl.NewService(kafkaSvc, logger),
 		Hooks:    newDefaultHooks(),
 	}
 }
