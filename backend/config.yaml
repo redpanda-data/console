@@ -1,0 +1,15 @@
+serveFrontend: false
+
+kafka:
+  brokers:
+    - kafka-0.brawlstats.com:19092
+    - kafka-1.brawlstats.com:19092
+    - kafka-2.brawlstats.com:19092
+  clientId: kafka-explorer-weeco-local
+  sasl:
+    enabled: true
+    username: developer
+    # password is set via flag
+
+server:
+  listenPort: 9090

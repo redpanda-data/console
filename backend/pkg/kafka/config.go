@@ -2,49 +2,35 @@ package kafka
 
 import (
 	"flag"
-
-	"github.com/cloudhut/common/flagext"
+	"fmt"
+	"github.com/Shopify/sarama"
 )
 
 // Config required for opening a connection to Kafka
 type Config struct {
 	// General
-	Brokers      flagext.StringsSlice
-	ClientID     string
-	KafkaVersion string
+	Brokers        []string `yaml:"brokers"`
+	ClientID       string   `yaml:"clientId"`
+	ClusterVersion string   `yaml:"clusterVersion"`
 
-	// TLS
-	TLSEnabled               bool
-	TLSCaFilePath            string
-	TLSCertFilePath          string
-	TLSKeyFilePath           string
-	TLSPassphrase            string
-	TLSInsecureSkipTLSVerify bool
-
-	// Authentication
-	SASLEnabled      bool
-	SASLUseHandshake bool
-	SASLUsername     string
-	SASLPassword     string
+	TLS  TLSConfig  `yaml:"tls"`
+	SASL SASLConfig `yaml:"sasl"`
 }
 
 // RegisterFlags registers all nested config flags.
 func (c *Config) RegisterFlags(f *flag.FlagSet) {
-	f.Var(&c.Brokers, "kafka.brokers", "Kafka Broker addresses (comma separated)")
-	f.StringVar(&c.KafkaVersion, "kafka.version", "1.0.0", "The kafka cluster's version (e. g. \"2.3.0\")")
-	f.StringVar(&c.ClientID, "kafka.client-id", "kafka-owl", "ClientID to identify the consumer")
+	c.SASL.RegisterFlags(f)
+}
 
-	// TLS
-	f.BoolVar(&c.TLSEnabled, "kafka.tls.enabled", false, "Whether or not to use TLS")
-	f.StringVar(&c.TLSCaFilePath, "kafka.tls.ca-file-path", "", "Filepath to TLS ca file")
-	f.StringVar(&c.TLSCertFilePath, "kafka.tls.cert-file-path", "", "Filepath to TLS cert file")
-	f.StringVar(&c.TLSKeyFilePath, "kafka.tls.key-file-path", "", "Filepath to TLS key file")
-	f.StringVar(&c.TLSPassphrase, "kafka.tls.passphrase", "", "Passphrase to decrypt the TLS key (leave empty for unencrypted key files)")
-	f.BoolVar(&c.TLSInsecureSkipTLSVerify, "kafka.tls.insecure-skip-verify", false, "If InsecureSkipVerify is true, TLS accepts any certificate presented by the server and any host name in that certificate.")
+func (c *Config) Validate() error {
+	if len(c.Brokers) == 0 {
+		return fmt.Errorf("you must specify at least one broker to connect to")
+	}
 
-	// Authentication
-	f.BoolVar(&c.SASLEnabled, "kafka.sasl.enabled", false, "Whether or not to use SASL authentication")
-	f.BoolVar(&c.SASLUseHandshake, "kafka.sasl.use-handshake", true, "Whether or not to send a SASL handshake first")
-	f.StringVar(&c.SASLUsername, "kafka.sasl.username", "", "SASL username")
-	f.StringVar(&c.SASLPassword, "kafka.sasl.password", "", "SASL password")
+	_, err := sarama.ParseKafkaVersion(c.ClusterVersion)
+	if err != nil {
+		return fmt.Errorf("failed to parse the given clusterVersion for Kafka: %w", err)
+	}
+
+	return nil
 }

@@ -12,7 +12,7 @@ import (
 func (s *Service) RegisterMetrics() {
 	pClient := prometheusmetrics.NewPrometheusProvider(
 		s.Client.Config().MetricRegistry,
-		"kafka",
+		s.MetricsNamespace,
 		"sarama",
 		prometheus.DefaultRegisterer,
 		5*time.Second)

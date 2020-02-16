@@ -22,7 +22,8 @@ func (api *API) routes() *chi.Mux {
 	// Init middlewares - Do any set up of shared/third-party middleware and handlers
 	if api.Cfg.REST.CompressionLevel > 0 {
 		api.Logger.Debug("using compression for all http routes", zap.Int("level", api.Cfg.REST.CompressionLevel))
-		router.Use(chimiddleware.Compress(api.Cfg.REST.CompressionLevel))
+		compressor := chimiddleware.NewCompressor(api.Cfg.REST.CompressionLevel)
+		router.Use(compressor.Handler())
 	}
 
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
@@ -63,7 +64,7 @@ func (api *API) routes() *chi.Mux {
 
 	api.Hooks.Route.ConfigRouter(router)
 
-	if api.Cfg.REST.ServeFrontend {
+	if api.Cfg.ServeFrontend {
 		// Check if the frontend directory 'build' exists
 		dir, err := filepath.Abs("./build")
 		if err != nil {
