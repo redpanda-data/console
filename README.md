@@ -39,4 +39,4 @@ Kafka Owl can be configured using a YAML file but it also accepts few flags for 
 
 #### YAML Config
 
-You can find a reference of all available config options under [/docs/config/kowl.yaml](#docs/config/kowl.yaml)
+You can find a reference of all available config options under [/docs/config/kowl.yaml](docs/config/kowl.yaml)
