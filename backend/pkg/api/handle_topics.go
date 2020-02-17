@@ -30,14 +30,14 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 			return
 		}
 
-		restErr := api.Hooks.Owl.FilterTopics(r.Context(), topics)
+		visibleTopics, restErr := api.Hooks.Owl.FilterTopics(r.Context(), topics)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
 		response := response{
-			Topics: topics,
+			Topics: visibleTopics,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
