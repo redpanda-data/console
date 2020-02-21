@@ -11,7 +11,7 @@ import prettyMilliseconds from 'pretty-ms';
 import prettyBytes from 'pretty-bytes';
 import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction } from "mobx";
+import { observable, computed, transaction, autorun, IReactionDisposer } from "mobx";
 import { findElementDeep, cullText, getAllKeys } from "../../../utils/utils";
 import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
@@ -41,6 +41,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     pageConfig = makePaginationConfig(uiState.topicSettings.pageSize);
     messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch);
 
+    autoSearchReaction: IReactionDisposer | null = null;
+
     constructor(props: { topic: TopicDetail }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
@@ -48,20 +50,43 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     }
 
     componentDidMount() {
-        this.executeMessageSearch();
+        this.autoSearchReaction = autorun(() => {
+            const params = uiState.topicSettings.searchParams;
+            // trigger mobx: let it know we are interested in those props
+            const _ = params._offsetMode + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
+            try {
+                if (this.fetchError == null)
+                    this.executeMessageSearch();
+            } catch (error) {
+                console.error(error);
+            }
+        }, { delay: 50 });
     }
     componentWillUnmount() {
         this.messageSource.dispose();
+        if (this.autoSearchReaction)
+            this.autoSearchReaction();
     }
 
     render() {
-        const topic = this.props.topic;
-        const SearchForm = Form.create<SearchParametersProps>({ name: 'messageSearch' })(InnerSearchParametersForm);
-
         return <>
-            {/* Message Search */}
-            <SearchForm topic={topic} submit={this.executeMessageSearch} searchParams={uiState.topicSettings.searchParams} requestInProgress={this.requestInProgress} />
+            <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
+                {/* Search Parameters */}
+                <this.SearchParameters />
 
+                <Spacer />
+
+                {/* Quick Search */}
+                <Input placeholder='Quick Search' allowClear={true} size='small'
+                    style={{ width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
+                    value={uiState.topicSettings.quickSearch}
+                    onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
+                    addonAfter={null} disabled={this.fetchError != null}
+                />
+                {/* <this.FilterSummary /> */}
+            </div>
+
+            {/* Message Table (or error display) */}
             {this.fetchError
                 ? <Alert
                     type="error" showIcon
@@ -69,21 +94,13 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     description={<div>
                         <Text>Please check and modify the request before resubmitting.</Text>
                         <div className='codeBox'>{this.fetchError.message}</div>
+                        <Button onClick={() => this.executeMessageSearch()}>
+                            Retry Search
+                        </Button>
                     </div>}
                 />
                 : <>
-                    {/* Quick Search Line */}
                     <Row align='middle' style={{ marginBottom: '0rem', display: 'flex', alignItems: 'center' }} >
-
-                        <Spacer />
-
-                        <Input placeholder='Quick Search' allowClear={true} size='default'
-                            style={{ marginRight: '1em', width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
-                            value={uiState.topicSettings.quickSearch}
-                            onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
-                            addonAfter={null}
-                        />
-                        <this.FilterSummary />
 
                         {/*
                             todo: move this below the table (aligned left)
@@ -127,6 +144,46 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         </div>
     }
 
+    SearchParameters = observer(() => {
+        const searchParams = uiState.topicSettings.searchParams;
+        const topic = this.props.topic;
+        return <>
+
+            {/* Partitions */}
+            <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em', marginRight: '0.5rem' }}>
+                <Select.Option key='all' value={-1}>All Partitions</Select.Option>
+                {range(0, topic.partitionCount).map(i =>
+                    <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
+            </Select>
+
+            {/* Result Count */}
+            <Select<number> value={searchParams.pageSize} onChange={c => searchParams.pageSize = c} style={{ width: '10em', marginRight: '0.5rem' }}>
+                {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()} results</Select.Option>)}
+            </Select>
+
+            {/* Offset */}
+            <InputGroup compact style={{ display: 'inline-block', width: 'auto', verticalAlign: 'bottom', marginRight: '0.5rem' }}>
+                <Select<TopicMessageOffset> value={searchParams._offsetMode} onChange={e => searchParams._offsetMode = e}
+                    dropdownMatchSelectWidth={false} style={{ width: '10em' }}>
+                    <Option value={TopicMessageOffset.End}>Newest Offset</Option>
+                    <Option value={TopicMessageOffset.Start}>Oldest Offset</Option>
+                    <Option value={TopicMessageOffset.Custom}>Custom Offset</Option>
+                </Select>
+                {
+                    searchParams._offsetMode == TopicMessageOffset.Custom &&
+                    <Input style={{ width: '8em' }} maxLength={20}
+                        value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
+                        disabled={searchParams._offsetMode != TopicMessageOffset.Custom} />
+                }
+            </InputGroup>
+
+            {/* todo:
+                when the user has entered a specific offset,
+                we should prevent selecting 'all' partitions, as that wouldn't make any sense.
+             */}
+
+        </>
+    });
 
     @computed
     get activeTags() {
@@ -209,8 +266,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         message.success('Message content (JSON) copied to clipboard', 5);
     }
 
-    previewSettingsModal: (ReturnType<ModalFunc> | null) = null;
-
     PreviewSettings = observer(() => {
 
         const content = <>
@@ -262,6 +317,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
 
     async executeMessageSearch(): Promise<void> {
+        console.log("executeMessageSearch()")
         const searchParams = uiState.topicSettings.searchParams;
 
         if (searchParams._offsetMode != TopicMessageOffset.Custom)
@@ -334,90 +390,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         <br />
         <span>Either the selected topic/partition did not contain any messages</span>
     </>} />
-}
-
-interface SearchParametersProps extends FormComponentProps {
-    searchParams: TopicMessageSearchParameters;
-    topic: TopicDetail;
-    submit: (form: InnerSearchParametersForm) => void;
-    requestInProgress: boolean;
-}
-
-@observer
-class InnerSearchParametersForm extends Component<SearchParametersProps> {
-    render() {
-        const topic = this.props.topic;
-        const searchParams = this.props.searchParams;
-        const submit = this.props.submit;
-        return (
-            <Form layout='inline' colon={false} className='query-form' onSubmit={this.handleSubmit}>
-
-                <Row>
-                    {/* Offset */}
-                    <Form.Item>
-                        <InputGroup compact>
-                            <Select<TopicMessageOffset> value={searchParams._offsetMode} onChange={e => searchParams._offsetMode = e}
-                                dropdownMatchSelectWidth={false} style={{ width: '10em' }}>
-                                <Option value={TopicMessageOffset.End}>Newest Offset</Option>
-                                <Option value={TopicMessageOffset.Start}>Oldest Offset</Option>
-                                <Option value={TopicMessageOffset.Custom}>Custom Offset</Option>
-                            </Select>
-                            <Input style={{ width: '8em' }} maxLength={20}
-                                value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
-                                disabled={searchParams._offsetMode != TopicMessageOffset.Custom} />
-                        </InputGroup>
-                    </Form.Item>
-
-                    {/* specific offset: lock partition to 'not all' */}
-                    <Form.Item>
-                        <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }}>
-                            <Select.Option key='all' value={-1}>All Partitions</Select.Option>
-                            {range(0, topic.partitionCount).map(i =>
-                                <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
-                        </Select>
-                    </Form.Item>
-
-                    <Form.Item>
-                        <Select<number> value={searchParams.pageSize} onChange={c => searchParams.pageSize = c} style={{ width: '10em' }}>
-                            {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()} results</Select.Option>)}
-                        </Select>
-                    </Form.Item>
-
-                    {/* Timestamp/Offset */}
-                    {/* <Form.Item>
-                        <Radio.Group onChange={e => this.sortType = e.target.value} value={this.sortType}>
-                            <Radio.Button value={TopicMessageSortBy.Offset}>Sort By Offset</Radio.Button>
-                            <Radio.Button value={TopicMessageSortBy.Timestamp}>Sort By Timestamp</Radio.Button>
-                        </Radio.Group>
-                    </Form.Item> */}
-
-                    {/* Asc/Desc */}
-                    {/* <Form.Item>
-                        <Radio.Group onChange={e => this.sortOrder = e.target.value} value={this.sortOrder}>
-                            <Radio.Button value={TopicMessageDirection.Ascending}>Ascending</Radio.Button>
-                            <Radio.Button value={TopicMessageDirection.Descending}>Descending</Radio.Button>
-                        </Radio.Group>
-                    </Form.Item> */}
-
-                    <Form.Item>
-                        <Button type='primary' icon='search' loading={this.props.requestInProgress} onClick={() => submit(this)} >Search</Button>
-                    </Form.Item>
-                </Row>
-
-            </Form>
-        );
-    }
-
-    handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
-        event.preventDefault();
-        this.props.form.validateFields((err, values) => {
-            if (!err) {
-                console.log('Received values of form: ', values);
-            } else {
-                this.props.submit(this);
-            }
-        });
-    };
 }
 
 
