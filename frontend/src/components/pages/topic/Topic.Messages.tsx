@@ -221,9 +221,9 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
-            { width: 1, title: 'Size', dataIndex: 'size', align: 'right', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) } },
+            { width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) } },
             {
-                width: 1, title: 'Action', key: 'action',
+                width: 1, title: ' ', key: 'action',
                 render: (text, record) => !record.isValueNull && (
                     <span>
                         <Button type='link' size='small' onClick={() => this.copyMessage(record)}>Copy</Button>
