@@ -75,6 +75,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     {/* Quick Search Line */}
                     <Row align='middle' style={{ marginBottom: '0rem', display: 'flex', alignItems: 'center' }} >
 
+                        <Spacer />
+
                         <Input placeholder='Quick Search' allowClear={true} size='default'
                             style={{ marginRight: '1em', width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
                             value={uiState.topicSettings.quickSearch}
@@ -83,8 +85,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         />
                         <this.FilterSummary />
 
-                        <Spacer />
-                        <this.SearchQueryAdditionalInfo />
+                        {/*
+                            todo: move this below the table (aligned left)
+                            This requires more work becasue we'd have to remove the pagination controls from the table and provide our own
+
+                            <this.SearchQueryAdditionalInfo />
+                         */}
                     </Row>
 
                     <this.MessageTable />
