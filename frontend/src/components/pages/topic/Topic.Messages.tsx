@@ -195,7 +195,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         const valueTitle = <>
             <span>Value
                 <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                    <Button shape='round' className='hoverBorder' onClick={() => this.showPreviewSettings = true} style={{ color: '#1890ff', padding: '0 0.5em' }}>
+                    <Button shape='round' className='hoverBorder' onClick={() => this.showPreviewSettings = true} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
                         <Icon type='setting' style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                         <span style={{ marginLeft: '.3em' }}>Preview</span>
                         {(() => {
