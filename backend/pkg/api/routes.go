@@ -33,9 +33,14 @@ func (api *API) routes() *chi.Mux {
 		recoverer.Wrap,
 		chimiddleware.RealIP,
 		chimiddleware.URLFormat,
+		chimiddleware.StripSlashes,
 		instrument.Wrap,
 		chimiddleware.Timeout(15*time.Second),
 	)
+
+	// This should be called here so that you can still add middlewares in the hook function.
+	// Middlewares must be defined before routes.
+	api.Hooks.Route.ConfigRouter(router)
 
 	// Private routes - these should only be accessible from within Kubernetes or a protected ingress
 	router.Group(func(r chi.Router) {
@@ -61,8 +66,6 @@ func (api *API) routes() *chi.Mux {
 			r.Get("/consumer-groups", api.handleGetConsumerGroups())
 		})
 	})
-
-	api.Hooks.Route.ConfigRouter(router)
 
 	if api.Cfg.ServeFrontend {
 		// Check if the frontend directory 'build' exists
