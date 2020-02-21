@@ -432,7 +432,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 text = cullText(JSON.stringify(value), 100);
             }
 
-            return <code><span className='cellDiv' style={{ fontSize: '85%' }}>{text}</span></code>
+            return <code><span className='cellDiv' style={{ fontSize: '95%' }}>{text}</span></code>
         }
         catch (e) {
             return <span style={{ color: 'red' }}>Error in RenderPreview: {e.toString()}</span>
