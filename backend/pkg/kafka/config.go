@@ -38,4 +38,6 @@ func (c *Config) Validate() error {
 func (c *Config) SetDefaults() {
 	c.ClientID = "kowl"
 	c.ClusterVersion = "1.0.0"
+
+	c.SASL.SetDefaults()
 }
