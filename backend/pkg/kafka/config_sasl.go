@@ -12,3 +12,7 @@ type SASLConfig struct {
 func (c *SASLConfig) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Password, "kafka.sasl.password", "", "SASL password")
 }
+
+func (c *SASLConfig) SetDefaults() {
+	c.UseHandshake = true
+}

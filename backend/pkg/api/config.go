@@ -8,7 +8,6 @@ import (
 	"github.com/cloudhut/kafka-owl/backend/pkg/kafka"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"time"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
@@ -48,17 +47,9 @@ func (c *Config) SetDefaults() {
 	c.ServeFrontend = true
 	c.MetricsNamespace = "kowl"
 
-	c.Logger.LogLevelInput = "info"
-
-	c.REST.CompressionLevel = 4
-	c.REST.HTTPListenPort = 8080
-	c.REST.HTTPServerIdleTimeout = 30 * time.Second
-	c.REST.HTTPServerReadTimeout = 30 * time.Second
-	c.REST.HTTPServerWriteTimeout = 30 * time.Second
-
-	c.Kafka.ClusterVersion = "1.0.0"
-	c.Kafka.ClientID = "kowl"
-	c.Kafka.SASL.UseHandshake = true
+	c.Logger.SetDefaults()
+	c.REST.SetDefaults()
+	c.Kafka.SetDefaults()
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.
