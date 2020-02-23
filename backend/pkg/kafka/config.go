@@ -34,3 +34,8 @@ func (c *Config) Validate() error {
 
 	return nil
 }
+
+func (c *Config) SetDefaults() {
+	c.ClientID = "kowl"
+	c.ClusterVersion = "1.0.0"
+}
