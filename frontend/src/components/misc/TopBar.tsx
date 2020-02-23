@@ -9,6 +9,7 @@ import { api } from '../../state/backendApi';
 
 import { IsDevelopment } from '../../utils/isProd';
 import env from '../../utils/env';
+import { appGlobal } from '../../state/appGlobal';
 
 const { Content, Footer, Sider, Header } = Layout;
 const { Option } = Select;
@@ -41,9 +42,7 @@ const TopBar = observer(() => {
             <span style={{ fontWeight: 'bold' }}>{user.name}</span>
         </Menu.Item>
         <Menu.Divider />
-        <Menu.Item key="0">Logout</Menu.Item>
-        {/* <Menu.Item key="2">Short</Menu.Item>
-        <Menu.Item key="3">Testing long text in the 3rd menu item</Menu.Item> */}
+        <Menu.Item key="0" onClick={() => { api.logout(); window.location.reload(); }}>Logout</Menu.Item>
     </Menu>
 
     return (
