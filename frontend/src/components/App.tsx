@@ -44,16 +44,20 @@ const SideBar = observer(() =>
             </div> */}
             <div style={{ position: 'relative' }}>
                 <img src={logo2} style={{
-                    width: 'auto', height: '130px', display: 'block', margin: 'auto', cursor: 'pointer',
+                    height: uiSettings.sideBarOpen ? '130px' : '65px',
+                    transition: 'all 200ms',
+                    width: 'auto', display: 'block', margin: 'auto', cursor: 'pointer',
                     opacity: 0.5, mixBlendMode: 'overlay',
-                    marginTop: '3em'
+                    marginTop: uiSettings.sideBarOpen ? '3em' : '.5em'
                 }}
                     onClick={() => { appGlobal.history.push('/'); }}
                 />
                 <div style={{
                     position: 'absolute',
-                    top: '-40px',
+                    transition: 'all 200ms',
                     width: '100%',
+                    top: uiSettings.sideBarOpen ? '-40px' : '-80px',
+                    opacity: uiSettings.sideBarOpen ? 1 : 0,
 
                     fontFamily: "'Quicksand', sans-serif",
                     fontWeight: 700,
