@@ -22,6 +22,11 @@ async function getProviders() {
         cache: 'no-cache',
         mode: 'no-cors'
     });
+
+    if (!response.ok) {
+        throw new Error(await response.text())
+    }
+
     return (await response.json() as ProvidersResponse);
 }
 
@@ -30,9 +35,15 @@ async function getProviders() {
 class Login extends Component {
 
     @observable providersResponse: ProvidersResponse | null = null;
+    @observable providersError: string | null = null;
 
     async componentDidMount() {
-        this.providersResponse = await getProviders();
+        try {
+            this.providersResponse = await getProviders();
+        } catch (err) {
+            this.providersResponse = null;
+            this.providersError = err.toString();
+        }
     }
 
     render() {
@@ -94,15 +105,28 @@ class Login extends Component {
                                     //         Login with {p.displayName}
                                     //     </span>
                                     // </div>
-
                                     <div key={p.displayName} className='loginButton2' onClick={() => window.location.replace(p.url)}>
                                         <Icon type='github' style={{ marginBottom: '6px' }} />
                                         <span>
                                             {p.displayName}
                                         </span>
                                     </div>
-
-                                )) || <div style={{ fontSize: '14px', marginTop: '32px', color: '#ddd' }}><Spin size='large' /><br />Retreiving login method from backend...</div>}
+                                ))
+                                    || (this.providersError && <div style={{
+                                        fontSize: '15px',
+                                        color: 'rgb(202, 0, 0)',
+                                        width: '66%',
+                                        margin: 'auto',
+                                        fontWeight: 'bold',
+                                        fontFamily: 'sans-serif',
+                                        background: 'rgba(0,0,0, 0.33)',
+                                        borderRadius: '3px',
+                                        padding: '1em',
+                                    }}>
+                                        <div>Unable to fetch providers</div>
+                                        <div style={{ fontSize: '0.9em' }}>{this.providersError}</div>
+                                    </div>)
+                                    || <div style={{ fontSize: '14px', marginTop: '32px', color: '#ddd' }}><Spin size='large' /><br />Retreiving login method from backend...</div>}
                             </div>
                         </div>
 
