@@ -147,7 +147,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
     topicNotFound(name: string) {
         return <Result
-            status="404"
+            status={404}
             title="404"
             subTitle={<>The topic <Text code>{name}</Text> does not exist.</>}
             extra={<Button type="primary" onClick={() => appGlobal.history.goBack()}>Go Back</Button>}
