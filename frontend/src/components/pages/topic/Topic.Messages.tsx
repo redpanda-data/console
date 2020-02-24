@@ -305,6 +305,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             title={<span><Icon type="filter" style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
             visible={this.showPreviewSettings}
             onOk={() => this.showPreviewSettings = false}
+            onCancel={() => this.showPreviewSettings = false}
             width={750}
             okText='Close'
             cancelButtonProps={{ style: { display: 'none' } }}
