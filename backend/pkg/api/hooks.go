@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"github.com/cloudhut/common/rest"
 
 	"github.com/go-chi/chi"
@@ -26,10 +27,10 @@ type RouteHooks interface {
 
 // OwlHooks include all functions which allow you to modify
 type OwlHooks interface {
-	CanSeeTopic(topicName string) (bool, *rest.Error)
-	CanViewTopicPartitions(topicName string) (bool, *rest.Error)
-	CanViewTopicConfig(topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(topicName string) (bool, *rest.Error)
+	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanViewTopicMessages(ctx context.Context, topicName string) (bool, *rest.Error)
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -48,15 +49,15 @@ func (*defaultHooks) ConfigAPIRouter(_ chi.Router) {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)    {}
 
 // Owl Hooks
-func (*defaultHooks) CanSeeTopic(_ string) (bool, *rest.Error) {
+func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
-func (*defaultHooks) CanViewTopicPartitions(_ string) (bool, *rest.Error) {
+func (*defaultHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
-func (*defaultHooks) CanViewTopicConfig(_ string) (bool, *rest.Error) {
+func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
-func (*defaultHooks) CanViewTopicMessages(_ string) (bool, *rest.Error) {
+func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }

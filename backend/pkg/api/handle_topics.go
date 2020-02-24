@@ -34,7 +34,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 		visibleTopics := make([]*owl.TopicOverview, 0, len(topics))
 		for _, topic := range topics {
 			// Check if logged in user is allowed to see this topic
-			canSee, restErr := api.Hooks.Owl.CanSeeTopic(topic.TopicName)
+			canSee, restErr := api.Hooks.Owl.CanSeeTopic(r.Context(), topic.TopicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -84,7 +84,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		// Check if logged in user is allowed to list messages for the given topic
-		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(topicName)
+		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -139,7 +139,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 		topicName := chi.URLParam(r, "topicName")
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Owl.CanViewTopicPartitions(topicName)
+		canView, restErr := api.Hooks.Owl.CanViewTopicPartitions(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -185,7 +185,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 		topicName := chi.URLParam(r, "topicName")
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Owl.CanViewTopicConfig(topicName)
+		canView, restErr := api.Hooks.Owl.CanViewTopicConfig(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
