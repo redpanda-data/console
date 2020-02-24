@@ -13,6 +13,7 @@ interface Provider {
 }
 interface ProvidersResponse {
     providers: Provider[]
+    companyName: string
 }
 
 async function getProviders() {
@@ -59,7 +60,7 @@ class Login extends Component {
                     </div>
 
                     <div style={{ justifySelf: 'center', marginBottom: 'auto' }}>
-                        <p style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Company Name</p>
+                        <p style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{this.providersResponse?.companyName ?? "COMPANY NAME"}</p>
                         <p style={{ width: '230px' }}>Login with an OAuth provider to continue</p>
                     </div>
                 </div>
