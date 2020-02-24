@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
-import { Button, Spin, Icon } from 'antd';
+import { Button, Spin, Icon, Modal } from 'antd';
 import { observer } from 'mobx-react';
 import { observable } from 'mobx';
 
 import SvgLoginWave from '../../assets/login_wave.svg';
 import PngLogo from '../../assets/logo2.png';
+import { uiState } from '../../state/uiState';
 
 interface Provider {
     displayName: string,
@@ -37,6 +38,18 @@ class Login extends Component {
         const ar = this.providersResponse ? this.providersResponse.providers : null;
 
         return <div className='login'>
+
+            <Modal
+                title="Access Denied"
+                visible={uiState.loginError != null}
+                cancelButtonProps={{ style: { display: 'none' } }}
+                closable={false}
+                maskClosable={false}
+                onOk={() => { uiState.loginError = null; }}
+            >
+                <p>Your login completed successfully, but your account is not allowed to access this application.</p>
+            </Modal>
+
             <div className='loginContainer'>
 
                 <div className='loginLeft'>

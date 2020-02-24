@@ -11,6 +11,7 @@ import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/uti
 import { objToQuery } from "../utils/queryHelper";
 import { IsDevelopment } from "../utils/isProd";
 import { appGlobal } from "./appGlobal";
+import { uiState } from "./uiState";
 
 const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
@@ -21,6 +22,9 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
 
     if (res.status == 401) {
         handleUnauthorized();
+    }
+    if (res.status == 403) {
+        handleForbidden();
     }
 
     if (!res.ok)
@@ -45,6 +49,10 @@ function handleUnauthorized() {
     appGlobal.history.push('/login');
 }
 
+function handleForbidden() {
+    uiState.loginError = 'accessDenied';
+    appGlobal.history.push('/login');
+}
 
 const cache = new LazyMap<string, CacheEntry>(u => new CacheEntry(u));
 class CacheEntry {

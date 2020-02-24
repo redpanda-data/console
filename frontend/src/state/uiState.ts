@@ -66,6 +66,8 @@ class UIState {
 
         throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
     }
+
+    @observable loginError: 'accessDenied' | null = null;
 }
 
 
