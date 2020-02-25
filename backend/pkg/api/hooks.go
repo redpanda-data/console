@@ -2,10 +2,8 @@ package api
 
 import (
 	"context"
-
 	"github.com/cloudhut/common/rest"
 
-	"github.com/cloudhut/kafka-owl/backend/pkg/owl"
 	"github.com/go-chi/chi"
 )
 
@@ -29,7 +27,10 @@ type RouteHooks interface {
 
 // OwlHooks include all functions which allow you to modify
 type OwlHooks interface {
-	FilterTopics(ctx context.Context, topics []*owl.TopicOverview) ([]*owl.TopicOverview, *rest.Error)
+	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanViewTopicMessages(ctx context.Context, topicName string) (bool, *rest.Error)
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -48,6 +49,15 @@ func (*defaultHooks) ConfigAPIRouter(_ chi.Router) {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)    {}
 
 // Owl Hooks
-func (*defaultHooks) FilterTopics(_ context.Context, topics []*owl.TopicOverview) ([]*owl.TopicOverview, *rest.Error) {
-	return topics, nil
+func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
 }
