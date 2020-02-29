@@ -19,6 +19,7 @@ type Config struct {
 
 // RegisterFlags registers all nested config flags.
 func (c *Config) RegisterFlags(f *flag.FlagSet) {
+	c.TLS.RegisterFlags(f)
 	c.SASL.RegisterFlags(f)
 }
 
