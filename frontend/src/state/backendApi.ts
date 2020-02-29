@@ -20,7 +20,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
 
     if (res.status == 401) {
-        handleUnauthorized();
+        await handleUnauthorized(res);
     }
 
     if (!res.ok)
@@ -32,11 +32,22 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     return data;
 }
 
-function handleUnauthorized() {
+async function handleUnauthorized(res: Response) {
     // Logout
     //   Clear our 'User' data if we have any
     //   Any old/invalid JWT will be cleared by the server
     api.UserData = null;
+
+    try {
+        const text = await res.text();
+        const obj = JSON.parse(text);
+        console.log("unauthorized message: " + text);
+
+        const err = obj as { statusCode: number, message: string }
+        uiState.loginError = String(err.message);
+    } catch (err) {
+        uiState.loginError = String(err);
+    }
 
     // Save current location url
     // store.urlBeforeLogin = window.location.href;
