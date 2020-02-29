@@ -25,46 +25,66 @@ func NewSaramaConfig(cfg *Config) (*sarama.Config, error) {
 	sConfig.Version = version
 	sConfig.Net.KeepAlive = 30 * time.Second
 
+	// Configure TLS
+	if cfg.TLS.Enabled {
+		sConfig.Net.TLS.Enable = true
+		sConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: cfg.TLS.InsecureSkipTLSVerify}
+
+		// Load CA file
+		if cfg.TLS.CaFilepath != "" {
+			ca, err := ioutil.ReadFile(cfg.TLS.CaFilepath)
+			if err != nil {
+				return nil, err
+			}
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(ca)
+			sConfig.Net.TLS.Config.RootCAs = caCertPool
+		}
+
+		// Load TLS / Key files
+		if cfg.TLS.CertFilepath != "" && cfg.TLS.KeyFilepath != "" {
+			err := canReadCertAndKey(cfg.TLS.CertFilepath, cfg.TLS.KeyFilepath)
+			if err != nil {
+				return nil, err
+			}
+
+			// Load Cert files and if necessary decrypt it too
+			certs, err := parseCerts(cfg.TLS.CertFilepath, cfg.TLS.KeyFilepath, cfg.TLS.Passphrase)
+			if err != nil {
+				return nil, err
+			}
+			sConfig.Net.TLS.Config.Certificates = certs
+		}
+	}
+
 	// Configure SASL
 	if cfg.SASL.Enabled {
 		sConfig.Net.SASL.Enable = true
 		sConfig.Net.SASL.Handshake = cfg.SASL.UseHandshake
 		sConfig.Net.SASL.User = cfg.SASL.Username
 		sConfig.Net.SASL.Password = cfg.SASL.Password
-	}
 
-	// Configure TLS
-	if cfg.TLS.Enabled {
-		sConfig.Net.TLS.Enable = true
-		sConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: cfg.TLS.InsecureSkipTLSVerify}
-
-		if cfg.TLS.CaFilepath != "" {
-			// Load CA file
-			// TODO: Why is that if condition here? Implement kerberos as well as shown in Kafka Minion
-			if cfg.TLS.CaFilepath != "" {
-				ca, err := ioutil.ReadFile(cfg.TLS.CaFilepath)
-				if err != nil {
-					return nil, err
-				}
-				caCertPool := x509.NewCertPool()
-				caCertPool.AppendCertsFromPEM(ca)
-				sConfig.Net.TLS.Config.RootCAs = caCertPool
+		switch cfg.SASL.Mechanism {
+		case sarama.SASLTypeSCRAMSHA256:
+			sConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
+			sConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &xdgSCRAMClient{HashGeneratorFcn: scramSha256} }
+		case sarama.SASLTypeSCRAMSHA512:
+			sConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
+			sConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &xdgSCRAMClient{HashGeneratorFcn: scramSha512} }
+		case sarama.SASLTypeGSSAPI:
+			sConfig.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
+			switch cfg.SASL.GSSAPIConfig.AuthType {
+			case "USER_AUTH:":
+				sConfig.Net.SASL.GSSAPI.AuthType = sarama.KRB5_USER_AUTH
+			case "KEYTAB_AUTH":
+				sConfig.Net.SASL.GSSAPI.AuthType = sarama.KRB5_KEYTAB_AUTH
+				sConfig.Net.SASL.GSSAPI.KeyTabPath = cfg.SASL.GSSAPIConfig.KeyTabPath
 			}
-
-			// Load TLS / Key files
-			if cfg.TLS.CertFilepath != "" && cfg.TLS.KeyFilepath != "" {
-				err := canReadCertAndKey(cfg.TLS.CertFilepath, cfg.TLS.KeyFilepath)
-				if err != nil {
-					return nil, err
-				}
-
-				// Load Cert files and if necessary it decrypt it too
-				cert, err := parseCerts(cfg.TLS.CertFilepath, cfg.TLS.KeyFilepath, cfg.TLS.Passphrase)
-				if err != nil {
-					return nil, err
-				}
-				sConfig.Net.TLS.Config.Certificates = cert
-			}
+			sConfig.Net.SASL.GSSAPI.Username = cfg.SASL.Username
+			sConfig.Net.SASL.GSSAPI.Password = cfg.SASL.GSSAPIConfig.Password
+			sConfig.Net.SASL.GSSAPI.KerberosConfigPath = cfg.SASL.GSSAPIConfig.KerberosConfigPath
+			sConfig.Net.SASL.GSSAPI.ServiceName = cfg.SASL.GSSAPIConfig.ServiceName
+			sConfig.Net.SASL.GSSAPI.Realm = cfg.SASL.GSSAPIConfig.Realm
 		}
 	}
 
