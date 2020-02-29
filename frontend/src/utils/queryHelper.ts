@@ -1,31 +1,37 @@
 
 
-import queryString, { ParseOptions, StringifyOptions } from 'query-string';
+import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
+
+import { appGlobal } from '../state/appGlobal';
 
 const parseOptions: ParseOptions = {
-	arrayFormat: 'comma',
-	parseBooleans: true,
-	parseNumbers: true,
+    arrayFormat: 'comma',
+    parseBooleans: true,
+    parseNumbers: true,
 };
 const stringifyOptions: StringifyOptions = {
-	strict: false,
-	encode: true,
-	arrayFormat: 'comma',
-	sort: false,
+    strict: false,
+    encode: true,
+    arrayFormat: 'comma',
+    sort: false,
 };
 
 export const queryToObj = (str: string) => queryString.parse(str, parseOptions);
 export const objToQuery = (obj: { [key: string]: any; }) => '?' + queryString.stringify(obj, stringifyOptions);
 
-/*
-	todo:
 
-	// parse query data to object
-	- queryToData<TData>(query: string) : TData
+// edit the current search query,
+// IFF you make any changes inside editFunction, it returns the stringified version of the search query
+export function editQuery(editFunction: (queryObject: ParsedQuery<string | number>) => void) {
+    const urlParams = queryString.parse(window.location.search);
+    editFunction(urlParams);
+    const query = queryString.stringify(urlParams);
+    const search = '?' + query;
 
-	// 1. convert object to query
-	// 2. compute full new url
-	// 3. set address bar (so they can copy that)
-	// 4. if last history entry has same path, replace it (so changing ui settings doesn't spam history state)
-	- setQuery(obj: any)
-*/
+    if (window.location.search != search) {
+        //console.log(`changing search: (${window.location.search}) -> (${search})`);
+        appGlobal.history.location.search = search;
+        appGlobal.history.replace(appGlobal.history.location);
+    }
+}
+

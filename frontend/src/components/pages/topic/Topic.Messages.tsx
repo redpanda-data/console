@@ -21,6 +21,10 @@ import '../../../utils/arrayExtensions';
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { ModalFunc } from "antd/lib/modal/Modal";
 import { uiState } from "../../../state/uiState";
+import { appGlobal } from "../../../state/appGlobal";
+import qs from 'query-string';
+import url from "url";
+import { editQuery } from "../../../utils/queryHelper";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -42,15 +46,24 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch);
 
     autoSearchReaction: IReactionDisposer | null = null;
+    quickSearchReaction: IReactionDisposer | null = null;
 
     constructor(props: { topic: TopicDetail }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
-        this.messageSource.filterText = uiState.topicSettings.quickSearch;
     }
 
     componentDidMount() {
+        // unpack query parameters (if any)
+        const searchParams = uiState.topicSettings.searchParams;
+        const query = qs.parse(window.location.search);
+        if (query.p != null) searchParams.partitionID = Number(query.p);
+        if (query.s != null) searchParams.pageSize = Number(query.s);
+        if (query.o != null) searchParams.startOffset = Number(query.o);
+        if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
+
         this.autoSearchReaction = autorun(() => {
+            console.log('autorun search...')
             const params = uiState.topicSettings.searchParams;
             // trigger mobx: let it know we are interested in those props
             const _ = params._offsetMode + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
@@ -61,11 +74,25 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 console.error(error);
             }
         }, { delay: 50 });
+
+        this.quickSearchReaction = autorun(() => {
+            editQuery(query => {
+                const q = String(uiState.topicSettings.quickSearch);
+                if (q)
+                    query["q"] = q;
+                else
+                    query["q"] = undefined;
+            })
+        });
+
+        this.messageSource.filterText = uiState.topicSettings.quickSearch;
     }
     componentWillUnmount() {
         this.messageSource.dispose();
         if (this.autoSearchReaction)
             this.autoSearchReaction();
+        if (this.quickSearchReaction)
+            this.quickSearchReaction();
     }
 
     render() {
@@ -322,6 +349,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         if (searchParams._offsetMode != TopicMessageOffset.Custom)
             searchParams.startOffset = searchParams._offsetMode;
+
+        editQuery(query => {
+            query["p"] = String(searchParams.partitionID); // p = partition
+            query["s"] = String(searchParams.pageSize); // s = size
+            query["o"] = String(searchParams.startOffset); // o = offset
+        })
 
         transaction(async () => {
             try {
