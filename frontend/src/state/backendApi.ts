@@ -16,15 +16,11 @@ import { uiState } from "./uiState";
 const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
 
-
 export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T> {
     const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
 
     if (res.status == 401) {
         handleUnauthorized();
-    }
-    if (res.status == 403) {
-        handleForbidden();
     }
 
     if (!res.ok)
@@ -46,11 +42,6 @@ function handleUnauthorized() {
     // store.urlBeforeLogin = window.location.href;
 
     // Redirect to login
-    appGlobal.history.push('/login');
-}
-
-function handleForbidden() {
-    uiState.loginError = 'accessDenied';
     appGlobal.history.push('/login');
 }
 

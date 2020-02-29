@@ -17,7 +17,7 @@ interface ProvidersResponse {
 }
 
 async function getProviders() {
-    const response = await fetch('/login/providers', {
+    const response = await fetch('/auth/providers', {
         method: 'GET',
         cache: 'no-cache',
         mode: 'no-cors'
@@ -59,7 +59,7 @@ class Login extends Component {
                 maskClosable={false}
                 onOk={() => { uiState.loginError = null; }}
             >
-                <p>Your login completed successfully, but your account is not allowed to access this application.</p>
+                <p>{uiState.loginError}</p>
             </Modal>
 
             <div className='loginContainer'>
