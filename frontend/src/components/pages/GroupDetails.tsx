@@ -86,6 +86,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
 const stateIcons = new Map<string, JSX.Element>([
     ['dead', <Icon type="fire" theme='twoTone' twoToneColor='orangered' />],
+    ['preparingrebalance', <Icon type="HourglassOutlined" theme='twoTone' twoToneColor='orange' />],
     ['empty', <Icon type="warning" theme='twoTone' twoToneColor='orange' />],
     ['stable', <Icon type="check-circle" theme='twoTone' twoToneColor='#52c41a' />],
 ]);
