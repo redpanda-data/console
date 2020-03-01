@@ -86,8 +86,8 @@ class TopicList extends PageComponent {
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
                     <Row type="flex">
-                        <Statistic title='Total Topics' value={topics.length} style={statisticStyle} />
-                        <Statistic title='Total Partitions' value={topics.map(x => x.partitionCount).reduce((p, c) => p + c)} style={statisticStyle} />
+                        <Statistic title='Total Topics' value={topics.length} />
+                        <Statistic title='Total Partitions' value={topics.map(x => x.partitionCount).reduce((p, c) => p + c)} />
                     </Row>
                 </Card>
 
@@ -151,7 +151,7 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
     }
 
     render() {
-        return <div style={{ marginBottom: '1em', padding: '0', whiteSpace: 'nowrap' }}>
+        return <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap' }}>
             {/* <AutoComplete placeholder='Quick Search' size='large'
                 style={{ width: 'auto', padding: '0' }}
                 onChange={v => this.filteredSource.filterText = String(v)}

@@ -66,8 +66,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
                 <Card>
                     <Row type="flex">
-                        <Statistic title='State' valueRender={() => <GroupState group={group} />} style={{ marginRight: '2em' }} />
-                        <Statistic title='Consumers' value={group.members.length} style={{ marginRight: '2em' }} />
+                        <Statistic title='State' valueRender={() => <GroupState group={group} />} />
+                        <Statistic title='Consumers' value={group.members.length} />
                         <ProtocolType group={group} />
                     </Row>
                 </Card>

@@ -23,29 +23,24 @@ import { uiState } from "../../../state/uiState";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { FavoritePopover, FormatValue } from "./Topic.Config";
 
-const { Text } = Typography;
-const { Option } = Select;
-const InputGroup = Input.Group;
-
-const statsStyle: CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
 // todo: rename QuickInfo
-export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[], size: number }) => {
+export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[], size: number, messageCount: string | null }) => {
 
     return <Row type="flex">
 
-        <Statistic title='Size' value={prettyBytes(p.size)} style={statsStyle} />
+        <Statistic title='Size' value={prettyBytes(p.size)} />
+        {/* {p.messageCount && <Statistic title='Messages' value={p.messageCount} />} */}
+
+        {uiState.topicSettings.favConfigEntries.filter(tce => !!tce).length > 0
+            && <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />}
 
         {
             uiState.topicSettings.favConfigEntries
                 .map(fce => p.config.find(tce => tce.name === fce))
                 .filter(tce => !!tce)
                 .map(tce =>
-                    FavoritePopover(tce!, (
-                        <div style={statsStyle}>
-                            <Statistic title={(tce!.name)} value={FormatValue(tce!)} />
-                        </div>
-                    ))
+                    FavoritePopover(tce!, <Statistic title={(tce!.name)} value={FormatValue(tce!)} />)
                 )
         }
     </Row>

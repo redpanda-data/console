@@ -74,8 +74,8 @@ class BrokerList extends PageComponent {
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
                     <Row type="flex">
-                        <Statistic title='ControllerID' value={info.controllerId} style={{ marginRight: '2rem' }} />
-                        <Statistic title='Broker Count' value={brokers.length} style={{ marginRight: '2rem' }} />
+                        <Statistic title='ControllerID' value={info.controllerId} />
+                        <Statistic title='Broker Count' value={brokers.length} />
                     </Row>
                 </Card>
 
