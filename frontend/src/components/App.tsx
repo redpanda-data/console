@@ -1,16 +1,15 @@
-import React, { PureComponent } from 'react';
+import React, { Component } from 'react';
 import { observer } from "mobx-react"
-import { Layout, Menu, Icon, Select, PageHeader, Alert, Button, Avatar } from 'antd';
+import { Layout, Menu, Icon, PageHeader, Button } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, APP_ROUTES, RouteView, } from './routes';
-import { RenderTrap, Spacer } from './misc/common';
-import { DebugTimerStore, hoursToMilliseconds } from '../utils/utils';
+import { RenderTrap } from './misc/common';
+import { DebugTimerStore } from '../utils/utils';
 import { api } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { MotionAlways, MotionDiv } from '../utils/animationProps';
+import { MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
-import prettyMilliseconds from 'pretty-ms';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
 import Title from 'antd/lib/typography/Title';
@@ -18,7 +17,7 @@ import Title from 'antd/lib/typography/Title';
 import logo2 from '../assets/logo2.png';
 import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsDevelopment, IsProduction } from '../utils/isProd';
+import { IsProduction } from '../utils/isProd';
 import { TopBar } from './misc/TopBar';
 import { isBusinessVersion } from '..';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
@@ -27,8 +26,7 @@ import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
 
-const { Content, Footer, Sider, Header } = Layout;
-const { Option } = Select;
+const { Content, Footer, Sider } = Layout;
 
 let siderCollapsedWidth = 80;
 
@@ -184,10 +182,12 @@ const AppContent = observer(() =>
     </Layout>
 );
 
-class App extends PureComponent {
+@observer
+class App extends Component {
 
     render() {
-        this.loginHandling(); // Complete login, or fetch user if needed
+        const r = this.loginHandling(); // Complete login, or fetch user if needed
+        if (r) return r;
 
         return (
             <ErrorBoundary>
@@ -209,30 +209,42 @@ class App extends PureComponent {
         );
     }
 
-    loginHandling() {
+    loginHandling(): JSX.Element | null {
 
-        if (!isBusinessVersion) return;
+        if (!isBusinessVersion)
+            return null; // free version has no login handling
 
+        const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />
+        const path = window.location.pathname;
         const isDev = !IsProduction;
-        const devPrint = function (str: string) { if (isDev) console.log(str); }
-        devPrint('loginHandling: path=' + window.location.pathname);
+        const devPrint = function (str: string) { if (isDev) console.log(`loginHandling (${path}): ` + str); }
 
+        if (path.startsWith('/login'))
+            return null; // already in login process, don't interrupt!
 
-        if (window.location.pathname.startsWith('/login/callbacks/')) {
-            devPrint('loginHandling: completing callback...');
-        } else if (!api.UserData) {
-            devPrint('loginHandling: user is null, fetching');
+        if (api.UserData === null && !path.startsWith('/login')) {
+            devPrint('hard redirect to login');
+            window.location.pathname = '/login'; // definitely not logged in, and in wrong url: hard redirect!
+            return preLogin;
+        }
+
+        if (api.UserData === undefined) {
+            devPrint('user is undefined...');
 
             fetchWithTimeout('/api/users/me', 10 * 1000).then(async r => {
                 if (r.ok) {
                     api.UserData = await r.json() as UserData;
-                    devPrint('loginHandling: fetched user successfully');
+                    devPrint('fetched user successfully');
                 } else if (r.status == 401) {
-                    devPrint('loginHandling: status=401, meaning we are not logged in');
+                    api.UserData = null;
                 }
             });
+
+            // don't render anything until we know if we're already logged in or not
+            return preLogin;
         } else {
-            devPrint('loginHandling: user is set: ' + JSON.stringify(api.UserData));
+            devPrint('user is set: ' + JSON.stringify(api.UserData));
+            return null;
         }
     }
 }
