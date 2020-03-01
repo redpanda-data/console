@@ -68,10 +68,10 @@ class GroupList extends PageComponent {
                 <Card>
                     <Row type="flex">
                         <Statistic title='Total Groups' value={groups.length} />
-                        <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem' }} />
-                        {stateGroups.map(g => <>
+                        <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
+                        {stateGroups.map(g =>
                             <Statistic style={{ marginRight: '1.5rem' }} key={g.key} title={g.key} value={g.items.length} />
-                        </>)}
+                        )}
                     </Row>
                 </Card>
 
@@ -110,7 +110,7 @@ class GroupList extends PageComponent {
 
     SearchBar = observer(() => {
 
-        return <div style={{ marginTop: '0', marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap' }}>
+        return <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap' }}>
 
             <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: 'auto' }}
                 onChange={e => uiSettings.consumerGroupList.quickSearch = e.target.value}

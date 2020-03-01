@@ -528,3 +528,7 @@ tr.tombstone .ant-table-row-expand-icon {
 tr td:nth-last-child(1) {
     padding-right: 30px !important;
 } */
+
+.ant-statistic {
+    margin-right: 2rem;
+}

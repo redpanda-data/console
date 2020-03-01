@@ -75,17 +75,22 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         const topicConfig = api.TopicConfig.get(topicName);
         if (!topicConfig) return this.skeleton;
 
+        let messageSum: null | string = null;
+        let partitions = api.TopicPartitions.get(topic.topicName);
+        if (partitions)
+            messageSum = partitions.reduce((p, c) => p + (c.waterMarkHigh - c.waterMarkLow), 0).toString();
+
         this.addBaseFavs(topicConfig);
 
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 {/* QuickInfo */}
                 <Card>
-                    <TopicQuickInfoStatistic config={topicConfig} size={topic.logDirSize} />
+                    <TopicQuickInfoStatistic config={topicConfig} size={topic.logDirSize} messageCount={messageSum} />
                 </Card>
 
                 {/* Tabs:  Messages, Configuration */}
-                <Card style={{ paddingTop: '0px' }}>
+                <Card>
                     <Tabs style={{ overflow: 'visible' }} animated={false}
                         activeKey={this.tabPageKey}
                         onChange={this.setTabPage}
