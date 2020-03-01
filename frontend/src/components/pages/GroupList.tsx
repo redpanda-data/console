@@ -11,15 +11,18 @@ import { makePaginationConfig, sortField } from "../misc/common";
 import { uiSettings } from "../../state/ui";
 import { appGlobal } from "../../state/appGlobal";
 import { GroupState } from "./GroupDetails";
-import { observable } from "mobx";
+import { observable, autorun, IReactionDisposer } from "mobx";
 import { containsIgnoreCase } from "../../utils/utils";
 import Card from "../misc/Card";
+import { editQuery } from "../../utils/queryHelper";
+import { uiState } from "../../state/uiState";
 
 
 @observer
 class GroupList extends PageComponent {
 
     pageConfig = makePaginationConfig(uiSettings.consumerGroupList.pageSize);
+    quickSearchReaction: IReactionDisposer;
 
     initPage(p: PageInitHelper): void {
         p.title = 'Consumer Groups';
@@ -28,6 +31,25 @@ class GroupList extends PageComponent {
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
 
+    }
+
+    componentDidMount() {
+        // 1. use 'q' parameter for quick search (if it exists)
+        editQuery(query => {
+            if (query["q"])
+                uiSettings.consumerGroupList.quickSearch = String(query["q"]);
+        });
+
+        // 2. whenever the quick search box changes, update the url
+        this.quickSearchReaction = autorun(() => {
+            editQuery(query => {
+                const q = String(uiState.topicSettings.quickSearch);
+                query["q"] = q ? q : undefined;
+            })
+        });
+    }
+    componentWillUnmount() {
+        if (this.quickSearchReaction) this.quickSearchReaction();
     }
 
     refreshData(force: boolean) {
@@ -63,7 +85,9 @@ class GroupList extends PageComponent {
                             ({
                                 onClick: () => appGlobal.history.push('/groups/' + record.groupId),
                             })}
-                        onChange={x => { if (x.pageSize) { uiSettings.consumerGroupList.pageSize = x.pageSize } }}
+                        onChange={x => {
+                            if (x.pageSize) { this.pageConfig.pageSize = uiSettings.consumerGroupList.pageSize = x.pageSize }
+                        }}
                         rowClassName={() => 'hoverLink'}
                         dataSource={groups}
                         rowKey={x => x.groupId}

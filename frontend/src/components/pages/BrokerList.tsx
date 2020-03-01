@@ -83,7 +83,7 @@ class BrokerList extends PageComponent {
                     <Table
                         style={{ margin: '0', padding: '0' }} size={'middle'}
                         pagination={this.pageConfig}
-                        onChange={x => { if (x.pageSize) { uiSettings.brokerList.pageSize = x.pageSize } }}
+                        onChange={x => { if (x.pageSize) { this.pageConfig.pageSize = uiSettings.brokerList.pageSize = x.pageSize } }}
                         dataSource={brokers}
                         rowKey={x => x.brokerId.toString()}
                         rowClassName={() => 'pureDisplayRow'}
