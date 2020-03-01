@@ -10,11 +10,12 @@ import { animProps, MotionDiv, MotionSpan } from "../../../utils/animationProps"
 import { appGlobal } from "../../../state/appGlobal";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { TopicDetail } from "../../../state/restInterfaces";
-import { observable } from "mobx";
+import { observable, autorun, IReactionDisposer } from "mobx";
 import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../../utils/utils";
 import { uiState } from "../../../state/uiState";
 import Card from "../../misc/Card";
+import { editQuery } from "../../../utils/queryHelper";
 const { Text } = Typography;
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -24,6 +25,7 @@ class TopicList extends PageComponent {
 
     pageConfig = makePaginationConfig(uiSettings.topicList.pageSize);
     @observable searchBar: RefObject<SearchBar<TopicDetail>> = React.createRef();
+    quickSearchReaction: IReactionDisposer;
 
     initPage(p: PageInitHelper): void {
         p.title = 'Topics';
@@ -37,6 +39,25 @@ class TopicList extends PageComponent {
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
+    }
+
+    componentDidMount() {
+        // 1. use 'q' parameter for quick search (if it exists)
+        editQuery(query => {
+            if (query["q"])
+                uiSettings.topicList.quickSearch = String(query["q"]);
+        });
+
+        // 2. whenever the quick search box changes, update the url
+        this.quickSearchReaction = autorun(() => {
+            editQuery(query => {
+                const q = String(uiSettings.topicList.quickSearch);
+                query["q"] = q ? q : undefined;
+            })
+        });
+    }
+    componentWillUnmount() {
+        if (this.quickSearchReaction) this.quickSearchReaction();
     }
 
     refreshData(force: boolean) {

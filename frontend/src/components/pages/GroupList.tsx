@@ -43,7 +43,7 @@ class GroupList extends PageComponent {
         // 2. whenever the quick search box changes, update the url
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
-                const q = String(uiState.topicSettings.quickSearch);
+                const q = String(uiSettings.consumerGroupList.quickSearch);
                 query["q"] = q ? q : undefined;
             })
         });
