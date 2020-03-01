@@ -78,10 +78,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
                 const q = String(uiState.topicSettings.quickSearch);
-                if (q)
-                    query["q"] = q;
-                else
-                    query["q"] = undefined;
+                query["q"] = q ? q : undefined;
             })
         });
 
