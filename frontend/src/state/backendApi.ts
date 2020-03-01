@@ -144,7 +144,9 @@ const apiStore = {
     TopicPartitions: new Map<string, Partition[]>(),
     ClusterInfo: null as (ClusterInfo | null),
 
-    UserData: null as (UserData | null),
+    // undefined = we haven't checked yet
+    // null = call completed, and we're not logged in
+    UserData: undefined as (UserData | null | undefined),
     async logout() {
         await fetch('/logout');
         this.UserData = null;
