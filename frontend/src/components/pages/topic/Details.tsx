@@ -80,7 +80,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         if (partitions)
             messageSum = partitions.reduce((p, c) => p + (c.waterMarkHigh - c.waterMarkLow), 0).toString();
 
-        this.addBaseFavs(topicConfig);
+        setTimeout(() => this.addBaseFavs(topicConfig), 10);
 
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
