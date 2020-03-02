@@ -131,7 +131,7 @@ const DataAgeInfo = observer(() => {
                 :
                 <>
                     <span className='spinner' style={{ marginLeft: '.5em', width: size, height: size }} />
-                    <span className='pulsating' style={{ paddingLeft: '0.8em', fontSize: '80%' }}>Fetching data...</span>
+                    <span className='pulsating' style={{ paddingLeft: '0.8em', fontSize: '80%', userSelect: 'none' }}>Fetching data...</span>
                 </>
             } </div>
     )
