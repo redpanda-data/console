@@ -10,6 +10,15 @@ kafka:
   #   useHandshake: true
   #   username:
   #   password: # This can be set via the --kafka.sasl.password flag as well
+  #   mechanism: PLAIN # PLAIN, SCRAM-SHA-256, SCRAM-SHA-512 and GSSAPI are supported
+  #   gssapi:
+  #     authType:
+  #     keyTabPath:
+  #     kerberosConfigPath:
+  #     serviceName:
+  #     username:
+  #     password: # can be set via the --kafka.sasl.gssapi.password flag as well
+  #     realm:
   # tls:
   #   enabled: false
   #   caFilepath:
