@@ -63,6 +63,7 @@ func (api *API) routes() *chi.Mux {
 			r.Get("/topics/{topicName}/partitions", api.handleGetPartitions())
 			r.Get("/topics/{topicName}/messages", api.handleGetMessages())
 			r.Get("/topics/{topicName}/configuration", api.handleGetTopicConfig())
+			r.Get("/topics/{topicName}/consumers", api.handleGetTopicConsumers())
 			r.Get("/consumer-groups", api.handleGetConsumerGroups())
 		})
 	})
