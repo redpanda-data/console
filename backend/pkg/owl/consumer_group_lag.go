@@ -16,6 +16,17 @@ type ConsumerGroupLag struct {
 	TopicLags []*TopicLag `json:"topicLags"`
 }
 
+// GetTopicLag returns the group's topic lag or nil if the group has no group offsets on that topic
+func (c *ConsumerGroupLag) GetTopicLag(topicName string) *TopicLag {
+	for _, lag := range c.TopicLags {
+		if lag.Topic == topicName {
+			return lag
+		}
+	}
+
+	return nil
+}
+
 // TopicLag describes the kafka lag for a single topic and it's partitions for a single consumer group
 type TopicLag struct {
 	Topic                 string         `json:"topic"`
@@ -45,7 +56,7 @@ func convertOffsets(offsets *sarama.OffsetFetchResponse) map[string]partitionOff
 	return res
 }
 
-// getConsumerGroupLags returns a nested map with the following key nestings: groupID -> topicName -> partitionID
+// getConsumerGroupLags returns a nested map where the group id is the key
 func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (map[string]*ConsumerGroupLag, error) {
 	// 1. Fetch all Consumer Group Offsets for each Topic
 	offsets, err := s.kafkaSvc.ListConsumerGroupOffsetsBulk(ctx, groups)
