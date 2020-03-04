@@ -27,12 +27,6 @@ class BrokerList extends PageComponent {
     initPage(p: PageInitHelper): void {
         p.title = 'Brokers';
         p.addBreadcrumb('Brokers', '/brokers');
-        p.extraContent = () => <>
-            <Checkbox
-                checked={uiSettings.brokerList.hideEmptyColumns}
-                onChange={e => uiSettings.brokerList.hideEmptyColumns = e.target.checked}
-            >Hide empty columns</Checkbox>
-        </>;
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -67,7 +61,7 @@ class BrokerList extends PageComponent {
             { title: 'ID', dataIndex: 'brokerId', width: '100px', render: renderIdColumn },
             { title: 'Address', dataIndex: 'address' },
             { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), width: '140px' },
-            (uiSettings.brokerList.hideEmptyColumns && !hasRack) ? null : { title: 'Rack', dataIndex: 'rack', width: '100px' },
+            !hasRack ? null : { title: 'Rack', dataIndex: 'rack', width: '100px' },
         ].filter(c => c != null).map(c => c!);
 
         return <>
