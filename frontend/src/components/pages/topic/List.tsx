@@ -30,12 +30,6 @@ class TopicList extends PageComponent {
     initPage(p: PageInitHelper): void {
         p.title = 'Topics';
         p.addBreadcrumb('Topics', '/topics');
-        p.extraContent = () => <>
-            <Checkbox
-                checked={uiSettings.topicList.hideInternalTopics}
-                onChange={e => uiSettings.topicList.hideInternalTopics = e.target.checked}
-            >Hide internal topics</Checkbox>
-        </>
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -151,7 +145,7 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
     }
 
     render() {
-        return <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap' }}>
+        return <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
             {/* <AutoComplete placeholder='Quick Search' size='large'
                 style={{ width: 'auto', padding: '0' }}
                 onChange={v => this.filteredSource.filterText = String(v)}
@@ -168,6 +162,13 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
             />
             {/* </AutoComplete> */}
             <this.FilterSummary />
+
+            <span style={{ flex: 1 }} />
+            <Checkbox
+                style={{ marginLeft: '1rem' }}
+                checked={uiSettings.topicList.hideInternalTopics}
+                onChange={e => uiSettings.topicList.hideInternalTopics = e.target.checked}
+            >Hide internal topics</Checkbox>
         </div>
     }
 
