@@ -532,3 +532,7 @@ tr td:nth-last-child(1) {
 .ant-statistic {
     margin-right: 2rem;
 }
+
+.noSelect {
+    user-select: none;
+}
