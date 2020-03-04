@@ -35,9 +35,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
     refreshData(force: boolean) {
-
         api.refreshTopics(force);
         api.refreshTopicConfig(this.props.topicName, force);
+        api.refreshTopicPartitions(this.props.topicName);
     }
 
     get tabPageKey() {
@@ -75,7 +75,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         const topicConfig = api.TopicConfig.get(topicName);
         if (!topicConfig) return this.skeleton;
 
-        let messageSum: null | string = null;
+        let messageSum: null | string = '...';
         let partitions = api.TopicPartitions.get(topic.topicName);
         if (partitions)
             messageSum = partitions.reduce((p, c) => p + (c.waterMarkHigh - c.waterMarkLow), 0).toString();
