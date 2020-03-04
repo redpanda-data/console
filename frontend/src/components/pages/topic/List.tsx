@@ -151,7 +151,7 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
                 onChange={v => this.filteredSource.filterText = String(v)}
                 dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
             > */}
-            <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: 'auto' }}
+            <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: '350px' }}
                 onChange={e => this.filteredSource.filterText = uiSettings.topicList.quickSearch = e.target.value}
                 value={uiSettings.topicList.quickSearch}
             // addonAfter={
