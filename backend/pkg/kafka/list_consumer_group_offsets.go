@@ -53,11 +53,6 @@ func (s *Service) ListConsumerGroupOffsetsBulk(ctx context.Context, groups []str
 		eg.Go(f(group))
 	}
 
-	type response struct {
-		Res   *sarama.OffsetFetchResponse
-		Group string
-	}
-
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}

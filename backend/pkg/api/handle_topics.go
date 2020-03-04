@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 
@@ -68,6 +69,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := chi.URLParam(r, "topicName")
+		logger := api.Logger.With(zap.String("topic_name", topicName))
 		query := r.URL.Query()
 
 		var req request
@@ -79,14 +81,14 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 				Message:  "The given query parameters are invalid",
 				IsSilent: false,
 			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 
 		// Check if logged in user is allowed to list messages for the given topic
 		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), topicName)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 		if !canViewMessages {
@@ -96,7 +98,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 				Message:  "You don't have permissions to view messages in that topic",
 				IsSilent: false,
 			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 
@@ -117,14 +119,14 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 				Message:  "Could not list messages for requested topic",
 				IsSilent: false,
 			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 
 		response := &GetTopicMessagesResponse{
 			KafkaMessages: messages,
 		}
-		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
+		rest.SendResponse(w, r, logger, http.StatusOK, response)
 	}
 }
 
@@ -137,11 +139,12 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := chi.URLParam(r, "topicName")
+		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
 		canView, restErr := api.Hooks.Owl.CanViewTopicPartitions(r.Context(), topicName)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 		if !canView {
@@ -151,7 +154,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 				Message:  "You don't have permissions to view partitions for that topic",
 				IsSilent: false,
 			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 
@@ -163,7 +166,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 				Message:  "Could not list topic partitions for requested topic",
 				IsSilent: false,
 			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 
@@ -171,7 +174,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 			TopicName:  topicName,
 			Partitions: partitions,
 		}
-		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+		rest.SendResponse(w, r, logger, http.StatusOK, res)
 	}
 }
 
@@ -183,11 +186,12 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := chi.URLParam(r, "topicName")
+		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
 		canView, restErr := api.Hooks.Owl.CanViewTopicConfig(r.Context(), topicName)
 		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 		if !canView {
@@ -197,7 +201,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 				Message:  "You don't have permissions to view the config for that topic",
 				IsSilent: false,
 			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 
@@ -209,7 +213,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 				Message:  "Could not list topic config for requested topic",
 				IsSilent: false,
 			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 
@@ -217,5 +221,53 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 			TopicDescription: description,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+// handleGetTopicConsumers returns all consumers along with their summed lag which consume the given topic
+func (api *API) handleGetTopicConsumers() http.HandlerFunc {
+	type response struct {
+		TopicName string                    `json:"topicName"`
+		Consumers []*owl.TopicConsumerGroup `json:"topicConsumers"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		topicName := chi.URLParam(r, "topicName")
+		logger := api.Logger.With(zap.String("topic_name", topicName))
+
+		// Check if logged in user is allowed to view partitions for the given topic
+		canView, restErr := api.Hooks.Owl.CanViewTopicConsumers(r.Context(), topicName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, logger, restErr)
+			return
+		}
+		if !canView {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("requester has no permissions to view topic consumers for the requested topic"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to view the config for that topic",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, logger, restErr)
+			return
+		}
+
+		consumers, err := api.OwlSvc.ListTopicConsumers(r.Context(), topicName)
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusInternalServerError,
+				Message:  "Could not list topic consumers for requested topic",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, logger, restErr)
+			return
+		}
+
+		res := response{
+			TopicName: topicName,
+			Consumers: consumers,
+		}
+		rest.SendResponse(w, r, logger, http.StatusOK, res)
 	}
 }
