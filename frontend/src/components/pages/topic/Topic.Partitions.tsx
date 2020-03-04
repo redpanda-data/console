@@ -22,6 +22,7 @@ import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { FavoritePopover, FormatValue } from "./Topic.Config";
+import { numberToThousandsString } from "../../../utils/tsxUtils";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -62,10 +63,10 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
             rowKey={x => x.id.toString()}
             columns={[
                 { width: 1, title: 'Partition ID', dataIndex: 'id', sorter: sortField('id'), defaultSortOrder: 'ascend' },
-                { width: 1, title: 'Low Water Mark', dataIndex: 'waterMarkLow', render: (t) => t.toLocaleString(), sorter: sortField('waterMarkLow') },
-                { width: 1, title: 'High Water Mark', dataIndex: 'waterMarkHigh', render: (t) => t.toLocaleString(), sorter: sortField('waterMarkHigh') },
+                { width: 1, title: 'Low Water Mark', dataIndex: 'waterMarkLow', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkLow') },
+                { width: 1, title: 'High Water Mark', dataIndex: 'waterMarkHigh', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkHigh') },
                 {
-                    width: 1, title: 'Message Count', key: 'msgCount', render: (t, r) => (r.waterMarkHigh - r.waterMarkLow).toLocaleString(),
+                    width: 1, title: 'Message Count', key: 'msgCount', render: (t, r) => numberToThousandsString(r.waterMarkHigh - r.waterMarkLow),
                     sorter: (p1, p2) => (p1.waterMarkHigh - p1.waterMarkLow) - (p2.waterMarkHigh - p2.waterMarkLow)
                 },
                 // todo: lag (sum of lag over all consumer groups)

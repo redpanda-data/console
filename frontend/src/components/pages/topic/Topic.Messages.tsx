@@ -25,6 +25,8 @@ import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
 import url from "url";
 import { editQuery } from "../../../utils/queryHelper";
+import { numberToThousandsString } from "../../../utils/tsxUtils";
+import Octicon, { Skip } from '@primer/octicons-react';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -234,10 +236,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         </>
 
         const columns: ColumnProps<TopicMessage>[] = [
-            { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend' },
-            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => new Date(t * 1000).toLocaleString() },
+            { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
-            { width: 1, title: 'Key', dataIndex: 'key', render: (t) => t },
+            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => new Date(t * 1000).toLocaleString() },
+            { width: 1, title: 'Key', dataIndex: 'key', render: (t) => t ?? <span style={{ opacity: 0.66, marginLeft: '3px' }}><Octicon icon={Skip} /></span> },
             {
                 title: valueTitle,
                 dataIndex: 'value',
