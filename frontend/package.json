@@ -27,6 +27,7 @@
     },
     "scripts": {
         "start": "react-app-rewired start",
+        "start2": "cross-env REACT_APP_BUSINESS=true react-app-rewired start",
         "build": "react-app-rewired build",
         "test": "react-app-rewired test",
         "eject": "react-scripts eject"
@@ -54,6 +55,7 @@
         "@types/react-dom": "16.9.1",
         "@types/react-router-dom": "^5.1.0",
         "babel-plugin-import": "^1.12.2",
+        "cross-env": "^7.0.1",
         "faker": "^4.1.0"
     }
 }
