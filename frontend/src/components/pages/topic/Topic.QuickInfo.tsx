@@ -30,7 +30,7 @@ export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[]
     return <Row type="flex">
 
         <Statistic title='Size' value={prettyBytes(p.size)} />
-        {/* {p.messageCount && <Statistic title='Messages' value={p.messageCount} />} */}
+        {p.messageCount && <Statistic title='Messages' value={p.messageCount} />}
 
         {uiState.topicSettings.favConfigEntries.filter(tce => !!tce).length > 0
             && <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />}
