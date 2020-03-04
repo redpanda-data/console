@@ -112,7 +112,7 @@ class GroupList extends PageComponent {
 
         return <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap' }}>
 
-            <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: 'auto' }}
+            <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: '350px' }}
                 onChange={e => uiSettings.consumerGroupList.quickSearch = e.target.value}
                 value={uiSettings.consumerGroupList.quickSearch}
             // addonAfter={
