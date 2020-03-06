@@ -28,6 +28,16 @@ export interface GetPartitionsResponse {
 }
 
 
+export interface TopicConsumer {
+    groupId: string
+    summedLag: number
+}
+
+export interface GetTopicConsumersResponse {
+    topicName: string;
+    topicConsumers: TopicConsumer[];
+}
+
 
 
 
