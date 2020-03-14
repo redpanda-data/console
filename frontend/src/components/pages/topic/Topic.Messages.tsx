@@ -12,7 +12,7 @@ import prettyBytes from 'pretty-bytes';
 import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed, transaction, autorun, IReactionDisposer } from "mobx";
-import { findElementDeep, cullText, getAllKeys } from "../../../utils/utils";
+import { findElementDeep, cullText, getAllKeys, ToJson } from "../../../utils/utils";
 import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -23,10 +23,11 @@ import { ModalFunc } from "antd/lib/modal/Modal";
 import { uiState } from "../../../state/uiState";
 import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
-import url from "url";
+import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { numberToThousandsString } from "../../../utils/tsxUtils";
+import { numberToThousandsString, ZeroSizeWrapper } from "../../../utils/tsxUtils";
 import Octicon, { Skip } from '@primer/octicons-react';
+import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -59,14 +60,19 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         // unpack query parameters (if any)
         const searchParams = uiState.topicSettings.searchParams;
         const query = qs.parse(window.location.search);
+        console.log("parsing query: " + ToJson(query));
         if (query.p != null) searchParams.partitionID = Number(query.p);
         if (query.s != null) searchParams.pageSize = Number(query.s);
-        if (query.o != null) searchParams.startOffset = Number(query.o);
+        if (query.o != null) {
+            searchParams.startOffset = Number(query.o);
+            searchParams._offsetMode = (searchParams.startOffset >= 0) ? TopicMessageOffset.Custom : searchParams.startOffset;
+        }
         if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
 
+        // Auto search when parameters change
         this.autoSearchReaction = autorun(() => {
-            console.log('autorun search...')
             const params = uiState.topicSettings.searchParams;
+            console.log('autorun search: ' + ToJson(params));
             // trigger mobx: let it know we are interested in those props
             const _ = params._offsetMode + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
             try {
@@ -77,6 +83,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             }
         }, { delay: 50 });
 
+        // Quick search -> url
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
                 const q = String(uiState.topicSettings.quickSearch);
@@ -252,10 +259,15 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 sorter: (a, b) => b.size - a.size
             },
             {
-                width: 1, title: ' ', key: 'action',
+                width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                 render: (text, record) => !record.isValueNull && (
                     <span>
-                        <Button type='link' size='small' onClick={() => this.copyMessage(record)}>Copy</Button>
+                        <ZeroSizeWrapper width={32} height={0}>
+                            <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon='copy' size='default' onClick={() => this.copyMessage(record)} />
+                        </ZeroSizeWrapper>
+                        <ZeroSizeWrapper width={32} height={0}>
+                            <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon='link' size='default' onClick={() => this.copyLinkToMessage(record)} />
+                        </ZeroSizeWrapper>
                         {/* <Divider type="vertical" /> */}
                     </span>
                 ),
@@ -293,6 +305,19 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     copyMessage(record: TopicMessage) {
         navigator.clipboard.writeText(record.valueJson);
         message.success('Message content (JSON) copied to clipboard', 5);
+    }
+
+    copyLinkToMessage(record: TopicMessage) {
+        const searchParams = { o: record.offset, p: record.partitionID, s: 1 };
+        const query = queryString.stringify(searchParams);
+        const url = parseUrl(window.location.href);
+        url.search = query;
+
+        const newUrl = formatUrl(url);
+        console.log("copied url: " + newUrl);
+
+        //navigator.clipboard.writeText(record.valueJson);
+        //message.success('Message content (JSON) copied to clipboard', 5);
     }
 
     PreviewSettings = observer(() => {

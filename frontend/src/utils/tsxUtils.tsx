@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Children } from "react";
 
 
 
@@ -22,6 +22,15 @@ export function numberToThousandsString(n: number): JSX.Element {
     return <>{result}</>
 }
 
+export const ZeroSizeWrapper = (p: { width: number, height: number, children?: React.ReactNode }) => {
+    return <span style={{
+        width: p.width, height: p.height,
+        display: 'inline-flex', placeContent: 'center', placeItems: 'center',
+
+    }}>
+        {p.children}
+    </span>;
+};
 
 
 export const copyIcon = <svg viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true">
