@@ -16,6 +16,7 @@ import BrokerList from "./pages/BrokerList";
 import { AnimatePresence } from "framer-motion";
 import { uiState } from "../state/uiState";
 import { SettingsPage } from "./pages/Settings";
+import AdminPage from "./pages/admin/AdminPage";
 
 //
 //	Route Types
@@ -175,7 +176,8 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', 'funnel-plot'),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', 'funnel-plot'),
 
-    //separator,
+
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', 'tool', false),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
 

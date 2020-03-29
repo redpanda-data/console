@@ -34,7 +34,7 @@ export class AutoRefresh extends Component {
 }
 
 const seen = new Set();
-export function ToJson(obj: any): string {
+export function ToJson(obj: any, space?: string | number | undefined): string {
     seen.clear();
     try {
         return JSON.stringify(obj,
@@ -46,7 +46,8 @@ export function ToJson(obj: any): string {
                     seen.add(value);
                 }
                 return value;
-            }
+            },
+            space
         );
     }
     finally {

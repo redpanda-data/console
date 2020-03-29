@@ -153,14 +153,16 @@ export interface ClusterInfoResponse {
 
 
 
-
+// Current user
 export interface User {
     id: string,
-    providerName: string,
-    email: string,
-    name: string,
-    avatarUrl: string,
     internalIdentifier: string,
+    providerID: number,
+    meta: {
+        email: string,
+        name: string,
+        avatarUrl: string,
+    }
 }
 export interface Seat {
     id: string, // id of seat
@@ -169,9 +171,51 @@ export interface Seat {
     lastActivity: string, // is a datetime string, should probably be a "UnixMillis"
 }
 export interface UserData {
-    user: User,
-    seat: Seat,
+    user: User;
+    seat: Seat;
 }
 
 
 
+export interface Permission {
+    resource: string;
+    includes: string[] | undefined;
+    excludes: string[] | undefined;
+    allowedActions: string[] | undefined;
+}
+export interface Role {
+    name: string;
+    permissions: Permission[];
+}
+export interface UserDetails {
+    name: string;
+    loginProvider: string;
+    roleNames: string[];
+    //seat: Seat; // seat this user occupies
+
+    // resolved by frontend, not transmitted!
+    roles: Role[];
+}
+export interface LoginProviderGroup {
+    name: string;
+    provider: string;
+    userNames: string[];
+}
+export interface SubjectDefinition {
+    kind: 'user' | 'group';
+    provider: string; // github or google, in various casings...
+    name: string; // name of the person or group
+    organization: string | undefined; // for github teams
+}
+export interface RoleBinding {
+    metadata: object;
+    subjects: SubjectDefinition[];
+    roleName: string;
+}
+// AdminInfo = all users and their roles, permissions; all login methods, ...
+export interface AdminInfo {
+    users: UserDetails[];
+    roles: Role[]; // list of all roles
+    groups: LoginProviderGroup[];
+    roleBindings: RoleBinding[];
+}

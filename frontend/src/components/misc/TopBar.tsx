@@ -31,7 +31,7 @@ const ClusterSelect = observer(() =>
 const TopBar = observer(() => {
 
     //console.dir(api.UserData);
-    if (!api.UserData || !api.UserData.user || !api.UserData.user.name) {
+    if (!api.UserData || !api.UserData.user || !api.UserData.user.meta.name) {
         return null;
     }
     const user = api.UserData.user;
@@ -39,7 +39,7 @@ const TopBar = observer(() => {
     const menu = <Menu className="avatarMenu">
         <Menu.Item style={{ pointerEvents: 'none' }}>
             Signed in as<br />
-            <span style={{ fontWeight: 'bold' }}>{user.name}</span>
+            <span style={{ fontWeight: 'bold' }}>{user.meta.name}</span>
         </Menu.Item>
         <Menu.Divider />
         <Menu.Item key="0" onClick={() => { api.logout(); window.location.reload(); }}>Logout</Menu.Item>
@@ -71,7 +71,7 @@ const TopBar = observer(() => {
                     <Dropdown overlay={menu} trigger={['click']}>
                         <div style={{ cursor: 'pointer' }}>
                             <span style={{ display: 'flex', alignItems: 'center' }}>
-                                <Avatar shape="square" size='large' icon="user" src={user.avatarUrl} style={{ marginRight: '.3em' }} />
+                                <Avatar shape="square" size='large' icon="user" src={user.meta.avatarUrl} style={{ marginRight: '.3em' }} />
                                 <Icon type='caret-down' style={{ color: 'rgba(0,0,0,0.6)' }} />
                             </span>
                         </div>
