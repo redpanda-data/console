@@ -158,11 +158,12 @@ export interface User {
     id: string,
     internalIdentifier: string,
     providerID: number,
+    providerName: string,
     meta: {
         email: string,
         name: string,
         avatarUrl: string,
-    }
+    },
 }
 export interface Seat {
     id: string, // id of seat
@@ -173,6 +174,7 @@ export interface Seat {
 export interface UserData {
     user: User;
     seat: Seat;
+    canManageKowl: boolean,
 }
 
 

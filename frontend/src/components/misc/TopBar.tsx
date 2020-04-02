@@ -2,7 +2,6 @@ import React, { PureComponent } from 'react';
 import { observer } from "mobx-react"
 import { Layout, Menu, Icon, Select, PageHeader, Alert, Button, Avatar, Popconfirm, Dropdown } from 'antd';
 import { uiSettings } from '../../state/ui';
-import { CreateRouteMenuItems, APP_ROUTES, RouteView, } from '.././routes';
 import { RenderTrap, Spacer } from '.././misc/common';
 import { DebugTimerStore, hoursToMilliseconds } from '../../utils/utils';
 import { api } from '../../state/backendApi';

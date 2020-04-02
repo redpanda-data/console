@@ -71,12 +71,11 @@ export class AdminRoleBindings extends Component<{}> {
 export class SubjectComponent extends Component<{ subject: SubjectDefinition }>{
     render() {
         const s = this.props.subject;
-
         // todo: this is a placeholder, to be completely replaced...
 
         const kind = s.provider + "-" + s.kind;
         return <div>
-            <div>{kind}: {s.name}</div>
+            <div>{kind}: {s.name} {s.organization && <>(Org: {s.organization})</>}</div>
         </div>
     }
 }
