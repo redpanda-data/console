@@ -17,6 +17,8 @@ import { AnimatePresence } from "framer-motion";
 import { uiState } from "../state/uiState";
 import { SettingsPage } from "./pages/Settings";
 import AdminPage from "./pages/admin/AdminPage";
+import { api } from "../state/backendApi";
+import { DebugTimerStore, ToJson } from "../utils/utils";
 
 //
 //	Route Types
@@ -35,6 +37,7 @@ export interface PageDefinition<TRouteParams = {}> {
     routeJsx: JSX.Element
     icon?: string
     menuItemKey?: string, // set by 'CreateRouteMenuItems'
+    showCondition?: () => boolean,
 }
 export interface SeparatorEntry { isSeparator: boolean; }
 
@@ -45,6 +48,15 @@ const MenuGroupTitle = observer((p: { title: string }) =>
     <div className={uiSettings.sideBarOpen ? '' : 'menu-divider-group-title'}>{p.title}</div>
 );
 
+export const RouteMenu = observer((p: {}) =>
+    <Menu mode="inline"
+        theme='dark'
+        selectedKeys={uiState.selectedMenuKeys}
+        style={{ border: 0, background: 'none' }}
+    >
+        {CreateRouteMenuItems(APP_ROUTES)}
+    </Menu>)
+
 // Generate content for <Menu> from all routes
 export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArray {
     return entries.map((entry, index) => {
@@ -54,6 +66,10 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
             if (entry.path.includes(':'))
                 return null; // only root-routes (no param) can be in menu
 
+            if (entry.showCondition)
+                if (entry.showCondition() == false)
+                    return null;
+
             return (
                 <Menu.Item key={entry.path}>
                     <Link to={entry.path}>
@@ -61,7 +77,7 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
                         <span>{entry.title}</span>
                     </Link>
                 </Menu.Item>
-            );
+            )
         }
         else if (isSeparator(entry)) {
             return <div key={index} className='menu-divider' />
@@ -125,7 +141,7 @@ export const RouteView = (() =>
     </AnimatePresence>
 )
 
-function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRouteParams>, title: string, icon?: string, exact: boolean = true): PageDefinition<TRouteParams> {
+function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRouteParams>, title: string, icon?: string, exact: boolean = true, showCondition?: () => boolean): PageDefinition<TRouteParams> {
 
     icon = icon || ' ';
 
@@ -135,6 +151,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
         pageType: page,
         routeJsx: (null as unknown as JSX.Element), // will be set below
         icon,
+        showCondition,
     }
 
     // todo: verify that path and route params match
@@ -177,7 +194,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', 'funnel-plot'),
 
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', 'tool', false),
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', 'tool', false, () => api.UserData?.canManageKowl ?? false),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
 

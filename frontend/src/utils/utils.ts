@@ -182,7 +182,7 @@ export class DebugTimerStore {
         return this.instance;
     }
 
-    @observable private secondCounter = 0;
+    @observable secondCounter = 0;
     @observable frame = 0;
 
     private constructor() {
