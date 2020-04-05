@@ -23,13 +23,6 @@ Kowl (previously known as Kafka Owl) helps you to explore messages in your clust
 | **RBAC permissions with group syncing** | :x: | :white_check_mark:  |
 | **Price**     | Always free / Open source       | $9 per Seat / Month, 2 Seats always free  |
 
-- [x] Supports Kafka 1.0.0+
-- [x] Fetch messages from Kafka Topics so that they can be comfortably previewed (JSON, XML, Text, Binary)
-- [x] Show Topic configuration with highlighted rows which have been modified
-- [x] List all Topics' Low & High Watermarks
-- [x] Performant & lightweight (e. g. fetching messages from one or across multiple partitions takes a few milliseconds)
-- [x] Consumer group overview along with their members, member state & partition assignments
-
 ## Install
 
 ### Docker images
