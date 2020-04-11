@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kafka-owl/backend/pkg/owl"
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 )
 
 func (api *API) handleDescribeCluster() http.HandlerFunc {

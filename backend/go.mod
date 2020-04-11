@@ -1,4 +1,4 @@
-module github.com/cloudhut/kafka-owl/backend
+module github.com/cloudhut/kowl/backend
 
 go 1.13
 
