@@ -16,7 +16,7 @@ type SASLConfig struct {
 	GSSAPIConfig SASLGSSAPIConfig `yaml:"gssapi"`
 }
 
-// RegisterFlags for all senstive Kafka SASL configs.
+// RegisterFlags for all sensitive Kafka SASL configs.
 func (c *SASLConfig) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Password, "kafka.sasl.password", "", "SASL password")
 	c.GSSAPIConfig.RegisterFlags(f)
