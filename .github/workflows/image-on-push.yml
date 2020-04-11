@@ -34,11 +34,11 @@ jobs:
           --build-arg "GIT_SHA=${GITHUB_SHA}"
           --build-arg "GIT_REF=${{ steps.extract_ref.outputs.ref }}"
           --build-arg "TIMESTAMP=${{ steps.set_timestamp.outputs.time }}"
-          -t quay.io/cloudhut/kafka-owl:master-$(echo ${GITHUB_SHA} | cut -c1-8)
-          -t quay.io/cloudhut/kafka-owl:master
+          -t quay.io/cloudhut/kowl:master-$(echo ${GITHUB_SHA} | cut -c1-8)
+          -t quay.io/cloudhut/kowl:master
           .
 
       - name: Push Image
         run: |
-          docker push quay.io/cloudhut/kafka-owl:master-$(echo ${GITHUB_SHA} | cut -c1-8)
-          docker push quay.io/cloudhut/kafka-owl:master
+          docker push quay.io/cloudhut/kowl:master-$(echo ${GITHUB_SHA} | cut -c1-8)
+          docker push quay.io/cloudhut/kowl:master
