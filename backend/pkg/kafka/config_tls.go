@@ -2,6 +2,7 @@ package kafka
 
 import "flag"
 
+// TLSConfig to connect to Kafka via TLS
 type TLSConfig struct {
 	Enabled               bool   `yaml:"enabled"`
 	CaFilepath            string `yaml:"caFilepath"`
@@ -11,6 +12,7 @@ type TLSConfig struct {
 	InsecureSkipTLSVerify bool   `yaml:"insecureSkipTlsVerify"`
 }
 
+// RegisterFlags for all senstive Kafka TLS configs
 func (c *TLSConfig) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Passphrase, "kafka.tls.passphrase", "", "Passphrase to optionally decrypt the private key")
 }

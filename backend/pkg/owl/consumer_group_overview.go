@@ -46,6 +46,9 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context) ([]*ConsumerGro
 	}
 
 	groupLags, err := s.getConsumerGroupLags(ctx, groups)
+	if err != nil {
+		return nil, err
+	}
 
 	res := make([]*ConsumerGroupOverview, 0)
 	for id, group := range describedGroups {

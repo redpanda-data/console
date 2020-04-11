@@ -29,6 +29,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	c.Kafka.RegisterFlags(f)
 }
 
+// Validate all root and child config structs
 func (c *Config) Validate() error {
 	err := c.Logger.Set(c.Logger.LogLevelInput) // Parses LogLevel
 	if err != nil {
@@ -43,6 +44,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// SetDefaults for all root and child config structs
 func (c *Config) SetDefaults() {
 	c.ServeFrontend = true
 	c.MetricsNamespace = "kowl"

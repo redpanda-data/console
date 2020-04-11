@@ -49,7 +49,7 @@ func (api *API) routes() *chi.Mux {
 			r.Handle("/health", healthhttp.HandleHealthJSON(api.health))
 		})
 
-		// Path must be prefixed with /debug otherwise it will be overriden, see: https://golang.org/pkg/net/http/pprof/
+		// Path must be prefixed with /debug otherwise it will be overridden, see: https://golang.org/pkg/net/http/pprof/
 		r.Mount("/debug", chimiddleware.Profiler())
 	})
 

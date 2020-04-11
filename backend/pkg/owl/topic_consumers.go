@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// TopicConsumersGroup is a group along with it's accumulated topic log for a given topic
+// TopicConsumerGroup is a group along with it's accumulated topic log for a given topic
 type TopicConsumerGroup struct {
 	GroupID   string `json:"groupId"`
 	SummedLag int64  `json:"summedLag"`

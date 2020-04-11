@@ -23,6 +23,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	c.SASL.RegisterFlags(f)
 }
 
+// Validate the Kafka config
 func (c *Config) Validate() error {
 	if len(c.Brokers) == 0 {
 		return fmt.Errorf("you must specify at least one broker to connect to")
@@ -36,6 +37,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// SetDefaults for Kafka config
 func (c *Config) SetDefaults() {
 	c.ClientID = "kowl"
 	c.ClusterVersion = "1.0.0"
