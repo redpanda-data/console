@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kafka-owl/backend/pkg/kafka"
-	"github.com/cloudhut/kafka-owl/backend/pkg/owl"
+	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/schema"
 )

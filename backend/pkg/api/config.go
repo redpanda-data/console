@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kafka-owl/backend/pkg/kafka"
+	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
