@@ -12,7 +12,7 @@ type TLSConfig struct {
 	InsecureSkipTLSVerify bool   `yaml:"insecureSkipTlsVerify"`
 }
 
-// RegisterFlags for all senstive Kafka TLS configs
+// RegisterFlags for all sensitive Kafka TLS configs
 func (c *TLSConfig) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Passphrase, "kafka.tls.passphrase", "", "Passphrase to optionally decrypt the private key")
 }
