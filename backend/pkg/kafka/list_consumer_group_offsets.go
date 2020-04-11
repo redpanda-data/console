@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// ListConsumerGroupOffsets returns the commited group offsets for a single group
+// ListConsumerGroupOffsets returns the committed group offsets for a single group
 func (s *Service) ListConsumerGroupOffsets(group string) (*sarama.OffsetFetchResponse, error) {
 	coordinator, err := s.Client.Coordinator(group)
 	if err != nil {
