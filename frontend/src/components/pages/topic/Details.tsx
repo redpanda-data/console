@@ -15,6 +15,7 @@ import { appGlobal } from "../../../state/appGlobal";
 import { TopicPartitions } from "./Topic.Partitions";
 import { TopicConfigEntry } from "../../../state/restInterfaces";
 import Card from "../../misc/Card";
+import { TopicConsumers } from "./Topic.Consumers";
 
 const { Text } = Typography;
 
@@ -37,11 +38,14 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     refreshData(force: boolean) {
         api.refreshTopics(force);
         api.refreshTopicConfig(this.props.topicName, force);
-        api.refreshTopicPartitions(this.props.topicName);
+        api.refreshTopicPartitions(this.props.topicName, force);
+
+        if (uiState.topicSettings.activeTabKey == 'consumers') // don't refresh unless needed, it's expensive
+            api.refreshTopicConsumers(this.props.topicName, force);
     }
 
     get tabPageKey() {
-        const tabs = ['partitions', 'messages', 'configuration'];
+        const tabs = ['partitions', 'messages', 'configuration', 'consumers'];
 
         // use url anchor if possible
         let key = (appGlobal.history.location.hash).replace("#", "");
@@ -106,6 +110,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         <Tabs.TabPane key="configuration" tab="Configuration">
                             <ConfigDisplaySettings /> {/* todo: move into TopicConfiguration */}
                             <TopicConfiguration config={topicConfig} />
+                        </Tabs.TabPane>
+
+                        <Tabs.TabPane key="consumers" tab="Consumers">
+                            <TopicConsumers topic={topic} />
                         </Tabs.TabPane>
                     </Tabs>
                 </Card>

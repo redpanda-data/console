@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition
+    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo
 } from "./restInterfaces";
 import { observable, autorun, computed } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -142,7 +142,9 @@ const apiStore = {
     ConsumerGroups: null as (GroupDescription[] | null),
     TopicConfig: new Map<string, TopicConfigEntry[]>(),
     TopicPartitions: new Map<string, Partition[]>(),
+    TopicConsumers: new Map<string, TopicConsumer[]>(),
     ClusterInfo: null as (ClusterInfo | null),
+    AdminInfo: null as (AdminInfo | null),
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -242,9 +244,23 @@ const apiStore = {
             .then(v => this.TopicPartitions.set(v.topicName, v.partitions), addError);
     },
 
+    refreshTopicConsumers(topicName: string, force?: boolean) {
+        cachedApiRequest<GetTopicConsumersResponse>(`/api/topics/${topicName}/consumers`, force)
+            .then(v => this.TopicConsumers.set(v.topicName, v.topicConsumers), addError);
+    },
+
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`/api/cluster`, force)
             .then(v => this.ClusterInfo = v.clusterInfo, addError);
+    },
+
+    refreshAdminInfo(force?: boolean) {
+        cachedApiRequest<AdminInfo>(`/api/admin`, force)
+            .then(v => {
+                for (let u of v.users)
+                    u.roles = u.roleNames.map(n => v.roles.find(r => r.name == n)!);
+                this.AdminInfo = v
+            }, addError);
     },
 }
 
