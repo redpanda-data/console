@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { observer } from "mobx-react"
 import { Layout, Menu, Icon, PageHeader, Button } from 'antd';
 import { uiSettings } from '../state/ui';
-import { CreateRouteMenuItems, APP_ROUTES, RouteView, } from './routes';
+import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
 import { RenderTrap } from './misc/common';
 import { DebugTimerStore } from '../utils/utils';
 import { api } from '../state/backendApi';
@@ -74,13 +74,7 @@ const SideBar = observer(() =>
 
         {/* Menu */}
         <Content className="scroll-on-hover-y">
-            <Menu mode="inline"
-                theme='dark'
-                selectedKeys={uiState.selectedMenuKeys}
-                style={{ border: 0, background: 'none' }}
-            >
-                {CreateRouteMenuItems(APP_ROUTES)}
-            </Menu>
+            <RouteMenu />
         </Content>
 
         {/* Version */}

@@ -478,7 +478,7 @@ span>.icon-container~span {
     background-color: hsla(209, 75%, 60%, 1);
 }
 
-button>i.anticon:only-child {
+button.ant-btn-circle>i.anticon:only-child {
     transform: translateY(-2px)
 }
 
@@ -531,4 +531,37 @@ tr td:nth-last-child(1) {
 
 .ant-statistic {
     margin-right: 2rem;
+}
+
+.noSelect {
+    user-select: none;
+}
+
+.iconButton {
+    transition-duration: 0ms;
+    transition-delay: 0ms;
+}
+
+tr button.ant-btn-link {
+    opacity: 0;
+}
+
+tr:hover button.ant-btn-link {
+    opacity: 1;
+}
+
+.ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-tbody>tr>td.msgTableActionColumn {
+    padding-left: 0;
+}
+
+.fill {
+    width: 100%;
+    height: 100%;
+}
+
+.roleTitle {
+    font-size: 110%;
+    font-weight: bold;
+    border-bottom: solid 1px rgba(0, 0, 0, 0.1);
+    margin-bottom: .5rem;
 }

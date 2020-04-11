@@ -106,7 +106,7 @@ class Login extends Component {
                                     //     </span>
                                     // </div>
                                     <div key={p.displayName} className='loginButton2' onClick={() => window.location.replace(p.url)}>
-                                        <Icon type='github' style={{ marginBottom: '6px' }} />
+                                        <Icon type={p.displayName.toLowerCase()} style={{ marginBottom: '6px' }} />
                                         <span>
                                             {p.displayName}
                                         </span>
@@ -136,25 +136,6 @@ class Login extends Component {
 
             </div>
         </div>
-
-        // <div className='loginRight'>
-        //             {ar && ar.map(p => (
-        //                 // <div key={p.displayName} className='loginButton' onClick={() => window.location.replace(p.url)}>
-        //                 //     <Icon type='google' style={{ fontSize: '26px', marginRight: '6px' }} />
-        //                 //     <span>
-        //                 //         Login with {p.displayName}
-        //                 //     </span>
-        //                 // </div>
-
-        //                 <div key={p.displayName} className='loginButton2' onClick={() => window.location.replace(p.url)}>
-        //                     <Icon type='github' style={{ marginBottom: '6px' }} />
-        //                     <span>
-        //                         {p.displayName}
-        //                     </span>
-        //                 </div>
-
-        //             )) || <div><Spin />Retreiving login method from backend...</div>}
-        //         </div>
     }
 }
 export default Login;

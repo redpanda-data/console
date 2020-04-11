@@ -34,7 +34,7 @@ export class AutoRefresh extends Component {
 }
 
 const seen = new Set();
-export function ToJson(obj: any): string {
+export function ToJson(obj: any, space?: string | number | undefined): string {
     seen.clear();
     try {
         return JSON.stringify(obj,
@@ -46,7 +46,8 @@ export function ToJson(obj: any): string {
                     seen.add(value);
                 }
                 return value;
-            }
+            },
+            space
         );
     }
     finally {
@@ -181,7 +182,7 @@ export class DebugTimerStore {
         return this.instance;
     }
 
-    @observable private secondCounter = 0;
+    @observable secondCounter = 0;
     @observable frame = 0;
 
     private constructor() {
@@ -373,4 +374,3 @@ export const prettyBytesOrNA = function (n: number) {
     if (n == -1) return "N/A";
     return prettyBytes(n);
 }
-
