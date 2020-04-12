@@ -3,6 +3,7 @@ package kafka
 import (
 	"flag"
 	"fmt"
+
 	"github.com/Shopify/sarama"
 )
 
@@ -34,7 +35,7 @@ func (c *SASLConfig) Validate() error {
 	case sarama.SASLTypePlaintext, sarama.SASLTypeSCRAMSHA256, sarama.SASLTypeSCRAMSHA512, sarama.SASLTypeGSSAPI:
 		// Valid and supported
 	case sarama.SASLTypeOAuth:
-		return fmt.Errorf("sasl mechanism '%v' is valid but not yet supported. Please submit an issue if you need it.")
+		return fmt.Errorf("sasl mechanism '%v' is valid but not yet supported. Please submit an issue if you need it.", c.Mechanism)
 	default:
 		return fmt.Errorf("given sasl mechanism '%v' is invalid", c.Mechanism)
 	}
