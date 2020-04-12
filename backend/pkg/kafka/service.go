@@ -17,6 +17,13 @@ type Service struct {
 
 // Start initializes the Kafka Service and takes care of stuff like KeepAlive
 func (s *Service) Start() {
+
+	// Immediately start connecting to all brokers
+	brokers := s.Client.Brokers()
+	for _, broker := range brokers {
+		broker.Open(s.Client.Config())
+	}
+
 	// Custom keep alive for Kafka, because: https://github.com/Shopify/sarama/issues/1487
 	// The KeepAlive property in sarama doesn't work either, because of golang's buggy net module: https://github.com/golang/go/issues/31490
 	go s.keepAlive()
@@ -31,31 +38,33 @@ func (s *Service) keepAlive() {
 		time.Sleep(3 * time.Second)
 
 		brokers := s.Client.Brokers()
-		//log.Info("Kafka Keepalive", zap.Int("brokers", len(brokers)))
 		connectedCount := 0
 
-		for _, b := range brokers {
-
-			connected, _ := b.Connected()
+		for _, broker := range brokers {
+			connected, _ := broker.Connected()
 			if !connected {
-				err := b.Open(s.Client.Config())
-				if err != nil {
-					log.Warn("could not open connection to broker", zap.String("broker", b.Addr()), zap.Error(err))
+				// Not connected
+				err := broker.Open(s.Client.Config())
+				if err != nil && err != sarama.ErrAlreadyConnected {
+					// Bad address?
+					log.Warn("could not open connection to broker", zap.String("broker", broker.Addr()), zap.Error(err))
 				} else {
-					log.Info("connecting to broker", zap.String("broker", b.Addr()))
+					log.Info("connecting to broker", zap.String("broker", broker.Addr()))
 				}
 				continue
 			}
-			connectedCount++
 
-			_, err := b.GetMetadata(&sarama.MetadataRequest{})
-
+			// Verify existing connection
+			_, err := broker.GetMetadata(&sarama.MetadataRequest{})
 			if err != nil {
-				log.Warn("heartbeat to broker has errored", zap.Error(err), zap.String("broker", b.Addr()), zap.Int32("id", b.ID()))
-
-				_ = b.Close()
-				_ = b.Open(s.Client.Config())
+				log.Warn("heartbeat: lost connection to broker", zap.Error(err), zap.String("broker", broker.Addr()), zap.Int32("id", broker.ID()))
+				_ = broker.Close()
+				_ = broker.Open(s.Client.Config())
+				continue
 			}
+
+			// Broker connection is healthy
+			connectedCount++
 		}
 
 		if connectedCount == len(brokers) {
