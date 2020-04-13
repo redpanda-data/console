@@ -44,4 +44,3 @@ kafka:
 
 # Prefix for all exported prometheus metrics
 # metricsNamespace: kowl
-
