@@ -1,0 +1,19 @@
+roles:
+  # developer role can:
+  # - administrate all consumer groups
+  # - all view permissions on topics except battle-logs
+  # - 3 atomic permissions are still allowed on the battle-logs topic
+  - name: developer
+    permissions:
+      - resource: consumerGroups
+        includes: ["/.*/"]
+        allowedActions: ["admin"]
+
+      - resource: topics
+        includes: ["/.*/"]
+        excludes: ["battle-logs"]
+        allowedActions: ["view"]
+
+      - resource: topics
+        includes: ["battle-logs"]
+        allowedActions: ["seeTopic", "viewPartitions", "viewConfig"]
