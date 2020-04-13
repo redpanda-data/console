@@ -33,7 +33,11 @@ after each push to master.
 
 ### Helm chart
 
-Kubernetes users may want to use the Helm chart to deploy Kowl: https://github.com/kafka-owl/helm-chart
+Kubernetes users may want to use the Helm chart to deploy Kowl: https://github.com/cloudhut/charts
+
+### Terraform module
+
+For those who favour Terraform for Kubernetes deployments we also offer a Terraform module for Kowl: https://github.com/cloudhut/terraform-modules
 
 ### Configuration
 
