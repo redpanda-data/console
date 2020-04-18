@@ -1,0 +1,20 @@
+# Role Bindings are used to attach roles to single users or groups of users
+roleBindings:
+  - metadata:
+      # Metadata properties will be shown in the UI. You can omit it if you want to
+      name: Developers
+    subjects:
+      # You can specify all groups or users from different providers here which shall be bound to the same role
+      - kind: group
+        provider: Google
+        name: dev-team-cloudhut@yourcompany.com
+      - kind: user
+        provider: Google
+        name: john.doe@yourcompany.com
+      - kind: group
+        provider: GitHub
+        name: kafka-owl-devs # This always resolves to the team within the Org where you installed the GitHub app
+      - kind: user
+        provider: GitHub
+        name: rikimaru0345
+    roleName: developer

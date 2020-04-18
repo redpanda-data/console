@@ -27,11 +27,15 @@ type RouteHooks interface {
 
 // OwlHooks include all functions which allow you to modify
 type OwlHooks interface {
+	// Topic Hooks
 	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicMessages(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
+
+	// ConsumerGroup Hooks
+	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -63,5 +67,8 @@ func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ string) (bool, *r
 	return true, nil
 }
 func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }

@@ -26,6 +26,19 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 			return
 		}
 
+		visibleGroups := make([]*owl.ConsumerGroupOverview, 0, len(describedGroups))
+		for _, group := range describedGroups {
+			canSee, restErr := api.Hooks.Owl.CanSeeConsumerGroup(r.Context(), group.GroupID)
+			if restErr != nil {
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
+
+			if canSee {
+				visibleGroups = append(visibleGroups, group)
+			}
+		}
+
 		response := GetConsumerGroupsResponse{
 			ConsumerGroups: describedGroups,
 		}
