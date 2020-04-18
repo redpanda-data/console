@@ -40,32 +40,41 @@ type TopicMessage struct {
 	IsValueNull bool `json:"isValueNull"`
 }
 
+// IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
+type IListMessagesProgress interface {
+	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
+	OnMessage(message *TopicMessage)
+	OnComplete(elapsedMs float64, isCancelled bool)
+	OnError(msg string)
+}
+
 // ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
 // (which runs in it's own goroutine) for each partition and funneling all the data to eventually
 // return it. The second return parameter is a bool which indicates whether the requested topic exists.
-// TODO: refactor to owl and add topic blacklisting
-func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*ListMessageResponse, error) {
+func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, progress IListMessagesProgress) error {
 	start := time.Now()
+	logger := s.Logger.With(zap.String("topic", req.TopicName))
 
+	progress.OnPhase("Create Consumer")
 	// We must create a new Consumer for every request,
 	// because each consumer can only consume every topic+partition once at the same time
 	// which means that concurrent requests will not work with one shared Consumer
 	consumer, err := sarama.NewConsumerFromClient(s.Client)
 	if err != nil {
-		s.Logger.Error("Couldn't create consumer", zap.String("topic", req.TopicName), zap.Error(err))
-		return nil, err
+		return fmt.Errorf("Couldn't create consumer: %w", err)
 	}
 	defer func() {
-		err = consumer.Close() // close consumer
+		err = consumer.Close()
 		if err != nil {
-			s.Logger.Error("Closing consumer failed", zap.Error(err))
+			logger.Error("Closing consumer failed", zap.Error(err))
 		}
 	}()
 
+	progress.OnPhase("Get Partitions")
 	// Create array of partitionIDs which shall be consumed (always do that to ensure the topic exists at all)
 	partitions, err := s.Client.Partitions(req.TopicName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get partitions for topic '%v': %v", req.TopicName, err)
+		return fmt.Errorf("failed to get partitions: %w", err)
 	}
 
 	partitionIDs := make([]int32, 0, len(partitions))
@@ -73,14 +82,15 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 		partitionIDs = partitions
 	} else if req.PartitionID > int32(len(partitions)) {
 		// Since the index of partitions array equals the partitionID we can use the len() to get the highest partitionID
-		return nil, fmt.Errorf("Requested partitionID does not exist on the given topic")
+		return fmt.Errorf("requested partitionID (%v) is greater than number of partitions (%v)", req.PartitionID, len(partitions))
 	} else {
 		partitionIDs = append(partitionIDs, req.PartitionID)
 	}
 
+	progress.OnPhase("Get Watermarks")
 	marks, err := s.WaterMarks(req.TopicName, partitionIDs)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to get watermarks: %w", err)
 	}
 
 	// Start a partition consumer for all requested partitions
@@ -88,6 +98,8 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 	messageCh := make(chan *TopicMessage, len(partitions)*int(req.MessageCount))
 	doneCh := make(chan struct{}, len(partitions))
 	startedWorkers := 0
+
+	progress.OnPhase("Start Partition Consumers")
 
 	for _, partitionID := range partitionIDs {
 		// Calculate start and end offset for current partition
@@ -122,15 +134,18 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 		}
 
 		pConsumer := partitionConsumer{
-			logger:      s.Logger.With(zap.String("topic_name", req.TopicName), zap.Int32("partition_id", req.PartitionID)),
-			errorCh:     errorCh,
-			messageCh:   messageCh,
+			logger: logger.With(zap.Int32("partition_id", req.PartitionID)),
+
+			errorCh:   errorCh,
+			messageCh: messageCh,
+			doneCh:    doneCh,
+			progress:  progress,
+
 			consumer:    consumer,
 			topicName:   req.TopicName,
 			partitionID: partitionID,
 			startOffset: startOffset,
 			endOffset:   endOffset,
-			doneCh:      doneCh,
 		}
 		startedWorkers++
 		go pConsumer.Run(ctx)
@@ -138,11 +153,11 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest) (*Li
 
 	// Read results into array
 	msgs := make([]*TopicMessage, 0, req.MessageCount)
-	isCancelled := false
 	fetchedMessages := uint16(0)
 	completedWorkers := 0
 	allWorkersDone := false
 
+	progress.OnPhase("Loading")
 	// Priority list of actions
 	// since we need to process cases by their priority, we must check them individually and
 	// can't rely on 'select' since it picks a random case if multiple are ready.
@@ -152,10 +167,7 @@ Loop:
 		// 1. Cancelled?
 		select {
 		case <-ctx.Done():
-			s.Logger.Error("Request was cancelled while waiting for messages from workers (probably timeout)",
-				zap.Int("completedWorkers", completedWorkers), zap.Int("startedWorkers", startedWorkers), zap.Uint16("fetchedMessages", fetchedMessages))
-			isCancelled = true
-			break Loop // request cancelled
+			return fmt.Errorf("Request was cancelled while waiting for messages from workers (probably timeout) completedWorkers=%v startedWorksers=%v fetchedMessages=%v", completedWorkers, startedWorkers, fetchedMessages)
 		default:
 		}
 
@@ -202,10 +214,6 @@ Loop:
 		<-time.After(15 * time.Millisecond)
 	}
 
-	return &ListMessageResponse{
-		ElapsedMs:       time.Since(start).Seconds() * 1000,
-		FetchedMessages: len(msgs),
-		IsCancelled:     isCancelled,
-		Messages:        msgs,
-	}, nil
+	progress.OnComplete(time.Since(start).Seconds()*1000, false)
+	return nil
 }
