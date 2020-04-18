@@ -1,7 +1,9 @@
 # Google OAuth Provider Setup
 
 This section guides you through the required steps to setup an OAuth application at Google.
-At the end of this guide you'll have a JSON file which Kowl will use to impersonate a Google service account.
+At the end of this guide you'll have an OAuth client id and client secret. If you are going
+to setup the Google Groups Sync (step 4) you'll additionally end up with a JSON file. This
+JSON file is used by Kowl to impersonate a Google service account.
 
 ## 1. Create a Google Cloud project
 
