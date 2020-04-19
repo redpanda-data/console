@@ -81,7 +81,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             } catch (error) {
                 console.error(error);
             }
-        }, { delay: 50 });
+        }, { delay: 0, name: 'auto search when parameters change' });
 
         // Quick search -> url
         this.quickSearchReaction = autorun(() => {
@@ -89,7 +89,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 const q = String(uiState.topicSettings.quickSearch);
                 query["q"] = q ? q : undefined;
             })
-        });
+        }, { name: 'update query string' });
 
         this.messageSource.filterText = uiState.topicSettings.quickSearch;
     }
@@ -209,6 +209,14 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         disabled={searchParams._offsetMode != TopicMessageOffset.Custom} />
                 }
             </InputGroup>
+
+            {api.MessageSearchPhase && <div style={{ margin: '0 1em', opacity: '80%', display: 'flex', placeItems: 'center' }}>
+                {api.MessageSearchPhase}
+            </div>}
+
+            {api.MessageSearchPhase && api.Messages && api.Messages.length > 0 && <div style={{ margin: '0 1em', opacity: '80%', display: 'flex', placeItems: 'center' }}>
+                {api.Messages.length} / {searchParams.pageSize}
+            </div>}
 
             {/* todo:
                 when the user has entered a specific offset,
@@ -387,9 +395,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             try {
                 this.fetchError = null;
                 this.requestInProgress = true;
-                await api.searchTopicMessages(this.props.topic.topicName, searchParams);
-                this.allCurrentKeys = Array.from(getAllKeys(api.Messages.map(m => m.value))); // cache array of every single key
-                this.pageConfig.current = undefined;
+
+                api.startMessageSearch(this.props.topic.topicName, searchParams);
+
+                // await api.searchTopicMessages(this.props.topic.topicName, searchParams);
+                // this.allCurrentKeys = Array.from(getAllKeys(api.Messages.map(m => m.value))); // cache array of every single key
+                // this.pageConfig.current = undefined;
             } catch (error) {
                 console.error('error in searchTopicMessages: ' + error.toString());
                 this.fetchError = error;

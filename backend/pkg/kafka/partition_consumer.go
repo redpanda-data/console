@@ -30,6 +30,8 @@ type partitionConsumer struct {
 	messageCh chan<- *TopicMessage // 'result' channel
 	doneCh    chan<- struct{}      // notify parent that we're done
 
+	progress IListMessagesProgress
+
 	// Consumer Details / Parameters
 	consumer    sarama.Consumer
 	topicName   string
@@ -75,6 +77,9 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 				Size:        len(m.Value),
 				IsValueNull: m.Value == nil,
 			}
+
+			p.progress.OnMessage(topicMessage)
+
 			p.messageCh <- topicMessage
 			if m.Offset >= p.endOffset {
 				return

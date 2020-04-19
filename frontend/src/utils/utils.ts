@@ -183,14 +183,14 @@ export class DebugTimerStore {
     }
 
     @observable secondCounter = 0;
-    @observable frame = 0;
+    @observable private frame = 0;
 
     private constructor() {
         this.increaseSec = this.increaseSec.bind(this);
         setInterval(this.increaseSec, 1000);
 
         this.increaseFrame = this.increaseFrame.bind(this);
-        setInterval(this.increaseFrame, 30);
+        //setInterval(this.increaseFrame, 30);
     }
 
     private increaseSec() { this.secondCounter++; }
