@@ -58,6 +58,8 @@ cloudHut:
   licenseToken: # This can be set via the --cloudhut.license-token flag as well
 
 login:
+  # jwtSecret can be any random password, but it must be the same across all replicas you run. It is used to sign JWTs
+  # which are used for user sessions. If you change the JWT secret all users will need to login again.
   jwtSecret: # This can be set via the --login.jwt-secret flag as well
   # At least one Login provider must be enabled
   google:
