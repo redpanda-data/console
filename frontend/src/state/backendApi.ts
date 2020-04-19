@@ -167,7 +167,7 @@ const apiStore = {
     MessageSearchPhase: null as string | null,
     MessagesFor: '', // for what topic?
     Messages: [] as TopicMessage[],
-    MessageResponse: {} as ListMessageResponse,
+    MessagesElapsedMs: null as null | number,
 
 
     async startMessageSearch(topicName: string, searchParams: TopicMessageSearchParameters): Promise<void> {
@@ -176,10 +176,12 @@ const apiStore = {
         (clone as any)._offsetMode = undefined;
         const queryString = objToQuery(clone);
 
-        //const url = 'ws://' + window.location.host + '/api/topics/' + topicName + '/messages' + queryString;
-        const url = 'ws://' + 'localhost:9090' + '/api/topics/' + topicName + '/messages' + queryString;
+        const isHttps = window.location.protocol.startsWith('https');
+        const protocol = isHttps ? 'wss://' : 'ws://';
+        const host = IsDevelopment ? 'localhost:9090' : window.location.host;
+        const url = protocol + host + '/api/topics/' + topicName + '/messages' + queryString;
 
-        console.log("connecting to \"" + url + "\"")
+        console.log("connecting to \"" + url + "\"");
 
         // Abort previous connection
         if (currentWS != null)
@@ -194,12 +196,12 @@ const apiStore = {
             if (ws !== currentWS) return; // newer request has taken over
             this.MessagesFor = topicName;
             this.Messages = [];
-            this.MessageResponse = { fetchedMessages: 0, elapsedMs: -1, isCancelled: false, messages: [] };
+            this.MessagesElapsedMs = null;
         }
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
             this.MessageSearchPhase = null;
-            console.log(`ws closed code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
+            console.log(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
         }
         currentWS.onmessage = msgEvent => {
             if (ws !== currentWS) return;
@@ -211,7 +213,8 @@ const apiStore = {
                     break;
 
                 case 'done':
-                    this.MessageResponse.elapsedMs = msg.done;
+                    this.MessagesElapsedMs = msg.elapsedMs;
+                    // this.MessageSearchCancelled = msg.isCancelled;
                     break;
 
                 case 'error':
@@ -249,14 +252,6 @@ const apiStore = {
 
 
     },
-
-    // todo: now that we're automatically starting new search requests, it might not be such a good idea anymore to clear our cache
-    clearMessageCache() {
-        this.MessageResponse = {} as ListMessageResponse;
-        this.MessagesFor = '';
-        this.Messages = [];
-    },
-
 
 
     refreshTopics(force?: boolean) {
