@@ -80,11 +80,14 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 				IsValueNull: m.Value == nil,
 			}
 
-			p.progress.OnMessage(topicMessage)
-			p.sharedCount.Inc()
-			if p.sharedCount.Load() >= p.requestedTotalMessageCount {
-				return // enough total messages
+			// We don't have to use a compare-exchange loop here, since we don't need
+			// to prevent 'p.sharedCount' from increasing beyond 'p.requestedTotalMessageCount'.
+			// We just have to make sure that we don't *send* more messages.
+			if p.sharedCount.Inc() > p.requestedTotalMessageCount {
+				return // enough messages already
 			}
+
+			p.progress.OnMessage(topicMessage)
 
 			if m.Offset >= p.endOffset {
 				return // reached end offset
