@@ -12,7 +12,7 @@ roles:
       - resource: topics
         includes: ["/.*/"]
         excludes: ["battle-logs"]
-        allowedActions: ["view"]
+        allowedActions: ["viewer"]
 
       - resource: topics
         includes: ["battle-logs"]
