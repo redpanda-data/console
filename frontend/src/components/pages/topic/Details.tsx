@@ -26,7 +26,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         const topicName = this.props.topicName;
         uiState.currentTopicName = topicName;
 
-        api.clearMessageCache();
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
 
