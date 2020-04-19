@@ -162,22 +162,26 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 Loop:
 	for {
 		//
-		// 1. Request cancelled?
-		select {
-		case <-ctx.Done():
-			requestCancelled = true
-		default:
+		// 1. Enough messages?
+		if collectedMessageCount.Load() >= uint64(req.MessageCount) {
+			logger.Info("ListMessages: collected == requestCount")
+			break Loop // request complete
 		}
 
 		//
-		// 2. Enough messages?
-		if collectedMessageCount.Load() == uint64(req.MessageCount) {
-			break Loop // request complete
+		// 2. Request cancelled?
+		select {
+		case <-ctx.Done():
+			requestCancelled = true
+			logger.Info("ListMessages: ctx.Done")
+			break Loop
+		default:
 		}
 
 		//
 		// 3. All workers done?
 		if allWorkersDone {
+			logger.Info("ListMessages: all workers done")
 			break Loop
 		}
 
