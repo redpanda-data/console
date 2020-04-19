@@ -218,6 +218,8 @@ const apiStore = {
                     break;
 
                 case 'error':
+                    // error doesn't neccesarily mean the whole request is done
+                    console.log("backend error: " + msg.message);
                     notification['error']({
                         message: "Backend Error",
                         description: msg.message,
