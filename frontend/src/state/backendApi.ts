@@ -12,9 +12,11 @@ import { objToQuery } from "../utils/queryHelper";
 import { IsDevelopment } from "../utils/isProd";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
+import { notification } from "antd";
 
 const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
+
 
 export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T> {
     const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
@@ -130,6 +132,7 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
 }
 
 
+let currentWS: WebSocket | null = null;
 
 //
 // BackendAPI
@@ -161,50 +164,93 @@ const apiStore = {
     Errors: [] as any[],
 
 
+    MessageSearchPhase: null as string | null,
     MessagesFor: '', // for what topic?
     Messages: [] as TopicMessage[],
     MessageResponse: {} as ListMessageResponse,
 
-    async searchTopicMessages(topicName: string, searchParams: TopicMessageSearchParameters): Promise<void> {
+
+    async startMessageSearch(topicName: string, searchParams: TopicMessageSearchParameters): Promise<void> {
+        // remove 'offsetMode' and convert to queryString
         const clone = JSON.parse(JSON.stringify(searchParams)) as TopicMessageSearchParameters;
         (clone as any)._offsetMode = undefined;
         const queryString = objToQuery(clone);
 
+        //const url = 'ws://' + window.location.host + '/api/topics/' + topicName + '/messages' + queryString;
+        const url = 'ws://' + 'localhost:9090' + '/api/topics/' + topicName + '/messages' + queryString;
 
-        let response: GetTopicMessagesResponse;
-        try {
-            response = await rest<GetTopicMessagesResponse>('/api/topics/' + topicName + '/messages' + queryString);
-        } finally {
-            this.clearMessageCache();
+        console.log("connecting to \"" + url + "\"")
+
+        // Abort previous connection
+        if (currentWS != null)
+            if (currentWS.readyState == WebSocket.OPEN || currentWS.readyState == WebSocket.CONNECTING)
+                currentWS.close();
+
+        currentWS = new WebSocket(url);
+        const ws = currentWS;
+        this.MessageSearchPhase = "Connecting";
+
+        currentWS.onopen = ev => {
+            if (ws !== currentWS) return; // newer request has taken over
+            this.MessagesFor = topicName;
+            this.Messages = [];
+            this.MessageResponse = { fetchedMessages: 0, elapsedMs: -1, isCancelled: false, messages: [] };
         }
+        currentWS.onclose = ev => {
+            if (ws !== currentWS) return;
+            this.MessageSearchPhase = null;
+            console.log(`ws closed code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
+        }
+        currentWS.onmessage = msgEvent => {
+            if (ws !== currentWS) return;
+            const msg = JSON.parse(msgEvent.data)
 
+            switch (msg.type) {
+                case 'phase':
+                    this.MessageSearchPhase = msg.phase;
+                    break;
 
-        this.MessagesFor = topicName;
-        for (let m of response.kafkaMessages.messages) {
-            //console.dir(m);
+                case 'done':
+                    this.MessageResponse.elapsedMs = msg.done;
+                    break;
 
-            if (m.key && typeof m.key === 'string' && m.key.length > 0)
-                m.key = atob(m.key); // unpack base64 encoded key
+                case 'error':
+                    notification['error']({
+                        message: "Backend Error",
+                        description: msg.message,
+                    })
+                    break;
 
-            m.valueJson = JSON.stringify(m.value);
+                case 'message':
+                    const m = msg.message;
 
-            if (m.valueType == 'binary') {
-                m.value = atob(m.value);
+                    if (m.key && typeof m.key === 'string' && m.key.length > 0)
+                        m.key = atob(m.key); // unpack base64 encoded key
 
-                const str = m.value as string;
-                var hex = '';
-                for (var i = 0; i < str.length && i < 50; i++) {
-                    let n = str.charCodeAt(i).toString(16);
-                    if (n.length == 1) n = '0' + n;
-                    hex += n + ' ';
-                }
-                m.valueBinHexPreview = hex;
+                    m.valueJson = JSON.stringify(m.value);
+
+                    if (m.valueType == 'binary') {
+                        m.value = atob(m.value);
+
+                        const str = m.value as string;
+                        let hex = '';
+                        for (let i = 0; i < str.length && i < 50; i++) {
+                            let n = str.charCodeAt(i).toString(16);
+                            if (n.length == 1) n = '0' + n;
+                            hex += n + ' ';
+                        }
+                        m.valueBinHexPreview = hex;
+                    }
+
+                    this.Messages.push(m);
+                    break;
             }
         }
-        this.MessageResponse = response.kafkaMessages;
-        this.Messages = response.kafkaMessages.messages;
+
+
     },
 
+    // todo: now that we're automatically starting new search requests, it might not be such a good idea anymore to clear our cache
     clearMessageCache() {
         this.MessageResponse = {} as ListMessageResponse;
         this.MessagesFor = '';
