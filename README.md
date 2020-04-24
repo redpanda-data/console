@@ -23,36 +23,6 @@ Kowl (previously known as Kafka Owl) helps you to explore messages in your clust
 | **RBAC permissions with group syncing** | :x: | :white_check_mark:  |
 | **Price**     | Always free / Open source       | $9 per Seat / Month, 2 Seats always free  |
 
-## Install
+## Documentation
 
-### Docker images
-
-Docker images are available on [Quay.io](https://quay.io/repository/cloudhut/kowl?tab=tags).
-We automatically push a docker images with a unique tag for each new release. Additionally we publish a docker images
-after each push to master.
-
-### Helm chart
-
-Kubernetes users may want to use the Helm chart to deploy Kowl: https://github.com/cloudhut/charts
-
-### Terraform module
-
-For those who favour Terraform for Kubernetes deployments we also offer a Terraform module for Kowl: https://github.com/cloudhut/terraform-modules
-
-### Configuration
-
-Kowl can be configured via flags (arguments) and a YAML config file. Flags are only meant to be used to set the
-the path to your config file and for sensitive input such as passwords. YAML settings take precedence over flag configs.
-
-#### Flags
-
-| Argument | Description | Default |
-| --- | --- | --- |
-| --config.filepath | Path to the config file | (No default) |
-| --kafka.sasl.password | SASL Password | (No default) |
-| --kafka.sasl.gssapi.password | Kerberos password if auth type user auth is used | (No default) |
-| --kafka.tls.passphrase | Passphrase to decrypt the TLS key (leave empty for unencrypted key files) | (No default) |
-
-#### YAML Config
-
-You can find a reference of all available config options under [/docs/config/kowl.yaml](docs/config/kowl.yaml)
+The documentation for Kowl & Kowl Business is hosted in this repository's [Wiki](https://github.com/cloudhut/kowl/wiki).

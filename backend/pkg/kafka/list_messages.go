@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -55,7 +56,7 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 	start := time.Now()
 	logger := s.Logger.With(zap.String("topic", req.TopicName))
 
-	progress.OnPhase("Create Consumer")
+	progress.OnPhase("Create Topic Consumer")
 	// We must create a new Consumer for every request,
 	// because each consumer can only consume every topic+partition once at the same time
 	// which means that concurrent requests will not work with one shared Consumer
@@ -94,12 +95,11 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 	}
 
 	// Start a partition consumer for all requested partitions
-	errorCh := make(chan error, len(partitions))
-	messageCh := make(chan *TopicMessage, len(partitions)*int(req.MessageCount))
-	doneCh := make(chan struct{}, len(partitions))
+	doneCh := make(chan struct{}, len(partitions)) // shared channel where completed workers notify us that they're done
 	startedWorkers := 0
+	collectedMessageCount := new(atomic.Uint64)
 
-	progress.OnPhase("Start Partition Consumers")
+	progress.OnPhase("Start Workers")
 
 	for _, partitionID := range partitionIDs {
 		// Calculate start and end offset for current partition
@@ -136,10 +136,10 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 		pConsumer := partitionConsumer{
 			logger: logger.With(zap.Int32("partition_id", req.PartitionID)),
 
-			errorCh:   errorCh,
-			messageCh: messageCh,
-			doneCh:    doneCh,
-			progress:  progress,
+			doneCh:                     doneCh,
+			sharedCount:                collectedMessageCount,
+			requestedTotalMessageCount: uint64(req.MessageCount),
+			progress:                   progress,
 
 			consumer:    consumer,
 			topicName:   req.TopicName,
@@ -151,11 +151,9 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 		go pConsumer.Run(ctx)
 	}
 
-	// Read results into array
-	msgs := make([]*TopicMessage, 0, req.MessageCount)
-	fetchedMessages := uint16(0)
 	completedWorkers := 0
 	allWorkersDone := false
+	requestCancelled := false
 
 	progress.OnPhase("Loading")
 	// Priority list of actions
@@ -164,38 +162,31 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 Loop:
 	for {
 		//
-		// 1. Cancelled?
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("Request was cancelled while waiting for messages from workers (probably timeout) completedWorkers=%v startedWorksers=%v fetchedMessages=%v", completedWorkers, startedWorkers, fetchedMessages)
-		default:
+		// 1. Enough messages?
+		if collectedMessageCount.Load() >= uint64(req.MessageCount) {
+			logger.Info("ListMessages: collected == requestCount")
+			break Loop // request complete
 		}
 
 		//
-		// 2. Drain *all* messages from the channel (and break when we have enough)
-		keepDraining := true
-		for keepDraining {
-			select {
-			case msg := <-messageCh:
-				msgs = append(msgs, msg)
-				fetchedMessages++
-				if fetchedMessages == req.MessageCount {
-					break Loop // request complete
-				}
-			default:
-				keepDraining = false
-			}
+		// 2. Request cancelled?
+		select {
+		case <-ctx.Done():
+			requestCancelled = true
+			logger.Info("ListMessages: ctx.Done")
+			break Loop
+		default:
 		}
 
 		//
 		// 3. All workers done?
 		if allWorkersDone {
-			// That means we'll get no more messages, and since we've just drained the channel we can exit
+			logger.Info("ListMessages: all workers done")
 			break Loop
 		}
 
 		//
-		// 4. Workers done?
+		// 4. Count completed workers
 		keepCounting := true
 		for keepCounting {
 			select {
@@ -211,9 +202,14 @@ Loop:
 		}
 
 		// Throttle so we don't spin-wait
-		<-time.After(15 * time.Millisecond)
+		<-time.After(50 * time.Millisecond)
 	}
 
-	progress.OnComplete(time.Since(start).Seconds()*1000, false)
+	progress.OnComplete(time.Since(start).Seconds()*1000, requestCancelled)
+
+	if requestCancelled {
+		return fmt.Errorf("Request was cancelled while waiting for messages from workers (probably timeout) completedWorkers=%v startedWorksers=%v fetchedMessages=%v", completedWorkers, startedWorkers, collectedMessageCount.Load())
+	}
+
 	return nil
 }

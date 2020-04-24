@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/Shopify/sarama"
 	xj "github.com/basgys/goxml2json"
 	"github.com/valyala/fastjson"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -26,11 +28,10 @@ type partitionConsumer struct {
 	logger *zap.Logger // WithFields (topic, partitionId)
 
 	// Infrastructure
-	errorCh   chan<- error
-	messageCh chan<- *TopicMessage // 'result' channel
-	doneCh    chan<- struct{}      // notify parent that we're done
-
-	progress IListMessagesProgress
+	doneCh                     chan<- struct{} // notify parent that we're done
+	sharedCount                *atomic.Uint64  // shared message count
+	requestedTotalMessageCount uint64
+	progress                   IListMessagesProgress
 
 	// Consumer Details / Parameters
 	consumer    sarama.Consumer
@@ -48,8 +49,8 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 	// Create PartitionConsumer
 	pConsumer, err := p.consumer.ConsumePartition(p.topicName, p.partitionID, p.startOffset)
 	if err != nil {
-		p.logger.Error("Couldn't consume topic/partition", zap.Error(err))
-		p.errorCh <- err
+		p.logger.Error("Couldn't consume topic/partition", zap.Error(err))                               // server log
+		p.progress.OnError(fmt.Sprintf("Couldn't consume partition %v: %v", p.partitionID, err.Error())) // send to client
 		return
 	}
 	defer func() {
@@ -63,6 +64,7 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 		case m, ok := <-pConsumer.Messages():
 			if !ok {
 				p.logger.Error("partition consumer message channel has unexpectedly closed")
+				p.progress.OnError(fmt.Sprintf("Partition consumer (partitionId=%v) failed to get the next message (see server log)", p.partitionID))
 				return
 			}
 
@@ -78,14 +80,20 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 				IsValueNull: m.Value == nil,
 			}
 
+			// We don't have to use a compare-exchange loop here, since we don't need
+			// to prevent 'p.sharedCount' from increasing beyond 'p.requestedTotalMessageCount'.
+			// We just have to make sure that we don't *send* more messages.
+			if p.sharedCount.Inc() > p.requestedTotalMessageCount {
+				return // enough messages already
+			}
+
 			p.progress.OnMessage(topicMessage)
 
-			p.messageCh <- topicMessage
 			if m.Offset >= p.endOffset {
-				return
+				return // reached end offset
 			}
 		case <-ctx.Done():
-			return
+			return // search request aborted
 		}
 	}
 }

@@ -17,7 +17,7 @@ import Title from 'antd/lib/typography/Title';
 import logo2 from '../assets/logo2.png';
 import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsProduction } from '../utils/isProd';
+import { IsProduction, IsDevelopment } from '../utils/isProd';
 import { TopBar } from './misc/TopBar';
 import { isBusinessVersion } from '..';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
@@ -80,7 +80,7 @@ const SideBar = observer(() =>
         {/* Version */}
         <div className='version'>
             <div className='repo'><a title="Visit Kafka-Owl's GitHub repository" href="https://github.com/kafka-owl/kafka-owl"><img src={gitHubLogo} /></a></div>
-            <div>KafkaOwl - {env.REACT_APP_GIT_REF || 'dev'}-{env.REACT_APP_GIT_SHA.slice(0, 8) || '??'}</div>
+            <div>KafkaOwl - {env.REACT_APP_GIT_REF || (IsDevelopment ? 'dev' : 'release')}-{env.REACT_APP_GIT_SHA.slice(0, 8) || '??'}</div>
             <div>Built {getBuildDate()}</div>
         </div>
 
