@@ -1,10 +1,11 @@
 # Docker Compose
 docker-compose/zk-single-kafka-single
-.vscode
-*.code-workspace
 
+# Misc
 .DS_Store
-
-
 notes.md
-backend/config.yaml
+
+# IDEs
+.vscode
+.idea
+*.code-workspace
