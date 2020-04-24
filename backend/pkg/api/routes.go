@@ -19,8 +19,15 @@ func (api *API) routes() *chi.Mux {
 	baseRouter.NotFound(rest.HandleNotFound(api.Logger))
 	baseRouter.MethodNotAllowed(rest.HandleMethodNotAllowed(api.Logger))
 
-	baseRouter.Group(func(router chi.Router) {
+	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
+	recoverer := middleware.Recoverer{Logger: api.Logger}
+	baseRouter.Use(recoverer.Wrap,
+		chimiddleware.RealIP,
+		chimiddleware.URLFormat,
+		chimiddleware.StripSlashes, // Doesn't really help for the Frontend because the SPA is in charge of it
+	)
 
+	baseRouter.Group(func(router chi.Router) {
 		// Init middlewares - Do any set up of shared/third-party middleware and handlers
 		if api.Cfg.REST.CompressionLevel > 0 {
 			api.Logger.Debug("using compression for all http routes", zap.Int("level", api.Cfg.REST.CompressionLevel))
@@ -28,14 +35,8 @@ func (api *API) routes() *chi.Mux {
 			router.Use(compressor.Handler())
 		}
 
-		instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
-		recoverer := middleware.Recoverer{Logger: api.Logger}
 		router.Use(
 			middleware.Intercept,
-			recoverer.Wrap,
-			chimiddleware.RealIP,
-			chimiddleware.URLFormat,
-			chimiddleware.StripSlashes,
 			instrument.Wrap,
 			chimiddleware.Timeout(15*time.Second),
 		)
@@ -92,24 +93,9 @@ func (api *API) routes() *chi.Mux {
 		}
 	})
 
+	// Websockets live in it's own group because not all middlewares support websockets
 	baseRouter.Group(func(wsRouter chi.Router) {
-		recoverer := middleware.Recoverer{Logger: api.Logger}
-		wsRouter.Use(
-			recoverer.Wrap,
-			chimiddleware.RealIP,
-			chimiddleware.URLFormat,
-			chimiddleware.StripSlashes,
-		)
-
-		wsRouter.Group(func(r chi.Router) {
-			api.Hooks.Route.ConfigAPIRouter(r)
-			// r.Route("/api", func(r chi.Router) { // could be merged into '/api/topics/...' but there will probably be more ws routes later
-			// 	r.Get("/topics/{topicName}/messages", api.handleGetMessages())
-			// })
-
-			r.Get("/api/topics/{topicName}/messages", api.handleGetMessages())
-		})
-
+		wsRouter.Get("/api/topics/{topicName}/messages", api.handleGetMessages())
 	})
 
 	return baseRouter
