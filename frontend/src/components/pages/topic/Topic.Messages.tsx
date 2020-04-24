@@ -81,7 +81,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             } catch (error) {
                 console.error(error);
             }
-        }, { delay: 0, name: 'auto search when parameters change' });
+        }, { delay: 100, name: 'auto search when parameters change' });
 
         // Quick search -> url
         this.quickSearchReaction = autorun(() => {
@@ -411,37 +411,39 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     }
 
-    SearchQueryAdditionalInfo = observer(() => {
-        if (!api.MessageResponse) return null;
-        if (api.MessageResponse.fetchedMessages === undefined) return null;
-        const formatTime = (ms: number) => !!ms && ms > 0
-            ? prettyMilliseconds(api.MessageResponse.elapsedMs, { secondsDecimalDigits: 2 })
-            : "undefined";
+    /*
+        SearchQueryAdditionalInfo = observer(() => {
+            if (!api.MessageResponse) return null;
+            if (api.MessageResponse.fetchedMessages === undefined) return null;
+            const formatTime = (ms: number) => !!ms && ms > 0
+                ? prettyMilliseconds(api.MessageResponse.elapsedMs, { secondsDecimalDigits: 2 })
+                : "undefined";
 
-        const warningDisplay = () => <>
-            <Icon type="warning" theme="twoTone" twoToneColor="orange" style={{ fontSize: '150%', marginRight: '0.2em' }} />
-            <Text type='warning' strong>
-                Backend aborted the search after <b>{formatTime(api.MessageResponse.elapsedMs)}</b> (fetched {api.MessageResponse.fetchedMessages} messages)
-            </Text>
-        </>
+            const warningDisplay = () => <>
+                <Icon type="warning" theme="twoTone" twoToneColor="orange" style={{ fontSize: '150%', marginRight: '0.2em' }} />
+                <Text type='warning' strong>
+                    Backend aborted the search after <b>{formatTime(api.MessageResponse.elapsedMs)}</b> (fetched {api.MessageResponse.fetchedMessages} messages)
+                </Text>
+            </>
 
-        const typeTags = api.MessageResponse.messages.map(m => m.valueType).distinct().map(t => this.formatTypeToTag(t)).filter(t => t != null);
+            const typeTags = api.MessageResponse.messages.map(m => m.valueType).distinct().map(t => this.formatTypeToTag(t)).filter(t => t != null);
 
-        const normalDisplay = () => <>
-            <Text type='secondary'>
-                <b>{api.MessageResponse.fetchedMessages}</b> messages (in <b>{formatTime(api.MessageResponse.elapsedMs)}</b>)
-            </Text>
-            <Divider type='vertical' />
-            {typeTags}
-        </>
-
-        return <MotionAlways>
-            <span style={{ display: 'flex', alignItems: 'center' }}>
+            const normalDisplay = () => <>
+                <Text type='secondary'>
+                    <b>{api.MessageResponse.fetchedMessages}</b> messages (in <b>{formatTime(api.MessageResponse.elapsedMs)}</b>)
+                </Text>
                 <Divider type='vertical' />
-                {api.MessageResponse.isCancelled === true ? warningDisplay() : normalDisplay()}
-            </span>
-        </MotionAlways>
-    })
+                {typeTags}
+            </>
+
+            return <MotionAlways>
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                    <Divider type='vertical' />
+                    {api.MessageResponse.isCancelled === true ? warningDisplay() : normalDisplay()}
+                </span>
+            </MotionAlways>
+        })
+    */
 
     formatTypeToTag(type: string) {
         type = String(type);
