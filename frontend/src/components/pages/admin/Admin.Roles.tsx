@@ -57,7 +57,7 @@ export class RoleComponent extends Component<{ role: Role }>{
 
         return <Card style={{ display: 'inline-block', marginRight: '1em' }}>
             <div className='roleTitle'>{r.name}</div>
-            {r.permissions.map((p, i) =>
+            {r.permissions.filter(p => p != null).map((p, i) =>
                 <div key={i} style={{ paddingLeft: '.5rem', marginBottom: '1rem' }}>
 
                     <div><b>Resource:</b> {p.resource}</div>
