@@ -21,7 +21,9 @@ Kowl (previously known as Kafka Owl) helps you to explore messages in your clust
 | **Message viewer** | :white_check_mark: | :white_check_mark:  |
 | **Login System (Google, GitHub OAuth)** | :x: | :white_check_mark:  |
 | **RBAC permissions with group syncing** | :x: | :white_check_mark:  |
-| **Price**     | Always free / Open source       | $9 per Seat / Month, 2 Seats always free  |
+| **Price**     | Always free / Open source       | Free during beta*  |
+
+*If you want to participate in the free beta send us an email to info@cloudhut.dev
 
 ## Documentation
 
