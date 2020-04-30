@@ -12,7 +12,7 @@ export interface BreadcrumbEntry {
 class UIState {
     @observable private _pageTitle: string = ' '
     @computed get pageTitle() { return this._pageTitle; }
-    set pageTitle(title: string) { this._pageTitle = title; document.title = title + ' - KafkaOwl'; }
+    set pageTitle(title: string) { this._pageTitle = title; document.title = title + ' - Kowl'; }
 
     @observable pageBreadcrumbs: BreadcrumbEntry[] = []
 

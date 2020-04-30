@@ -16,6 +16,27 @@ RUN CGO_ENABLED=0 go build -o ./bin/kowl ./cmd/api
 # Frontend Build
 # copy frontend (to /app/frontend/) and build it
 FROM node:12-alpine as frontendBuilder
+
+# From: https://docs.docker.com/engine/reference/builder/#using-arg-variables
+# We want to bake the envVars into the image (and react app), or abort if they're not set
+# ENV values are persistet in the built image, ARG instructions are not!
+
+# git sha of the commit
+ARG KOWL_GIT_SHA
+RUN test -n "$KOWL_GIT_SHA" || (echo "KOWL_GIT_SHA must be set" && false)
+ENV REACT_APP_KOWL_GIT_SHA ${KOWL_GIT_SHA}
+
+# name of the git branch
+ARG KOWL_GIT_REF
+RUN test -n "$KOWL_GIT_REF" || (echo "KOWL_GIT_REF must be set" && false)
+ENV REACT_APP_KOWL_GIT_REF ${KOWL_GIT_REF}
+
+# timestamp in unix seconds when the image was built
+ARG KOWL_TIMESTAMP
+RUN test -n "$KOWL_TIMESTAMP" || (echo "KOWL_TIMESTAMP must be set" && false)
+ENV REACT_APP_KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
+
+
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 
@@ -30,32 +51,25 @@ RUN npm run build
 
 # Create executable image
 FROM alpine:3
+
+# Embed env vars in final image as well (so the backend can read them)
+ARG KOWL_GIT_SHA
+ENV KOWL_GIT_SHA ${KOWL_GIT_SHA}
+ENV REACT_APP_KOWL_GIT_SHA ${KOWL_GIT_SHA}
+
+ARG KOWL_GIT_REF
+ENV KOWL_GIT_REF ${KOWL_GIT_REF}
+ENV REACT_APP_KOWL_GIT_REF ${KOWL_GIT_REF}
+
+ARG KOWL_TIMESTAMP
+ENV KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
+ENV REACT_APP_KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
+
 WORKDIR /app
+
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/bin/kowl /app/kowl
 
 COPY --from=frontendBuilder /app/build/ /app/build
-
-
-
-# From: https://docs.docker.com/engine/reference/builder/#using-arg-variables
-# We want to bake the commit sha into the image, or abort if the value is not set
-# ENV values are persistet in the built image, ARG instructions are not!
-
-# git sha of the commit
-ARG GIT_SHA
-RUN test -n "$GIT_SHA" || (echo "GIT_SHA must be set" && false)
-ENV REACT_APP_GIT_SHA ${GIT_SHA}
-
-# name of the git branch
-ARG GIT_REF
-RUN test -n "$GIT_REF" || (echo "GIT_REF must be set" && false)
-ENV REACT_APP_GIT_REF ${GIT_REF}
-
-# timestamp in unix seconds when the image was built
-ARG TIMESTAMP
-RUN test -n "$TIMESTAMP" || (echo "TIMESTAMP must be set" && false)
-ENV REACT_APP_TIMESTAMP ${TIMESTAMP}
-
 
 ENTRYPOINT ["./kowl"]

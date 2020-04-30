@@ -1,15 +1,15 @@
 {
-  "short_name": "KafkaOwl",
-  "name": "Kafka Owl",
-  "icons": [
-    {
-      "src": "favicon.png",
-      "type": "image/png",
-      "sizes": "200x200"
-    }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+    "short_name": "Kowl",
+    "name": "Kowl",
+    "icons": [
+        {
+            "src": "favicon.png",
+            "type": "image/png",
+            "sizes": "200x200"
+        }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "theme_color": "#000000",
+    "background_color": "#ffffff"
 }

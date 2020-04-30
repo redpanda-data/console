@@ -62,7 +62,7 @@ export class SettingsPage extends PageComponent {
     showDeleteConfirm() {
         Modal.confirm({
             title: 'Delete user settings?',
-            content: 'This will remove all local Kafka-Owl settings in the browser (clears "localStorage")',
+            content: 'This will remove all local Kowl settings in the browser (clears "localStorage")',
             okText: 'Yes, reset my settings!', okType: 'danger',
             cancelText: "No, don't do anything.",
             width: 700,

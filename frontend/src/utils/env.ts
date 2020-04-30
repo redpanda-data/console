@@ -1,9 +1,9 @@
 
 
 const envNames = [
-    'REACT_APP_GIT_SHA',
-    'REACT_APP_GIT_REF', // 'master' or 'v1.2.3'
-    'REACT_APP_TIMESTAMP'
+    'REACT_APP_KOWL_GIT_SHA',
+    'REACT_APP_KOWL_GIT_REF', // 'master' or 'v1.2.3'
+    'REACT_APP_KOWL_TIMESTAMP'
 ] as const;
 
 type Environment = { [key in typeof envNames[number]]: string };
@@ -16,7 +16,7 @@ for (let k of envNames)
 export default env;
 
 export function getBuildDate(): string {
-    const timestamp = +env.REACT_APP_TIMESTAMP
+    const timestamp = +env.REACT_APP_KOWL_TIMESTAMP
     if (timestamp == 0) {
         return '??';
     }

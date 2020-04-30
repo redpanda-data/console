@@ -1,4 +1,6 @@
 serveFrontend: false
+# logger:
+#     level: debug
 
 kafka:
   brokers:
