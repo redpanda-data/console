@@ -26,7 +26,7 @@ export class ErrorBoundary extends React.Component {
             return <>
                 <h1>Error</h1>
                 <h3>Please report this on GitHub</h3>
-                <h4><a href="https://github.com/kafka-owl/kafka-owl/issues">Kafka-Owl GitHub Issues</a></h4>
+                <h4><a href="https://github.com/cloudhut/kowl/issues">Kowl GitHub Issues</a></h4>
                 <br />
                 <br />
                 <p>{errorJson}</p>

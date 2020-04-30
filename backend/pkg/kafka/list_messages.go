@@ -164,7 +164,7 @@ Loop:
 		//
 		// 1. Enough messages?
 		if collectedMessageCount.Load() >= uint64(req.MessageCount) {
-			logger.Info("ListMessages: collected == requestCount")
+			logger.Debug("ListMessages: collected == requestCount")
 			break Loop // request complete
 		}
 
@@ -173,7 +173,7 @@ Loop:
 		select {
 		case <-ctx.Done():
 			requestCancelled = true
-			logger.Info("ListMessages: ctx.Done")
+			logger.Debug("ListMessages: ctx.Done")
 			break Loop
 		default:
 		}
@@ -181,7 +181,7 @@ Loop:
 		//
 		// 3. All workers done?
 		if allWorkersDone {
-			logger.Info("ListMessages: all workers done")
+			logger.Debug("ListMessages: all workers done")
 			break Loop
 		}
 

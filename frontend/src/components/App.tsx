@@ -79,9 +79,9 @@ const SideBar = observer(() =>
 
         {/* Version */}
         <div className='version'>
-            <div className='repo'><a title="Visit Kafka-Owl's GitHub repository" href="https://github.com/kafka-owl/kafka-owl"><img src={gitHubLogo} /></a></div>
-            <div>KafkaOwl - {env.REACT_APP_GIT_REF || (IsDevelopment ? 'dev' : 'release')}-{env.REACT_APP_GIT_SHA.slice(0, 8) || '??'}</div>
-            <div>Built {getBuildDate()}</div>
+            <div className='repo'><a title="Visit Kowl's GitHub repository" href="https://github.com/cloudhut/kowl"><img src={gitHubLogo} /></a></div>
+            <div>Kowl - {env.REACT_APP_KOWL_GIT_REF || (IsDevelopment ? 'dev' : 'release')}-{env.REACT_APP_KOWL_GIT_SHA.slice(0, 8) || 'mode'}</div>
+            {!IsDevelopment && <div>Built {getBuildDate()}</div>}
         </div>
 
         {/* Toggle */}
