@@ -27,4 +27,8 @@ Kowl (previously known as Kafka Owl) helps you to explore messages in your clust
 
 ## Documentation
 
-The documentation for Kowl & Kowl Business is hosted in this repository's [Wiki](https://github.com/cloudhut/kowl/wiki).
+The documentation for Kowl & Kowl Business is available in this repository's [Wiki](https://github.com/cloudhut/kowl/wiki).
+
+## License
+
+Kowl is distributed under the [Apache 2.0 License](https://github.com/cloudhut/kowl/blob/master/LICENSE).
