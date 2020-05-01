@@ -1,4 +1,6 @@
+############################################################
 # Backend Build
+############################################################
 FROM golang:1.14-alpine as builder
 RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificates
 
@@ -13,9 +15,17 @@ RUN CGO_ENABLED=0 go build -o ./bin/kowl ./cmd/api
 # Compiled backend binary is in '/app/bin/' named 'kowl'
 
 
+############################################################
 # Frontend Build
-# copy frontend (to /app/frontend/) and build it
+############################################################
 FROM node:12-alpine as frontendBuilder
+
+WORKDIR /app
+ENV PATH /app/node_modules/.bin:$PATH
+
+COPY ./frontend/package.json ./package.json
+RUN npm install
+
 
 # From: https://docs.docker.com/engine/reference/builder/#using-arg-variables
 # We want to bake the envVars into the image (and react app), or abort if they're not set
@@ -36,20 +46,14 @@ ARG KOWL_TIMESTAMP
 RUN test -n "$KOWL_TIMESTAMP" || (echo "KOWL_TIMESTAMP must be set" && false)
 ENV REACT_APP_KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
 
-
-WORKDIR /app
-ENV PATH /app/node_modules/.bin:$PATH
-
-COPY ./frontend/package.json ./package.json
-RUN npm install
-
 COPY ./frontend ./
 RUN npm run build
 # All the built frontend files for the SPA are now in '/app/build/'
 
 
-
-# Create executable image
+############################################################
+# Final Image
+############################################################
 FROM alpine:3
 
 # Embed env vars in final image as well (so the backend can read them)
@@ -66,6 +70,10 @@ ENV KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
 ENV REACT_APP_KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
 
 WORKDIR /app
+
+RUN echo $REACT_APP_KOWL_GIT_SHA >> sha.envVar; \
+    echo $REACT_APP_KOWL_GIT_REF >> ref.envVar; \
+    echo $REACT_APP_KOWL_TIMESTAMP >> time.envVar
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/bin/kowl /app/kowl
