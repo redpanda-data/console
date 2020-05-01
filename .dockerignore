@@ -3,6 +3,7 @@
 **/.github
 **/.gitignore
 **/.vscode
+**/.idea
 
 **/Dockerfile*
 **/docker-compose*
