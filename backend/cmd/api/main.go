@@ -49,7 +49,7 @@ func printVersion(logger *zap.Logger) {
 		t1, err := strconv.ParseInt(timestamp1, 10, 64)
 		var timeStr1 string
 		if err != nil {
-			logger.Warn("failed to parse timestamp as int64", zap.String("timestamp", timeStr1), zap.Error(err))
+			logger.Warn("failed to parse timestamp as int64", zap.String("timestamp", timestamp1), zap.Error(err))
 			timeStr1 = "(parsing error)"
 		} else {
 			timeStr1 = time.Unix(t1, 0).Format(time.RFC3339)
