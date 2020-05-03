@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete } from "antd";
+import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
@@ -13,13 +13,11 @@ import { sortField, range, makePaginationConfig, Spacer } from "../../misc/commo
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed, transaction, autorun, IReactionDisposer } from "mobx";
 import { findElementDeep, cullText, getAllKeys, ToJson } from "../../../utils/utils";
-import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { ModalFunc } from "antd/lib/modal/Modal";
 import { uiState } from "../../../state/uiState";
 import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
@@ -28,12 +26,11 @@ import { editQuery } from "../../../utils/queryHelper";
 import { numberToThousandsString, ZeroSizeWrapper } from "../../../utils/tsxUtils";
 import Octicon, { Skip } from '@primer/octicons-react';
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
+import Icon from '@ant-design/icons';
 
 const { Text } = Typography;
 const { Option } = Select;
 const InputGroup = Input.Group;
-
-
 
 @observer
 export class TopicMessageView extends Component<{ topic: TopicDetail }> {
@@ -271,10 +268,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 render: (text, record) => !record.isValueNull && (
                     <span>
                         <ZeroSizeWrapper width={32} height={0}>
-                            <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon='copy' size='default' onClick={() => this.copyMessage(record)} />
+                            <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon='copy' size='middle' onClick={() => this.copyMessage(record)} />
                         </ZeroSizeWrapper>
                         <ZeroSizeWrapper width={32} height={0}>
-                            <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon='link' size='default' onClick={() => this.copyLinkToMessage(record)} />
+                            <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon='link' size='middle' onClick={() => this.copyLinkToMessage(record)} />
                         </ZeroSizeWrapper>
                         {/* <Divider type="vertical" /> */}
                     </span>
@@ -300,7 +297,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                     expandRowByClick={false}
                     expandedRowRender={record => RenderExpandedMessage(record)}
-                    expandIconAsCell={false}
+                    //expandIconAsCell={false}
                     expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
                     columns={columns}
                 />
