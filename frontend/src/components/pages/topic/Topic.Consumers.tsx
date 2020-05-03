@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import { TopicConfigEntry, TopicDetail } from "../../../state/restInterfaces";
 import {
     Tooltip,
-    Icon,
     Descriptions,
     Popover,
     Checkbox,
@@ -25,7 +24,8 @@ import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
 import { appGlobal } from "../../../state/appGlobal";
 import { sortField, makePaginationConfig } from "../../misc/common";
-import { PaginationConfig } from "antd/lib/table";
+import { TablePaginationConfig } from "antd/lib/table";
+import Icon from '@ant-design/icons';
 
 const { Text } = Typography;
 
