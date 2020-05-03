@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
-import { Button, Spin, Icon, Modal } from 'antd';
+import { Spin, Modal } from 'antd';
 import { observer } from 'mobx-react';
 import { observable } from 'mobx';
 
 import SvgLoginWave from '../../assets/login_wave.svg';
 import PngLogo from '../../assets/logo2.png';
 import { uiState } from '../../state/uiState';
+import Icon from '@ant-design/icons';
 
 interface Provider {
     displayName: string,

@@ -1,14 +1,14 @@
 import React, { PureComponent } from 'react';
 import { observer } from "mobx-react"
-import { Layout, Menu, Icon, Select, PageHeader, Alert, Button, Avatar, Popconfirm, Dropdown } from 'antd';
+import { Layout, Menu, Select, Avatar, Popconfirm, Dropdown } from 'antd';
 import { uiSettings } from '../../state/ui';
 import { RenderTrap, Spacer } from '.././misc/common';
-import { DebugTimerStore, hoursToMilliseconds } from '../../utils/utils';
 import { api } from '../../state/backendApi';
 
 import { IsDevelopment } from '../../utils/isProd';
 import env from '../../utils/env';
 import { appGlobal } from '../../state/appGlobal';
+import Icon from '@ant-design/icons';
 
 const { Content, Footer, Sider, Header } = Layout;
 const { Option } = Select;
@@ -64,8 +64,7 @@ const TopBar = observer(() => {
 
 
 
-                    <Popconfirm title='Do you want to logout?' onConfirm={() => api.logout()} placement='left' okText='Yes' cancelText='No'>
-                    </Popconfirm>
+                    <Popconfirm title='Do you want to logout?' onConfirm={() => api.logout()} placement='left' okText='Yes' cancelText='No' />
 
                     <Dropdown overlay={menu} trigger={['click']}>
                         <div style={{ cursor: 'pointer' }}>

@@ -1,5 +1,5 @@
 import React, { Component, RefObject } from "react";
-import { Table, Empty, Skeleton, Checkbox, Row, Statistic, Input, Typography, AutoComplete, Icon, Button, Popover, Switch, Divider } from "antd";
+import { Table, Empty, Skeleton, Checkbox, Row, Statistic, Input, Typography, AutoComplete, Button, Popover, Switch, Divider } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
@@ -16,6 +16,7 @@ import { prettyBytesOrNA } from "../../../utils/utils";
 import { uiState } from "../../../state/uiState";
 import Card from "../../misc/Card";
 import { editQuery } from "../../../utils/queryHelper";
+import Icon from '@ant-design/icons';
 const { Text } = Typography;
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -79,7 +80,7 @@ class TopicList extends PageComponent {
         return (
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
-                    <Row type="flex">
+                    <Row>
                         <Statistic title='Total Topics' value={topics.length} />
                         <Statistic title='Total Partitions' value={topics.map(x => x.partitionCount).reduce((p, c) => p + c)} />
                     </Row>

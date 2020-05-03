@@ -42,7 +42,7 @@ export class SettingsPage extends PageComponent {
 
             {/*
             <Alert type='error' message={<>
-                <Button type='danger' onClick={this.showDeleteConfirm}>Clear User Settings</Button>
+                <Button danger onClick={this.showDeleteConfirm}>Clear User Settings</Button>
             </>}>
             </Alert>
              */}
@@ -63,7 +63,7 @@ export class SettingsPage extends PageComponent {
         Modal.confirm({
             title: 'Delete user settings?',
             content: 'This will remove all local Kowl settings in the browser (clears "localStorage")',
-            okText: 'Yes, reset my settings!', okType: 'danger',
+            okText: 'Yes, reset my settings!', okType: 'default',
             cancelText: "No, don't do anything.",
             width: 700,
             onOk() {

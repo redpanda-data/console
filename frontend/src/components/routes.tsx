@@ -1,5 +1,5 @@
 
-import { Menu, Icon } from "antd";
+import { Menu } from "antd";
 import { Link, Switch } from "react-router-dom";
 import React from "react";
 import { Section } from "./misc/common";
@@ -19,6 +19,7 @@ import { SettingsPage } from "./pages/Settings";
 import AdminPage from "./pages/admin/AdminPage";
 import { api } from "../state/backendApi";
 import { DebugTimerStore, ToJson } from "../utils/utils";
+import Icon from '@ant-design/icons';
 
 //
 //	Route Types
