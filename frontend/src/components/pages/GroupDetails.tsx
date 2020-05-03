@@ -88,10 +88,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 }
 
 const stateIcons = new Map<string, JSX.Element>([
-    // ['dead', <Icon type="fire" theme='twoTone' twoToneColor='orangered' />],
-    // ['preparingrebalance', <Icon type="HourglassOutlined" theme='twoTone' twoToneColor='orange' />],
-    // ['empty', <Icon type="warning" theme='twoTone' twoToneColor='orange' />],
-    // ['stable', <Icon type="check-circle" theme='twoTone' twoToneColor='#52c41a' />],
     ['dead', <FireTwoTone twoToneColor='orangered' />],
     ['preparingrebalance', <HourglassTwoTone twoToneColor='orange' />],
     ['empty', <WarningTwoTone twoToneColor='orange' />],
@@ -122,11 +118,13 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
 
     return <Table
         style={{ margin: '0', padding: '0', whiteSpace: 'normal' }} size={'middle'}
-        //expandRowByClick={false}
         //expandIconAsCell={false} // broken since antd4
-        expandIconColumnIndex={0}
-        expandedRowRender={(record: GroupMemberDescription) => <ExpandedGroupMember groupId={p.group.groupId} topicLags={topicLags} member={record} />}
-
+        expandable={{
+            // expandIcon: () => null,
+            expandIconColumnIndex: 0,
+            expandRowByClick: true,
+            expandedRowRender: (record: GroupMemberDescription) => <ExpandedGroupMember groupId={p.group.groupId} topicLags={topicLags} member={record} />,
+        }}
         pagination={pageConfig}
         dataSource={p.group.members}
         rowKey={r => r.id}

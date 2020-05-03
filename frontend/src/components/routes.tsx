@@ -19,7 +19,7 @@ import { SettingsPage } from "./pages/Settings";
 import AdminPage from "./pages/admin/AdminPage";
 import { api } from "../state/backendApi";
 import { DebugTimerStore, ToJson } from "../utils/utils";
-import Icon from '@ant-design/icons';
+import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined } from '@ant-design/icons';
 
 //
 //	Route Types
@@ -36,7 +36,7 @@ export interface PageDefinition<TRouteParams = {}> {
     path: string
     pageType: PageComponentType<TRouteParams>
     routeJsx: JSX.Element
-    icon?: string
+    icon?: JSX.Element
     menuItemKey?: string, // set by 'CreateRouteMenuItems'
     showCondition?: () => boolean,
 }
@@ -74,7 +74,7 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
             return (
                 <Menu.Item key={entry.path}>
                     <Link to={entry.path}>
-                        <Icon type={entry.icon} />
+                        {entry.icon}
                         <span>{entry.title}</span>
                     </Link>
                 </Menu.Item>
@@ -142,9 +142,7 @@ export const RouteView = (() =>
     </AnimatePresence>
 )
 
-function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRouteParams>, title: string, icon?: string, exact: boolean = true, showCondition?: () => boolean): PageDefinition<TRouteParams> {
-
-    icon = icon || ' ';
+function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRouteParams>, title: string, icon?: JSX.Element, exact: boolean = true, showCondition?: () => boolean): PageDefinition<TRouteParams> {
 
     const route: PageDefinition<TRouteParams> = {
         title,
@@ -186,16 +184,16 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 //
 export const APP_ROUTES: IRouteEntry[] = [
 
-    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', 'hdd'),
+    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <HddOutlined />),
 
-    MakeRoute<{}>('/topics', TopicList, 'Topics', 'profile'),
-    MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics', 'profile'),
+    MakeRoute<{}>('/topics', TopicList, 'Topics', <ProfileOutlined />),
+    MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics', <ProfileOutlined />),
 
-    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', 'funnel-plot'),
-    MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', 'funnel-plot'),
+    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <FunnelPlotOutlined />),
+    MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', <FunnelPlotOutlined />),
 
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', 'tool', false, () => api.UserData?.canManageKowl ?? false),
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => api.UserData?.canManageKowl ?? false),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
 

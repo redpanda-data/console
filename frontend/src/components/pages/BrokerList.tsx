@@ -14,7 +14,7 @@ import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../utils/utils";
 import { appGlobal } from "../../state/appGlobal";
 import Card from "../misc/Card";
-import Icon from '@ant-design/icons';
+import Icon, { CrownOutlined } from '@ant-design/icons';
 
 
 @observer
@@ -52,8 +52,7 @@ class BrokerList extends PageComponent {
             if (record.brokerId != info.controllerId) return text;
             return <>{text}
                 <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'}>
-                    <Icon type='crown' // theme='outlined'
-                        style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
+                    <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
                 </Tooltip>
             </>
         };
