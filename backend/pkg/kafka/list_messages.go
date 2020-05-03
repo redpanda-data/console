@@ -101,8 +101,8 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 
 	progress.OnPhase("Start Workers")
 
+	// Calculate start and end offset for each partition
 	for _, partitionID := range partitionIDs {
-		// Calculate start and end offset for current partition
 		highWaterMark := marks[partitionID].High
 		lowWaterMark := marks[partitionID].Low
 		hasMessages := highWaterMark-lowWaterMark > 0
@@ -130,7 +130,7 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 
 		// Fallback to oldest available start offset if the desired start offset is lower than lowWaterMark
 		if startOffset <= lowWaterMark {
-			startOffset = -2
+			startOffset = sarama.OffsetOldest
 		}
 
 		pConsumer := partitionConsumer{
