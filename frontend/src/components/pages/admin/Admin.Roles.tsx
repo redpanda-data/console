@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage, Partition, UserDetails, Role } from "../../../state/restInterfaces";
-import { Table, Tooltip, Icon, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
+import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
@@ -14,7 +14,6 @@ import { sortField, range, makePaginationConfig, Spacer } from "../../misc/commo
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed, transaction } from "mobx";
 import { findElementDeep, cullText, getAllKeys } from "../../../utils/utils";
-import { FormComponentProps } from "antd/lib/form";
 import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
@@ -23,6 +22,8 @@ import { uiState } from "../../../state/uiState";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { numberToThousandsString, QuickTable, ObjToKv } from "../../../utils/tsxUtils";
 import Card from "../../misc/Card";
+import Icon from '@ant-design/icons';
+
 
 const { Text } = Typography;
 const { Option } = Select;

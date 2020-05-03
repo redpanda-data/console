@@ -1,7 +1,8 @@
 import React, { FC, Props } from "react";
 import { PropsWithChildren } from "react";
-import { PaginationConfig, CompareFn } from "antd/lib/table";
+import { TablePaginationConfig } from "antd/lib/table";
 import { uiSettings } from "../../state/ui";
+import { CompareFn } from "antd/lib/table/interface";
 
 
 const renderCount = new Map<string, number>();
@@ -42,14 +43,14 @@ export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />
 
 
 export const DEFAULT_TABLE_PAGE_SIZE = 50;
-export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE): PaginationConfig {
+export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE): TablePaginationConfig {
     return {
-        position: uiSettings.userDefaults.paginationPosition,
+        position: [uiSettings.userDefaults.paginationPosition],
         pageSize: pageSize,
 
         showSizeChanger: true,
         pageSizeOptions: ['10', '20', '50', '100'],
-        showTotal: (total) => `Total ${total} items`,
+        showTotal: (total: number) => `Total ${total} items`,
         hideOnSinglePage: false,
     };
 }

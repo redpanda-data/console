@@ -66,7 +66,7 @@ class GroupList extends PageComponent {
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
-                    <Row type="flex">
+                    <Row>{/*<Row type="flex">*/}
                         <Statistic title='Total Groups' value={groups.length} />
                         <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
                         {stateGroups.map(g =>
@@ -97,7 +97,7 @@ class GroupList extends PageComponent {
                                 title: 'ID', dataIndex: 'groupId',
                                 sorter: sortField('groupId'),
                                 filteredValue: [uiSettings.consumerGroupList.quickSearch],
-                                onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, filterValue),
+                                onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
                                 render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
                             },
                             { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
