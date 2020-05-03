@@ -1,8 +1,9 @@
 import React from 'react';
 import { observer } from "mobx-react";
-import { Icon, Result } from 'antd';
+import { Result } from 'antd';
 import { Button } from 'antd';
 import { api } from '../../state/backendApi';
+import { CloseCircleOutlined } from '@ant-design/icons'
 
 
 @observer
@@ -17,7 +18,7 @@ export class ErrorDisplay extends React.Component {
 
                 <div className="error-list">
                     {api.Errors.map((e, i) => <div key={i}>
-                        <Icon style={{ color: 'red' }} type="close-circle" /> {e.toString()}
+                        <CloseCircleOutlined style={{ color: 'red' }} /> {e.toString()}
                     </div>)}
                 </div>
             </div>
