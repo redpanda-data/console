@@ -26,7 +26,7 @@ import { editQuery } from "../../../utils/queryHelper";
 import { numberToThousandsString, ZeroSizeWrapper } from "../../../utils/tsxUtils";
 import Octicon, { Skip } from '@primer/octicons-react';
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import Icon from '@ant-design/icons';
+import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -107,8 +107,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 <Spacer />
 
                 {/* Quick Search */}
-                <Input placeholder='Quick Search' allowClear={true} size='small'
-                    style={{ width: 'auto', padding: '0', whiteSpace: 'nowrap' }}
+                <Input placeholder='Quick Search' allowClear={true} size='middle'
+                    style={{ width: 'auto', padding: '2px 8px', whiteSpace: 'nowrap' }}
                     value={uiState.topicSettings.quickSearch}
                     onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
                     addonAfter={null} disabled={this.fetchError != null}
@@ -234,7 +234,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             <span>Value
                 <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
                     <Button shape='round' className='hoverBorder' onClick={() => this.showPreviewSettings = true} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
-                        <Icon type='setting' style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
+                        <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                         <span style={{ marginLeft: '.3em' }}>Preview</span>
                         {(() => {
                             const count = uiState.topicSettings.previewTags.sum(t => t.active ? 1 : 0);
@@ -295,10 +295,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
                     rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
 
-                    expandRowByClick={false}
-                    expandedRowRender={record => RenderExpandedMessage(record)}
-                    //expandIconAsCell={false}
-                    expandIconColumnIndex={columns.findIndex(c => c.dataIndex === 'value')}
+                    expandable={{
+                        expandRowByClick: false,
+                        expandedRowRender: record => RenderExpandedMessage(record),
+                        expandIconColumnIndex: columns.findIndex(c => c.dataIndex === 'value')
+                    }}
+
                     columns={columns}
                 />
 
@@ -361,7 +363,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         </>
 
         return <Modal
-            title={<span><Icon type="filter" style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
+            title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
             visible={this.showPreviewSettings}
             onOk={() => this.showPreviewSettings = false}
             onCancel={() => this.showPreviewSettings = false}
@@ -476,7 +478,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             if (!value || msg.isValueNull) {
                 // null: must be a tombstone (maybe? what if other fields are not null?)
                 // todo: render tombstones in a better way!
-                text = <><Icon type='delete' style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
+                text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
             }
             else if (msg.valueType == 'text') {
                 // Raw Text (wtf :P)
@@ -629,7 +631,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
                     {!this.inputVisible &&
                         <motion.span positionTransition>
                             <Button onClick={() => this.inputVisible = true} size='small' type='dashed'>
-                                <Icon type='plus' style={{ color: '#999' }} />
+                                <PlusOutlined style={{ color: '#999' }} />
                                 <>Add Preview</>
                             </Button>
                         </motion.span>
