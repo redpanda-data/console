@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Icon, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -11,6 +11,8 @@ import { groupConsecutive } from "../../utils/utils";
 import { observable, autorun } from "mobx";
 import { appGlobal } from "../../state/appGlobal";
 import Card from "../misc/Card";
+import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone } from '@ant-design/icons';
+
 const { Text } = Typography;
 const { TreeNode } = Tree;
 
@@ -65,7 +67,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             <MotionDiv style={{ margin: '0 1rem' }}>
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
                 <Card>
-                    <Row type="flex">
+                    {/* <Row type="flex"> */}
+                    <Row>
                         <Statistic title='State' valueRender={() => <GroupState group={group} />} />
                         <Statistic title='Consumers' value={group.members.length} />
                         <ProtocolType group={group} />
@@ -85,10 +88,14 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 }
 
 const stateIcons = new Map<string, JSX.Element>([
-    ['dead', <Icon type="fire" theme='twoTone' twoToneColor='orangered' />],
-    ['preparingrebalance', <Icon type="HourglassOutlined" theme='twoTone' twoToneColor='orange' />],
-    ['empty', <Icon type="warning" theme='twoTone' twoToneColor='orange' />],
-    ['stable', <Icon type="check-circle" theme='twoTone' twoToneColor='#52c41a' />],
+    // ['dead', <Icon type="fire" theme='twoTone' twoToneColor='orangered' />],
+    // ['preparingrebalance', <Icon type="HourglassOutlined" theme='twoTone' twoToneColor='orange' />],
+    // ['empty', <Icon type="warning" theme='twoTone' twoToneColor='orange' />],
+    // ['stable', <Icon type="check-circle" theme='twoTone' twoToneColor='#52c41a' />],
+    ['dead', <FireTwoTone twoToneColor='orangered' />],
+    ['preparingrebalance', <HourglassTwoTone twoToneColor='orange' />],
+    ['empty', <WarningTwoTone twoToneColor='orange' />],
+    ['stable', <CheckCircleTwoTone twoToneColor='#52c41a' />],
 ]);
 export const GroupState = (p: { group: GroupDescription }) => {
     const state = p.group.state.toLowerCase();
@@ -116,7 +123,7 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
     return <Table
         style={{ margin: '0', padding: '0', whiteSpace: 'normal' }} size={'middle'}
         //expandRowByClick={false}
-        expandIconAsCell={false}
+        //expandIconAsCell={false} // broken since antd4
         expandIconColumnIndex={0}
         expandedRowRender={(record: GroupMemberDescription) => <ExpandedGroupMember groupId={p.group.groupId} topicLags={topicLags} member={record} />}
 

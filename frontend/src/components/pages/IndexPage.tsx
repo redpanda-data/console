@@ -3,9 +3,10 @@ import React from "react";
 import { observer } from "mobx-react";
 import { uiSettings } from "../../state/ui";
 import Paragraph from "antd/lib/typography/Paragraph";
-import { Button, Card, Icon } from "antd";
+import { Button, Card } from "antd";
 import { api } from "../../state/backendApi";
 import { uiState } from "../../state/uiState";
+import Icon from '@ant-design/icons';
 
 
 const IndexPage = observer(() => {
@@ -26,8 +27,7 @@ const IndexPage = observer(() => {
             <div style={{ display: 'flex', margin: '2em 0' }}>
                 {api.Clusters.map((c, i) => <ClusterCard key={c} cluster={c} />)}
             </div>
-
-            <Button type='danger' onClick={() => uiSettings.selectedClusterIndex = -1}>Debug: Reset cluster selection</Button>
+            <Button danger onClick={() => uiSettings.selectedClusterIndex = -1}>Debug: Reset cluster selection</Button>
         </div>
     </>
 })

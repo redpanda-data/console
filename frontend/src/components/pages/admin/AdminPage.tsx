@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Icon, Tooltip, Tabs } from "antd";
+import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Tooltip, Tabs } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";

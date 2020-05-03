@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Icon, Tooltip } from "antd";
+import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Tooltip } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "./Page";
 import { api } from "../../state/backendApi";
@@ -14,6 +14,7 @@ import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../utils/utils";
 import { appGlobal } from "../../state/appGlobal";
 import Card from "../misc/Card";
+import Icon from '@ant-design/icons';
 
 
 @observer
@@ -51,7 +52,7 @@ class BrokerList extends PageComponent {
             if (record.brokerId != info.controllerId) return text;
             return <>{text}
                 <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'}>
-                    <Icon type='crown' theme='outlined'
+                    <Icon type='crown' // theme='outlined'
                         style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
                 </Tooltip>
             </>
@@ -67,7 +68,7 @@ class BrokerList extends PageComponent {
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
-                    <Row type="flex">
+                    <Row> {/* type="flex" */}
                         <Statistic title='ControllerID' value={info.controllerId} />
                         <Statistic title='Broker Count' value={brokers.length} />
                     </Row>

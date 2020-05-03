@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { observer } from "mobx-react"
-import { Layout, Menu, Icon, PageHeader, Button } from 'antd';
+import { Layout, Menu, PageHeader, Button } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
 import { RenderTrap } from './misc/common';
@@ -25,8 +25,10 @@ import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 
 const { Content, Footer, Sider } = Layout;
+
 
 let siderCollapsedWidth = 80;
 
@@ -89,7 +91,7 @@ const SideBar = observer(() =>
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
             height: '40px', padding: 0, background: 'rgba(0,0,0, 0.25)', cursor: 'pointer'
         }} onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen }}>
-            <Icon type={uiSettings.sideBarOpen ? 'menu-fold' : 'menu-unfold'} style={{ fontSize: '19px', color: '#1f6190' }} />
+            {uiSettings.sideBarOpen ? <MenuFoldOutlined style={{ fontSize: '19px', color: '#1f6190' }} /> : <MenuUnfoldOutlined style={{ fontSize: '19px', color: '#1f6190' }} />}
         </Footer>
     </Layout>
 )
