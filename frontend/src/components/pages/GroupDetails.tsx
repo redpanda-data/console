@@ -68,7 +68,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
                 <Card>
                     {/* <Row type="flex"> */}
-                    <Row>
+                    <Row >
                         <Statistic title='State' valueRender={() => <GroupState group={group} />} />
                         <Statistic title='Consumers' value={group.members.length} />
                         <ProtocolType group={group} />
@@ -256,17 +256,15 @@ class TopicLags extends Component<{ name: string, partitions: number[], topicLag
         if (!this.isExpanded) // In small view: show only non-zero, and only top5
             partitionLags = partitionLags.filter(l => l.lag > 0).slice(0, 5);
 
-        return <MotionDiv positionTransition>
-            <Col xs={24} sm={24} md={24} lg={12} xl={8} xxl={6}>
-                <AntCard size="small" title={p.name} extra={expandBtn} style={{ marginBottom: '1em' }}>
-                    {
-                        isAllZeroLag
-                            ? <span style={{ fontSize: '.75rem' }}>No lag on any partition</span>
-                            : renderLagTable(partitionLags)
-                    }
-                </AntCard>
-            </Col>
-        </MotionDiv>
+        return <Col xs={24} sm={24} md={24} lg={12} xl={8} xxl={6}>
+            <AntCard size="small" title={p.name} extra={expandBtn} style={{ marginBottom: '1em' }}>
+                {
+                    isAllZeroLag
+                        ? <span style={{ fontSize: '.75rem' }}>No lag on any partition</span>
+                        : renderLagTable(partitionLags)
+                }
+            </AntCard>
+        </Col>
     }
 }
 
