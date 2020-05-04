@@ -153,7 +153,6 @@ const AppPageHeader = observer(() => {
             title={<><Title level={3}>{uiState.pageTitle}</Title></>}
             subTitle={<DataAgeInfo />}
             footer={<></>}
-            extra={uiState.pageHeaderExtra()} // right sider
         />
     </MotionDiv>
 });
