@@ -26,7 +26,7 @@ import { editQuery } from "../../../utils/queryHelper";
 import { numberToThousandsString, ZeroSizeWrapper } from "../../../utils/tsxUtils";
 import Octicon, { Skip } from '@primer/octicons-react';
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -268,10 +268,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 render: (text, record) => !record.isValueNull && (
                     <span>
                         <ZeroSizeWrapper width={32} height={0}>
-                            <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon='copy' size='middle' onClick={() => this.copyMessage(record)} />
+                            <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
                         </ZeroSizeWrapper>
                         <ZeroSizeWrapper width={32} height={0}>
-                            <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon='link' size='middle' onClick={() => this.copyLinkToMessage(record)} />
+                            <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
                         </ZeroSizeWrapper>
                         {/* <Divider type="vertical" /> */}
                     </span>

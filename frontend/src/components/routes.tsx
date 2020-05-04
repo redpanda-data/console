@@ -159,10 +159,8 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
         const query = queryToObj(rp.location.search);
         const { ...params } = rp.match.params;
 
-        // Reset some things on page change
         if (uiState.currentRoute && uiState.currentRoute.path != route.path) {
             //console.log('switching route: ' + routeStr(ui.currentRoute) + " -> " + routeStr(route));
-            uiState.pageHeaderExtra = () => null;
         }
 
         let pageProps: PageProps<TRouteParams> = {
