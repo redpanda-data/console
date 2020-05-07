@@ -3,12 +3,14 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/Shopify/sarama"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
+)
+
+const (
+	partitionsAll int32 = -1
 )
 
 // ListMessageRequest carries all filter, sort and cancellation options for fetching messages from Kafka
@@ -41,6 +43,18 @@ type TopicMessage struct {
 	IsValueNull bool `json:"isValueNull"`
 }
 
+// partitionConsumeRequest is a partitionID along with it's calculated start and end offset.
+type partitionConsumeRequest struct {
+	PartitionID   int32
+	IsDrained     bool // True if the partition was not able to return as many messages as desired here
+	LowWaterMark  int64
+	HighWaterMark int64
+
+	StartOffset     int64
+	EndOffset       int64
+	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the consumer will stop.
+}
+
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
 type IListMessagesProgress interface {
 	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
@@ -52,9 +66,10 @@ type IListMessagesProgress interface {
 // ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
 // (which runs in it's own goroutine) for each partition and funneling all the data to eventually
 // return it. The second return parameter is a bool which indicates whether the requested topic exists.
-func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, progress IListMessagesProgress) error {
+// TODO: Report execution plan and results summary to frontend. Why didn't we get the desired number of results
+func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
 	start := time.Now()
-	logger := s.Logger.With(zap.String("topic", req.TopicName))
+	logger := s.Logger.With(zap.String("topic", listReq.TopicName))
 
 	progress.OnPhase("Create Topic Consumer")
 	// We must create a new Consumer for every request,
@@ -73,79 +88,47 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 
 	progress.OnPhase("Get Partitions")
 	// Create array of partitionIDs which shall be consumed (always do that to ensure the topic exists at all)
-	partitions, err := s.Client.Partitions(req.TopicName)
+	partitions, err := s.Client.Partitions(listReq.TopicName)
 	if err != nil {
 		return fmt.Errorf("failed to get partitions: %w", err)
 	}
 
+	// Check if requested partitionID exists
+	if listReq.PartitionID > int32(len(partitions)) {
+		return fmt.Errorf("requested partitionID (%v) is greater than number of partitions (%v)", listReq.PartitionID, len(partitions))
+	}
+
 	partitionIDs := make([]int32, 0, len(partitions))
-	if req.PartitionID == -1 {
+	if listReq.PartitionID == partitionsAll {
 		partitionIDs = partitions
-	} else if req.PartitionID > int32(len(partitions)) {
-		// Since the index of partitions array equals the partitionID we can use the len() to get the highest partitionID
-		return fmt.Errorf("requested partitionID (%v) is greater than number of partitions (%v)", req.PartitionID, len(partitions))
 	} else {
-		partitionIDs = append(partitionIDs, req.PartitionID)
+		partitionIDs = append(partitionIDs, listReq.PartitionID)
 	}
 
 	progress.OnPhase("Get Watermarks")
-	marks, err := s.WaterMarks(req.TopicName, partitionIDs)
+	marks, err := s.WaterMarks(listReq.TopicName, partitionIDs)
 	if err != nil {
 		return fmt.Errorf("failed to get watermarks: %w", err)
 	}
 
+	progress.OnPhase("Setup consumer agents")
+
 	// Start a partition consumer for all requested partitions
 	doneCh := make(chan struct{}, len(partitions)) // shared channel where completed workers notify us that they're done
 	startedWorkers := 0
-	collectedMessageCount := new(atomic.Uint64)
 
-	progress.OnPhase("Start Workers")
-
-	// Calculate start and end offset for each partition
-	for _, partitionID := range partitionIDs {
-		highWaterMark := marks[partitionID].High
-		lowWaterMark := marks[partitionID].Low
-		hasMessages := highWaterMark-lowWaterMark > 0
-		if !hasMessages {
-			continue
-		}
-
-		messageCount := int64(math.Ceil(float64(req.MessageCount) / float64(len(partitionIDs))))
-
-		var startOffset int64
-		var endOffset int64
-		if req.StartOffset == -1 {
-			// Newest messages
-			startOffset = highWaterMark - messageCount
-			endOffset = highWaterMark
-		} else if req.StartOffset == -2 {
-			// Oldest messages
-			startOffset = req.StartOffset
-			endOffset = lowWaterMark + messageCount - 1 // -1 because first message at start index is also consumed
-		} else {
-			// Custom start offset given
-			startOffset = req.StartOffset
-			endOffset = req.StartOffset + messageCount
-		}
-
-		// Fallback to oldest available start offset if the desired start offset is lower than lowWaterMark
-		if startOffset <= lowWaterMark {
-			startOffset = sarama.OffsetOldest
-		}
-
+	// Get partition consume request by calculating start and end offsets for each partition
+	consumeRequests := calculateConsumeRequests(&listReq, marks)
+	for _, req := range consumeRequests {
 		pConsumer := partitionConsumer{
 			logger: logger.With(zap.Int32("partition_id", req.PartitionID)),
 
-			doneCh:                     doneCh,
-			sharedCount:                collectedMessageCount,
-			requestedTotalMessageCount: uint64(req.MessageCount),
-			progress:                   progress,
+			doneCh:   doneCh,
+			progress: progress,
 
-			consumer:    consumer,
-			topicName:   req.TopicName,
-			partitionID: partitionID,
-			startOffset: startOffset,
-			endOffset:   endOffset,
+			consumer:  consumer,
+			topicName: listReq.TopicName,
+			req:       req,
 		}
 		startedWorkers++
 		go pConsumer.Run(ctx)
@@ -156,20 +139,13 @@ func (s *Service) ListMessages(ctx context.Context, req ListMessageRequest, prog
 	requestCancelled := false
 
 	progress.OnPhase("Loading")
+
 	// Priority list of actions
 	// since we need to process cases by their priority, we must check them individually and
 	// can't rely on 'select' since it picks a random case if multiple are ready.
 Loop:
 	for {
-		//
-		// 1. Enough messages?
-		if collectedMessageCount.Load() >= uint64(req.MessageCount) {
-			logger.Debug("ListMessages: collected == requestCount")
-			break Loop // request complete
-		}
-
-		//
-		// 2. Request cancelled?
+		// 1. Request cancelled?
 		select {
 		case <-ctx.Done():
 			requestCancelled = true
@@ -178,15 +154,13 @@ Loop:
 		default:
 		}
 
-		//
-		// 3. All workers done?
+		// 2. All workers done?
 		if allWorkersDone {
 			logger.Debug("ListMessages: all workers done")
 			break Loop
 		}
 
-		//
-		// 4. Count completed workers
+		// 3. Count completed workers
 		keepCounting := true
 		for keepCounting {
 			select {
@@ -208,8 +182,103 @@ Loop:
 	progress.OnComplete(time.Since(start).Seconds()*1000, requestCancelled)
 
 	if requestCancelled {
-		return fmt.Errorf("Request was cancelled while waiting for messages from workers (probably timeout) completedWorkers=%v startedWorksers=%v fetchedMessages=%v", completedWorkers, startedWorkers, collectedMessageCount.Load())
+		return fmt.Errorf("request was cancelled while waiting for messages from workers (probably timeout) completedWorkers=%v startedWorksers=%v", completedWorkers, startedWorkers)
 	}
 
 	return nil
+}
+
+// calculateConsumeRequests is supposed to calculate the start and end offsets for each partition consumer, so that
+// we'll end up with ${messageCount} messages in total. To do so we'll take the known low and high watermarks into
+// account. Gaps between low and high watermarks (caused by compactions) will be neglected for now.
+func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*WaterMark) map[int32]*partitionConsumeRequest {
+	requests := make(map[int32]*partitionConsumeRequest, len(marks))
+
+	// Init result map
+	notInitialized := int64(-1)
+	for _, mark := range marks {
+		p := &partitionConsumeRequest{
+			PartitionID:     mark.PartitionID,
+			IsDrained:       false,
+			LowWaterMark:    mark.Low,
+			HighWaterMark:   mark.High,
+			StartOffset:     notInitialized,
+			EndOffset:       mark.High, // End is limited by high watermark or max message count
+			MaxMessageCount: 0,
+		}
+
+		if listReq.StartOffset == sarama.OffsetNewest {
+			p.StartOffset = mark.High
+		} else if listReq.StartOffset == sarama.OffsetOldest {
+			p.StartOffset = mark.Low
+		} else {
+			p.StartOffset = listReq.StartOffset
+
+			if p.StartOffset < mark.Low {
+				p.StartOffset = mark.Low
+				// TODO: Add some note that custom offset was lower than low watermark
+			}
+		}
+
+		requests[mark.PartitionID] = p
+	}
+
+	// We strive to return an equal number of messages across all requested partitions.
+	// Round robin through partitions until either listReq.MaxMessageCount is reached or all partitions are drained
+	remainingMessages := listReq.MessageCount
+	yieldingPartitions := len(requests)
+
+	for remainingMessages > 0 {
+		// Check if there is at least one partition which can still return more messages
+		if yieldingPartitions == 0 {
+			break
+		}
+
+		for _, req := range requests {
+			// If partition is already drained we must ignore it
+			if req.IsDrained || remainingMessages == 0 {
+				continue
+			}
+
+			if listReq.StartOffset == sarama.OffsetNewest {
+				isDrained := req.StartOffset == req.LowWaterMark
+				if isDrained {
+					req.IsDrained = true
+					yieldingPartitions--
+					continue
+				}
+
+				// Consume "backwards" by lowering the start offset
+				req.StartOffset--
+			} else {
+				maxDelta := req.EndOffset - req.StartOffset
+				isDrained := maxDelta == req.MaxMessageCount
+				if isDrained {
+					req.IsDrained = true
+					yieldingPartitions--
+					continue
+				}
+
+				// We don't need to increase an endOffset here, because we'll increase the max message count.
+				// The partition consumer will then consume forward until it has either reached the high watermark
+				// or the desired number of max message count. However we still need to iterate through these partitions
+				// in order to check if other partitions may assist in fulfilling the requested message count.
+			}
+
+			req.MaxMessageCount++
+			remainingMessages--
+		}
+	}
+
+	// Finally clean up results and remove those partition requests which had been initialized but are not needed
+	filteredRequests := make(map[int32]*partitionConsumeRequest)
+	for pID, req := range requests {
+		if req.MaxMessageCount == 0 {
+			continue
+		}
+
+		filteredRequests[pID] = req
+	}
+
+	return filteredRequests
 }
