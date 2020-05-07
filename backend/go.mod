@@ -28,6 +28,7 @@ require (
 	github.com/prometheus/common v0.9.1
 	github.com/prometheus/procfs v0.0.9 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
+	github.com/stretchr/testify v1.5.1
 	github.com/valyala/fastjson v1.4.5
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c
 	go.opencensus.io v0.22.3 // indirect

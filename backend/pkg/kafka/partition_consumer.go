@@ -11,7 +11,6 @@ import (
 	"github.com/Shopify/sarama"
 	xj "github.com/basgys/goxml2json"
 	"github.com/valyala/fastjson"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -28,17 +27,13 @@ type partitionConsumer struct {
 	logger *zap.Logger // WithFields (topic, partitionId)
 
 	// Infrastructure
-	doneCh                     chan<- struct{} // notify parent that we're done
-	sharedCount                *atomic.Uint64  // shared message count
-	requestedTotalMessageCount uint64
-	progress                   IListMessagesProgress
+	doneCh   chan<- struct{} // notify parent that we're done
+	progress IListMessagesProgress
 
 	// Consumer Details / Parameters
-	consumer    sarama.Consumer
-	topicName   string
-	partitionID int32
-	startOffset int64
-	endOffset   int64
+	consumer  sarama.Consumer
+	topicName string
+	req       *partitionConsumeRequest
 }
 
 func (p *partitionConsumer) Run(ctx context.Context) {
@@ -47,10 +42,10 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 	}()
 
 	// Create PartitionConsumer
-	pConsumer, err := p.consumer.ConsumePartition(p.topicName, p.partitionID, p.startOffset)
+	pConsumer, err := p.consumer.ConsumePartition(p.topicName, p.req.PartitionID, p.req.StartOffset)
 	if err != nil {
-		p.logger.Error("Couldn't consume topic/partition", zap.Error(err))                               // server log
-		p.progress.OnError(fmt.Sprintf("Couldn't consume partition %v: %v", p.partitionID, err.Error())) // send to client
+		p.logger.Error("couldn't consume partition", zap.Error(err))
+		p.progress.OnError(fmt.Sprintf("couldn't consume partition %v: %v", p.req.PartitionID, err.Error()))
 		return
 	}
 	defer func() {
@@ -59,12 +54,13 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 		}
 	}()
 
+	messageCount := int64(0)
 	for {
 		select {
 		case m, ok := <-pConsumer.Messages():
 			if !ok {
 				p.logger.Error("partition consumer message channel has unexpectedly closed")
-				p.progress.OnError(fmt.Sprintf("Partition consumer (partitionId=%v) failed to get the next message (see server log)", p.partitionID))
+				p.progress.OnError(fmt.Sprintf("partition consumer (partitionId=%v) failed to get the next message (see server log)", p.req.PartitionID))
 				return
 			}
 
@@ -79,17 +75,11 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 				Size:        len(m.Value),
 				IsValueNull: m.Value == nil,
 			}
-
-			// We don't have to use a compare-exchange loop here, since we don't need
-			// to prevent 'p.sharedCount' from increasing beyond 'p.requestedTotalMessageCount'.
-			// We just have to make sure that we don't *send* more messages.
-			if p.sharedCount.Inc() > p.requestedTotalMessageCount {
-				return // enough messages already
-			}
+			messageCount++
 
 			p.progress.OnMessage(topicMessage)
 
-			if m.Offset >= p.endOffset {
+			if m.Offset >= p.req.EndOffset || messageCount == p.req.MaxMessageCount {
 				return // reached end offset
 			}
 		case <-ctx.Done():
