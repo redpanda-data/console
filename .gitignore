@@ -6,6 +6,8 @@ docker-compose/zk-single-kafka-single
 notes.md
 
 # IDEs
-.vscode
-.idea
-*.code-workspace
+**/.vscode
+**/.idea
+**/*.code-workspace
+
+**/config.yaml
