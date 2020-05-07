@@ -6,7 +6,12 @@ import { observable } from 'mobx';
 import SvgLoginWave from '../../assets/login_wave.svg';
 import PngLogo from '../../assets/logo2.png';
 import { uiState } from '../../state/uiState';
-import Icon from '@ant-design/icons';
+import Icon, { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
+
+const iconMap = new Map([
+    ["google", <GoogleOutlined style={{ marginBottom: '6px' }} />],
+    ["github", <GithubOutlined style={{ marginBottom: '6px' }} />],
+]);
 
 interface Provider {
     displayName: string,
@@ -100,14 +105,8 @@ class Login extends Component {
                             </div>
                             <div className='loginButtonList'>
                                 {ar && ar.map(p => (
-                                    // <div key={p.displayName} className='loginButton' onClick={() => window.location.replace(p.url)}>
-                                    //     <Icon type='google' style={{ fontSize: '26px', marginRight: '6px' }} />
-                                    //     <span>
-                                    //         Login with {p.displayName}
-                                    //     </span>
-                                    // </div>
                                     <div key={p.displayName} className='loginButton2' onClick={() => window.location.replace(p.url)}>
-                                        <Icon type={p.displayName.toLowerCase()} style={{ marginBottom: '6px' }} />
+                                        {iconMap.get(p.displayName.toLowerCase())}
                                         <span>
                                             {p.displayName}
                                         </span>
