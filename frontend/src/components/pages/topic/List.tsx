@@ -77,6 +77,9 @@ class TopicList extends PageComponent {
 
         const data = this.searchBar.current ? this.searchBar.current.data : ([] as TopicDetail[]);
 
+        const tt = topics[0] as any;
+        tt.partitionCount = undefined;
+
         return (
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>

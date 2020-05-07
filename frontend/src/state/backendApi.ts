@@ -16,9 +16,17 @@ import { notification } from "antd";
 
 const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
-
+const REST_DEBUG_BASE_URL = null// || "http://localhost:9090"; // only uncommented using "npm run build && serve -s build"
 
 export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T> {
+
+    if (REST_DEBUG_BASE_URL) {
+        url = REST_DEBUG_BASE_URL + url;
+        if (!requestInit) requestInit = {};
+        requestInit.mode = "no-cors";
+        requestInit.cache = "no-cache";
+    }
+
     const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
 
     if (res.status == 401) {
