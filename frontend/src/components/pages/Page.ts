@@ -11,7 +11,6 @@ export type PageProps<TRouteParams = {}> = TRouteParams & { matchedPath: string;
 export class PageInitHelper {
     set title(title: string) { uiState.pageTitle = title; }
     addBreadcrumb(title: string, to: string) { uiState.pageBreadcrumbs.push({ title: title, linkTo: to }) }
-    set extraContent(value: () => React.ReactNode) { uiState.pageHeaderExtra = value; }
 }
 export abstract class PageComponent<TRouteParams = {}> extends React.Component<PageProps<TRouteParams>> {
 
@@ -19,7 +18,6 @@ export abstract class PageComponent<TRouteParams = {}> extends React.Component<P
         super(props);
 
         uiState.pageBreadcrumbs = [];
-        uiState.pageHeaderExtra = () => null;
 
         this.initPage(new PageInitHelper());
     }

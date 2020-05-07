@@ -25,7 +25,7 @@ import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined } from '@ant-design/icons';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -116,12 +116,12 @@ const DataAgeInfo = observer(() => {
     // maybe we need to use the same 'no vertical expansion' trick:
     // <span >
     return (
-        <div style={{ color: 'hsl(205, 100%, 50%)', display: 'flex', alignItems: 'center', height: '2em' }} className='fadeIn' >
+        <div style={{ color: 'hsl(205, 100%, 50%)', display: 'flex', height: '3em' }} className='fadeIn' >
 
             {maxFetchTime < 0.1
                 ?
                 <>
-                    <Button icon='reload' shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
+                    <Button icon={<ReloadOutlined />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
                     {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
                 </>
                 :
@@ -153,7 +153,6 @@ const AppPageHeader = observer(() => {
             title={<><Title level={3}>{uiState.pageTitle}</Title></>}
             subTitle={<DataAgeInfo />}
             footer={<></>}
-            extra={uiState.pageHeaderExtra()} // right sider
         />
     </MotionDiv>
 });

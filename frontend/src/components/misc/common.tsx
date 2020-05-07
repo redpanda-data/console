@@ -45,7 +45,7 @@ export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />
 export const DEFAULT_TABLE_PAGE_SIZE = 50;
 export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE): TablePaginationConfig {
     return {
-        position: [uiSettings.userDefaults.paginationPosition],
+        position: ['none' as any, 'bottomRight'],
         pageSize: pageSize,
 
         showSizeChanger: true,

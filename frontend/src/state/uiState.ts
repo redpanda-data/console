@@ -16,10 +16,6 @@ class UIState {
 
     @observable pageBreadcrumbs: BreadcrumbEntry[] = []
 
-    @observable private pageHeaderExtraFunc: (() => React.ReactNode) | undefined = undefined
-    @computed get pageHeaderExtra(): () => React.ReactNode { return this.pageHeaderExtraFunc || (() => null) }
-    set pageHeaderExtra(func: (() => React.ReactNode)) { this.pageHeaderExtraFunc = func; }
-
     @computed get selectedClusterName(): string | null {
         if (uiSettings.selectedClusterIndex in api.Clusters)
             return api.Clusters[uiSettings.selectedClusterIndex];
