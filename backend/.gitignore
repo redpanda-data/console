@@ -21,3 +21,7 @@ e2e/data
 
 # Compiled frontend
 build
+
+# Local configs
+config.yaml
+config

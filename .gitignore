@@ -10,5 +10,3 @@ fixname.sh
 **/.vscode
 **/.idea
 **/*.code-workspace
-
-**/config.yaml
