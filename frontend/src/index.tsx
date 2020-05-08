@@ -14,10 +14,6 @@ import 'mobx-react-lite/batchingForReactDom'
 import App from "./components/App";
 import { appGlobal } from "./state/appGlobal";
 
-// True for 'KafkaOwl Business'
-// Enables the top bar and its features: cluster select, login
-export const isBusinessVersion = process?.env?.REACT_APP_BUSINESS ?? false;
-
 const HistorySetter = withRouter((p: RouteComponentProps) => {
   appGlobal.history = p.history;
   return <></>;

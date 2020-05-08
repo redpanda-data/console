@@ -27,6 +27,7 @@ import { numberToThousandsString, ZeroSizeWrapper } from "../../../utils/tsxUtil
 import Octicon, { Skip } from '@primer/octicons-react';
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
 import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined } from '@ant-design/icons';
+import { ErrorBoundary } from "../../misc/ErrorBoundary";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -280,32 +281,34 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         ];
 
         return <>
-            <ConfigProvider renderEmpty={this.empty}>
-                <Table
-                    style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
-                    size='middle'
-                    pagination={this.pageConfig}
-                    onChange={(pagination, filters, sorter, extra) => {
-                        if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;
-                        this.pageConfig.current = pagination.current;
-                        this.pageConfig.pageSize = pagination.pageSize;
-                    }}
-                    dataSource={this.messageSource.data}
-                    loading={this.requestInProgress}
-                    rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
-                    rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
+            <ErrorBoundary>
+                <ConfigProvider renderEmpty={this.empty}>
+                    <Table
+                        style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
+                        size='middle'
+                        pagination={this.pageConfig}
+                        onChange={(pagination, filters, sorter, extra) => {
+                            if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;
+                            this.pageConfig.current = pagination.current;
+                            this.pageConfig.pageSize = pagination.pageSize;
+                        }}
+                        dataSource={this.messageSource.data}
+                        loading={this.requestInProgress}
+                        rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
+                        rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
 
-                    expandable={{
-                        expandRowByClick: false,
-                        expandedRowRender: record => RenderExpandedMessage(record),
-                        expandIconColumnIndex: columns.findIndex(c => c.dataIndex === 'value')
-                    }}
+                        expandable={{
+                            expandRowByClick: false,
+                            expandedRowRender: record => RenderExpandedMessage(record),
+                            expandIconColumnIndex: columns.findIndex(c => c.dataIndex === 'value')
+                        }}
 
-                    columns={columns}
-                />
+                        columns={columns}
+                    />
 
-                {(this.messageSource.data && this.messageSource.data.length > 0) && <this.PreviewSettings />}
-            </ConfigProvider>
+                    {(this.messageSource.data && this.messageSource.data.length > 0) && <this.PreviewSettings />}
+                </ConfigProvider>
+            </ErrorBoundary>
         </>
     })
 

@@ -4,8 +4,17 @@ import { observable } from "mobx";
 import { ToJson } from "../../utils/utils";
 import { Button, Layout, message, Space } from "antd";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
+import env, { envVarDebugAr } from "../../utils/env";
 
 const { Content, Footer, Sider, Header } = Layout;
+
+// background       rgb(35, 35, 35)
+// div              rgba(206, 17, 38, 0.1)
+// title            rgb(232, 59, 70)
+// foreground  
+//    - main        rgb(252, 207, 207)
+//    - highligh    rgb(204, 102, 102)
+//    - secondary   rgb(135, 142, 145)
 
 const valueStyle: CSSProperties = {
     whiteSpace: 'pre-line',
@@ -40,21 +49,27 @@ export class ErrorBoundary extends React.Component {
         console.dir(errorInfo)
 
         this.infoItems = [];
+
+        // Type
         if (this.error?.name && this.error.name.toLowerCase() != 'error')
             this.infoItems.push({ name: "Type", value: this.error.name });
 
+        // Message
         if (this.error?.message)
             this.infoItems.push({ name: "Message", value: this.error.message });
         else
             this.infoItems.push({ name: "Message", value: "(no message)" });
 
+        // Call Stack
         if (this.error?.stack) {
             let s = this.error.stack;
-            if (s.toLowerCase().startsWith("error:")) s = s.substr(6).trim();
-            if (this.error.message && s.startsWith(this.error.message)) s = s.substr(this.error.message.length).trimStart();
+            if (s.toLowerCase().startsWith("error:")) s = s.substr(6).trim(); // todo removePrefix()
+            if (this.error.message && s.startsWith(this.error.message))
+                s = s.substr(this.error.message.length).trimStart();
             this.infoItems.push({ name: "Stack", value: s });
         }
 
+        // Component Stack
         if (this.errorInfo && (this.errorInfo as any).componentStack)
             this.infoItems.push({ name: "Components", value: (this.errorInfo as any).componentStack });
         else
@@ -63,6 +78,18 @@ export class ErrorBoundary extends React.Component {
                     ? "(componentStack not set) errorInfo as Json: \n" + ToJson(this.errorInfo)
                     : "(errorInfo was not set)"
             });
+
+
+        // EnvVars
+        try {
+            const len = envVarDebugAr.map(e => e.name.length).reduce((p, c) => Math.max(p, c));
+            this.infoItems.push({
+                name: "Environment",
+                value: envVarDebugAr.map(e => e.name.padEnd(len) + ': ' + e.value).join("\n")
+            })
+        } catch (ex) {
+            this.infoItems.push({ name: "Environment", value: "(error retreiving env list)" });
+        }
 
 
         // Remove indentation from stack traces

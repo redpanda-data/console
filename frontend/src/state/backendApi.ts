@@ -9,7 +9,7 @@ import { observable, autorun, computed } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/utils";
 import { objToQuery } from "../utils/queryHelper";
-import { IsDevelopment } from "../utils/isProd";
+import { IsDevelopment } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
