@@ -30,8 +30,8 @@ export default env;
 //
 // Helpers
 const isDev = (!process.env.NODE_ENV || process.env.NODE_ENV === 'development');
-export const IsProduction = !isDev; // todo: rename IsProd IsDev
-export const IsDevelopment = isDev;
+export const IsProd = !isDev; // todo: rename IsProd IsDev
+export const IsDev = isDev;
 
 export const IsBusiness = Boolean(env.REACT_APP_BUSINESS);
 export const AppName = IsBusiness ? 'Kowl Business' : 'Kowl';

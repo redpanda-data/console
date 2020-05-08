@@ -17,7 +17,7 @@ import Title from 'antd/lib/typography/Title';
 import logo2 from '../assets/logo2.png';
 import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsProduction, IsDevelopment, AppName, IsBusiness } from '../utils/env';
+import { IsProd, IsDev, AppName, IsBusiness } from '../utils/env';
 import { TopBar } from './misc/TopBar';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
@@ -35,7 +35,7 @@ let siderCollapsedWidth = 80;
 const VersionInfo = () => {
     // Local Development Mode
     //   Kowl - DEV
-    if (IsDevelopment) return <div>{AppName} - DEV</div>
+    if (IsDev) return <div>{AppName} - DEV</div>
 
     // Continuous Delivery Mode
     //   Kowl Business - CI
@@ -252,7 +252,7 @@ class App extends Component {
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />
         const path = window.location.pathname;
-        const isDev = !IsProduction;
+        const isDev = !IsProd;
         const devPrint = function (str: string) { if (isDev) console.log(`loginHandling (${path}): ` + str); }
 
         if (path.startsWith('/login'))

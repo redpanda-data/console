@@ -9,12 +9,12 @@ import { observable, autorun, computed } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/utils";
 import { objToQuery } from "../utils/queryHelper";
-import { IsDevelopment } from "../utils/env";
+import { IsDev } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
 
-const REST_TIMEOUT_SEC = IsDevelopment ? 5 : 25;
+const REST_TIMEOUT_SEC = IsDev ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
 const REST_DEBUG_BASE_URL = null// || "http://localhost:9090"; // only uncommented using "npm run build && serve -s build"
 
@@ -186,7 +186,7 @@ const apiStore = {
 
         const isHttps = window.location.protocol.startsWith('https');
         const protocol = isHttps ? 'wss://' : 'ws://';
-        const host = IsDevelopment ? 'localhost:9090' : window.location.host;
+        const host = IsDev ? 'localhost:9090' : window.location.host;
         const url = protocol + host + '/api/topics/' + topicName + '/messages' + queryString;
 
         console.log("connecting to \"" + url + "\"");
