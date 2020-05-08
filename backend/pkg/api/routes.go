@@ -95,11 +95,7 @@ func (api *API) routes() *chi.Mux {
 
 	// Websockets live in it's own group because not all middlewares support websockets
 	baseRouter.Group(func(wsRouter chi.Router) {
-		// We only want to call this function here (a second time!) because we configure middlewares in it. Specifically
-		// the EnsureLoggedIn middleware. Without this middleware the session claims which are required for checking the
-		// user permissions, can not be extracted anymore. This should be refactored into a better solution probably.
-		// This could potentially lead to duplicate routes for the same endpoints.
-		api.Hooks.Route.ConfigAPIRouter(wsRouter)
+		api.Hooks.Route.ConfigWsRouter(wsRouter)
 
 		wsRouter.Get("/api/topics/{topicName}/messages", api.handleGetMessages())
 	})

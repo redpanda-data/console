@@ -20,6 +20,9 @@ type RouteHooks interface {
 	// ConfigAPIRouter allows you to modify the router responsible for all /api routes
 	ConfigAPIRouter(router chi.Router)
 
+	// ConfigAPIRouter allows you to modify the router responsible for all websocket routes
+	ConfigWsRouter(router chi.Router)
+
 	// ConfigRouter allows you to modify the router responsible for all non /api and non /admin routes.
 	// By default we serve the frontend on these routes.
 	ConfigRouter(router chi.Router)
@@ -51,6 +54,7 @@ func newDefaultHooks() *Hooks {
 
 // Router Hooks
 func (*defaultHooks) ConfigAPIRouter(_ chi.Router) {}
+func (*defaultHooks) ConfigWsRouter(_ chi.Router)  {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)    {}
 
 // Owl Hooks
