@@ -27,6 +27,7 @@ import { numberToThousandsString, ZeroSizeWrapper } from "../../../utils/tsxUtil
 import Octicon, { Skip } from '@primer/octicons-react';
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
 import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined } from '@ant-design/icons';
+import { ErrorBoundary } from "../../misc/ErrorBoundary";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -67,16 +68,22 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
 
         // Auto search when parameters change
+        let currentSearchRun: string | null = null;
         this.autoSearchReaction = autorun(() => {
-            const params = uiState.topicSettings.searchParams;
-            console.log('autorun search: ' + ToJson(params));
-            // trigger mobx: let it know we are interested in those props
-            const _ = params._offsetMode + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
+            if (currentSearchRun) return;
             try {
+                const params = uiState.topicSettings.searchParams;
+                console.log('autorun search: ' + ToJson(params));
+                // 1. trigger mobx: let it know we are interested in those props
+                // 2. prevent recursive updates
+                currentSearchRun = String(params._offsetMode) + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
+
                 if (this.fetchError == null)
                     this.executeMessageSearch();
             } catch (error) {
                 console.error(error);
+            } finally {
+                currentSearchRun = null;
             }
         }, { delay: 100, name: 'auto search when parameters change' });
 
@@ -280,32 +287,34 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         ];
 
         return <>
-            <ConfigProvider renderEmpty={this.empty}>
-                <Table
-                    style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
-                    size='middle'
-                    pagination={this.pageConfig}
-                    onChange={(pagination, filters, sorter, extra) => {
-                        if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;
-                        this.pageConfig.current = pagination.current;
-                        this.pageConfig.pageSize = pagination.pageSize;
-                    }}
-                    dataSource={this.messageSource.data}
-                    loading={this.requestInProgress}
-                    rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
-                    rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
+            <ErrorBoundary>
+                <ConfigProvider renderEmpty={this.empty}>
+                    <Table
+                        style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
+                        size='middle'
+                        pagination={this.pageConfig}
+                        onChange={(pagination, filters, sorter, extra) => {
+                            if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;
+                            this.pageConfig.current = pagination.current;
+                            this.pageConfig.pageSize = pagination.pageSize;
+                        }}
+                        dataSource={this.messageSource.data}
+                        loading={this.requestInProgress}
+                        rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
+                        rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
 
-                    expandable={{
-                        expandRowByClick: false,
-                        expandedRowRender: record => RenderExpandedMessage(record),
-                        expandIconColumnIndex: columns.findIndex(c => c.dataIndex === 'value')
-                    }}
+                        expandable={{
+                            expandRowByClick: false,
+                            expandedRowRender: record => RenderExpandedMessage(record),
+                            expandIconColumnIndex: columns.findIndex(c => c.dataIndex === 'value')
+                        }}
 
-                    columns={columns}
-                />
+                        columns={columns}
+                    />
 
-                {(this.messageSource.data && this.messageSource.data.length > 0) && <this.PreviewSettings />}
-            </ConfigProvider>
+                    {(this.messageSource.data && this.messageSource.data.length > 0) && <this.PreviewSettings />}
+                </ConfigProvider>
+            </ErrorBoundary>
         </>
     })
 

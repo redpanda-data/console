@@ -4,8 +4,11 @@ docker-compose/zk-single-kafka-single
 # Misc
 .DS_Store
 notes.md
+fixname.sh
 
 # IDEs
-.vscode
-.idea
-*.code-workspace
+**/.vscode
+**/.idea
+**/*.code-workspace
+
+**/config.yaml

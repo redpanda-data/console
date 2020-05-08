@@ -46,6 +46,10 @@ ARG KOWL_TIMESTAMP
 RUN test -n "$KOWL_TIMESTAMP" || (echo "KOWL_TIMESTAMP must be set" && false)
 ENV REACT_APP_KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
 
+# whether the image was build in response to a push (as opposed to an intentional "release")
+ARG BUILT_FROM_PUSH
+ENV REACT_APP_BUILT_FROM_PUSH ${BUILT_FROM_PUSH}
+
 COPY ./frontend ./
 RUN npm run build
 # All the built frontend files for the SPA are now in '/app/build/'

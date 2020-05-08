@@ -4,7 +4,7 @@ import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
 import { PageComponent, PageInitHelper } from "./Page";
-import { makePaginationConfig } from "../misc/common";
+import { makePaginationConfig, sortField } from "../misc/common";
 import { MotionDiv } from "../../utils/animationProps";
 import { GroupDescription, GroupMemberDescription, GroupMemberAssignment, TopicLag } from "../../state/restInterfaces";
 import { groupConsecutive } from "../../utils/utils";
@@ -130,7 +130,7 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
         rowKey={r => r.id}
         rowClassName={() => 'pureDisplayRow'}
         columns={[
-            { title: <span>Consumer ID</span>, dataIndex: 'id', className: 'whiteSpaceDefault', render: renderMergedID },
+            { title: <span>Consumer ID</span>, dataIndex: 'id', className: 'whiteSpaceDefault', render: renderMergedID, sorter: sortField('id'), sortOrder: 'ascend' },
             //{ width: '150px', title: 'ClientID', dataIndex: 'clientId' },
             { width: '150px', title: 'Client Host', dataIndex: 'clientHost' },
             { title: 'Assignments', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t), className: 'whiteSpaceDefault' },
@@ -140,7 +140,10 @@ const GroupMembers = observer((p: { group: GroupDescription }) => {
 const renderMergedID = (text: string, record: GroupMemberDescription) => {
     if (record.id.startsWith(record.clientId)) { // should always be true...
         const suffix = record.id.substring(record.clientId.length);
-        return <>{record.clientId}<span className='consumerGroupSuffix'>{suffix}</span></>
+        return <span className='consumerGroupCompleteID'>
+            <span className='consumerGroupName'>{record.clientId}</span>
+            <span className='consumerGroupSuffix'>{suffix}</span>
+        </span>
     }
 };
 

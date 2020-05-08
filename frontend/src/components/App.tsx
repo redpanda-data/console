@@ -17,9 +17,8 @@ import Title from 'antd/lib/typography/Title';
 import logo2 from '../assets/logo2.png';
 import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsProduction, IsDevelopment } from '../utils/isProd';
+import { IsProd, IsDev, AppName, IsBusiness } from '../utils/env';
 import { TopBar } from './misc/TopBar';
-import { isBusinessVersion } from '..';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
@@ -32,6 +31,46 @@ const { Content, Footer, Sider } = Layout;
 
 let siderCollapsedWidth = 80;
 
+
+const VersionInfo = () => {
+    // Local Development Mode
+    //   Kowl - DEV
+    if (IsDev) return <div>{AppName} - DEV</div>
+
+    // Continuous Delivery Mode
+    //   Kowl Business - CI
+    //   b27c2a3f f3acf4b7
+    if (env.REACT_APP_BUILT_FROM_PUSH) return <>
+        <div>{AppName} - CI</div>
+        <div>
+            <span>{env.REACT_APP_KOWL_GIT_REF != 'master' && env.REACT_APP_KOWL_GIT_REF + "-"}</span>
+            <span>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 8)}</span>
+        </div>
+
+        {IsBusiness && <div>
+            <span>{env.REACT_APP_KOWL_BUSINESS_GIT_REF != 'master' &&
+                env.REACT_APP_KOWL_BUSINESS_GIT_REF + "-"}</span>
+            <span>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 8)}</span>
+        </div>}
+
+        <div>
+            {getBuildDate(IsBusiness ? 'business' : 'free')?.toDateString()}
+        </div>
+    </>
+
+    // Release
+    //   Kowl Business v1.2.3
+    //   b27c2a3f f3acf4b7
+    return <>
+        <div>{AppName} - {IsBusiness ? env.REACT_APP_KOWL_BUSINESS_GIT_REF : env.REACT_APP_KOWL_GIT_REF}</div>
+        <div>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 8)}</div>
+        {IsBusiness && <div>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 8)}</div>}
+        <div>
+            {getBuildDate(IsBusiness ? 'business' : 'free')?.toDateString()}
+        </div>
+    </>
+
+}
 
 const SideBar = observer(() =>
     <Layout style={{ display: 'flex', flex: 1, height: '100vh', flexDirection: 'column', background: 'linear-gradient(180deg, hsla(206, 60%, 17%, 0.95) 0%, #08273ef5 94.27%) no-repeat' }}>
@@ -81,9 +120,11 @@ const SideBar = observer(() =>
 
         {/* Version */}
         <div className='version'>
-            <div className='repo'><a title="Visit Kowl's GitHub repository" href="https://github.com/cloudhut/kowl"><img src={gitHubLogo} /></a></div>
-            <div>Kowl - {env.REACT_APP_KOWL_GIT_REF || (IsDevelopment ? 'dev' : 'release')}-{env.REACT_APP_KOWL_GIT_SHA.slice(0, 8) || 'mode'}</div>
-            {!IsDevelopment && <div>Built {getBuildDate()}</div>}
+            <div className='repo'><a title="Visit Kowl's GitHub repository" href="https://github.com/cloudhut/kowl">
+                <img src={gitHubLogo} />
+            </a></div>
+
+            <VersionInfo />
         </div>
 
         {/* Toggle */}
@@ -163,10 +204,10 @@ const AppContent = observer(() =>
         <RenderTrap name='AppContentLayout' />
 
         {/* Cluster, User */}
-        {isBusinessVersion && <TopBar />}
+        {IsBusiness && <TopBar />}
 
         {/* Page */}
-        <Content style={{ display: 'flex', flexDirection: 'column', background: '#f0f2f5', padding: '8px 6px 8px 4px', zIndex: 1 }}>
+        <Content style={{ display: 'flex', flexDirection: 'column', padding: '8px 6px 8px 4px', zIndex: 1 }}>
             <AppPageHeader />
 
             <ErrorDisplay>
@@ -206,12 +247,12 @@ class App extends Component {
 
     loginHandling(): JSX.Element | null {
 
-        if (!isBusinessVersion)
+        if (!IsBusiness)
             return null; // free version has no login handling
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />
         const path = window.location.pathname;
-        const isDev = !IsProduction;
+        const isDev = !IsProd;
         const devPrint = function (str: string) { if (isDev) console.log(`loginHandling (${path}): ` + str); }
 
         if (path.startsWith('/login'))

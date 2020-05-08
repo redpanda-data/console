@@ -1,16 +1,11 @@
-import React, { PureComponent } from 'react';
+import React from 'react';
 import { observer } from "mobx-react"
-import { Layout, Menu, Select, Avatar, Popconfirm, Dropdown } from 'antd';
+import { Menu, Select, Avatar, Popconfirm, Dropdown } from 'antd';
 import { uiSettings } from '../../state/ui';
 import { RenderTrap, Spacer } from '.././misc/common';
 import { api } from '../../state/backendApi';
-
-import { IsDevelopment } from '../../utils/isProd';
-import env from '../../utils/env';
-import { appGlobal } from '../../state/appGlobal';
 import Icon from '@ant-design/icons';
 
-const { Content, Footer, Sider, Header } = Layout;
 const { Option } = Select;
 
 
