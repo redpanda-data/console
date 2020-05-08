@@ -194,7 +194,7 @@ class App extends Component {
 
                     {/* Default View */}
                     <Route path="*">
-                        <Layout style={{ minHeight: '100vh', background: 'transparent', overflow: 'hidden' }}>
+                        <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
                             <AppSide />
                             <AppContent />
                         </Layout>

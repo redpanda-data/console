@@ -319,9 +319,19 @@ span>.icon-container~span {
     white-space: normal;
 }
 
+.consumerGroupCompleteID {
+    white-space: normal;
+    word-break: break-all;
+}
+.consumerGroupName {
+    white-space: nowrap;
+}
 .consumerGroupSuffix {
     opacity: 0.4;
+    white-space: nowrap;
 }
+
+
 
 .groupLagDisplayLine {
     font-size: 85%;
@@ -582,4 +592,11 @@ tr:hover button.ant-btn-link {
 
 button.ant-table-row-expand-icon {
     margin-left: 12px;
+}
+
+/* Fix: make it possible to configure column width */
+td .ant-table-cell {
+    word-wrap: break-word;
+    word-break: break-all;
+    white-space: normal;
 }
