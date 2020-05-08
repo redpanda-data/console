@@ -72,7 +72,7 @@ func (api *API) routes() *chi.Mux {
 
 		if api.Cfg.ServeFrontend {
 			// Check if the frontend directory 'build' exists
-			dir, err := filepath.Abs("./build")
+			dir, err := filepath.Abs(api.Cfg.FrontendPath)
 			if err != nil {
 				api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", dir), zap.Error(err))
 			}
