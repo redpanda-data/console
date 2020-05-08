@@ -15,6 +15,7 @@ type Config struct {
 	ConfigFilepath   string
 	MetricsNamespace string `yaml:"metricsNamespace"`
 	ServeFrontend    bool   `yaml:"serveFrontend"`
+	FrontendPath     string `yaml:"frontendPath"`
 
 	REST   rest.Config    `yaml:"server"`
 	Kafka  kafka.Config   `yaml:"kafka"`
@@ -47,6 +48,7 @@ func (c *Config) Validate() error {
 // SetDefaults for all root and child config structs
 func (c *Config) SetDefaults() {
 	c.ServeFrontend = true
+	c.FrontendPath = "./build"
 	c.MetricsNamespace = "kowl"
 
 	c.Logger.SetDefaults()
