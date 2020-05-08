@@ -34,6 +34,7 @@ jobs:
           --build-arg "KOWL_GIT_SHA=${GITHUB_SHA}"
           --build-arg "KOWL_GIT_REF=${{ steps.extract_ref.outputs.ref }}"
           --build-arg "KOWL_TIMESTAMP=${{ steps.set_timestamp.outputs.time }}"
+          --build-arg "BUILT_FROM_PUSH=true"
           -t quay.io/cloudhut/kowl:master-$(echo ${GITHUB_SHA} | cut -c1-8)
           -t quay.io/cloudhut/kowl:master
           .
