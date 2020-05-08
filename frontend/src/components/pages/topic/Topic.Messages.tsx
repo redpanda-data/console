@@ -68,16 +68,22 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
 
         // Auto search when parameters change
+        let currentSearchRun: string | null = null;
         this.autoSearchReaction = autorun(() => {
-            const params = uiState.topicSettings.searchParams;
-            console.log('autorun search: ' + ToJson(params));
-            // trigger mobx: let it know we are interested in those props
-            const _ = params._offsetMode + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
+            if (currentSearchRun) return;
             try {
+                const params = uiState.topicSettings.searchParams;
+                console.log('autorun search: ' + ToJson(params));
+                // 1. trigger mobx: let it know we are interested in those props
+                // 2. prevent recursive updates
+                currentSearchRun = String(params._offsetMode) + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
+
                 if (this.fetchError == null)
                     this.executeMessageSearch();
             } catch (error) {
                 console.error(error);
+            } finally {
+                currentSearchRun = null;
             }
         }, { delay: 100, name: 'auto search when parameters change' });
 
