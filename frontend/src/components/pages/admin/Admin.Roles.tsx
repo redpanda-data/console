@@ -18,9 +18,6 @@ import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProp
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
-import { uiState } from "../../../state/uiState";
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { numberToThousandsString, QuickTable, ObjToKv } from "../../../utils/tsxUtils";
 import Card from "../../misc/Card";
 import Icon from '@ant-design/icons';
 

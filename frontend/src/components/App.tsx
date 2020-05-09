@@ -286,7 +286,7 @@ class App extends Component {
                     devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging')
                     uiState.isUsingDebugUserLogin = true;
                     api.UserData = {
-                        canManageKowl: true,
+                        canManageKowl: false,
                         seat: null as any,
                         user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                     };

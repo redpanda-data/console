@@ -1,5 +1,5 @@
 import React, { Component, RefObject } from "react";
-import { Table, Empty, Skeleton, Checkbox, Row, Statistic, Input, Typography, AutoComplete, Button, Popover, Switch, Divider } from "antd";
+import { Table, Empty, Skeleton, Checkbox, Row, Statistic, Input, Typography, AutoComplete, Button, Popover, Switch, Divider, Descriptions } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
@@ -12,11 +12,12 @@ import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { TopicDetail } from "../../../state/restInterfaces";
 import { observable, autorun, IReactionDisposer } from "mobx";
 import prettyBytes from "pretty-bytes";
-import { prettyBytesOrNA } from "../../../utils/utils";
+import { prettyBytesOrNA, DebugTimerStore } from "../../../utils/utils";
 import { uiState } from "../../../state/uiState";
 import Card from "../../misc/Card";
 import { editQuery } from "../../../utils/queryHelper";
 import Icon from '@ant-design/icons';
+import { QuickTable } from "../../../utils/tsxUtils";
 const { Text } = Typography;
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -76,13 +77,32 @@ class TopicList extends PageComponent {
         const topics = this.getTopics();
 
         const data = this.searchBar.current ? this.searchBar.current.data : ([] as TopicDetail[]);
+        const partitionCountReal = topics.map(x => x.partitionCount).reduce((p, c) => p + c);
+        const partitionCountOnlyReplicated = topics.map(x => x.partitionCount * x.replicationFactor).reduce((p, c) => p + c);
+
+        // const partitionDetails = (
+        //     <Descriptions bordered={false} size='small' layout="horizontal" column={1} style={{ display: "inline-block" }}>
+        //         <Descriptions.Item label="Primary">{partitionCountReal}</Descriptions.Item>
+        //         <Descriptions.Item label="Replicated">{partitionCountOnlyReplicated}</Descriptions.Item>
+        //         <Descriptions.Item label="All ">{partitionCountReal + partitionCountOnlyReplicated}</Descriptions.Item>
+        //     </Descriptions>
+        // );
+        const partitionDetails = QuickTable([
+            { key: 'Primary:', value: partitionCountReal },
+            { key: 'Replicated:', value: partitionCountOnlyReplicated },
+            { key: 'All:', value: partitionCountReal + partitionCountOnlyReplicated },
+        ], { keyAlign: 'right', keyStyle: { fontWeight: 'bold' } })
 
         return (
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
                     <Row>
                         <Statistic title='Total Topics' value={topics.length} />
-                        <Statistic title='Total Partitions' value={topics.map(x => x.partitionCount).reduce((p, c) => p + c)} />
+                        <Popover title='Partition Details' content={partitionDetails} placement='right' mouseEnterDelay={0} trigger='hover'>
+                            <div className="hoverLink" style={{ display: "flex", verticalAlign: "middle", cursor: "default" }}>
+                                <Statistic title='Total Partitions' value={partitionCountReal} />
+                            </div>
+                        </Popover>
                     </Row>
                 </Card>
 
