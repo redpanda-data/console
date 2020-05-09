@@ -4,14 +4,14 @@ import { observable } from "mobx";
 import { ToJson } from "../../utils/utils";
 import { Button, Layout, message, Space } from "antd";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
-import env, { envVarDebugAr } from "../../utils/env";
+import { envVarDebugAr } from "../../utils/env";
 
 const { Content, Footer, Sider, Header } = Layout;
 
 // background       rgb(35, 35, 35)
 // div              rgba(206, 17, 38, 0.1)
 // title            rgb(232, 59, 70)
-// foreground  
+// foreground
 //    - main        rgb(252, 207, 207)
 //    - highligh    rgb(204, 102, 102)
 //    - secondary   rgb(135, 142, 145)

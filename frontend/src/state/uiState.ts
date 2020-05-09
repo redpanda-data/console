@@ -64,6 +64,7 @@ class UIState {
     }
 
     @observable loginError: string | null = null;
+    @observable isUsingDebugUserLogin: boolean = false;
 }
 
 

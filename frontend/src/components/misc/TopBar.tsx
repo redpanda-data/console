@@ -4,7 +4,7 @@ import { Menu, Select, Avatar, Popconfirm, Dropdown } from 'antd';
 import { uiSettings } from '../../state/ui';
 import { RenderTrap, Spacer } from '.././misc/common';
 import { api } from '../../state/backendApi';
-import Icon from '@ant-design/icons';
+import Icon, { UserOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
@@ -55,16 +55,12 @@ const TopBar = observer(() => {
 
                 {/* User Button */}
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}> {/* user column */}
-
-
-
-
                     <Popconfirm title='Do you want to logout?' onConfirm={() => api.logout()} placement='left' okText='Yes' cancelText='No' />
 
                     <Dropdown overlay={menu} trigger={['click']}>
                         <div style={{ cursor: 'pointer' }}>
                             <span style={{ display: 'flex', alignItems: 'center' }}>
-                                <Avatar shape="square" size='large' icon="user" src={user.meta.avatarUrl} style={{ marginRight: '.3em' }} />
+                                <Avatar shape="square" size='large' src={user.meta.avatarUrl} style={{ marginRight: '.3em' }} />
                                 <Icon type='caret-down' style={{ color: 'rgba(0,0,0,0.6)' }} />
                             </span>
                         </div>

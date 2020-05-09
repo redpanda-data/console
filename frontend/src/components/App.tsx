@@ -32,6 +32,13 @@ const { Content, Footer, Sider } = Layout;
 let siderCollapsedWidth = 80;
 
 
+const DebugUserInfoBar = () => (
+    <div style={{ background: '#FFCD22', padding: '2rem', fontSize: '120%', fontWeight: 'bold', textAlign: 'center', display: 'flex', placeContent: 'center' }}>
+        This frontend has been compiled for usage with Kowl-Business, but the backend server is the free version of Kowl. <br />
+        You have been logged in as a locally created fake user to help debugging.
+    </div>
+)
+
 const VersionInfo = () => {
     // Local Development Mode
     //   Kowl - DEV
@@ -71,7 +78,6 @@ const VersionInfo = () => {
     </>
 
 }
-
 const SideBar = observer(() =>
     <Layout style={{ display: 'flex', flex: 1, height: '100vh', flexDirection: 'column', background: 'linear-gradient(180deg, hsla(206, 60%, 17%, 0.95) 0%, #08273ef5 94.27%) no-repeat' }}>
         <RenderTrap name='SideBarContent' />
@@ -203,6 +209,9 @@ const AppContent = observer(() =>
 
         <RenderTrap name='AppContentLayout' />
 
+        {/* Debug User */}
+        {uiState.isUsingDebugUserLogin && <DebugUserInfoBar />}
+
         {/* Cluster, User */}
         {IsBusiness && <TopBar />}
 
@@ -252,34 +261,43 @@ class App extends Component {
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />
         const path = window.location.pathname;
-        const isDev = !IsProd;
-        const devPrint = function (str: string) { if (isDev) console.log(`loginHandling (${path}): ` + str); }
+        const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); }
 
         if (path.startsWith('/login'))
             return null; // already in login process, don't interrupt!
 
         if (api.UserData === null && !path.startsWith('/login')) {
-            devPrint('hard redirect to login');
+            devPrint('known not logged in, hard redirect');
             window.location.pathname = '/login'; // definitely not logged in, and in wrong url: hard redirect!
             return preLogin;
         }
 
         if (api.UserData === undefined) {
-            devPrint('user is undefined...');
+            devPrint('user is undefined (this is most likely a fresh page load)');
 
             fetchWithTimeout('/api/users/me', 10 * 1000).then(async r => {
                 if (r.ok) {
                     api.UserData = await r.json() as UserData;
-                    devPrint('fetched user successfully');
-                } else if (r.status == 401) {
+                    devPrint('user fetched, success');
+                } else if (r.status == 401) { // unauthorized / not logged in
+                    devPrint('not logged in');
                     api.UserData = null;
+                } else if (r.status == 404) { // not found: server must be non-business version
+                    devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging')
+                    uiState.isUsingDebugUserLogin = true;
+                    api.UserData = {
+                        canManageKowl: true,
+                        seat: null as any,
+                        user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
+                    };
                 }
             });
 
             // don't render anything until we know if we're already logged in or not
             return preLogin;
         } else {
-            devPrint('user is set: ' + JSON.stringify(api.UserData));
+            if (!uiState.isUsingDebugUserLogin)
+                devPrint('user is set: ' + JSON.stringify(api.UserData));
             return null;
         }
     }
