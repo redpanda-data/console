@@ -138,7 +138,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	allWorkersDone := false
 	requestCancelled := false
 
-	progress.OnPhase("Loading")
+	progress.OnPhase("Consuming messages")
 
 	// Priority list of actions
 	// since we need to process cases by their priority, we must check them individually and
