@@ -177,7 +177,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			defer progress.wsMutex.Unlock()
 			err = wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil && err != websocket.ErrCloseSent {
-				api.Logger.Error("failed to send 'CloseNormalClosure' to ws connection", zap.Error(err))
+				api.Logger.Debug("failed to send 'CloseNormalClosure' to ws connection", zap.Error(err))
 			} else {
 				//api.Logger.Debug("graceful WS close message sent")
 				// the example in github.com/gorilla/websocket also does this
