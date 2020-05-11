@@ -277,9 +277,9 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         <ZeroSizeWrapper width={32} height={0}>
                             <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
                         </ZeroSizeWrapper>
-                        <ZeroSizeWrapper width={32} height={0}>
-                            <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
-                        </ZeroSizeWrapper>
+                        {/* <ZeroSizeWrapper width={32} height={0}>
+                                <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
+                            </ZeroSizeWrapper> */}
                         {/* <Divider type="vertical" /> */}
                     </span>
                 ),
@@ -287,34 +287,39 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         ];
 
         return <>
-            <ErrorBoundary>
-                <ConfigProvider renderEmpty={this.empty}>
-                    <Table
-                        style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
-                        size='middle'
-                        pagination={this.pageConfig}
-                        onChange={(pagination, filters, sorter, extra) => {
-                            if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;
-                            this.pageConfig.current = pagination.current;
-                            this.pageConfig.pageSize = pagination.pageSize;
-                        }}
-                        dataSource={this.messageSource.data}
-                        loading={this.requestInProgress}
-                        rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
-                        rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
+            <ConfigProvider renderEmpty={this.empty}>
+                <Table
+                    style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
+                    size='middle'
+                    pagination={this.pageConfig}
 
-                        expandable={{
-                            expandRowByClick: false,
-                            expandedRowRender: record => RenderExpandedMessage(record),
-                            expandIconColumnIndex: columns.findIndex(c => c.dataIndex === 'value')
-                        }}
+                    onChange={(pagination, filters, sorter, extra) => {
+                        if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;
+                        this.pageConfig.current = pagination.current;
+                        this.pageConfig.pageSize = pagination.pageSize;
+                    }}
 
-                        columns={columns}
-                    />
+                    dataSource={this.messageSource.data}
 
-                    {(this.messageSource.data && this.messageSource.data.length > 0) && <this.PreviewSettings />}
-                </ConfigProvider>
-            </ErrorBoundary>
+                    loading={this.requestInProgress}
+                    rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
+                    rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
+
+                    expandable={{
+                        expandRowByClick: false,
+                        expandedRowRender: record => RenderExpandedMessage(record),
+                        expandIconColumnIndex: columns.findIndex(c => c.dataIndex === 'value')
+                    }}
+
+                    columns={columns}
+                />
+
+                {
+                    (this.messageSource?.data?.length > 0) &&
+                    <PreviewSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showPreviewSettings} setShowDialog={s => this.showPreviewSettings = s} />
+                }
+
+            </ConfigProvider>
         </>
     })
 
@@ -335,57 +340,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         //navigator.clipboard.writeText(record.valueJson);
         //message.success('Message content (JSON) copied to clipboard', 5);
     }
-
-    PreviewSettings = observer(() => {
-
-        const content = <>
-            <Paragraph>
-                <Text>
-                    When viewing large messages we're often only interested in a few specific fields.
-                    To make the preview more helpful, add all the json keys you want to see.<br />
-                    Click on an existing tag to toggle it on/off, or <b>x</b> to remove it.<br />
-                </Text>
-            </Paragraph>
-            <div style={{ padding: '1.5em 1em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px' }}>
-                <CustomTagList tags={uiState.topicSettings.previewTags} allCurrentKeys={this.allCurrentKeys} />
-            </div>
-            <div style={{ marginTop: '1em' }}>
-                <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
-                <Checkbox
-                    checked={uiState.topicSettings.previewTagsCaseSensitive}
-                    onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e.target.checked}
-                >Case Sensitive</Checkbox>
-                {/* todo:
-
-                    - Show Empty Messages: when unchecked, and the field-filters don't find anything, the whole message will be hidden instead of showing an empty "{}"
-                    - JS filters! You get a small textbox where you can type in something like those examples:
-                        Example 1 | // if the name matches, show this prop in the preview
-                                  | if (prop.key == 'name') show(prop)
-
-                    - JS filters could also be submitted to the backend, so it can do the filtering there already
-                 */}
-                {/* <Checkbox
-                    checked={uiSettings.topicList.previewShowEmptyMessages}
-                    onChange={e => uiSettings.topicList.previewShowEmptyMessages = e.target.checked}
-                >Show Empty Messages</Checkbox> */}
-            </div>
-        </>
-
-        return <Modal
-            title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
-            visible={this.showPreviewSettings}
-            onOk={() => this.showPreviewSettings = false}
-            onCancel={() => this.showPreviewSettings = false}
-            width={750}
-            okText='Close'
-            cancelButtonProps={{ style: { display: 'none' } }}
-            closable={false}
-            maskClosable={true}
-        >
-            {content}
-        </Modal>;
-    });
-
 
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
@@ -585,6 +539,59 @@ function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
     }
 }
 
+@observer
+class PreviewSettings extends Component<{ allCurrentKeys: string[], getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
+    render() {
+
+        const content = <>
+            <Paragraph>
+                <Text>
+                    When viewing large messages we're often only interested in a few specific fields.
+                            To make the preview more helpful, add all the json keys you want to see.<br />
+                            Click on an existing tag to toggle it on/off, or <b>x</b> to remove it.<br />
+                </Text>
+            </Paragraph>
+            <div style={{ padding: '1.5em 1em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px' }}>
+                <CustomTagList tags={uiState.topicSettings.previewTags} allCurrentKeys={this.props.allCurrentKeys} />
+            </div>
+            <div style={{ marginTop: '1em' }}>
+                <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
+                <Checkbox
+                    checked={uiState.topicSettings.previewTagsCaseSensitive}
+                    onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e.target.checked}
+                >Case Sensitive</Checkbox>
+                {
+                    // - Show Empty Messages: when unchecked, and the field-filters don't find anything, the whole message will be hidden instead of showing an empty "{}"
+                    // - JS filters! You get a small textbox where you can type in something like those examples:
+                    //     Example 1 | // if the name matches, show this prop in the preview
+                    //               | if (prop.key == 'name') show(prop)
+
+                    // - JS filters could also be submitted to the backend, so it can do the filtering there already
+                }
+                {
+                    // <Checkbox
+                    //     checked={uiSettings.topicList.previewShowEmptyMessages}
+                    //     onChange={e => uiSettings.topicList.previewShowEmptyMessages = e.target.checked}
+                    // >Show Empty Messages</Checkbox>
+                }
+            </div>
+        </>
+
+        return <Modal
+            title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
+            visible={this.props.getShowDialog()}
+            onOk={() => this.props.setShowDialog(false)}
+            onCancel={() => this.props.setShowDialog(false)}
+            width={750}
+            okText='Close'
+            cancelButtonProps={{ style: { display: 'none' } }}
+            closable={false}
+            maskClosable={true}
+        >
+            {content}
+        </Modal>;
+    }
+}
 
 
 @observer
