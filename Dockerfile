@@ -62,22 +62,15 @@ FROM alpine:3
 
 # Embed env vars in final image as well (so the backend can read them)
 ARG KOWL_GIT_SHA
-ENV KOWL_GIT_SHA ${KOWL_GIT_SHA}
 ENV REACT_APP_KOWL_GIT_SHA ${KOWL_GIT_SHA}
 
 ARG KOWL_GIT_REF
-ENV KOWL_GIT_REF ${KOWL_GIT_REF}
 ENV REACT_APP_KOWL_GIT_REF ${KOWL_GIT_REF}
 
 ARG KOWL_TIMESTAMP
-ENV KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
 ENV REACT_APP_KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
 
 WORKDIR /app
-
-RUN echo $REACT_APP_KOWL_GIT_SHA >> sha.envVar; \
-    echo $REACT_APP_KOWL_GIT_REF >> ref.envVar; \
-    echo $REACT_APP_KOWL_TIMESTAMP >> time.envVar
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /app/bin/kowl /app/kowl
