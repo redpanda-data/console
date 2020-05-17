@@ -28,6 +28,7 @@ Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) =>
         if (selector(this[i])) {
             this.splice(i, 1);
             count++;
+            i--;
         }
     }
     return count;

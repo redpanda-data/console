@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -12,12 +12,15 @@ import { observable, autorun } from "mobx";
 import { appGlobal } from "../../state/appGlobal";
 import Card from "../misc/Card";
 import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone } from '@ant-design/icons';
+import { Radio } from 'antd';
 
 const { Text } = Typography;
 const { TreeNode } = Tree;
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
+    @observable groupMode: 'topic' | 'consumer' = 'consumer';
+    @observable onlyShowPartitionsWithLag: boolean = false;
 
     initPage(p: PageInitHelper): void {
         const group = this.props.groupId;
@@ -62,7 +65,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             }
         }
 
-
         return (
             <MotionDiv style={{ margin: '0 1rem' }}>
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
@@ -76,7 +78,20 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 </Card>
 
                 <Card>
-                    <GroupMembers group={group} />
+                    <Space style={{ margin: '.5rem 0 1rem 0' }} size='middle'>
+                        Group By:
+                        <Radio.Group value={this.groupMode} onChange={e => this.groupMode = e.target.value}>
+                            <Radio.Button value="consumer">Consumers</Radio.Button>
+                            <Radio.Button value="topic">Topics</Radio.Button>
+                        </Radio.Group>
+                        <Checkbox checked={this.onlyShowPartitionsWithLag} onChange={e => this.onlyShowPartitionsWithLag = e.target.checked}>Only show partitions with lag</Checkbox>
+                    </Space>
+
+                    {this.groupMode == 'consumer'
+                        ? <GroupByConsumers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
+                        : <GroupByTopics group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
+                    }
+
                 </Card>
             </MotionDiv>
         );
@@ -111,30 +126,105 @@ const ProtocolType = (p: { group: GroupDescription }) => {
 
 
 // Group Members
-const GroupMembers = observer((p: { group: GroupDescription }) => {
+const GroupByConsumers = observer((p: { group: GroupDescription, onlyShowPartitionsWithLag: boolean }) => {
 
-    const pageConfig = makePaginationConfig();
+    const pageConfig = makePaginationConfig(10);
     const topicLags = p.group.lag.topicLags;
 
-    return <Table
-        style={{ margin: '0', padding: '0', whiteSpace: 'normal' }} size={'middle'}
-        //expandIconAsCell={false} // broken since antd4
-        expandable={{
-            // expandIcon: () => null,
-            expandIconColumnIndex: 0,
-            expandRowByClick: true,
-            expandedRowRender: (record: GroupMemberDescription) => <ExpandedGroupMember groupId={p.group.groupId} topicLags={topicLags} member={record} />,
-        }}
-        pagination={pageConfig}
-        dataSource={p.group.members}
-        rowKey={r => r.id}
-        rowClassName={() => 'pureDisplayRow'}
-        columns={[
-            { title: <span>Consumer ID</span>, dataIndex: 'id', className: 'whiteSpaceDefault', render: renderMergedID, sorter: sortField('id'), sortOrder: 'ascend' },
-            //{ width: '150px', title: 'ClientID', dataIndex: 'clientId' },
-            { width: '150px', title: 'Client Host', dataIndex: 'clientHost' },
-            { title: 'Assignments', dataIndex: 'assignments', render: (t, r, i) => renderAssignments(t), className: 'whiteSpaceDefault' },
-        ]} />
+    const memberEntries = p.group.members.map((m, i) => {
+        const topics = m.assignments;
+
+        const topicsFlat = topics
+            .map(a => a.partitionIds.map(id => {
+                const topicLag = topicLags.find(t => t.topic == a.topicName);
+                const partLag = topicLag?.partitionLags.find(p => p.partitionId == id)?.lag;
+                //const topicInfo = api.Topics?.find(t=>t.topicName==a.topicName);
+                const topicPartitions = api.TopicPartitions.get(a.topicName);
+                if (topicPartitions == undefined)
+                    setTimeout(() => api.refreshTopicPartitions(a.topicName), 1);
+                const partitionInfo = api.TopicPartitions.get(a.topicName)?.find(p => p.id == id);
+
+                return {
+                    topicName: a.topicName,
+                    partitionId: id,
+                    partitionLag: partLag,
+                    waterMarkHigh: partitionInfo?.waterMarkHigh,
+                }
+            })).flat();
+        if (p.onlyShowPartitionsWithLag)
+            topicsFlat.removeAll(e => !e.partitionLag);
+
+        return <div key={m.clientId}>
+            <h3>{renderMergedID('', m)} {m.clientHost}</h3>
+            <Table
+                size='small'
+                pagination={pageConfig}
+                dataSource={topicsFlat}
+                rowKey={r => r.topicName + r.partitionId}
+                columns={[
+                    { width: 150, title: 'Topic', dataIndex: 'topicName', },
+                    { width: 150, title: 'Partition', dataIndex: 'partitionId', },
+                    { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
+                    { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
+                ]}
+            />
+        </div>
+    });
+
+    return <>{memberEntries}</>;
+})
+
+const GroupByTopics = observer((p: { group: GroupDescription, onlyShowPartitionsWithLag: boolean }) => {
+    const pageConfig = makePaginationConfig(10);
+    const topicLags = p.group.lag.topicLags;
+
+    const topicsFlat = p.group.members.map(m => m.assignments.map(a => ({
+        topicName: a.topicName,
+        partitionIds: a.partitionIds,
+        member: m,
+        topic: api.Topics?.find(t => t.topicName == a.topicName),
+    }))).flat();
+
+    const partitionsFlat = topicsFlat.map(t => t.partitionIds.map(p => {
+        const topicLag = topicLags.find(tl => tl.topic == t.topicName);
+        const partLag = topicLag?.partitionLags.find(pl => pl.partitionId == p)?.lag;
+        const partitionInfo = api.TopicPartitions.get(t.topicName)?.find(tp => tp.id == p);
+        return {
+            consumer: t.member,
+            consumerName: t.member.clientId,
+
+            topic: t.topic,
+            partitionId: p,
+            member: t.member,
+            partitionLag: partLag,
+            waterMarkHigh: partitionInfo?.waterMarkHigh,
+        }
+    })).flat();
+
+    const topics = partitionsFlat.groupInto(e => e.topic?.topicName);
+
+    if (p.onlyShowPartitionsWithLag)
+        topics.forEach(t => t.items.removeAll(e => !e.partitionLag));
+
+    const topicEntries = topics.map(t => {
+        return <div key={t.key}>
+            <h3>{t.key}</h3>
+            <Table
+                size='small'
+                pagination={pageConfig}
+                dataSource={t.items}
+                rowKey={r => r.partitionId}
+                columns={[
+                    { width: 150, title: 'Consumer', dataIndex: 'consumerName', },
+                    { width: 150, title: 'Partition', dataIndex: 'partitionId', },
+                    { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
+                    { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
+                ]}
+            />
+        </div>
+    });
+
+    return <>{topicEntries}</>;
 })
 
 const renderMergedID = (text: string, record: GroupMemberDescription) => {
