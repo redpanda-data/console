@@ -23,6 +23,18 @@ const (
 	valueTypeBinary valueType = "binary"
 )
 
+// partitionConsumeRequest is a partitionID along with it's calculated start and end offset.
+type partitionConsumeRequest struct {
+	PartitionID   int32
+	IsDrained     bool // True if the partition was not able to return as many messages as desired here
+	LowWaterMark  int64
+	HighWaterMark int64
+
+	StartOffset     int64
+	EndOffset       int64
+	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the consumer will stop.
+}
+
 type partitionConsumer struct {
 	logger *zap.Logger // WithFields (topic, partitionId)
 

@@ -43,18 +43,6 @@ type TopicMessage struct {
 	IsValueNull bool `json:"isValueNull"`
 }
 
-// partitionConsumeRequest is a partitionID along with it's calculated start and end offset.
-type partitionConsumeRequest struct {
-	PartitionID   int32
-	IsDrained     bool // True if the partition was not able to return as many messages as desired here
-	LowWaterMark  int64
-	HighWaterMark int64
-
-	StartOffset     int64
-	EndOffset       int64
-	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the consumer will stop.
-}
-
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
 type IListMessagesProgress interface {
 	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
@@ -66,7 +54,6 @@ type IListMessagesProgress interface {
 // ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
 // (which runs in it's own goroutine) for each partition and funneling all the data to eventually
 // return it. The second return parameter is a bool which indicates whether the requested topic exists.
-// TODO: Report execution plan and results summary to frontend. Why didn't we get the desired number of results
 func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
 	start := time.Now()
 	logger := s.Logger.With(zap.String("topic", listReq.TopicName))
