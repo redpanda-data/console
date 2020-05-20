@@ -68,15 +68,16 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             <MotionDiv style={{ margin: '0 1rem' }}>
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
                 <Card>
-                    {/* <Row type="flex"> */}
                     <Row >
                         <Statistic title='State' valueRender={() => <GroupState group={group} />} />
-                        <Statistic title='Consumers' value={group.members.length} />
                         <ProtocolType group={group} />
+                        <Statistic title='Consumers' value={group.members.length} />
+                        <Statistic title='Topics' value={requiredTopics.length} />
                     </Row>
                 </Card>
 
                 <Card>
+                    {/* Settings: GroupBy, Partitions */}
                     <Space style={{ margin: '.5rem 0 1rem 0' }} size='large'>
                         <span>
                             Group By:
