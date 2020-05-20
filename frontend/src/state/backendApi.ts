@@ -279,7 +279,7 @@ const apiStore = {
         cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
             .then(v => {
                 for (let g of v.consumerGroups) {
-                    g.lagSum = g.lag.topicLags.map(t => t.summedLag).reduce((a, b) => a + b, 0)
+                    g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
                 }
                 this.ConsumerGroups = v.consumerGroups;
             }, addError);
