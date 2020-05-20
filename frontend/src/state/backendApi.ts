@@ -81,7 +81,6 @@ class CacheEntry {
 
         const self = this;
         this.isPending = true;
-        api.ActiveRequests.push(this);
         this.promise = promise;
 
         promise.then(
@@ -99,6 +98,8 @@ class CacheEntry {
             }
             self.isPending = false;
         });
+
+        api.ActiveRequests.push(this);
     }
 
     lastResult: any | undefined; // set automatically
@@ -126,13 +127,20 @@ class CacheEntry {
 function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
     const entry = cache.get(url);
 
-    if (entry.isPending)
+    if (entry.isPending) {
+        // console.log("debug: request already pending", entry);
         return entry.lastPromise;
+    }
 
     if (entry.resultAge > REST_CACHE_DURATION_SEC || force) {
-        // Start request
+        // Start or refresh request
+        // console.log("debug: refreshing...", entry);
+
         const promise = rest<T>(url); //.catch(r => { throw new Error(url) });
         entry.setPromise(promise);
+
+    } else {
+        // console.log("debug: cached request still valid??", entry);
     }
 
     // Not ready yet, don't update, return last result

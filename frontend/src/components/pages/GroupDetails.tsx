@@ -55,14 +55,24 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
         // Get info about each topic
         const requiredTopics = group.members.flatMap(m => m.assignments.map(a => a.topicName)).distinct();
-        for (let topicName of requiredTopics) {
-            const topic = api.Topics.find(t => t.topicName == topicName);
-            if (!topic) {
-                //api.refreshTopics();
-                console.log('waiting for topic data...');
-                return this.skeleton;
+        let allDataLoaded = true;
+        for (const topicName of requiredTopics) {
+            if (api.Topics.find(t => t.topicName == topicName) == undefined) {
+                console.log('waiting for topic details of "' + topicName + '"...');
+                setTimeout(() => api.refreshTopics(), 1);
+                allDataLoaded = false;
+            }
+            if (!api.TopicPartitions.has(topicName)) {
+                console.log('waiting for partitions of topic "' + topicName + '"...');
+                setTimeout(() => api.refreshTopicPartitions(topicName), 1);
+                allDataLoaded = false;
             }
         }
+        if (!allDataLoaded)
+            return this.skeleton;
+
+
+        const totalPartitions = group.members.flatMap(m => m.assignments).map(a => a.partitionIds.length).reduce((prev, cur) => prev + cur);
 
         return (
             <MotionDiv style={{ margin: '0 1rem' }}>
@@ -73,6 +83,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                         <ProtocolType group={group} />
                         <Statistic title='Consumers' value={group.members.length} />
                         <Statistic title='Topics' value={requiredTopics.length} />
+                        <Statistic title='Consumed Partitions' value={totalPartitions} />
                     </Row>
                 </Card>
 
@@ -129,9 +140,9 @@ class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPart
         const p = this.props;
 
         const memberEntries = p.group.members.map((m, i) => {
-            const topics = m.assignments;
+            const assignments = m.assignments;
 
-            const topicsFlat = topics
+            const assignmentsFlat = assignments
                 .map(a => a.partitionIds.map(id => {
                     const topicLag = this.topicLags.find(t => t.topic == a.topicName);
                     const partLag = topicLag?.partitionLags.find(p => p.partitionId == id)?.lag;
@@ -149,21 +160,24 @@ class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPart
                     }
                 })).flat();
 
-            if (p.onlyShowPartitionsWithLag)
-                topicsFlat.removeAll(e => !e.partitionLag);
 
-            const totalLag = topicsFlat.sum(t => t.partitionLag ?? 0);
+            const totalLag = assignmentsFlat.sum(t => t.partitionLag ?? 0);
+            const totalPartitions = assignmentsFlat.length;
+
+            if (p.onlyShowPartitionsWithLag)
+                assignmentsFlat.removeAll(e => !e.partitionLag);
 
             return <div key={m.clientId}>
                 <div style={{ margin: '.5em' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{renderMergedID('', m)}</span>
-                    <Tag style={{ marginLeft: '1em' }} color='blue'>host: {m.clientHost}</Tag>
-                    <Tag style={{ marginLeft: '.5em' }} color='blue'>lag: {totalLag}</Tag>
+                    <span style={{ fontWeight: 'bold', fontSize: '110%', marginRight: '1em' }}>{renderMergedID(m)}</span>
+                    <Tag color='blue'>lag: {totalLag}</Tag>
+                    <Tag color='blue'>partitions: {totalPartitions}</Tag>
+                    <Tag color='blue'>host: {m.clientHost}</Tag>
                 </div>
                 <Table
                     size='small'
                     pagination={this.pageConfig}
-                    dataSource={topicsFlat}
+                    dataSource={assignmentsFlat}
                     rowKey={r => r.topicName + r.partitionId}
                     columns={[
                         { width: 150, title: 'Topic', dataIndex: 'topicName', },
@@ -218,24 +232,26 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             }
         })).flat();
 
-        const topics = partitionsFlat.groupInto(e => e.topic?.topicName);
+        const partitionGroupsByTopic = partitionsFlat.filter(p => p.topic?.topicName).groupInto(e => e.topic!.topicName);
 
-        if (p.onlyShowPartitionsWithLag)
-            topics.forEach(t => t.items.removeAll(e => !e.partitionLag));
+        const topicEntries = partitionGroupsByTopic.map(g => {
+            const topicInfo = api.TopicPartitions.get(g.key);
+            const totalLag = g.items.sum(c => c.partitionLag ?? 0);
+            const partitionCount = g.items.length;
 
+            if (p.onlyShowPartitionsWithLag)
+                g.items.removeAll(e => !e.partitionLag);
 
-        const topicEntries = topics.map(t => {
-            const totalLag = t.items.sum(c => c.partitionLag ?? 0);
-
-            return <div key={t.key}>
+            return <div key={g.key}>
                 <div style={{ margin: '.5em' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{t.key}</span>
+                    <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{g.key}</span>
                     <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLag}</Tag>
+                    <Tag color='blue'>partitions: {partitionCount}/{topicInfo?.length}</Tag>
                 </div>
                 <Table
                     size='small'
                     pagination={this.pageConfig}
-                    dataSource={t.items}
+                    dataSource={g.items}
                     rowKey={r => r.partitionId}
                     columns={[
                         { width: 150, title: 'Consumer', dataIndex: 'consumerName', },
@@ -252,7 +268,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
 }
 
 
-const renderMergedID = (text: string, record: GroupMemberDescription) => {
+const renderMergedID = (record: GroupMemberDescription) => {
     if (record.id.startsWith(record.clientId)) { // should always be true...
         const suffix = record.id.substring(record.clientId.length);
         return <span className='consumerGroupCompleteID'>
