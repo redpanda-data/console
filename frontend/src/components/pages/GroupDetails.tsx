@@ -13,13 +13,12 @@ import { appGlobal } from "../../state/appGlobal";
 import Card from "../misc/Card";
 import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone } from '@ant-design/icons';
 import { Radio } from 'antd';
+import { TablePaginationConfig } from "antd/lib/table";
 
-const { Text } = Typography;
-const { TreeNode } = Tree;
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
-    @observable groupMode: 'topic' | 'consumer' = 'consumer';
+    @observable groupMode: 'topic' | 'consumer' = 'topic';
     @observable onlyShowPartitionsWithLag: boolean = false;
 
     initPage(p: PageInitHelper): void {
@@ -78,13 +77,21 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 </Card>
 
                 <Card>
-                    <Space style={{ margin: '.5rem 0 1rem 0' }} size='middle'>
-                        Group By:
-                        <Radio.Group value={this.groupMode} onChange={e => this.groupMode = e.target.value}>
-                            <Radio.Button value="consumer">Consumers</Radio.Button>
-                            <Radio.Button value="topic">Topics</Radio.Button>
-                        </Radio.Group>
-                        <Checkbox checked={this.onlyShowPartitionsWithLag} onChange={e => this.onlyShowPartitionsWithLag = e.target.checked}>Only show partitions with lag</Checkbox>
+                    <Space style={{ margin: '.5rem 0 1rem 0' }} size='large'>
+                        <span>
+                            Group By:
+                            <Radio.Group value={this.groupMode} onChange={e => this.groupMode = e.target.value} style={{ marginLeft: '.5rem' }}>
+                                <Radio.Button value="consumer">Consumer</Radio.Button>
+                                <Radio.Button value="topic">Topic</Radio.Button>
+                            </Radio.Group>
+                        </span>
+                        <span>
+                            Partitions:
+                            <Radio.Group value={this.onlyShowPartitionsWithLag} onChange={e => this.onlyShowPartitionsWithLag = e.target.value} style={{ marginLeft: '.5rem' }}>
+                                <Radio.Button value={false}>All</Radio.Button>
+                                <Radio.Button value={true}>With Lag</Radio.Button>
+                            </Radio.Group>
+                        </span>
                     </Space>
 
                     {this.groupMode == 'consumer'
@@ -101,6 +108,160 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
     </MotionDiv>
 }
+
+
+@observer
+class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
+
+    pageConfig: TablePaginationConfig;
+    topicLags: TopicLag[];
+
+    constructor(props: any) {
+        super(props);
+        this.pageConfig = makePaginationConfig(30);
+        this.pageConfig.hideOnSinglePage = true;
+        this.pageConfig.showSizeChanger = false;
+        this.topicLags = this.props.group.lag.topicLags;
+    }
+
+    render() {
+        const p = this.props;
+
+        const memberEntries = p.group.members.map((m, i) => {
+            const topics = m.assignments;
+
+            const topicsFlat = topics
+                .map(a => a.partitionIds.map(id => {
+                    const topicLag = this.topicLags.find(t => t.topic == a.topicName);
+                    const partLag = topicLag?.partitionLags.find(p => p.partitionId == id)?.lag;
+                    //const topicInfo = api.Topics?.find(t=>t.topicName==a.topicName);
+                    const topicPartitions = api.TopicPartitions.get(a.topicName);
+                    if (topicPartitions == undefined)
+                        setTimeout(() => api.refreshTopicPartitions(a.topicName), 1);
+                    const partitionInfo = api.TopicPartitions.get(a.topicName)?.find(p => p.id == id);
+
+                    return {
+                        topicName: a.topicName,
+                        partitionId: id,
+                        partitionLag: partLag,
+                        waterMarkHigh: partitionInfo?.waterMarkHigh,
+                    }
+                })).flat();
+
+            if (p.onlyShowPartitionsWithLag)
+                topicsFlat.removeAll(e => !e.partitionLag);
+
+            const totalLag = topicsFlat.sum(t => t.partitionLag ?? 0);
+
+            return <div key={m.clientId}>
+                <div style={{ margin: '.5em' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{renderMergedID('', m)}</span>
+                    <Tag style={{ marginLeft: '1em' }} color='blue'>host: {m.clientHost}</Tag>
+                    <Tag style={{ marginLeft: '.5em' }} color='blue'>lag: {totalLag}</Tag>
+                </div>
+                <Table
+                    size='small'
+                    pagination={this.pageConfig}
+                    dataSource={topicsFlat}
+                    rowKey={r => r.topicName + r.partitionId}
+                    columns={[
+                        { width: 150, title: 'Topic', dataIndex: 'topicName', },
+                        { width: 150, title: 'Partition', dataIndex: 'partitionId', },
+                        { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
+                        { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
+                    ]}
+                />
+            </div>
+        });
+
+        return <>{memberEntries}</>;
+    }
+}
+@observer
+class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
+
+    pageConfig: TablePaginationConfig;
+    topicLags: TopicLag[];
+
+    constructor(props: any) {
+        super(props);
+        this.pageConfig = makePaginationConfig(30);
+        this.pageConfig.hideOnSinglePage = true;
+        this.pageConfig.showSizeChanger = false;
+        this.topicLags = this.props.group.lag.topicLags;
+    }
+
+    render() {
+        const p = this.props;
+
+        const topicsFlat = p.group.members.map(m => m.assignments.map(a => ({
+            topicName: a.topicName,
+            partitionIds: a.partitionIds,
+            member: m,
+            topic: api.Topics?.find(t => t.topicName == a.topicName),
+        }))).flat();
+
+        const partitionsFlat = topicsFlat.map(t => t.partitionIds.map(p => {
+            const topicLag = this.topicLags.find(tl => tl.topic == t.topicName);
+            const partLag = topicLag?.partitionLags.find(pl => pl.partitionId == p)?.lag;
+            const partitionInfo = api.TopicPartitions.get(t.topicName)?.find(tp => tp.id == p);
+            return {
+                consumer: t.member,
+                consumerName: t.member.clientId,
+
+                topic: t.topic,
+                partitionId: p,
+                member: t.member,
+                partitionLag: partLag,
+                waterMarkHigh: partitionInfo?.waterMarkHigh,
+            }
+        })).flat();
+
+        const topics = partitionsFlat.groupInto(e => e.topic?.topicName);
+
+        if (p.onlyShowPartitionsWithLag)
+            topics.forEach(t => t.items.removeAll(e => !e.partitionLag));
+
+
+        const topicEntries = topics.map(t => {
+            const totalLag = t.items.sum(c => c.partitionLag ?? 0);
+
+            return <div key={t.key}>
+                <div style={{ margin: '.5em' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{t.key}</span>
+                    <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLag}</Tag>
+                </div>
+                <Table
+                    size='small'
+                    pagination={this.pageConfig}
+                    dataSource={t.items}
+                    rowKey={r => r.partitionId}
+                    columns={[
+                        { width: 150, title: 'Consumer', dataIndex: 'consumerName', },
+                        { width: 150, title: 'Partition', dataIndex: 'partitionId', },
+                        { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
+                        { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
+                    ]}
+                />
+            </div>
+        });
+
+        return <>{topicEntries}</>;
+    }
+}
+
+
+const renderMergedID = (text: string, record: GroupMemberDescription) => {
+    if (record.id.startsWith(record.clientId)) { // should always be true...
+        const suffix = record.id.substring(record.clientId.length);
+        return <span className='consumerGroupCompleteID'>
+            <span className='consumerGroupName'>{record.clientId}</span>
+            <span className='consumerGroupSuffix'>{suffix}</span>
+        </span>
+    }
+};
+
+
 
 const stateIcons = new Map<string, JSX.Element>([
     ['dead', <FireTwoTone twoToneColor='orangered' />],
@@ -123,243 +284,5 @@ const ProtocolType = (p: { group: GroupDescription }) => {
 
     return <Statistic title='Protocol' value={protocol} />
 }
-
-
-// Group Members
-const GroupByConsumers = observer((p: { group: GroupDescription, onlyShowPartitionsWithLag: boolean }) => {
-
-    const pageConfig = makePaginationConfig(10);
-    const topicLags = p.group.lag.topicLags;
-
-    const memberEntries = p.group.members.map((m, i) => {
-        const topics = m.assignments;
-
-        const topicsFlat = topics
-            .map(a => a.partitionIds.map(id => {
-                const topicLag = topicLags.find(t => t.topic == a.topicName);
-                const partLag = topicLag?.partitionLags.find(p => p.partitionId == id)?.lag;
-                //const topicInfo = api.Topics?.find(t=>t.topicName==a.topicName);
-                const topicPartitions = api.TopicPartitions.get(a.topicName);
-                if (topicPartitions == undefined)
-                    setTimeout(() => api.refreshTopicPartitions(a.topicName), 1);
-                const partitionInfo = api.TopicPartitions.get(a.topicName)?.find(p => p.id == id);
-
-                return {
-                    topicName: a.topicName,
-                    partitionId: id,
-                    partitionLag: partLag,
-                    waterMarkHigh: partitionInfo?.waterMarkHigh,
-                }
-            })).flat();
-        if (p.onlyShowPartitionsWithLag)
-            topicsFlat.removeAll(e => !e.partitionLag);
-
-        return <div key={m.clientId}>
-            <h3>{renderMergedID('', m)} {m.clientHost}</h3>
-            <Table
-                size='small'
-                pagination={pageConfig}
-                dataSource={topicsFlat}
-                rowKey={r => r.topicName + r.partitionId}
-                columns={[
-                    { width: 150, title: 'Topic', dataIndex: 'topicName', },
-                    { width: 150, title: 'Partition', dataIndex: 'partitionId', },
-                    { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
-                    { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
-                ]}
-            />
-        </div>
-    });
-
-    return <>{memberEntries}</>;
-})
-
-const GroupByTopics = observer((p: { group: GroupDescription, onlyShowPartitionsWithLag: boolean }) => {
-    const pageConfig = makePaginationConfig(10);
-    const topicLags = p.group.lag.topicLags;
-
-    const topicsFlat = p.group.members.map(m => m.assignments.map(a => ({
-        topicName: a.topicName,
-        partitionIds: a.partitionIds,
-        member: m,
-        topic: api.Topics?.find(t => t.topicName == a.topicName),
-    }))).flat();
-
-    const partitionsFlat = topicsFlat.map(t => t.partitionIds.map(p => {
-        const topicLag = topicLags.find(tl => tl.topic == t.topicName);
-        const partLag = topicLag?.partitionLags.find(pl => pl.partitionId == p)?.lag;
-        const partitionInfo = api.TopicPartitions.get(t.topicName)?.find(tp => tp.id == p);
-        return {
-            consumer: t.member,
-            consumerName: t.member.clientId,
-
-            topic: t.topic,
-            partitionId: p,
-            member: t.member,
-            partitionLag: partLag,
-            waterMarkHigh: partitionInfo?.waterMarkHigh,
-        }
-    })).flat();
-
-    const topics = partitionsFlat.groupInto(e => e.topic?.topicName);
-
-    if (p.onlyShowPartitionsWithLag)
-        topics.forEach(t => t.items.removeAll(e => !e.partitionLag));
-
-    const topicEntries = topics.map(t => {
-        return <div key={t.key}>
-            <h3>{t.key}</h3>
-            <Table
-                size='small'
-                pagination={pageConfig}
-                dataSource={t.items}
-                rowKey={r => r.partitionId}
-                columns={[
-                    { width: 150, title: 'Consumer', dataIndex: 'consumerName', },
-                    { width: 150, title: 'Partition', dataIndex: 'partitionId', },
-                    { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
-                    { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
-                ]}
-            />
-        </div>
-    });
-
-    return <>{topicEntries}</>;
-})
-
-const renderMergedID = (text: string, record: GroupMemberDescription) => {
-    if (record.id.startsWith(record.clientId)) { // should always be true...
-        const suffix = record.id.substring(record.clientId.length);
-        return <span className='consumerGroupCompleteID'>
-            <span className='consumerGroupName'>{record.clientId}</span>
-            <span className='consumerGroupSuffix'>{suffix}</span>
-        </span>
-    }
-};
-
-const margin1Px = { margin: '1px' };
-const margin2PxLine = { margin: '2px 0' };
-
-function renderAssignments(value: GroupMemberAssignment[]): React.ReactNode {
-    const topicAssignments = value.groupBy(x => x.topicName);
-
-    const jsx: JSX.Element[] = [];
-
-    for (let [topicName, assignments] of topicAssignments) {
-        const assignedIds = assignments.flatMap(x => x.partitionIds).distinct();
-
-        // Try to summarize the assignment...
-        if (api.Topics) {
-            var topic = api.Topics.find(t => t.topicName == topicName);
-            if (topic) {
-                // All partitions?
-                if (topic.partitionCount == assignedIds.length) {
-                    jsx.push(<span style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: <Tag color="geekblue">All partitions</Tag><b>({assignedIds.length})</b></Tag></span>);
-                    continue;
-                }
-            }
-        }
-
-        // List partitions explicitly, but maybe we can merge some groups
-        assignedIds.sort((a, b) => a - b);
-        const groups = groupConsecutive(assignedIds);
-        const ids: JSX.Element[] = [];
-        for (let group of groups) {
-            const text = group.length == 1
-                ? group[0].toString() // single ID
-                : group[0] + " .. " + group[group.length - 1]; // range of IDs
-            ids.push(<Tag style={margin1Px} color="geekblue">{text}</Tag>);
-        }
-
-        jsx.push(<span style={margin2PxLine} key={topicName}><Tag color='blue'>{topicName}: {ids}<b> ({assignedIds.length})</b></Tag></span>);
-    }
-
-    return jsx;
-}
-
-
-const ExpandedGroupMember = observer((p: { groupId: string, topicLags: TopicLag[], member: GroupMemberDescription }) => {
-
-    // For debugging:
-    ///////////
-    //const sourceAssignments = [...p.member.assignments];
-    // sourceAssignments.push({ ...sourceAssignments[0]});
-    // sourceAssignments.push({ ...sourceAssignments[0]});
-    // sourceAssignments.push({ ...sourceAssignments[0]});
-    // sourceAssignments.push({ ...sourceAssignments[0]});
-    // sourceAssignments.push({ ...sourceAssignments[0]});
-    const sourceAssignments = p.member.assignments;
-    ///////////
-
-    const assignments = sourceAssignments.map((assignment: GroupMemberAssignment, index) => {
-        const topicLag = p.topicLags.find(tl => tl.topic == assignment.topicName);
-        if (!topicLag) {
-            console.log('Backend provided no lag information for topic: ' + assignment.topicName);
-            return null;
-        }
-        return <TopicLags key={assignment.topicName} name={assignment.topicName} partitions={assignment.partitionIds} topicLag={topicLag} />
-    });
-
-    return <Row gutter={[16, 16]}>
-        {assignments}
-    </Row>
-});
-
-@observer
-class TopicLags extends Component<{ name: string, partitions: number[], topicLag: TopicLag }> {
-
-    @observable isExpanded = false;
-
-    render() {
-        const p = this.props;
-
-        const renderPartitionLag = (p: { id: number, lag: number }) => {
-            // <div className='lagIndicatorBg'><div className='lagIndicatorFill' style={{ width: '%' }}></div></div>
-            return <div className='groupLagDisplayLine'>Partition{p.id}: {p.lag} messages</div>
-        };
-
-        const renderLagTable = (lags: { id: number, lag: number }[]): JSX.Element => {
-            return <table className='groupLagDisplayLine'>
-                <thead>
-                    <tr>
-                        <th>Partition</th>
-                        <th>Lag</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {lags.map(l => <tr>
-                        <td>{l.id}</td>
-                        <td>{l.lag}</td>
-                    </tr>)}
-                </tbody>
-            </table>
-        }
-
-        const expandBtn = <a onClick={() => this.isExpanded = !this.isExpanded}>{this.isExpanded ? 'Less' : 'More'}</a>
-
-        let partitionLags = p.partitions
-            .map(id => {
-                const pLag = p.topicLag.partitionLags.find(lag => lag.partitionId == id);
-                return { id: id, lag: pLag ? pLag.lag : 0 };
-            })
-            .sort((a, b) => b.lag - a.lag);
-
-        const isAllZeroLag = !this.isExpanded && (partitionLags.length == 0 || partitionLags.all(l => l.lag == 0));
-
-        if (!this.isExpanded) // In small view: show only non-zero, and only top5
-            partitionLags = partitionLags.filter(l => l.lag > 0).slice(0, 5);
-
-        return <Col xs={24} sm={24} md={24} lg={12} xl={8} xxl={6}>
-            <AntCard size="small" title={p.name} extra={expandBtn} style={{ marginBottom: '1em' }}>
-                {
-                    isAllZeroLag
-                        ? <span style={{ fontSize: '.75rem' }}>No lag on any partition</span>
-                        : renderLagTable(partitionLags)
-                }
-            </AntCard>
-        </Col>
-    }
-}
-
 
 export default GroupDetails;
