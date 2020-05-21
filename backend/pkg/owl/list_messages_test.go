@@ -1,14 +1,15 @@
-package kafka
+package owl
 
 import (
 	"github.com/Shopify/sarama"
+	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {
 	// Request less messages than we have partitions
-	marks := map[int32]*WaterMark{
+	marks := map[int32]*kafka.WaterMark{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 10},
 		2: {PartitionID: 2, Low: 10, High: 30},
@@ -25,7 +26,7 @@ func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) 
 	}
 
 	// Expected result should be able to return all 100 requested messages as evenly distributed as possible
-	expected := map[int32]*partitionConsumeRequest{
+	expected := map[int32]*kafka.partitionConsumeRequest{
 		0: {PartitionID: 0, IsDrained: false, StartOffset: marks[0].High - 1, EndOffset: marks[0].High, MaxMessageCount: 1, LowWaterMark: marks[0].Low, HighWaterMark: marks[0].High},
 		1: {PartitionID: 0, IsDrained: false, StartOffset: marks[1].High - 1, EndOffset: marks[1].High, MaxMessageCount: 1, LowWaterMark: marks[1].Low, HighWaterMark: marks[1].High},
 		2: {PartitionID: 0, IsDrained: false, StartOffset: marks[2].High - 1, EndOffset: marks[2].High, MaxMessageCount: 1, LowWaterMark: marks[2].Low, HighWaterMark: marks[2].High},
@@ -37,7 +38,7 @@ func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) 
 
 func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 	// Unbalanced message distribution across 3 partitions
-	marks := map[int32]*WaterMark{
+	marks := map[int32]*kafka.WaterMark{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 10},
 		2: {PartitionID: 2, Low: 10, High: 30},
@@ -51,7 +52,7 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 	}
 
 	// Expected result should be able to return all 100 requested messages as evenly distributed as possible
-	expected := map[int32]*partitionConsumeRequest{
+	expected := map[int32]*kafka.partitionConsumeRequest{
 		0: {PartitionID: 0, IsDrained: false, LowWaterMark: marks[0].Low, HighWaterMark: marks[0].High, StartOffset: 0, EndOffset: marks[0].High, MaxMessageCount: 70},
 		1: {PartitionID: 1, IsDrained: true, LowWaterMark: marks[1].Low, HighWaterMark: marks[1].High, StartOffset: 0, EndOffset: marks[1].High, MaxMessageCount: 10},
 		2: {PartitionID: 2, IsDrained: true, LowWaterMark: marks[2].Low, HighWaterMark: marks[2].High, StartOffset: 10, EndOffset: marks[2].High, MaxMessageCount: 20},
@@ -62,7 +63,7 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 }
 
 func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
-	marks := map[int32]*WaterMark{
+	marks := map[int32]*kafka.WaterMark{
 		14: {PartitionID: 14, Low: 100, High: 300},
 	}
 	lowMark := marks[14].Low
@@ -70,12 +71,12 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 
 	tt := []struct {
 		req      *ListMessageRequest
-		expected map[int32]*partitionConsumeRequest
+		expected map[int32]*kafka.partitionConsumeRequest
 	}{
 		// Newest 100 messages
 		{
 			&ListMessageRequest{TopicName: "test", PartitionID: 14, StartOffset: sarama.OffsetNewest, MessageCount: 100},
-			map[int32]*partitionConsumeRequest{
+			map[int32]*kafka.partitionConsumeRequest{
 				14: {PartitionID: 14, IsDrained: false, StartOffset: highMark - 100, EndOffset: highMark, MaxMessageCount: 100, LowWaterMark: lowMark, HighWaterMark: highMark},
 			},
 		},
@@ -83,7 +84,7 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 		// Oldest 40 messages
 		{
 			&ListMessageRequest{TopicName: "test", PartitionID: 14, StartOffset: sarama.OffsetOldest, MessageCount: 40},
-			map[int32]*partitionConsumeRequest{
+			map[int32]*kafka.partitionConsumeRequest{
 				14: {PartitionID: 14, IsDrained: false, StartOffset: lowMark, EndOffset: highMark, MaxMessageCount: 40, LowWaterMark: lowMark, HighWaterMark: highMark},
 			},
 		},
@@ -91,7 +92,7 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 		// Custom start offset with drained - 50 messages
 		{
 			&ListMessageRequest{TopicName: "test", PartitionID: 14, StartOffset: 250, MessageCount: 200},
-			map[int32]*partitionConsumeRequest{
+			map[int32]*kafka.partitionConsumeRequest{
 				14: {PartitionID: 14, IsDrained: true, StartOffset: 250, EndOffset: highMark, MaxMessageCount: 50, LowWaterMark: lowMark, HighWaterMark: highMark},
 			},
 		},
@@ -99,7 +100,7 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 		// Custom out of bounds start offset - 50 messages
 		{
 			&ListMessageRequest{TopicName: "test", PartitionID: 14, StartOffset: 15, MessageCount: 50},
-			map[int32]*partitionConsumeRequest{
+			map[int32]*kafka.partitionConsumeRequest{
 				14: {PartitionID: 14, IsDrained: false, StartOffset: lowMark, EndOffset: highMark, MaxMessageCount: 50, LowWaterMark: lowMark, HighWaterMark: highMark},
 			},
 		},
@@ -107,7 +108,7 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 		// Newest 500 messages with drained
 		{
 			&ListMessageRequest{TopicName: "test", PartitionID: 14, StartOffset: sarama.OffsetNewest, MessageCount: 500},
-			map[int32]*partitionConsumeRequest{
+			map[int32]*kafka.partitionConsumeRequest{
 				14: {PartitionID: 14, IsDrained: true, StartOffset: lowMark, EndOffset: highMark, MaxMessageCount: highMark - lowMark, LowWaterMark: lowMark, HighWaterMark: highMark},
 			},
 		},
@@ -115,7 +116,7 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 		// Oldest 500 messages with drained
 		{
 			&ListMessageRequest{TopicName: "test", PartitionID: 14, StartOffset: sarama.OffsetOldest, MessageCount: 500},
-			map[int32]*partitionConsumeRequest{
+			map[int32]*kafka.partitionConsumeRequest{
 				14: {PartitionID: 14, IsDrained: true, StartOffset: lowMark, EndOffset: highMark, MaxMessageCount: highMark - lowMark, LowWaterMark: lowMark, HighWaterMark: highMark},
 			},
 		},

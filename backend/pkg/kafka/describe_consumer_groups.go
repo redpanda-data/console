@@ -8,10 +8,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// DescribeConsumerGroups fetches additional information from Kafka about one or more consumer groups.
+// DescribeConsumerGroups fetches additional information from Kafka about one or more Consumer groups.
 // It returns a map where the coordinator BrokerID is the key.
 func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (map[int32]*sarama.DescribeGroupsResponse, error) {
-	// 1. Bucket all groupIDs by their respective consumer group coordinator/broker
+	// 1. Bucket all groupIDs by their respective Consumer group coordinator/broker
 	brokersByID := make(map[int32]*sarama.Broker)
 	groupsByBrokerID := make(map[int32][]string)
 	for _, group := range groups {

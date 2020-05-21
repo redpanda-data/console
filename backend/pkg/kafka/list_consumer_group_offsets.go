@@ -28,7 +28,7 @@ func (s *Service) ListConsumerGroupOffsets(group string) (*sarama.OffsetFetchRes
 	return offsets, nil
 }
 
-// ListConsumerGroupOffsetsBulk returns a map which has the consumer group name as key
+// ListConsumerGroupOffsetsBulk returns a map which has the Consumer group name as key
 func (s *Service) ListConsumerGroupOffsetsBulk(ctx context.Context, groups []string) (map[string]*sarama.OffsetFetchResponse, error) {
 	eg, _ := errgroup.WithContext(ctx)
 
