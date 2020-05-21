@@ -167,7 +167,7 @@ class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPart
             if (p.onlyShowPartitionsWithLag)
                 assignmentsFlat.removeAll(e => !e.partitionLag);
 
-            return <div key={m.clientId}>
+            return <div key={m.id}>
                 <div style={{ margin: '.5em' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '110%', marginRight: '1em' }}>{renderMergedID(m)}</span>
                     <Tag color='blue'>lag: {totalLag}</Tag>
@@ -180,7 +180,7 @@ class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPart
                     dataSource={assignmentsFlat}
                     rowKey={r => r.topicName + r.partitionId}
                     columns={[
-                        { width: 150, title: 'Topic', dataIndex: 'topicName', },
+                        { width: 'auto', title: 'Topic', dataIndex: 'topicName', },
                         { width: 150, title: 'Partition', dataIndex: 'partitionId', },
                         { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
                         { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
@@ -254,7 +254,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                     dataSource={g.items}
                     rowKey={r => r.partitionId}
                     columns={[
-                        { width: 150, title: 'Consumer', dataIndex: 'consumerName', },
+                        { width: 'auto', title: 'Consumer', dataIndex: 'consumerName', },
                         { width: 150, title: 'Partition', dataIndex: 'partitionId', },
                         { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
                         { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
