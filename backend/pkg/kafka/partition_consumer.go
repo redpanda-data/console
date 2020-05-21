@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"strings"
 	"unicode/utf8"
 
@@ -30,6 +29,20 @@ type IListMessagesProgress interface {
 	OnMessage(message *TopicMessage)
 	OnComplete(elapsedMs float64, isCancelled bool)
 	OnError(msg string)
+}
+
+// TopicMessage represents a single message from a given Kafka topic/partition
+type TopicMessage struct {
+	PartitionID int32  `json:"partitionID"`
+	Offset      int64  `json:"offset"`
+	Timestamp   int64  `json:"timestamp"`
+	Key         []byte `json:"key"`
+
+	Value     DirectEmbedding `json:"value"`
+	ValueType string          `json:"valueType"`
+
+	Size        int  `json:"size"`
+	IsValueNull bool `json:"isValueNull"`
 }
 
 // PartitionConsumeRequest is a partitionID along with it's calculated start and end offset.
@@ -86,7 +99,7 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 			}
 
 			vType, value := p.getValue(m.Value)
-			topicMessage := &owl.TopicMessage{
+			topicMessage := &TopicMessage{
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp.Unix(),

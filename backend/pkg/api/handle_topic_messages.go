@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"net/http"
 	"sync"
@@ -50,15 +51,15 @@ func (p *progressReporter) OnPhase(name string) {
 	}{"phase", name})
 }
 
-func (p *progressReporter) OnMessage(message *owl.TopicMessage) {
+func (p *progressReporter) OnMessage(message *kafka.TopicMessage) {
 	p.wsMutex.Lock()
 	defer p.wsMutex.Unlock()
 
 	//<-p.debugDelayTicker.C
 	p.websocket.EnableWriteCompression(true)
 	p.websocket.WriteJSON(struct {
-		Type    string            `json:"type"`
-		Message *owl.TopicMessage `json:"message"`
+		Type    string              `json:"type"`
+		Message *kafka.TopicMessage `json:"message"`
 	}{"message", message})
 }
 

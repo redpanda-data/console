@@ -24,30 +24,16 @@ type ListMessageRequest struct {
 
 // ListMessageResponse returns the requested kafka messages along with some metadata about the operation
 type ListMessageResponse struct {
-	ElapsedMs       float64         `json:"elapsedMs"`
-	FetchedMessages int             `json:"fetchedMessages"`
-	IsCancelled     bool            `json:"isCancelled"`
-	Messages        []*TopicMessage `json:"messages"`
-}
-
-// TopicMessage represents a single message from a given Kafka topic/partition
-type TopicMessage struct {
-	PartitionID int32  `json:"partitionID"`
-	Offset      int64  `json:"offset"`
-	Timestamp   int64  `json:"timestamp"`
-	Key         []byte `json:"key"`
-
-	Value     kafka.DirectEmbedding `json:"value"`
-	ValueType string                `json:"valueType"`
-
-	Size        int  `json:"size"`
-	IsValueNull bool `json:"isValueNull"`
+	ElapsedMs       float64               `json:"elapsedMs"`
+	FetchedMessages int                   `json:"fetchedMessages"`
+	IsCancelled     bool                  `json:"isCancelled"`
+	Messages        []*kafka.TopicMessage `json:"messages"`
 }
 
 // ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
 // (which runs in it's own goroutine) for each partition and funneling all the data to eventually
 // return it. The second return parameter is a bool which indicates whether the requested topic exists.
-func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
+func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress kafka.IListMessagesProgress) error {
 	start := time.Now()
 	logger := s.logger.With(zap.String("topic", listReq.TopicName))
 
