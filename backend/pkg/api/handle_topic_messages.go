@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"net/http"
 	"sync"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/go-chi/chi"
 
 	"github.com/gorilla/schema"
@@ -25,13 +25,13 @@ var upgrader = websocket.Upgrader{EnableCompression: true, CheckOrigin: allowAll
 
 // GetTopicMessagesResponse is a wrapper for an array of TopicMessage
 type GetTopicMessagesResponse struct {
-	KafkaMessages *kafka.ListMessageResponse `json:"kafkaMessages"`
+	KafkaMessages *owl.ListMessageResponse `json:"kafkaMessages"`
 }
 
 // This thing is given to 'ListMessages' so it can send updates about the search to client
 type progressReporter struct {
 	logger  *zap.Logger
-	request *kafka.ListMessageRequest
+	request *owl.ListMessageRequest
 
 	wsMutex   *sync.Mutex
 	websocket *websocket.Conn
@@ -50,15 +50,15 @@ func (p *progressReporter) OnPhase(name string) {
 	}{"phase", name})
 }
 
-func (p *progressReporter) OnMessage(message *kafka.TopicMessage) {
+func (p *progressReporter) OnMessage(message *owl.TopicMessage) {
 	p.wsMutex.Lock()
 	defer p.wsMutex.Unlock()
 
 	//<-p.debugDelayTicker.C
 	p.websocket.EnableWriteCompression(true)
 	p.websocket.WriteJSON(struct {
-		Type    string              `json:"type"`
-		Message *kafka.TopicMessage `json:"message"`
+		Type    string            `json:"type"`
+		Message *owl.TopicMessage `json:"message"`
 	}{"message", message})
 }
 
@@ -153,7 +153,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		api.Logger.Debug("websocket connection upgrade complete")
 
 		// Request messages from kafka and return them once we got all the messages or the context is done
-		listReq := kafka.ListMessageRequest{
+		listReq := owl.ListMessageRequest{
 			TopicName:    topicName,
 			PartitionID:  req.PartitionID,
 			StartOffset:  req.StartOffset,
@@ -165,8 +165,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		ctx, cancelCtx := context.WithTimeout(r.Context(), 18*time.Second)
 		defer cancelCtx()
 
-		// todo: don't call directly into kafka package, call into owl.* which in turn uses the kafka package
-		err = api.KafkaSvc.ListMessages(ctx, listReq, progress)
+		err = api.OwlSvc.ListMessages(ctx, listReq, progress)
 		if err != nil {
 			progress.OnError(err.Error())
 		}

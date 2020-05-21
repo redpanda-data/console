@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"strings"
 	"unicode/utf8"
 
@@ -23,8 +24,16 @@ const (
 	valueTypeBinary valueType = "binary"
 )
 
-// partitionConsumeRequest is a partitionID along with it's calculated start and end offset.
-type partitionConsumeRequest struct {
+// IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
+type IListMessagesProgress interface {
+	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
+	OnMessage(message *TopicMessage)
+	OnComplete(elapsedMs float64, isCancelled bool)
+	OnError(msg string)
+}
+
+// PartitionConsumeRequest is a partitionID along with it's calculated start and end offset.
+type PartitionConsumeRequest struct {
 	PartitionID   int32
 	IsDrained     bool // True if the partition was not able to return as many messages as desired here
 	LowWaterMark  int64
@@ -32,37 +41,37 @@ type partitionConsumeRequest struct {
 
 	StartOffset     int64
 	EndOffset       int64
-	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the consumer will stop.
+	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the Consumer will stop.
 }
 
-type partitionConsumer struct {
-	logger *zap.Logger // WithFields (topic, partitionId)
+type PartitionConsumer struct {
+	Logger *zap.Logger // WithFields (topic, partitionId)
 
 	// Infrastructure
-	doneCh   chan<- struct{} // notify parent that we're done
-	progress IListMessagesProgress
+	DoneCh   chan<- struct{} // notify parent that we're done
+	Progress IListMessagesProgress
 
 	// Consumer Details / Parameters
-	consumer  sarama.Consumer
-	topicName string
-	req       *partitionConsumeRequest
+	Consumer  sarama.Consumer
+	TopicName string
+	Req       *PartitionConsumeRequest
 }
 
-func (p *partitionConsumer) Run(ctx context.Context) {
+func (p *PartitionConsumer) Run(ctx context.Context) {
 	defer func() {
-		p.doneCh <- struct{}{}
+		p.DoneCh <- struct{}{}
 	}()
 
 	// Create PartitionConsumer
-	pConsumer, err := p.consumer.ConsumePartition(p.topicName, p.req.PartitionID, p.req.StartOffset)
+	pConsumer, err := p.Consumer.ConsumePartition(p.TopicName, p.Req.PartitionID, p.Req.StartOffset)
 	if err != nil {
-		p.logger.Error("couldn't consume partition", zap.Error(err))
-		p.progress.OnError(fmt.Sprintf("couldn't consume partition %v: %v", p.req.PartitionID, err.Error()))
+		p.Logger.Error("couldn't consume partition", zap.Error(err))
+		p.Progress.OnError(fmt.Sprintf("couldn't consume partition %v: %v", p.Req.PartitionID, err.Error()))
 		return
 	}
 	defer func() {
 		if errC := pConsumer.Close(); errC != nil {
-			p.logger.Error("Failed to close partition consumer", zap.Error(errC))
+			p.Logger.Error("Failed to close partition Consumer", zap.Error(errC))
 		}
 	}()
 
@@ -71,13 +80,13 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 		select {
 		case m, ok := <-pConsumer.Messages():
 			if !ok {
-				p.logger.Error("partition consumer message channel has unexpectedly closed")
-				p.progress.OnError(fmt.Sprintf("partition consumer (partitionId=%v) failed to get the next message (see server log)", p.req.PartitionID))
+				p.Logger.Error("partition Consumer message channel has unexpectedly closed")
+				p.Progress.OnError(fmt.Sprintf("partition Consumer (partitionId=%v) failed to get the next message (see server log)", p.Req.PartitionID))
 				return
 			}
 
 			vType, value := p.getValue(m.Value)
-			topicMessage := &TopicMessage{
+			topicMessage := &owl.TopicMessage{
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp.Unix(),
@@ -89,9 +98,9 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 			}
 			messageCount++
 
-			p.progress.OnMessage(topicMessage)
+			p.Progress.OnMessage(topicMessage)
 
-			if m.Offset >= p.req.EndOffset || messageCount == p.req.MaxMessageCount {
+			if m.Offset >= p.Req.EndOffset || messageCount == p.Req.MaxMessageCount {
 				return // reached end offset
 			}
 		case <-ctx.Done():
@@ -103,7 +112,7 @@ func (p *partitionConsumer) Run(ctx context.Context) {
 // getValue returns the valueType along with it's DirectEmbedding which implements a custom Marshaller,
 // so that it can return a string in the desired representation, regardless whether it's binary, text, xml
 // or JSON data.
-func (p *partitionConsumer) getValue(value []byte) (valueType, DirectEmbedding) {
+func (p *PartitionConsumer) getValue(value []byte) (valueType, DirectEmbedding) {
 	if len(value) == 0 {
 		return "", DirectEmbedding{ValueType: "", Value: value}
 	}
