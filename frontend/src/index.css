@@ -1,10 +1,10 @@
 body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    -webkit-font-smoothing: antialiased;
+    margin                 : 0;
+    font-family            : -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing : antialiased;
     -moz-osx-font-smoothing: grayscale;
-    list-style-type: none;
-    
+    list-style-type        : none;
+
     background: #f0f2f5;
 }
 
@@ -22,31 +22,31 @@ code {
 }
 
 .cell {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    position  : absolute;
+    top       : 0;
+    right     : 0;
+    bottom    : 0;
+    left      : 0;
     box-sizing: border-box;
-    display: block;
-    width: 100%;
+    display   : block;
+    width     : 100%;
 }
 
 .cell-overflow {
-    box-sizing: border-box;
-    overflow: hidden;
+    box-sizing   : border-box;
+    overflow     : hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space  : nowrap;
 }
 
 .cellDiv {
-    display: inline-block;
-    padding-right: 2em;
-    width: 0;
-    min-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display       : inline-block;
+    padding-right : 2em;
+    width         : 0;
+    min-width     : 100%;
+    overflow      : hidden;
+    text-overflow : ellipsis;
+    white-space   : nowrap;
     vertical-align: text-bottom;
 }
 
@@ -67,8 +67,8 @@ code {
 /* - Last two selectors fix the faulty indenting when there's a fold-button */
 
 .icon-container {
-    position: absolute;
-    width: auto;
+    position : absolute;
+    width    : auto;
     transform: translateX(-85%);
 }
 
@@ -89,12 +89,12 @@ span>.icon-container~span {
 
 .hoverButton {
     border-color: transparent;
-    box-shadow: none;
+    box-shadow  : none;
 }
 
 .hoverButton:hover .ant-avatar {
-    border-radius: 4px;
-    border-top-left-radius: 0px;
+    border-radius            : 4px;
+    border-top-left-radius   : 0px;
     border-bottom-left-radius: 0px;
 }
 
@@ -107,30 +107,31 @@ span>.icon-container~span {
 }
 
 .spinner {
-    width: 100%;
-    height: 100%;
+    width        : 100%;
+    height       : 100%;
     border-radius: 100%;
-    display: inline-block;
-    /* margin: auto;
-	position: absolute;
-	left: 0;
-	right: 0;
-	top: 0;
-	bottom: 0;
-	margin: auto; */
+    display      : inline-block;
+    /* margin    : auto;
+	position        : absolute;
+	left            : 0;
+	right           : 0;
+	top             : 0;
+	bottom          : 0;
+	margin          : auto; */
 }
 
 .spinner {
-    border: 3px solid transparent;
+    border             : 3px solid transparent;
     border-bottom-color: hsl(205, 100%, 50%);
-    border-top-color: hsl(205, 100%, 50%);
-    animation: rotate 0.7s linear 0s infinite;
+    border-top-color   : hsl(205, 100%, 50%);
+    animation          : rotate 0.7s linear 0s infinite;
 }
 
 @keyframes rotate {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -144,9 +145,11 @@ span>.icon-container~span {
     from {
         opacity: 1.0;
     }
+
     50% {
         opacity: 0.5;
     }
+
     to {
         transform: 1.0;
     }
@@ -160,28 +163,29 @@ span>.icon-container~span {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
 }
 
 .menu-divider-group-title {
-    color: transparent;
-    height: 1px;
-    background: #fff2;
-    /* margin: 1em; */
+    color        : transparent;
+    height       : 1px;
+    background   : #fff2;
+    /* margin    : 1em; */
     text-overflow: clip;
-    /* font-size: 0; */
-    transition: all 0.3s ease-out 0s;
+    /* font-size : 0; */
+    transition   : all 0.3s ease-out 0s;
 }
 
 .menu-divider {
-    color: transparent;
-    height: 1px;
-    background: #fff2;
+    color        : transparent;
+    height       : 1px;
+    background   : #fff2;
     text-overflow: clip;
-    transition: all 0.3s ease-out 0s;
-    margin: 1em 1em;
+    transition   : all 0.3s ease-out 0s;
+    margin       : 1em 1em;
 }
 
 .cursor-pointer {
@@ -190,7 +194,7 @@ span>.icon-container~span {
 
 .hoverLink:hover {
     cursor: pointer;
-    color: hsl(205, 100%, 50%);
+    color : hsl(205, 100%, 50%);
 }
 
 .pureDisplayRow {
@@ -219,17 +223,18 @@ span>.icon-container~span {
     overflow: visible;
 }
 
-.ant-table-tbody>tr:hover:not(.ant-table-row-selected), .pureDisplayRow>td {
+.ant-table-tbody>tr:hover:not(.ant-table-row-selected),
+.pureDisplayRow>td {
     background-color: initial !important;
 }
 
 .ant-pagination-total-text {
     font-size: 13px;
-    opacity: 80%;
+    opacity  : 80%;
 }
 
 .ant-pagination-item {
-    border-color: transparent;
+    border-color    : transparent;
     background-color: transparent;
 }
 
@@ -244,18 +249,18 @@ span>.icon-container~span {
 
 .ant-pagination-item-active a {
     font-weight: bold;
-    cursor: default;
+    cursor     : default;
 }
 
 .fadeIn3d {
-    opacity: 1;
-    transform: translateY(0) perspective(10em) rotateX(0) scale(1, 1);
+    opacity   : 1;
+    transform : translateY(0) perspective(10em) rotateX(0) scale(1, 1);
     transition: all 0.15s ease-out;
 }
 
 .fadeOut3d {
-    opacity: 0;
-    transform: translateY(.1em) perspective(6em) rotateX(30deg) scale(0.85, 0.85);
+    opacity   : 0;
+    transform : translateY(.1em) perspective(6em) rotateX(30deg) scale(0.85, 0.85);
     transition: all 0.1s ease-out;
 }
 
@@ -264,30 +269,30 @@ span>.icon-container~span {
 }
 
 .error-list {
-    padding: 2em;
-    margin: 1em 0;
-    background: hsla(205, 15%, 90%, 1);
+    padding      : 2em;
+    margin       : 1em 0;
+    background   : hsla(205, 15%, 90%, 1);
     border-radius: 6px;
 }
 
 .codeBox {
-    margin-top: 1em;
+    margin-top   : 1em;
     margin-bottom: 0;
-    padding: 0.2em 0.4em 0.1em;
-    font-size: 85%;
-    background: rgb(241, 241, 241);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    padding      : 0.2em 0.4em 0.1em;
+    font-size    : 85%;
+    background   : rgb(241, 241, 241);
+    border       : 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 3px;
-    font-family: monospace;
+    font-family  : monospace;
 }
 
 .version {
-    color: hsla(205, 32%, 46%, 0.4);
-    font-size: 80%;
-    margin: .5em auto;
-    display: flex;
+    color         : hsla(205, 32%, 46%, 0.4);
+    font-size     : 80%;
+    margin        : .5em auto;
+    display       : flex;
     flex-direction: column;
-    text-align: center;
+    text-align    : center;
 }
 
 .version .repo {
@@ -321,168 +326,172 @@ span>.icon-container~span {
 
 .consumerGroupCompleteID {
     white-space: normal;
-    word-break: break-all;
+    word-break : break-all;
 }
+
 .consumerGroupName {
     white-space: nowrap;
 }
+
 .consumerGroupSuffix {
-    opacity: 0.4;
+    opacity    : 0.4;
     white-space: nowrap;
+    font-size  : 66%;
 }
 
 
 
 .groupLagDisplayLine {
-    font-size: 85%;
+    font-size    : 85%;
     margin-bottom: .2em;
 }
 
 .groupLagDisplayLine:not(:last-child) {
     padding-bottom: 0.2em;
-    border-bottom: 1px solid #eee;
+    border-bottom : 1px solid #eee;
 }
 
 .login {
-    display: flex;
+    display      : flex;
     place-content: center;
-    place-items: center;
-    height: 100vh;
-    background: rgb(233, 233, 233);
-    font-family: 'Quicksand', sans-serif;
+    place-items  : center;
+    height       : 100vh;
+    background   : rgb(233, 233, 233);
+    font-family  : 'Quicksand', sans-serif;
 }
 
 .loginContainer {
-    width: 970px;
-    height: 600px;
-    background: #fafafa;
-    overflow: overlay;
-    box-shadow: 8px 8px 16px 1px rgba(0, 0, 0, 0.15);
+    width        : 970px;
+    height       : 600px;
+    background   : #fafafa;
+    overflow     : overlay;
+    box-shadow   : 8px 8px 16px 1px rgba(0, 0, 0, 0.15);
     border-radius: 4px;
-    display: flex;
-    font-size: 22px;
-    line-height: 23px;
+    display      : flex;
+    font-size    : 22px;
+    line-height  : 23px;
     /* or 107% */
-    display: flex;
-    align-items: center;
-    color: #498FC2;
+    display      : flex;
+    align-items  : center;
+    color        : #498FC2;
 }
 
 .loginContainerRight {
-    height: 100%;
-    display: flex;
+    height        : 100%;
+    display       : flex;
     flex-direction: column;
-    font-size: 11px;
-    color: #fafafa;
-    text-align: center;
-    font-weight: 500;
-    padding: 2rem 0;
+    font-size     : 11px;
+    color         : #fafafa;
+    text-align    : center;
+    font-weight   : 500;
+    padding       : 2rem 0;
 }
 
 .loginLeft {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    height         : 100%;
+    display        : flex;
+    flex-direction : column;
     justify-content: center;
-    padding-left: 4rem;
+    padding-left   : 4rem;
 }
 
 .loginRight {
-    position: relative;
-    height: 100%;
-    background: linear-gradient(338.72deg, #0a64a7 0%, #08273e 94.27%) no-repeat;
-    opacity: 0.8;
-    flex-grow: 1;
-    /* background: url('assets/pattern.png') repeat-x;
+    position           : relative;
+    height             : 100%;
+    background         : linear-gradient(338.72deg, #0a64a7 0%, #08273e 94.27%) no-repeat;
+    opacity            : 0.8;
+    flex-grow          : 1;
+    /* background      : url('assets/pattern.png') repeat-x;
     background-position: bottom; */
-    /* background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('assets/pattern.png') repeat; */
+    /* background      : linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('assets/pattern.png') repeat; */
 }
 
 .loginRight::after {
-    content: "";
-    background: url('assets/pattern3.png') repeat-x 330px bottom;
+    content              : "";
+    background           : url('assets/pattern3.png') repeat-x 330px bottom;
     background-position-y: 115%;
-    mix-blend-mode: hard-light;
-    opacity: 35%;
-    zoom: 80%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    z-index: -1;
+    mix-blend-mode       : hard-light;
+    opacity              : 35%;
+    zoom                 : 80%;
+    position             : absolute;
+    top                  : 0;
+    left                 : 0;
+    bottom               : 0;
+    right                : 0;
+    z-index              : -1;
 }
 
 .loginLogo {
-    color: #f5f5f5;
-    font-size: 2rem;
+    color      : #f5f5f5;
+    font-size  : 2rem;
     font-weight: 600;
-    display: flex;
+    display    : flex;
     place-items: center;
 }
 
 .loginButtonList {
-    display: flex;
+    display      : flex;
     place-content: center;
-    place-items: center;
-    margin-top: 1rem;
+    place-items  : center;
+    margin-top   : 1rem;
 }
 
 .loginSeperator {
-    margin: 0rem 2rem;
-    width: 1px;
+    margin    : 0rem 2rem;
+    width     : 1px;
     min-height: 100px;
     background: rgba(255, 255, 255, 0.287);
 }
 
 .loginButton2 {
-    cursor: pointer;
-    width: 130px;
-    height: 85px;
-    font-size: 1.5em;
-    font-weight: bold;
-    color: rgba(23, 23, 23);
-    background: #3a618899;
-    border-radius: 2px;
-    display: flex;
-    place-content: center;
-    place-items: center;
+    cursor        : pointer;
+    width         : 130px;
+    height        : 85px;
+    font-size     : 1.5em;
+    font-weight   : bold;
+    color         : rgba(23, 23, 23);
+    background    : #3a618899;
+    border-radius : 2px;
+    display       : flex;
+    place-content : center;
+    place-items   : center;
     flex-direction: column;
 }
 
 .loginButton2 i {
-    font-size: 28px;
+    font-size : 28px;
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 .loginButton2:hover {
-    color: #fff;
+    color     : #fff;
     background: hsla(5, 100%, 64%, 1);
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 .loginButton2:hover i {
-    font-size: 45px;
-    color: #fff;
+    font-size : 45px;
+    color     : #fff;
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
-.ant-menu.ant-menu-dark .ant-menu-item-selected, .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
+.ant-menu.ant-menu-dark .ant-menu-item-selected,
+.ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
     background-color: hsla(209, 72%, 59%, 0.68);
 }
 
 .ant-checkbox-checked .ant-checkbox-inner {
     background-color: hsla(209, 75%, 66%, 1);
-    border-color: hsla(209, 50%, 55%, 1);
+    border-color    : hsla(209, 50%, 55%, 1);
 }
 
 .ant-btn-primary {
     background-color: hsla(209, 66%, 55%, 1);
-    border-color: transparent;
+    border-color    : transparent;
 }
 
 .ant-tabs-nav .ant-tabs-tab-active {
-    color: hsla(206, 80%, 55%, 1);
+    color     : hsla(206, 80%, 55%, 1);
     background: #00b9ff17;
 }
 
@@ -504,12 +513,12 @@ tr.tombstone .ant-table-row-expand-icon {
 }
 
 .kowlCard {
-    margin: 0;
+    margin       : 0;
     margin-bottom: .75rem;
-    padding: 1rem 1.5rem;
-    background: #fff;
+    padding      : 1rem 1.5rem;
+    background   : #fff;
     border-radius: 2px;
-    box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.02);
+    box-shadow   : 0px 0px 1px 1px rgba(0, 0, 0, 0.02);
 }
 
 .avatarMenu {
@@ -525,7 +534,7 @@ tr.tombstone .ant-table-row-expand-icon {
 }
 
 .ant-tabs-nav .ant-tabs-tab {
-    flex: 1;
+    flex      : 1;
     text-align: center;
 }
 
@@ -551,7 +560,7 @@ tr td:nth-last-child(1) {
 
 .iconButton {
     transition-duration: 0ms;
-    transition-delay: 0ms;
+    transition-delay   : 0ms;
 }
 
 tr button.ant-btn-link {
@@ -567,13 +576,13 @@ tr:hover button.ant-btn-link {
 }
 
 .fill {
-    width: 100%;
+    width : 100%;
     height: 100%;
 }
 
 .roleTitle {
-    font-size: 110%;
-    font-weight: bold;
+    font-size    : 110%;
+    font-weight  : bold;
     border-bottom: solid 1px rgba(0, 0, 0, 0.1);
     margin-bottom: .5rem;
 }
@@ -596,7 +605,7 @@ button.ant-table-row-expand-icon {
 
 /* Fix: make it possible to configure column width */
 td .ant-table-cell {
-    word-wrap: break-word;
-    word-break: break-all;
+    word-wrap  : break-word;
+    word-break : break-all;
     white-space: normal;
 }
