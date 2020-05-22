@@ -138,21 +138,20 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
 
     render() {
         const p = this.props;
+        const allAssignments = p.group.members.flatMap(m => m.assignments.map(as => ({ member: m, topicName: as.topicName, partitions: as.partitionIds })));
 
         const lagsFlat = this.topicLags.flatMap(topicLag => topicLag.partitionLags.map(partLag => {
-            const a = p.group.members.flatMap(m => m.assignments.map(as => ({ member: m, assignment: as })));
 
-            const assignedMember = a.find(e =>
-                e.assignment.topicName == topicLag.topic
-                && e.assignment.partitionIds.includes(partLag.partitionId));
+            const assignedMember = allAssignments.find(e =>
+                e.topicName == topicLag.topic
+                && e.partitions.includes(partLag.partitionId));
 
             return {
                 topicName: topicLag.topic,
                 partitionId: partLag.partitionId,
                 lag: partLag.lag,
-                assignedMember: assignedMember?.member,
-                assignment: assignedMember?.assignment,
 
+                assignedMember: assignedMember?.member,
                 clientId: assignedMember?.member.clientId,
                 host: assignedMember?.member.clientHost
             }
@@ -162,8 +161,9 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
 
         const topicEntries = lagGroupsByTopic.map(g => {
             const topicPartitionInfo = api.TopicPartitions.get(g.key);
-            const totalLag = g.items.filter(c => c.assignedMember).sum(c => c.lag ?? 0);
-            const partitionCount = g.items.length;
+            const totalLagAll = g.items.sum(c => c.lag ?? 0);
+            const totalLagAssigned = g.items.filter(c => c.assignedMember).sum(c => c.lag ?? 0);
+            const partitionsAssigned = g.items.filter(c => c.assignedMember).length;
 
             if (p.onlyShowPartitionsWithLag)
                 g.items.removeAll(e => e.lag == 0);
@@ -171,11 +171,14 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             return <div key={g.key}>
                 <div style={{ margin: '.5em' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{g.key}</span>
-                    <Tooltip placement='top' title='Summed lag over all assigned partitions' mouseEnterDelay={0}>
-                        <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLag}</Tag>
+                    <Tooltip placement='top' title='Summed lag of all assigned partitions' mouseEnterDelay={0}>
+                        <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLagAssigned}</Tag>
                     </Tooltip>
-                    <Tooltip placement='top' title='Number of partitions assigned / number of partitions in the topic' mouseEnterDelay={0}>
+                    {/* <Tooltip placement='top' title='Number of partitions assigned / Number of partitions in the topic' mouseEnterDelay={0}>
                         <Tag color='blue'>partitions: {partitionCount}/{topicPartitionInfo?.length}</Tag>
+                    </Tooltip> */}
+                    <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
+                        <Tag color='blue'>assigned partitions: {partitionsAssigned}</Tag>
                     </Tooltip>
                 </div>
                 <Table
