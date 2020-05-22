@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../state/backendApi";
@@ -162,7 +162,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
 
         const topicEntries = lagGroupsByTopic.map(g => {
             const topicPartitionInfo = api.TopicPartitions.get(g.key);
-            const totalLag = g.items.sum(c => c.lag ?? 0);
+            const totalLag = g.items.filter(c => c.assignedMember).sum(c => c.lag ?? 0);
             const partitionCount = g.items.length;
 
             if (p.onlyShowPartitionsWithLag)
@@ -171,8 +171,12 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             return <div key={g.key}>
                 <div style={{ margin: '.5em' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{g.key}</span>
-                    <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLag}</Tag>
-                    <Tag color='blue'>partitions: {partitionCount}/{topicPartitionInfo?.length}</Tag>
+                    <Tooltip placement='top' title='Summed lag over all assigned partitions' mouseEnterDelay={0}>
+                        <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLag}</Tag>
+                    </Tooltip>
+                    <Tooltip placement='top' title='Number of partitions assigned / number of partitions in the topic' mouseEnterDelay={0}>
+                        <Tag color='blue'>partitions: {partitionCount}/{topicPartitionInfo?.length}</Tag>
+                    </Tooltip>
                 </div>
                 <Table
                     size='small'
@@ -233,9 +237,15 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
             return <div key={m.id}>
                 <div style={{ margin: '.5em' }}>
                     <span style={{ fontWeight: 'bold', fontSize: '110%', marginRight: '1em' }}>{renderMergedID(m)}</span>
-                    <Tag color='blue'>lag: {totalLag}</Tag>
-                    <Tag color='blue'>partitions: {totalPartitions}</Tag>
-                    <Tag color='blue'>host: {m.clientHost}</Tag>
+                    <Tooltip placement='top' title='Host of the member' mouseEnterDelay={0}>
+                        <Tag color='blue'>host: {m.clientHost}</Tag>
+                    </Tooltip>
+                    <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
+                        <Tag color='blue'>partitions: {totalPartitions}</Tag>
+                    </Tooltip>
+                    <Tooltip placement='top' title='Summed lag over all assigned partitions of all topics' mouseEnterDelay={0}>
+                        <Tag color='blue'>lag: {totalLag}</Tag>
+                    </Tooltip>
                 </div>
                 <Table
                     size='small'
@@ -243,9 +253,9 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                     dataSource={assignmentsFlat}
                     rowKey={r => r.topicName + r.partitionId}
                     columns={[
-                        { width: 'auto', title: 'Topic', dataIndex: 'topicName', },
-                        { width: 150, title: 'Partition', dataIndex: 'partitionId', },
-                        { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
+                        { width: 'auto', title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName') },
+                        { width: 150, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId') },
+                        { width: 150, title: 'Lag', dataIndex: 'partitionLag', sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
                     ]}
                 />
             </div>
