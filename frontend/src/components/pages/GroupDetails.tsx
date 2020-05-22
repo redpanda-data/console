@@ -81,9 +81,9 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                     <Row >
                         <Statistic title='State' valueRender={() => <GroupState group={group} />} />
                         <ProtocolType group={group} />
-                        <Statistic title='Consumers' value={group.members.length} />
-                        <Statistic title='Topics' value={requiredTopics.length} />
-                        <Statistic title='Consumed Partitions' value={totalPartitions} />
+                        <Statistic title='Members' value={group.members.length} />
+                        <Statistic title='Assigned Topics' value={requiredTopics.length} />
+                        <Statistic title='Assigned Partitions' value={totalPartitions} />
                     </Row>
                 </Card>
 
@@ -152,6 +152,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                 lag: partLag.lag,
 
                 assignedMember: assignedMember?.member,
+                id: assignedMember?.member.id,
                 clientId: assignedMember?.member.clientId,
                 host: assignedMember?.member.clientHost
             }
@@ -168,19 +169,22 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             if (p.onlyShowPartitionsWithLag)
                 g.items.removeAll(e => e.lag == 0);
 
-            return <div key={g.key}>
-                <div style={{ margin: '.5em' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{g.key}</span>
-                    <Tooltip placement='top' title='Summed lag of all assigned partitions' mouseEnterDelay={0}>
-                        <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLagAssigned}</Tag>
-                    </Tooltip>
-                    {/* <Tooltip placement='top' title='Number of partitions assigned / Number of partitions in the topic' mouseEnterDelay={0}>
-                        <Tag color='blue'>partitions: {partitionCount}/{topicPartitionInfo?.length}</Tag>
-                    </Tooltip> */}
-                    <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
-                        <Tag color='blue'>assigned partitions: {partitionsAssigned}</Tag>
-                    </Tooltip>
-                </div>
+            return <Collapse.Panel key={g.key}
+                header={
+                    <div>
+                        <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{g.key}</span>
+                        <Tooltip placement='top' title='Summed lag of all partitions of the topic' mouseEnterDelay={0}>
+                            <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLagAll}</Tag>
+                        </Tooltip>
+                        {/* <Tooltip placement='top' title='Number of partitions assigned / Number of partitions in the topic' mouseEnterDelay={0}>
+                                <Tag color='blue'>partitions: {partitionCount}/{topicPartitionInfo?.length}</Tag>
+                            </Tooltip> */}
+                        <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
+                            <Tag color='blue'>assigned partitions: {partitionsAssigned}</Tag>
+                        </Tooltip>
+                    </div>
+                }>
+
                 <Table
                     size='small'
                     pagination={this.pageConfig}
@@ -188,15 +192,21 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                     rowKey={r => r.partitionId}
                     columns={[
                         { width: 150, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
-                        { width: 'auto', title: 'Assigned Member', dataIndex: 'clientId' },
+                        { width: 'auto', title: 'Assigned Member', dataIndex: 'id' },
                         { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
                         { width: 150, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
                     ]}
                 />
-            </div>
+            </Collapse.Panel>
         });
 
-        return <>{topicEntries}</>;
+        const defaultExpand = lagGroupsByTopic.length == 0
+            ? undefined // 0 => undefined
+            : lagGroupsByTopic.length < 4
+                ? lagGroupsByTopic.map(g => g.key)  // all
+                : lagGroupsByTopic[0].key; // only first
+
+        return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{topicEntries}</Collapse>;
     }
 }
 
@@ -237,19 +247,22 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
             if (p.onlyShowPartitionsWithLag)
                 assignmentsFlat.removeAll(e => !e.partitionLag);
 
-            return <div key={m.id}>
-                <div style={{ margin: '.5em' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '110%', marginRight: '1em' }}>{renderMergedID(m)}</span>
-                    <Tooltip placement='top' title='Host of the member' mouseEnterDelay={0}>
-                        <Tag color='blue'>host: {m.clientHost}</Tag>
-                    </Tooltip>
-                    <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
-                        <Tag color='blue'>partitions: {totalPartitions}</Tag>
-                    </Tooltip>
-                    <Tooltip placement='top' title='Summed lag over all assigned partitions of all topics' mouseEnterDelay={0}>
-                        <Tag color='blue'>lag: {totalLag}</Tag>
-                    </Tooltip>
-                </div>
+            return <Collapse.Panel key={m.id}
+                header={
+                    <div>
+                        <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{renderMergedID(m)}</span>
+                        <Tooltip placement='top' title='Host of the member' mouseEnterDelay={0}>
+                            <Tag style={{ marginLeft: '1em' }} color='blue'>host: {m.clientHost}</Tag>
+                        </Tooltip>
+                        <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
+                            <Tag color='blue'>partitions: {totalPartitions}</Tag>
+                        </Tooltip>
+                        <Tooltip placement='top' title='Summed lag over all assigned partitions of all topics' mouseEnterDelay={0}>
+                            <Tag color='blue'>lag: {totalLag}</Tag>
+                        </Tooltip>
+                    </div>
+                }>
+
                 <Table
                     size='small'
                     pagination={this.pageConfig}
@@ -261,10 +274,16 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                         { width: 150, title: 'Lag', dataIndex: 'partitionLag', sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
                     ]}
                 />
-            </div>
+            </Collapse.Panel>
         });
 
-        return <>{memberEntries}</>;
+        const defaultExpand = p.group.members.length == 0
+            ? undefined // 0 => undefined
+            : p.group.members.length < 4
+                ? p.group.members.map(m => m.id)  // all
+                : p.group.members[0].id; // only first
+
+        return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{memberEntries}</Collapse>;
     }
 }
 
