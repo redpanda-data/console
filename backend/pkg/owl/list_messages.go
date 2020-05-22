@@ -1,8 +1,9 @@
-package kafka
+package owl
 
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -23,59 +24,24 @@ type ListMessageRequest struct {
 
 // ListMessageResponse returns the requested kafka messages along with some metadata about the operation
 type ListMessageResponse struct {
-	ElapsedMs       float64         `json:"elapsedMs"`
-	FetchedMessages int             `json:"fetchedMessages"`
-	IsCancelled     bool            `json:"isCancelled"`
-	Messages        []*TopicMessage `json:"messages"`
-}
-
-// TopicMessage represents a single message from a given Kafka topic/partition
-type TopicMessage struct {
-	PartitionID int32  `json:"partitionID"`
-	Offset      int64  `json:"offset"`
-	Timestamp   int64  `json:"timestamp"`
-	Key         []byte `json:"key"`
-
-	Value     DirectEmbedding `json:"value"`
-	ValueType string          `json:"valueType"`
-
-	Size        int  `json:"size"`
-	IsValueNull bool `json:"isValueNull"`
-}
-
-// partitionConsumeRequest is a partitionID along with it's calculated start and end offset.
-type partitionConsumeRequest struct {
-	PartitionID   int32
-	IsDrained     bool // True if the partition was not able to return as many messages as desired here
-	LowWaterMark  int64
-	HighWaterMark int64
-
-	StartOffset     int64
-	EndOffset       int64
-	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the consumer will stop.
-}
-
-// IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
-type IListMessagesProgress interface {
-	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
-	OnMessage(message *TopicMessage)
-	OnComplete(elapsedMs float64, isCancelled bool)
-	OnError(msg string)
+	ElapsedMs       float64               `json:"elapsedMs"`
+	FetchedMessages int                   `json:"fetchedMessages"`
+	IsCancelled     bool                  `json:"isCancelled"`
+	Messages        []*kafka.TopicMessage `json:"messages"`
 }
 
 // ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
 // (which runs in it's own goroutine) for each partition and funneling all the data to eventually
 // return it. The second return parameter is a bool which indicates whether the requested topic exists.
-// TODO: Report execution plan and results summary to frontend. Why didn't we get the desired number of results
-func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress IListMessagesProgress) error {
+func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress kafka.IListMessagesProgress) error {
 	start := time.Now()
-	logger := s.Logger.With(zap.String("topic", listReq.TopicName))
+	logger := s.logger.With(zap.String("topic", listReq.TopicName))
 
 	progress.OnPhase("Create Topic Consumer")
 	// We must create a new Consumer for every request,
 	// because each consumer can only consume every topic+partition once at the same time
 	// which means that concurrent requests will not work with one shared Consumer
-	consumer, err := sarama.NewConsumerFromClient(s.Client)
+	consumer, err := sarama.NewConsumerFromClient(s.kafkaSvc.Client)
 	if err != nil {
 		return fmt.Errorf("Couldn't create consumer: %w", err)
 	}
@@ -88,7 +54,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 
 	progress.OnPhase("Get Partitions")
 	// Create array of partitionIDs which shall be consumed (always do that to ensure the topic exists at all)
-	partitions, err := s.Client.Partitions(listReq.TopicName)
+	partitions, err := s.kafkaSvc.ListPartitions(listReq.TopicName)
 	if err != nil {
 		return fmt.Errorf("failed to get partitions: %w", err)
 	}
@@ -106,7 +72,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 
 	progress.OnPhase("Get Watermarks")
-	marks, err := s.WaterMarks(listReq.TopicName, partitionIDs)
+	marks, err := s.kafkaSvc.WaterMarks(listReq.TopicName, partitionIDs)
 	if err != nil {
 		return fmt.Errorf("failed to get watermarks: %w", err)
 	}
@@ -120,15 +86,15 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	// Get partition consume request by calculating start and end offsets for each partition
 	consumeRequests := calculateConsumeRequests(&listReq, marks)
 	for _, req := range consumeRequests {
-		pConsumer := partitionConsumer{
-			logger: logger.With(zap.Int32("partition_id", req.PartitionID)),
+		pConsumer := kafka.PartitionConsumer{
+			Logger: logger.With(zap.Int32("partition_id", req.PartitionID)),
 
-			doneCh:   doneCh,
-			progress: progress,
+			DoneCh:   doneCh,
+			Progress: progress,
 
-			consumer:  consumer,
-			topicName: listReq.TopicName,
-			req:       req,
+			Consumer:  consumer,
+			TopicName: listReq.TopicName,
+			Req:       req,
 		}
 		startedWorkers++
 		go pConsumer.Run(ctx)
@@ -191,13 +157,13 @@ Loop:
 // calculateConsumeRequests is supposed to calculate the start and end offsets for each partition consumer, so that
 // we'll end up with ${messageCount} messages in total. To do so we'll take the known low and high watermarks into
 // account. Gaps between low and high watermarks (caused by compactions) will be neglected for now.
-func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*WaterMark) map[int32]*partitionConsumeRequest {
-	requests := make(map[int32]*partitionConsumeRequest, len(marks))
+func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafka.WaterMark) map[int32]*kafka.PartitionConsumeRequest {
+	requests := make(map[int32]*kafka.PartitionConsumeRequest, len(marks))
 
 	// Init result map
 	notInitialized := int64(-1)
 	for _, mark := range marks {
-		p := &partitionConsumeRequest{
+		p := &kafka.PartitionConsumeRequest{
 			PartitionID:     mark.PartitionID,
 			IsDrained:       false,
 			LowWaterMark:    mark.Low,
@@ -271,7 +237,7 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*Wate
 	}
 
 	// Finally clean up results and remove those partition requests which had been initialized but are not needed
-	filteredRequests := make(map[int32]*partitionConsumeRequest)
+	filteredRequests := make(map[int32]*kafka.PartitionConsumeRequest)
 	for pID, req := range requests {
 		if req.MaxMessageCount == 0 {
 			continue

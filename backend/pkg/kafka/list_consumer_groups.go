@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// ListConsumerGroups returns an array of consumer group ids
+// ListConsumerGroups returns an array of Consumer group ids
 func (s *Service) ListConsumerGroups(ctx context.Context) ([]string, error) {
 	// 1. Query all brokers in the cluster in parallel in order to get all Consumer Groups
 	brokers := s.Client.Brokers()
@@ -65,7 +65,7 @@ Loop:
 				break Loop
 			}
 			if res.Err != nil {
-				return nil, fmt.Errorf("broker with id '%v' failed to return a list of consumer groups: %v", res.BrokerID, res.Err)
+				return nil, fmt.Errorf("broker with id '%v' failed to return a list of Consumer groups: %v", res.BrokerID, res.Err)
 			}
 
 			for g := range res.GroupsResponse.Groups {
