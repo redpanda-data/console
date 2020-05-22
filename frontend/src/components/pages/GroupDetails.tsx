@@ -222,7 +222,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             const partitionInfo = api.TopicPartitions.get(t.topicName)?.find(tp => tp.id == p);
             return {
                 consumer: t.member,
-                consumerName: t.member.clientId,
+                consumerClientId: t.member.clientId,
 
                 topic: t.topic,
                 partitionId: p,
@@ -254,7 +254,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                     dataSource={g.items}
                     rowKey={r => r.partitionId}
                     columns={[
-                        { width: 150, title: 'Consumer', dataIndex: 'consumerName', },
+                        { width: 150, title: 'Consumer', dataIndex: 'consumerClientId', },
                         { width: 150, title: 'Partition', dataIndex: 'partitionId', },
                         { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
                         { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
