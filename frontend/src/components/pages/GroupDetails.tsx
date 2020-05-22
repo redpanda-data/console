@@ -123,6 +123,77 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
 
 @observer
+class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
+
+    pageConfig: TablePaginationConfig;
+    topicLags: TopicLag[];
+
+    constructor(props: any) {
+        super(props);
+        this.pageConfig = makePaginationConfig(30);
+        this.pageConfig.hideOnSinglePage = true;
+        this.pageConfig.showSizeChanger = false;
+        this.topicLags = this.props.group.lag.topicLags;
+    }
+
+    render() {
+        const p = this.props;
+
+        const lagsFlat = this.topicLags.flatMap(topicLag => topicLag.partitionLags.map(partLag => {
+            const a = p.group.members.flatMap(m => m.assignments.map(as => ({ member: m, assignment: as })));
+
+            const assignedMember = a.find(e =>
+                e.assignment.topicName == topicLag.topic
+                && e.assignment.partitionIds.includes(partLag.partitionId));
+
+            return {
+                topicName: topicLag.topic,
+                partitionId: partLag.partitionId,
+                lag: partLag.lag,
+                assignedMember: assignedMember?.member,
+                assignment: assignedMember?.assignment,
+
+                clientId: assignedMember?.member.clientId,
+                host: assignedMember?.member.clientHost
+            }
+        }));
+
+        const lagGroupsByTopic = lagsFlat.groupInto(e => e.topicName);
+
+        const topicEntries = lagGroupsByTopic.map(g => {
+            const topicPartitionInfo = api.TopicPartitions.get(g.key);
+            const totalLag = g.items.sum(c => c.lag ?? 0);
+            const partitionCount = g.items.length;
+
+            if (p.onlyShowPartitionsWithLag)
+                g.items.removeAll(e => e.lag == 0);
+
+            return <div key={g.key}>
+                <div style={{ margin: '.5em' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{g.key}</span>
+                    <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLag}</Tag>
+                    <Tag color='blue'>partitions: {partitionCount}/{topicPartitionInfo?.length}</Tag>
+                </div>
+                <Table
+                    size='small'
+                    pagination={this.pageConfig}
+                    dataSource={g.items}
+                    rowKey={r => r.partitionId}
+                    columns={[
+                        { width: 150, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
+                        { width: 'auto', title: 'Assigned Member', dataIndex: 'clientId' },
+                        { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
+                        { width: 150, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
+                    ]}
+                />
+            </div>
+        });
+
+        return <>{topicEntries}</>;
+    }
+}
+
+@observer
 class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
 
     pageConfig: TablePaginationConfig;
@@ -192,80 +263,7 @@ class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPart
         return <>{memberEntries}</>;
     }
 }
-@observer
-class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
 
-    pageConfig: TablePaginationConfig;
-    topicLags: TopicLag[];
-
-    constructor(props: any) {
-        super(props);
-        this.pageConfig = makePaginationConfig(30);
-        this.pageConfig.hideOnSinglePage = true;
-        this.pageConfig.showSizeChanger = false;
-        this.topicLags = this.props.group.lag.topicLags;
-    }
-
-    render() {
-        const p = this.props;
-
-        const topicsFlat = p.group.members.map(m => m.assignments.map(a => ({
-            topicName: a.topicName,
-            partitionIds: a.partitionIds,
-            member: m,
-            topic: api.Topics?.find(t => t.topicName == a.topicName),
-        }))).flat();
-
-        const partitionsFlat = topicsFlat.map(t => t.partitionIds.map(p => {
-            const topicLag = this.topicLags.find(tl => tl.topic == t.topicName);
-            const partLag = topicLag?.partitionLags.find(pl => pl.partitionId == p)?.lag;
-            const partitionInfo = api.TopicPartitions.get(t.topicName)?.find(tp => tp.id == p);
-            return {
-                consumer: t.member,
-                consumerClientId: t.member.clientId,
-
-                topic: t.topic,
-                partitionId: p,
-                member: t.member,
-                partitionLag: partLag,
-                waterMarkHigh: partitionInfo?.waterMarkHigh,
-            }
-        })).flat();
-
-        const partitionGroupsByTopic = partitionsFlat.filter(p => p.topic?.topicName).groupInto(e => e.topic!.topicName);
-
-        const topicEntries = partitionGroupsByTopic.map(g => {
-            const topicInfo = api.TopicPartitions.get(g.key);
-            const totalLag = g.items.sum(c => c.partitionLag ?? 0);
-            const partitionCount = g.items.length;
-
-            if (p.onlyShowPartitionsWithLag)
-                g.items.removeAll(e => !e.partitionLag);
-
-            return <div key={g.key}>
-                <div style={{ margin: '.5em' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '110%' }}>{g.key}</span>
-                    <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLag}</Tag>
-                    <Tag color='blue'>partitions: {partitionCount}/{topicInfo?.length}</Tag>
-                </div>
-                <Table
-                    size='small'
-                    pagination={this.pageConfig}
-                    dataSource={g.items}
-                    rowKey={r => r.partitionId}
-                    columns={[
-                        { width: 'auto', title: 'Consumer', dataIndex: 'consumerClientId', },
-                        { width: 150, title: 'Partition', dataIndex: 'partitionId', },
-                        { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
-                        { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
-                    ]}
-                />
-            </div>
-        });
-
-        return <>{topicEntries}</>;
-    }
-}
 
 
 const renderMergedID = (record: GroupMemberDescription) => {
