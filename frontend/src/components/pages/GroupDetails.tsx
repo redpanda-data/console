@@ -18,7 +18,7 @@ import { TablePaginationConfig } from "antd/lib/table";
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
-    @observable groupMode: 'topic' | 'consumer' = 'topic';
+    @observable viewMode: 'topic' | 'member' = 'topic';
     @observable onlyShowPartitionsWithLag: boolean = false;
 
     initPage(p: PageInitHelper): void {
@@ -91,10 +91,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                     {/* Settings: GroupBy, Partitions */}
                     <Space style={{ margin: '.5rem 0 1rem 0' }} size='large'>
                         <span>
-                            Group By:
-                            <Radio.Group value={this.groupMode} onChange={e => this.groupMode = e.target.value} style={{ marginLeft: '.5rem' }}>
-                                <Radio.Button value="consumer">Consumer</Radio.Button>
-                                <Radio.Button value="topic">Topic</Radio.Button>
+                            View:
+                            <Radio.Group value={this.viewMode} onChange={e => this.viewMode = e.target.value} style={{ marginLeft: '.5rem' }}>
+                                <Radio.Button value="member">Members</Radio.Button>
+                                <Radio.Button value="topic">Topics</Radio.Button>
                             </Radio.Group>
                         </span>
                         <span>
@@ -106,8 +106,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                         </span>
                     </Space>
 
-                    {this.groupMode == 'consumer'
-                        ? <GroupByConsumers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
+                    {this.viewMode == 'member'
+                        ? <GroupByMembers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
                         : <GroupByTopics group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
                     }
 
@@ -194,7 +194,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
 }
 
 @observer
-class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
+class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
 
     pageConfig: TablePaginationConfig;
     topicLags: TopicLag[];
@@ -217,20 +217,12 @@ class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPart
                 .map(a => a.partitionIds.map(id => {
                     const topicLag = this.topicLags.find(t => t.topic == a.topicName);
                     const partLag = topicLag?.partitionLags.find(p => p.partitionId == id)?.lag;
-                    //const topicInfo = api.Topics?.find(t=>t.topicName==a.topicName);
-                    const topicPartitions = api.TopicPartitions.get(a.topicName);
-                    if (topicPartitions == undefined)
-                        setTimeout(() => api.refreshTopicPartitions(a.topicName), 1);
-                    const partitionInfo = api.TopicPartitions.get(a.topicName)?.find(p => p.id == id);
-
                     return {
                         topicName: a.topicName,
                         partitionId: id,
                         partitionLag: partLag,
-                        waterMarkHigh: partitionInfo?.waterMarkHigh,
                     }
                 })).flat();
-
 
             const totalLag = assignmentsFlat.sum(t => t.partitionLag ?? 0);
             const totalPartitions = assignmentsFlat.length;
@@ -254,7 +246,6 @@ class GroupByConsumers extends Component<{ group: GroupDescription, onlyShowPart
                         { width: 'auto', title: 'Topic', dataIndex: 'topicName', },
                         { width: 150, title: 'Partition', dataIndex: 'partitionId', },
                         { width: 150, title: 'Lag', dataIndex: 'partitionLag', },
-                        { width: 150, title: 'High Watermark', dataIndex: 'waterMarkHigh', },
                     ]}
                 />
             </div>
