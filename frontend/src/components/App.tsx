@@ -158,7 +158,7 @@ const DataAgeInfo = observer(() => {
 
     const maxFetchTime = api.ActiveRequests.length == 0
         ? 0
-        : api.ActiveRequests.map(r => r.requestTime).reduce((p, c) => Math.max(p, c));
+        : api.ActiveRequests.map(r => r.requestTime).reduce((p, c) => Math.max(p, c), 0);
 
     // maybe we need to use the same 'no vertical expansion' trick:
     // <span >

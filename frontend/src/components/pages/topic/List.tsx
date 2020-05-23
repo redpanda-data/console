@@ -77,8 +77,8 @@ class TopicList extends PageComponent {
         const topics = this.getTopics();
 
         const data = this.searchBar.current ? this.searchBar.current.data : ([] as TopicDetail[]);
-        const partitionCountReal = topics.map(x => x.partitionCount).reduce((p, c) => p + c);
-        const partitionCountOnlyReplicated = topics.map(x => x.partitionCount * x.replicationFactor).reduce((p, c) => p + c);
+        const partitionCountReal = topics.map(x => x.partitionCount).reduce((p, c) => p + c, 0);
+        const partitionCountOnlyReplicated = topics.map(x => x.partitionCount * x.replicationFactor).reduce((p, c) => p + c, 0);
 
         // const partitionDetails = (
         //     <Descriptions bordered={false} size='small' layout="horizontal" column={1} style={{ display: "inline-block" }}>

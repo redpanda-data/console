@@ -72,7 +72,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             return this.skeleton;
 
 
-        const totalPartitions = group.members.flatMap(m => m.assignments).map(a => a.partitionIds.length).reduce((prev, cur) => prev + cur);
+        const totalPartitions = group.members.flatMap(m => m.assignments).map(a => a.partitionIds.length).reduce((prev, cur) => prev + cur, 0);
 
         return (
             <MotionDiv style={{ margin: '0 1rem' }}>
