@@ -141,14 +141,14 @@ export interface GetConsumerGroupsResponse {
 
 export interface Broker {
     brokerId: number;
+    logDirSize: number; // bytes of the whole directory
     address: string;
     rack: string;
 }
 
 export interface ClusterInfo {
-    controllerId: number;
     brokers: Broker[];
-    logDirSize: number; // bytes of the whole directory
+    controllerId: number;
 }
 
 export interface ClusterInfoResponse {

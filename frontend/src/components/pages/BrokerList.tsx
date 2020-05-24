@@ -5,11 +5,11 @@ import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "./Page";
 import { api } from "../../state/backendApi";
 import { uiSettings } from "../../state/ui";
-import { makePaginationConfig } from "../misc/common";
+import { makePaginationConfig, sortField } from "../misc/common";
 import { Broker } from "../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../utils/animationProps";
-import { observable } from "mobx";
+import { observable, computed } from "mobx";
 import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../utils/utils";
 import { appGlobal } from "../../state/appGlobal";
@@ -23,7 +23,7 @@ class BrokerList extends PageComponent {
     pageConfig = makePaginationConfig(100, true);
 
     @observable filteredBrokers: Broker[];
-
+    @computed get hasRack() { return api.ClusterInfo?.brokers?.sum(b => b.rack ? 1 : 0) }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Brokers';
@@ -46,7 +46,6 @@ class BrokerList extends PageComponent {
 
         const info = api.ClusterInfo;
         const brokers = info.brokers;
-        let hasRack = brokers.any(b => b.rack ? true : false);
 
         const renderIdColumn = (text: string, record: Broker) => {
             if (record.brokerId != info.controllerId) return text;
@@ -58,11 +57,13 @@ class BrokerList extends PageComponent {
         };
 
         const columns: ColumnProps<Broker>[] = [
-            { title: 'ID', dataIndex: 'brokerId', width: '100px', render: renderIdColumn },
-            { title: 'Address', dataIndex: 'address' },
-            { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), width: '140px' },
-            !hasRack ? null : { title: 'Rack', dataIndex: 'rack', width: '100px' },
-        ].filter(c => c != null).map(c => c!);
+            { width: '100px', title: 'ID', dataIndex: 'brokerId', render: renderIdColumn, sorter: sortField('brokerId'), defaultSortOrder: 'ascend' },
+            { width: 'auto', title: 'Address', dataIndex: 'address', sorter: sortField('address') },
+            { width: '120px', title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), sorter: sortField('logDirSize') }
+        ]
+
+        if (this.hasRack)
+            columns.push({ width: '100px', title: 'Rack', dataIndex: 'rack', sorter: sortField('rack') });
 
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>

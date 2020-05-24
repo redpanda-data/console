@@ -223,7 +223,11 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                     rowClassName={(r) => (r.assignedMember) ? '' : 'consumerGroupNoMemberAssigned'}
                     columns={[
                         { width: 100, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
-                        { width: 'auto', title: 'Assigned Member', dataIndex: 'id', render: (t, r) => t ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><Octicon icon={Skip} /> no assigned member</span> },
+                        {
+                            width: 'auto', title: 'Assigned Member', dataIndex: 'id', render: (t, r) =>
+                                (renderMergedID(r.id, r.clientId))
+                                ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><Octicon icon={Skip} /> no assigned member</span>
+                        },
                         { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
                         { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
                     ]}
@@ -279,7 +283,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
             return <Collapse.Panel key={m.id}
                 header={
                     <div>
-                        <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{renderMergedID(m)}</span>
+                        <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{renderMergedID(m.id, m.clientId)}</span>
                         <Tooltip placement='top' title='Host of the member' mouseEnterDelay={0}>
                             <Tag style={{ marginLeft: '1em' }} color='blue'>host: {m.clientHost}</Tag>
                         </Tooltip>
@@ -316,14 +320,18 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
 
 
 
-const renderMergedID = (record: GroupMemberDescription) => {
-    if (record.id.startsWith(record.clientId)) { // should always be true...
-        const suffix = record.id.substring(record.clientId.length);
+const renderMergedID = (id?: string, clientId?: string) => {
+
+    if (id && clientId && id.startsWith(clientId)) { // should always be true...
+        const suffix = id.substring(clientId.length);
+
         return <span className='consumerGroupCompleteID'>
-            <span className='consumerGroupName'>{record.clientId}</span>
+            <span className='consumerGroupName'>{clientId}</span>
             <span className='consumerGroupSuffix'>{suffix}</span>
         </span>
     }
+
+    return <span className='consumerGroupCompleteID'>{clientId ?? id ?? ''}</span>
 };
 
 
