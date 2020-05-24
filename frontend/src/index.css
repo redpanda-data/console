@@ -196,12 +196,59 @@ span>.icon-container~span {
     color: inherit;
 }
 
-.ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-tbody>tr>td {
-    padding: 8px 8px;
+/* */
+
+/* Table size={'middle} */
+
+/* */
+
+.ant-table-middle {
+    /* Header height */
+    --headerVertical: 10px;
+    /* Row height */
+    --padRowHeight: 8px;
+    /* Cell horizontal */
+    --padCells: 12px;
+    /* Outside left/right */
+    --padOutside: 16px;
 }
 
-.ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-thead>tr>th {
-    padding: 12px 8px;
+.ant-table.ant-table-middle .ant-table-thead>tr>th {
+    /* Header: middle (normal + sorter)*/
+    padding: var(--headerVertical) var(--padCells);
+}
+
+.ant-table.ant-table-middle .ant-table-thead>tr>th:first-child {
+    /* Header: first (normal + sorter)*/
+    padding-left: var(--padOutside);
+}
+
+.ant-table.ant-table-middle .ant-table-thead>tr>th:last-child {
+    /* Header: last (normal + sorter)*/
+    padding-right: var(--padOutside);
+}
+
+.ant-table.ant-table-middle .ant-table-thead .ant-table-column-sorters {
+    padding: 0;
+}
+
+.ant-table.ant-table-middle .ant-table-thead th.ant-table-column-has-sorters {
+    padding: var(--headerVertical) var(--padCells);
+}
+
+.ant-table.ant-table-middle .ant-table-tbody>tr>td {
+    /* Cell: middle */
+    padding: var(--padRowHeight) var(--padCells);
+}
+
+.ant-table.ant-table-middle .ant-table-tbody>tr>td:first-child {
+    /* Cell: first */
+    padding-left: var(--padOutside);
+}
+
+.ant-table.ant-table-middle .ant-table-tbody>tr>td:last-child {
+    /* Cell: last */
+    padding-right: var(--padOutside);
 }
 
 .ant-table-tbody>tr:hover>td {
@@ -211,6 +258,10 @@ span>.icon-container~span {
 .ant-table-tbody>tr>td {
     transition-duration: 0s, 0s !important;
 }
+
+/* */
+
+/* */
 
 /* Don't clip animated page headers */
 
