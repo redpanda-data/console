@@ -5,11 +5,16 @@ declare global {
     interface Array<T> {
         remove(obj: T): boolean;
         removeAll(selector: (x: T) => boolean): number;
+
         sum<T>(this: T[], selector: (x: T) => number): number;
+        max<T>(this: T[], selector: (x: T) => number): number;
+
         any<T>(this: T[], selector: (x: T) => boolean): boolean;
         all<T>(this: T[], selector: (x: T) => boolean): boolean;
+
         groupBy<T, K>(this: T[], selector: (x: T) => K): Map<K, T[]>;
         groupInto<T, K>(this: T[], selector: (x: T) => K): { key: K, items: T[] }[];
+
         distinct<T>(this: T[], keySelector?: ((x: T) => any)): T[];
         pushDistinct<T>(this: T[], ...elements: T[]): void;
     }
@@ -34,9 +39,15 @@ Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) =>
     return count;
 };
 
+
 Array.prototype.sum = function sum<T>(this: T[], selector: (x: T) => number) {
     return this.reduce((pre, cur) => pre + selector(cur), 0);
 };
+
+Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {
+    return this.reduce((pre, cur) => Math.max(pre, selector(cur)), 0);
+};
+
 
 Array.prototype.any = function any<T>(this: T[], selector: (x: T) => boolean) {
     for (let e of this) {

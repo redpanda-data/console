@@ -81,7 +81,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         let messageSum: null | string = '...';
         let partitions = api.TopicPartitions.get(topic.topicName);
         if (partitions)
-            messageSum = partitions.reduce((p, c) => p + (c.waterMarkHigh - c.waterMarkLow), 0).toString();
+            messageSum = partitions.sum(p => (p.waterMarkHigh - p.waterMarkLow)).toString();
 
         setTimeout(() => this.addBaseFavs(topicConfig), 10);
 

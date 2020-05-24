@@ -82,7 +82,7 @@ export class ErrorBoundary extends React.Component {
 
         // EnvVars
         try {
-            const len = envVarDebugAr.map(e => e.name.length).reduce((p, c) => Math.max(p, c), 0);
+            const len = envVarDebugAr.max(e => e.name.length);
             this.infoItems.push({
                 name: "Environment",
                 value: envVarDebugAr.map(e => e.name.padEnd(len) + ': ' + e.value).join("\n")
