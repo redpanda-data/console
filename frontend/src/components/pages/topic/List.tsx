@@ -100,7 +100,7 @@ class TopicList extends PageComponent {
                         <Statistic title='Total Topics' value={topics.length} />
                         <Popover title='Partition Details' content={partitionDetails} placement='right' mouseEnterDelay={0} trigger='hover'>
                             <div className="hoverLink" style={{ display: "flex", verticalAlign: "middle", cursor: "default" }}>
-                                <Statistic title='Total Partitions' value={partitionCountReal} />
+                                <Statistic title='Total Partitions' value={partitionCountReal + partitionCountOnlyReplicated} />
                             </div>
                         </Popover>
                     </Row>
