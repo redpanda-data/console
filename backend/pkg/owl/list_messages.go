@@ -164,12 +164,15 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafk
 	notInitialized := int64(-1)
 	for _, mark := range marks {
 		p := &kafka.PartitionConsumeRequest{
-			PartitionID:     mark.PartitionID,
-			IsDrained:       false,
-			LowWaterMark:    mark.Low,
-			HighWaterMark:   mark.High,
-			StartOffset:     notInitialized,
-			EndOffset:       mark.High, // End is limited by high watermark or max message count
+			PartitionID:   mark.PartitionID,
+			IsDrained:     false,
+			LowWaterMark:  mark.Low,
+			HighWaterMark: mark.High,
+			StartOffset:   notInitialized,
+
+			// End is limited by high watermark or max message count
+			// -1 is necessary because mark.High - 1 is the last message which can actually be consumed
+			EndOffset:       mark.High - 1,
 			MaxMessageCount: 0,
 		}
 
