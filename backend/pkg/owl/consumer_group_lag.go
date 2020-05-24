@@ -29,10 +29,11 @@ func (c *ConsumerGroupLag) GetTopicLag(topicName string) *TopicLag {
 
 // TopicLag describes the kafka lag for a single topic and it's partitions for a single consumer group
 type TopicLag struct {
-	Topic                 string         `json:"topic"`
-	SummedLag             int64          `json:"summedLag"`             // Sums all partition lags (non consumed partitions are not considered)
-	ConsumesAllPartitions bool           `json:"consumesAllPartitions"` // Whether the consumer group has at least one active offset for all partitions or not
-	PartitionLags         []PartitionLag `json:"partitionLags"`
+	Topic                string         `json:"topic"`
+	SummedLag            int64          `json:"summedLag"` // Sums all partition lags (non consumed partitions are not considered)
+	PartitionCount       int            `json:"partitionCount"`
+	PartitionsWithOffset int            `json:"partitionsWithOffset"` // Number of partitions which have an active group offset
+	PartitionLags        []PartitionLag `json:"partitionLags"`
 }
 
 // PartitionLag describes the kafka lag for a partition for a single consumer group
@@ -108,20 +109,21 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 				return nil, fmt.Errorf("no partition watermark for the group's topic available")
 			}
 
-			// Take note, it's possible that a consumer group does not have active offsets for all topics, let's make that transparent
-			// For this reason we rather iterate on the partition water marks than the group partition offsets.
+			// Take note, it's possible that a consumer group does not have active offsets for all partitions, let's make that transparent!
+			// For this reason we rather iterate on the partition water marks rather than the group partition offsets.
 			t := TopicLag{
-				Topic:                 topic,
-				SummedLag:             0,
-				ConsumesAllPartitions: true,
-				PartitionLags:         make([]PartitionLag, 0),
+				Topic:                topic,
+				SummedLag:            0,
+				PartitionCount:       len(partitionWaterMarks),
+				PartitionsWithOffset: 0,
+				PartitionLags:        make([]PartitionLag, 0),
 			}
 			for pID, watermark := range partitionWaterMarks {
-				groupOffset, ok := partitionOffsets[pID]
-				if !ok {
-					t.ConsumesAllPartitions = false
+				groupOffset, hasGroupOffset := partitionOffsets[pID]
+				if !hasGroupOffset {
 					continue
 				}
+				t.PartitionsWithOffset++
 
 				lag := watermark - groupOffset
 				if lag < 0 {
