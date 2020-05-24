@@ -73,6 +73,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
 
         const totalPartitions = group.members.flatMap(m => m.assignments).sum(a => a.partitionIds.length);
+        //const partitionsWithOffset = group.lag.topicLags.flatMap(p => p.partitionLags).filter(p => p.hasOffset).length;
 
         return (
             <MotionDiv style={{ margin: '0 1rem' }}>
@@ -84,6 +85,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                         <Statistic title='Members' value={group.members.length} />
                         <Statistic title='Assigned Topics' value={requiredTopics.length} />
                         <Statistic title='Assigned Partitions' value={totalPartitions} />
+                        {/* <Statistic title='Partitions with offset' value={partitionsWithOffset} /> */}
                     </Row>
                 </Card>
 
