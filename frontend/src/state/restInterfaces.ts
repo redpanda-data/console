@@ -121,8 +121,11 @@ export interface GroupLagDescription {
 export interface TopicLag {
     topic: string; // name
     summedLag: number;
-    consumesAllPartitions: boolean;
-    partitionLags: { lag: number, partitionId: number }[]
+
+    partitionCount: number; // number of partitions the topic has
+    partitionsWithOffset: number; // number of partitions that have an active offset in this group
+
+    partitionLags: { lag: number, partitionId: number, hasOffset: boolean }[]
 }
 
 export interface GetConsumerGroupsResponse {

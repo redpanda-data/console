@@ -14,6 +14,7 @@ import Card from "../misc/Card";
 import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone } from '@ant-design/icons';
 import { Radio } from 'antd';
 import { TablePaginationConfig } from "antd/lib/table";
+import Octicon, { Skip } from "@primer/octicons-react";
 
 
 @observer
@@ -140,32 +141,35 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
 
     render() {
         const p = this.props;
-        const allAssignments = p.group.members.flatMap(m => m.assignments.map(as => ({ member: m, topicName: as.topicName, partitions: as.partitionIds })));
+        const allAssignments = p.group.members
+            .flatMap(m => m.assignments
+                .map(as => ({ member: m, topicName: as.topicName, partitions: as.partitionIds })));
 
-        const lagsFlat = this.topicLags.flatMap(topicLag => topicLag.partitionLags.map(partLag => {
+        const lagsFlat = this.topicLags.flatMap(topicLag =>
+            topicLag.partitionLags.map(partLag => {
 
-            const assignedMember = allAssignments.find(e =>
-                e.topicName == topicLag.topic
-                && e.partitions.includes(partLag.partitionId));
+                const assignedMember = allAssignments.find(e =>
+                    e.topicName == topicLag.topic
+                    && e.partitions.includes(partLag.partitionId));
 
-            return {
-                topicName: topicLag.topic,
-                partitionId: partLag.partitionId,
-                lag: partLag.lag,
+                return {
+                    topicName: topicLag.topic,
+                    partitionId: partLag.partitionId,
+                    lag: partLag.lag,
 
-                assignedMember: assignedMember?.member,
-                id: assignedMember?.member.id,
-                clientId: assignedMember?.member.clientId,
-                host: assignedMember?.member.clientHost
-            }
-        }));
+                    assignedMember: assignedMember?.member,
+                    id: assignedMember?.member.id,
+                    clientId: assignedMember?.member.clientId,
+                    host: assignedMember?.member.clientHost
+                }
+            }));
 
         const lagGroupsByTopic = lagsFlat.groupInto(e => e.topicName);
 
         const topicEntries = lagGroupsByTopic.map(g => {
             const topicPartitionInfo = api.TopicPartitions.get(g.key);
-            const totalLagAll = g.items.sum(c => c.lag ?? 0);
             const totalLagAssigned = g.items.filter(c => c.assignedMember).sum(c => c.lag ?? 0);
+            const totalLagAll = g.items.sum(c => c.lag ?? 0);
             const partitionsAssigned = g.items.filter(c => c.assignedMember).length;
 
             if (p.onlyShowPartitionsWithLag)
@@ -192,9 +196,10 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                     pagination={this.pageConfig}
                     dataSource={g.items}
                     rowKey={r => r.partitionId}
+                    rowClassName={(r) => (r.assignedMember) ? '' : 'consumerGroupNoMemberAssigned'}
                     columns={[
                         { width: 100, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
-                        { width: 'auto', title: 'Assigned Member', dataIndex: 'id' },
+                        { width: 'auto', title: 'Assigned Member', dataIndex: 'id', render: (t, r) => t ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><Octicon icon={Skip} /> no assigned member</span> },
                         { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
                         { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
                     ]}
