@@ -86,9 +86,9 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                         <ProtocolType group={group} />
                         <Statistic title='Members' value={group.members.length} />
                         <Statistic title='Assigned Topics' value={requiredTopics.length} />
+                        <Statistic title='Topics with offset' value={topicsWithOffset} />
                         <Statistic title='Assigned Partitions' value={totalPartitions} />
                         <Statistic title='Partitions with offset' value={partitionsWithOffset} />
-                        <Statistic title='Topics with offset' value={topicsWithOffset} />
                     </Row>
                 </Card>
 
