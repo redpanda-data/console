@@ -3,15 +3,15 @@ import { Transition, motion } from "framer-motion";
 import { alwaysChanging } from "./utils";
 import { PositionProperty } from "csstype";
 
-const time = 0.2; // 0.15
-const dist = 1;
+const time = 0.25; // 0.15
+const dist = 2;
 const dx100em = [(dist * -1) + 'em', 0, dist + 'em'];
 const dx50em = [(dist * 0.5 * -1) + 'em', 0, (dist * 0.5) + 'em'];
 // ease:
 // "linear" | "easeIn" | "easeOut" | "easeInOut" | "circIn" | "circOut" | "circInOut" | "backIn" | "backOut" | "backInOut" | "anticipate"
 
 const transition: Transition = {
-    ease: 'easeOut', staggerChildren: 0,
+    ease: 'circOut', //staggerChildren: 0,
     duration: time,
 };
 
