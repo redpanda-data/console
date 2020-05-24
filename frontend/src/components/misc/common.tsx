@@ -43,7 +43,7 @@ export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />
 
 
 export const DEFAULT_TABLE_PAGE_SIZE = 50;
-export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE): TablePaginationConfig {
+export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE, hideOnSinglePage?: boolean): TablePaginationConfig {
     return {
         position: ['none' as any, 'bottomRight'],
         pageSize: pageSize,
@@ -51,7 +51,7 @@ export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE)
         showSizeChanger: true,
         pageSizeOptions: ['10', '20', '50', '100'],
         showTotal: (total: number) => `Total ${total} items`,
-        hideOnSinglePage: false,
+        hideOnSinglePage: hideOnSinglePage ?? false,
     };
 }
 

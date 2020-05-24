@@ -20,7 +20,7 @@ import Icon, { CrownOutlined } from '@ant-design/icons';
 @observer
 class BrokerList extends PageComponent {
 
-    pageConfig = makePaginationConfig(uiSettings.brokerList.pageSize);
+    pageConfig = makePaginationConfig(100, true);
 
     @observable filteredBrokers: Broker[];
 
