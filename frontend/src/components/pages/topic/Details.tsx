@@ -202,7 +202,7 @@ const ConfigDisplaySettings = observer(() =>
 
                 <OptionGroup label='Sort'
                     options={{
-                        "Default": 'default',
+                        "None": 'default',
                         "Changed First": 'changedFirst',
                     }}
                     value={uiSettings.topicList.propsOrder}
