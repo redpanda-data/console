@@ -59,17 +59,17 @@ export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE)
 export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
     return (a: T, b: T, _) => {
         if (typeof a[field] === 'string') {
-            const left = a[field] as unknown as string;
-            const right = b[field] as unknown as string;
+            const left = String(a[field]);
+            const right = String(b[field]);
             return left.localeCompare(right);
         }
         if (typeof a[field] === 'number') {
-            const left = a[field] as unknown as number;
-            const right = b[field] as unknown as number;
+            const left = +a[field];
+            const right = +b[field];
             return left - right;
         }
 
-        throw Error(`Table 'sortField()' can't handle '${field}'`)
+        throw Error(`Table 'sortField()' can't handle '${field}', it's type is '${typeof a[field]}'`)
     }
 }
 
