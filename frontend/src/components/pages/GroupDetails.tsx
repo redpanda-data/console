@@ -72,7 +72,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             return this.skeleton;
 
 
-        const totalPartitions = group.members.flatMap(m => m.assignments).map(a => a.partitionIds.length).reduce((prev, cur) => prev + cur, 0);
+        const totalPartitions = group.members.flatMap(m => m.assignments).sum(a => a.partitionIds.length);
 
         return (
             <MotionDiv style={{ margin: '0 1rem' }}>
@@ -191,20 +191,18 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                     dataSource={g.items}
                     rowKey={r => r.partitionId}
                     columns={[
-                        { width: 150, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
+                        { width: 100, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
                         { width: 'auto', title: 'Assigned Member', dataIndex: 'id' },
                         { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
-                        { width: 150, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
+                        { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
                     ]}
                 />
             </Collapse.Panel>
         });
 
-        const defaultExpand = lagGroupsByTopic.length == 0
-            ? undefined // 0 => undefined
-            : lagGroupsByTopic.length < 4
-                ? lagGroupsByTopic.map(g => g.key)  // all
-                : lagGroupsByTopic[0].key; // only first
+        const defaultExpand = lagGroupsByTopic.length == 1
+            ? lagGroupsByTopic[0].key // only one -> expand
+            : undefined; // more than one -> collapse
 
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{topicEntries}</Collapse>;
     }
@@ -237,7 +235,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                     return {
                         topicName: a.topicName,
                         partitionId: id,
-                        partitionLag: partLag,
+                        partitionLag: partLag ?? 0,
                     }
                 })).flat();
 
@@ -277,11 +275,9 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
             </Collapse.Panel>
         });
 
-        const defaultExpand = p.group.members.length == 0
-            ? undefined // 0 => undefined
-            : p.group.members.length < 4
-                ? p.group.members.map(m => m.id)  // all
-                : p.group.members[0].id; // only first
+        const defaultExpand = p.group.members.length == 1
+            ? p.group.members[0].id // if only one entry, expand it
+            : undefined; // more than one -> collapse
 
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{memberEntries}</Collapse>;
     }
