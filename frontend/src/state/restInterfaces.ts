@@ -125,7 +125,8 @@ export interface TopicLag {
     partitionCount: number; // number of partitions the topic has
     partitionsWithOffset: number; // number of partitions that have an active offset in this group
 
-    partitionLags: { lag: number, partitionId: number, hasOffset: boolean }[]
+    // only lists partitions that have a commited offset (independent of whether or not a member is currently assigned to it)
+    partitionLags: { lag: number, partitionId: number }[]
 }
 
 export interface GetConsumerGroupsResponse {
