@@ -5,8 +5,8 @@ import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { PageComponent, PageInitHelper } from "../Page";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { motion } from "framer-motion";
-import { animProps, MotionDiv, MotionSpan } from "../../../utils/animationProps";
+import { motion, AnimatePresence } from "framer-motion";
+import { animProps, MotionDiv, MotionSpan, animProps_span_searchResult } from "../../../utils/animationProps";
 import { appGlobal } from "../../../state/appGlobal";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { TopicDetail } from "../../../state/restInterfaces";
@@ -121,10 +121,10 @@ class TopicList extends PageComponent {
                         dataSource={data}
                         rowKey={x => x.topicName}
                         columns={[
-                            { title: 'Name', dataIndex: 'topicName', sorter: sortField('topicName'), className: 'whiteSpaceDefault' },
+                            { title: 'Name', dataIndex: 'topicName', sorter: sortField('topicName'), className: 'whiteSpaceDefault', showSorterTooltip: false, defaultSortOrder: 'ascend' },
                             { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
-                            { title: 'Replication', dataIndex: 'replicationFactor', width: 1 },
-                            { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1 },
+                            { title: 'Replication', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
+                            { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', sorter: sortField('cleanupPolicy'), width: 1 },
                             { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), sorter: (a, b) => a.logDirSize - b.logDirSize, width: '140px' },
                         ]} />
                 </Card>
@@ -181,12 +181,11 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
             //     </Popover>
             // }
             />
-            {/* </AutoComplete> */}
+
             <this.FilterSummary />
 
-            <span style={{ flex: 1 }} />
             <Checkbox
-                style={{ marginLeft: '1rem' }}
+                style={{ paddingLeft: '1rem', marginLeft: 'auto' }}
                 checked={uiSettings.topicList.hideInternalTopics}
                 onChange={e => uiSettings.topicList.hideInternalTopics = e.target.checked}
             >Hide internal topics</Checkbox>
@@ -202,6 +201,26 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
     })
 
     FilterSummary = observer((() => {
+        const searchSummary = this.computeFilterSummary();
+
+        return (
+            <AnimatePresence>
+                {searchSummary &&
+                    <MotionSpan
+                        identityKey={searchSummary?.identity ?? 'null'} // identityKey={searchSummary?.identity ?? 'null'}
+                        overrideAnimProps={animProps_span_searchResult}
+                    >
+                        <span style={{ opacity: 0.8, paddingLeft: '1em' }}>
+                            {searchSummary?.node}
+                        </span>
+                    </MotionSpan>
+                }
+            </AnimatePresence>
+
+        )
+    }).bind(this));
+
+    computeFilterSummary(): { identity: string, node: React.ReactNode } | null {
         const source = this.props.dataSource();
         if (!source || source.length == 0) {
             // console.log('filter summary:');
@@ -216,15 +235,11 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
         const sourceLength = source.length;
         const resultLength = this.filteredSource.data.length;
 
-        const displayText = sourceLength == resultLength
-            ? 'Filter matched everything'
-            : <><b>{this.filteredSource.data.length}</b> results</>;
+        if (sourceLength == resultLength)
+            return { identity: 'all', node: <span>Filter matched everything</span> };
 
-        return <MotionSpan identityKey={displayText} >
-            <Text type='secondary' style={{ marginLeft: '1em' }} >{displayText}</Text>
-        </MotionSpan>
-
-    }).bind(this));
+        return { identity: 'r', node: <span><span style={{ fontWeight: 600 }}>{this.filteredSource.data.length}</span> results</span> }
+    }
 
 }
 

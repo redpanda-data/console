@@ -37,8 +37,14 @@ export const TopicConfiguration = observer(
         >
             {p.config
                 .filter(e =>
-                    uiSettings.topicList.onlyShowChanged ? !e.isDefault : true
+                    uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isDefault : true
                 )
+                .sort((a, b) => {
+                    if (uiSettings.topicList.propsOrder != 'changedFirst') return 0;
+                    const v1 = a.isDefault ? 1 : 0;
+                    const v2 = b.isDefault ? 1 : 0;
+                    return v1 - v2;
+                })
                 .map(e => (
                     <Descriptions.Item key={e.name} label={DataName(e)}>
                         {DataValue(e)}
@@ -148,17 +154,17 @@ export function FormatValue(configEntry: TopicConfigEntry): string {
 
     const num = Number(value);
 
-    // Special cases for known configuration entries
+    // Special case 1
     if (configEntry.name == "flush.messages" && num > Math.pow(2, 60))
-        // messages between each fsync
-        return "Never" + suffix;
+        return "Never" + suffix; // messages between each fsync
 
+    // Special case 2
     if (configEntry.name == "retention.bytes" && num < 0)
-        // max bytes to keep before discarding old log segments
-        return "Infinite" + suffix;
+        return "Infinite" + suffix; // max bytes to keep before discarding old log segments
 
-    // Don't modify zero at all
-    if (value == "0") return value;
+    // Special case 3
+    if (value == "0") return value; // Don't modify zero at all
+
 
     // Time
     if (configEntry.name.endsWith(".ms")) {
@@ -171,6 +177,11 @@ export function FormatValue(configEntry: TopicConfigEntry): string {
     // Bytes
     if (configEntry.name.endsWith(".bytes")) {
         return prettyBytes(num) + suffix;
+    }
+
+    // Ratio
+    if (configEntry.name.endsWith(".ratio")) {
+        return (num * 100).toLocaleString() + "%"
     }
 
     return value;

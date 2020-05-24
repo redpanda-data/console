@@ -383,3 +383,11 @@ export const prettyBytesOrNA = function (n: number) {
     if (n == -1) return "N/A";
     return prettyBytes(n);
 }
+
+
+export function randomId() {
+    return (Math.random() * Number.MAX_SAFE_INTEGER).toString(16);
+}
+export function simpleUniqueId(prefix: string) {
+    return `${prefix}-${randomId()}-${randomId()}`;
+}

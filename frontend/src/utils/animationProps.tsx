@@ -5,23 +5,69 @@ import { PositionProperty } from "csstype";
 
 const time = 0.2; // 0.15
 const dist = 1;
-const dx = [(dist * -1) + 'em', 0, dist + 'em'];
+const dx100em = [(dist * -1) + 'em', 0, dist + 'em'];
+const dx50em = [(dist * 0.5 * -1) + 'em', 0, (dist * 0.5) + 'em'];
+// ease:
+// "linear" | "easeIn" | "easeOut" | "easeInOut" | "circIn" | "circOut" | "circInOut" | "backIn" | "backOut" | "backInOut" | "anticipate"
 
 const transition: Transition = {
-    ease: 'easeOut',
+    ease: 'easeOut', staggerChildren: 0,
     duration: time,
-    staggerChildren: 0
 };
 
 
 export const animProps = {
     transition: transition,
-    initial: { opacity: 0, x: dx[0], position: 'static' as PositionProperty },
-    animate: { opacity: 1, x: dx[1], position: 'static' as PositionProperty },
-    exit: { opacity: 0, x: dx[2], position: 'absolute' as PositionProperty, width: 'auto' },
+    initial: { opacity: 0, x: dx100em[0], position: 'static' as PositionProperty },
+    animate: { opacity: 1, x: dx100em[1], position: 'static' as PositionProperty },
+    exit: { opacity: 0, x: dx100em[2], position: 'absolute' as PositionProperty, width: 'auto' },
 };
 
-export const MotionAlways: FC = (p: { children?: React.ReactNode, style?: CSSProperties }) => <motion.div {...animProps} {...p} key={alwaysChanging()} />;
+export const animProps_span_searchResult = {
+    transition: { ease: 'circOut', duration: 0.2 },
+    initial: { opacity: 0, x: dx100em[0] },
+    animate: { opacity: 1, x: dx100em[1] },
+    exit: { opacity: 0, x: dx50em[2] },
+};
+
+export const animProps_span_messagesStatus = {
+    initial: {
+        opacity: 0,
+        x: 0,
+        display: 'inline-block'
+    },
+    animate: {
+        opacity: 1,
+        x: dx100em[1],
+        transition: {
+            ease: 'easeOut',
+            duration: 0,
+            delay: 0
+        },
+    },
+    exit: {
+        opacity: 0,
+        x: dx100em[2],
+        transition: {
+            ease: 'easeOut',
+            duration: 0.35,
+            delay: 0.9
+        }
+    },
+};
+
+
+export const MotionAlways: FC = (p: { children?: React.ReactNode, style?: CSSProperties }) =>
+    <motion.div key={alwaysChanging()} {...animProps} style={p.style}>
+        {p.children}
+    </motion.div>;
+
 export const MotionDiv: FC<{ identityKey?: any, positionTransition?: boolean, layoutTransition?: boolean, style?: CSSProperties }> = (p) =>
-    <motion.div {...animProps} positionTransition={p.positionTransition} layoutTransition={p.layoutTransition} key={p.identityKey} style={p.style}>{p.children}</motion.div>;
-export const MotionSpan: FC<{ identityKey?: any }> = (p) => <motion.span {...animProps} key={p.identityKey}>{p.children}</motion.span>;
+    <motion.div key={p.identityKey} positionTransition={p.positionTransition} layoutTransition={p.layoutTransition} style={p.style} {...animProps} >
+        {p.children}
+    </motion.div>;
+
+export const MotionSpan: FC<{ identityKey?: any, overrideAnimProps?: any, style?: CSSProperties }> = (p) =>
+    <motion.span key={p.identityKey} style={p.style} {...(p.overrideAnimProps ?? animProps)}>
+        {p.children}
+    </motion.span>;

@@ -1,4 +1,6 @@
-import React, { Children } from "react";
+import React, { Children, useState, Component, CSSProperties } from "react";
+import { simpleUniqueId } from "./utils";
+import { Radio } from 'antd';
 
 
 
@@ -92,4 +94,54 @@ export function ObjToKv(obj: any): { key: string, value: any }[] {
         ar.push({ key: k, value: obj[k] })
     }
     return ar;
+}
+
+
+const style_flexColumn: CSSProperties = { display: 'flex', flexDirection: 'column' };
+export const Label = (p: { text: string, children?: React.ReactNode }) => {
+    const [id] = useState(() => simpleUniqueId(p.text));
+
+    const child: React.ReactNode = p.children ?? <React.Fragment />;
+
+    const newChild = Object.assign({}, child) as any;
+    newChild.props = {};
+    Object.assign(newChild.props, (child as any).props, { id: id });
+
+    return <>
+        <div style={style_flexColumn}>
+            <div className='labelText'>
+                <label htmlFor={id}>{p.text}</label>
+            </div>
+            <div>
+                {newChild}
+            </div>
+        </div>
+    </>
+}
+
+export class OptionGroup<T> extends Component<{
+    label?: string,
+    options: { [key: string]: any },
+    value: T,
+    onChange: (value: T) => void,
+    children?: never
+}> {
+
+    render() {
+        const p = this.props;
+
+        const radioGroup = (
+            <Radio.Group value={p.value} onChange={e => p.onChange(e.target.value)}>
+                {ObjToKv(p.options).map(kv =>
+                    <Radio.Button value={kv.value}>{kv.key}</Radio.Button>
+                )}
+            </Radio.Group>
+        );
+
+        if (!p.label) return radioGroup;
+
+        return <Label text={p.label}>
+            {radioGroup}
+        </Label>
+    }
 }

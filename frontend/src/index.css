@@ -605,3 +605,19 @@ td .ant-table-cell {
 tr.consumerGroupNoMemberAssigned {
     color: rgba(0, 0, 0, 0.25);
 }
+
+.labelText {
+    margin-bottom: 3px;
+    margin-left: 1px;
+    line-height: 1.5;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    /* background: linear-gradient(90deg, rgba(0, 0, 0, 20%) 5%, rgba(0, 0, 0, 0) 100%) bottom no-repeat;
+    background-size: 100% 1px; */
+}
+
+.ant-space-horizontal {
+    flex-wrap: wrap;
+}

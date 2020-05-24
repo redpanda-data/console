@@ -92,13 +92,14 @@ class GroupList extends PageComponent {
                         dataSource={groups}
                         rowKey={x => x.groupId}
                         columns={[
-                            { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
+                            { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} />, showSorterTooltip: false },
                             {
                                 title: 'ID', dataIndex: 'groupId',
                                 sorter: sortField('groupId'),
                                 filteredValue: [uiSettings.consumerGroupList.quickSearch],
                                 onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
-                                render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
+                                render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault',
+                                showSorterTooltip: false
                             },
                             { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
                             { title: 'Lag (Sum)', dataIndex: 'lagSum', sorter: (a, b) => a.lagSum - b.lagSum },

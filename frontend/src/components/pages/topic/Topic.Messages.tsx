@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete } from "antd";
+import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
@@ -13,7 +13,7 @@ import { sortField, range, makePaginationConfig, Spacer } from "../../misc/commo
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed, transaction, autorun, IReactionDisposer } from "mobx";
 import { findElementDeep, cullText, getAllKeys, ToJson } from "../../../utils/utils";
-import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
+import { animProps, MotionAlways, MotionDiv, MotionSpan, animProps_span_messagesStatus } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
@@ -23,7 +23,7 @@ import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
 import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { numberToThousandsString, ZeroSizeWrapper } from "../../../utils/tsxUtils";
+import { numberToThousandsString, ZeroSizeWrapper, Label } from "../../../utils/tsxUtils";
 import Octicon, { Skip } from '@primer/octicons-react';
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
 import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined } from '@ant-design/icons';
@@ -107,7 +107,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     render() {
         return <>
-            <div style={{ display: 'flex', marginBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                 {/* Search Parameters */}
                 <this.SearchParameters />
 
@@ -115,7 +115,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                 {/* Quick Search */}
                 <Input placeholder='Quick Search' allowClear={true} size='middle'
-                    style={{ width: 'auto', padding: '2px 8px', whiteSpace: 'nowrap' }}
+                    style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap', alignSelf: 'flex-end', marginTop: '0.5rem', marginLeft: 'auto' }}
                     value={uiState.topicSettings.quickSearch}
                     onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
                     addonAfter={null} disabled={this.fetchError != null}
@@ -138,13 +138,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 />
                 : <>
                     <Row align='middle' style={{ marginBottom: '0rem', display: 'flex', alignItems: 'center' }} >
-
                         {/*
                             todo: move this below the table (aligned left)
                             This requires more work becasue we'd have to remove the pagination controls from the table and provide our own
-
-                            <this.SearchQueryAdditionalInfo />
                          */}
+
+                        {/* <this.SearchQueryAdditionalInfo /> */}
                     </Row>
 
                     <this.MessageTable />
@@ -185,48 +184,54 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
         return <>
+            <Space size='middle' align='center'>
 
-            {/* Partitions */}
-            <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em', marginRight: '0.5rem' }}>
-                <Select.Option key='all' value={-1}>All Partitions</Select.Option>
-                {range(0, topic.partitionCount).map(i =>
-                    <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
-            </Select>
+                <Label text='Partition'>
+                    <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }}>
+                        <Select.Option key='all' value={-1}>All</Select.Option>
+                        {range(0, topic.partitionCount).map(i =>
+                            <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
+                    </Select>
+                </Label>
 
-            {/* Result Count */}
-            <Select<number> value={searchParams.pageSize} onChange={c => searchParams.pageSize = c} style={{ width: '10em', marginRight: '0.5rem' }}>
-                {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()} results</Select.Option>)}
-            </Select>
+                <Label text='Max Results'>
+                    <Select<number> value={searchParams.pageSize} onChange={c => searchParams.pageSize = c} style={{ width: '10em' }}>
+                        {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()} results</Select.Option>)}
+                    </Select>
+                </Label>
 
-            {/* Offset */}
-            <InputGroup compact style={{ display: 'inline-block', width: 'auto', verticalAlign: 'bottom', marginRight: '0.5rem' }}>
-                <Select<TopicMessageOffset> value={searchParams._offsetMode} onChange={e => searchParams._offsetMode = e}
-                    dropdownMatchSelectWidth={false} style={{ width: '10em' }}>
-                    <Option value={TopicMessageOffset.End}>Newest Offset</Option>
-                    <Option value={TopicMessageOffset.Start}>Oldest Offset</Option>
-                    <Option value={TopicMessageOffset.Custom}>Custom Offset</Option>
-                </Select>
-                {
-                    searchParams._offsetMode == TopicMessageOffset.Custom &&
-                    <Input style={{ width: '8em' }} maxLength={20}
-                        value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
-                        disabled={searchParams._offsetMode != TopicMessageOffset.Custom} />
-                }
-            </InputGroup>
+                <Label text='Offset'>
+                    <InputGroup compact style={{ display: 'inline-block', width: 'auto' }}>
+                        <Select<TopicMessageOffset> value={searchParams._offsetMode} onChange={e => searchParams._offsetMode = e}
+                            dropdownMatchSelectWidth={false} style={{ width: '10em' }}>
+                            <Option value={TopicMessageOffset.End}>Newest Offset</Option>
+                            <Option value={TopicMessageOffset.Start}>Oldest Offset</Option>
+                            <Option value={TopicMessageOffset.Custom}>Custom Offset</Option>
+                        </Select>
+                        {
+                            searchParams._offsetMode == TopicMessageOffset.Custom &&
+                            <Input style={{ width: '8em' }} maxLength={20}
+                                value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
+                                disabled={searchParams._offsetMode != TopicMessageOffset.Custom} />
+                        }
+                    </InputGroup>
+                </Label>
 
-            {api.MessageSearchPhase && <div style={{ margin: '0 1em', opacity: '80%', display: 'flex', placeItems: 'center' }}>
-                {api.MessageSearchPhase}
-            </div>}
 
-            {api.MessageSearchPhase && api.Messages && api.Messages.length > 0 && <div style={{ margin: '0 1em', opacity: '80%', display: 'flex', placeItems: 'center' }}>
-                {api.Messages.length} / {searchParams.pageSize}
-            </div>}
+                <AnimatePresence>
+                    {api.MessageSearchPhase && (
+                        <MotionSpan key='messageSearchPhase' overrideAnimProps={animProps_span_messagesStatus} style={{ paddingTop: '1.2em', whiteSpace: 'nowrap' }}>
+                            {api.MessageSearchPhase} <span style={{ fontWeight: 600 }}>{api.Messages?.length} / {searchParams.pageSize}</span>
+                        </MotionSpan>
+                    )}
+                </AnimatePresence>
 
-            {/* todo:
-                when the user has entered a specific offset,
-                we should prevent selecting 'all' partitions, as that wouldn't make any sense.
-             */}
 
+                {/* todo:
+                    when the user has entered a specific offset,
+                    we should prevent selecting 'all' partitions, as that wouldn't make any sense.
+                */}
+            </Space>
         </>
     });
 

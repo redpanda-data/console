@@ -15,6 +15,7 @@ import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, Chec
 import { Radio } from 'antd';
 import { TablePaginationConfig } from "antd/lib/table";
 import Octicon, { Skip } from "@primer/octicons-react";
+import { OptionGroup } from "../../utils/tsxUtils";
 
 
 @observer
@@ -94,7 +95,28 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
                 <Card>
                     {/* Settings: GroupBy, Partitions */}
-                    <Space style={{ margin: '.5rem 0 1rem 0' }} size='large'>
+                    <Space size='large' style={{ marginLeft: '.5em', marginBottom: '2em' }}>
+
+                        <OptionGroup label='View'
+                            options={{
+                                "Members": 'member',
+                                "Topics": 'topic'
+                            }}
+                            value={this.viewMode}
+                            onChange={s => this.viewMode = s}
+                        />
+
+                        <OptionGroup label='Filter'
+                            options={{
+                                "Show All": false,
+                                "With Lag": true
+                            }}
+                            value={this.onlyShowPartitionsWithLag}
+                            onChange={s => this.onlyShowPartitionsWithLag = s}
+                        />
+                    </Space>
+
+                    <Space style={{ margin: '.5rem 0 1rem 0', display: 'none' }} size='large'>
                         <span>
                             View:
                             <Radio.Group value={this.viewMode} onChange={e => this.viewMode = e.target.value} style={{ marginLeft: '.5rem' }}>

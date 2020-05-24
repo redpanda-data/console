@@ -1,5 +1,5 @@
-import React from "react";
-import { Row, Tabs, Skeleton, Radio, Checkbox, Button, Select, Input, Typography, Result } from "antd";
+import React, { Component, CSSProperties, useState } from "react";
+import { Row, Tabs, Skeleton, Radio, Checkbox, Button, Select, Input, Typography, Result, Space } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
@@ -16,6 +16,8 @@ import { TopicPartitions } from "./Topic.Partitions";
 import { TopicConfigEntry } from "../../../state/restInterfaces";
 import Card from "../../misc/Card";
 import { TopicConsumers } from "./Topic.Consumers";
+import { simpleUniqueId } from "../../../utils/utils";
+import { Label, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 
 const { Text } = Typography;
 
@@ -176,19 +178,38 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
 
 const ConfigDisplaySettings = observer(() =>
-    <div style={{ marginTop: '1em', marginBottom: '1em' }}>
+    <div style={{ marginLeft: '.5em', marginBottom: '2em' }}>
 
         <Row>
-            <Radio.Group value={uiSettings.topicList.valueDisplay} onChange={(e) => uiSettings.topicList.valueDisplay = e.target.value} size='small'>
-                <Radio.Button value="friendly">Friendly</Radio.Button>
-                <Radio.Button value="raw">Raw</Radio.Button>
-                {/* <Radio.Button value="both">Both</Radio.Button> */}
-            </Radio.Group>
+            <Space size='large'>
 
-            <span> </span>
+                <OptionGroup label='Formatting'
+                    options={{
+                        "Friendly": 'friendly',
+                        "Raw": 'raw'
+                    }}
+                    value={uiSettings.topicList.valueDisplay}
+                    onChange={s => uiSettings.topicList.valueDisplay = s}
+                />
 
-            <Checkbox onChange={(e) => uiSettings.topicList.onlyShowChanged = e.target.checked} checked={uiSettings.topicList.onlyShowChanged}>Only show changed</Checkbox>
+                <OptionGroup label='Filter'
+                    options={{
+                        "Show All": 'all',
+                        "Only Changed": 'onlyChanged'
+                    }}
+                    value={uiSettings.topicList.propsFilter}
+                    onChange={s => uiSettings.topicList.propsFilter = s}
+                />
 
+                <OptionGroup label='Sort'
+                    options={{
+                        "Default": 'default',
+                        "Changed First": 'changedFirst',
+                    }}
+                    value={uiSettings.topicList.propsOrder}
+                    onChange={s => uiSettings.topicList.propsOrder = s}
+                />
+            </Space>
         </Row>
     </div>);
 

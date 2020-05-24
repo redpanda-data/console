@@ -50,8 +50,9 @@ const uiSettings = observable({
     },
 
     topicList: {
-        onlyShowChanged: false,
         valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
+        propsOrder: 'changedFirst' as 'changedFirst' | 'default',
+        propsFilter: 'all' as 'all' | 'onlyChanged',
         hideInternalTopics: true,
         pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
         quickSearch: '',
