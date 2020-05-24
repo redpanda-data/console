@@ -107,7 +107,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     render() {
         return <>
-            <div style={{ display: 'flex', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ marginLeft: '1px', marginBottom: '1.5em', display: 'flex', flexWrap: 'wrap' }}>
                 {/* Search Parameters */}
                 <this.SearchParameters />
 
@@ -184,7 +184,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
         return <>
-            <Space size='middle' align='center'>
+            <Space size='large' align='center'>
 
                 <Label text='Partition'>
                     <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }}>

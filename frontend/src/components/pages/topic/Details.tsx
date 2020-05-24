@@ -178,8 +178,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
 
 const ConfigDisplaySettings = observer(() =>
-    <div style={{ marginLeft: '.5em', marginBottom: '2em' }}>
-
+    <div style={{ marginLeft: '1px', marginBottom: '1.5em' }}>
         <Row>
             <Space size='large'>
 

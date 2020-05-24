@@ -621,3 +621,8 @@ tr.consumerGroupNoMemberAssigned {
 .ant-space-horizontal {
     flex-wrap: wrap;
 }
+
+.ant-tabs .ant-tabs-top-content>.ant-tabs-tabpane, .ant-tabs .ant-tabs-bottom-content>.ant-tabs-tabpane {
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out
+}
