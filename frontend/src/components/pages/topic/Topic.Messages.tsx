@@ -12,7 +12,7 @@ import prettyBytes from 'pretty-bytes';
 import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed, transaction, autorun, IReactionDisposer } from "mobx";
-import { findElementDeep, cullText, getAllKeys, ToJson } from "../../../utils/utils";
+import { findElementDeep, cullText, getAllKeys, ToJson, simpleUniqueId } from "../../../utils/utils";
 import { animProps, MotionAlways, MotionDiv, MotionSpan, animProps_span_messagesStatus } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
@@ -242,20 +242,27 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     MessageTable = observer(() => {
 
-        const valueTitle = <>
-            <span>Value
-                <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                    <Button shape='round' className='hoverBorder' onClick={() => this.showPreviewSettings = true} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
-                        <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
-                        <span style={{ marginLeft: '.3em' }}>Preview</span>
-                        {(() => {
-                            const count = uiState.topicSettings.previewTags.sum(t => t.active ? 1 : 0);
-                            if (count > 0)
-                                return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>
-                            return <></>;
-                        })()}
-                    </Button>
-                </span>
+        // debug...
+        // let i = 0;
+        // for (const x of this.messageSource.data) {
+        //     let s = '';
+        //     for (let j = 0; j < i; j++) s += simpleUniqueId(i.toString());
+        //     x.key = s;
+        //     i += 1;
+        // }
+
+        const previewButton = <>
+            <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
+                <Button shape='round' className='hoverBorder' onClick={() => this.showPreviewSettings = true} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
+                    <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
+                    <span style={{ marginLeft: '.3em' }}>Preview</span>
+                    {(() => {
+                        const count = uiState.topicSettings.previewTags.sum(t => t.active ? 1 : 0);
+                        if (count > 0)
+                            return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>
+                        return <></>;
+                    })()}
+                </Button>
             </span>
         </>
 
@@ -263,9 +270,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => new Date(t * 1000).toLocaleString() },
-            { width: 1, title: 'Key', dataIndex: 'key', render: (t) => t ?? <span style={{ opacity: 0.66, marginLeft: '3px' }}><Octicon icon={Skip} /></span> },
+            { width: 3, title: 'Key', dataIndex: 'key', render: renderKey },
             {
-                title: valueTitle,
+                width: 'auto',
+                title: <span>Value {previewButton}</span>,
                 dataIndex: 'value',
                 render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activeTags} />,
                 //filteredValue: ['?'],
@@ -431,6 +439,43 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         <span>Either the selected topic/partition did not contain any messages</span>
     </>} />
 }
+
+const renderKey = (text: string | null | undefined) => {
+
+    if (text == undefined || text == null || text.length == 0)
+        return <span style={{ opacity: 0.66, marginLeft: '3px' }}><Octicon icon={Skip} /></span>
+
+    if (text.length > 45) {
+
+        const modal = () => Modal.info({
+            title: 'Key',
+            width: '80vw',
+            centered: true,
+            maskClosable: true,
+            content: (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div>
+                        Full view of the key<br />
+                        <b>todo: add different viewers here (plain, hex, ...)</b><br />
+                        <b>todo: fix layout</b><br />
+                    </div>
+                    <div className='codeBox' style={{ margin: '1em 0 0 0', padding: '1em', whiteSpace: 'normal', wordBreak: 'break-all', overflowY: 'scroll', maxHeight: '300px' }}>
+                        <code>{text}</code>
+                    </div>
+                </div>
+            ),
+            onOk() { },
+        });
+
+        return <span className='hoverLink cellDiv' style={{ minWidth: '120px' }} onClick={() => modal()}>
+            <code style={{ fontSize: '95%' }}>{text.slice(0, 44)}&hellip;</code>
+        </span>
+    }
+
+    return <span className='cellDiv' style={{ width: 'auto' }}>
+        <code style={{ fontSize: '95%' }}>{text}</code>
+    </span>;
+};
 
 
 @observer
