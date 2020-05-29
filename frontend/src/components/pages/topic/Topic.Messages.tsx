@@ -23,7 +23,7 @@ import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
 import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { numberToThousandsString, ZeroSizeWrapper, Label } from "../../../utils/tsxUtils";
+import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup } from "../../../utils/tsxUtils";
 import Octicon, { Skip } from '@primer/octicons-react';
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
 import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined } from '@ant-design/icons';
@@ -606,10 +606,11 @@ class PreviewSettings extends Component<{ allCurrentKeys: string[], getShowDialo
             </div>
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
-                <Checkbox
-                    checked={uiState.topicSettings.previewTagsCaseSensitive}
-                    onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e.target.checked}
-                >Case Sensitive</Checkbox>
+                <OptionGroup label='Matching' options={{ 'Ignore Case': false, 'Case Sensitive': true }}
+                    value={uiState.topicSettings.previewTagsCaseSensitive}
+                    onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
+                />
+
                 {
                     // - Show Empty Messages: when unchecked, and the field-filters don't find anything, the whole message will be hidden instead of showing an empty "{}"
                     // - JS filters! You get a small textbox where you can type in something like those examples:
@@ -686,7 +687,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
                                     style={{ width: 130 }}
                                     value={this.inputValue}
                                     onChange={e => this.inputValue = e.toString()}
-                                    onBlur={() => { this.inputValue = ''; this.handleInputConfirm(); }}
+                                    onBlur={() => { this.handleInputConfirm(); }}
                                     filterOption={true}
                                 />
                             </span>
