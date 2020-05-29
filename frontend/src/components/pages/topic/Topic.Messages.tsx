@@ -505,13 +505,25 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 // Json!
                 // Construct our preview object
                 const previewObj: any = {};
+                const searchOptions = { caseSensitive: uiState.topicSettings.previewTagsCaseSensitive, returnFirstResult: uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst' };
                 for (let f of fields) {
-                    var x = findElementDeep(value, f, uiState.topicSettings.previewTagsCaseSensitive);
-                    if (x !== undefined) {
-                        previewObj[f] = x;
+                    const results = findElementDeep(value, f, searchOptions);
+
+                    if (results.length > 0) {
+                        const propName = (!searchOptions.returnFirstResult && uiState.topicSettings.previewShowResultCount)
+                            ? `${results[0].propertyName}(${results.length})`
+                            : results[0].propertyName;
+
+                        if (results.length == 1 || searchOptions.returnFirstResult)
+                            previewObj[propName] = results[0].value; // show only first value
+                        else
+                            previewObj[propName] = results.map(r => r.value); // show array of all found values
                     }
                 }
-                text = cullText(JSON.stringify(previewObj), 100);
+
+                // text = cullText(JSON.stringify(value), 100);
+                // text = JSON.stringify(previewObj, undefined, 2)
+                text = JSON.stringify(previewObj, undefined, 4).removePrefix('{').removeSuffix('}').trim();
             }
             else {
                 // Normal display (json, no filters). Just stringify the whole object
@@ -606,11 +618,22 @@ class PreviewSettings extends Component<{ allCurrentKeys: string[], getShowDialo
             </div>
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
-                <OptionGroup label='Matching' options={{ 'Ignore Case': false, 'Case Sensitive': true }}
-                    value={uiState.topicSettings.previewTagsCaseSensitive}
-                    onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
-                />
-
+                <Space size='large'>
+                    <OptionGroup label='Matching' options={{ 'Ignore Case': false, 'Case Sensitive': true }}
+                        value={uiState.topicSettings.previewTagsCaseSensitive}
+                        onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
+                    />
+                    <OptionGroup label='Multiple Results' options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
+                        value={uiState.topicSettings.previewMultiResultMode}
+                        onChange={e => uiState.topicSettings.previewMultiResultMode = e}
+                    />
+                    {uiState.topicSettings.previewMultiResultMode == 'showAll' &&
+                        <OptionGroup label='Result Count' options={{ 'Hide': false, 'As part of name': true }}
+                            value={uiState.topicSettings.previewShowResultCount}
+                            onChange={e => uiState.topicSettings.previewShowResultCount = e}
+                        />
+                    }
+                </Space>
                 {
                     // - Show Empty Messages: when unchecked, and the field-filters don't find anything, the whole message will be hidden instead of showing an empty "{}"
                     // - JS filters! You get a small textbox where you can type in something like those examples:

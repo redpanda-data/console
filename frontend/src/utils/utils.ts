@@ -294,31 +294,54 @@ const collator = new Intl.Collator(undefined, {
     sensitivity: 'base',
 });
 
+
+type FoundProperty = { propertyName: string, path: string[], value: any }
+type PropertySearchOptions = { caseSensitive: boolean, returnFirstResult: boolean; }
+type PropertySearchResult = 'continue' | 'abort';
+type PropertySearchContext = { targetPropertyName: string, currentPath: string[], results: FoundProperty[], options: PropertySearchOptions }
+
 // todo: this only finds the first match, what if we want to find all?
-export function findElementDeep(obj: any, name: string, caseSensitive: boolean): any {
+export function findElementDeep(obj: any, name: string, options: PropertySearchOptions): FoundProperty[] {
+    const ctx: PropertySearchContext = {
+        targetPropertyName: name,
+        currentPath: [],
+        results: [],
+        options: options,
+    };
+    findElementDeep2(ctx, obj);
+    return ctx.results;
+}
+
+function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchResult {
     for (let key in obj) {
 
         const value = obj[key];
 
         // property match?
-        const isMatch = caseSensitive
-            ? key === name
-            : collator.compare(name, key) === 0;
+        const isMatch = ctx.options.caseSensitive
+            ? key === ctx.targetPropertyName
+            : collator.compare(ctx.targetPropertyName, key) === 0;
 
-        //console.log(`[${key}] match=${isMatch} type=${typeof value} value=${value}`);
+        if (isMatch) {
+            const clonedPath = Object.assign([], ctx.currentPath);
+            ctx.results.push({ propertyName: key, path: clonedPath, value: value });
 
-        if (isMatch)
-            return value;
+            if (ctx.options.returnFirstResult) return 'abort';
+        }
 
         // descend into object
         if (typeof value === 'object') {
-            const childResult = findElementDeep(value, name, caseSensitive);
-            if (childResult !== undefined)
-                return childResult;
+
+            ctx.currentPath.push(key);
+            const childResult = findElementDeep2(ctx, value);
+            ctx.currentPath.pop();
+
+            if (childResult == 'abort')
+                return 'abort';
         }
     }
 
-    return undefined;
+    return 'continue';
 }
 
 

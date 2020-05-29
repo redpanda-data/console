@@ -33,7 +33,12 @@ export class TopicDetailsSettings {
 
     @observable previewTags = [] as PreviewTag[];
     @observable previewTagsCaseSensitive = false;
-    @observable previewShowEmptyMessages = true;
+
+    @observable previewMultiResultMode = 'showAll' as 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
+    @observable previewShowResultCount = false;
+    // @observable previewResultLimit: 3; // todo
+    @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
+
     @observable quickSearch = '';
 }
 

@@ -133,7 +133,7 @@ export class OptionGroup<T> extends Component<{
         const radioGroup = (
             <Radio.Group value={p.value} onChange={e => p.onChange(e.target.value)}>
                 {ObjToKv(p.options).map(kv =>
-                    <Radio.Button value={kv.value}>{kv.key}</Radio.Button>
+                    <Radio.Button key={kv.key} value={kv.value}>{kv.key}</Radio.Button>
                 )}
             </Radio.Group>
         );
