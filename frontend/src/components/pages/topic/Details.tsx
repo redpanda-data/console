@@ -21,6 +21,9 @@ import { Label, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 
 const { Text } = Typography;
 
+const TopicDetailsTabs = ['partitions', 'messages', 'configuration', 'consumers'] as const;
+export type TopicDetailsTab = undefined | typeof TopicDetailsTabs[number];
+
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {
 
@@ -41,23 +44,21 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         api.refreshTopicConfig(this.props.topicName, force);
         api.refreshTopicPartitions(this.props.topicName, force);
 
-        if (uiState.topicSettings.activeTabKey == 'consumers') // don't refresh unless needed, it's expensive
+        if (uiSettings.topicDetailsActiveTabKey == 'consumers') // don't refresh unless needed, it's expensive
             api.refreshTopicConsumers(this.props.topicName, force);
     }
 
-    get tabPageKey() {
-        const tabs = ['partitions', 'messages', 'configuration', 'consumers'];
-
+    get tabPageKey(): TopicDetailsTab {
         // use url anchor if possible
         let key = (appGlobal.history.location.hash).replace("#", "");
-        if (tabs.includes(key)) return key;
+        if (TopicDetailsTabs.includes(key as any)) return key as TopicDetailsTab;
 
         // use settings (last visited tab)
-        key = uiState.topicSettings.activeTabKey!;
-        if (tabs.includes(key)) return key;
+        key = uiSettings.topicDetailsActiveTabKey!;
+        if (TopicDetailsTabs.includes(key as any)) return key as TopicDetailsTab;
 
         // default to partitions
-        return 'partitions'
+        return 'messages'
     }
 
     componentDidMount() {
@@ -100,21 +101,21 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         activeKey={this.tabPageKey}
                         onChange={this.setTabPage}
                     >
-                        <Tabs.TabPane key="partitions" tab="Partitions">
-                            <TopicPartitions topic={topic} />
-                        </Tabs.TabPane>
-
                         <Tabs.TabPane key="messages" tab="Messages">
                             <TopicMessageView topic={topic} />
+                        </Tabs.TabPane>
+
+                        <Tabs.TabPane key="consumers" tab="Consumers">
+                            <TopicConsumers topic={topic} />
+                        </Tabs.TabPane>
+
+                        <Tabs.TabPane key="partitions" tab="Partitions">
+                            <TopicPartitions topic={topic} />
                         </Tabs.TabPane>
 
                         <Tabs.TabPane key="configuration" tab="Configuration">
                             <ConfigDisplaySettings /> {/* todo: move into TopicConfiguration */}
                             <TopicConfiguration config={topicConfig} />
-                        </Tabs.TabPane>
-
-                        <Tabs.TabPane key="consumers" tab="Consumers">
-                            <TopicConsumers topic={topic} />
                         </Tabs.TabPane>
                     </Tabs>
                 </Card>
@@ -152,10 +153,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
     setTabPage = (activeKey: string): void => {
-        uiState.topicSettings.activeTabKey = activeKey;
+        uiSettings.topicDetailsActiveTabKey = activeKey as any;
 
         const loc = appGlobal.history.location;
-        loc.hash = activeKey;
+        loc.hash = String(activeKey);
         appGlobal.history.replace(loc);
     }
 
