@@ -78,15 +78,8 @@ class TopicList extends PageComponent {
 
         const data = this.searchBar.current ? this.searchBar.current.data : ([] as TopicDetail[]);
         const partitionCountReal = topics.sum(x => x.partitionCount);
-        const partitionCountOnlyReplicated = topics.sum(x => x.partitionCount * x.replicationFactor);
+        const partitionCountOnlyReplicated = topics.sum(x => x.partitionCount * (x.replicationFactor - 1));
 
-        // const partitionDetails = (
-        //     <Descriptions bordered={false} size='small' layout="horizontal" column={1} style={{ display: "inline-block" }}>
-        //         <Descriptions.Item label="Primary">{partitionCountReal}</Descriptions.Item>
-        //         <Descriptions.Item label="Replicated">{partitionCountOnlyReplicated}</Descriptions.Item>
-        //         <Descriptions.Item label="All ">{partitionCountReal + partitionCountOnlyReplicated}</Descriptions.Item>
-        //     </Descriptions>
-        // );
         const partitionDetails = QuickTable([
             { key: 'Primary:', value: partitionCountReal },
             { key: 'Replicated:', value: partitionCountOnlyReplicated },
