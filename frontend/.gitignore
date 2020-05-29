@@ -26,3 +26,5 @@ yarn-error.log*
 # IDEs
 .idea
 .vscode
+
+notes.md
