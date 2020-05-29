@@ -678,20 +678,9 @@ tr.consumerGroupNoMemberAssigned {
     transition-timing-function: ease-out
 }
 
-.ant-modal {
-    max-height: 90vh;
-    max-width: 80vw;
-    height: 100%;
-    width: 100%;
-}
-
-.ant-modal-body {
-    height: 100%;
-}
-
-.ant-modal-content {
-    max-height: 100%;
-    max-width: 100%;
-    height: 100%;
-    width: 100%;
+@media only screen and (max-width: 1100px) {
+    .ant-statistic-content {
+        font-size: 20px;
+        line-height: 1.3;
+    }
 }
