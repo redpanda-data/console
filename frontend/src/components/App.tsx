@@ -3,7 +3,7 @@ import { observer } from "mobx-react"
 import { Layout, Menu, PageHeader, Button } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
-import { RenderTrap } from './misc/common';
+import { RenderTrap, DebugDisplay } from './misc/common';
 import { DebugTimerStore } from '../utils/utils';
 import { api } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
@@ -24,6 +24,8 @@ import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled } from '@ant-design/icons';
+import Draggable from 'react-draggable';
+import { observable } from 'mobx';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -227,8 +229,7 @@ const AppContent = observer(() =>
     </Layout>
 );
 
-@observer
-class App extends Component {
+export default class App extends Component {
 
     render() {
         const r = this.loginHandling(); // Complete login, or fetch user if needed
@@ -236,6 +237,7 @@ class App extends Component {
 
         return (
             <ErrorBoundary>
+                {IsDev && <DebugDisplay />}
                 <Switch>
                     {/* Login (and callbacks) */}
                     <Route exact path='/login' component={Login} />
@@ -302,4 +304,3 @@ class App extends Component {
         }
     }
 }
-export default App;

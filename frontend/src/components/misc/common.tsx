@@ -1,8 +1,13 @@
-import React, { FC, Props } from "react";
+import React, { FC, Props, CSSProperties } from "react";
 import { PropsWithChildren } from "react";
 import { TablePaginationConfig } from "antd/lib/table";
 import { uiSettings } from "../../state/ui";
 import { CompareFn } from "antd/lib/table/interface";
+import Draggable from "react-draggable";
+import { observer } from "mobx-react";
+import { Grid, Tag } from "antd";
+
+const { useBreakpoint } = Grid;
 
 
 const renderCount = new Map<string, number>();
@@ -33,6 +38,33 @@ export const WhiteCard = (p: PropsWithChildren<{ style?: React.CSSProperties, ti
             {p.children}
         </div>
     </div>
+
+
+const dragBoxStyle: CSSProperties = {
+    position: 'absolute', right: 0, zIndex: 9999,
+    margin: '4px', marginRight: '20px',
+    minWidth: '200px', display: 'flex', flexDirection: 'column', placeContent: 'center',
+    borderRadius: '3px', background: 'hsl(205, 20%, 20%)', color: '#eee', opacity: 0.8
+};
+export const DebugDisplay = observer(() => {
+    const screens = useBreakpoint();
+
+    return <Draggable bounds="parent" handle='.title'>
+        <div style={dragBoxStyle}>
+            <div className='title' style={{ textAlign: 'center', padding: '6px', paddingBottom: '6px', borderBottom: '1px solid #aaa6', cursor: 'default', userSelect: 'none' }}>Debug</div>
+            <div style={{ padding: '8px', }}>
+                Breakpoints:{' '}
+                {Object.entries(screens)
+                    .filter(screen => !!screen[1])
+                    .map(screen => (
+                        <Tag color="blue" key={screen[0]}>
+                            {screen[0]}
+                        </Tag>
+                    ))}
+            </div>
+        </div>
+    </Draggable>
+})
 
 
 function constant(constantValue: JSX.Element): () => JSX.Element {
@@ -84,3 +116,4 @@ export function range(start: number, end: number): number[] {
         ar.push(i);
     return ar;
 }
+
