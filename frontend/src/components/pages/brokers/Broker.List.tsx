@@ -2,18 +2,18 @@ import React, { ReactNode } from "react";
 import { observer } from "mobx-react";
 import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Tooltip } from "antd";
 import { ColumnProps } from "antd/lib/table";
-import { PageComponent, PageInitHelper } from "./Page";
-import { api } from "../../state/backendApi";
-import { uiSettings } from "../../state/ui";
-import { makePaginationConfig, sortField } from "../misc/common";
-import { Broker } from "../../state/restInterfaces";
+import { PageComponent, PageInitHelper } from "../Page";
+import { api } from "../../../state/backendApi";
+import { uiSettings } from "../../../state/ui";
+import { makePaginationConfig, sortField } from "../../misc/common";
+import { Broker } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
-import { animProps } from "../../utils/animationProps";
+import { animProps } from "../../../utils/animationProps";
 import { observable, computed } from "mobx";
 import prettyBytes from "pretty-bytes";
-import { prettyBytesOrNA } from "../../utils/utils";
-import { appGlobal } from "../../state/appGlobal";
-import Card from "../misc/Card";
+import { prettyBytesOrNA } from "../../../utils/utils";
+import { appGlobal } from "../../../state/appGlobal";
+import Card from "../../misc/Card";
 import Icon, { CrownOutlined } from '@ant-design/icons';
 
 

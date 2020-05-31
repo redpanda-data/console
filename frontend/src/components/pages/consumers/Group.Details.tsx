@@ -2,20 +2,20 @@ import React, { Component } from "react";
 import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip } from "antd";
 import { observer } from "mobx-react";
 
-import { api } from "../../state/backendApi";
-import { PageComponent, PageInitHelper } from "./Page";
-import { makePaginationConfig, sortField } from "../misc/common";
-import { MotionDiv } from "../../utils/animationProps";
-import { GroupDescription, GroupMemberDescription, GroupMemberAssignment, TopicLag } from "../../state/restInterfaces";
-import { groupConsecutive } from "../../utils/utils";
+import { api } from "../../../state/backendApi";
+import { PageComponent, PageInitHelper } from "../Page";
+import { makePaginationConfig, sortField } from "../../misc/common";
+import { MotionDiv } from "../../../utils/animationProps";
+import { GroupDescription, GroupMemberDescription, GroupMemberAssignment, TopicLag } from "../../../state/restInterfaces";
+import { groupConsecutive } from "../../../utils/utils";
 import { observable, autorun } from "mobx";
-import { appGlobal } from "../../state/appGlobal";
-import Card from "../misc/Card";
+import { appGlobal } from "../../../state/appGlobal";
+import Card from "../../misc/Card";
 import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone } from '@ant-design/icons';
 import { Radio } from 'antd';
 import { TablePaginationConfig } from "antd/lib/table";
 import Octicon, { Skip } from "@primer/octicons-react";
-import { OptionGroup } from "../../utils/tsxUtils";
+import { OptionGroup } from "../../../utils/tsxUtils";
 
 
 @observer

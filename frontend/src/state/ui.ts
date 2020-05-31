@@ -2,7 +2,7 @@ import { observable, autorun } from "mobx";
 import { touch, assignDeep } from "../utils/utils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicMessageOffset, TopicMessageDirection, TopicMessageSortBy, TopicMessageSearchParameters } from "./backendApi";
-import { TopicDetailsTab } from "../components/pages/topic/Details";
+import { TopicDetailsTab } from "../components/pages/topics/Topic.Details";
 
 const settingsName = 'uiSettings-v2';
 

@@ -20,7 +20,7 @@ import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { FavoritePopover, FormatValue } from "./Topic.Config";
+import { FavoritePopover, FormatValue } from "./Tab.Config";
 
 
 // todo: rename QuickInfo

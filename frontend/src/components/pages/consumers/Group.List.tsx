@@ -2,20 +2,20 @@ import React from "react";
 import { Table, Empty, Skeleton, Row, Statistic, Tag, Input, Divider } from "antd";
 import { observer } from "mobx-react";
 
-import { api } from "../../state/backendApi";
-import { PageComponent, PageInitHelper } from "./Page";
-import { GroupMemberDescription, GroupDescription } from "../../state/restInterfaces";
+import { api } from "../../../state/backendApi";
+import { PageComponent, PageInitHelper } from "../Page";
+import { GroupMemberDescription, GroupDescription } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
-import { animProps } from "../../utils/animationProps";
-import { makePaginationConfig, sortField } from "../misc/common";
-import { uiSettings } from "../../state/ui";
-import { appGlobal } from "../../state/appGlobal";
-import { GroupState } from "./GroupDetails";
+import { animProps } from "../../../utils/animationProps";
+import { makePaginationConfig, sortField } from "../../misc/common";
+import { uiSettings } from "../../../state/ui";
+import { appGlobal } from "../../../state/appGlobal";
+import { GroupState } from "./Group.Details";
 import { observable, autorun, IReactionDisposer } from "mobx";
-import { containsIgnoreCase } from "../../utils/utils";
-import Card from "../misc/Card";
-import { editQuery } from "../../utils/queryHelper";
-import { uiState } from "../../state/uiState";
+import { containsIgnoreCase } from "../../../utils/utils";
+import Card from "../../misc/Card";
+import { editQuery } from "../../../utils/queryHelper";
+import { uiState } from "../../../state/uiState";
 
 
 @observer

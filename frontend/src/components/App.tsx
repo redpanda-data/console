@@ -15,7 +15,6 @@ import { appGlobal } from '../state/appGlobal';
 import Title from 'antd/lib/typography/Title';
 
 import logo2 from '../assets/logo2.png';
-import gitHubLogo from '../assets/GitHub-Mark-Light-32px.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
 import { IsProd, IsDev, AppName, IsBusiness } from '../utils/env';
 import { TopBar } from './misc/TopBar';
@@ -24,7 +23,7 @@ import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
-import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined } from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled } from '@ant-design/icons';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -127,7 +126,8 @@ const SideBar = observer(() =>
         {/* Version */}
         <div className='version'>
             <div className='repo'><a title="Visit Kowl's GitHub repository" href="https://github.com/cloudhut/kowl">
-                <img src={gitHubLogo} />
+                {/* <img src={gitHubLogo} /> */}
+                <GithubFilled style={{ fontSize: '36px', color: 'hsl(209, 100%, 92%)' }} />
             </a></div>
 
             <VersionInfo />
