@@ -26,6 +26,7 @@ import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled } from '@ant-design/icons';
 import Draggable from 'react-draggable';
 import { observable } from 'mobx';
+import { SyncIcon } from '@primer/octicons-v2-react';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -166,11 +167,10 @@ const DataAgeInfo = observer(() => {
     // <span >
     return (
         <div style={{ color: 'hsl(205, 100%, 50%)', display: 'flex', height: '3em' }} className='fadeIn' >
-
             {maxFetchTime < 0.1
                 ?
                 <>
-                    <Button icon={<ReloadOutlined />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
+                    <Button icon={<SyncIcon size={16} />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
                     {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
                 </>
                 :
@@ -237,7 +237,7 @@ export default class App extends Component {
 
         return (
             <ErrorBoundary>
-                {IsDev && <DebugDisplay />}
+                {/* {IsDev && <DebugDisplay />} */}
                 <Switch>
                     {/* Login (and callbacks) */}
                     <Route exact path='/login' component={Login} />

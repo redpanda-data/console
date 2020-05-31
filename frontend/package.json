@@ -7,6 +7,7 @@
         "@ant-design/dark-theme": "^1.0.3",
         "@ant-design/icons": "^4.1.0",
         "@primer/octicons-react": "^9.6.0",
+        "@primer/octicons-v2-react": "0.0.0-53e900d",
         "antd": "^4.2.0",
         "customize-cra": "^0.9.1",
         "framer-motion": "^1.10.3",

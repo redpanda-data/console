@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space } from "antd";
+import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Dropdown, Menu } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
@@ -24,14 +24,26 @@ import qs from 'query-string';
 import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
 import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup } from "../../../utils/tsxUtils";
-import Octicon, { Skip } from '@primer/octicons-react';
+
+import Octicon, { Skip, Sync, ChevronDown, Play, ChevronRight } from '@primer/octicons-react';
+import { SyncIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon } from '@primer/octicons-v2-react'
+import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg';
+
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined } from '@ant-design/icons';
+import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined } from '@ant-design/icons';
 import { ErrorBoundary } from "../../misc/ErrorBoundary";
 
 const { Text } = Typography;
 const { Option } = Select;
 const InputGroup = Input.Group;
+
+/*
+    TODO:
+        - when the user has entered a specific offset, we should prevent selecting 'all' partitions, as that wouldn't make any sense.
+        - add back summary of quick search  <this.FilterSummary />
+
+
+*/
 
 @observer
 export class TopicMessageView extends Component<{ topic: TopicDetail }> {
@@ -44,7 +56,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     @observable fetchError = null as Error | null;
 
     pageConfig = makePaginationConfig(uiState.topicSettings.pageSize);
-    messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch);
+    messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch, 16);
 
     autoSearchReaction: IReactionDisposer | null = null;
     quickSearchReaction: IReactionDisposer | null = null;
@@ -107,21 +119,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     render() {
         return <>
-            <div style={{ marginLeft: '1px', marginBottom: '1.5em', display: 'flex', flexWrap: 'wrap' }}>
-                {/* Search Parameters */}
-                <this.SearchParameters />
-
-                <Spacer />
-
-                {/* Quick Search */}
-                <Input placeholder='Quick Search' allowClear={true} size='middle'
-                    style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap', alignSelf: 'flex-end', marginTop: '0.5rem', marginLeft: 'auto' }}
-                    value={uiState.topicSettings.quickSearch}
-                    onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
-                    addonAfter={null} disabled={this.fetchError != null}
-                />
-                {/* <this.FilterSummary /> */}
-            </div>
+            <this.SearchControlsBar />
 
             {/* Message Table (or error display) */}
             {this.fetchError
@@ -142,7 +140,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                             todo: move this below the table (aligned left)
                             This requires more work becasue we'd have to remove the pagination controls from the table and provide our own
                          */}
-
                         {/* <this.SearchQueryAdditionalInfo /> */}
                     </Row>
 
@@ -151,6 +148,90 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             }
         </>
     }
+
+    SearchControlsBar = observer(() => {
+        const searchParams = uiState.topicSettings.searchParams;
+        const topic = this.props.topic;
+        const spaceStyle = { marginRight: '16px', marginTop: '12px' };
+        return <React.Fragment>
+            <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                {/* Search Settings*/}
+                <Label text='Partition' style={{ ...spaceStyle }}>
+                    <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }}>
+                        <Select.Option key='all' value={-1}>All</Select.Option>
+                        {range(0, topic.partitionCount).map(i =>
+                            <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
+                    </Select>
+                </Label>
+                <Label text='Max Results' style={{ ...spaceStyle }}>
+                    <Select<number> value={searchParams.pageSize} onChange={c => searchParams.pageSize = c} style={{ width: '10em' }}>
+                        {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()} results</Select.Option>)}
+                    </Select>
+                </Label>
+                <Label text='Offset' style={{ ...spaceStyle }}>
+                    <InputGroup compact style={{ display: 'inline-block', width: 'auto' }}>
+                        <Select<TopicMessageOffset> value={searchParams._offsetMode} onChange={e => searchParams._offsetMode = e}
+                            dropdownMatchSelectWidth={false} style={{ width: '10em' }}>
+                            <Option value={TopicMessageOffset.End}>Newest Offset</Option>
+                            <Option value={TopicMessageOffset.Start}>Oldest Offset</Option>
+                            <Option value={TopicMessageOffset.Custom}>Custom Offset</Option>
+                        </Select>
+                        {
+                            searchParams._offsetMode == TopicMessageOffset.Custom &&
+                            <Input style={{ width: '8em' }} maxLength={20}
+                                value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
+                                disabled={searchParams._offsetMode != TopicMessageOffset.Custom} />
+                        }
+                    </InputGroup>
+                </Label>
+
+                {/* Refresh Button */}
+                {/* <div style={{ ...spaceStyle }}>
+                    <Input.Group compact>
+                        <Tooltip title='Load more messages'>
+                            <Button type='primary' className='messagesSpecialIconButton'>
+                                <span style={{ height: '100%' }}><ArrowRightIcon size={16} /></span>
+                                <span style={{ height: '100%', marginLeft: '-11px', transform: 'rotate(90deg)' }} ><DashIcon size={18} /></span>
+                            </Button>
+                        </Tooltip>
+                        <Tooltip title='Start live updating'>
+                            <Button type='primary' className='messagesSpecialIconButton'>
+                                <span style={{ height: '100%', width: '5px' }}><ChevronRightIcon size={16} /></span>
+                                <span style={{ height: '100%' }} ><ChevronRightIcon size={16} /></span>
+                            </Button>
+                        </Tooltip>
+                        <Button type='primary' className='messagesSpecialIconButton' style={{ padding: '0' }}>
+                            <div style={{ height: '100%', background: 'linear-gradient(to right, white 0%, rgba(255,255,255,0) 50%, white 100%)', backgroundSize: '80%', backgroundRepeat: 'repeat', padding: '0 15px' }}>
+                                <div style={{ width: '18px', height: '18px' }}>
+                                    <SvgCircleStop style={{ verticalAlign: 'baseline', fill: 'hsl(0, 0%, 95%)' }} />
+                                </div>
+                            </div>
+                        </Button>
+                    </Input.Group>
+                </div> */}
+
+                {/* "Loading Messages  30/30" */}
+                <AnimatePresence>
+                    {api.MessageSearchPhase && (
+                        <MotionSpan key='messageSearchPhase' overrideAnimProps={animProps_span_messagesStatus} style={{ marginBottom: '5px', alignSelf: 'flex-end', whiteSpace: 'nowrap' }}>
+                            {api.MessageSearchPhase} <span style={{ fontWeight: 600 }}>{api.Messages?.length} / {uiState.topicSettings.searchParams.pageSize}</span>
+                        </MotionSpan>
+                    )}
+                </AnimatePresence>
+
+                {/* Quick Search */}
+                <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto' }}>
+                    <Input placeholder='Quick Search' allowClear={true} size='middle'
+                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
+                        value={uiState.topicSettings.quickSearch}
+                        onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
+                        addonAfter={null} disabled={this.fetchError != null}
+                    />
+                </div>
+            </div>
+
+        </React.Fragment>
+    });
 
     isFilterMatch(str: string, m: TopicMessage) {
         str = str.toLowerCase();
@@ -180,61 +261,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         </div>
     }
 
-    SearchParameters = observer(() => {
-        const searchParams = uiState.topicSettings.searchParams;
-        const topic = this.props.topic;
-        return <>
-            <Space size='large' align='center'>
-
-                <Label text='Partition'>
-                    <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }}>
-                        <Select.Option key='all' value={-1}>All</Select.Option>
-                        {range(0, topic.partitionCount).map(i =>
-                            <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
-                    </Select>
-                </Label>
-
-                <Label text='Max Results'>
-                    <Select<number> value={searchParams.pageSize} onChange={c => searchParams.pageSize = c} style={{ width: '10em' }}>
-                        {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()} results</Select.Option>)}
-                    </Select>
-                </Label>
-
-                <Label text='Offset'>
-                    <InputGroup compact style={{ display: 'inline-block', width: 'auto' }}>
-                        <Select<TopicMessageOffset> value={searchParams._offsetMode} onChange={e => searchParams._offsetMode = e}
-                            dropdownMatchSelectWidth={false} style={{ width: '10em' }}>
-                            <Option value={TopicMessageOffset.End}>Newest Offset</Option>
-                            <Option value={TopicMessageOffset.Start}>Oldest Offset</Option>
-                            <Option value={TopicMessageOffset.Custom}>Custom Offset</Option>
-                        </Select>
-                        {
-                            searchParams._offsetMode == TopicMessageOffset.Custom &&
-                            <Input style={{ width: '8em' }} maxLength={20}
-                                value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
-                                disabled={searchParams._offsetMode != TopicMessageOffset.Custom} />
-                        }
-                    </InputGroup>
-                </Label>
-
-
-                <AnimatePresence>
-                    {api.MessageSearchPhase && (
-                        <MotionSpan key='messageSearchPhase' overrideAnimProps={animProps_span_messagesStatus} style={{ paddingTop: '1.2em', whiteSpace: 'nowrap' }}>
-                            {api.MessageSearchPhase} <span style={{ fontWeight: 600 }}>{api.Messages?.length} / {searchParams.pageSize}</span>
-                        </MotionSpan>
-                    )}
-                </AnimatePresence>
-
-
-                {/* todo:
-                    when the user has entered a specific offset,
-                    we should prevent selecting 'all' partitions, as that wouldn't make any sense.
-                */}
-            </Space>
-        </>
-    });
-
     @computed
     get activeTags() {
         return uiState.topicSettings.previewTags.filter(t => t.active).map(t => t.value);
@@ -255,7 +281,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
                 <Button shape='round' className='hoverBorder' onClick={() => this.showPreviewSettings = true} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
                     <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
-                    <span style={{ marginLeft: '.3em' }}>Preview</span>
+                    <span style={{ marginLeft: '.3em', fontSize: '85%' }}>Preview</span>
                     {(() => {
                         const count = uiState.topicSettings.previewTags.sum(t => t.active ? 1 : 0);
                         if (count > 0)
@@ -443,7 +469,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 const renderKey = (text: string | null | undefined) => {
 
     if (text == undefined || text == null || text.length == 0)
-        return <span style={{ opacity: 0.66, marginLeft: '3px' }}><Octicon icon={Skip} /></span>
+        return <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={Skip} /></span>
 
     if (text.length > 45) {
 

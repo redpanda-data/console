@@ -710,3 +710,17 @@ tr.consumerGroupNoMemberAssigned {
 .ant-table-column-has-sorters:hover .ant-table-column-sorter {
     color: hsla(0, 0%, 50%, 0.85);
 }
+
+.messagesSpecialIconButton {
+    padding: 0px 15px;
+}
+
+.ant-input-group-compact .messagesSpecialIconButton:not(:first-child) {
+    border-left: 1px solid hsla(205, 100%, 90%, 0.5);
+}
+
+svg {
+    display: inline-block;
+    height: 100%;
+    margin: auto;
+}
