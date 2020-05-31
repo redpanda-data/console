@@ -37,6 +37,13 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 			if canSee {
 				visibleGroups = append(visibleGroups, group)
 			}
+
+			// Attach allowed actions for each topic
+			group.AllowedActions, restErr = api.Hooks.Owl.AllowedConsumerGroupActions(r.Context(), group.GroupID)
+			if restErr != nil {
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
 		}
 
 		response := GetConsumerGroupsResponse{

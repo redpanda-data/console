@@ -15,6 +15,9 @@ type TopicOverview struct {
 	ReplicationFactor int    `json:"replicationFactor"`
 	CleanupPolicy     string `json:"cleanupPolicy"`
 	LogDirSize        int64  `json:"logDirSize"`
+
+	// What actions the logged in user is allowed to run on this topic
+	AllowedActions []string `json:"allowedActions"`
 }
 
 // GetTopicsOverview returns a TopicOverview for all Kafka Topics
