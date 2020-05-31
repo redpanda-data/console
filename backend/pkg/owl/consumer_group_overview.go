@@ -10,13 +10,14 @@ import (
 
 // ConsumerGroupOverview for a Kafka Consumer Group
 type ConsumerGroupOverview struct {
-	GroupID       string                    `json:"groupId"`
-	State         string                    `json:"state"`
-	ProtocolType  string                    `json:"protocolType"`
-	Protocol      string                    `json:"-"`
-	Members       []*GroupMemberDescription `json:"members"`
-	CoordinatorID int32                     `json:"coordinatorId"`
-	Lags          *ConsumerGroupLag         `json:"lag"`
+	GroupID        string                    `json:"groupId"`
+	State          string                    `json:"state"`
+	ProtocolType   string                    `json:"protocolType"`
+	Protocol       string                    `json:"-"`
+	Members        []*GroupMemberDescription `json:"members"`
+	CoordinatorID  int32                     `json:"coordinatorId"`
+	Lags           *ConsumerGroupLag         `json:"lag"`
+	AllowedActions []string                  `json:"allowedActions"`
 }
 
 // GroupMemberDescription is a member (e. g. connected host) of a Consumer Group

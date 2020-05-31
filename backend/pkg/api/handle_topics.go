@@ -33,7 +33,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 
 		visibleTopics := make([]*owl.TopicOverview, 0, len(topics))
 		for _, topic := range topics {
-			// Check if logged in user is allowed to see this topic
+			// Check if logged in user is allowed to see this topic. If not remove the topic from the list.
 			canSee, restErr := api.Hooks.Owl.CanSeeTopic(r.Context(), topic.TopicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
@@ -42,6 +42,13 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 
 			if canSee {
 				visibleTopics = append(visibleTopics, topic)
+			}
+
+			// Attach allowed actions for each topic
+			topic.AllowedActions, restErr = api.Hooks.Owl.AllowedTopicActions(r.Context(), topic.TopicName)
+			if restErr != nil {
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
 			}
 		}
 

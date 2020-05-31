@@ -36,9 +36,11 @@ type OwlHooks interface {
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicMessages(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
+	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
 
 	// ConsumerGroup Hooks
 	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
+	AllowedConsumerGroupActions(ctx context.Context, groupName string) ([]string, *rest.Error)
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -73,6 +75,14 @@ func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ string) (bool, *r
 func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string, *rest.Error) {
+	// "all" will be considered as wild card - all actions are allowed
+	return []string{"all"}, nil
+}
 func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
+}
+func (*defaultHooks) AllowedConsumerGroupActions(_ context.Context, _ string) ([]string, *rest.Error) {
+	// "all" will be considered as wild card - all actions are allowed
+	return []string{"all"}, nil
 }
