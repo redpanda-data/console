@@ -688,3 +688,25 @@ tr.consumerGroupNoMemberAssigned {
 .ant-modal {
     max-height: 80%;
 }
+
+.ant-tooltip-inner {
+    min-height: 20px;
+    padding: 3px 6px;
+    color: rgba(255, 255, 255, 85%);
+    border-radius: 3px;
+    background-color: hsla(209, 15%, 20%, 80%);
+}
+
+.ant-tooltip-arrow::before {
+    background-color: hsla(209, 15%, 20%, 80%);
+    width: 8px;
+    height: 8px;
+}
+
+.ant-table-column-has-sorters .ant-table-column-sorter {
+    color: hsla(0, 0%, 50%, 0.3);
+}
+
+.ant-table-column-has-sorters:hover .ant-table-column-sorter {
+    color: hsla(0, 0%, 50%, 0.85);
+}
