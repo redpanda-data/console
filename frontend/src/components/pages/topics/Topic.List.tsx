@@ -135,7 +135,7 @@ class TopicList extends PageComponent {
 
 const iconAllowed = <span style={{ color: 'green' }}><CheckIcon size={16} /></span>
 const iconForbidden = <span style={{ color: '#ca000a' }}><CircleSlashIcon size={15} /></span>
-const iconClosedEye = <span style={{ color: '#0008', paddingRight: '4px', transform: 'translateY(-1px)', display: 'inline-block' }}><EyeClosedIcon size={14} verticalAlign='middle' /></span>;
+const iconClosedEye = <span style={{ color: '#0008', paddingLeft: '4px', transform: 'translateY(-1px)', display: 'inline-block' }}><EyeClosedIcon size={14} verticalAlign='middle' /></span>;
 
 const renderName = (topic: TopicDetail) => {
     const actions = topic.allowedActions;
@@ -164,8 +164,8 @@ const renderName = (topic: TopicDetail) => {
 
     return <Popover content={popoverContent} placement='right' mouseEnterDelay={0} mouseLeaveDelay={0.1}>
         <span>
-            {iconClosedEye}
             {topic.topicName}
+            {iconClosedEye}
         </span>
     </Popover>
 };

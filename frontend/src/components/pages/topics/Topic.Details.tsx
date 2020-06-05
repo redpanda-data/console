@@ -1,5 +1,5 @@
 import React, { Component, CSSProperties, useState } from "react";
-import { Row, Tabs, Skeleton, Radio, Checkbox, Button, Select, Input, Typography, Result, Space } from "antd";
+import { Row, Tabs, Skeleton, Radio, Checkbox, Button, Select, Input, Typography, Result, Space, Popover } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
@@ -18,6 +18,7 @@ import Card from "../../misc/Card";
 import { TopicConsumers } from "./Tab.Consumers";
 import { simpleUniqueId } from "../../../utils/utils";
 import { Label, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
+import { LockIcon } from "@primer/octicons-v2-react";
 
 const { Text } = Typography;
 
@@ -41,11 +42,19 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
     refreshData(force: boolean) {
         api.refreshTopics(force);
-        api.refreshTopicConfig(this.props.topicName, force);
-        api.refreshTopicPartitions(this.props.topicName, force);
 
-        if (uiSettings.topicDetailsActiveTabKey == 'consumers') // don't refresh unless needed, it's expensive
-            api.refreshTopicConsumers(this.props.topicName, force);
+        try {
+            if (uiSettings.topicDetailsActiveTabKey == 'consumers') // don't refresh unless needed, it's expensive
+                api.refreshTopicConsumers(this.props.topicName, force);
+        } catch { }
+
+        try {
+            api.refreshTopicPartitions(this.props.topicName, force);
+        } catch { }
+
+        try {
+            api.refreshTopicConfig(this.props.topicName, force);
+        } catch { }
     }
 
     get tabPageKey(): TopicDetailsTab {
@@ -86,6 +95,19 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         if (partitions)
             messageSum = partitions.sum(p => (p.waterMarkHigh - p.waterMarkLow)).toString();
 
+        const canSeeAll = !topic.allowedActions || topic.allowedActions[0] == 'all';
+        const show = {
+            messages: canSeeAll || topic.allowedActions!.includes('viewMessages'),
+            consumers: canSeeAll || topic.allowedActions!.includes('viewConsumers'),
+            partitions: canSeeAll || topic.allowedActions!.includes('viewPartitions'),
+            config: canSeeAll || topic.allowedActions!.includes('viewConfig'),
+        };
+        const tabTitle = (title: string, enabled: boolean) => !enabled
+            ? <Popover content={"You're missing the required permissions to view this tab"}>
+                <div><LockIcon size={16} />{' '}{title}</div>
+            </Popover>
+            : title;
+
         setTimeout(() => this.addBaseFavs(topicConfig), 10);
 
         return (
@@ -101,19 +123,19 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         activeKey={this.tabPageKey}
                         onChange={this.setTabPage}
                     >
-                        <Tabs.TabPane key="messages" tab="Messages">
+                        <Tabs.TabPane key="messages" tab={tabTitle('Messages', show.messages)} disabled={!show.messages}>
                             <TopicMessageView topic={topic} />
                         </Tabs.TabPane>
 
-                        <Tabs.TabPane key="consumers" tab="Consumers">
+                        <Tabs.TabPane key="consumers" tab={tabTitle('Consumers', show.consumers)} disabled={!show.consumers}>
                             <TopicConsumers topic={topic} />
                         </Tabs.TabPane>
 
-                        <Tabs.TabPane key="partitions" tab="Partitions">
+                        <Tabs.TabPane key="partitions" tab={tabTitle('Partitions', show.partitions)} disabled={!show.partitions}>
                             <TopicPartitions topic={topic} />
                         </Tabs.TabPane>
 
-                        <Tabs.TabPane key="configuration" tab="Configuration">
+                        <Tabs.TabPane key="configuration" tab={tabTitle('Configuration', show.config)} disabled={!show.config}>
                             <ConfigDisplaySettings /> {/* todo: move into TopicConfiguration */}
                             <TopicConfiguration config={topicConfig} />
                         </Tabs.TabPane>

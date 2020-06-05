@@ -279,8 +279,6 @@ const apiStore = {
                     if (!t.allowedActions) continue;
 
                     // DEBUG: randomly remove some allowedActions
-                    if (Math.random() > 0.5) continue; // do nothing
-
                     const numToRemove = Math.round(Math.random() * t.allowedActions.length);
                     for (let i = 0; i < numToRemove; i++) {
                         const randomIndex = Math.round(Math.random() * (t.allowedActions.length - 1));
@@ -288,16 +286,6 @@ const apiStore = {
                     }
                 }
                 this.Topics = v.topics;
-            }, addError);
-    },
-
-    refreshConsumerGroups(force?: boolean) {
-        cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
-            .then(v => {
-                for (const g of v.consumerGroups) {
-                    g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
-                }
-                this.ConsumerGroups = v.consumerGroups;
             }, addError);
     },
 
@@ -316,9 +304,20 @@ const apiStore = {
             .then(v => this.TopicConsumers.set(v.topicName, v.topicConsumers), addError);
     },
 
+
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`/api/cluster`, force)
             .then(v => this.ClusterInfo = v.clusterInfo, addError);
+    },
+
+    refreshConsumerGroups(force?: boolean) {
+        cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
+            .then(v => {
+                for (const g of v.consumerGroups) {
+                    g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
+                }
+                this.ConsumerGroups = v.consumerGroups;
+            }, addError);
     },
 
     refreshAdminInfo(force?: boolean) {
