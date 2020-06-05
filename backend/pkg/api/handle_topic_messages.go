@@ -12,10 +12,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi"
-
-	"github.com/gorilla/schema"
-
 	"github.com/gorilla/websocket"
 )
 
@@ -86,36 +82,93 @@ func (p *progressReporter) OnError(message string) {
 	}{"error", message})
 }
 
-func (api *API) handleGetMessages() http.HandlerFunc {
-	decoder := schema.NewDecoder()
-	decoder.IgnoreUnknownKeys(true)
-	type request struct {
-		StartOffset int64  `schema:"startOffset,required"` // -1 for newest, -2 for oldest offset
-		PartitionID int32  `schema:"partitionID,required"` // -1 for all partition ids
-		PageSize    uint16 `schema:"pageSize,required"`
+type listMessagesRequest struct {
+	TopicName   string `json:"topicName"`
+	StartOffset int64  `json:"startOffset"` // -1 for newest, -2 for oldest offset
+	PartitionID int32  `json:"partitionId"` // -1 for all partition ids
+	MaxResults  uint16 `json:"maxResults"`
+}
+
+func (l *listMessagesRequest) OK() error {
+	if l.TopicName == "" {
+		return fmt.Errorf("topic name is required")
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Search Arguments
-		topicName := chi.URLParam(r, "topicName")
-		logger := api.Logger.With(zap.String("topic_name", topicName))
-		query := r.URL.Query()
+	if l.StartOffset < -2 {
+		return fmt.Errorf("start offset is smaller than -2")
+	}
 
-		var req request
-		err := decoder.Decode(&req, query)
+	if l.PartitionID < -1 {
+		return fmt.Errorf("partitionID is smaller than -1")
+	}
+
+	if l.MaxResults <= 0 || l.MaxResults > 500 {
+		return fmt.Errorf("max results must be between 1 and 500")
+	}
+
+	return nil
+}
+
+func (api *API) handleGetMessages() http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger := api.Logger
+
+		// Websocket upgrade
+		logger.Debug("starting websocket connection upgrade")
+
+		wsConnection, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			restErr := &rest.Error{
+			logger.Error("failed to upgrade websocket in messages endpoint", zap.Error(err))
+			return
+		}
+		wsConnection.SetCloseHandler(func(code int, text string) error {
+			logger.Debug("connection has been closed by client")
+			r.Context().Done()
+			return nil
+		})
+		logger.Debug("websocket connection upgrade complete")
+
+		defer func() {
+			// Close connection gracefully!
+			err = wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			if err != nil && err != websocket.ErrCloseSent {
+				logger.Debug("failed to send 'CloseNormalClosure' to ws connection", zap.Error(err))
+			} else {
+				//logger.Debug("graceful WS close message sent")
+				// the example in github.com/gorilla/websocket also does this
+				time.Sleep(2 * time.Second)
+			}
+		}()
+
+		// Get search parameters. Close connection if search parameters are invalid
+		maxMessageSize := int64(16 * 1024) // 16kb
+		wsConnection.SetReadLimit(maxMessageSize)
+		var req listMessagesRequest
+		err = wsConnection.ReadJSON(&req)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
 				Status:   http.StatusBadRequest,
-				Message:  "The given query parameters are invalid",
+				Message:  "Failed to parse list message request",
 				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, logger, restErr)
+			})
+			return
+		}
+
+		err = req.OK()
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadRequest,
+				Message:  fmt.Sprintf("Failed to validate list message request: %v", err),
+				IsSilent: false,
+			})
 			return
 		}
 
 		// Check if logged in user is allowed to list messages for the given topic
-		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), topicName)
+		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req.TopicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -131,34 +184,12 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			return
 		}
 
-		// Websocket upgrade
-		api.Logger.Debug("starting websocket connection upgrade")
-
-		wsConnection, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			api.Logger.Error("messages endpoint websocket upgrade", zap.Error(err))
-			return
-		}
-
-		// "The application *must* read the connection to process close, ..."
-		// https://godoc.org/github.com/gorilla/websocket#hdr-Control_Messages
-		go (func() {
-			for {
-				if _, _, err := wsConnection.NextReader(); err != nil {
-					wsConnection.Close()
-					return
-				}
-			}
-		})()
-
-		api.Logger.Debug("websocket connection upgrade complete")
-
 		// Request messages from kafka and return them once we got all the messages or the context is done
 		listReq := owl.ListMessageRequest{
-			TopicName:    topicName,
+			TopicName:    req.TopicName,
 			PartitionID:  req.PartitionID,
 			StartOffset:  req.StartOffset,
-			MessageCount: req.PageSize,
+			MessageCount: req.MaxResults,
 		}
 
 		progress := &progressReporter{api.Logger, &listReq, &sync.Mutex{}, wsConnection, time.NewTicker(300 * time.Millisecond)}
@@ -170,19 +201,5 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		if err != nil {
 			progress.OnError(err.Error())
 		}
-
-		// Close connection gracefully!
-		(func() {
-			progress.wsMutex.Lock()
-			defer progress.wsMutex.Unlock()
-			err = wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil && err != websocket.ErrCloseSent {
-				api.Logger.Debug("failed to send 'CloseNormalClosure' to ws connection", zap.Error(err))
-			} else {
-				//api.Logger.Debug("graceful WS close message sent")
-				// the example in github.com/gorilla/websocket also does this
-				time.Sleep(2 * time.Second)
-			}
-		})()
 	}
 }
