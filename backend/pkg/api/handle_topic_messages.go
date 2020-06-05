@@ -15,11 +15,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func allowAll(r *http.Request) bool { return true }
-
-// websocket upgrader options
-var upgrader = websocket.Upgrader{EnableCompression: true, CheckOrigin: allowAll}
-
 // GetTopicMessagesResponse is a wrapper for an array of TopicMessage
 type GetTopicMessagesResponse struct {
 	KafkaMessages *owl.ListMessageResponse `json:"kafkaMessages"`
@@ -110,7 +105,6 @@ func (l *listMessagesRequest) OK() error {
 }
 
 func (api *API) handleGetMessages() http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger := api.Logger
 
@@ -194,6 +188,13 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 }
 
 func setupWebsocket(w http.ResponseWriter, r *http.Request, logger *zap.Logger) (*websocket.Conn, *rest.Error) {
+	// websocket upgrader options
+	upgrader := websocket.Upgrader{
+		EnableCompression: true,
+		// TODO(security): Implement origin check once something can be modified or deleted via websockets, not necessary for fetching messages only
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
 	logger.Debug("starting websocket connection upgrade")
 	wsConnection, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
