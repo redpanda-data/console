@@ -1,5 +1,7 @@
 
 
+export type TopicAction = 'all' | 'viewMessages' | 'viewConsumers' | 'seeTopic' | 'viewPartitions' | 'viewConfig';
+
 export class TopicDetail {
     topicName: string;
     isInternal: boolean;
@@ -7,6 +9,7 @@ export class TopicDetail {
     replicationFactor: number;
     cleanupPolicy: string;
     logDirSize: number; // how much space this topic takes up (files in its log dir)
+    allowedActions: TopicAction[] | undefined;
 
     // Added by frontend
     // messageCount: number;

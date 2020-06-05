@@ -275,10 +275,18 @@ const apiStore = {
     refreshTopics(force?: boolean) {
         cachedApiRequest<GetTopicsResponse>('/api/topics', force)
             .then(v => {
-                for (let t of v.topics) {
-                    // t.messageCount = ...
-                }
+                for (const t of v.topics) {
+                    if (!t.allowedActions) continue;
 
+                    // DEBUG: randomly remove some allowedActions
+                    if (Math.random() > 0.5) continue; // do nothing
+
+                    const numToRemove = Math.round(Math.random() * t.allowedActions.length);
+                    for (let i = 0; i < numToRemove; i++) {
+                        const randomIndex = Math.round(Math.random() * (t.allowedActions.length - 1));
+                        t.allowedActions.splice(randomIndex, 1);
+                    }
+                }
                 this.Topics = v.topics;
             }, addError);
     },
@@ -286,7 +294,7 @@ const apiStore = {
     refreshConsumerGroups(force?: boolean) {
         cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
             .then(v => {
-                for (let g of v.consumerGroups) {
+                for (const g of v.consumerGroups) {
                     g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
                 }
                 this.ConsumerGroups = v.consumerGroups;
