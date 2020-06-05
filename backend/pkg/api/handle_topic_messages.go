@@ -114,40 +114,28 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger := api.Logger
 
-		// Websocket upgrade
-		logger.Debug("starting websocket connection upgrade")
-
-		wsConnection, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			logger.Error("failed to upgrade websocket in messages endpoint", zap.Error(err))
+		// Websocket setup
+		wsConnection, restErr := setupWebsocket(w, r, logger)
+		if restErr != nil {
+			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
-		wsConnection.SetCloseHandler(func(code int, text string) error {
-			logger.Debug("connection has been closed by client")
-			r.Context().Done()
-			return nil
-		})
-		logger.Debug("websocket connection upgrade complete")
-
 		defer func() {
 			// Close connection gracefully!
-			err = wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			err := wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil && err != websocket.ErrCloseSent {
 				logger.Debug("failed to send 'CloseNormalClosure' to ws connection", zap.Error(err))
 			} else {
-				//logger.Debug("graceful WS close message sent")
 				// the example in github.com/gorilla/websocket also does this
 				time.Sleep(2 * time.Second)
 			}
 		}()
 
 		// Get search parameters. Close connection if search parameters are invalid
-		maxMessageSize := int64(16 * 1024) // 16kb
-		wsConnection.SetReadLimit(maxMessageSize)
 		var req listMessagesRequest
-		err = wsConnection.ReadJSON(&req)
+		err := wsConnection.ReadJSON(&req)
 		if err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+			rest.SendRESTError(w, r, logger, &rest.Error{
 				Err:      err,
 				Status:   http.StatusBadRequest,
 				Message:  "Failed to parse list message request",
@@ -156,6 +144,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			return
 		}
 
+		// Validate request parameter
 		err = req.OK()
 		if err != nil {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
@@ -202,4 +191,31 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			progress.OnError(err.Error())
 		}
 	}
+}
+
+func setupWebsocket(w http.ResponseWriter, r *http.Request, logger *zap.Logger) (*websocket.Conn, *rest.Error) {
+	logger.Debug("starting websocket connection upgrade")
+	wsConnection, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		restErr := &rest.Error{
+			Err:      fmt.Errorf("failed to upgrade websocket in messages endpoint %w", err),
+			Status:   http.StatusBadRequest,
+			Message:  "Failed upgrade websocket",
+			IsSilent: false,
+		}
+		return nil, restErr
+	}
+	logger.Debug("websocket upgrade complete")
+
+	wsConnection.SetCloseHandler(func(code int, text string) error {
+		logger.Debug("connection has been closed by client")
+		r.Context().Done()
+		return nil
+	})
+	logger.Debug("websocket connection upgrade complete")
+
+	maxMessageSize := int64(16 * 1024) // 16kb
+	wsConnection.SetReadLimit(maxMessageSize)
+
+	return wsConnection, nil
 }
