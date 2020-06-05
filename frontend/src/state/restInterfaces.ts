@@ -1,6 +1,7 @@
 
 
-export type TopicAction = 'all' | 'viewMessages' | 'viewConsumers' | 'seeTopic' | 'viewPartitions' | 'viewConfig';
+export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'viewConsumers', 'viewConfig'] as const;
+export type TopicAction = 'all' | typeof TopicActions[number];
 
 export class TopicDetail {
     topicName: string;

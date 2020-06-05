@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { animProps, MotionDiv, MotionSpan, animProps_span_searchResult } from "../../../utils/animationProps";
 import { appGlobal } from "../../../state/appGlobal";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { TopicDetail } from "../../../state/restInterfaces";
+import { TopicDetail, TopicAction, TopicActions } from "../../../state/restInterfaces";
 import { observable, autorun, IReactionDisposer } from "mobx";
 import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA, DebugTimerStore } from "../../../utils/utils";
@@ -18,6 +18,7 @@ import Card from "../../misc/Card";
 import { editQuery } from "../../../utils/queryHelper";
 import Icon from '@ant-design/icons';
 import { QuickTable } from "../../../utils/tsxUtils";
+import { EyeClosedIcon, CheckIcon, CircleSlashIcon } from "@primer/octicons-v2-react";
 const { Text } = Typography;
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
 
@@ -114,7 +115,7 @@ class TopicList extends PageComponent {
                         dataSource={data}
                         rowKey={x => x.topicName}
                         columns={[
-                            { title: 'Name', dataIndex: 'topicName', sorter: sortField('topicName'), className: 'whiteSpaceDefault', showSorterTooltip: false, defaultSortOrder: 'ascend' },
+                            { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', showSorterTooltip: false, defaultSortOrder: 'ascend' },
                             { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
                             { title: 'Replication', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
                             { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', sorter: sortField('cleanupPolicy'), width: 1 },
@@ -132,6 +133,42 @@ class TopicList extends PageComponent {
     </>
 }
 
+const iconAllowed = <span style={{ color: 'green' }}><CheckIcon size={16} /></span>
+const iconForbidden = <span style={{ color: '#ca000a' }}><CircleSlashIcon size={15} /></span>
+const iconClosedEye = <span style={{ color: '#0008', paddingRight: '4px', transform: 'translateY(-1px)', display: 'inline-block' }}><EyeClosedIcon size={14} verticalAlign='middle' /></span>;
+
+const renderName = (topic: TopicDetail) => {
+    const actions = topic.allowedActions;
+
+    if (!actions || actions[0] == 'all')
+        return topic.topicName; // happens in non-business version
+
+    let missing = 0;
+    for (const a of TopicActions)
+        if (!actions.includes(a))
+            missing++;
+
+    if (missing == 0)
+        return topic.topicName; // everything is allowed
+
+    // There's at least one action the user can't do
+    // Show a table of what they can't do
+    const popoverContent = <div>
+        <div style={{ marginBottom: '1em' }}>You may not be able to view all aspects of this topic.</div>
+        {QuickTable(TopicActions.map(a => ({
+            key: a,
+            value: actions.includes(a) ? iconAllowed : iconForbidden
+        })), { gutterWidth: '6px', gutterHeight: '2px', keyStyle: { fontSize: '86%', fontWeight: 700 }, keyAlign: 'right' })}
+    </div>
+
+
+    return <Popover content={popoverContent} placement='right' mouseEnterDelay={0} mouseLeaveDelay={0.1}>
+        <span>
+            {iconClosedEye}
+            {topic.topicName}
+        </span>
+    </Popover>
+};
 
 // todo: extract out where the filterText is retreived from / saved.
 //       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
