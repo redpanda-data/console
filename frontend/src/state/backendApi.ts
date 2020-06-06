@@ -30,7 +30,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
 
     if (res.status == 401) {
-        await handleUnauthorized(res);
+        await handleUnauthorized401(res);
     }
 
     if (!res.ok)
@@ -42,7 +42,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     return data;
 }
 
-async function handleUnauthorized(res: Response) {
+async function handleUnauthorized401(res: Response) {
     // Logout
     //   Clear our 'User' data if we have any
     //   Any old/invalid JWT will be cleared by the server
@@ -157,13 +157,16 @@ const apiStore = {
 
     // Data
     Clusters: ['BigData Prod', 'BigData Staging', 'BigData Dev'],
-    Topics: null as (TopicDetail[] | null),
-    ConsumerGroups: null as (GroupDescription[] | null),
-    TopicConfig: new Map<string, TopicConfigEntry[]>(),
-    TopicPartitions: new Map<string, Partition[]>(),
-    TopicConsumers: new Map<string, TopicConsumer[]>(),
     ClusterInfo: null as (ClusterInfo | null),
     AdminInfo: null as (AdminInfo | null),
+
+    Topics: null as (TopicDetail[] | null),
+    TopicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
+    TopicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
+    TopicConsumers: new Map<string, TopicConsumer[]>(),
+
+    ConsumerGroups: null as (GroupDescription[] | null),
+
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in

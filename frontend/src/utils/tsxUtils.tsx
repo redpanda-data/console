@@ -45,6 +45,7 @@ const DefaultQuickTableOptions = {
     gutterWidth: '.5em' as string | number,
     gutterHeight: 0 as string | number,
     keyStyle: undefined as React.CSSProperties | undefined,
+    tableStyle: undefined as React.CSSProperties | undefined,
 }
 type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>
 
@@ -67,7 +68,7 @@ export function QuickTable(data: { key: any, value: any }[], options?: QuickTabl
 
     const showVerticalGutter = (typeof o.gutterHeight === 'number' && o.gutterHeight > 0) || typeof o.gutterHeight === 'string';
 
-    return <table className={o.tableClassName}>
+    return <table className={o.tableClassName} style={o.tableStyle}>
         <tbody>
             {data.map((obj, i) =>
                 <React.Fragment key={i}>
