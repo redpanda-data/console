@@ -6,6 +6,8 @@ declare global {
         remove(obj: T): boolean;
         removeAll(selector: (x: T) => boolean): number;
 
+        first<T>(this: T[], selector: (x: T) => boolean): T | undefined;
+
         sum<T>(this: T[], selector: (x: T) => number): number;
         max<T>(this: T[], selector: (x: T) => number): number;
 
@@ -40,6 +42,15 @@ Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) =>
 };
 
 
+Array.prototype.first = function first<T>(this: T[], selector: (x: T) => boolean): T | undefined {
+    for (const e of this)
+        if (selector(e))
+            return e;
+    return undefined;
+};
+
+
+
 Array.prototype.sum = function sum<T>(this: T[], selector: (x: T) => number) {
     return this.reduce((pre, cur) => pre + selector(cur), 0);
 };
@@ -50,18 +61,16 @@ Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {
 
 
 Array.prototype.any = function any<T>(this: T[], selector: (x: T) => boolean) {
-    for (let e of this) {
+    for (let e of this)
         if (selector(e))
             return true;
-    }
     return false;
 };
 
 Array.prototype.all = function all<T>(this: T[], selector: (x: T) => boolean) {
-    for (let e of this) {
+    for (let e of this)
         if (!selector(e))
             return false;
-    }
     return true;
 };
 
