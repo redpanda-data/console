@@ -154,15 +154,22 @@ const renderName = (topic: TopicDetail) => {
     // There's at least one action the user can't do
     // Show a table of what they can't do
     const popoverContent = <div>
-        <div style={{ marginBottom: '1em' }}>You may not be able to view all aspects of this topic.</div>
+        <div style={{ marginBottom: '1em' }}>
+            You're missing permissions to view<br />
+            one more aspects of this topic.
+        </div>
         {QuickTable(TopicActions.map(a => ({
             key: a,
             value: actions.includes(a) ? iconAllowed : iconForbidden
-        })), { gutterWidth: '6px', gutterHeight: '2px', keyStyle: { fontSize: '86%', fontWeight: 700 }, keyAlign: 'right' })}
+        })), {
+            gutterWidth: '6px', gutterHeight: '2px', keyAlign: 'right',
+            keyStyle: { fontSize: '86%', fontWeight: 700 },
+            tableStyle: { margin: 'auto' }
+        })}
     </div>
 
 
-    return <Popover content={popoverContent} placement='right' mouseEnterDelay={0} mouseLeaveDelay={0.1}>
+    return <Popover content={popoverContent} placement='right' mouseEnterDelay={0.1} mouseLeaveDelay={0.1}>
         <span>
             {topic.topicName}
             {iconClosedEye}

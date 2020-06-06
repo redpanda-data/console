@@ -13,20 +13,75 @@ import { TopicConfiguration } from "./Tab.Config";
 import { TopicMessageView } from "./Tab.Messages";
 import { appGlobal } from "../../../state/appGlobal";
 import { TopicPartitions } from "./Tab.Partitions";
-import { TopicConfigEntry } from "../../../state/restInterfaces";
+import { TopicConfigEntry, TopicDetail, TopicAction } from "../../../state/restInterfaces";
 import Card from "../../misc/Card";
 import { TopicConsumers } from "./Tab.Consumers";
 import { simpleUniqueId } from "../../../utils/utils";
 import { Label, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 import { LockIcon } from "@primer/octicons-v2-react";
+import { computed, observable } from "mobx";
 
 const { Text } = Typography;
 
-const TopicDetailsTabs = ['partitions', 'messages', 'configuration', 'consumers'] as const;
-export type TopicDetailsTab = undefined | typeof TopicDetailsTabs[number];
+const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration'] as const;
+export type TopicTabId = typeof TopicTabIds[number];
+
+class TopicTab {
+    constructor(
+        private topicGetter: () => TopicDetail | undefined | null,
+        public id: TopicTabId,
+        private requiredPermission: TopicAction,
+        public titleText: string,
+        private contentFunc: (topic: TopicDetail) => React.ReactNode
+    ) { }
+
+    @computed get isEnabled(): boolean {
+        const topic = this.topicGetter();
+        if (!topic)
+            return true; // no data yet
+        if (!topic.allowedActions || topic.allowedActions[0] == 'all')
+            return true; // kowl free version
+
+        return topic.allowedActions.includes(this.requiredPermission);
+    }
+
+    @computed get isDisabled(): boolean {
+        return !this.isEnabled;
+    }
+
+    @computed get title(): React.ReactNode {
+        if (this.isEnabled) return this.titleText;
+
+        return 1 &&
+            <Popover content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}>
+                <div><LockIcon size={16} />{' '}{this.titleText}</div>
+            </Popover>
+    }
+
+    @computed get content(): React.ReactNode {
+        const topic = this.topicGetter();
+        if (topic) return this.contentFunc(topic);
+        return null;
+    }
+}
+
 
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {
+
+    topicTabs: TopicTab[];
+
+    constructor(props: any) {
+        super(props);
+
+        const topic = () => this.topic;
+        this.topicTabs = [
+            new TopicTab(topic, 'messages', 'viewMessages', 'Messages', t => <TopicMessageView topic={t} />),
+            new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', t => <TopicConsumers topic={t} />),
+            new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', t => <TopicPartitions topic={t} />),
+            new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', t => <TopicConfiguration topic={t} />),
+        ];
+    }
 
     initPage(p: PageInitHelper): void {
         const topicName = this.props.topicName;
@@ -43,36 +98,52 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     refreshData(force: boolean) {
         api.refreshTopics(force);
 
-        try {
-            if (uiSettings.topicDetailsActiveTabKey == 'consumers') // don't refresh unless needed, it's expensive
-                api.refreshTopicConsumers(this.props.topicName, force);
-        } catch { }
+        if (uiSettings.topicDetailsActiveTabKey == 'consumers') // don't refresh unless needed, it's expensive
+            api.refreshTopicConsumers(this.props.topicName, force);
 
-        try {
-            api.refreshTopicPartitions(this.props.topicName, force);
-        } catch { }
+        api.refreshTopicPartitions(this.props.topicName, force);
 
-        try {
-            api.refreshTopicConfig(this.props.topicName, force);
-        } catch { }
+        api.refreshTopicConfig(this.props.topicName, force);
     }
 
-    get tabPageKey(): TopicDetailsTab {
-        // use url anchor if possible
-        let key = (appGlobal.history.location.hash).replace("#", "");
-        if (TopicDetailsTabs.includes(key as any)) return key as TopicDetailsTab;
 
-        // use settings (last visited tab)
-        key = uiSettings.topicDetailsActiveTabKey!;
-        if (TopicDetailsTabs.includes(key as any)) return key as TopicDetailsTab;
-
-        // default to partitions
-        return 'messages'
+    @computed get topic(): undefined | TopicDetail | null { // undefined = not yet known, null = known to be null
+        if (!api.Topics) return undefined;
+        const topic = api.Topics.find(e => e.topicName == this.props.topicName);
+        if (!topic) return null;
+        return topic;
     }
+    @computed get topicConfig(): undefined | TopicConfigEntry[] | null {
+        return api.TopicConfig.get(this.props.topicName);
+    }
+
+    get selectedTabId(): TopicTabId {
+        function computeTabId() {
+            // use url anchor if possible
+            let key = (appGlobal.history.location.hash).replace("#", "");
+            if (TopicTabIds.includes(key as any)) return key as TopicTabId;
+
+            // use settings (last visited tab)
+            key = uiSettings.topicDetailsActiveTabKey!;
+            if (TopicTabIds.includes(key as any)) return key as TopicTabId;
+
+            // default to partitions
+            return 'messages'
+        }
+
+        // 1. calculate what tab is selected as usual: url -> settings -> default
+        // 2. if that tab is enabled, return it, otherwise return the first one that is not
+        //    (todo: should probably show some message if all tabs are disabled...)
+        const id = computeTabId();
+        if (this.topicTabs.first(t => t.id == id)!.isEnabled)
+            return id;
+        return this.topicTabs.first(t => t.isEnabled)?.id ?? 'messages';
+    }
+
 
     componentDidMount() {
         // fix anchor
-        const anchor = '#' + this.tabPageKey;
+        const anchor = '#' + this.selectedTabId;
         const location = appGlobal.history.location;
         if (location.hash !== anchor) {
             location.hash = anchor;
@@ -81,64 +152,31 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
     render() {
-        const topicName = this.props.topicName;
-        // todo: we shouldn't prepare data here. Instead we should create actions that obtain
-        // the data and pass those to the components, they should be responsible to handle 'undefined' themselves.
-        if (!api.Topics) return this.skeleton;
-        const topic = api.Topics.find(e => e.topicName == topicName);
-        if (!topic) return this.topicNotFound(topicName);
-        const topicConfig = api.TopicConfig.get(topicName);
-        if (!topicConfig) return this.skeleton;
+        const topic = this.topic;
+        const topicConfig = this.topicConfig;
+        if (topic === undefined || topicConfig === undefined) return this.skeleton;
+        if (topic === null) return this.topicNotFound();
 
-        let messageSum: null | string = '...';
-        let partitions = api.TopicPartitions.get(topic.topicName);
-        if (partitions)
-            messageSum = partitions.sum(p => (p.waterMarkHigh - p.waterMarkLow)).toString();
-
-        const canSeeAll = !topic.allowedActions || topic.allowedActions[0] == 'all';
-        const show = {
-            messages: canSeeAll || topic.allowedActions!.includes('viewMessages'),
-            consumers: canSeeAll || topic.allowedActions!.includes('viewConsumers'),
-            partitions: canSeeAll || topic.allowedActions!.includes('viewPartitions'),
-            config: canSeeAll || topic.allowedActions!.includes('viewConfig'),
-        };
-        const tabTitle = (title: string, enabled: boolean) => !enabled
-            ? <Popover content={"You're missing the required permissions to view this tab"}>
-                <div><LockIcon size={16} />{' '}{title}</div>
-            </Popover>
-            : title;
-
-        setTimeout(() => this.addBaseFavs(topicConfig), 10);
+        setTimeout(() => topicConfig && this.addBaseFavs(topicConfig), 10);
 
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 {/* QuickInfo */}
                 <Card>
-                    <TopicQuickInfoStatistic config={topicConfig} size={topic.logDirSize} messageCount={messageSum} />
+                    <TopicQuickInfoStatistic topicName={topic.topicName} />
                 </Card>
 
                 {/* Tabs:  Messages, Configuration */}
                 <Card>
                     <Tabs style={{ overflow: 'visible' }} animated={false}
-                        activeKey={this.tabPageKey}
+                        activeKey={this.selectedTabId}
                         onChange={this.setTabPage}
                     >
-                        <Tabs.TabPane key="messages" tab={tabTitle('Messages', show.messages)} disabled={!show.messages}>
-                            <TopicMessageView topic={topic} />
-                        </Tabs.TabPane>
-
-                        <Tabs.TabPane key="consumers" tab={tabTitle('Consumers', show.consumers)} disabled={!show.consumers}>
-                            <TopicConsumers topic={topic} />
-                        </Tabs.TabPane>
-
-                        <Tabs.TabPane key="partitions" tab={tabTitle('Partitions', show.partitions)} disabled={!show.partitions}>
-                            <TopicPartitions topic={topic} />
-                        </Tabs.TabPane>
-
-                        <Tabs.TabPane key="configuration" tab={tabTitle('Configuration', show.config)} disabled={!show.config}>
-                            <ConfigDisplaySettings /> {/* todo: move into TopicConfiguration */}
-                            <TopicConfiguration config={topicConfig} />
-                        </Tabs.TabPane>
+                        {this.topicTabs.map(tab =>
+                            <Tabs.TabPane key={tab.id} tab={tab.title} disabled={tab.isDisabled}>
+                                {tab.content}
+                            </Tabs.TabPane>
+                        )}
                     </Tabs>
                 </Card>
             </motion.div>
@@ -182,7 +220,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         appGlobal.history.replace(loc);
     }
 
-    topicNotFound(name: string) {
+    topicNotFound() {
+        const name = this.props.topicName;
         return <Result
             status={404}
             title="404"
@@ -198,42 +237,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     </>
 }
 
-
-
-const ConfigDisplaySettings = observer(() =>
-    <div style={{ marginLeft: '1px', marginBottom: '1.5em' }}>
-        <Row>
-            <Space size='large'>
-
-                <OptionGroup label='Formatting'
-                    options={{
-                        "Friendly": 'friendly',
-                        "Raw": 'raw'
-                    }}
-                    value={uiSettings.topicList.valueDisplay}
-                    onChange={s => uiSettings.topicList.valueDisplay = s}
-                />
-
-                <OptionGroup label='Filter'
-                    options={{
-                        "Show All": 'all',
-                        "Only Changed": 'onlyChanged'
-                    }}
-                    value={uiSettings.topicList.propsFilter}
-                    onChange={s => uiSettings.topicList.propsFilter = s}
-                />
-
-                <OptionGroup label='Sort'
-                    options={{
-                        "None": 'default',
-                        "Changed First": 'changedFirst',
-                    }}
-                    value={uiSettings.topicList.propsOrder}
-                    onChange={s => uiSettings.topicList.propsOrder = s}
-                />
-            </Space>
-        </Row>
-    </div>);
 
 
 
