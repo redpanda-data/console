@@ -105,13 +105,19 @@ export interface GroupMemberDescription {
     assignments: GroupMemberAssignment[]; // topics+partitions that the worker is assigned to
 
 }
+
+
+export const GroupActions = ['seeConsumerGroup'] as const;
+export type GroupAction = 'all' | typeof GroupActions[number];
+
 export interface GroupDescription {
     groupId: string; // name of the group
     state: string; // Dead, Initializing, Rebalancing, Stable
-    members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
+    members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     coordinatorId: number;
     lag: GroupLagDescription;
+    allowedActions: GroupAction[];
 
     // Computed by frontend
     lagSum: number;
