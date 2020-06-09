@@ -16,10 +16,11 @@ const (
 
 // ListMessageRequest carries all filter, sort and cancellation options for fetching messages from Kafka
 type ListMessageRequest struct {
-	TopicName    string
-	PartitionID  int32 // -1 for all partitions
-	StartOffset  int64 // -1 for newest, -2 for oldest offset
-	MessageCount uint16
+	TopicName             string
+	PartitionID           int32 // -1 for all partitions
+	StartOffset           int64 // -1 for newest, -2 for oldest offset
+	MessageCount          uint16
+	FilterInterpreterCode string
 }
 
 // ListMessageResponse returns the requested kafka messages along with some metadata about the operation
@@ -92,9 +93,10 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 			DoneCh:   doneCh,
 			Progress: progress,
 
-			Consumer:  consumer,
-			TopicName: listReq.TopicName,
-			Req:       req,
+			Consumer:              consumer,
+			TopicName:             listReq.TopicName,
+			Req:                   req,
+			FilterInterpreterCode: listReq.FilterInterpreterCode,
 		}
 		startedWorkers++
 		go pConsumer.Run(ctx)

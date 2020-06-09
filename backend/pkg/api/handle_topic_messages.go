@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
@@ -78,10 +79,11 @@ func (p *progressReporter) OnError(message string) {
 }
 
 type listMessagesRequest struct {
-	TopicName   string `json:"topicName"`
-	StartOffset int64  `json:"startOffset"` // -1 for newest, -2 for oldest offset
-	PartitionID int32  `json:"partitionId"` // -1 for all partition ids
-	MaxResults  uint16 `json:"maxResults"`
+	TopicName             string `json:"topicName"`
+	StartOffset           int64  `json:"startOffset"` // -1 for newest, -2 for oldest offset
+	PartitionID           int32  `json:"partitionId"` // -1 for all partition ids
+	MaxResults            uint16 `json:"maxResults"`
+	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
 }
 
 func (l *listMessagesRequest) OK() error {
@@ -101,7 +103,20 @@ func (l *listMessagesRequest) OK() error {
 		return fmt.Errorf("max results must be between 1 and 500")
 	}
 
+	if _, err := l.DecodeInterpreterCode(); err != nil {
+		return fmt.Errorf("failed to decode interpreter code %w", err)
+	}
+
 	return nil
+}
+
+func (l *listMessagesRequest) DecodeInterpreterCode() (string, error) {
+	code, err := base64.StdEncoding.DecodeString(l.FilterInterpreterCode)
+	if err != nil {
+		return "", err
+	}
+
+	return string(code), nil
 }
 
 func (api *API) handleGetMessages() http.HandlerFunc {
@@ -167,12 +182,15 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			return
 		}
 
+		interpreterCode, _ := req.DecodeInterpreterCode() // Error has been checked in validation function
+
 		// Request messages from kafka and return them once we got all the messages or the context is done
 		listReq := owl.ListMessageRequest{
-			TopicName:    req.TopicName,
-			PartitionID:  req.PartitionID,
-			StartOffset:  req.StartOffset,
-			MessageCount: req.MaxResults,
+			TopicName:             req.TopicName,
+			PartitionID:           req.PartitionID,
+			StartOffset:           req.StartOffset,
+			MessageCount:          req.MaxResults,
+			FilterInterpreterCode: interpreterCode,
 		}
 
 		progress := &progressReporter{api.Logger, &listReq, &sync.Mutex{}, wsConnection, time.NewTicker(300 * time.Millisecond)}
