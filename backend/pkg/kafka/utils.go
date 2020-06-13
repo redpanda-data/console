@@ -3,6 +3,7 @@ package kafka
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/Shopify/sarama"
 )
@@ -43,4 +44,22 @@ func (d *DirectEmbedding) MarshalJSON() ([]byte, error) {
 	}
 
 	return d.Value, nil
+}
+
+func (d *DirectEmbedding) Parse() (interface{}, error) {
+	var parsed interface{}
+	parsed = d.Value
+	// Parse as actual Go type so that it will be passed as Object into JS VM
+	if d.ValueType == valueTypeJSON || d.ValueType == valueTypeXML {
+		err := json.Unmarshal(d.Value, &parsed)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse byte array as json even though type has been recognized as XML/JSON: %w", err)
+		}
+	}
+
+	if d.ValueType == valueTypeText {
+		return string(d.Value), nil
+	}
+
+	return parsed, nil
 }
