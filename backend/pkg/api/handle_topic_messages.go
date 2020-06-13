@@ -195,7 +195,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 
 		progress := &progressReporter{api.Logger, &listReq, &sync.Mutex{}, wsConnection, time.NewTicker(300 * time.Millisecond)}
 
-		ctx, cancelCtx := context.WithTimeout(r.Context(), 18*time.Second)
+		ctx, cancelCtx := context.WithTimeout(r.Context(), 10*time.Minute)
 		defer cancelCtx()
 
 		err = api.OwlSvc.ListMessages(ctx, listReq, progress)

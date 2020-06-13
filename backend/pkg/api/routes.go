@@ -1,9 +1,6 @@
 package api
 
 import (
-	"path/filepath"
-	"time"
-
 	healthhttp "github.com/AppsFlyer/go-sundheit/http"
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
@@ -11,6 +8,7 @@ import (
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
+	"path/filepath"
 )
 
 // All the routes for the application are defined in one place.
@@ -28,17 +26,17 @@ func (api *API) routes() *chi.Mux {
 	)
 
 	baseRouter.Group(func(router chi.Router) {
-		// Init middlewares - Do any set up of shared/third-party middleware and handlers
+		// Init middlewares - Do set up of any shared/third-party middleware and handlers
 		if api.Cfg.REST.CompressionLevel > 0 {
 			api.Logger.Debug("using compression for all http routes", zap.Int("level", api.Cfg.REST.CompressionLevel))
 			compressor := chimiddleware.NewCompressor(api.Cfg.REST.CompressionLevel)
-			router.Use(compressor.Handler())
+			router.Use(compressor.Handler)
 		}
 
 		router.Use(
 			middleware.Intercept,
 			instrument.Wrap,
-			chimiddleware.Timeout(15*time.Second),
+			// TODO: Add timeout middleware which allows route excludes
 		)
 
 		// This should be called here so that you can still add middlewares in the hook function.
