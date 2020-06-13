@@ -195,7 +195,12 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 
 		progress := &progressReporter{api.Logger, &listReq, &sync.Mutex{}, wsConnection, time.NewTicker(300 * time.Millisecond)}
 
-		ctx, cancelCtx := context.WithTimeout(r.Context(), 10*time.Minute)
+		// Use 30min duration if we want to search a whole topic
+		duration := 18 * time.Second
+		if listReq.FilterInterpreterCode != "" {
+			duration = 30 * time.Minute
+		}
+		ctx, cancelCtx := context.WithTimeout(r.Context(), duration)
 		defer cancelCtx()
 
 		err = api.OwlSvc.ListMessages(ctx, listReq, progress)
