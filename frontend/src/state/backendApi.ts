@@ -18,7 +18,7 @@ const REST_TIMEOUT_SEC = IsDev ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
 const REST_DEBUG_BASE_URL = null// || "http://localhost:9090"; // only uncommented using "npm run build && serve -s build"
 
-export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T> {
+export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T | null> {
 
     if (REST_DEBUG_BASE_URL) {
         url = REST_DEBUG_BASE_URL + url;
@@ -29,8 +29,11 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
 
     const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
 
-    if (res.status == 401) {
-        await handleUnauthorized401(res);
+    if (res.status == 401) { // Unauthorized
+        await handle401(res);
+    }
+    if (res.status == 403) { // Forbidden
+        return null;
     }
 
     if (!res.ok)
@@ -42,7 +45,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     return data;
 }
 
-async function handleUnauthorized401(res: Response) {
+async function handle401(res: Response) {
     // Logout
     //   Clear our 'User' data if we have any
     //   Any old/invalid JWT will be cleared by the server
