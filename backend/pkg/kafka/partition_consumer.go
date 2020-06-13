@@ -35,11 +35,12 @@ type IListMessagesProgress interface {
 
 // TopicMessage represents a single message from a given Kafka topic/partition
 type TopicMessage struct {
-	PartitionID int32  `json:"partitionID"`
-	Offset      int64  `json:"offset"`
-	Timestamp   int64  `json:"timestamp"`
-	Key         []byte `json:"key"`
+	PartitionID int32 `json:"partitionID"`
+	Offset      int64 `json:"offset"`
+	Timestamp   int64 `json:"timestamp"`
 
+	Key       DirectEmbedding `json:"key"`
+	KeyType   string          `json:"keyType"`
 	Value     DirectEmbedding `json:"value"`
 	ValueType string          `json:"valueType"`
 
@@ -63,8 +64,8 @@ type interpreterArguments struct {
 	PartitionID int32
 	Offset      int64
 	Timestamp   time.Time
-	Key         interface{}
-	Value       interface{}
+	Key         DirectEmbedding
+	Value       DirectEmbedding
 }
 
 type PartitionConsumer struct {
@@ -97,13 +98,15 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 	}
 	defer func() {
 		if errC := pConsumer.Close(); errC != nil {
-			p.Logger.Error("Failed to close partition Consumer", zap.Error(errC))
+			p.Logger.Error("failed to close partition consumer", zap.Error(errC))
 		}
 	}()
 
 	// Setup JS interpreter
-	err = p.SetupInterpreter()
+	isMessageOK, err := p.SetupInterpreter()
 	if err != nil {
+		p.Logger.Error("failed to setup interpreter", zap.Error(err))
+		p.Progress.OnError(fmt.Sprintf("failed to setup interpreter: %v", err.Error()))
 		return
 	}
 
@@ -119,31 +122,36 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 
 			// Run Interpreter filter and check if message passes the filter
 			vType, value := p.getValue(m.Value)
-			ottoValue, err := interpreter.Call("isMessageOk", map[string]interface{}{"hashtag": "xy"})
-			if err != nil {
-				// TODO: Inform frontend what exact messages failed to get evaluated, user might be interested
-				p.Logger.Info("failed to evaluate isMessageOk() method", zap.Error(err))
-				continue
-			}
-
-			isMessageOK, err := ottoValue.ToBoolean()
-			if err != nil {
-				p.Logger.Info("failed to cast return type from interpreter method", zap.Error(err))
-				continue
-			}
+			kType, key := p.getValue(m.Key)
 
 			topicMessage := &TopicMessage{
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp.Unix(),
-				Key:         m.Key,
+				Key:         key,
+				KeyType:     string(kType),
 				Value:       value,
 				ValueType:   string(vType),
 				Size:        len(m.Value),
 				IsValueNull: m.Value == nil,
 			}
 
-			if isMessageOK {
+			// Check if message passes filter code
+			args := interpreterArguments{
+				PartitionID: m.Partition,
+				Offset:      m.Offset,
+				Timestamp:   m.Timestamp,
+				Key:         DirectEmbedding{ValueType: valueTypeText, Value: m.Key}, // TODO: Parse key
+				Value:       value,
+			}
+			isOK, err := isMessageOK(args)
+			if err != nil {
+				// TODO: This might be changed to debug level, because operators probably do not care about user failures?
+				p.Logger.Info("failed to check if message is ok", zap.Error(err))
+				p.Progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v')", m.Partition, m.Offset))
+				return
+			}
+			if isOK {
 				messageCount++
 				p.Progress.OnMessage(topicMessage)
 			}
@@ -202,19 +210,17 @@ func (p *PartitionConsumer) getValue(value []byte) (valueType, DirectEmbedding) 
 // SetupInterpreter initializes the JavaScript interpreter along with the given JS code. It returns a wrapper function
 // which accepts all Kafka message properties (offset, key, value, ...) and returns true (message shall be returned) or false
 // (message shall be filtered).
-func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) bool, error) {
+func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) (bool, error), error) {
 	// In case there's no code for the interpreter let's return a dummy function which always allows all messages
 	if p.FilterInterpreterCode == "" {
-		return func(args interpreterArguments) bool { return true }, nil
+		return func(args interpreterArguments) (bool, error) { return true, nil }, nil
 	}
 
 	vm := otto.New()
 	code := fmt.Sprintf(`interpreter = {isMessageOk: function(partitionId, offset, timestamp, key, value) {%s}}`, p.FilterInterpreterCode)
 	_, err := vm.Run(code)
 	if err != nil {
-		p.Logger.Error("failed to evaluate given interpreter code", zap.Error(err))
-		p.Progress.OnError(fmt.Sprintf("couldn't consume partition %v: %v because interpreter code is invalid", p.Req.PartitionID, err.Error()))
-		return nil, err
+		return nil, fmt.Errorf("failed to compile given interpreter code: %w", err)
 	}
 
 	interpreter, err := vm.Object("interpreter")
@@ -222,23 +228,28 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		return nil, err
 	}
 
-	isMessageOk := func(args interpreterArguments) bool {
-		// TODO: Try to parse key + value from XML/JSON
-		val, err := interpreter.Call("isMessageOk", args.PartitionID, args.Offset, args.Timestamp, args.Key, args.Value)
+	isMessageOk := func(args interpreterArguments) (bool, error) {
+		// Parse kafka key and message to a Go type (interface{} for JSON, string for text, etc)
+		key, err := args.Key.Parse()
 		if err != nil {
-			// TODO: Inform frontend what exact messages failed to get evaluated, user might be interested
-			p.Logger.Info("failed to evaluate isMessageOk() method", zap.Error(err))
-			return false
+			return false, fmt.Errorf("failed to parse key (partition '%v', offset '%v')", args.PartitionID, args.Offset)
+		}
+		value, err := args.Value.Parse()
+		if err != nil {
+			return false, fmt.Errorf("failed to parse value (partition '%v', offset '%v')", args.PartitionID, args.Offset)
 		}
 
+		// Call Javascript function and check if it could be evaluated and whether it returned true or false
+		val, err := interpreter.Call("isMessageOk", args.PartitionID, args.Offset, args.Timestamp, key, value)
+		if err != nil {
+			return false, fmt.Errorf("failed to evaluate javascript code: %w", err)
+		}
 		isOk, err := val.ToBoolean()
 		if err != nil {
-			// TODO: Inform frontend what exact messages failed to get evaluated, user might be interested
-			p.Logger.Info("failed to cast return type from interpreter method", zap.Error(err))
-			return false
+			return false, fmt.Errorf("failed to cast return type to boolean: %w", err)
 		}
 
-		return isOk
+		return isOk, nil
 	}
 
 	return isMessageOk, nil
