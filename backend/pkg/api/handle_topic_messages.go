@@ -30,6 +30,9 @@ type progressReporter struct {
 	websocket *websocket.Conn
 
 	debugDelayTicker *time.Ticker
+
+	messagesConsumed int64
+	bytesConsumed    int64
 }
 
 func (p *progressReporter) OnPhase(name string) {
@@ -41,6 +44,11 @@ func (p *progressReporter) OnPhase(name string) {
 		Type  string `json:"type"`
 		Phase string `json:"phase"`
 	}{"phase", name})
+}
+
+func (p *progressReporter) OnMessageConsumed(size int64) {
+	p.messagesConsumed++
+	p.bytesConsumed += size
 }
 
 func (p *progressReporter) OnMessage(message *kafka.TopicMessage) {
@@ -61,10 +69,12 @@ func (p *progressReporter) OnComplete(elapsedMs float64, isCancelled bool) {
 
 	p.websocket.EnableWriteCompression(false)
 	p.websocket.WriteJSON(struct {
-		Type        string  `json:"type"`
-		ElapsedMs   float64 `json:"elapsedMs"`
-		IsCancelled bool    `json:"isCancelled"`
-	}{"done", elapsedMs, isCancelled})
+		Type             string  `json:"type"`
+		ElapsedMs        float64 `json:"elapsedMs"`
+		IsCancelled      bool    `json:"isCancelled"`
+		MessagesConsumed int64   `json:"messagesConsumed"`
+		BytesConsumed    int64   `json:"bytesConsumed"`
+	}{"done", elapsedMs, isCancelled, p.messagesConsumed, p.bytesConsumed})
 }
 
 func (p *progressReporter) OnError(message string) {
@@ -193,7 +203,15 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			FilterInterpreterCode: interpreterCode,
 		}
 
-		progress := &progressReporter{api.Logger, &listReq, &sync.Mutex{}, wsConnection, time.NewTicker(300 * time.Millisecond)}
+		progress := &progressReporter{
+			logger:           api.Logger,
+			request:          &listReq,
+			wsMutex:          &sync.Mutex{},
+			websocket:        wsConnection,
+			debugDelayTicker: time.NewTicker(300 * time.Millisecond),
+			messagesConsumed: 0,
+			bytesConsumed:    0,
+		}
 
 		// Use 30min duration if we want to search a whole topic
 		duration := 18 * time.Second

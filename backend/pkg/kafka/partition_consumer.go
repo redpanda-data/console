@@ -29,6 +29,7 @@ const (
 type IListMessagesProgress interface {
 	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
 	OnMessage(message *TopicMessage)
+	OnMessageConsumed(size int64)
 	OnComplete(elapsedMs float64, isCancelled bool)
 	OnError(msg string)
 }
@@ -119,6 +120,7 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				p.Progress.OnError(fmt.Sprintf("partition Consumer (partitionId=%v) failed to get the next message (see server log)", p.Req.PartitionID))
 				return
 			}
+			p.Progress.OnMessageConsumed(int64(len(m.Key) + len(m.Value)))
 
 			// Run Interpreter filter and check if message passes the filter
 			vType, value := p.getValue(m.Value)
