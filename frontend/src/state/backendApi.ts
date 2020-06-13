@@ -159,7 +159,7 @@ let currentWS: WebSocket | null = null;
 const apiStore = {
 
     // Data
-    Clusters: ['BigData Prod', 'BigData Staging', 'BigData Dev'],
+    Clusters: ['A', 'B', 'C'],
     ClusterInfo: null as (ClusterInfo | null),
     AdminInfo: null as (AdminInfo | null),
 

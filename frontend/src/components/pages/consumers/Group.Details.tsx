@@ -22,6 +22,7 @@ import { OptionGroup } from "../../../utils/tsxUtils";
 class GroupDetails extends PageComponent<{ groupId: string }> {
     @observable viewMode: 'topic' | 'member' = 'topic';
     @observable onlyShowPartitionsWithLag: boolean = false;
+    @observable forbiddenResourcesEncountered: boolean = false;
 
     initPage(p: PageInitHelper): void {
         const group = this.props.groupId;
@@ -64,10 +65,14 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 setTimeout(() => api.refreshTopics(), 1);
                 allDataLoaded = false;
             }
-            if (!api.TopicPartitions.has(topicName)) {
+            const partitions = api.TopicPartitions.get(topicName);
+            if (partitions === undefined) {
                 console.log('waiting for partitions of topic "' + topicName + '"...');
                 setTimeout(() => api.refreshTopicPartitions(topicName), 1);
                 allDataLoaded = false;
+            } else if (partitions === null) {
+                console.log('no permissions to view partitions of topic "' + topicName + '"');
+                setTimeout(() => this.forbiddenResourcesEncountered = true, 1);
             }
         }
         if (!allDataLoaded)
@@ -116,22 +121,13 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                         />
                     </Space>
 
-                    <Space style={{ margin: '.5rem 0 1rem 0', display: 'none' }} size='large'>
-                        <span>
-                            View:
-                            <Radio.Group value={this.viewMode} onChange={e => this.viewMode = e.target.value} style={{ marginLeft: '.5rem' }}>
-                                <Radio.Button value="member">Members</Radio.Button>
-                                <Radio.Button value="topic">Topics</Radio.Button>
-                            </Radio.Group>
-                        </span>
-                        <span>
-                            Partitions:
-                            <Radio.Group value={this.onlyShowPartitionsWithLag} onChange={e => this.onlyShowPartitionsWithLag = e.target.value} style={{ marginLeft: '.5rem' }}>
-                                <Radio.Button value={false}>All</Radio.Button>
-                                <Radio.Button value={true}>With Lag</Radio.Button>
-                            </Radio.Group>
-                        </span>
-                    </Space>
+                    {this.forbiddenResourcesEncountered &&
+                        <div style={{ padding: '.5em 1em' }}>
+                            Displayed information may be incomplete because you don't have permissions for all required resources
+                        </div>
+                    }
+
+
 
                     {this.viewMode == 'member'
                         ? <GroupByMembers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
@@ -191,8 +187,6 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
         const lagGroupsByTopic = lagsFlat.groupInto(e => e.topicName);
 
         const topicEntries = lagGroupsByTopic.map(g => {
-            const topicPartitionInfo = api.TopicPartitions.get(g.key);
-            const totalLagAssigned = g.items.filter(c => c.assignedMember).sum(c => c.lag ?? 0);
             const totalLagAll = g.items.sum(c => c.lag ?? 0);
             const partitionsAssigned = g.items.filter(c => c.assignedMember).length;
 
