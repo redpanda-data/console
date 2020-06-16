@@ -23,6 +23,7 @@ type GetTopicMessagesResponse struct {
 
 // This thing is given to 'ListMessages' so it can send updates about the search to client
 type progressReporter struct {
+	ctx     context.Context
 	logger  *zap.Logger
 	request *owl.ListMessageRequest
 
@@ -31,8 +32,46 @@ type progressReporter struct {
 
 	debugDelayTicker *time.Ticker
 
+	statsMutex       *sync.RWMutex
 	messagesConsumed int64
 	bytesConsumed    int64
+}
+
+func (p *progressReporter) Start() {
+	// If search is disabled do not report progress regularly as each consumed message will be sent through the socket
+	// anyways
+	if p.request.FilterInterpreterCode == "" {
+		return
+	}
+
+	// Report the current progress every second to the user. If there's a search request which has to browse a whole
+	// topic it may take some time until there are messages. This go routine is in charge of keeping the user up to
+	// date about the progress Kowl made streaming the topic
+	go func() {
+		for {
+			select {
+			case <-p.ctx.Done():
+				return
+			default:
+				p.reportProgress()
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+}
+
+func (p *progressReporter) reportProgress() {
+	p.wsMutex.Lock()
+	p.statsMutex.RLock()
+	defer p.wsMutex.Unlock()
+	defer p.statsMutex.RUnlock()
+
+	p.websocket.EnableWriteCompression(false)
+	p.websocket.WriteJSON(struct {
+		Type             string `json:"type"`
+		MessagesConsumed int64  `json:"messagesConsumed"`
+		BytesConsumed    int64  `json:"bytesConsumed"`
+	}{"progressUpdate", p.messagesConsumed, p.bytesConsumed})
 }
 
 func (p *progressReporter) OnPhase(name string) {
@@ -47,6 +86,9 @@ func (p *progressReporter) OnPhase(name string) {
 }
 
 func (p *progressReporter) OnMessageConsumed(size int64) {
+	p.statsMutex.Lock()
+	defer p.statsMutex.Unlock()
+
 	p.messagesConsumed++
 	p.bytesConsumed += size
 }
@@ -203,16 +245,6 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			FilterInterpreterCode: interpreterCode,
 		}
 
-		progress := &progressReporter{
-			logger:           api.Logger,
-			request:          &listReq,
-			wsMutex:          &sync.Mutex{},
-			websocket:        wsConnection,
-			debugDelayTicker: time.NewTicker(300 * time.Millisecond),
-			messagesConsumed: 0,
-			bytesConsumed:    0,
-		}
-
 		// Use 30min duration if we want to search a whole topic
 		duration := 18 * time.Second
 		if listReq.FilterInterpreterCode != "" {
@@ -220,6 +252,19 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 		ctx, cancelCtx := context.WithTimeout(r.Context(), duration)
 		defer cancelCtx()
+
+		progress := &progressReporter{
+			ctx:              ctx,
+			logger:           api.Logger,
+			request:          &listReq,
+			wsMutex:          &sync.Mutex{},
+			websocket:        wsConnection,
+			debugDelayTicker: time.NewTicker(300 * time.Millisecond),
+			statsMutex:       &sync.RWMutex{},
+			messagesConsumed: 0,
+			bytesConsumed:    0,
+		}
+		progress.Start()
 
 		err = api.OwlSvc.ListMessages(ctx, listReq, progress)
 		if err != nil {
