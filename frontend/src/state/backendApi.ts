@@ -222,6 +222,8 @@ const apiStore = {
         }
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
+            // double assignment makes sense: when the phase changes to null, some observing components will play a "fade out" animation, using the last (non-null) value
+            this.MessageSearchPhase = "Done";
             this.MessageSearchPhase = null;
             console.log(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
         }

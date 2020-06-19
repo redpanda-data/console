@@ -11,7 +11,7 @@ import prettyMilliseconds from 'pretty-ms';
 import prettyBytes from 'pretty-bytes';
 import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction, autorun, IReactionDisposer } from "mobx";
+import { observable, computed, transaction, autorun, IReactionDisposer, untracked } from "mobx";
 import { findElementDeep, cullText, getAllKeys, ToJson, simpleUniqueId } from "../../../utils/utils";
 import { animProps, MotionAlways, MotionDiv, MotionSpan, animProps_span_messagesStatus } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -61,6 +61,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     autoSearchReaction: IReactionDisposer | null = null;
     quickSearchReaction: IReactionDisposer | null = null;
 
+    currentSearchRun: string | null = null;
+
     constructor(props: { topic: TopicDetail }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
@@ -80,24 +82,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
 
         // Auto search when parameters change
-        let currentSearchRun: string | null = null;
-        this.autoSearchReaction = autorun(() => {
-            if (currentSearchRun) return;
-            try {
-                const params = uiState.topicSettings.searchParams;
-                console.log('autorun search: ' + ToJson(params));
-                // 1. trigger mobx: let it know we are interested in those props
-                // 2. prevent recursive updates
-                currentSearchRun = String(params._offsetMode) + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
 
-                if (this.fetchError == null)
-                    this.executeMessageSearch();
-            } catch (error) {
-                console.error(error);
-            } finally {
-                currentSearchRun = null;
-            }
-        }, { delay: 100, name: 'auto search when parameters change' });
+        this.autoSearchReaction = autorun(() => this.searchFunc('auto'), { delay: 100, name: 'auto search when parameters change' });
 
         // Quick search -> url
         this.quickSearchReaction = autorun(() => {
@@ -186,6 +172,15 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 </Label>
 
                 {/* Refresh Button */}
+                <div style={{ ...spaceStyle }}>
+                    <Tooltip title='Repeat current search'>
+                        <Button type='primary' onClick={() => this.searchFunc('manual')} disabled={api.MessageSearchPhase != null}>
+                            <SyncIcon size={16} />
+                        </Button>
+                    </Tooltip>
+                </div>
+
+                {/* Button (live search?) */}
                 {/* <div style={{ ...spaceStyle }}>
                     <Input.Group compact>
                         <Tooltip title='Load more messages'>
@@ -232,6 +227,29 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         </React.Fragment>
     });
+
+    searchFunc = (source: 'auto' | 'manual') => {
+        if (this.currentSearchRun)
+            return console.log(`searchFunc: function already in progress (trigger:${source})`);
+
+        const phase = untracked(() => api.MessageSearchPhase);
+        if (phase)
+            return console.log(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
+
+        try {
+            const params = uiState.topicSettings.searchParams;
+            // 1. trigger mobx: let it know we are interested in those props
+            // 2. prevent recursive updates
+            this.currentSearchRun = String(params._offsetMode) + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
+
+            if (this.fetchError == null)
+                this.executeMessageSearch();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            this.currentSearchRun = null;
+        }
+    }
 
     isFilterMatch(str: string, m: TopicMessage) {
         str = str.toLowerCase();
