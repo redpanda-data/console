@@ -4,7 +4,7 @@ import { Layout, Menu, PageHeader, Button } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
 import { RenderTrap, DebugDisplay } from './misc/common';
-import { DebugTimerStore } from '../utils/utils';
+import { DebugTimerStore, ToJson } from '../utils/utils';
 import { api } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
@@ -229,6 +229,7 @@ const AppContent = observer(() =>
     </Layout>
 );
 
+@observer
 export default class App extends Component {
 
     render() {
@@ -257,7 +258,6 @@ export default class App extends Component {
     }
 
     loginHandling(): JSX.Element | null {
-
         if (!IsBusiness)
             return null; // free version has no login handling
 
@@ -275,12 +275,12 @@ export default class App extends Component {
         }
 
         if (api.UserData === undefined) {
-            devPrint('user is undefined (this is most likely a fresh page load)');
+            devPrint('user is undefined (probably a fresh page load)');
 
             fetchWithTimeout('/api/users/me', 10 * 1000).then(async r => {
                 if (r.ok) {
+                    devPrint('user fetched');
                     api.UserData = await r.json() as UserData;
-                    devPrint('user fetched, success');
                 } else if (r.status == 401) { // unauthorized / not logged in
                     devPrint('not logged in');
                     api.UserData = null;
@@ -295,7 +295,6 @@ export default class App extends Component {
                 }
             });
 
-            // don't render anything until we know if we're already logged in or not
             return preLogin;
         } else {
             if (!uiState.isUsingDebugUserLogin)
