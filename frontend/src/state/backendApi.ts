@@ -285,11 +285,13 @@ const apiStore = {
                     if (!t.allowedActions) continue;
 
                     // DEBUG: randomly remove some allowedActions
+                    /*
                     const numToRemove = Math.round(Math.random() * t.allowedActions.length);
                     for (let i = 0; i < numToRemove; i++) {
                         const randomIndex = Math.round(Math.random() * (t.allowedActions.length - 1));
                         t.allowedActions.splice(randomIndex, 1);
                     }
+                    */
                 }
                 this.Topics = v.topics;
             }, addError);
