@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip, Popover } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../../state/backendApi";
@@ -11,11 +11,11 @@ import { groupConsecutive } from "../../../utils/utils";
 import { observable, autorun } from "mobx";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
-import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone } from '@ant-design/icons';
+import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { Radio } from 'antd';
 import { TablePaginationConfig } from "antd/lib/table";
 import Octicon, { Skip } from "@primer/octicons-react";
-import { OptionGroup } from "../../../utils/tsxUtils";
+import { OptionGroup, QuickTable } from "../../../utils/tsxUtils";
 
 
 @observer
@@ -331,19 +331,41 @@ const renderMergedID = (id?: string, clientId?: string) => {
 
 
 const stateIcons = new Map<string, JSX.Element>([
-    ['dead', <FireTwoTone twoToneColor='orangered' />],
+    ['stable', <CheckCircleTwoTone twoToneColor='#52c41a' />],
+    ['completingrebalance', <HourglassTwoTone twoToneColor='#52c41a' />],
     ['preparingrebalance', <HourglassTwoTone twoToneColor='orange' />],
     ['empty', <WarningTwoTone twoToneColor='orange' />],
-    ['stable', <CheckCircleTwoTone twoToneColor='#52c41a' />],
+    ['dead', <FireTwoTone twoToneColor='orangered' />],
+    ['unknown', <QuestionCircleOutlined />],
 ]);
+const makeStateEntry = (iconName: string, displayName: string, description: string): [any, any] => [
+    <span>{stateIcons.get(iconName)} <span style={{ fontSize: '85%', fontWeight: 600 }}>{displayName}</span></span>,
+    <div style={{ maxWidth: '350px' }}>{description}</div>
+]
+
+const consumerGroupStateTable = QuickTable([
+    makeStateEntry('stable', "Stable", "Consumer group has members which have been assigned partitions"),
+    makeStateEntry('completingrebalance', "Completing Rebalance", "Kafka is assigning partitions to group members"),
+    makeStateEntry('preparingrebalance', "Preparing Rebalance", "A reassignment of partitions is required, members have been asked to stop consuming"),
+    makeStateEntry('empty', "Empty", "Consumer group exists, but does not have any members"),
+    makeStateEntry('dead', "Dead", "Consumer group does not have any members and it's metadata has been removed"),
+    makeStateEntry('unknown', "Unknown", "Group state is not known"),
+], {
+    gutterHeight: '.5em',
+    gutterWidth: '.5em',
+    keyStyle: { verticalAlign: 'top' },
+});
+
 export const GroupState = (p: { group: GroupDescription }) => {
     const state = p.group.state.toLowerCase();
     const icon = stateIcons.get(state);
-    // todo...
-    return <>
-        {icon}
-        <span> {p.group.state}</span>
-    </>
+
+    return <Popover content={consumerGroupStateTable} placement='right'>
+        <span>
+            {icon}
+            <span> {p.group.state}</span>
+        </span>
+    </Popover>
 }
 const ProtocolType = (p: { group: GroupDescription }) => {
     const protocol = p.group.protocolType;
