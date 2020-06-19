@@ -1,5 +1,8 @@
 
 
+export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'viewConsumers', 'viewConfig'] as const;
+export type TopicAction = 'all' | typeof TopicActions[number];
+
 export class TopicDetail {
     topicName: string;
     isInternal: boolean;
@@ -7,6 +10,7 @@ export class TopicDetail {
     replicationFactor: number;
     cleanupPolicy: string;
     logDirSize: number; // how much space this topic takes up (files in its log dir)
+    allowedActions: TopicAction[] | undefined;
 
     // Added by frontend
     // messageCount: number;
@@ -101,13 +105,19 @@ export interface GroupMemberDescription {
     assignments: GroupMemberAssignment[]; // topics+partitions that the worker is assigned to
 
 }
+
+
+export const GroupActions = ['seeConsumerGroup'] as const;
+export type GroupAction = 'all' | typeof GroupActions[number];
+
 export interface GroupDescription {
     groupId: string; // name of the group
     state: string; // Dead, Initializing, Rebalancing, Stable
-    members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
+    members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     coordinatorId: number;
     lag: GroupLagDescription;
+    allowedActions: GroupAction[];
 
     // Computed by frontend
     lagSum: number;

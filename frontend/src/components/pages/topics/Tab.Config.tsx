@@ -1,5 +1,5 @@
 import React from "react";
-import { TopicConfigEntry } from "../../../state/restInterfaces";
+import { TopicConfigEntry, TopicDetail } from "../../../state/restInterfaces";
 import {
     Tooltip,
     Descriptions,
@@ -7,7 +7,9 @@ import {
     Checkbox,
     Select,
     Input,
-    Typography
+    Typography,
+    Row,
+    Space
 } from "antd";
 import { observer } from "mobx-react";
 import { uiSettings } from "../../../state/ui";
@@ -18,6 +20,8 @@ import Paragraph from "antd/lib/typography/Paragraph";
 import "../../../utils/arrayExtensions";
 import Icon, { HighlightTwoTone } from '@ant-design/icons';
 import { uiState } from "../../../state/uiState";
+import { OptionGroup } from "../../../utils/tsxUtils";
+import { api } from "../../../state/backendApi";
 
 const { Text } = Typography;
 
@@ -26,33 +30,73 @@ const { Text } = Typography;
 
 // Full topic configuration
 export const TopicConfiguration = observer(
-    (p: { config: TopicConfigEntry[] }) => (
-        <Descriptions
-            bordered
-            size="small"
-            colon={true}
-            layout="horizontal"
-            column={1}
-            style={{ display: "inline-block" }}
-        >
-            {p.config
-                .filter(e =>
-                    uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isDefault : true
-                )
-                .sort((a, b) => {
-                    if (uiSettings.topicList.propsOrder != 'changedFirst') return 0;
-                    const v1 = a.isDefault ? 1 : 0;
-                    const v2 = b.isDefault ? 1 : 0;
-                    return v1 - v2;
-                })
-                .map(e => (
-                    <Descriptions.Item key={e.name} label={DataName(e)}>
-                        {DataValue(e)}
-                    </Descriptions.Item>
-                ))}
-        </Descriptions>
-    )
+    (p: { topic: TopicDetail }) => {
+        const config = api.TopicConfig.get(p.topic.topicName);
+
+        return <>
+            <ConfigDisplaySettings />
+            <Descriptions
+                bordered
+                size="small"
+                colon={true}
+                layout="horizontal"
+                column={1}
+                style={{ display: "inline-block" }}
+            >
+                {config && config.filter(e => uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isDefault : true)
+                    .sort((a, b) => {
+                        if (uiSettings.topicList.propsOrder != 'changedFirst') return 0;
+                        const v1 = a.isDefault ? 1 : 0;
+                        const v2 = b.isDefault ? 1 : 0;
+                        return v1 - v2;
+                    })
+                    .map(e => (
+                        <Descriptions.Item key={e.name} label={DataName(e)}>
+                            {DataValue(e)}
+                        </Descriptions.Item>
+                    ))}
+            </Descriptions>
+        </>
+    }
 );
+
+
+
+const ConfigDisplaySettings = observer(() =>
+    <div style={{ marginLeft: '1px', marginBottom: '1.5em' }}>
+        <Row>
+            <Space size='large'>
+
+                <OptionGroup label='Formatting'
+                    options={{
+                        "Friendly": 'friendly',
+                        "Raw": 'raw'
+                    }}
+                    value={uiSettings.topicList.valueDisplay}
+                    onChange={s => uiSettings.topicList.valueDisplay = s}
+                />
+
+                <OptionGroup label='Filter'
+                    options={{
+                        "Show All": 'all',
+                        "Only Changed": 'onlyChanged'
+                    }}
+                    value={uiSettings.topicList.propsFilter}
+                    onChange={s => uiSettings.topicList.propsFilter = s}
+                />
+
+                <OptionGroup label='Sort'
+                    options={{
+                        "None": 'default',
+                        "Changed First": 'changedFirst',
+                    }}
+                    value={uiSettings.topicList.propsOrder}
+                    onChange={s => uiSettings.topicList.propsOrder = s}
+                />
+            </Space>
+        </Row>
+    </div>);
+
 
 const markerIcon = (
     <HighlightTwoTone twoToneColor="#1890ff" style={{ fontSize: "1.5em", marginRight: ".25em" }} />

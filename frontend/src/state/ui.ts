@@ -2,7 +2,7 @@ import { observable, autorun } from "mobx";
 import { touch, assignDeep } from "../utils/utils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicMessageOffset, TopicMessageDirection, TopicMessageSortBy, TopicMessageSearchParameters } from "./backendApi";
-import { TopicDetailsTab } from "../components/pages/topics/Topic.Details";
+import { TopicTabId } from "../components/pages/topics/Topic.Details";
 
 const settingsName = 'uiSettings-v2';
 
@@ -47,7 +47,7 @@ const uiSettings = observable({
     sideBarOpen: true,
     selectedClusterIndex: 0,
     perTopicSettings: [] as TopicDetailsSettings[], // don't use directly, instead use uiState.topicDetails
-    topicDetailsActiveTabKey: undefined as TopicDetailsTab,
+    topicDetailsActiveTabKey: undefined as TopicTabId | undefined,
 
     // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
     brokerList: {

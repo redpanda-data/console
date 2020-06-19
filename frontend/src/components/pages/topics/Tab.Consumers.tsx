@@ -1,34 +1,18 @@
 import React, { Component } from "react";
-import { TopicConfigEntry, TopicDetail } from "../../../state/restInterfaces";
+import { TopicDetail } from "../../../state/restInterfaces";
 import {
-    Tooltip,
-    Descriptions,
-    Popover,
-    Checkbox,
-    Select,
-    Input,
-    Typography,
     Table,
     Skeleton
 } from "antd";
 import { observer } from "mobx-react";
-import { uiSettings } from "../../../state/ui";
-import prettyMilliseconds from "pretty-ms";
-import prettyBytes from "pretty-bytes";
-import topicConfigInfo from "../../../assets/topicConfigInfo.json";
-import Paragraph from "antd/lib/typography/Paragraph";
+
 import "../../../utils/arrayExtensions";
-import { uiState } from "../../../state/uiState";
+
 import { api } from "../../../state/backendApi";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
 import { appGlobal } from "../../../state/appGlobal";
 import { sortField, makePaginationConfig } from "../../misc/common";
-import { TablePaginationConfig } from "antd/lib/table";
-import Icon from '@ant-design/icons';
-
-const { Text } = Typography;
-
 
 @observer
 export class TopicConsumers extends Component<{ topic: TopicDetail }> {

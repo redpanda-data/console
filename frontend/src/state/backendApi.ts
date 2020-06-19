@@ -18,7 +18,7 @@ const REST_TIMEOUT_SEC = IsDev ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
 const REST_DEBUG_BASE_URL = null// || "http://localhost:9090"; // only uncommented using "npm run build && serve -s build"
 
-export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T> {
+export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T | null> {
 
     if (REST_DEBUG_BASE_URL) {
         url = REST_DEBUG_BASE_URL + url;
@@ -29,8 +29,11 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
 
     const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
 
-    if (res.status == 401) {
-        await handleUnauthorized(res);
+    if (res.status == 401) { // Unauthorized
+        await handle401(res);
+    }
+    if (res.status == 403) { // Forbidden
+        return null;
     }
 
     if (!res.ok)
@@ -42,7 +45,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     return data;
 }
 
-async function handleUnauthorized(res: Response) {
+async function handle401(res: Response) {
     // Logout
     //   Clear our 'User' data if we have any
     //   Any old/invalid JWT will be cleared by the server
@@ -156,14 +159,17 @@ let currentWS: WebSocket | null = null;
 const apiStore = {
 
     // Data
-    Clusters: ['BigData Prod', 'BigData Staging', 'BigData Dev'],
-    Topics: null as (TopicDetail[] | null),
-    ConsumerGroups: null as (GroupDescription[] | null),
-    TopicConfig: new Map<string, TopicConfigEntry[]>(),
-    TopicPartitions: new Map<string, Partition[]>(),
-    TopicConsumers: new Map<string, TopicConsumer[]>(),
+    Clusters: ['A', 'B', 'C'],
     ClusterInfo: null as (ClusterInfo | null),
     AdminInfo: null as (AdminInfo | null),
+
+    Topics: null as (TopicDetail[] | null),
+    TopicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
+    TopicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
+    TopicConsumers: new Map<string, TopicConsumer[]>(),
+
+    ConsumerGroups: null as (GroupDescription[] | null),
+
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -275,21 +281,19 @@ const apiStore = {
     refreshTopics(force?: boolean) {
         cachedApiRequest<GetTopicsResponse>('/api/topics', force)
             .then(v => {
-                for (let t of v.topics) {
-                    // t.messageCount = ...
-                }
+                for (const t of v.topics) {
+                    if (!t.allowedActions) continue;
 
+                    // DEBUG: randomly remove some allowedActions
+                    /*
+                    const numToRemove = Math.round(Math.random() * t.allowedActions.length);
+                    for (let i = 0; i < numToRemove; i++) {
+                        const randomIndex = Math.round(Math.random() * (t.allowedActions.length - 1));
+                        t.allowedActions.splice(randomIndex, 1);
+                    }
+                    */
+                }
                 this.Topics = v.topics;
-            }, addError);
-    },
-
-    refreshConsumerGroups(force?: boolean) {
-        cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
-            .then(v => {
-                for (let g of v.consumerGroups) {
-                    g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
-                }
-                this.ConsumerGroups = v.consumerGroups;
             }, addError);
     },
 
@@ -308,9 +312,20 @@ const apiStore = {
             .then(v => this.TopicConsumers.set(v.topicName, v.topicConsumers), addError);
     },
 
+
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`/api/cluster`, force)
             .then(v => this.ClusterInfo = v.clusterInfo, addError);
+    },
+
+    refreshConsumerGroups(force?: boolean) {
+        cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
+            .then(v => {
+                for (const g of v.consumerGroups) {
+                    g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
+                }
+                this.ConsumerGroups = v.consumerGroups;
+            }, addError);
     },
 
     refreshAdminInfo(force?: boolean) {

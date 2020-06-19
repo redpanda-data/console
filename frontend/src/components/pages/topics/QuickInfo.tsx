@@ -24,22 +24,35 @@ import { FavoritePopover, FormatValue } from "./Tab.Config";
 
 
 // todo: rename QuickInfo
-export const TopicQuickInfoStatistic = observer((p: { config: TopicConfigEntry[], size: number, messageCount: string | null }) => {
+export const TopicQuickInfoStatistic = observer((p: { topicName: string }) => {
+
+    const topic = api.Topics?.first(t => t.topicName == p.topicName);
+    if (topic === undefined) return null; // not ready yet
+
+    const topicConfig = api.TopicConfig.get(p.topicName);
+
+    const partitions = api.TopicPartitions.get(p.topicName);
+    let messageSum: null | string;
+    if (partitions === undefined) messageSum = '...'; // waiting...
+    else if (partitions === null) messageSum = null; // hide
+    else messageSum = partitions.sum(p => (p.waterMarkHigh - p.waterMarkLow)).toString();
+
 
     return <Row >
 
-        <Statistic title='Size' value={prettyBytes(p.size)} />
-        {p.messageCount && <Statistic title='Messages' value={p.messageCount} />}
+        <Statistic title='Size' value={prettyBytes(topic.logDirSize)} />
+        {messageSum && <Statistic title='Messages' value={messageSum} />}
 
         {uiState.topicSettings.favConfigEntries.filter(tce => !!tce).length > 0
-            && <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />}
+            ? <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
+            : null}
 
         {
-            uiState.topicSettings.favConfigEntries
-                .map(fce => p.config.find(tce => tce.name === fce))
-                .filter(tce => !!tce)
-                .map(tce =>
-                    FavoritePopover(tce!, <Statistic title={(tce!.name)} value={FormatValue(tce!)} />)
+            topicConfig && uiState.topicSettings.favConfigEntries
+                .map(fav => topicConfig.find(tce => tce.name === fav))
+                .filter(tce => tce)
+                .map(configEntry =>
+                    FavoritePopover(configEntry!, <Statistic title={(configEntry!.name)} value={FormatValue(configEntry!)} />)
                 )
         }
     </Row>

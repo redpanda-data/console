@@ -7,6 +7,7 @@
 - [FEATURE] Additional filter options (case sensitivity and multi results) for field previews
 - [ENHANCEMENT] In the message table, long keys will now be truncated (>45 chars). Click on a key to show a dialog containing the full key
 - [ENHANCEMENT] Statistics elements will now reduce their size on smaller screens
+- [ENHANCEMENT] If you are missing some permissions for a topic (for example: can't view config, or can't view messages), there's now an icon that will be shown for that topic in the topic list. Hovering over it will show the permission details.
 - [BUGFIX] Fixed the calculation of replicated and total partitions
 - [BUGFIX] Preview Tags: properties shown are now in the correct casing (as they are defined in the object)
 
