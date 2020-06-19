@@ -45,11 +45,22 @@ const DefaultQuickTableOptions = {
     gutterWidth: '.5em' as string | number,
     gutterHeight: 0 as string | number,
     keyStyle: undefined as React.CSSProperties | undefined,
+    valueStyle: undefined as React.CSSProperties | undefined,
     tableStyle: undefined as React.CSSProperties | undefined,
 }
 type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>
 
-export function QuickTable(data: { key: any, value: any }[], options?: QuickTableOptions): JSX.Element {
+export function QuickTable(data: [any, any][], options?: QuickTableOptions): JSX.Element;
+export function QuickTable(data: { key: any, value: any }[], options?: QuickTableOptions): JSX.Element;
+
+export function QuickTable(data: { key: any, value: any }[] | [any, any][], options?: QuickTableOptions): JSX.Element {
+    // Convert data elements from arrays to objects
+    let entries: { key: any, value: any }[];
+    if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0]))
+        entries = (data as [any, any][]).map(ar => ({ key: ar[0], value: ar[1] }));
+    else
+        entries = data as { key: any, value: any }[];
+
     const o: QuickTableOptions = {}; // create new options object (because we don't want to pollute the one the user gave us)
 
     {
@@ -70,15 +81,15 @@ export function QuickTable(data: { key: any, value: any }[], options?: QuickTabl
 
     return <table className={o.tableClassName} style={o.tableStyle}>
         <tbody>
-            {data.map((obj, i) =>
+            {entries.map((obj, i) =>
                 <React.Fragment key={i}>
                     <tr>
                         <td style={{ textAlign: o.keyAlign, ...o.keyStyle }}>{obj.key}</td>
                         <td style={{ paddingLeft: o.gutterWidth }}></td>
-                        <td>{obj.value}</td>
+                        <td style={{ ...o.valueStyle }}>{obj.value}</td>
                     </tr>
 
-                    {showVerticalGutter && (i < data.length - 1) &&
+                    {showVerticalGutter && (i < entries.length - 1) &&
                         <tr>
                             <td style={{ padding: 0, paddingBottom: o.gutterHeight }}></td>
                         </tr>
