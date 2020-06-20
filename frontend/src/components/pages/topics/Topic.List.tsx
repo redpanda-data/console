@@ -109,13 +109,18 @@ class TopicList extends PageComponent {
                             ({
                                 onClick: () => appGlobal.history.push('/topics/' + record.topicName),
                             })}
-                        onChange={x => { if (x.pageSize) { uiSettings.topicList.pageSize = x.pageSize; this.pageConfig.pageSize = x.pageSize; } }}
-                        rowClassName={() => 'hoverLink'}
                         pagination={this.pageConfig}
+                        onChange={(pagination) => {
+                            if (pagination.pageSize) uiSettings.topicList.pageSize = pagination.pageSize;
+                            this.pageConfig.current = pagination.current;
+                            this.pageConfig.pageSize = pagination.pageSize;
+                        }}
+                        rowClassName={() => 'hoverLink'}
                         dataSource={data}
                         rowKey={x => x.topicName}
+                        showSorterTooltip={false}
                         columns={[
-                            { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', showSorterTooltip: false, defaultSortOrder: 'ascend' },
+                            { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', defaultSortOrder: 'ascend' },
                             { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
                             { title: 'Replication', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
                             { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', sorter: sortField('cleanupPolicy'), width: 1 },

@@ -32,6 +32,7 @@ import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
 import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined } from '@ant-design/icons';
 import { ErrorBoundary } from "../../misc/ErrorBoundary";
+import { SortOrder } from "antd/lib/table/interface";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -41,8 +42,6 @@ const InputGroup = Input.Group;
     TODO:
         - when the user has entered a specific offset, we should prevent selecting 'all' partitions, as that wouldn't make any sense.
         - add back summary of quick search  <this.FilterSummary />
-
-
 */
 
 @observer
@@ -55,7 +54,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     @observable fetchError = null as Error | null;
 
-    pageConfig = makePaginationConfig(uiState.topicSettings.pageSize);
+    pageConfig = makePaginationConfig(uiState.topicSettings.messagesPageSize);
     messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch, 16);
 
     autoSearchReaction: IReactionDisposer | null = null;
@@ -314,7 +313,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => new Date(t * 1000).toLocaleString() },
-            { width: 3, title: 'Key', dataIndex: 'key', render: renderKey },
+            { width: 3, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
             {
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
@@ -348,10 +347,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 <Table
                     style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
                     size='middle'
+                    showSorterTooltip={false}
                     pagination={this.pageConfig}
-
-                    onChange={(pagination, filters, sorter, extra) => {
-                        if (pagination.pageSize) uiState.topicSettings.pageSize = pagination.pageSize;
+                    onChange={(pagination) => {
+                        if (pagination.pageSize) uiState.topicSettings.messagesPageSize = pagination.pageSize;
                         this.pageConfig.current = pagination.current;
                         this.pageConfig.pageSize = pagination.pageSize;
                     }}
@@ -379,6 +378,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             </ConfigProvider>
         </>
     })
+
+    keySorter(a: TopicMessage, b: TopicMessage, sortOrder?: SortOrder): number {
+        const ta = String(a.key) ?? "";
+        const tb = String(b.key) ?? "";
+        return ta.localeCompare(tb);
+    }
 
     copyMessage(record: TopicMessage) {
         navigator.clipboard.writeText(record.valueJson);

@@ -16,6 +16,7 @@ import { Radio } from 'antd';
 import { TablePaginationConfig } from "antd/lib/table";
 import Octicon, { Skip } from "@primer/octicons-react";
 import { OptionGroup, QuickTable } from "../../../utils/tsxUtils";
+import { uiSettings } from "../../../state/ui";
 
 
 @observer
@@ -210,17 +211,21 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                 }>
 
                 <Table
-                    size='small'
+                    size='small' showSorterTooltip={false}
                     pagination={this.pageConfig}
+                    onChange={(pagination) => {
+                        if (pagination.pageSize) uiSettings.consumerGroupDetails.pageSize = pagination.pageSize;
+                        this.pageConfig.current = pagination.current;
+                        this.pageConfig.pageSize = pagination.pageSize;
+                    }}
                     dataSource={g.items}
                     rowKey={r => r.partitionId}
                     rowClassName={(r) => (r.assignedMember) ? '' : 'consumerGroupNoMemberAssigned'}
                     columns={[
                         { width: 100, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
                         {
-                            width: 'auto', title: 'Assigned Member', dataIndex: 'id', render: (t, r) =>
-                                (renderMergedID(r.id, r.clientId))
-                                ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><Octicon icon={Skip} /> no assigned member</span>
+                            width: 'auto', title: 'Assigned Member', dataIndex: 'id', sorter: sortField('id'),
+                            render: (t, r) => (renderMergedID(r.id, r.clientId)) ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><Octicon icon={Skip} /> no assigned member</span>
                         },
                         { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
                         { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },

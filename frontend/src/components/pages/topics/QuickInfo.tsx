@@ -1,25 +1,11 @@
-import { Component, ReactNode, CSSProperties } from "react";
 import React from "react";
-import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
+import { TopicConfigEntry } from "../../../state/restInterfaces";
+import { Row, Statistic } from "antd";
 import { observer } from "mobx-react";
-import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
-import { uiSettings, PreviewTag } from "../../../state/ui";
-import ReactJson, { CollapsedFieldProps } from 'react-json-view'
-import { PageComponent, PageInitHelper } from "../Page";
-import prettyMilliseconds from 'pretty-ms';
+import { api } from "../../../state/backendApi";
 import prettyBytes from 'pretty-bytes';
-import topicConfigInfo from '../../../assets/topicConfigInfo.json'
-import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
-import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction } from "mobx";
-import { findElementDeep, cullText, getAllKeys } from "../../../utils/utils";
-import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
-import Paragraph from "antd/lib/typography/Paragraph";
-import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { FavoritePopover, FormatValue } from "./Tab.Config";
 
 
@@ -29,14 +15,14 @@ export const TopicQuickInfoStatistic = observer((p: { topicName: string }) => {
     const topic = api.Topics?.first(t => t.topicName == p.topicName);
     if (topic === undefined) return null; // not ready yet
 
-    const topicConfig = api.TopicConfig.get(p.topicName);
+    let topicConfig = filterTopicConfig(api.TopicConfig.get(p.topicName));
+    if (!topicConfig) return null;
 
     const partitions = api.TopicPartitions.get(p.topicName);
     let messageSum: null | string;
     if (partitions === undefined) messageSum = '...'; // waiting...
     else if (partitions === null) messageSum = null; // hide
     else messageSum = partitions.sum(p => (p.waterMarkHigh - p.waterMarkLow)).toString();
-
 
     return <Row >
 
@@ -49,7 +35,7 @@ export const TopicQuickInfoStatistic = observer((p: { topicName: string }) => {
 
         {
             topicConfig && uiState.topicSettings.favConfigEntries
-                .map(fav => topicConfig.find(tce => tce.name === fav))
+                .map(fav => topicConfig!.find(tce => tce.name === fav))
                 .filter(tce => tce)
                 .map(configEntry =>
                     FavoritePopover(configEntry!, <Statistic title={(configEntry!.name)} value={FormatValue(configEntry!)} />)
@@ -57,3 +43,17 @@ export const TopicQuickInfoStatistic = observer((p: { topicName: string }) => {
         }
     </Row>
 })
+
+function filterTopicConfig(config: TopicConfigEntry[] | null | undefined): TopicConfigEntry[] | null | undefined {
+    if (!config) return config;
+
+    const newConfig: TopicConfigEntry[] = [];
+    for (const e of config) newConfig.push(e);
+
+    if (config.find(e => e.name == 'cleanup.policy' && e.value.includes('compact'))) {
+        // this is a compacted topic, 'retention.bytes', 'retention.ms' don't apply, so hide them
+        newConfig.removeAll(e => e.name == 'retention.bytes' || e.name == 'retention.ms');
+    }
+
+    return newConfig;
+}

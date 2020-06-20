@@ -41,13 +41,15 @@ export class AdminUsers extends Component<{}> {
 
         const table = <Table
             size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
+            showSorterTooltip={false}
+
             dataSource={users}
             rowKey={x => x.name}
             rowClassName={() => 'hoverLink'}
             columns={[
-                { width: 2, title: 'Name', dataIndex: 'name' },
-                { width: undefined, title: 'Roles', dataIndex: 'roleNames', render: (t, r, i) => r.roleNames.join(', ') },
-                { width: 1, title: 'Login', dataIndex: 'loginProvider' },
+                { width: 2, title: 'Name', dataIndex: 'name', sorter: sortField('name') },
+                { width: undefined, title: 'Roles', dataIndex: 'roleNames', render: (t, r, i) => r.roleNames.join(', ') }, // can't sort
+                { width: 1, title: 'Login', dataIndex: 'loginProvider', sorter: sortField('loginProvider') },
             ]}
             // expandIconAsCell={false}
             expandIconColumnIndex={-1}

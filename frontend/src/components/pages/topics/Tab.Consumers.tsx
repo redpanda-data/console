@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
 import { appGlobal } from "../../../state/appGlobal";
 import { sortField, makePaginationConfig } from "../../misc/common";
+import { uiState } from "../../../state/uiState";
 
 @observer
 export class TopicConsumers extends Component<{ topic: TopicDetail }> {
@@ -31,11 +32,17 @@ export class TopicConsumers extends Component<{ topic: TopicDetail }> {
         return <div>
             <Table
                 style={{ margin: '0', padding: '0' }} size='middle'
+                showSorterTooltip={false}
                 onRow={(record) =>
                     ({
                         onClick: () => appGlobal.history.push('/groups/' + record.groupId),
                     })}
                 pagination={this.pageConfig}
+                onChange={(pagination) => {
+                    if (pagination.pageSize) uiState.topicSettings.consumerPageSize = pagination.pageSize;
+                    this.pageConfig.current = pagination.current;
+                    this.pageConfig.pageSize = pagination.pageSize;
+                }}
                 rowClassName={() => 'hoverLink'}
                 dataSource={consumers}
                 rowKey={x => x.groupId}

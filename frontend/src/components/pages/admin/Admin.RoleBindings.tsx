@@ -41,12 +41,13 @@ export class AdminRoleBindings extends Component<{}> {
 
         const table = <Table
             size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
+            showSorterTooltip={false}
             dataSource={roleBindings}
             rowClassName={() => 'hoverLink'}
             columns={[
-                { width: 1, title: 'Metadata', dataIndex: 'metadata', render: (t, r) => <code>{ToJson(r.metadata)}</code> },
-                { width: 2, title: 'Role', dataIndex: 'roleName' },
-                { width: 1, title: 'Subjects', dataIndex: 'subjects', render: (t, r) => r.subjects?.length ?? 0 },
+                { width: 1, title: 'Metadata', dataIndex: 'metadata', render: (t, r) => <code>{ToJson(r.metadata)}</code>, sorter: sortField('metadata') },
+                { width: 2, title: 'Role', dataIndex: 'roleName', sorter: sortField('roleName') },
+                { width: 1, title: 'Subjects', dataIndex: 'subjects', render: (t, r) => r.subjects?.length ?? 0, sorter: (a, b) => (a.subjects?.length - b.subjects?.length) ?? 0 },
             ]}
             // expandIconAsCell={false} broken after upgrade to antd4
             expandIconColumnIndex={-1}

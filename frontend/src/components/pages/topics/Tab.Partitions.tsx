@@ -53,10 +53,12 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
 
         const table = <Table
             size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
+            showSorterTooltip={false}
             pagination={this.pageConfig}
-            onChange={(pagination, filter, sorter) => {
-                if (pagination.pageSize) { /* todo    uiSettings.top.pageSize = x.pageSize*/ }
-                console.dir({ pagination, sorter });
+            onChange={(pagination) => {
+                if (pagination.pageSize) uiState.topicSettings.partitionPageSize = pagination.pageSize;
+                this.pageConfig.current = pagination.current;
+                this.pageConfig.pageSize = pagination.pageSize;
             }}
             dataSource={partitions}
             rowKey={x => x.id.toString()}

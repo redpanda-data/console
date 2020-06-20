@@ -80,26 +80,28 @@ class GroupList extends PageComponent {
 
                     <Table
                         style={{ margin: '0', padding: '0' }} size={'middle'}
-                        pagination={this.pageConfig}
                         onRow={(record) =>
                             ({
                                 onClick: () => appGlobal.history.push('/groups/' + record.groupId),
                             })}
-                        onChange={x => {
-                            if (x.pageSize) { this.pageConfig.pageSize = uiSettings.consumerGroupList.pageSize = x.pageSize }
+                        pagination={this.pageConfig}
+                        onChange={(pagination) => {
+                            if (pagination.pageSize) uiSettings.consumerGroupList.pageSize = pagination.pageSize;
+                            this.pageConfig.current = pagination.current;
+                            this.pageConfig.pageSize = pagination.pageSize;
                         }}
                         rowClassName={() => 'hoverLink'}
+                        showSorterTooltip={false}
                         dataSource={groups}
                         rowKey={x => x.groupId}
                         columns={[
-                            { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} />, showSorterTooltip: false },
+                            { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
                             {
                                 title: 'ID', dataIndex: 'groupId',
                                 sorter: sortField('groupId'),
                                 filteredValue: [uiSettings.consumerGroupList.quickSearch],
                                 onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
-                                render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault',
-                                showSorterTooltip: false
+                                render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
                             },
                             { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
                             { title: 'Lag (Sum)', dataIndex: 'lagSum', sorter: (a, b) => a.lagSum - b.lagSum },

@@ -28,7 +28,7 @@ export class TopicDetailsSettings {
         sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset
     };
 
-    @observable pageSize = 20;
+    @observable messagesPageSize = 20;
     @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
 
     @observable previewTags = [] as PreviewTag[];
@@ -38,6 +38,9 @@ export class TopicDetailsSettings {
     @observable previewShowResultCount = false;
     // @observable previewResultLimit: 3; // todo
     @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
+
+    @observable consumerPageSize = 20;
+    @observable partitionPageSize = 20;
 
     @observable quickSearch = '';
 }
@@ -67,6 +70,10 @@ const uiSettings = observable({
     consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
         quickSearch: '',
+    },
+
+    consumerGroupDetails: {
+        pageSize: DEFAULT_TABLE_PAGE_SIZE,
     },
 
     previewNotificationHideUntil: 0, // utc seconds
