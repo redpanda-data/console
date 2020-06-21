@@ -537,6 +537,14 @@ span>.icon-container~span {
     background: #00b9ff17;
 }
 
+.ant-tabs-nav-list {
+    width: 100%;
+}
+
+.ant-tabs-tab {
+    place-content: center;
+}
+
 .ant-tabs-ink-bar {
     background-color: hsla(209, 75%, 60%, 1);
 }
