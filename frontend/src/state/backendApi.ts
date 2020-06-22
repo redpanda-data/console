@@ -5,7 +5,7 @@ import {
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
     ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo
 } from "./restInterfaces";
-import { observable, autorun, computed } from "mobx";
+import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/utils";
 import { objToQuery } from "../utils/queryHelper";
@@ -193,10 +193,6 @@ const apiStore = {
 
 
     async startMessageSearch(topicName: string, searchParams: TopicMessageSearchParameters): Promise<void> {
-        // remove 'offsetMode' and convert to queryString
-        const clone = JSON.parse(JSON.stringify(searchParams)) as TopicMessageSearchParameters;
-        (clone as any)._offsetMode = undefined;
-        const queryString = objToQuery(clone);
 
         const isHttps = window.location.protocol.startsWith('https');
         const protocol = isHttps ? 'wss://' : 'ws://';
@@ -233,11 +229,9 @@ const apiStore = {
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
             // double assignment makes sense: when the phase changes to null, some observing components will play a "fade out" animation, using the last (non-null) value
-            this.MessageSearchPhase = "Done";
-            this.MessageSearchPhase = null;
             console.log(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
         }
-        currentWS.onmessage = msgEvent => {
+        const onMessageHandler = (msgEvent: MessageEvent) => {
             if (ws !== currentWS) return;
             const msg = JSON.parse(msgEvent.data)
 
@@ -249,6 +243,8 @@ const apiStore = {
                 case 'done':
                     this.MessagesElapsedMs = msg.elapsedMs;
                     // this.MessageSearchCancelled = msg.isCancelled;
+                    this.MessageSearchPhase = "Done";
+                    this.MessageSearchPhase = null;
                     break;
 
                 case 'error':
@@ -261,7 +257,7 @@ const apiStore = {
                     break;
 
                 case 'message':
-                    const m = msg.message;
+                    let m = msg.message as TopicMessage;
 
                     if (m.key && typeof m.key === 'string' && m.key.length > 0)
                         m.key = atob(m.key); // unpack base64 encoded key
@@ -281,12 +277,14 @@ const apiStore = {
                         m.valueBinHexPreview = hex;
                     }
 
+                    //m = observable.object(m, undefined, { deep: false });
+
                     this.Messages.push(m);
                     break;
             }
-        }
-
-
+        };
+        //currentWS.onmessage = m => transaction(() => onMessageHandler(m));
+        currentWS.onmessage = onMessageHandler;
     },
 
 
@@ -382,7 +380,7 @@ function addError(err: Error) {
 
 
 type apiStoreType = typeof apiStore;
-export const api = observable(apiStore) as apiStoreType;
+export const api = observable(apiStore, { Messages: observable.shallow }) as apiStoreType;
 
 /*
 autorun(r => {

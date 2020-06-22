@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Dropdown, Menu } from "antd";
+import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Dropdown, Menu, Spin, Progress } from "antd";
 import { observer } from "mobx-react";
 import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
@@ -23,14 +23,14 @@ import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
 import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup } from "../../../utils/tsxUtils";
+import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator } from "../../../utils/tsxUtils";
 
 import Octicon, { Skip, Sync, ChevronDown, Play, ChevronRight } from '@primer/octicons-react';
 import { SyncIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon } from '@primer/octicons-v2-react'
 import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg';
 
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined } from '@ant-design/icons';
+import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined, LoadingOutlined } from '@ant-design/icons';
 import { ErrorBoundary } from "../../misc/ErrorBoundary";
 import { SortOrder } from "antd/lib/table/interface";
 
@@ -47,7 +47,6 @@ const InputGroup = Input.Group;
 @observer
 export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
-    @observable requestInProgress = false;
     @observable previewDisplay: string[] = [];
     @observable allCurrentKeys: string[] = [];
     @observable showPreviewSettings = false;
@@ -91,6 +90,25 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 query["q"] = q ? q : undefined;
             })
         }, { name: 'update query string' });
+
+        /*
+        message.config({ top: 8 });
+        const content = <div>
+            <div style={{ minWidth: '300px', lineHeight: 0 }}>
+                <Progress percent={80} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
+            </div>
+            <div style={{ display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' }}>
+                <div>Status</div>
+                <div style={{ marginLeft: 'auto', paddingLeft: '2em' }}>76/200</div>
+            </div>
+        </div>
+        const hide = message.open({ content: content, key: 'messageSearchStatus', icon: <span />, duration: null, type: 'loading' });
+        */
+        //setTimeout(hide, 2000);
+
+        const searchProgressIndicatorReaction = autorun(() => {
+
+        });
 
         this.messageSource.filterText = uiState.topicSettings.quickSearch;
     }
@@ -205,13 +223,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 </div> */}
 
                 {/* "Loading Messages  30/30" */}
-                <AnimatePresence>
-                    {api.MessageSearchPhase && (
-                        <MotionSpan key='messageSearchPhase' overrideAnimProps={animProps_span_messagesStatus} style={{ marginBottom: '5px', alignSelf: 'flex-end', whiteSpace: 'nowrap', maxWidth: 'auto', textOverflow: 'elipsis' }}>
-                            {api.MessageSearchPhase} <span style={{ fontWeight: 600 }}>{api.Messages?.length} / {uiState.topicSettings.searchParams.pageSize}</span>
-                        </MotionSpan>
-                    )}
-                </AnimatePresence>
+                {api.MessageSearchPhase &&
+                    <StatusIndicator
+                        identityKey='messageSearch'
+                        fillFactor={(api.Messages?.length ?? 0) / uiState.topicSettings.searchParams.pageSize}
+                        statusText={api.MessageSearchPhase}
+                        progressText={`${api.Messages?.length ?? 0} / ${uiState.topicSettings.searchParams.pageSize}`} />}
 
                 {/* Quick Search */}
                 <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto' }}>
@@ -228,6 +245,11 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     });
 
     searchFunc = (source: 'auto' | 'manual') => {
+
+        // need to do this first, so we trigger mobx
+        const params = uiState.topicSettings.searchParams;
+        const searchParams = String(params._offsetMode) + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
+
         if (this.currentSearchRun)
             return console.log(`searchFunc: function already in progress (trigger:${source})`);
 
@@ -236,10 +258,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             return console.log(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
 
         try {
-            const params = uiState.topicSettings.searchParams;
-            // 1. trigger mobx: let it know we are interested in those props
-            // 2. prevent recursive updates
-            this.currentSearchRun = String(params._offsetMode) + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
+            this.currentSearchRun = searchParams;
 
             if (this.fetchError == null)
                 this.executeMessageSearch();
@@ -357,7 +376,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                     dataSource={this.messageSource.data}
 
-                    loading={this.requestInProgress}
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
                     rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
 
@@ -418,18 +436,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         transaction(async () => {
             try {
                 this.fetchError = null;
-                this.requestInProgress = true;
-
                 api.startMessageSearch(this.props.topic.topicName, searchParams);
-
-                // await api.searchTopicMessages(this.props.topic.topicName, searchParams);
-                // this.allCurrentKeys = Array.from(getAllKeys(api.Messages.map(m => m.value))); // cache array of every single key
-                // this.pageConfig.current = undefined;
             } catch (error) {
                 console.error('error in searchTopicMessages: ' + error.toString());
                 this.fetchError = error;
-            } finally {
-                this.requestInProgress = false;
             }
         });
 

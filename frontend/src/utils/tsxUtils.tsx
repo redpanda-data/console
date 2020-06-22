@@ -1,6 +1,7 @@
 import React, { Children, useState, Component, CSSProperties } from "react";
 import { simpleUniqueId } from "./utils";
-import { Radio } from 'antd';
+import { Radio, message, Progress } from 'antd';
+import { MessageType } from "antd/lib/message";
 
 
 
@@ -157,5 +158,49 @@ export class OptionGroup<T> extends Component<{
         return <Label text={p.label}>
             {radioGroup}
         </Label>
+    }
+}
+
+export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, progressText: string }> {
+
+    static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
+    static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
+    static readonly progressTextStyle: CSSProperties = { marginLeft: 'auto', paddingLeft: '2em' } as const;
+
+    hide: MessageType;
+
+    constructor(p: any) {
+        super(p);
+        message.config({ top: 8 });
+    }
+
+    componentDidMount() {
+        this.customRender();
+    }
+    componentDidUpdate() {
+        this.customRender();
+    }
+
+    componentWillUnmount() {
+        this.hide?.call(this);
+    }
+
+    customRender() {
+        const content = <div>
+            <div style={StatusIndicator.progressStyle}>
+                <Progress percent={this.props.fillFactor * 100} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
+            </div>
+            <div style={StatusIndicator.statusBarStyle}>
+                <div>{this.props.statusText}</div>
+                <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
+            </div>
+        </div>
+        this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: null, type: 'loading' });
+    }
+
+    render() {
+
+
+        return null;
     }
 }
