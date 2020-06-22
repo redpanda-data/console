@@ -201,7 +201,7 @@ const apiStore = {
         const isHttps = window.location.protocol.startsWith('https');
         const protocol = isHttps ? 'wss://' : 'ws://';
         const host = IsDev ? 'localhost:9090' : window.location.host;
-        const url = protocol + host + '/api/topics/' + topicName + '/messages' + queryString;
+        const url = protocol + host + '/api/topics/' + topicName + '/messages';
 
         console.log("connecting to \"" + url + "\"");
 
@@ -216,9 +216,19 @@ const apiStore = {
 
         currentWS.onopen = ev => {
             if (ws !== currentWS) return; // newer request has taken over
+            // reset state for new request
             this.MessagesFor = topicName;
             this.Messages = [];
             this.MessagesElapsedMs = null;
+            // send new request
+            const r: MessageSearchRequest = {
+                topicName: topicName,
+                partitionId: searchParams.partitionID,
+                startOffset: searchParams.startOffset,
+                maxResults: searchParams.pageSize,
+                filterInterpreterCode: ''
+            };
+            currentWS.send(JSON.stringify(r));
         }
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
@@ -343,13 +353,21 @@ const apiStore = {
 export enum TopicMessageOffset { End = -1, Start = -2, Custom = 0 }
 export enum TopicMessageSortBy { Offset, Timestamp }
 export enum TopicMessageDirection { Descending, Ascending }
-export interface TopicMessageSearchParameters {
+export interface TopicMessageSearchParameters { // interface thatis used by the frontend
     _offsetMode: TopicMessageOffset;
     startOffset: number;
     partitionID: number;
     pageSize: number;
     sortType: TopicMessageSortBy;
     sortOrder: TopicMessageDirection;
+}
+
+export interface MessageSearchRequest {
+    topicName: string,
+    startOffset: number,
+    partitionId: number,
+    maxResults: number, // should also support '-1' soon, so we can do live tailing
+    filterInterpreterCode: string, // js code, base64 encoded
 }
 
 

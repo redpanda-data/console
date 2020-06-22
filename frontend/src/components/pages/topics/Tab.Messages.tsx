@@ -207,7 +207,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 {/* "Loading Messages  30/30" */}
                 <AnimatePresence>
                     {api.MessageSearchPhase && (
-                        <MotionSpan key='messageSearchPhase' overrideAnimProps={animProps_span_messagesStatus} style={{ marginBottom: '5px', alignSelf: 'flex-end', whiteSpace: 'nowrap' }}>
+                        <MotionSpan key='messageSearchPhase' overrideAnimProps={animProps_span_messagesStatus} style={{ marginBottom: '5px', alignSelf: 'flex-end', whiteSpace: 'nowrap', maxWidth: 'auto', textOverflow: 'elipsis' }}>
                             {api.MessageSearchPhase} <span style={{ fontWeight: 600 }}>{api.Messages?.length} / {uiState.topicSettings.searchParams.pageSize}</span>
                         </MotionSpan>
                     )}
@@ -253,7 +253,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     isFilterMatch(str: string, m: TopicMessage) {
         str = str.toLowerCase();
         if (m.offset.toString().toLowerCase().includes(str)) return true;
-        if (m.key && m.key.toLowerCase().includes(str)) return true;
+        if (m.key && String(m.key).toLowerCase().includes(str)) return true;
         if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
         return false;
     }
@@ -489,9 +489,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     </>} />
 }
 
-const renderKey = (text: string | null | undefined) => {
+const renderKey = (key: any | null | undefined) => {
+    const text = typeof key === 'string' ? key : ToJson(key);
 
-    if (text == undefined || text == null || text.length == 0)
+    if (key == undefined || key == null || text.length == 0 || text == '{}')
         return <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={Skip} /></span>
 
     if (text.length > 45) {
