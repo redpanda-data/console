@@ -222,7 +222,7 @@ const apiStore = {
                 partitionId: searchParams.partitionID,
                 startOffset: searchParams.startOffset,
                 maxResults: searchParams.pageSize,
-                filterInterpreterCode: ''
+                filterInterpreterCode: btoa(searchParams.filterText),
             };
             currentWS.send(JSON.stringify(r));
         }
@@ -358,6 +358,8 @@ export interface TopicMessageSearchParameters { // interface thatis used by the 
     pageSize: number;
     sortType: TopicMessageSortBy;
     sortOrder: TopicMessageDirection;
+
+    filterText: string;
 }
 
 export interface MessageSearchRequest {

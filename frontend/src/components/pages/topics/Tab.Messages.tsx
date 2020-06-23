@@ -239,6 +239,15 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         addonAfter={null} disabled={this.fetchError != null}
                     />
                 </div>
+
+
+                <div style={{ paddingTop: '1em' }}>
+                    <Input size='large' placeholder='js filter text' style={{ width: '600px', fontFamily: 'monospace' }}
+                        value={uiState.topicSettings.searchParams.filterText}
+                        onChange={e => uiState.topicSettings.searchParams.filterText = e.target.value}
+                    />
+                </div>
+
             </div>
 
         </React.Fragment>

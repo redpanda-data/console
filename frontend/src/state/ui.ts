@@ -25,7 +25,9 @@ export class TopicDetailsSettings {
     @observable searchParams: TopicMessageSearchParameters = {
         _offsetMode: TopicMessageOffset.End,
         startOffset: -1, partitionID: -1, pageSize: 50,
-        sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset
+        sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset,
+
+        filterText: ''
     };
 
     @observable messagesPageSize = 20;
@@ -43,6 +45,7 @@ export class TopicDetailsSettings {
     @observable partitionPageSize = 20;
 
     @observable quickSearch = '';
+
 }
 
 
