@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/gorilla/websocket"
 )
 
 // GetTopicMessagesResponse is a wrapper for an array of TopicMessage
@@ -21,16 +20,12 @@ type GetTopicMessagesResponse struct {
 	KafkaMessages *owl.ListMessageResponse `json:"kafkaMessages"`
 }
 
-// This thing is given to 'ListMessages' so it can send updates about the search to client
+// progressReport is in charge of sending status updates and messages regularly to the frontend.
 type progressReporter struct {
-	ctx     context.Context
-	logger  *zap.Logger
-	request *owl.ListMessageRequest
-
-	wsMutex   *sync.Mutex
-	websocket *websocket.Conn
-
-	debugDelayTicker *time.Ticker
+	ctx       context.Context
+	logger    *zap.Logger
+	request   *owl.ListMessageRequest
+	websocket *WebsocketClient
 
 	statsMutex       *sync.RWMutex
 	messagesConsumed int64
@@ -61,13 +56,10 @@ func (p *progressReporter) Start() {
 }
 
 func (p *progressReporter) reportProgress() {
-	p.wsMutex.Lock()
 	p.statsMutex.RLock()
-	defer p.wsMutex.Unlock()
 	defer p.statsMutex.RUnlock()
 
-	p.websocket.EnableWriteCompression(false)
-	p.websocket.WriteJSON(struct {
+	_ = p.websocket.WriteJSON(struct {
 		Type             string `json:"type"`
 		MessagesConsumed int64  `json:"messagesConsumed"`
 		BytesConsumed    int64  `json:"bytesConsumed"`
@@ -75,11 +67,7 @@ func (p *progressReporter) reportProgress() {
 }
 
 func (p *progressReporter) OnPhase(name string) {
-	p.wsMutex.Lock()
-	defer p.wsMutex.Unlock()
-
-	p.websocket.EnableWriteCompression(false)
-	p.websocket.WriteJSON(struct {
+	_ = p.websocket.WriteJSON(struct {
 		Type  string `json:"type"`
 		Phase string `json:"phase"`
 	}{"phase", name})
@@ -94,23 +82,14 @@ func (p *progressReporter) OnMessageConsumed(size int64) {
 }
 
 func (p *progressReporter) OnMessage(message *kafka.TopicMessage) {
-	p.wsMutex.Lock()
-	defer p.wsMutex.Unlock()
-
-	//<-p.debugDelayTicker.C
-	p.websocket.EnableWriteCompression(true)
-	p.websocket.WriteJSON(struct {
+	_ = p.websocket.WriteJSON(struct {
 		Type    string              `json:"type"`
 		Message *kafka.TopicMessage `json:"message"`
 	}{"message", message})
 }
 
 func (p *progressReporter) OnComplete(elapsedMs float64, isCancelled bool) {
-	p.wsMutex.Lock()
-	defer p.wsMutex.Unlock()
-
-	p.websocket.EnableWriteCompression(false)
-	p.websocket.WriteJSON(struct {
+	_ = p.websocket.WriteJSON(struct {
 		Type             string  `json:"type"`
 		ElapsedMs        float64 `json:"elapsedMs"`
 		IsCancelled      bool    `json:"isCancelled"`
@@ -120,11 +99,7 @@ func (p *progressReporter) OnComplete(elapsedMs float64, isCancelled bool) {
 }
 
 func (p *progressReporter) OnError(message string) {
-	p.wsMutex.Lock()
-	defer p.wsMutex.Unlock()
-
-	p.websocket.EnableWriteCompression(false)
-	p.websocket.WriteJSON(struct {
+	_ = p.websocket.WriteJSON(struct {
 		Type    string `json:"type"`
 		Message string `json:"message"`
 	}{"error", message})
@@ -175,26 +150,26 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger := api.Logger
 
-		// Websocket setup
-		wsConnection, restErr := setupWebsocket(w, r, logger)
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+
+		wsClient := WebsocketClient{
+			Ctx:        ctx,
+			Cancel:     cancel,
+			Logger:     logger,
+			Connection: nil,
+			Mutex:      &sync.RWMutex{},
+		}
+		restErr := wsClient.Upgrade(w, r)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
-		defer func() {
-			// Close connection gracefully!
-			err := wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil && err != websocket.ErrCloseSent {
-				logger.Debug("failed to send 'CloseNormalClosure' to ws connection", zap.Error(err))
-			} else {
-				// the example in github.com/gorilla/websocket also does this
-				time.Sleep(2 * time.Second)
-			}
-		}()
+		defer wsClient.SendClose()
 
 		// Get search parameters. Close connection if search parameters are invalid
 		var req listMessagesRequest
-		err := wsConnection.ReadJSON(&req)
+		err := wsClient.ReadJSON(&req)
 		if err != nil {
 			rest.SendRESTError(w, r, logger, &rest.Error{
 				Err:      err,
@@ -250,16 +225,14 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		if listReq.FilterInterpreterCode != "" {
 			duration = 30 * time.Minute
 		}
-		ctx, cancelCtx := context.WithTimeout(r.Context(), duration)
-		defer cancelCtx()
+		childCtx, cancel := context.WithTimeout(ctx, duration)
+		defer cancel()
 
 		progress := &progressReporter{
-			ctx:              ctx,
+			ctx:              childCtx,
 			logger:           api.Logger,
 			request:          &listReq,
-			wsMutex:          &sync.Mutex{},
-			websocket:        wsConnection,
-			debugDelayTicker: time.NewTicker(300 * time.Millisecond),
+			websocket:        &wsClient,
 			statsMutex:       &sync.RWMutex{},
 			messagesConsumed: 0,
 			bytesConsumed:    0,
@@ -271,38 +244,4 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			progress.OnError(err.Error())
 		}
 	}
-}
-
-func setupWebsocket(w http.ResponseWriter, r *http.Request, logger *zap.Logger) (*websocket.Conn, *rest.Error) {
-	// websocket upgrader options
-	upgrader := websocket.Upgrader{
-		EnableCompression: true,
-		// TODO(security): Implement origin check once something can be modified or deleted via websockets, not necessary for fetching messages only
-		CheckOrigin: func(r *http.Request) bool { return true },
-	}
-
-	logger.Debug("starting websocket connection upgrade")
-	wsConnection, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		restErr := &rest.Error{
-			Err:      fmt.Errorf("failed to upgrade websocket in messages endpoint %w", err),
-			Status:   http.StatusBadRequest,
-			Message:  "Failed upgrade websocket",
-			IsSilent: false,
-		}
-		return nil, restErr
-	}
-	logger.Debug("websocket upgrade complete")
-
-	wsConnection.SetCloseHandler(func(code int, text string) error {
-		logger.Debug("connection has been closed by client")
-		r.Context().Done()
-		return nil
-	})
-	logger.Debug("websocket connection upgrade complete")
-
-	maxMessageSize := int64(16 * 1024) // 16kb
-	wsConnection.SetReadLimit(maxMessageSize)
-
-	return wsConnection, nil
 }

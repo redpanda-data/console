@@ -162,6 +162,7 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				return // reached end offset
 			}
 		case <-ctx.Done():
+			p.Logger.Debug("consume request aborted because context has been cancelled")
 			return // search request aborted
 		}
 	}
