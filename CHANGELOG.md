@@ -1,6 +1,6 @@
 # Changelog
 
-## Master / unreleased
+## 1.0.0 / 2020-06-24
 
 - [CHANGE] Tabs in a topic detail view have been reordered, and the messages tab is now selected by default
 - [CHANGE] Deselecting the input field in the "Preview Settings" dialog (or closing the dialog) will be considered as a confirmation now (instead of cancelling the tag that is being added)
