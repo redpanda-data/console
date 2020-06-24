@@ -63,6 +63,7 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
         entries = data as { key: any, value: any }[];
 
     const o: QuickTableOptions = {}; // create new options object (because we don't want to pollute the one the user gave us)
+    if (options == null) options = {};
 
     {
         const oa = o as any;

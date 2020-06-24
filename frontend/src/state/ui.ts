@@ -1,10 +1,9 @@
 import { observable, autorun } from "mobx";
-import { touch, assignDeep } from "../utils/utils";
+import { touch, assignDeep, randomId, simpleUniqueId, uniqueId4 } from "../utils/utils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
-import { TopicMessageOffset, TopicMessageDirection, TopicMessageSortBy, TopicMessageSearchParameters } from "./backendApi";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
 
-const settingsName = 'uiSettings-v2';
+const settingsName = 'uiSettings-v3';
 
 
 /*
@@ -18,16 +17,53 @@ export interface PreviewTag {
     active: boolean;
 }
 
+export type FilterType = 'simple' | 'code'
+export const FilterOperators = [
+    {
+        name: '==',
+    },
+    {
+        name: '!=',
+    },
+    {
+        name: '<',
+    },
+    {
+        name: '<=',
+    },
+] as const;
+export type FilterOperator = (typeof FilterOperators[number])['name']
+export class FilterEntry {
+    id = randomId() + randomId(); // used as react key
+    @observable filterType: FilterType = 'code';
+
+    @observable isActive = true;
+
+    // Simple
+    @observable property: string = ''; // ex: 'battle.type'
+    @observable operator: FilterOperator = '==';
+    @observable value: string = ''; // any js expression: string, number, or array
+
+    // Code
+    @observable name: string = ''; // name of the filter, shown instead of the code when set
+    @observable code: string = 'return true\n//allow all messages'; // js code the user entered
+}
+
+export enum TopicOffsetOrigin { End = -1, Start = -2, Custom = 0 }
+export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams']
 // Settings for an individual topic
 export class TopicDetailsSettings {
     topicName: string;
 
-    @observable searchParams: TopicMessageSearchParameters = {
-        _offsetMode: TopicMessageOffset.End,
-        startOffset: -1, partitionID: -1, pageSize: 50,
-        sortOrder: TopicMessageDirection.Descending, sortType: TopicMessageSortBy.Offset,
+    @observable searchParams = {
+        offsetOrigin: -1 as TopicOffsetOrigin, // start, end, custom
+        startOffset: -1, // used when offsetOrigin is custom
+        partitionID: -1,
+        maxResults: 50,
 
-        filterText: ''
+        debugFilterText: '', // todo: remove
+        filtersEnabled: false,
+        filters: [] as FilterEntry[],
     };
 
     @observable messagesPageSize = 20;

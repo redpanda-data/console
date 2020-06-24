@@ -1,10 +1,10 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Dropdown, Menu, Spin, Progress } from "antd";
+import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Dropdown, Menu, Spin, Progress, Switch, notification } from "antd";
 import { observer } from "mobx-react";
-import { api, TopicMessageOffset, TopicMessageSortBy, TopicMessageDirection, TopicMessageSearchParameters } from "../../../state/backendApi";
-import { uiSettings, PreviewTag } from "../../../state/ui";
+import { api } from "../../../state/backendApi";
+import { uiSettings, PreviewTag, TopicOffsetOrigin, FilterEntry } from "../../../state/ui";
 import ReactJson, { CollapsedFieldProps } from 'react-json-view'
 import { PageComponent, PageInitHelper } from "../Page";
 import prettyMilliseconds from 'pretty-ms';
@@ -23,16 +23,18 @@ import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
 import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator } from "../../../utils/tsxUtils";
+import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable } from "../../../utils/tsxUtils";
 
 import Octicon, { Skip, Sync, ChevronDown, Play, ChevronRight } from '@primer/octicons-react';
-import { SyncIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon } from '@primer/octicons-v2-react'
+import { SyncIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon, PlusIcon } from '@primer/octicons-v2-react'
 import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg';
 
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
 import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined, LoadingOutlined } from '@ant-design/icons';
 import { ErrorBoundary } from "../../misc/ErrorBoundary";
 import { SortOrder } from "antd/lib/table/interface";
+import TextArea from "antd/lib/input/TextArea";
+import { IsDev } from "../../../utils/env";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -72,10 +74,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         const query = qs.parse(window.location.search);
         console.log("parsing query: " + ToJson(query));
         if (query.p != null) searchParams.partitionID = Number(query.p);
-        if (query.s != null) searchParams.pageSize = Number(query.s);
+        if (query.s != null) searchParams.maxResults = Number(query.s);
         if (query.o != null) {
             searchParams.startOffset = Number(query.o);
-            searchParams._offsetMode = (searchParams.startOffset >= 0) ? TopicMessageOffset.Custom : searchParams.startOffset;
+            searchParams.offsetOrigin = (searchParams.startOffset >= 0) ? TopicOffsetOrigin.Custom : searchParams.startOffset;
         }
         if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
 
@@ -167,25 +169,30 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </Select>
                 </Label>
                 <Label text='Max Results' style={{ ...spaceStyle }}>
-                    <Select<number> value={searchParams.pageSize} onChange={c => searchParams.pageSize = c} style={{ width: '10em' }}>
+                    <Select<number> value={searchParams.maxResults} onChange={c => searchParams.maxResults = c} style={{ width: '10em' }}>
                         {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()} results</Select.Option>)}
                     </Select>
                 </Label>
                 <Label text='Offset' style={{ ...spaceStyle }}>
                     <InputGroup compact style={{ display: 'inline-block', width: 'auto' }}>
-                        <Select<TopicMessageOffset> value={searchParams._offsetMode} onChange={e => searchParams._offsetMode = e}
+                        <Select<TopicOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => searchParams.offsetOrigin = e}
                             dropdownMatchSelectWidth={false} style={{ width: '10em' }}>
-                            <Option value={TopicMessageOffset.End}>Newest Offset</Option>
-                            <Option value={TopicMessageOffset.Start}>Oldest Offset</Option>
-                            <Option value={TopicMessageOffset.Custom}>Custom Offset</Option>
+                            <Option value={TopicOffsetOrigin.End}>Newest Offset</Option>
+                            <Option value={TopicOffsetOrigin.Start}>Oldest Offset</Option>
+                            <Option value={TopicOffsetOrigin.Custom}>Custom Offset</Option>
                         </Select>
                         {
-                            searchParams._offsetMode == TopicMessageOffset.Custom &&
+                            searchParams.offsetOrigin == TopicOffsetOrigin.Custom &&
                             <Input style={{ width: '8em' }} maxLength={20}
                                 value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
-                                disabled={searchParams._offsetMode != TopicMessageOffset.Custom} />
+                                disabled={searchParams.offsetOrigin != TopicOffsetOrigin.Custom} />
                         }
                     </InputGroup>
+                </Label>
+                <Label text='Filter' style={{ ...spaceStyle }}>
+                    <div style={{ height: '32px', paddingTop: '3px' }}>
+                        <Switch checked={searchParams.filtersEnabled} onChange={v => searchParams.filtersEnabled = v} />
+                    </div>
                 </Label>
 
                 {/* Refresh Button */}
@@ -195,6 +202,40 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                             <SyncIcon size={16} />
                         </Button>
                     </Tooltip>
+                </div>
+
+                {/* Search Progress Indicator: "Consuming Messages  30/30" */}
+                {api.MessageSearchPhase &&
+                    <StatusIndicator
+                        identityKey='messageSearch'
+                        fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
+                        statusText={api.MessageSearchPhase}
+                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`} />}
+
+
+                {/* Filter Tags */}
+                {searchParams.filtersEnabled && <div style={{ paddingTop: '1em', width: '100%' }}>
+                    <MessageSearchFilterBar />
+                </div>}
+
+                {/* DEBUG: filter text input */}
+                <div style={{ paddingTop: '1em' }}>
+                    <TextArea placeholder='js filter text'
+                        style={{ width: '600px', fontFamily: 'monospace' }}
+                        value={searchParams.debugFilterText}
+                        onChange={e => searchParams.debugFilterText = e.target.value}
+                        autoSize={{ minRows: 1, maxRows: 8 }}
+                    />
+                </div>
+
+                {/* Quick Search */}
+                <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto' }}>
+                    <Input placeholder='Quick Search' allowClear={true} size='middle'
+                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
+                        value={uiState.topicSettings.quickSearch}
+                        onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
+                        addonAfter={null} disabled={this.fetchError != null}
+                    />
                 </div>
 
                 {/* Button (live search?) */}
@@ -222,31 +263,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </Input.Group>
                 </div> */}
 
-                {/* "Loading Messages  30/30" */}
-                {api.MessageSearchPhase &&
-                    <StatusIndicator
-                        identityKey='messageSearch'
-                        fillFactor={(api.Messages?.length ?? 0) / uiState.topicSettings.searchParams.pageSize}
-                        statusText={api.MessageSearchPhase}
-                        progressText={`${api.Messages?.length ?? 0} / ${uiState.topicSettings.searchParams.pageSize}`} />}
-
-                {/* Quick Search */}
-                <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto' }}>
-                    <Input placeholder='Quick Search' allowClear={true} size='middle'
-                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
-                        value={uiState.topicSettings.quickSearch}
-                        onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
-                        addonAfter={null} disabled={this.fetchError != null}
-                    />
-                </div>
-
-
-                <div style={{ paddingTop: '1em' }}>
-                    <Input size='large' placeholder='js filter text' style={{ width: '600px', fontFamily: 'monospace' }}
-                        value={uiState.topicSettings.searchParams.filterText}
-                        onChange={e => uiState.topicSettings.searchParams.filterText = e.target.value}
-                    />
-                </div>
 
             </div>
 
@@ -257,7 +273,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         // need to do this first, so we trigger mobx
         const params = uiState.topicSettings.searchParams;
-        const searchParams = String(params._offsetMode) + params.pageSize + params.partitionID + params.sortOrder + params.sortType + params.startOffset;
+        const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset;
 
         if (this.currentSearchRun)
             return console.log(`searchFunc: function already in progress (trigger:${source})`);
@@ -433,19 +449,48 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
 
-        if (searchParams._offsetMode != TopicMessageOffset.Custom)
-            searchParams.startOffset = searchParams._offsetMode;
+        if (searchParams.offsetOrigin != TopicOffsetOrigin.Custom)
+            searchParams.startOffset = searchParams.offsetOrigin;
 
         editQuery(query => {
             query["p"] = String(searchParams.partitionID); // p = partition
-            query["s"] = String(searchParams.pageSize); // s = size
+            query["s"] = String(searchParams.maxResults); // s = size
             query["o"] = String(searchParams.startOffset); // o = offset
         })
+
+        let filterCode: string = searchParams.debugFilterText;
+        if (!filterCode && searchParams.filtersEnabled) {
+            const functionNames: string[] = [];
+            const functions: string[] = [];
+
+            searchParams.filters.filter(e => e.isActive && e.code).forEach(e => {
+                const name = `filter${functionNames.length + 1}`;
+                functionNames.push(name);
+                functions.push(`
+function ${name}() {
+    ${e.code.includes('return ') ? e.code : 'return (' + e.code + ')'}
+}`);
+            });
+
+            if (functions) {
+                filterCode = functions.join('\n\n') + "\n\n"
+                    + `return ${functionNames.map(f => f + "()").join(' && ')}`;
+                if (IsDev) console.log(`constructed filter code (${functions.length} functions)`, "\n\n" + filterCode);
+            }
+        }
+
+        const request = {
+            topicName: this.props.topic.topicName,
+            partitionId: searchParams.partitionID,
+            startOffset: searchParams.startOffset,
+            maxResults: searchParams.maxResults,
+            filterInterpreterCode: btoa(filterCode),
+        };
 
         transaction(async () => {
             try {
                 this.fetchError = null;
-                api.startMessageSearch(this.props.topic.topicName, searchParams);
+                api.startMessageSearch(request);
             } catch (error) {
                 console.error('error in searchTopicMessages: ' + error.toString());
                 this.fetchError = error;
@@ -558,8 +603,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             let text: ReactNode = <></>;
 
             if (!value || msg.isValueNull) {
-                // null: must be a tombstone (maybe? what if other fields are not null?)
-                // todo: render tombstones in a better way!
+                // null: tombstone
                 text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
             }
             else if (msg.valueType == 'text') {
@@ -858,4 +902,129 @@ class CustomTag extends Component<{ tag: PreviewTag, tagList: CustomTagList }> {
             >{value}</Tag>
         </motion.span>
     }
+}
+
+
+const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
+    <Popover key={title} trigger='click' title={popTitle} content={content}>
+        <Button type='link' size='small' style={{ fontSize: '1.2em' }}>{title}</Button>
+    </Popover>
+)
+
+const helpEntries = [
+    makeHelpEntry('Basics', <ul>
+        <li>code is a javascript function body</li>
+        <li>the context is re-used between messages, but every partition has its own context</li>
+        <li>return true to allow a message, return false to discard the message</li>
+    </ul>),
+    makeHelpEntry('Parameters', 'available parameters are: ...'),
+    makeHelpEntry('Examples', 'todo... '),
+].genericJoin(<div style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
+
+@observer
+class MessageSearchFilterBar extends Component {
+    /*
+    todo:
+        - does a click outside of the editor mean "ok" or "cancel"?
+            - maybe don't allow closing by clicking outside?
+            - ok: so we can make quick changes
+        - maybe submit the code live, show syntax errors below
+        - maybe havee a button that runs the code against the newest message?
+     */
+
+    @observable currentFilter: FilterEntry | null = null;
+    currentFilterBackup: string | null = null; // json of 'currentFilter'
+    currentIsNew = false; // true: 'onCancel' must remove the filter again
+
+    static tooltipText = QuickTable([
+        ["Click:", "toggle active"],
+        ["Double Click:", "edit filter"]
+    ]);
+
+
+    render() {
+        const settings = uiState.topicSettings.searchParams;
+
+        return <div style={{ display: 'flex', flexWrap: 'wrap', flexDirection: 'row' }}>
+
+            {settings.filters?.map(e =>
+                <Tooltip key={e.id} title={MessageSearchFilterBar.tooltipText} mouseEnterDelay={200}>
+                    <Tag
+                        style={{ userSelect: 'none' }}
+                        key={e.id}
+                        closable
+                        color={e.isActive ? 'blue' : undefined}
+                        onClick={() => e.isActive = !e.isActive}
+                        onDoubleClick={() => {
+                            this.currentIsNew = false;
+                            this.currentFilterBackup = ToJson(e);
+                            this.currentFilter = e;
+                        }}
+                        onClose={() => settings.filters.remove(e)}
+                    >
+                        {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+                    </Tag>
+                </Tooltip>
+            )}
+
+            <Tag onClick={() => transaction(() => {
+                this.currentIsNew = true;
+                this.currentFilterBackup = null;
+                this.currentFilter = new FilterEntry();
+                settings.filters.push(this.currentFilter);
+            })}>
+                <span style={{ verticalAlign: 'middle', marginTop: '-3px', }}> {/* marginRight: '4px' */}
+                    <PlusIcon size='small' />
+                </span>
+                {/* <span>New Filter</span> */}
+            </Tag>
+
+            <Modal centered visible={this.currentFilter != null}
+                title='Edit Filter'
+                onOk={() => this.currentFilter = null}
+
+                //cancelText='Revert'
+                cancelButtonProps={{ danger: true, style: { display: 'none' } }}
+
+                onCancel={() => {
+                    // restore backup, write it to the filter, then close
+                    this.currentFilter = null;
+                }}
+
+                footer={null}
+            >
+                {this.currentFilter && <>
+                    <Label text='Name'>
+                        <Input value={this.currentFilter!.name} onChange={e => this.currentFilter!.name = e.target.value} />
+                    </Label>
+                    <Label text='Code' style={{ marginTop: '1em' }}>
+                        <TextArea
+                            autoFocus={true}
+                            value={this.currentFilter!.code}
+                            onChange={e => this.currentFilter!.code = e.target.value}
+                            autoSize={{ minRows: 4, maxRows: 20 }}
+                        />
+                    </Label>
+
+                    <Alert type='info' style={{ marginTop: '.5em', padding: '3px 8px', }} message={<>
+                        <span style={{ fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%', color: '#0009' }}>
+                            <span>Help:</span>
+                            {helpEntries}
+                        </span>
+                    </>} />
+                </>}
+            </Modal>
+        </div>
+    }
+
+
+
+    revertChanges() {
+        if (this.currentFilter && this.currentFilterBackup) {
+            const restored = JSON.parse(this.currentFilterBackup);
+            if (restored)
+                Object.assign(this.currentFilter, restored);
+        }
+    }
+
 }

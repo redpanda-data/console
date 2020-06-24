@@ -13,6 +13,7 @@ import { IsDev } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
+import { TopicMessageSearchSettings } from "./ui";
 
 const REST_TIMEOUT_SEC = IsDev ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
@@ -192,12 +193,12 @@ const apiStore = {
     MessagesElapsedMs: null as null | number,
 
 
-    async startMessageSearch(topicName: string, searchParams: TopicMessageSearchParameters): Promise<void> {
+    async startMessageSearch(searchRequest: MessageSearchRequest): Promise<void> {
 
         const isHttps = window.location.protocol.startsWith('https');
         const protocol = isHttps ? 'wss://' : 'ws://';
         const host = IsDev ? 'localhost:9090' : window.location.host;
-        const url = protocol + host + '/api/topics/' + topicName + '/messages';
+        const url = protocol + host + '/api/topics/' + searchRequest.topicName + '/messages';
 
         console.log("connecting to \"" + url + "\"");
 
@@ -213,18 +214,11 @@ const apiStore = {
         currentWS.onopen = ev => {
             if (ws !== currentWS) return; // newer request has taken over
             // reset state for new request
-            this.MessagesFor = topicName;
+            this.MessagesFor = searchRequest.topicName;
             this.Messages = [];
             this.MessagesElapsedMs = null;
             // send new request
-            const r: MessageSearchRequest = {
-                topicName: topicName,
-                partitionId: searchParams.partitionID,
-                startOffset: searchParams.startOffset,
-                maxResults: searchParams.pageSize,
-                filterInterpreterCode: btoa(searchParams.filterText),
-            };
-            currentWS.send(JSON.stringify(r));
+            currentWS.send(JSON.stringify(searchRequest));
         }
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
@@ -346,20 +340,6 @@ const apiStore = {
                 this.AdminInfo = v
             }, addError);
     },
-}
-
-export enum TopicMessageOffset { End = -1, Start = -2, Custom = 0 }
-export enum TopicMessageSortBy { Offset, Timestamp }
-export enum TopicMessageDirection { Descending, Ascending }
-export interface TopicMessageSearchParameters { // interface thatis used by the frontend
-    _offsetMode: TopicMessageOffset;
-    startOffset: number;
-    partitionID: number;
-    pageSize: number;
-    sortType: TopicMessageSortBy;
-    sortOrder: TopicMessageDirection;
-
-    filterText: string;
 }
 
 export interface MessageSearchRequest {

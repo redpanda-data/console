@@ -408,9 +408,23 @@ export const prettyBytesOrNA = function (n: number) {
 }
 
 
+/**
+ * random digits and letters (entropy: 53bit)
+ */
 export function randomId() {
-    return (Math.random() * Number.MAX_SAFE_INTEGER).toString(16);
+    return (Math.random() * Number.MAX_SAFE_INTEGER).toString(36);
 }
-export function simpleUniqueId(prefix: string) {
+
+/**
+ * "prefix-randomId()-randomId()"
+ */
+export function simpleUniqueId(prefix?: string) {
     return `${prefix}-${randomId()}-${randomId()}`;
+}
+
+/**
+ * 4x 'randomId()'
+ */
+export function uniqueId4(): string {
+    return randomId() + randomId() + randomId() + randomId();
 }

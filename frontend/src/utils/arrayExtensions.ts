@@ -19,6 +19,8 @@ declare global {
 
         distinct<T>(this: T[], keySelector?: ((x: T) => any)): T[];
         pushDistinct<T>(this: T[], ...elements: T[]): void;
+
+        genericJoin<T>(this: T[], separator: T): T[];
     }
 }
 
@@ -122,4 +124,14 @@ Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: 
     for (let e of elements)
         if (!this.includes(e))
             this.push(e);
+};
+
+Array.prototype.genericJoin = function genericJoin<T>(this: T[], separator: T): T[] {
+    const ar = [];
+    for (let i = 0; i < this.length; i++) {
+        ar.push(this[i]);
+        ar.push(separator);
+    }
+    ar.splice(ar.length - 1, 1);
+    return ar;
 };
