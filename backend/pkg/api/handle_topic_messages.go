@@ -171,11 +171,10 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		var req listMessagesRequest
 		err := wsClient.ReadJSON(&req)
 		if err != nil {
-			rest.SendRESTError(w, r, logger, &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  "Failed to parse list message request",
-				IsSilent: false,
+			wsClient.WriteJSON(rest.Error{
+				Err:     err,
+				Status:  http.StatusBadRequest,
+				Message: "Failed to parse list message request",
 			})
 			return
 		}
@@ -183,11 +182,10 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		// Validate request parameter
 		err = req.OK()
 		if err != nil {
-			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  fmt.Sprintf("Failed to validate list message request: %v", err),
-				IsSilent: false,
+			wsClient.WriteJSON(rest.Error{
+				Err:     err,
+				Status:  http.StatusBadRequest,
+				Message: fmt.Sprintf("Failed to validate list message request: %v", err),
 			})
 			return
 		}
