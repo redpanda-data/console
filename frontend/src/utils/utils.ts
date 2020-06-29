@@ -251,8 +251,9 @@ export const alwaysChanging = () => refreshCounter = (refreshCounter + 1) % 1000
 
 
 export function assignDeep(target: any, source: any) {
-
     for (let key in source) {
+        if (!source.hasOwnProperty(key)) continue; // don't
+
         const value = source[key];
         const existing = target[key];
 
