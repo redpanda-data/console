@@ -703,20 +703,6 @@ tr.consumerGroupNoMemberAssigned {
     max-height: 80%;
 }
 
-.ant-tooltip-inner {
-    min-height: 20px;
-    padding: 3px 6px;
-    color: rgba(255, 255, 255, 85%);
-    border-radius: 3px;
-    background-color: hsla(209, 15%, 20%, 80%);
-}
-
-.ant-tooltip-arrow::before {
-    background-color: hsla(209, 15%, 20%, 80%);
-    width: 8px;
-    height: 8px;
-}
-
 .ant-table-column-has-sorters .ant-table-column-sorter {
     color: hsla(0, 0%, 50%, 0.3);
 }
@@ -776,4 +762,60 @@ svg {
     box-shadow: 0 1px 5px 0px rgba(0, 0, 0, 0.12), 0 3px 8px 2px rgba(0, 0, 0, 0.04);
     /* */
     border-radius: 3px;
+}
+
+.ant-tooltip {
+    font-size: 12px;
+    max-width: 400px;
+}
+
+.ant-tooltip-inner {
+    min-height: 20px;
+    padding: 3px 6px;
+    color: rgba(255, 255, 255, 85%);
+    border-radius: 4px;
+    background-color: hsla(210, 14%, 20%, 0.9);
+}
+
+.ant-tooltip-arrow::before {
+    background-color: hsla(210, 14%, 20%, 0.9);
+    width: 8px;
+    height: 8px;
+}
+
+/* Helper classes */
+
+.displayNone {
+    display: none;
+}
+
+.marginTop1em {
+    margin-top: 1em;
+}
+
+.marginTop05em {
+    margin-top: .5em;
+}
+
+.h3 {
+    font-weight: 500;
+    padding-right: .5em;
+    color: rgba(0, 0, 0, 0.85);
+    font-size: 1.17em;
+}
+
+.inlineFlex {
+    display: inline-flex;
+}
+
+.marginRight05em {
+    margin-right: .5em;
+}
+
+.marginRight1em {
+    margin-right: 1em;
+}
+
+.code-editor-textarea {
+    outline: none;
 }

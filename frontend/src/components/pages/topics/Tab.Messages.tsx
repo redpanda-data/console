@@ -30,11 +30,21 @@ import { SyncIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIco
 import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg';
 
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined, LoadingOutlined } from '@ant-design/icons';
+import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined, LoadingOutlined, QuestionCircleTwoTone } from '@ant-design/icons';
 import { ErrorBoundary } from "../../misc/ErrorBoundary";
 import { SortOrder } from "antd/lib/table/interface";
 import TextArea from "antd/lib/input/TextArea";
 import { IsDev } from "../../../utils/env";
+
+import Editor from 'react-simple-code-editor';
+
+import Prism, { languages as PrismLanguages, highlightAll } from "prismjs";
+import 'prismjs/prism.js';
+import 'prismjs/components/prism-javascript';
+import "prismjs/components/prism-js-extras"
+import 'prismjs/themes/prism.css';
+
+
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -204,30 +214,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </Tooltip>
                 </div>
 
-                {/* Search Progress Indicator: "Consuming Messages  30/30" */}
-                {api.MessageSearchPhase &&
-                    <StatusIndicator
-                        identityKey='messageSearch'
-                        fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
-                        statusText={api.MessageSearchPhase}
-                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`} />}
-
-
-                {/* Filter Tags */}
-                {searchParams.filtersEnabled && <div style={{ paddingTop: '1em', width: '100%' }}>
-                    <MessageSearchFilterBar />
-                </div>}
-
-                {/* DEBUG: filter text input */}
-                <div style={{ paddingTop: '1em' }}>
-                    <TextArea placeholder='js filter text'
-                        style={{ width: '600px', fontFamily: 'monospace' }}
-                        value={searchParams.debugFilterText}
-                        onChange={e => searchParams.debugFilterText = e.target.value}
-                        autoSize={{ minRows: 1, maxRows: 8 }}
-                    />
-                </div>
-
                 {/* Quick Search */}
                 <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto' }}>
                     <Input placeholder='Quick Search' allowClear={true} size='middle'
@@ -237,6 +223,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         addonAfter={null} disabled={this.fetchError != null}
                     />
                 </div>
+
+                {/* Search Progress Indicator: "Consuming Messages  30/30" */}
+                {api.MessageSearchPhase &&
+                    <StatusIndicator
+                        identityKey='messageSearch'
+                        fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
+                        statusText={api.MessageSearchPhase}
+                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`} />}
+
+                {/* Filter Tags */}
+                {searchParams.filtersEnabled && <div style={{ paddingTop: '1em', width: '100%' }}>
+                    <MessageSearchFilterBar />
+                </div>}
+
+
 
                 {/* Button (live search?) */}
                 {/* <div style={{ ...spaceStyle }}>
@@ -262,8 +263,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         </Button>
                     </Input.Group>
                 </div> */}
-
-
             </div>
 
         </React.Fragment>
@@ -458,8 +457,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             query["o"] = String(searchParams.startOffset); // o = offset
         })
 
-        let filterCode: string = searchParams.debugFilterText;
-        if (!filterCode && searchParams.filtersEnabled) {
+        let filterCode: string = "";
+        if (searchParams.filtersEnabled) {
             const functionNames: string[] = [];
             const functions: string[] = [];
 
@@ -912,12 +911,15 @@ const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): Re
 )
 
 const helpEntries = [
-    makeHelpEntry('Basics', <ul>
+    makeHelpEntry('Basics', <ul style={{ margin: 0 }}>
         <li>code is a javascript function body</li>
         <li>the context is re-used between messages, but every partition has its own context</li>
         <li>return true to allow a message, return false to discard the message</li>
     </ul>),
-    makeHelpEntry('Parameters', 'available parameters are: ...'),
+    makeHelpEntry('Parameters', <ul style={{ margin: 0 }}>
+        <li><span className='codeBox'>offset</span>, <span className='codeBox'>partitionID</span></li>
+        <li><span className='codeBox'>partitionID</span>: ...</li>
+    </ul>),
     makeHelpEntry('Examples', 'todo... '),
 ].genericJoin(<div style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
@@ -936,6 +938,8 @@ class MessageSearchFilterBar extends Component {
     currentFilterBackup: string | null = null; // json of 'currentFilter'
     currentIsNew = false; // true: 'onCancel' must remove the filter again
 
+    @observable hasChanges = false; // used by editor; shows "revert changes" when true
+
     static tooltipText = QuickTable([
         ["Click:", "toggle active"],
         ["Double Click:", "edit filter"]
@@ -945,10 +949,26 @@ class MessageSearchFilterBar extends Component {
     render() {
         const settings = uiState.topicSettings.searchParams;
 
+        const nameTip = <>
+            <span style={{
+                display: 'inline-flex',
+                verticalAlign: 'middle',
+                width: '2px', height: '2px',
+                zIndex: 1,
+                justifyContent: 'start',
+                alignItems: 'center',
+            }}>
+                <Tooltip placement='top' title={<span>Enter a custom name that will be shown in the list.<br />Otherwise the the code itself will be used as the name.</span>}>
+                    <QuestionCircleTwoTone twoToneColor='deepskyblue' style={{ fontSize: '15px', marginBottom: '3px', marginLeft: '2px' }} />
+                </Tooltip>
+            </span>
+        </>
+
         return <div style={{ display: 'flex', flexWrap: 'wrap', flexDirection: 'row' }}>
 
+            {/* Existing Tags List  */}
             {settings.filters?.map(e =>
-                <Tooltip key={e.id} title={MessageSearchFilterBar.tooltipText} mouseEnterDelay={200}>
+                <Tooltip key={e.id} title={MessageSearchFilterBar.tooltipText} mouseEnterDelay={0.2}>
                     <Tag
                         style={{ userSelect: 'none' }}
                         key={e.id}
@@ -959,6 +979,7 @@ class MessageSearchFilterBar extends Component {
                             this.currentIsNew = false;
                             this.currentFilterBackup = ToJson(e);
                             this.currentFilter = e;
+                            this.hasChanges = false;
                         }}
                         onClose={() => settings.filters.remove(e)}
                     >
@@ -967,10 +988,12 @@ class MessageSearchFilterBar extends Component {
                 </Tooltip>
             )}
 
+            {/* Add Filter Button */}
             <Tag onClick={() => transaction(() => {
                 this.currentIsNew = true;
                 this.currentFilterBackup = null;
                 this.currentFilter = new FilterEntry();
+                this.hasChanges = false;
                 settings.filters.push(this.currentFilter);
             })}>
                 <span style={{ verticalAlign: 'middle', marginTop: '-3px', }}> {/* marginRight: '4px' */}
@@ -979,39 +1002,79 @@ class MessageSearchFilterBar extends Component {
                 {/* <span>New Filter</span> */}
             </Tag>
 
+
+            {/* Editor */}
             <Modal centered visible={this.currentFilter != null}
-                title='Edit Filter'
+                //title='Edit Filter'
+                closable={false}
+                title={null}
                 onOk={() => this.currentFilter = null}
+                onCancel={() => this.currentFilter = null}
 
-                //cancelText='Revert'
-                cancelButtonProps={{ danger: true, style: { display: 'none' } }}
+                cancelButtonProps={{ danger: true, className: 'displayNone' }}
 
-                onCancel={() => {
-                    // restore backup, write it to the filter, then close
-                    this.currentFilter = null;
-                }}
-
+                destroyOnClose={true}
                 footer={null}
+
+                bodyStyle={{ paddingTop: '18px' }}
             >
                 {this.currentFilter && <>
-                    <Label text='Name'>
-                        <Input value={this.currentFilter!.name} onChange={e => this.currentFilter!.name = e.target.value} />
-                    </Label>
-                    <Label text='Code' style={{ marginTop: '1em' }}>
-                        <TextArea
+
+                    {/* Title */}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', marginTop: '1em' }}>
+                        <span className='h3' style={{ marginRight: '0.3em' }}>Edit Filter</span>
+                        <Button style={{
+                            opacity: this.hasChanges ? 1 : 0,
+                            transform: this.hasChanges ? '' : 'translate(-10px 0px)',
+                            transition: 'all 0.4s ease-out',
+                            fontFamily: '"Open Sans", sans-serif',
+                            fontSize: '73%',
+                        }}
+                            danger type='dashed' size='small'
+                            onClick={() => this.revertChanges()}
+                        >
+                            Revert Changes
+                        </Button>
+                    </span>
+
+                    {/* Code Box */}
+                    <Label text='Filter Code'>
+                        {/* <TextArea
                             autoFocus={true}
                             value={this.currentFilter!.code}
-                            onChange={e => this.currentFilter!.code = e.target.value}
+                            onChange={e => { this.currentFilter!.code = e.target.value; this.hasChanges = true; }}
                             autoSize={{ minRows: 4, maxRows: 20 }}
+                        /> */}
+                        <Editor
+                            value={this.currentFilter!.code}
+                            onValueChange={code => { this.currentFilter!.code = code; this.hasChanges = true; }}
+                            highlight={code => Prism.highlight(code, PrismLanguages["javascript"], "javascript")}
+                            padding={10}
+                            style={{
+                                fontFamily: '"Fira code", "Fira Mono", monospace',
+                                fontSize: 12,
+                                minWidth: '300px',
+                                minHeight: '200px',
+                                border: '1px solid #0004',
+                                outline: 'none',
+                                borderRadius: '2px',
+                            }}
+                            textareaClassName='code-editor-textarea'
                         />
                     </Label>
 
+                    {/* Help Bar */}
                     <Alert type='info' style={{ marginTop: '.5em', padding: '3px 8px', }} message={<>
                         <span style={{ fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%', color: '#0009' }}>
                             <span>Help:</span>
                             {helpEntries}
                         </span>
                     </>} />
+
+                    {/* Name */}
+                    <Label text='Display Name' textSuffix={nameTip} className='marginTop1em'>
+                        <Input value={this.currentFilter!.name} onChange={e => { this.currentFilter!.name = e.target.value; this.hasChanges = true; }} placeholder='(optional)' />
+                    </Label>
                 </>}
             </Modal>
         </div>
@@ -1024,7 +1087,7 @@ class MessageSearchFilterBar extends Component {
             const restored = JSON.parse(this.currentFilterBackup);
             if (restored)
                 Object.assign(this.currentFilter, restored);
+            this.hasChanges = false;
         }
     }
-
 }

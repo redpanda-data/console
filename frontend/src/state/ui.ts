@@ -61,7 +61,6 @@ export class TopicDetailsSettings {
         partitionID: -1,
         maxResults: 50,
 
-        debugFilterText: '', // todo: remove
         filtersEnabled: false,
         filters: [] as FilterEntry[],
     };

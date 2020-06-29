@@ -112,7 +112,7 @@ export function ObjToKv(obj: any): { key: string, value: any }[] {
 
 
 const style_flexColumn: CSSProperties = { display: 'flex', flexDirection: 'column' };
-export const Label = (p: { text: string, style?: CSSProperties, children?: React.ReactNode }) => {
+export const Label = (p: { text: string, textSuffix?: React.ReactNode, className?: string, style?: CSSProperties, children?: React.ReactNode }) => {
     const [id] = useState(() => simpleUniqueId(p.text));
 
     const child: React.ReactNode = p.children ?? <React.Fragment />;
@@ -124,9 +124,9 @@ export const Label = (p: { text: string, style?: CSSProperties, children?: React
     const divStyle = p.style ? { ...p.style, ...style_flexColumn } : p.style;
 
     return <>
-        <div style={divStyle}>
+        <div className={p.className} style={divStyle}>
             <div className='labelText'>
-                <label htmlFor={id}>{p.text}</label>
+                <label htmlFor={id}>{p.text} {p.textSuffix}</label>
             </div>
             <div>
                 {newChild}
