@@ -23,7 +23,7 @@ import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
 import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable } from "../../../utils/tsxUtils";
+import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
 
 import Octicon, { Skip, Sync, ChevronDown, Play, ChevronRight } from '@primer/octicons-react';
 import { SyncIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon, PlusIcon } from '@primer/octicons-v2-react'
@@ -471,7 +471,7 @@ function ${name}() {
 }`);
             });
 
-            if (functions) {
+            if (functions.length > 0) {
                 filterCode = functions.join('\n\n') + "\n\n"
                     + `return ${functionNames.map(f => f + "()").join(' && ')}`;
                 if (IsDev) console.log(`constructed filter code (${functions.length} functions)`, "\n\n" + filterCode);
@@ -940,29 +940,21 @@ class MessageSearchFilterBar extends Component {
 
     @observable hasChanges = false; // used by editor; shows "revert changes" when true
 
-    static tooltipText = QuickTable([
+    static readonly tooltipText = QuickTable([
         ["Click:", "toggle active"],
         ["Double Click:", "edit filter"]
     ]);
 
+    static readonly nameTip = <>
+        <LayoutBypass>
+            <Tooltip placement='top' title={<span>Enter a custom name that will be shown in the list.<br />Otherwise the the code itself will be used as the name.</span>}>
+                <QuestionCircleTwoTone twoToneColor='deepskyblue' style={{ fontSize: '15px', marginBottom: '3px', marginLeft: '2px' }} />
+            </Tooltip>
+        </LayoutBypass>
+    </>
 
     render() {
         const settings = uiState.topicSettings.searchParams;
-
-        const nameTip = <>
-            <span style={{
-                display: 'inline-flex',
-                verticalAlign: 'middle',
-                width: '2px', height: '2px',
-                zIndex: 1,
-                justifyContent: 'start',
-                alignItems: 'center',
-            }}>
-                <Tooltip placement='top' title={<span>Enter a custom name that will be shown in the list.<br />Otherwise the the code itself will be used as the name.</span>}>
-                    <QuestionCircleTwoTone twoToneColor='deepskyblue' style={{ fontSize: '15px', marginBottom: '3px', marginLeft: '2px' }} />
-                </Tooltip>
-            </span>
-        </>
 
         return <div style={{ display: 'flex', flexWrap: 'wrap', flexDirection: 'row' }}>
 
@@ -1010,8 +1002,6 @@ class MessageSearchFilterBar extends Component {
                 title={null}
                 onOk={() => this.currentFilter = null}
                 onCancel={() => this.currentFilter = null}
-
-                cancelButtonProps={{ danger: true, className: 'displayNone' }}
 
                 destroyOnClose={true}
                 footer={null}
@@ -1072,7 +1062,7 @@ class MessageSearchFilterBar extends Component {
                     </>} />
 
                     {/* Name */}
-                    <Label text='Display Name' textSuffix={nameTip} className='marginTop1em'>
+                    <Label text='Display Name' textSuffix={MessageSearchFilterBar.nameTip} className='marginTop1em'>
                         <Input value={this.currentFilter!.name} onChange={e => { this.currentFilter!.name = e.target.value; this.hasChanges = true; }} placeholder='(optional)' />
                     </Label>
                 </>}

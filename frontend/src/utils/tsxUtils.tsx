@@ -205,3 +205,20 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
         return null;
     }
 }
+
+export class LayoutBypass extends Component {
+
+    static readonly style: CSSProperties = {
+        display: 'inline-flex',
+        verticalAlign: 'middle',
+        width: '0px', height: '0px',
+        zIndex: 1,
+        justifyContent: 'start',
+        alignItems: 'center',
+    };
+
+    render() {
+        // todo: if any props, copy 'style' and overwrite (object.assign + remove 'children' prop)
+        return <span style={LayoutBypass.style}>{this.props.children}</span>
+    }
+}

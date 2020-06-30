@@ -332,22 +332,45 @@ span>.icon-container~span {
 }
 
 .version {
-    color: hsla(205, 32%, 46%, 0.4);
-    font-size: 80%;
-    margin: .5em auto;
+    padding-bottom: .5em;
     display: flex;
     flex-direction: column;
     text-align: center;
+    font-family: "Open Sans";
+    font-size: 11px;
+    font-weight: 600;
+    line-height: normal;
+    opacity: 0.2;
+}
+
+.version, .version span[role=img] {
+    color: hsla(205, 60%, 75%, 1);
+    transition: all 0.2s ease-out;
+}
+
+.version:hover, .version:hover span[role=img] {
+    color: hsla(205, 85%, 66%, 1);
+    opacity: 0.9;
 }
 
 .version .repo {
-    opacity: 0.1;
     padding: 4px;
 }
 
-.version .repo:hover {
-    opacity: .8;
+.versionGitData {
+    font-family: monospace;
 }
+
+.versionDate {
+    opacity: 0;
+    transition: all 0.4s ease-out 0.2s;
+}
+
+.version:hover .versionDate {
+    opacity: 1;
+}
+
+.versionTitle {}
 
 .hoverBorder {
     border-color: transparent;

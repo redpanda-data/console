@@ -44,26 +44,30 @@ const DebugUserInfoBar = () => (
 const VersionInfo = () => {
     // Local Development Mode
     //   Kowl - DEV
-    if (IsDev) return <div>{AppName} - DEV</div>
+    if (IsDev) return <>
+        <div className='versionTitle'>{AppName} - DEV</div>
+        <div className='versionGitData'>{"b27cxxaf"} {"f3axxb7"}</div>
+        <div className='versionDate'>Tue Dez 42 3920</div>
+    </>
 
     // Continuous Delivery Mode
     //   Kowl Business - CI
     //   b27c2a3f f3acf4b7
     if (env.REACT_APP_BUILT_FROM_PUSH) return <>
-        <div>{AppName} - CI</div>
+        <div className='versionTitle'>{AppName} - CI</div>
         <div>
             <span>{env.REACT_APP_KOWL_GIT_REF != 'master' && env.REACT_APP_KOWL_GIT_REF + "-"}</span>
-            <span>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 8)}</span>
+            <span>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 7)}</span>
         </div>
 
-        {IsBusiness && <div>
+        {IsBusiness && <div className='versionGitData'>
             <span>{env.REACT_APP_KOWL_BUSINESS_GIT_REF != 'master' &&
                 env.REACT_APP_KOWL_BUSINESS_GIT_REF + "-"}</span>
-            <span>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 8)}</span>
+            <span>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 7)}</span>
         </div>}
 
-        <div>
-            {getBuildDate(IsBusiness ? 'business' : 'free')?.toDateString()}
+        <div className='versionDate'>
+            {getBuildDate()?.toDateString()}
         </div>
     </>
 
@@ -71,11 +75,11 @@ const VersionInfo = () => {
     //   Kowl Business v1.2.3
     //   b27c2a3f f3acf4b7
     return <>
-        <div>{AppName} - {IsBusiness ? env.REACT_APP_KOWL_BUSINESS_GIT_REF : env.REACT_APP_KOWL_GIT_REF}</div>
-        <div>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 8)}</div>
-        {IsBusiness && <div>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 8)}</div>}
-        <div>
-            {getBuildDate(IsBusiness ? 'business' : 'free')?.toDateString()}
+        <div className='versionTitle'>{AppName} - {IsBusiness ? env.REACT_APP_KOWL_BUSINESS_GIT_REF : env.REACT_APP_KOWL_GIT_REF}</div>
+        <div className='versionGitData'>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 7)}</div>
+        {IsBusiness && <div className='versionGitData'>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 7)}</div>}
+        <div className='versionDate'>
+            {getBuildDate()?.toDateString()}
         </div>
     </>
 
