@@ -89,6 +89,9 @@ func (p *progressReporter) OnMessage(message *kafka.TopicMessage) {
 }
 
 func (p *progressReporter) OnComplete(elapsedMs float64, isCancelled bool) {
+	p.statsMutex.RLock()
+	defer p.statsMutex.RUnlock()
+
 	_ = p.websocket.writeJSON(struct {
 		Type             string  `json:"type"`
 		ElapsedMs        float64 `json:"elapsedMs"`
