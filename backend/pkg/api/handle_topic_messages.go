@@ -25,7 +25,7 @@ type progressReporter struct {
 	ctx       context.Context
 	logger    *zap.Logger
 	request   *owl.ListMessageRequest
-	websocket *WebsocketClient
+	websocket *websocketClient
 
 	statsMutex       *sync.RWMutex
 	messagesConsumed int64
@@ -59,7 +59,7 @@ func (p *progressReporter) reportProgress() {
 	p.statsMutex.RLock()
 	defer p.statsMutex.RUnlock()
 
-	_ = p.websocket.WriteJSON(struct {
+	_ = p.websocket.writeJSON(struct {
 		Type             string `json:"type"`
 		MessagesConsumed int64  `json:"messagesConsumed"`
 		BytesConsumed    int64  `json:"bytesConsumed"`
@@ -67,7 +67,7 @@ func (p *progressReporter) reportProgress() {
 }
 
 func (p *progressReporter) OnPhase(name string) {
-	_ = p.websocket.WriteJSON(struct {
+	_ = p.websocket.writeJSON(struct {
 		Type  string `json:"type"`
 		Phase string `json:"phase"`
 	}{"phase", name})
@@ -82,14 +82,14 @@ func (p *progressReporter) OnMessageConsumed(size int64) {
 }
 
 func (p *progressReporter) OnMessage(message *kafka.TopicMessage) {
-	_ = p.websocket.WriteJSON(struct {
+	_ = p.websocket.writeJSON(struct {
 		Type    string              `json:"type"`
 		Message *kafka.TopicMessage `json:"message"`
 	}{"message", message})
 }
 
 func (p *progressReporter) OnComplete(elapsedMs float64, isCancelled bool) {
-	_ = p.websocket.WriteJSON(struct {
+	_ = p.websocket.writeJSON(struct {
 		Type             string  `json:"type"`
 		ElapsedMs        float64 `json:"elapsedMs"`
 		IsCancelled      bool    `json:"isCancelled"`
@@ -99,7 +99,7 @@ func (p *progressReporter) OnComplete(elapsedMs float64, isCancelled bool) {
 }
 
 func (p *progressReporter) OnError(message string) {
-	_ = p.websocket.WriteJSON(struct {
+	_ = p.websocket.writeJSON(struct {
 		Type    string `json:"type"`
 		Message string `json:"message"`
 	}{"error", message})
@@ -153,36 +153,38 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 
-		wsClient := WebsocketClient{
+		wsClient := websocketClient{
 			Ctx:        ctx,
 			Cancel:     cancel,
 			Logger:     logger,
 			Connection: nil,
 			Mutex:      &sync.RWMutex{},
 		}
-		restErr := wsClient.Upgrade(w, r)
+		restErr := wsClient.upgrade(w, r)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
-		defer wsClient.SendClose()
+		defer wsClient.sendClose()
 
 		// Get search parameters. Close connection if search parameters are invalid
 		var req listMessagesRequest
-		err := wsClient.ReadJSON(&req)
+		err := wsClient.readJSON(&req)
 		if err != nil {
-			wsClient.WriteJSON(rest.Error{
+			wsClient.writeJSON(rest.Error{
 				Err:     err,
 				Status:  http.StatusBadRequest,
 				Message: "Failed to parse list message request",
 			})
 			return
 		}
+		go wsClient.readLoop()
+		go wsClient.producePings()
 
 		// Validate request parameter
 		err = req.OK()
 		if err != nil {
-			wsClient.WriteJSON(rest.Error{
+			wsClient.writeJSON(rest.Error{
 				Err:     err,
 				Status:  http.StatusBadRequest,
 				Message: fmt.Sprintf("Failed to validate list message request: %v", err),

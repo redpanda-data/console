@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type WebsocketClient struct {
+type websocketClient struct {
 	Ctx        context.Context
 	Cancel     context.CancelFunc
 	Logger     *zap.Logger
@@ -19,13 +19,14 @@ type WebsocketClient struct {
 	Mutex      *sync.RWMutex
 }
 
-func (wc *WebsocketClient) Upgrade(w http.ResponseWriter, r *http.Request) *rest.Error {
+func (wc *websocketClient) upgrade(w http.ResponseWriter, r *http.Request) *rest.Error {
 	upgrader := websocket.Upgrader{
 		EnableCompression: true,
 		// TODO(security): Implement origin check once something can be modified or deleted via websockets, not necessary for fetching messages only
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
+	// TODO: Add user information to logger?
 	wc.Logger.Debug("starting websocket connection upgrade")
 	wsConnection, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -39,42 +40,85 @@ func (wc *WebsocketClient) Upgrade(w http.ResponseWriter, r *http.Request) *rest
 	}
 	wc.Logger.Debug("websocket upgrade complete")
 
-	wsConnection.SetCloseHandler(wc.OnClose)
-	wc.Logger.Debug("websocket connection upgrade complete")
-
 	maxMessageSize := int64(16 * 1024) // 16kb
 	wsConnection.SetReadLimit(maxMessageSize)
+	wsConnection.SetCloseHandler(wc.onClose)
+	wsConnection.SetReadDeadline(time.Now().Add(10 * time.Second)) // Grant max 10s until readLoop() is setup
 	wc.Connection = wsConnection
 
 	return nil
 }
 
-func (wc *WebsocketClient) ReadJSON(v interface{}) error {
+// readLoop reads all messages received on the websocket connection so that it can handle pong and close messages
+// sent by the websocket peer.
+func (wc *websocketClient) readLoop() {
+	maxSilence := time.Second * 10
+	wc.Connection.SetPongHandler(func(string) error { wc.Connection.SetReadDeadline(time.Now().Add(maxSilence)); return nil })
+	wc.Connection.SetReadDeadline(time.Now().Add(maxSilence))
+
+	for {
+		if _, _, err := wc.Connection.NextReader(); err != nil {
+			wc.writeJSON(rest.Error{
+				Status:  http.StatusRequestTimeout,
+				Message: "Last received pong was too long ago",
+			})
+			wc.sendClose()
+			break
+		}
+	}
+}
+
+// producePings sends ping messages until websocket connection is broken
+func (wc *websocketClient) producePings() {
+	ticker := time.NewTicker(time.Second * 3)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := wc.writeMessage(websocket.PingMessage, []byte{}); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (wc *websocketClient) readJSON(v interface{}) error {
 	wc.Mutex.RLock()
 	defer wc.Mutex.RUnlock()
 
 	return wc.Connection.ReadJSON(v)
 }
 
-func (wc *WebsocketClient) WriteJSON(v interface{}) error {
+func (wc *websocketClient) writeJSON(v interface{}) error {
 	wc.Mutex.Lock()
 	defer wc.Mutex.Unlock()
 
 	return wc.Connection.WriteJSON(v)
 }
 
-func (wc *WebsocketClient) SendClose() {
+func (wc *websocketClient) writeMessage(messageType int, data []byte) error {
+	wc.Mutex.Lock()
+	defer wc.Mutex.Unlock()
+
+	return wc.Connection.WriteMessage(messageType, data)
+}
+
+func (wc *websocketClient) sendClose() {
+	wc.Cancel()
+
 	// Close connection gracefully!
-	err := wc.Connection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	err := wc.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil && err != websocket.ErrCloseSent {
 		wc.Logger.Debug("failed to send 'CloseNormalClosure' to ws connection", zap.Error(err))
 	} else {
-		// the example in github.com/gorilla/websocket also does this
+		// Wait for client close event for up to 2s
 		time.Sleep(2 * time.Second)
 	}
+	_ = wc.Connection.Close()
 }
 
-func (wc *WebsocketClient) OnClose(code int, text string) error {
+func (wc *websocketClient) onClose(code int, text string) error {
 	wc.Logger.Debug("connection has been closed by client", zap.Int("code", code), zap.String("text", text))
 	wc.Cancel()
 	return nil
