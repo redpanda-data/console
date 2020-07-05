@@ -196,12 +196,12 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
                 <div>{this.props.statusText}</div>
                 <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
             </div>
-            {this.props.bytesConsumed > 0 && 
+            {this.props.bytesConsumed > 0 &&
                 <div style={StatusIndicator.moreInfoStyle}>
                     Bytes Consumed: {this.props.bytesConsumed}
                 </div>
             }
-            {this.props.messagesConsumed > 0 && 
+            {this.props.messagesConsumed > 0 &&
                 <div style={StatusIndicator.moreInfoStyle}>
                     Messages Consumed: {this.props.messagesConsumed}
                 </div>
@@ -217,19 +217,28 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
     }
 }
 
-export class LayoutBypass extends Component {
+export class LayoutBypass extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string }> {
 
     static readonly style: CSSProperties = {
         display: 'inline-flex',
-        verticalAlign: 'middle',
         width: '0px', height: '0px',
-        zIndex: 1,
-        justifyContent: 'start',
+        transform: 'translateY(-1px)',
+        // zIndex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
     };
 
     render() {
-        // todo: if any props, copy 'style' and overwrite (object.assign + remove 'children' prop)
-        return <span style={LayoutBypass.style}>{this.props.children}</span>
+        const p = this.props;
+        let style = LayoutBypass.style;
+        if (p.width || p.height || p.justifyContent || p.alignItems) {
+            style = Object.assign({}, style, p);
+        }
+
+        return <span className='verticalCenter' style={style}>
+            <span>
+                {this.props.children}
+            </span>
+        </span>
     }
 }
