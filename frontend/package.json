@@ -10,7 +10,7 @@
         "@primer/octicons-v2-react": "0.0.0-53e900d",
         "antd": "^4.2.0",
         "customize-cra": "^0.9.1",
-        "framer-motion": "^1.10.3",
+        "framer-motion": "^1.11.1",
         "less": "^3.10.3",
         "less-loader": "^6.0.0",
         "mobx": "^5.14.0",
