@@ -191,6 +191,8 @@ const apiStore = {
     MessagesFor: '', // for what topic?
     Messages: [] as TopicMessage[],
     MessagesElapsedMs: null as null | number,
+    MessagesBytesConsumed: 0,
+    MessagesTotalConsumed: 0,
 
 
     async startMessageSearch(searchRequest: MessageSearchRequest): Promise<void> {
@@ -210,6 +212,8 @@ const apiStore = {
         currentWS = new WebSocket(url);
         const ws = currentWS;
         this.MessageSearchPhase = "Connecting";
+        this.MessagesBytesConsumed = 0;
+        this.MessagesTotalConsumed = 0;
 
         currentWS.onopen = ev => {
             if (ws !== currentWS) return; // newer request has taken over
@@ -234,6 +238,11 @@ const apiStore = {
                     this.MessageSearchPhase = msg.phase;
                     break;
 
+                case 'progressUpdate':
+                    this.MessagesBytesConsumed = msg.bytesConsumed;
+                    this.MessagesTotalConsumed = msg.messagesConsumed;
+                    break;
+
                 case 'done':
                     this.MessagesElapsedMs = msg.elapsedMs;
                     // this.MessageSearchCancelled = msg.isCancelled;
@@ -253,8 +262,14 @@ const apiStore = {
                 case 'message':
                     let m = msg.message as TopicMessage;
 
-                    if (m.key && typeof m.key === 'string' && m.key.length > 0)
-                        m.key = atob(m.key); // unpack base64 encoded key
+                    if (m.key && typeof m.key === 'string' && m.key.length > 0) {
+                        try {
+                            m.key = atob(m.key); // unpack base64 encoded key
+                        } catch (error) {
+                            // Empty
+                            // Only unpack if the key is base64 based
+                        }
+                    }
 
                     m.valueJson = JSON.stringify(m.value);
 
@@ -281,6 +296,19 @@ const apiStore = {
         currentWS.onmessage = onMessageHandler;
     },
 
+    stopMessageSearch() {
+        if (!currentWS) {
+            return;
+        }
+
+        currentWS.close();
+        currentWS = null;
+
+        this.MessageSearchPhase = "Done";
+        this.MessagesBytesConsumed = 0;
+        this.MessagesTotalConsumed = 0;
+        this.MessageSearchPhase = null;
+    },
 
     refreshTopics(force?: boolean) {
         cachedApiRequest<GetTopicsResponse>('/api/topics', force)

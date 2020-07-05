@@ -26,7 +26,7 @@ import { editQuery } from "../../../utils/queryHelper";
 import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
 
 import Octicon, { Skip, Sync, ChevronDown, Play, ChevronRight } from '@primer/octicons-react';
-import { SyncIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon, PlusIcon } from '@primer/octicons-v2-react'
+import { SyncIcon, XCircleIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon, PlusIcon } from '@primer/octicons-v2-react'
 import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg';
 
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
@@ -205,13 +205,22 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </div>
                 </Label>
 
-                {/* Refresh Button */}
+                {/* Refresh / Cancel Button */}
                 <div style={{ ...spaceStyle }}>
-                    <Tooltip title='Repeat current search'>
-                        <Button type='primary' onClick={() => this.searchFunc('manual')} disabled={api.MessageSearchPhase != null}>
+                    {!api.MessageSearchPhase &&
+                        <Tooltip title='Repeat current search'>
+                        <Button type='primary' onClick={() => this.searchFunc('manual')}>
                             <SyncIcon size={16} />
                         </Button>
-                    </Tooltip>
+                        </Tooltip>
+                    }
+                    {api.MessageSearchPhase &&
+                        <Tooltip title='Cancel current search'>
+                        <Button danger type='primary' onClick={() => this.cancelSearch()}>
+                            <XCircleIcon size={20} />
+                        </Button>
+                        </Tooltip>
+                    }
                 </div>
 
                 {/* Quick Search */}
@@ -230,6 +239,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         identityKey='messageSearch'
                         fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
                         statusText={api.MessageSearchPhase}
+                        bytesConsumed={api.MessagesBytesConsumed}
+                        messagesConsumed={api.MessagesTotalConsumed}
                         progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`} />}
 
                 {/* Filter Tags */}
@@ -292,6 +303,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             this.currentSearchRun = null;
         }
     }
+
+    cancelSearch = () => api.stopMessageSearch();
 
     isFilterMatch(str: string, m: TopicMessage) {
         str = str.toLowerCase();
