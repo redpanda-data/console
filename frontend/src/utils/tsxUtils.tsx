@@ -162,10 +162,11 @@ export class OptionGroup<T> extends Component<{
     }
 }
 
-export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, progressText: string }> {
+export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed: number, messagesConsumed: number, progressText: string }> {
 
     static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
     static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
+    static readonly moreInfoStyle: CSSProperties = { display: 'block', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%', textAlign: 'left' } as const;
     static readonly progressTextStyle: CSSProperties = { marginLeft: 'auto', paddingLeft: '2em' } as const;
 
     hide: MessageType;
@@ -195,6 +196,16 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
                 <div>{this.props.statusText}</div>
                 <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
             </div>
+            {this.props.bytesConsumed > 0 && 
+                <div style={StatusIndicator.moreInfoStyle}>
+                    Bytes Consumed: {this.props.bytesConsumed}
+                </div>
+            }
+            {this.props.messagesConsumed > 0 && 
+                <div style={StatusIndicator.moreInfoStyle}>
+                    Messages Consumed: {this.props.messagesConsumed}
+                </div>
+            }
         </div>
         this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: null, type: 'loading' });
     }
