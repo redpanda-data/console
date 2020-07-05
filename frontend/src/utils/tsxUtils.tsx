@@ -162,7 +162,7 @@ export class OptionGroup<T> extends Component<{
     }
 }
 
-export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed: number, messagesConsumed: number, progressText: string }> {
+export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed: string, messagesConsumed: string, progressText: string }> {
 
     static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
     static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
@@ -196,14 +196,12 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
                 <div>{this.props.statusText}</div>
                 <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
             </div>
-            {this.props.bytesConsumed > 0 &&
+            {(this.props.bytesConsumed && this.props.messagesConsumed) &&
                 <div style={StatusIndicator.moreInfoStyle}>
-                    Bytes Consumed: {this.props.bytesConsumed}
-                </div>
-            }
-            {this.props.messagesConsumed > 0 &&
-                <div style={StatusIndicator.moreInfoStyle}>
-                    Messages Consumed: {this.props.messagesConsumed}
+                    <div>
+                        Bytes: {this.props.bytesConsumed}
+                    </div>
+                    <div style={StatusIndicator.progressTextStyle}>Messages: {this.props.messagesConsumed}</div>
                 </div>
             }
         </div>

@@ -163,7 +163,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             }
         </>
     }
-
     SearchControlsBar = observer(() => {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
@@ -172,32 +171,40 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 {/* Search Settings*/}
                 <Label text='Partition' style={{ ...spaceStyle }}>
-                    <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }}>
+                    <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }} size='middle'>
                         <Select.Option key='all' value={-1}>All</Select.Option>
                         {range(0, topic.partitionCount).map(i =>
                             <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
                     </Select>
                 </Label>
-                <Label text='Max Results' style={{ ...spaceStyle }}>
-                    <Select<number> value={searchParams.maxResults} onChange={c => searchParams.maxResults = c} style={{ width: '10em' }}>
-                        {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()} results</Select.Option>)}
-                    </Select>
-                </Label>
-                <Label text='Offset' style={{ ...spaceStyle }}>
+                <Label text='Start Offset' style={{ ...spaceStyle }}>
                     <InputGroup compact style={{ display: 'inline-block', width: 'auto' }}>
-                        <Select<TopicOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => searchParams.offsetOrigin = e}
-                            dropdownMatchSelectWidth={false} style={{ width: '10em' }}>
-                            <Option value={TopicOffsetOrigin.End}>Newest Offset</Option>
-                            <Option value={TopicOffsetOrigin.Start}>Oldest Offset</Option>
-                            <Option value={TopicOffsetOrigin.Custom}>Custom Offset</Option>
+                        <Select<TopicOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => searchParams.offsetOrigin = e} size='middle'
+                            dropdownMatchSelectWidth={false} style={{ width: '9em' }}
+                        >
+                            {/* riki's solution: */}
+                            { /* First */}
+                            { /* Last */}
+                            { /* Next */}
+                            { /* Custom */}
+                            {/* weeco's solution: https://i.imgur.com/mhbgyPS.png */}
+                            <Option value={(TopicOffsetOrigin.End) - 3}>Newest</Option>
+                            <Option value={TopicOffsetOrigin.End}>Newest<span style={{ opacity: '90%' }}>-{searchParams.maxResults}</span></Option>
+                            <Option value={TopicOffsetOrigin.Start}>Oldest</Option>
+                            <Option value={TopicOffsetOrigin.Custom}>Custom</Option>
                         </Select>
                         {
                             searchParams.offsetOrigin == TopicOffsetOrigin.Custom &&
-                            <Input style={{ width: '8em' }} maxLength={20}
+                            <Input style={{ width: '7.5em' }} maxLength={20}
                                 value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
                                 disabled={searchParams.offsetOrigin != TopicOffsetOrigin.Custom} />
                         }
                     </InputGroup>
+                </Label>
+                <Label text='Max Results' style={{ ...spaceStyle }}>
+                    <Select<number> value={searchParams.maxResults} onChange={c => searchParams.maxResults = c} style={{ width: '9em' }} size='middle'>
+                        {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()}</Select.Option>)}
+                    </Select>
                 </Label>
                 <Label text='Filter' style={{ ...spaceStyle }}>
                     <div style={{ height: '32px', paddingTop: '3px' }}>
@@ -205,23 +212,34 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </div>
                 </Label>
 
-                {/* Refresh / Cancel Button */}
-                <div style={{ ...spaceStyle }}>
-                    {!api.MessageSearchPhase &&
-                        <Tooltip title='Repeat current search'>
-                        <Button type='primary' onClick={() => this.searchFunc('manual')}>
-                            <SyncIcon size={16} />
-                        </Button>
-                        </Tooltip>
-                    }
-                    {api.MessageSearchPhase &&
-                        <Tooltip title='Cancel current search'>
-                        <Button danger type='primary' onClick={() => this.cancelSearch()}>
-                            <XCircleIcon size={20} />
-                        </Button>
-                        </Tooltip>
-                    }
-                </div>
+                {/* Refresh Button */}
+                <Label text='' style={{ ...spaceStyle }}>
+                    <div style={{ display: 'flex' }}>
+
+                        <AnimatePresence>
+                            {api.MessageSearchPhase == null &&
+                                <MotionSpan identityKey='btnRefresh' overrideAnimProps={animProps_span_messagesStatus}>
+                                    <Tooltip title='Repeat current search'>
+                                        <Button type='primary' onClick={() => this.searchFunc('manual')}>
+                                            <SyncIcon size={16} />
+                                        </Button>
+                                    </Tooltip>
+                                </MotionSpan>
+                            }
+                            {api.MessageSearchPhase != null &&
+                                <MotionSpan identityKey='btnCancelSearch' overrideAnimProps={animProps_span_messagesStatus}>
+                                    <Tooltip title='Stop searching'>
+                                        <Button type='primary' danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
+                                            <LayoutBypass >
+                                                <XCircleIcon size={20} />
+                                            </LayoutBypass>
+                                        </Button>
+                                    </Tooltip>
+                                </MotionSpan>
+                            }
+                        </AnimatePresence>
+                    </div>
+                </Label>
 
                 {/* Quick Search */}
                 <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto' }}>
@@ -233,15 +251,17 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     />
                 </div>
 
-                {/* Search Progress Indicator: "Consuming Messages  30/30" */}
+                {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                 {api.MessageSearchPhase &&
                     <StatusIndicator
                         identityKey='messageSearch'
                         fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
                         statusText={api.MessageSearchPhase}
-                        bytesConsumed={api.MessagesBytesConsumed}
-                        messagesConsumed={api.MessagesTotalConsumed}
-                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`} />}
+                        bytesConsumed={prettyBytes(api.MessagesBytesConsumed)}
+                        messagesConsumed={String(api.MessagesTotalConsumed)}
+                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`}
+                    />
+                }
 
                 {/* Filter Tags */}
                 {searchParams.filtersEnabled && <div style={{ paddingTop: '1em', width: '100%' }}>
