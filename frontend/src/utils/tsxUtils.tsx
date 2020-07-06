@@ -201,7 +201,9 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
                     <div>
                         Bytes: {this.props.bytesConsumed}
                     </div>
-                    <div style={StatusIndicator.progressTextStyle}>Messages: {this.props.messagesConsumed}</div>
+                    <div>
+                        Messages: {this.props.messagesConsumed}
+                    </div>
                 </div>
             }
         </div>
