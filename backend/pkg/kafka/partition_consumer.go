@@ -146,6 +146,7 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				Key:         DirectEmbedding{ValueType: valueTypeText, Value: m.Key}, // TODO: Parse key
 				Value:       value,
 			}
+
 			isOK, err := isMessageOK(args)
 			if err != nil {
 				// TODO: This might be changed to debug level, because operators probably do not care about user failures?
@@ -220,6 +221,8 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 	}
 
 	vm := otto.New()
+	vm.Interrupt = make(chan func(), 1)
+
 	code := fmt.Sprintf(`interpreter = {isMessageOk: function(partitionId, offset, timestamp, key, value) {%s}}`, p.FilterInterpreterCode)
 	_, err := vm.Run(code)
 	if err != nil {
@@ -231,7 +234,40 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		return nil, err
 	}
 
-	isMessageOk := func(args interpreterArguments) (bool, error) {
+	// We use named return parameter here because this way we can return a error message in recover().
+	// Returning a proper error is important because we want to stop the consumer for this partition
+	// if we exceed the execution timeout.
+	isMessageOk := func(args interpreterArguments) (isOk bool, err error) {
+		// 1. Setup timeout check. If execution takes longer than 400ms the VM will be killed
+		// Ctx is used to notify the below go routine once we are done
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		errTimeout := "interpreter execution has taken too long"
+		defer func() {
+			if caught := recover(); caught != nil {
+				if caught == errTimeout {
+					err = fmt.Errorf(errTimeout)
+					return
+				}
+				panic(caught) // Something else happened, repanic!
+			}
+		}()
+
+		// Send interrupt signal to VM if execution has taken too long
+		go func() {
+			timer := time.NewTimer(400 * time.Millisecond)
+
+			select {
+			case <-timer.C:
+				vm.Interrupt <- func() { panic(errTimeout) }
+				return
+			case <-ctx.Done():
+				return
+			}
+		}()
+
+		// 2. Run JavaScript code inside of VM
 		// Parse kafka key and message to a Go type (interface{} for JSON, string for text, etc)
 		key, err := args.Key.Parse()
 		if err != nil {
@@ -247,7 +283,7 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		if err != nil {
 			return false, fmt.Errorf("failed to evaluate javascript code: %w", err)
 		}
-		isOk, err := val.ToBoolean()
+		isOk, err = val.ToBoolean()
 		if err != nil {
 			return false, fmt.Errorf("failed to cast return type to boolean: %w", err)
 		}
