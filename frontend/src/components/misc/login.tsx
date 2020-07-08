@@ -130,7 +130,7 @@ class Login extends Component {
                             </div>
                         </div>
 
-                        <div style={{ marginTop: 'auto', fontWeight: 'normal' }}>Copyright © 2020 CloudHut. All rights reserved.</div>
+                        <div style={{ marginTop: 'auto', fontWeight: 'normal' }}>Copyright © 2020-{new Date().getFullYear()} CloudHut. All rights reserved.</div>
                     </div>
                 </div>
 

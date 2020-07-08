@@ -954,7 +954,7 @@ const helpEntries = [
         <li><span className='codeBox'>partitionID</span>: ...</li>
     </ul>),
     makeHelpEntry('Examples', 'todo... '),
-].genericJoin(<div style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
+].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
 @observer
 class MessageSearchFilterBar extends Component {
