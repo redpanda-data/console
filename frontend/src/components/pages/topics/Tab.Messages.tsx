@@ -316,7 +316,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             this.currentSearchRun = searchParams;
 
             if (this.fetchError == null)
-                this.executeMessageSearch();
+                untracked(() => this.executeMessageSearch());
         } catch (error) {
             console.error(error);
         } finally {
