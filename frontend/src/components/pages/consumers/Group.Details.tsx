@@ -192,7 +192,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             const partitionsAssigned = g.items.filter(c => c.assignedMember).length;
 
             if (p.onlyShowPartitionsWithLag)
-                g.items.removeAll(e => e.lag == 0);
+                g.items.removeAll(e => e.lag === 0);
 
             return <Collapse.Panel key={g.key}
                 header={
@@ -277,7 +277,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
             const totalPartitions = assignmentsFlat.length;
 
             if (p.onlyShowPartitionsWithLag)
-                assignmentsFlat.removeAll(e => !e.partitionLag);
+                assignmentsFlat.removeAll(e => e.partitionLag === 0);
 
             return <Collapse.Panel key={m.id}
                 header={
