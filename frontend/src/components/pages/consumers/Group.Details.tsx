@@ -96,6 +96,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                         <Statistic title='Topics with offset' value={topicsWithOffset} />
                         <Statistic title='Assigned Partitions' value={totalPartitions} />
                         <Statistic title='Partitions with offset' value={partitionsWithOffset} />
+                        <Statistic title='Total Lag' value={group.lagSum} />
                     </Row>
                 </Card>
 
