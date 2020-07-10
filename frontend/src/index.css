@@ -130,6 +130,7 @@ span>.icon-container~span {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -143,9 +144,11 @@ span>.icon-container~span {
     from {
         opacity: 1.0;
     }
+
     50% {
         opacity: 0.5;
     }
+
     to {
         transform: 1.0;
     }
@@ -159,6 +162,7 @@ span>.icon-container~span {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -269,7 +273,8 @@ span>.icon-container~span {
     overflow: visible;
 }
 
-.ant-table-tbody>tr:hover:not(.ant-table-row-selected), .pureDisplayRow>td {
+.ant-table-tbody>tr:hover:not(.ant-table-row-selected),
+.pureDisplayRow>td {
     background-color: initial !important;
 }
 
@@ -332,22 +337,47 @@ span>.icon-container~span {
 }
 
 .version {
-    color: hsla(205, 32%, 46%, 0.4);
-    font-size: 80%;
-    margin: .5em auto;
+    padding-bottom: .5em;
     display: flex;
     flex-direction: column;
     text-align: center;
+    font-family: "Open Sans";
+    font-size: 11px;
+    font-weight: 600;
+    line-height: normal;
+    opacity: 0.2;
+}
+
+.version,
+.version span[role=img] {
+    color: hsla(205, 60%, 75%, 1);
+    transition: all 0.2s ease-out;
+}
+
+.version:hover,
+.version:hover span[role=img] {
+    color: hsla(205, 85%, 66%, 1);
+    opacity: 0.9;
 }
 
 .version .repo {
-    opacity: 0.1;
     padding: 4px;
 }
 
-.version .repo:hover {
-    opacity: .8;
+.versionGitData {
+    font-family: monospace;
 }
+
+.versionDate {
+    opacity: 0;
+    transition: all 0.4s ease-out 0.2s;
+}
+
+.version:hover .versionDate {
+    opacity: 1;
+}
+
+.versionTitle {}
 
 .hoverBorder {
     border-color: transparent;
@@ -518,7 +548,8 @@ span>.icon-container~span {
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
-.ant-menu.ant-menu-dark .ant-menu-item-selected, .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
+.ant-menu.ant-menu-dark .ant-menu-item-selected,
+.ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
     background-color: hsla(209, 72%, 59%, 0.68);
 }
 
@@ -681,7 +712,8 @@ tr.consumerGroupNoMemberAssigned {
     flex-wrap: wrap;
 }
 
-.ant-tabs .ant-tabs-top-content>.ant-tabs-tabpane, .ant-tabs .ant-tabs-bottom-content>.ant-tabs-tabpane {
+.ant-tabs .ant-tabs-top-content>.ant-tabs-tabpane,
+.ant-tabs .ant-tabs-bottom-content>.ant-tabs-tabpane {
     transition-duration: 0.15s;
     transition-timing-function: ease-out
 }
@@ -701,20 +733,6 @@ tr.consumerGroupNoMemberAssigned {
 
 .ant-modal {
     max-height: 80%;
-}
-
-.ant-tooltip-inner {
-    min-height: 20px;
-    padding: 3px 6px;
-    color: rgba(255, 255, 255, 85%);
-    border-radius: 3px;
-    background-color: hsla(209, 15%, 20%, 80%);
-}
-
-.ant-tooltip-arrow::before {
-    background-color: hsla(209, 15%, 20%, 80%);
-    width: 8px;
-    height: 8px;
 }
 
 .ant-table-column-has-sorters .ant-table-column-sorter {
@@ -742,4 +760,118 @@ svg {
 .ant-popover-content {
     /* popover is too hard to see on white background */
     box-shadow: 0px 0px 4px 1px rgba(0, 0, 0, 0.07);
+}
+
+.ant-progress-status-active .ant-progress-bg::before {
+    /* faster, quadratic ease-out */
+    animation: ant-progress-active 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+.ant-progress-success-bg,
+.ant-progress-bg {
+    transition-duration: 0s;
+}
+
+@keyframes ant-progress-active {
+
+    /* improve visibility of animation */
+    0% {
+        width: 0%;
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.6;
+    }
+
+    100% {
+        width: 100%;
+        opacity: 0.2;
+    }
+}
+
+.ant-message-notice-content {
+    /* vertical padding is way too large */
+    padding: 4px 16px;
+    padding-top: 5px;
+    /* shadow is too strong */
+    box-shadow: 0 1px 5px 0px rgba(0, 0, 0, 0.12), 0 3px 8px 2px rgba(0, 0, 0, 0.04);
+    /* */
+    border-radius: 3px;
+}
+
+.ant-tooltip {
+    font-size: 12px;
+    max-width: 400px;
+}
+
+.ant-tooltip-inner {
+    min-height: 20px;
+    padding: 3px 6px;
+    color: rgba(255, 255, 255, 85%);
+    border-radius: 4px;
+    background-color: hsla(210, 14%, 20%, 0.9);
+}
+
+.ant-tooltip-arrow::before {
+    background-color: hsla(210, 14%, 20%, 0.9);
+    width: 8px;
+    height: 8px;
+}
+
+/* Helper classes */
+
+
+
+
+
+.displayNone {
+    display: none;
+}
+
+.marginTop1em {
+    margin-top: 1em;
+}
+
+.marginTop05em {
+    margin-top: .5em;
+}
+
+.h3 {
+    font-weight: 500;
+    padding-right: .5em;
+    color: rgba(0, 0, 0, 0.85);
+    font-size: 1.17em;
+}
+
+.inlineFlex {
+    display: inline-flex;
+}
+
+.marginRight05em {
+    margin-right: .5em;
+}
+
+.marginRight1em {
+    margin-right: 1em;
+}
+
+.code-editor-textarea {
+    outline: none;
+}
+
+.verticalCenter {
+    vertical-align: middle;
+}
+
+.verticalCenter:before {
+    content: '';
+    display: inline-block;
+    vertical-align: middle;
+    height: 100%;
+}
+
+.messageSearchFilterBar .ant-tag {
+    padding: 0px 10px;
+    border-radius: 50px;
 }

@@ -49,11 +49,14 @@ export interface TopicMessage {
     offset: number,
     timestamp: number,
     partitionID: number,
-    key: string, // base64 encoded key of the message
+    key: string | object, // base64 encoded key of the message
     value: any, // json representation of the message value (xml, avro, etc will get converted)
-    valueType: 'json' | 'xml' | 'avro' | 'text' | 'binary', // actual format the message (before being converted to json)
+    valueType: 'json' | 'xml' | 'avro' | 'text' | 'binary', // actual format of the message (before the backend converted it to json)
     size: number, // size in bytes of the kafka message
-    isValueNull: boolean,
+    isValueNull: boolean, // todo: rename to isTombstone
+    // todo: we also need to add: keyType, keySize
+    // todo: rename size to valueSize
+    // todo: Tab.Messages.tsx: isFilterMatch(): use 'keyJson' instead
 
     // Added by the frontend (sometimes)
     valueJson: string,

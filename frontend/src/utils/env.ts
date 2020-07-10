@@ -14,7 +14,6 @@ const envNames = [
 
     'REACT_APP_KOWL_BUSINESS_GIT_SHA',
     'REACT_APP_KOWL_BUSINESS_GIT_REF',
-    'REACT_APP_KOWL_BUSINESS_TIMESTAMP',
 
     'REACT_APP_BUILT_FROM_PUSH', // was built by 'image-on-push'?
     'REACT_APP_BUSINESS', // is business version?
@@ -40,8 +39,8 @@ export const IsDev = isDev;
 export const IsBusiness = Boolean(env.REACT_APP_BUSINESS);
 export const AppName = IsBusiness ? 'Kowl Business' : 'Kowl';
 
-export function getBuildDate(version: 'free' | 'business'): Date | undefined {
-    const timestamp = version == 'free' ? +env.REACT_APP_KOWL_TIMESTAMP : +env.REACT_APP_KOWL_BUSINESS_TIMESTAMP;
+export function getBuildDate(): Date | undefined {
+    const timestamp = +env.REACT_APP_KOWL_TIMESTAMP;
     if (timestamp == 0) return undefined;
     return new Date(timestamp * 1000);
 }

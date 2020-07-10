@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/robertkrimen/otto"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/Shopify/sarama"
@@ -27,17 +29,19 @@ const (
 type IListMessagesProgress interface {
 	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
 	OnMessage(message *TopicMessage)
+	OnMessageConsumed(size int64)
 	OnComplete(elapsedMs float64, isCancelled bool)
 	OnError(msg string)
 }
 
 // TopicMessage represents a single message from a given Kafka topic/partition
 type TopicMessage struct {
-	PartitionID int32  `json:"partitionID"`
-	Offset      int64  `json:"offset"`
-	Timestamp   int64  `json:"timestamp"`
-	Key         []byte `json:"key"`
+	PartitionID int32 `json:"partitionID"`
+	Offset      int64 `json:"offset"`
+	Timestamp   int64 `json:"timestamp"`
 
+	Key       DirectEmbedding `json:"key"`
+	KeyType   string          `json:"keyType"`
 	Value     DirectEmbedding `json:"value"`
 	ValueType string          `json:"valueType"`
 
@@ -57,6 +61,14 @@ type PartitionConsumeRequest struct {
 	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the Consumer will stop.
 }
 
+type interpreterArguments struct {
+	PartitionID int32
+	Offset      int64
+	Timestamp   time.Time
+	Key         DirectEmbedding
+	Value       DirectEmbedding
+}
+
 type PartitionConsumer struct {
 	Logger *zap.Logger // WithFields (topic, partitionId)
 
@@ -68,6 +80,9 @@ type PartitionConsumer struct {
 	Consumer  sarama.Consumer
 	TopicName string
 	Req       *PartitionConsumeRequest
+
+	VM                    *otto.Otto
+	FilterInterpreterCode string
 }
 
 func (p *PartitionConsumer) Run(ctx context.Context) {
@@ -84,9 +99,17 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 	}
 	defer func() {
 		if errC := pConsumer.Close(); errC != nil {
-			p.Logger.Error("Failed to close partition Consumer", zap.Error(errC))
+			p.Logger.Error("failed to close partition consumer", zap.Error(errC))
 		}
 	}()
+
+	// Setup JS interpreter
+	isMessageOK, err := p.SetupInterpreter()
+	if err != nil {
+		p.Logger.Error("failed to setup interpreter", zap.Error(err))
+		p.Progress.OnError(fmt.Sprintf("failed to setup interpreter: %v", err.Error()))
+		return
+	}
 
 	messageCount := int64(0)
 	for {
@@ -97,26 +120,50 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				p.Progress.OnError(fmt.Sprintf("partition Consumer (partitionId=%v) failed to get the next message (see server log)", p.Req.PartitionID))
 				return
 			}
+			p.Progress.OnMessageConsumed(int64(len(m.Key) + len(m.Value)))
 
+			// Run Interpreter filter and check if message passes the filter
 			vType, value := p.getValue(m.Value)
+			kType, key := p.getValue(m.Key)
+
 			topicMessage := &TopicMessage{
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp.Unix(),
-				Key:         m.Key,
+				Key:         key,
+				KeyType:     string(kType),
 				Value:       value,
 				ValueType:   string(vType),
 				Size:        len(m.Value),
 				IsValueNull: m.Value == nil,
 			}
-			messageCount++
 
-			p.Progress.OnMessage(topicMessage)
+			// Check if message passes filter code
+			args := interpreterArguments{
+				PartitionID: m.Partition,
+				Offset:      m.Offset,
+				Timestamp:   m.Timestamp,
+				Key:         DirectEmbedding{ValueType: valueTypeText, Value: m.Key}, // TODO: Parse key
+				Value:       value,
+			}
+
+			isOK, err := isMessageOK(args)
+			if err != nil {
+				// TODO: This might be changed to debug level, because operators probably do not care about user failures?
+				p.Logger.Info("failed to check if message is ok", zap.Error(err))
+				p.Progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v')", m.Partition, m.Offset))
+				return
+			}
+			if isOK {
+				messageCount++
+				p.Progress.OnMessage(topicMessage)
+			}
 
 			if m.Offset >= p.Req.EndOffset || messageCount == p.Req.MaxMessageCount {
 				return // reached end offset
 			}
 		case <-ctx.Done():
+			p.Logger.Debug("consume request aborted because context has been cancelled")
 			return // search request aborted
 		}
 	}
@@ -162,4 +209,87 @@ func (p *PartitionConsumer) getValue(value []byte) (valueType, DirectEmbedding) 
 
 	b64 := []byte(base64.StdEncoding.EncodeToString(value))
 	return valueTypeBinary, DirectEmbedding{ValueType: valueTypeBinary, Value: b64}
+}
+
+// SetupInterpreter initializes the JavaScript interpreter along with the given JS code. It returns a wrapper function
+// which accepts all Kafka message properties (offset, key, value, ...) and returns true (message shall be returned) or false
+// (message shall be filtered).
+func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) (bool, error), error) {
+	// In case there's no code for the interpreter let's return a dummy function which always allows all messages
+	if p.FilterInterpreterCode == "" {
+		return func(args interpreterArguments) (bool, error) { return true, nil }, nil
+	}
+
+	vm := otto.New()
+	vm.Interrupt = make(chan func(), 1)
+
+	code := fmt.Sprintf(`interpreter = {isMessageOk: function(partitionId, offset, timestamp, key, value) {%s}}`, p.FilterInterpreterCode)
+	_, err := vm.Run(code)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile given interpreter code: %w", err)
+	}
+
+	interpreter, err := vm.Object("interpreter")
+	if err != nil {
+		return nil, err
+	}
+
+	// We use named return parameter here because this way we can return a error message in recover().
+	// Returning a proper error is important because we want to stop the consumer for this partition
+	// if we exceed the execution timeout.
+	isMessageOk := func(args interpreterArguments) (isOk bool, err error) {
+		// 1. Setup timeout check. If execution takes longer than 400ms the VM will be killed
+		// Ctx is used to notify the below go routine once we are done
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		errTimeout := "interpreter execution has taken too long"
+		defer func() {
+			if caught := recover(); caught != nil {
+				if caught == errTimeout {
+					err = fmt.Errorf(errTimeout)
+					return
+				}
+				panic(caught) // Something else happened, repanic!
+			}
+		}()
+
+		// Send interrupt signal to VM if execution has taken too long
+		go func() {
+			timer := time.NewTimer(400 * time.Millisecond)
+
+			select {
+			case <-timer.C:
+				vm.Interrupt <- func() { panic(errTimeout) }
+				return
+			case <-ctx.Done():
+				return
+			}
+		}()
+
+		// 2. Run JavaScript code inside of VM
+		// Parse kafka key and message to a Go type (interface{} for JSON, string for text, etc)
+		key, err := args.Key.Parse()
+		if err != nil {
+			return false, fmt.Errorf("failed to parse key (partition '%v', offset '%v')", args.PartitionID, args.Offset)
+		}
+		value, err := args.Value.Parse()
+		if err != nil {
+			return false, fmt.Errorf("failed to parse value (partition '%v', offset '%v')", args.PartitionID, args.Offset)
+		}
+
+		// Call Javascript function and check if it could be evaluated and whether it returned true or false
+		val, err := interpreter.Call("isMessageOk", args.PartitionID, args.Offset, args.Timestamp, key, value)
+		if err != nil {
+			return false, fmt.Errorf("failed to evaluate javascript code: %w", err)
+		}
+		isOk, err = val.ToBoolean()
+		if err != nil {
+			return false, fmt.Errorf("failed to cast return type to boolean: %w", err)
+		}
+
+		return isOk, nil
+	}
+
+	return isMessageOk, nil
 }

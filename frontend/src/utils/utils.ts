@@ -251,8 +251,9 @@ export const alwaysChanging = () => refreshCounter = (refreshCounter + 1) % 1000
 
 
 export function assignDeep(target: any, source: any) {
-
     for (let key in source) {
+        if (!source.hasOwnProperty(key)) continue; // don't
+
         const value = source[key];
         const existing = target[key];
 
@@ -408,9 +409,23 @@ export const prettyBytesOrNA = function (n: number) {
 }
 
 
+/**
+ * random digits and letters (entropy: 53bit)
+ */
 export function randomId() {
-    return (Math.random() * Number.MAX_SAFE_INTEGER).toString(16);
+    return (Math.random() * Number.MAX_SAFE_INTEGER).toString(36);
 }
-export function simpleUniqueId(prefix: string) {
+
+/**
+ * "prefix-randomId()-randomId()"
+ */
+export function simpleUniqueId(prefix?: string) {
     return `${prefix}-${randomId()}-${randomId()}`;
+}
+
+/**
+ * 4x 'randomId()'
+ */
+export function uniqueId4(): string {
+    return randomId() + randomId() + randomId() + randomId();
 }

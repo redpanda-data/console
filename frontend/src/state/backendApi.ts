@@ -5,7 +5,7 @@ import {
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
     ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo
 } from "./restInterfaces";
-import { observable, autorun, computed } from "mobx";
+import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/utils";
 import { objToQuery } from "../utils/queryHelper";
@@ -13,6 +13,7 @@ import { IsDev } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
+import { TopicMessageSearchSettings } from "./ui";
 
 const REST_TIMEOUT_SEC = IsDev ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
@@ -190,18 +191,16 @@ const apiStore = {
     MessagesFor: '', // for what topic?
     Messages: [] as TopicMessage[],
     MessagesElapsedMs: null as null | number,
+    MessagesBytesConsumed: 0,
+    MessagesTotalConsumed: 0,
 
 
-    async startMessageSearch(topicName: string, searchParams: TopicMessageSearchParameters): Promise<void> {
-        // remove 'offsetMode' and convert to queryString
-        const clone = JSON.parse(JSON.stringify(searchParams)) as TopicMessageSearchParameters;
-        (clone as any)._offsetMode = undefined;
-        const queryString = objToQuery(clone);
+    async startMessageSearch(searchRequest: MessageSearchRequest): Promise<void> {
 
         const isHttps = window.location.protocol.startsWith('https');
         const protocol = isHttps ? 'wss://' : 'ws://';
         const host = IsDev ? 'localhost:9090' : window.location.host;
-        const url = protocol + host + '/api/topics/' + topicName + '/messages' + queryString;
+        const url = protocol + host + '/api/topics/' + searchRequest.topicName + '/messages';
 
         console.log("connecting to \"" + url + "\"");
 
@@ -213,21 +212,24 @@ const apiStore = {
         currentWS = new WebSocket(url);
         const ws = currentWS;
         this.MessageSearchPhase = "Connecting";
+        this.MessagesBytesConsumed = 0;
+        this.MessagesTotalConsumed = 0;
 
         currentWS.onopen = ev => {
             if (ws !== currentWS) return; // newer request has taken over
-            this.MessagesFor = topicName;
+            // reset state for new request
+            this.MessagesFor = searchRequest.topicName;
             this.Messages = [];
             this.MessagesElapsedMs = null;
+            // send new request
+            currentWS.send(JSON.stringify(searchRequest));
         }
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
             // double assignment makes sense: when the phase changes to null, some observing components will play a "fade out" animation, using the last (non-null) value
-            this.MessageSearchPhase = "Done";
-            this.MessageSearchPhase = null;
             console.log(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
         }
-        currentWS.onmessage = msgEvent => {
+        const onMessageHandler = (msgEvent: MessageEvent) => {
             if (ws !== currentWS) return;
             const msg = JSON.parse(msgEvent.data)
 
@@ -236,9 +238,16 @@ const apiStore = {
                     this.MessageSearchPhase = msg.phase;
                     break;
 
+                case 'progressUpdate':
+                    this.MessagesBytesConsumed = msg.bytesConsumed;
+                    this.MessagesTotalConsumed = msg.messagesConsumed;
+                    break;
+
                 case 'done':
                     this.MessagesElapsedMs = msg.elapsedMs;
                     // this.MessageSearchCancelled = msg.isCancelled;
+                    this.MessageSearchPhase = "Done";
+                    this.MessageSearchPhase = null;
                     break;
 
                 case 'error':
@@ -251,10 +260,16 @@ const apiStore = {
                     break;
 
                 case 'message':
-                    const m = msg.message;
+                    let m = msg.message as TopicMessage;
 
-                    if (m.key && typeof m.key === 'string' && m.key.length > 0)
-                        m.key = atob(m.key); // unpack base64 encoded key
+                    if (m.key && typeof m.key === 'string' && m.key.length > 0) {
+                        try {
+                            m.key = atob(m.key); // unpack base64 encoded key
+                        } catch (error) {
+                            // Empty
+                            // Only unpack if the key is base64 based
+                        }
+                    }
 
                     m.valueJson = JSON.stringify(m.value);
 
@@ -271,14 +286,29 @@ const apiStore = {
                         m.valueBinHexPreview = hex;
                     }
 
+                    //m = observable.object(m, undefined, { deep: false });
+
                     this.Messages.push(m);
                     break;
             }
-        }
-
-
+        };
+        //currentWS.onmessage = m => transaction(() => onMessageHandler(m));
+        currentWS.onmessage = onMessageHandler;
     },
 
+    stopMessageSearch() {
+        if (!currentWS) {
+            return;
+        }
+
+        currentWS.close();
+        currentWS = null;
+
+        this.MessageSearchPhase = "Done";
+        this.MessagesBytesConsumed = 0;
+        this.MessagesTotalConsumed = 0;
+        this.MessageSearchPhase = null;
+    },
 
     refreshTopics(force?: boolean) {
         cachedApiRequest<GetTopicsResponse>('/api/topics', force)
@@ -340,16 +370,12 @@ const apiStore = {
     },
 }
 
-export enum TopicMessageOffset { End = -1, Start = -2, Custom = 0 }
-export enum TopicMessageSortBy { Offset, Timestamp }
-export enum TopicMessageDirection { Descending, Ascending }
-export interface TopicMessageSearchParameters {
-    _offsetMode: TopicMessageOffset;
-    startOffset: number;
-    partitionID: number;
-    pageSize: number;
-    sortType: TopicMessageSortBy;
-    sortOrder: TopicMessageDirection;
+export interface MessageSearchRequest {
+    topicName: string,
+    startOffset: number,
+    partitionId: number,
+    maxResults: number, // should also support '-1' soon, so we can do live tailing
+    filterInterpreterCode: string, // js code, base64 encoded
 }
 
 
@@ -364,7 +390,7 @@ function addError(err: Error) {
 
 
 type apiStoreType = typeof apiStore;
-export const api = observable(apiStore) as apiStoreType;
+export const api = observable(apiStore, { Messages: observable.shallow }) as apiStoreType;
 
 /*
 autorun(r => {

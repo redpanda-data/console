@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
@@ -12,110 +13,190 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi"
-
-	"github.com/gorilla/schema"
-
-	"github.com/gorilla/websocket"
 )
-
-func allowAll(r *http.Request) bool { return true }
-
-// websocket upgrader options
-var upgrader = websocket.Upgrader{EnableCompression: true, CheckOrigin: allowAll}
 
 // GetTopicMessagesResponse is a wrapper for an array of TopicMessage
 type GetTopicMessagesResponse struct {
 	KafkaMessages *owl.ListMessageResponse `json:"kafkaMessages"`
 }
 
-// This thing is given to 'ListMessages' so it can send updates about the search to client
+// progressReport is in charge of sending status updates and messages regularly to the frontend.
 type progressReporter struct {
-	logger  *zap.Logger
-	request *owl.ListMessageRequest
+	ctx       context.Context
+	logger    *zap.Logger
+	request   *owl.ListMessageRequest
+	websocket *websocketClient
 
-	wsMutex   *sync.Mutex
-	websocket *websocket.Conn
+	statsMutex       *sync.RWMutex
+	messagesConsumed int64
+	bytesConsumed    int64
+}
 
-	debugDelayTicker *time.Ticker
+func (p *progressReporter) Start() {
+	// If search is disabled do not report progress regularly as each consumed message will be sent through the socket
+	// anyways
+	if p.request.FilterInterpreterCode == "" {
+		return
+	}
+
+	// Report the current progress every second to the user. If there's a search request which has to browse a whole
+	// topic it may take some time until there are messages. This go routine is in charge of keeping the user up to
+	// date about the progress Kowl made streaming the topic
+	go func() {
+		for {
+			select {
+			case <-p.ctx.Done():
+				return
+			default:
+				p.reportProgress()
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+}
+
+func (p *progressReporter) reportProgress() {
+	p.statsMutex.RLock()
+	defer p.statsMutex.RUnlock()
+
+	_ = p.websocket.writeJSON(struct {
+		Type             string `json:"type"`
+		MessagesConsumed int64  `json:"messagesConsumed"`
+		BytesConsumed    int64  `json:"bytesConsumed"`
+	}{"progressUpdate", p.messagesConsumed, p.bytesConsumed})
 }
 
 func (p *progressReporter) OnPhase(name string) {
-	p.wsMutex.Lock()
-	defer p.wsMutex.Unlock()
-
-	p.websocket.EnableWriteCompression(false)
-	p.websocket.WriteJSON(struct {
+	_ = p.websocket.writeJSON(struct {
 		Type  string `json:"type"`
 		Phase string `json:"phase"`
 	}{"phase", name})
 }
 
-func (p *progressReporter) OnMessage(message *kafka.TopicMessage) {
-	p.wsMutex.Lock()
-	defer p.wsMutex.Unlock()
+func (p *progressReporter) OnMessageConsumed(size int64) {
+	p.statsMutex.Lock()
+	defer p.statsMutex.Unlock()
 
-	//<-p.debugDelayTicker.C
-	p.websocket.EnableWriteCompression(true)
-	p.websocket.WriteJSON(struct {
+	p.messagesConsumed++
+	p.bytesConsumed += size
+}
+
+func (p *progressReporter) OnMessage(message *kafka.TopicMessage) {
+	_ = p.websocket.writeJSON(struct {
 		Type    string              `json:"type"`
 		Message *kafka.TopicMessage `json:"message"`
 	}{"message", message})
 }
 
 func (p *progressReporter) OnComplete(elapsedMs float64, isCancelled bool) {
-	p.wsMutex.Lock()
-	defer p.wsMutex.Unlock()
+	p.statsMutex.RLock()
+	defer p.statsMutex.RUnlock()
 
-	p.websocket.EnableWriteCompression(false)
-	p.websocket.WriteJSON(struct {
-		Type        string  `json:"type"`
-		ElapsedMs   float64 `json:"elapsedMs"`
-		IsCancelled bool    `json:"isCancelled"`
-	}{"done", elapsedMs, isCancelled})
+	_ = p.websocket.writeJSON(struct {
+		Type             string  `json:"type"`
+		ElapsedMs        float64 `json:"elapsedMs"`
+		IsCancelled      bool    `json:"isCancelled"`
+		MessagesConsumed int64   `json:"messagesConsumed"`
+		BytesConsumed    int64   `json:"bytesConsumed"`
+	}{"done", elapsedMs, isCancelled, p.messagesConsumed, p.bytesConsumed})
 }
 
 func (p *progressReporter) OnError(message string) {
-	p.wsMutex.Lock()
-	defer p.wsMutex.Unlock()
-
-	p.websocket.EnableWriteCompression(false)
-	p.websocket.WriteJSON(struct {
+	_ = p.websocket.writeJSON(struct {
 		Type    string `json:"type"`
 		Message string `json:"message"`
 	}{"error", message})
 }
 
-func (api *API) handleGetMessages() http.HandlerFunc {
-	decoder := schema.NewDecoder()
-	decoder.IgnoreUnknownKeys(true)
-	type request struct {
-		StartOffset int64  `schema:"startOffset,required"` // -1 for newest, -2 for oldest offset
-		PartitionID int32  `schema:"partitionID,required"` // -1 for all partition ids
-		PageSize    uint16 `schema:"pageSize,required"`
+type listMessagesRequest struct {
+	TopicName             string `json:"topicName"`
+	StartOffset           int64  `json:"startOffset"` // -1 for newest, -2 for oldest offset
+	PartitionID           int32  `json:"partitionId"` // -1 for all partition ids
+	MaxResults            uint16 `json:"maxResults"`
+	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
+}
+
+func (l *listMessagesRequest) OK() error {
+	if l.TopicName == "" {
+		return fmt.Errorf("topic name is required")
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Search Arguments
-		topicName := chi.URLParam(r, "topicName")
-		logger := api.Logger.With(zap.String("topic_name", topicName))
-		query := r.URL.Query()
+	if l.StartOffset < -2 {
+		return fmt.Errorf("start offset is smaller than -2")
+	}
 
-		var req request
-		err := decoder.Decode(&req, query)
-		if err != nil {
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  "The given query parameters are invalid",
-				IsSilent: false,
-			}
+	if l.PartitionID < -1 {
+		return fmt.Errorf("partitionID is smaller than -1")
+	}
+
+	if l.MaxResults <= 0 || l.MaxResults > 500 {
+		return fmt.Errorf("max results must be between 1 and 500")
+	}
+
+	if _, err := l.DecodeInterpreterCode(); err != nil {
+		return fmt.Errorf("failed to decode interpreter code %w", err)
+	}
+
+	return nil
+}
+
+func (l *listMessagesRequest) DecodeInterpreterCode() (string, error) {
+	code, err := base64.StdEncoding.DecodeString(l.FilterInterpreterCode)
+	if err != nil {
+		return "", err
+	}
+
+	return string(code), nil
+}
+
+func (api *API) handleGetMessages() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger := api.Logger
+
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+
+		wsClient := websocketClient{
+			Ctx:        ctx,
+			Cancel:     cancel,
+			Logger:     logger,
+			Connection: nil,
+			Mutex:      &sync.RWMutex{},
+		}
+		restErr := wsClient.upgrade(w, r)
+		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
+			return
+		}
+		defer wsClient.sendClose()
+
+		// Get search parameters. Close connection if search parameters are invalid
+		var req listMessagesRequest
+		err := wsClient.readJSON(&req)
+		if err != nil {
+			wsClient.writeJSON(rest.Error{
+				Err:     err,
+				Status:  http.StatusBadRequest,
+				Message: "Failed to parse list message request",
+			})
+			return
+		}
+		go wsClient.readLoop()
+		go wsClient.producePings()
+
+		// Validate request parameter
+		err = req.OK()
+		if err != nil {
+			wsClient.writeJSON(rest.Error{
+				Err:     err,
+				Status:  http.StatusBadRequest,
+				Message: fmt.Sprintf("Failed to validate list message request: %v", err),
+			})
 			return
 		}
 
 		// Check if logged in user is allowed to list messages for the given topic
-		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), topicName)
+		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req.TopicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -131,58 +212,39 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			return
 		}
 
-		// Websocket upgrade
-		api.Logger.Debug("starting websocket connection upgrade")
-
-		wsConnection, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			api.Logger.Error("messages endpoint websocket upgrade", zap.Error(err))
-			return
-		}
-
-		// "The application *must* read the connection to process close, ..."
-		// https://godoc.org/github.com/gorilla/websocket#hdr-Control_Messages
-		go (func() {
-			for {
-				if _, _, err := wsConnection.NextReader(); err != nil {
-					wsConnection.Close()
-					return
-				}
-			}
-		})()
-
-		api.Logger.Debug("websocket connection upgrade complete")
+		interpreterCode, _ := req.DecodeInterpreterCode() // Error has been checked in validation function
 
 		// Request messages from kafka and return them once we got all the messages or the context is done
 		listReq := owl.ListMessageRequest{
-			TopicName:    topicName,
-			PartitionID:  req.PartitionID,
-			StartOffset:  req.StartOffset,
-			MessageCount: req.PageSize,
+			TopicName:             req.TopicName,
+			PartitionID:           req.PartitionID,
+			StartOffset:           req.StartOffset,
+			MessageCount:          req.MaxResults,
+			FilterInterpreterCode: interpreterCode,
 		}
 
-		progress := &progressReporter{api.Logger, &listReq, &sync.Mutex{}, wsConnection, time.NewTicker(300 * time.Millisecond)}
+		// Use 30min duration if we want to search a whole topic
+		duration := 18 * time.Second
+		if listReq.FilterInterpreterCode != "" {
+			duration = 30 * time.Minute
+		}
+		childCtx, cancel := context.WithTimeout(ctx, duration)
+		defer cancel()
 
-		ctx, cancelCtx := context.WithTimeout(r.Context(), 18*time.Second)
-		defer cancelCtx()
+		progress := &progressReporter{
+			ctx:              childCtx,
+			logger:           api.Logger,
+			request:          &listReq,
+			websocket:        &wsClient,
+			statsMutex:       &sync.RWMutex{},
+			messagesConsumed: 0,
+			bytesConsumed:    0,
+		}
+		progress.Start()
 
 		err = api.OwlSvc.ListMessages(ctx, listReq, progress)
 		if err != nil {
 			progress.OnError(err.Error())
 		}
-
-		// Close connection gracefully!
-		(func() {
-			progress.wsMutex.Lock()
-			defer progress.wsMutex.Unlock()
-			err = wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil && err != websocket.ErrCloseSent {
-				api.Logger.Debug("failed to send 'CloseNormalClosure' to ws connection", zap.Error(err))
-			} else {
-				//api.Logger.Debug("graceful WS close message sent")
-				// the example in github.com/gorilla/websocket also does this
-				time.Sleep(2 * time.Second)
-			}
-		})()
 	}
 }

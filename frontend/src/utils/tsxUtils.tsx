@@ -1,6 +1,7 @@
 import React, { Children, useState, Component, CSSProperties } from "react";
 import { simpleUniqueId } from "./utils";
-import { Radio } from 'antd';
+import { Radio, message, Progress } from 'antd';
+import { MessageType } from "antd/lib/message";
 
 
 
@@ -62,6 +63,7 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
         entries = data as { key: any, value: any }[];
 
     const o: QuickTableOptions = {}; // create new options object (because we don't want to pollute the one the user gave us)
+    if (options == null) options = {};
 
     {
         const oa = o as any;
@@ -110,7 +112,7 @@ export function ObjToKv(obj: any): { key: string, value: any }[] {
 
 
 const style_flexColumn: CSSProperties = { display: 'flex', flexDirection: 'column' };
-export const Label = (p: { text: string, style?: CSSProperties, children?: React.ReactNode }) => {
+export const Label = (p: { text: string, textSuffix?: React.ReactNode, className?: string, style?: CSSProperties, children?: React.ReactNode }) => {
     const [id] = useState(() => simpleUniqueId(p.text));
 
     const child: React.ReactNode = p.children ?? <React.Fragment />;
@@ -122,9 +124,9 @@ export const Label = (p: { text: string, style?: CSSProperties, children?: React
     const divStyle = p.style ? { ...p.style, ...style_flexColumn } : p.style;
 
     return <>
-        <div style={divStyle}>
+        <div className={p.className} style={divStyle}>
             <div className='labelText'>
-                <label htmlFor={id}>{p.text}</label>
+                <label htmlFor={id}>{p.text} {p.textSuffix}</label>
             </div>
             <div>
                 {newChild}
@@ -157,5 +159,86 @@ export class OptionGroup<T> extends Component<{
         return <Label text={p.label}>
             {radioGroup}
         </Label>
+    }
+}
+
+export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed: string, messagesConsumed: string, progressText: string }> {
+
+    static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
+    static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
+    static readonly moreInfoStyle: CSSProperties = { display: 'block', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%', textAlign: 'left' } as const;
+    static readonly progressTextStyle: CSSProperties = { marginLeft: 'auto', paddingLeft: '2em' } as const;
+
+    hide: MessageType;
+
+    constructor(p: any) {
+        super(p);
+        message.config({ top: 8 });
+    }
+
+    componentDidMount() {
+        this.customRender();
+    }
+    componentDidUpdate() {
+        this.customRender();
+    }
+
+    componentWillUnmount() {
+        this.hide?.call(this);
+    }
+
+    customRender() {
+        const content = <div>
+            <div style={StatusIndicator.progressStyle}>
+                <Progress percent={this.props.fillFactor * 100} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
+            </div>
+            <div style={StatusIndicator.statusBarStyle}>
+                <div>{this.props.statusText}</div>
+                <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
+            </div>
+            {(this.props.bytesConsumed && this.props.messagesConsumed) &&
+                <div style={StatusIndicator.moreInfoStyle}>
+                    <div>
+                        Bytes: {this.props.bytesConsumed}
+                    </div>
+                    <div>
+                        Messages: {this.props.messagesConsumed}
+                    </div>
+                </div>
+            }
+        </div>
+        this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: null, type: 'loading' });
+    }
+
+    render() {
+
+
+        return null;
+    }
+}
+
+export class LayoutBypass extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string }> {
+
+    static readonly style: CSSProperties = {
+        display: 'inline-flex',
+        width: '0px', height: '0px',
+        transform: 'translateY(-1px)',
+        // zIndex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    };
+
+    render() {
+        const p = this.props;
+        let style = LayoutBypass.style;
+        if (p.width || p.height || p.justifyContent || p.alignItems) {
+            style = Object.assign({}, style, p);
+        }
+
+        return <span className='verticalCenter' style={style}>
+            <span>
+                {this.props.children}
+            </span>
+        </span>
     }
 }
