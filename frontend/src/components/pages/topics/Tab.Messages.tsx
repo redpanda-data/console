@@ -25,7 +25,7 @@ import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
 import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
 
-import Octicon, { Skip, Sync, ChevronDown, Play, ChevronRight } from '@primer/octicons-react';
+import Octicon, { SkipIcon as OctoSkip, SyncIcon as OctoSync, ChevronDownIcon as OctoDown, PlayIcon as OctoPlay, ChevronRightIcon as OctoRight } from '@primer/octicons-react';
 import { SyncIcon, XCircleIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon, PlusIcon } from '@primer/octicons-v2-react'
 import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg';
 
@@ -589,7 +589,7 @@ const renderKey = (key: any | null | undefined) => {
     const text = typeof key === 'string' ? key : ToJson(key);
 
     if (key == undefined || key == null || text.length == 0 || text == '{}')
-        return <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={Skip} /></span>
+        return <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={OctoSkip} /></span>
 
     if (text.length > 45) {
 
