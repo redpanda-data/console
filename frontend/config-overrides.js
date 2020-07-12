@@ -1,5 +1,5 @@
 
-const { override, fixBabelImports, addLessLoader } = require('customize-cra');
+const { override, fixBabelImports } = require('customize-cra');
 
 
 module.exports = function override(config, env) {
