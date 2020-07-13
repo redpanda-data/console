@@ -25,7 +25,7 @@ import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
 import { numberToThousandsString, renderTimestamp, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
 
-import Octicon, { Skip, Sync, ChevronDown, Play, ChevronRight } from '@primer/octicons-react';
+import Octicon, { SkipIcon as OctoSkip, SyncIcon as OctoSync, ChevronDownIcon as OctoDown, PlayIcon as OctoPlay, ChevronRightIcon as OctoRight } from '@primer/octicons-react';
 import { SyncIcon, XCircleIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon, PlusIcon } from '@primer/octicons-v2-react'
 import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg';
 
@@ -243,7 +243,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 </Label>
 
                 {/* Quick Search */}
-                <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto'  }}>
+                <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto' }}>
                     <Input placeholder='Quick Search' allowClear={true} size='middle'
                         style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
                         value={uiState.topicSettings.quickSearch}
@@ -429,15 +429,15 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         ];
 
         // If the previewColumnFields is empty then use the default columns, otherwise filter it based on it
-        const filteredColumns: (ColumnProps<TopicMessage>)[] = 
+        const filteredColumns: (ColumnProps<TopicMessage>)[] =
             uiState.topicSettings.previewColumnFields.length === 0 ?
-            columns : uiState.topicSettings.previewColumnFields
-                .map(columnList => 
-                    columns.find(c => c.dataIndex === columnList.dataIndex) 
-                )
-                .filter(column => !!column)
-                // Add the action tab at the end
-                .concat(columns[columns.length -1]) as (ColumnProps<TopicMessage>)[];
+                columns : uiState.topicSettings.previewColumnFields
+                    .map(columnList =>
+                        columns.find(c => c.dataIndex === columnList.dataIndex)
+                    )
+                    .filter(column => !!column)
+                    // Add the action tab at the end
+                    .concat(columns[columns.length - 1]) as (ColumnProps<TopicMessage>)[];
 
         return <>
             <ConfigProvider renderEmpty={this.empty}>
@@ -616,8 +616,8 @@ const renderKey = (key: any | null | undefined) => {
 
     if (key == undefined || key == null || text.length == 0 || text == '{}')
         return <Tooltip title="Empty Key" mouseEnterDelay={0.1}>
-                <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={Skip} /></span>
-            </Tooltip>
+            <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={OctoSkip} /></span>
+        </Tooltip>
 
     if (text.length > 45) {
 
@@ -842,9 +842,9 @@ class PreviewSettings extends Component<{ allCurrentKeys: string[], getShowDialo
 
 @observer
 class ColumnSettings extends Component<{ allCurrentKeys: string[], getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
-    
+
     render() {
-        
+
         const content = <>
             <Paragraph>
                 <Text>
@@ -857,7 +857,7 @@ class ColumnSettings extends Component<{ allCurrentKeys: string[], getShowDialog
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>More Settings</h3>
                 <Space size='large'>
-                    <OptionGroup label='Timestamp' options={{ 'Default': 'default', 'Only Date': 'onlyDate', 'Only Time': 'onlyTime', 'Unix Seconds' : 'unixSeconds', 'Relative': 'relative'}}
+                    <OptionGroup label='Timestamp' options={{ 'Default': 'default', 'Only Date': 'onlyDate', 'Only Time': 'onlyTime', 'Unix Seconds': 'unixSeconds', 'Relative': 'relative' }}
                         value={uiState.topicSettings.previewTimestamps}
                         onChange={e => uiState.topicSettings.previewTimestamps = e}
                     />
@@ -882,7 +882,7 @@ class ColumnSettings extends Component<{ allCurrentKeys: string[], getShowDialog
 }
 
 @observer
-class ColumnOptions extends Component<{ tags: ColumnList[]}> {
+class ColumnOptions extends Component<{ tags: ColumnList[] }> {
 
     defaultColumnList: ColumnList[] = [
         { title: 'Offset', dataIndex: 'offset' },
@@ -892,7 +892,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[]}> {
         { title: 'Value', dataIndex: 'value' },
         { title: 'Size', dataIndex: 'size' },
     ];
-    
+
     render() {
         const defaultValues = uiState.topicSettings.previewColumnFields.map(column => column.title);
         const children = this.defaultColumnList.map((column: ColumnList) =>

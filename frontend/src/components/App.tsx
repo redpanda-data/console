@@ -8,7 +8,7 @@ import { DebugTimerStore, ToJson } from '../utils/utils';
 import { api } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { MotionDiv } from '../utils/animationProps';
+import { MotionDiv, MotionDivInvertedScale } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
@@ -27,6 +27,8 @@ import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled } fr
 import Draggable from 'react-draggable';
 import { observable } from 'mobx';
 import { SyncIcon } from '@primer/octicons-v2-react';
+import { motion } from 'framer-motion';
+import { LayoutBypass } from '../utils/tsxUtils';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -159,31 +161,46 @@ const AppSide = observer(() => (
 
 
 const DataAgeInfo = observer(() => {
-    const size = '19px'
 
+    const spinnerSize = '16px';
     DebugTimerStore.Instance.useFrame();
 
-    const maxFetchTime = api.ActiveRequests.length == 0
+    let maxFetchTime = api.ActiveRequests.length == 0
         ? 0
         : api.ActiveRequests.map(r => r.requestTime).reduce((p, c) => Math.max(p, c), 0);
 
+    // debugging:
+    // maxFetchTime = ((DebugTimerStore.Instance.secondCounter * 1) % 4) < 3.5
+    //     ? 100
+    //     : 0;
+    // maxFetchTime = 5;
+
     // maybe we need to use the same 'no vertical expansion' trick:
-    // <span >
-    return (
-        <div style={{ color: 'hsl(205, 100%, 50%)', display: 'flex', height: '3em' }} className='fadeIn' >
-            {maxFetchTime < 0.1
+    return <div style={{
+        background: 'hsl(216, 66%, 92%)',
+        color: 'hsl(205, 100%, 50%)',
+        height: '32px',
+        display: 'inline-flex',
+        borderRadius: '30px',
+        placeContent: 'center',
+        placeItems: 'center',
+
+        marginBottom: '0.5em', // same as the h1
+    }}>
+        {
+            maxFetchTime < 0.1
                 ?
                 <>
-                    <Button icon={<SyncIcon size={16} />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
+                    < Button icon={< SyncIcon size={16} />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
                     {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
                 </>
                 :
                 <>
-                    <span className='spinner' style={{ marginLeft: '.5em', width: size, height: size }} />
-                    <span className='pulsating' style={{ paddingLeft: '0.8em', fontSize: '80%', userSelect: 'none' }}>Fetching data...</span>
+                    <span className='spinner' style={{ marginLeft: '8px', width: spinnerSize, height: spinnerSize }} />
+                    <span className='pulsating' style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data...</span>
                 </>
-            } </div>
-    )
+        }
+    </div>
 })
 
 const AppPageHeader = observer(() => {

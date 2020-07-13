@@ -52,9 +52,7 @@ code {
 /*
 	Fixes for react-json-view
 */
-
 /* remove the unneccesary fold-button at the root */
-
 /* .react-json-view>div>div>div>span:first-of-type {
 	display: none;
 }
@@ -62,9 +60,7 @@ code {
 .react-json-view>div>div>div>span:last-of-type {
 	display: none;
 } */
-
 /* - Last two selectors fix the faulty indenting when there's a fold-button */
-
 .icon-container {
     position: absolute;
     width: auto;
@@ -76,12 +72,10 @@ span>.icon-container~span {
 }
 
 /* - fix root indenting */
-
 /* .react-json-view>div>div>div>div>div>div {
 	padding-left: 1em !important;
 	border-left: 0 !important;
 } */
-
 .react-json-view {
     padding-left: 1em;
 }
@@ -120,10 +114,23 @@ span>.icon-container~span {
 }
 
 .spinner {
-    border: 3px solid transparent;
+    border: 2px solid transparent;
     border-bottom-color: hsl(205, 100%, 50%);
     border-top-color: hsl(205, 100%, 50%);
-    animation: rotate 0.7s linear 0s infinite;
+    animation:
+        rotateIn 1.2s cubic-bezier(0.25, 0.80, 0.9, 0.9) 0s 1,
+        rotate 0.7s linear 1.2s infinite,
+        spinnerFadeIn 0.5s ease 0s 1;
+}
+
+@keyframes rotateIn {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(1800deg);
+    }
 }
 
 @keyframes rotate {
@@ -133,6 +140,18 @@ span>.icon-container~span {
 
     to {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes spinnerFadeIn {
+    from {
+        opacity: 0;
+        scale: 120%;
+    }
+
+    to {
+        opacity: 1;
+        scale: 100%;
     }
 }
 
@@ -201,11 +220,8 @@ span>.icon-container~span {
 }
 
 /* */
-
 /* Table size={'middle} */
-
 /* */
-
 .ant-table-middle {
     /* Header height */
     --headerVertical: 10px;
@@ -264,11 +280,8 @@ span>.icon-container~span {
 }
 
 /* */
-
 /* */
-
 /* Don't clip animated page headers */
-
 .ant-page-header-heading {
     overflow: visible;
 }
@@ -296,7 +309,6 @@ span>.icon-container~span {
     color: hsl(205, 100%, 55%)
 }
 */
-
 .ant-pagination-item-active a {
     font-weight: bold;
     cursor: default;
@@ -630,7 +642,6 @@ tr.tombstone .ant-table-row-expand-icon {
 tr td:nth-last-child(1) {
     padding-right: 30px !important;
 } */
-
 .ant-statistic {
     margin-right: 2rem;
 }
@@ -685,7 +696,6 @@ button.ant-table-row-expand-icon {
 }
 
 /* Fix: make it possible to configure column width */
-
 td .ant-table-cell {
     word-wrap: break-word;
     word-break: break-all;
@@ -820,11 +830,6 @@ svg {
 }
 
 /* Helper classes */
-
-
-
-
-
 .displayNone {
     display: none;
 }

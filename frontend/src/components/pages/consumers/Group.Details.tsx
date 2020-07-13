@@ -14,7 +14,7 @@ import Card from "../../misc/Card";
 import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { Radio } from 'antd';
 import { TablePaginationConfig } from "antd/lib/table";
-import Octicon, { Skip } from "@primer/octicons-react";
+import Octicon, { SkipIcon } from "@primer/octicons-react";
 import { OptionGroup, QuickTable } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
 
@@ -96,6 +96,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                         <Statistic title='Topics with offset' value={topicsWithOffset} />
                         <Statistic title='Assigned Partitions' value={totalPartitions} />
                         <Statistic title='Partitions with offset' value={partitionsWithOffset} />
+                        <Statistic title='Total Lag' value={group.lagSum} />
                     </Row>
                 </Card>
 
@@ -192,7 +193,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             const partitionsAssigned = g.items.filter(c => c.assignedMember).length;
 
             if (p.onlyShowPartitionsWithLag)
-                g.items.removeAll(e => e.lag == 0);
+                g.items.removeAll(e => e.lag === 0);
 
             return <Collapse.Panel key={g.key}
                 header={
@@ -225,7 +226,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                         { width: 100, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
                         {
                             width: 'auto', title: 'Assigned Member', dataIndex: 'id', sorter: sortField('id'),
-                            render: (t, r) => (renderMergedID(r.id, r.clientId)) ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><Octicon icon={Skip} /> no assigned member</span>
+                            render: (t, r) => (renderMergedID(r.id, r.clientId)) ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><Octicon icon={SkipIcon} /> no assigned member</span>
                         },
                         { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
                         { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
@@ -277,7 +278,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
             const totalPartitions = assignmentsFlat.length;
 
             if (p.onlyShowPartitionsWithLag)
-                assignmentsFlat.removeAll(e => !e.partitionLag);
+                assignmentsFlat.removeAll(e => e.partitionLag === 0);
 
             return <Collapse.Panel key={m.id}
                 header={

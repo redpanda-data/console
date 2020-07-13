@@ -44,6 +44,8 @@ Once you've entered all details, proceed by clicking "Create". A dialog box will
 
 If desired you can bind permissions (Roles) to Google Groups defined in your organization (see [Permissions](https://github.com/cloudhut/kowl/wiki/Permissions)). Therefore you must grant Kowl permissions to resolve the memberships of all bound Google Groups.
 
+GCP Referece docs: https://developers.google.com/admin-sdk/directory/v1/guides/delegation
+
 > :triangular_flag_on_post: Private Google Groups which are managed by different organizations can not be resolved.
 
 #### Create a service account

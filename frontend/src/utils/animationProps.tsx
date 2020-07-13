@@ -1,5 +1,5 @@
 import React, { FC, CSSProperties } from "react";
-import { Transition, motion } from "framer-motion";
+import { Transition, motion, useInvertedScale } from "framer-motion";
 import { alwaysChanging } from "./utils";
 import { PositionProperty } from "csstype";
 
@@ -71,3 +71,10 @@ export const MotionSpan: FC<{ identityKey?: any, overrideAnimProps?: any, style?
     <motion.span key={p.identityKey} style={p.style} {...(p.overrideAnimProps ?? animProps)}>
         {p.children}
     </motion.span>;
+
+export const MotionDivInvertedScale: FC<{ children?: React.ReactNode, style?: CSSProperties }> = p => {
+    const { scaleX, scaleY } = useInvertedScale();
+    return <motion.div style={{ scaleX, scaleY, ...p.style }}>
+        {p.children}
+    </motion.div>
+}
