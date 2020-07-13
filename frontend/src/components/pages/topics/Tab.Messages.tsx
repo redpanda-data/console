@@ -430,7 +430,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         // If the previewColumnFields is empty then use the default columns, otherwise filter it based on it
         const filteredColumns: (ColumnProps<TopicMessage>)[] =
-            uiState.topicSettings.previewColumnFields.length === 0 ?
+            uiState.topicSettings.previewColumnFields.length == 0 ?
                 columns : uiState.topicSettings.previewColumnFields
                     .map(columnList =>
                         columns.find(c => c.dataIndex === columnList.dataIndex)
@@ -857,7 +857,7 @@ class ColumnSettings extends Component<{ allCurrentKeys: string[], getShowDialog
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>More Settings</h3>
                 <Space size='large'>
-                    <OptionGroup label='Timestamp' options={{ 'Default': 'default', 'Only Date': 'onlyDate', 'Only Time': 'onlyTime', 'Unix Seconds': 'unixSeconds', 'Relative': 'relative' }}
+                    <OptionGroup label='Timestamp' options={{ 'Local DateTime': 'default', 'Unix Seconds': 'unixSeconds', 'Relative': 'relative', 'Local Date': 'onlyDate', 'Local Time': 'onlyTime' }}
                         value={uiState.topicSettings.previewTimestamps}
                         onChange={e => uiState.topicSettings.previewTimestamps = e}
                     />
