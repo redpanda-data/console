@@ -472,9 +472,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     <PreviewSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showPreviewSettings} setShowDialog={s => this.showPreviewSettings = s} />
                 }
 
-                {
-                    <ColumnSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
-                }
+                <ColumnSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
 
             </ConfigProvider>
         </>
