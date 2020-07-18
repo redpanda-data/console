@@ -1,8 +1,9 @@
-import React, { Children, useState, Component, CSSProperties } from "react";
+import React, { useState, Component, CSSProperties } from "react";
 import { simpleUniqueId } from "./utils";
 import { Radio, message, Progress } from 'antd';
 import { MessageType } from "antd/lib/message";
 import prettyMilliseconds from 'pretty-ms';
+import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 
 
 
@@ -222,10 +223,10 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
                 <div style={StatusIndicator.moreInfoStyle}>
                     <div>
-                        Bytes: {this.props.bytesConsumed}
+                        <DownloadOutlined />Bytes: {this.props.bytesConsumed}
                     </div>
                     <div>
-                        Messages: {this.props.messagesConsumed}
+                        <CopyOutlined />Messages: {this.props.messagesConsumed}
                     </div>
                 </div>
             }

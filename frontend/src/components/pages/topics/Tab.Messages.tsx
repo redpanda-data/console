@@ -1,44 +1,38 @@
 import { Component, ReactNode } from "react";
 import React from "react";
-import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Dropdown, Menu, Spin, Progress, Switch, notification } from "antd";
+import { TopicDetail, TopicMessage } from "../../../state/restInterfaces";
+import { Table, Tooltip, Row, Popover, Button, Select, Input, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Switch } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
-import { uiSettings, PreviewTag, TopicOffsetOrigin, FilterEntry, ColumnList } from "../../../state/ui";
+import { PreviewTag, TopicOffsetOrigin, FilterEntry, ColumnList } from "../../../state/ui";
 import ReactJson, { CollapsedFieldProps } from 'react-json-view'
-import { PageComponent, PageInitHelper } from "../Page";
-import prettyMilliseconds from 'pretty-ms';
 import prettyBytes from 'pretty-bytes';
-import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
+import { sortField, range, makePaginationConfig } from "../../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed, transaction, autorun, IReactionDisposer, untracked } from "mobx";
-import { findElementDeep, cullText, getAllKeys, ToJson, simpleUniqueId } from "../../../utils/utils";
-import { animProps, MotionAlways, MotionDiv, MotionSpan, animProps_span_messagesStatus } from "../../../utils/animationProps";
+import { findElementDeep, cullText, ToJson } from "../../../utils/utils";
+import { MotionDiv, MotionSpan, animProps_span_messagesStatus } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { uiState } from "../../../state/uiState";
-import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
-import url, { URL, parse as parseUrl, format as formatUrl } from "url";
+import { parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
 import { numberToThousandsString, renderTimestamp, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
 
-import Octicon, { SkipIcon as OctoSkip, SyncIcon as OctoSync, ChevronDownIcon as OctoDown, PlayIcon as OctoPlay, ChevronRightIcon as OctoRight } from '@primer/octicons-react';
-import { SyncIcon, XCircleIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon, PlusIcon } from '@primer/octicons-v2-react'
-import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg';
+import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
+import { SyncIcon, XCircleIcon, PlusIcon } from '@primer/octicons-v2-react'
 
-import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined, LoadingOutlined, QuestionCircleTwoTone, FilterFilled } from '@ant-design/icons';
-import { ErrorBoundary } from "../../misc/ErrorBoundary";
-import { SortOrder, FilterDropdownProps } from "antd/lib/table/interface";
-import TextArea from "antd/lib/input/TextArea";
+import queryString from 'query-string';
+import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, QuestionCircleTwoTone, FilterFilled } from '@ant-design/icons';
+import { SortOrder } from "antd/lib/table/interface";
 import { IsDev } from "../../../utils/env";
 
 import Editor from 'react-simple-code-editor';
 
-import Prism, { languages as PrismLanguages, highlightAll } from "prismjs";
+import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/prism.js';
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras"
@@ -253,7 +247,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 </div>
 
                 {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-                {api.MessageSearchPhase && searchParams.filtersEnabled &&
+                {api.MessageSearchPhase && searchParams.filters.length &&
                     <StatusIndicator
                         identityKey='messageSearch'
                         fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
