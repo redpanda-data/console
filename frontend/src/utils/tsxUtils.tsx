@@ -2,6 +2,7 @@ import React, { Children, useState, Component, CSSProperties } from "react";
 import { simpleUniqueId } from "./utils";
 import { Radio, message, Progress } from 'antd';
 import { MessageType } from "antd/lib/message";
+import prettyMilliseconds from 'pretty-ms';
 
 
 
@@ -23,6 +24,28 @@ export function numberToThousandsString(n: number): JSX.Element {
     }
 
     return <>{result}</>
+}
+
+export function renderTimestamp(unixEpochSecond: number, format?: string): string {
+    let timestamp = "";
+    switch(format) {
+        case 'onlyDate':
+            timestamp = new Date(unixEpochSecond * 1000).toDateString()
+            break;
+        case 'onlyTime':
+            timestamp = new Date(unixEpochSecond * 1000).toLocaleTimeString()
+            break;
+        case 'unixSeconds':
+            timestamp = unixEpochSecond.toString();
+            break;
+        case 'relative':
+            timestamp = prettyMilliseconds(Date.now() - unixEpochSecond * 1000, { compact: true }) + ' ago';
+            break;
+        default:
+            timestamp = new Date(unixEpochSecond * 1000).toLocaleString();
+    }
+
+    return timestamp;
 }
 
 export const ZeroSizeWrapper = (p: { width: number, height: number, children?: React.ReactNode }) => {

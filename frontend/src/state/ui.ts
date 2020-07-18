@@ -17,6 +17,11 @@ export interface PreviewTag {
     active: boolean;
 }
 
+export interface ColumnList {
+    title: string;
+    dataIndex: string;
+}
+
 export type FilterType = 'simple' | 'code'
 export const FilterOperators = [
     {
@@ -76,8 +81,12 @@ export class TopicDetailsSettings {
     // @observable previewResultLimit: 3; // todo
     @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
 
+    @observable previewTimestamps = 'default' as 'default' | 'onlyDate' | 'onlyTime' | 'unixSeconds' | 'relative';
+    @observable previewColumnFields = [] as ColumnList[];
+
     @observable consumerPageSize = 20;
     @observable partitionPageSize = 20;
+
 
     @observable quickSearch = '';
 
@@ -131,7 +140,15 @@ export { uiSettings };
 let storedSettingsJson = localStorage.getItem(settingsName);
 if (storedSettingsJson) {
     const loadedSettings = JSON.parse(storedSettingsJson);
-    assignDeep(uiSettings, loadedSettings);
+    assignDeep(uiSettings, loadedSettings); // overwrite defaults with loaded values
+
+    // Upgrade: new props in 'TopicDetailsSettings'
+    for (const ts of uiSettings.perTopicSettings) {
+        // when loading a previous version, we'll have "undefined" for all the new properties,
+        // which is ok for 'number', but not for any other type.
+        ts.previewColumnFields = ts.previewColumnFields ?? [];
+        ts.previewTimestamps = ts.previewTimestamps ?? 'default';
+    }
 }
 
 // Auto save (timed)

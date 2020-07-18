@@ -4,7 +4,7 @@ import { TopicDetail, TopicConfigEntry, TopicMessage } from "../../../state/rest
 import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Dropdown, Menu, Spin, Progress, Switch, notification } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
-import { uiSettings, PreviewTag, TopicOffsetOrigin, FilterEntry } from "../../../state/ui";
+import { uiSettings, PreviewTag, TopicOffsetOrigin, FilterEntry, ColumnList } from "../../../state/ui";
 import ReactJson, { CollapsedFieldProps } from 'react-json-view'
 import { PageComponent, PageInitHelper } from "../Page";
 import prettyMilliseconds from 'pretty-ms';
@@ -23,16 +23,16 @@ import { appGlobal } from "../../../state/appGlobal";
 import qs from 'query-string';
 import url, { URL, parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { numberToThousandsString, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
+import { numberToThousandsString, renderTimestamp, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
 
 import Octicon, { SkipIcon as OctoSkip, SyncIcon as OctoSync, ChevronDownIcon as OctoDown, PlayIcon as OctoPlay, ChevronRightIcon as OctoRight } from '@primer/octicons-react';
 import { SyncIcon, XCircleIcon, PlayIcon, ChevronRightIcon, ArrowRightIcon, HorizontalRuleIcon, DashIcon, CircleIcon, PlusIcon } from '@primer/octicons-v2-react'
 import { ReactComponent as SvgCircleStop } from '../../../assets/circle-stop.svg';
 
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined, LoadingOutlined, QuestionCircleTwoTone } from '@ant-design/icons';
+import Icon, { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, LinkOutlined, ReloadOutlined, UserOutlined, PlayCircleFilled, DoubleRightOutlined, PlayCircleOutlined, VerticalAlignTopOutlined, LoadingOutlined, QuestionCircleTwoTone, FilterFilled } from '@ant-design/icons';
 import { ErrorBoundary } from "../../misc/ErrorBoundary";
-import { SortOrder } from "antd/lib/table/interface";
+import { SortOrder, FilterDropdownProps } from "antd/lib/table/interface";
 import TextArea from "antd/lib/input/TextArea";
 import { IsDev } from "../../../utils/env";
 
@@ -62,6 +62,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     @observable previewDisplay: string[] = [];
     @observable allCurrentKeys: string[] = [];
     @observable showPreviewSettings = false;
+    @observable showColumnSettings = false;
 
     @observable fetchError = null as Error | null;
 
@@ -252,7 +253,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 </div>
 
                 {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-                {api.MessageSearchPhase &&
+                {api.MessageSearchPhase && searchParams.filtersEnabled &&
                     <StatusIndicator
                         identityKey='messageSearch'
                         fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
@@ -385,10 +386,11 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             </span>
         </>
 
+        const tsFormat = uiState.topicSettings.previewTimestamps;
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
-            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => new Date(t * 1000).toLocaleString() },
+            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => renderTimestamp(t, tsFormat) },
             { width: 3, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
             {
                 width: 'auto',
@@ -404,6 +406,14 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             },
             {
                 width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
+                filters: [],
+                filterDropdownVisible: false,
+                onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
+                filterIcon: (_) => {
+                    return <Tooltip title='Column Settings' mouseEnterDelay={0.1}>
+                        <span style={{ opacity: 0.66, marginLeft: '5px', width: '15px' }}><FilterFilled /></span>
+                    </Tooltip>
+                },
                 render: (text, record) => !record.isValueNull && (
                     <span>
                         <ZeroSizeWrapper width={32} height={0}>
@@ -417,6 +427,17 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 ),
             },
         ];
+
+        // If the previewColumnFields is empty then use the default columns, otherwise filter it based on it
+        const filteredColumns: (ColumnProps<TopicMessage>)[] =
+            uiState.topicSettings.previewColumnFields.length == 0 ?
+                columns : uiState.topicSettings.previewColumnFields
+                    .map(columnList =>
+                        columns.find(c => c.dataIndex === columnList.dataIndex)
+                    )
+                    .filter(column => !!column)
+                    // Add the action tab at the end
+                    .concat(columns[columns.length - 1]) as (ColumnProps<TopicMessage>)[];
 
         return <>
             <ConfigProvider renderEmpty={this.empty}>
@@ -438,17 +459,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                     expandable={{
                         expandRowByClick: false,
+                        expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'value'),
+                        rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
                         expandedRowRender: record => RenderExpandedMessage(record),
-                        expandIconColumnIndex: columns.findIndex(c => c.dataIndex === 'value')
                     }}
 
-                    columns={columns}
+                    columns={filteredColumns}
                 />
 
                 {
                     (this.messageSource?.data?.length > 0) &&
                     <PreviewSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showPreviewSettings} setShowDialog={s => this.showPreviewSettings = s} />
                 }
+
+                <ColumnSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
+
 
             </ConfigProvider>
         </>
@@ -589,7 +614,9 @@ const renderKey = (key: any | null | undefined) => {
     const text = typeof key === 'string' ? key : ToJson(key);
 
     if (key == undefined || key == null || text.length == 0 || text == '{}')
-        return <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={OctoSkip} /></span>
+        return <Tooltip title="Empty Key" mouseEnterDelay={0.1}>
+            <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={OctoSkip} /></span>
+        </Tooltip>
 
     if (text.length > 45) {
 
@@ -812,6 +839,89 @@ class PreviewSettings extends Component<{ allCurrentKeys: string[], getShowDialo
     }
 }
 
+@observer
+class ColumnSettings extends Component<{ allCurrentKeys: string[], getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
+
+    render() {
+
+        const content = <>
+            <Paragraph>
+                <Text>
+                    Click on the column field on the text field and/or <b>x</b> on to remove it.<br />
+                </Text>
+            </Paragraph>
+            <div style={{ padding: '1.5em 1em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px' }}>
+                <ColumnOptions tags={uiState.topicSettings.previewColumnFields} />
+            </div>
+            <div style={{ marginTop: '1em' }}>
+                <h3 style={{ marginBottom: '0.5em' }}>More Settings</h3>
+                <Space size='large'>
+                    <OptionGroup label='Timestamp' options={{ 'Local DateTime': 'default', 'Unix Seconds': 'unixSeconds', 'Relative': 'relative', 'Local Date': 'onlyDate', 'Local Time': 'onlyTime' }}
+                        value={uiState.topicSettings.previewTimestamps}
+                        onChange={e => uiState.topicSettings.previewTimestamps = e}
+                    />
+                </Space>
+            </div>
+        </>
+
+        return <Modal
+            title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Column Settings</span>}
+            visible={this.props.getShowDialog()}
+            onOk={() => this.props.setShowDialog(false)}
+            onCancel={() => this.props.setShowDialog(false)}
+            width={750}
+            okText='Close'
+            cancelButtonProps={{ style: { display: 'none' } }}
+            closable={false}
+            maskClosable={true}
+        >
+            {content}
+        </Modal>;
+    }
+}
+
+@observer
+class ColumnOptions extends Component<{ tags: ColumnList[] }> {
+
+    defaultColumnList: ColumnList[] = [
+        { title: 'Offset', dataIndex: 'offset' },
+        { title: 'Partition', dataIndex: 'partitionID' },
+        { title: 'Timestamp', dataIndex: 'timestamp' },
+        { title: 'Key', dataIndex: 'key' },
+        { title: 'Value', dataIndex: 'value' },
+        { title: 'Size', dataIndex: 'size' },
+    ];
+
+    render() {
+        const defaultValues = uiState.topicSettings.previewColumnFields.map(column => column.title);
+        const children = this.defaultColumnList.map((column: ColumnList) =>
+            <Option value={column.dataIndex} key={column.dataIndex}>{column.title}</Option>
+        );
+
+        return <>
+            <Select
+                mode="multiple"
+                style={{ width: '100%' }}
+                placeholder="Currently on default View, please select"
+                defaultValue={defaultValues}
+                onChange={this.handleColumnListChange}
+            >
+                {children}
+            </Select>
+        </>
+    }
+
+    handleColumnListChange = (values: string[]) => {
+        if (!values.length) {
+            uiState.topicSettings.previewColumnFields = [];
+        } else {
+            const columnsSelected = values
+                .map(value => this.defaultColumnList.find(columnList => columnList.dataIndex === value))
+                .filter(columnList => !!columnList) as ColumnList[];
+            uiState.topicSettings.previewColumnFields = columnsSelected;
+        }
+    }
+}
 
 @observer
 class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: string[] }> {
