@@ -35,10 +35,24 @@ export class AdminRoles extends Component<{}> {
         if (!api.AdminInfo) return this.skeleton;
         const roles = api.AdminInfo.roles;
 
+        const table = <Table
+            size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
+            showSorterTooltip={false}
+            dataSource={roles}
+            rowClassName={() => 'hoverLink'}
+            rowKey={(x, i) => x.name}
+            columns={[
+                { width: 1, title: 'Role Name', dataIndex: 'name', sorter: sortField('name') },
+                { title: '', render: r => (<span></span>) },
+            ]}
+            // expandIconAsCell={false} broken after upgrade to antd4
+            expandIconColumnIndex={0}
+            expandRowByClick={true}
+            expandedRowRender={(r: Role) => <RoleComponent key={r.name} role={r} />}
+        />
+
         return <MotionAlways>
-            {roles.map((role, i) => <div key={i}>
-                <RoleComponent role={role} />
-            </div>)}
+            {table}
         </MotionAlways>
     }
 
