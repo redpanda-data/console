@@ -30,15 +30,13 @@ const { Option } = Select;
 const InputGroup = Input.Group;
 
 @observer
-export class AdminRoleBindings extends Component<{}> {
+export class AdminRoleBindings extends Component {
 
     render() {
         if (!api.AdminInfo) return this.skeleton;
         const roleBindings = api.AdminInfo.roleBindings;
-        const groupMap: {[key: string]: LoginProviderGroup} = {};
-        api.AdminInfo.groups.forEach(group => {
-            groupMap[group.name] = group;
-        });
+
+        const groupMap = api.AdminInfo.groups.toMap(x => x.name, x => x);
 
         const table = <Table
             size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
@@ -55,7 +53,7 @@ export class AdminRoleBindings extends Component<{}> {
             expandIconColumnIndex={0}
             expandRowByClick={true}
             expandedRowRender={(rb: RoleBinding) => {
-                return rb.subjects.map(s => <SubjectComponent key={rb.roleName} subject={s} group={s.kind === 'group' && groupMap[s.name]} />)
+                return rb.subjects.map(s => <SubjectComponent key={rb.roleName} subject={s} group={s.kind === 'group' ? groupMap.get(s.name) : undefined} />)
             }}
         />
 
@@ -71,7 +69,7 @@ export class AdminRoleBindings extends Component<{}> {
     </>
 }
 
-export class SubjectComponent extends Component<{ subject: SubjectDefinition, group: LoginProviderGroup | false }>{
+export class SubjectComponent extends Component<{ subject: SubjectDefinition, group?: LoginProviderGroup }>{
     render() {
         const s = this.props.subject;
         const group = this.props.group;
@@ -87,7 +85,7 @@ export class SubjectComponent extends Component<{ subject: SubjectDefinition, gr
 
         return <div>
             <div>{kind}: {s.name} {s.organization && <>(Org: {s.organization})</>}</div>
-            { groupElement }
+            {groupElement}
         </div>
     }
 }
