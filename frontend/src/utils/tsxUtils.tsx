@@ -1,8 +1,9 @@
-import React, { Children, useState, Component, CSSProperties } from "react";
+import React, { useState, Component, CSSProperties } from "react";
 import { simpleUniqueId } from "./utils";
 import { Radio, message, Progress } from 'antd';
 import { MessageType } from "antd/lib/message";
 import prettyMilliseconds from 'pretty-ms';
+import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 
 
 
@@ -28,7 +29,7 @@ export function numberToThousandsString(n: number): JSX.Element {
 
 export function renderTimestamp(unixEpochSecond: number, format?: string): string {
     let timestamp = "";
-    switch(format) {
+    switch (format) {
         case 'onlyDate':
             timestamp = new Date(unixEpochSecond * 1000).toDateString()
             break;
@@ -189,7 +190,6 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
 
     static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
     static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
-    static readonly moreInfoStyle: CSSProperties = { display: 'block', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%', textAlign: 'left' } as const;
     static readonly progressTextStyle: CSSProperties = { marginLeft: 'auto', paddingLeft: '2em' } as const;
 
     hide: MessageType;
@@ -211,7 +211,7 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
     }
 
     customRender() {
-        const content = <div>
+        const content = <div style={{ marginBottom: '0.2em' }}>
             <div style={StatusIndicator.progressStyle}>
                 <Progress percent={this.props.fillFactor * 100} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
             </div>
@@ -220,12 +220,12 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
                 <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
             </div>
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
-                <div style={StatusIndicator.moreInfoStyle}>
-                    <div>
-                        Bytes: {this.props.bytesConsumed}
+                <div style={StatusIndicator.statusBarStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <DownloadOutlined /> {this.props.bytesConsumed}
                     </div>
-                    <div>
-                        Messages: {this.props.messagesConsumed}
+                    <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
+                        <CopyOutlined />{this.props.messagesConsumed} messages
                     </div>
                 </div>
             }
