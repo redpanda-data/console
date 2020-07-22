@@ -163,17 +163,6 @@ const AppSide = observer(() => (
 const DataAgeInfo = observer(() => {
 
     const spinnerSize = '16px';
-    DebugTimerStore.Instance.useFrame();
-
-    let maxFetchTime = api.ActiveRequests.length == 0
-        ? 0
-        : api.ActiveRequests.map(r => r.requestTime).reduce((p, c) => Math.max(p, c), 0);
-
-    // debugging:
-    // maxFetchTime = ((DebugTimerStore.Instance.secondCounter * 1) % 4) < 3.5
-    //     ? 100
-    //     : 0;
-    // maxFetchTime = 5;
 
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div style={{
@@ -188,7 +177,7 @@ const DataAgeInfo = observer(() => {
         marginBottom: '0.5em', // same as the h1
     }}>
         {
-            maxFetchTime < 0.1
+            api.ActiveRequests.length == 0
                 ?
                 <>
                     < Button icon={< SyncIcon size={16} />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
