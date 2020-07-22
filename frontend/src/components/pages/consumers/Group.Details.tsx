@@ -151,23 +151,22 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
 
     pageConfig: TablePaginationConfig;
-    topicLags: TopicLag[];
 
     constructor(props: any) {
         super(props);
         this.pageConfig = makePaginationConfig(30);
         this.pageConfig.hideOnSinglePage = true;
         this.pageConfig.showSizeChanger = false;
-        this.topicLags = this.props.group.lag.topicLags;
     }
 
     render() {
+        const topicLags = this.props.group.lag.topicLags;
         const p = this.props;
         const allAssignments = p.group.members
             .flatMap(m => m.assignments
                 .map(as => ({ member: m, topicName: as.topicName, partitions: as.partitionIds })));
 
-        const lagsFlat = this.topicLags.flatMap(topicLag =>
+        const lagsFlat = topicLags.flatMap(topicLag =>
             topicLag.partitionLags.map(partLag => {
 
                 const assignedMember = allAssignments.find(e =>
@@ -184,7 +183,8 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                     clientId: assignedMember?.member.clientId,
                     host: assignedMember?.member.clientHost
                 }
-            }));
+            })
+        );
 
         const lagGroupsByTopic = lagsFlat.groupInto(e => e.topicName);
 
@@ -247,17 +247,16 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
 class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
 
     pageConfig: TablePaginationConfig;
-    topicLags: TopicLag[];
 
     constructor(props: any) {
         super(props);
         this.pageConfig = makePaginationConfig(30);
         this.pageConfig.hideOnSinglePage = true;
         this.pageConfig.showSizeChanger = false;
-        this.topicLags = this.props.group.lag.topicLags;
     }
 
     render() {
+        const topicLags = this.props.group.lag.topicLags;
         const p = this.props;
 
         const memberEntries = p.group.members.map((m, i) => {
@@ -265,7 +264,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
 
             const assignmentsFlat = assignments
                 .map(a => a.partitionIds.map(id => {
-                    const topicLag = this.topicLags.find(t => t.topic == a.topicName);
+                    const topicLag = topicLags.find(t => t.topic == a.topicName);
                     const partLag = topicLag?.partitionLags.find(p => p.partitionId == id)?.lag;
                     return {
                         topicName: a.topicName,
