@@ -183,8 +183,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                             { /* Next */}
                             { /* Custom */}
                             {/* weeco's solution: https://i.imgur.com/mhbgyPS.png */}
-                            <Option value={(TopicOffsetOrigin.End) - 3}>Newest</Option>
-                            <Option value={TopicOffsetOrigin.End}>Newest<span style={{ opacity: '90%' }}>-{searchParams.maxResults}</span></Option>
+                            <Option value={TopicOffsetOrigin.End}>Newest</Option>
+                            <Option value={TopicOffsetOrigin.EndMinusResults}>Newest<span style={{ opacity: '90%' }}>-{searchParams.maxResults}</span></Option>
                             <Option value={TopicOffsetOrigin.Start}>Oldest</Option>
                             <Option value={TopicOffsetOrigin.Custom}>Custom</Option>
                         </Select>

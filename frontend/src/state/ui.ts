@@ -54,7 +54,7 @@ export class FilterEntry {
     @observable code: string = 'return true\n//allow all messages'; // js code the user entered
 }
 
-export enum TopicOffsetOrigin { End = -1, Start = -2, Custom = 0 }
+export enum TopicOffsetOrigin { EndMinusResults = -1, Start = -2, End = -3, Custom = 0 }
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams']
 // Settings for an individual topic
 export class TopicDetailsSettings {
