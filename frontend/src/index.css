@@ -667,6 +667,10 @@ tr:hover button.ant-btn-link {
     padding-left: 0;
 }
 
+tr>td.msgTableActionColumn {
+    text-align: right;
+}
+
 .fill {
     width: 100%;
     height: 100%;
