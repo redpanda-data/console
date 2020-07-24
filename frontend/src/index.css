@@ -671,6 +671,18 @@ tr>td.msgTableActionColumn {
     text-align: right;
 }
 
+/* Change color of the "filter" button (which changes what columns are displayed)  */
+th.msgTableActionColumn .anticon svg {
+    min-width: 15px;
+    color: rgb(160, 160, 160);
+}
+
+th.msgTableActionColumn .ant-table-filter-trigger-container {
+    /* not sure at all if any of those two lines are a good idea */
+    /* background: rgba(0, 0, 0, 0.04); */
+    border-left: 1px solid rgba(184, 184, 184, 0.4);
+}
+
 .fill {
     width: 100%;
     height: 100%;

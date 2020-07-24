@@ -23,10 +23,10 @@ import { editQuery } from "../../../utils/queryHelper";
 import { numberToThousandsString, renderTimestamp, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
 
 import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
-import { SyncIcon, XCircleIcon, PlusIcon } from '@primer/octicons-v2-react'
+import { SyncIcon, XCircleIcon, PlusIcon, SettingsIcon } from '@primer/octicons-v2-react'
 
 import queryString from 'query-string';
-import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, QuestionCircleTwoTone, FilterFilled } from '@ant-design/icons';
+import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, QuestionCircleTwoTone, FilterFilled, SettingFilled } from '@ant-design/icons';
 import { SortOrder } from "antd/lib/table/interface";
 import { IsDev } from "../../../utils/env";
 
@@ -405,7 +405,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
                     return <Tooltip title='Column Settings' mouseEnterDelay={0.1}>
-                        <span style={{ opacity: 0.66, marginLeft: '5px', width: '15px' }}><FilterFilled /></span>
+                        <SettingFilled />
                     </Tooltip>
                 },
                 render: (text, record) => !record.isValueNull && (
