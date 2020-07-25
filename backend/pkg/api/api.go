@@ -41,13 +41,14 @@ func New(cfg *Config) *API {
 	// Sarama Config
 	saramaConfig, err := kafka.NewSaramaConfig(&cfg.Kafka)
 	if err != nil {
-		log.Fatal("Failed to create a valid sarama config", zap.Error(err))
+		log.Fatal("failed to create a valid sarama config", zap.Error(err))
 	}
 
 	// Sarama Client
+	logger.Info("connecting to Kafka cluster")
 	client, err := sarama.NewClient(cfg.Kafka.Brokers, saramaConfig)
 	if err != nil {
-		logger.Fatal("Failed to create kafka client", zap.Error(err))
+		logger.Fatal("failed to create kafka client", zap.Error(err))
 	}
 
 	kafkaSvc := &kafka.Service{Client: client, Logger: logger, MetricsNamespace: cfg.MetricsNamespace}
