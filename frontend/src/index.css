@@ -833,16 +833,24 @@ svg {
 
 .ant-tooltip-inner {
     min-height: 20px;
-    padding: 3px 6px;
+    padding: .5em .75em;
     color: rgba(255, 255, 255, 85%);
     border-radius: 4px;
     background-color: hsla(210, 14%, 20%, 0.9);
+    text-align: center;
+    font-size: 11px;
+    font-family: Verdana, "Segoe UI", Helvetica, sans-serif;
+    line-height: 1.5;
 }
 
 .ant-tooltip-arrow::before {
     background-color: hsla(210, 14%, 20%, 0.9);
     width: 8px;
     height: 8px;
+}
+
+.quickTable {
+    text-align: initial;
 }
 
 /* Helper classes */

@@ -104,8 +104,9 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
     }
 
     const showVerticalGutter = (typeof o.gutterHeight === 'number' && o.gutterHeight > 0) || typeof o.gutterHeight === 'string';
+    const classNames = [o.tableClassName, "quickTable"].joinStr(" ");
 
-    return <table className={o.tableClassName} style={o.tableStyle}>
+    return <table className={classNames} style={o.tableStyle}>
         <tbody>
             {entries.map((obj, i) =>
                 <React.Fragment key={i}>
