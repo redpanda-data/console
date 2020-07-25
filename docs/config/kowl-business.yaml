@@ -28,7 +28,6 @@ kafka:
   #   keyFilepath:
   #   passphrase: # This can be set via the --kafka.tls.passphrase flag as well
   #   insecureSkipTlsVerify: false
-
   # server:
   #   listenPort: 8080
   #   gracefulShutdownTimeout: 30s
@@ -47,8 +46,6 @@ kafka:
 # Prefix for all exported prometheus metrics
 # metricsNamespace: kowl
 
-
-
 ###################################################################
 # Below flags are only available in Kowl Business
 ###################################################################
@@ -65,19 +62,18 @@ login:
   google:
     enabled: false
     clientId:
-    clientSecret: # This can be set via the --login.google.clientSecret flag as well
-    # Below properties are required if you want to create roleBindings on Google groups instead of only users
-#    serviceAccountFilepath:
-#    targetPrincipal: # Email address to impersonate
-#    domain: # Group domain
+    clientSecret: # This can be set via the --login.google.client-secret flag as well
+    # Below properties are required if you want to create roleBindings on Google groups instead of users
+    # directory:
+    #   serviceAccountFilepath:
+    #   targetPrincipal:
   github:
     enabled: false
     clientId:
-    clientSecret: # This can be set via the --login.github.clientSecret flag as well
-    # Below properties are required if you want to create roleBindings on GitHub teams instead of only users
-    # appId:
-    # installationId:
-    # privateKeyFilepath:
+    clientSecret: # This can be set via the --login.github.client-secret flag as well
+    # Below properties are required if you want to create roleBindings on GitHub teams instead of users
+    # directory:
+    #   personalAccessToken: # This can be set via the --login.github.directory.personal-access-token flag as well
 
 business:
   rolesFilepath:
