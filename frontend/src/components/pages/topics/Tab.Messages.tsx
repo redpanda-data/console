@@ -604,10 +604,10 @@ function ${name}() {
     </>} />
 }
 
-const renderKey = (key: any | null | undefined) => {
-    const text = typeof key === 'string' ? key : ToJson(key);
+const renderKey = (value: any, record: TopicMessage) => {
+    const text = typeof value === 'string' ? value : ToJson(value);
 
-    if (key == undefined || key == null || text.length == 0 || text == '{}')
+    if (value == undefined || value == null || text.length == 0 || text == '{}')
         return <Tooltip title="Empty Key" mouseEnterDelay={0.1}>
             <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={OctoSkip} /></span>
         </Tooltip>
