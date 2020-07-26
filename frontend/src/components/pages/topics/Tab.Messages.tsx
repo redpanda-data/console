@@ -1078,8 +1078,8 @@ class MessageSearchFilterBar extends Component {
     @observable hasChanges = false; // used by editor; shows "revert changes" when true
 
     static readonly tooltipText = QuickTable([
-        ["Click:", "toggle active"],
-        ["Double Click:", "edit filter"]
+        ["Click:", "Toggle active"],
+        ["Click on Cog:", "Edit filter"]
     ]);
 
     static readonly nameTip = <>
@@ -1100,19 +1100,23 @@ class MessageSearchFilterBar extends Component {
                 <Tooltip key={e.id} title={MessageSearchFilterBar.tooltipText} mouseEnterDelay={0.2}>
                     <Tag
                         style={{ userSelect: 'none' }}
+                        className='filterTag'
                         key={e.id}
                         closable
                         color={e.isActive ? 'blue' : undefined}
                         onClick={() => e.isActive = !e.isActive}
-                        onDoubleClick={() => {
-                            this.currentIsNew = false;
-                            this.currentFilterBackup = ToJson(e);
-                            this.currentFilter = e;
-                            this.hasChanges = false;
-                        }}
                         onClose={() => settings.filters.remove(e)}
                     >
-                        {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+                        <span>{e.name ? e.name : (e.code ? e.code : 'New Filter')}</span>
+                        <SettingOutlined
+                            className='settingIconFilter'
+                            onClick={() => {
+                                this.currentIsNew = false;
+                                this.currentFilterBackup = ToJson(e);
+                                this.currentFilter = e;
+                                this.hasChanges = false;
+                            }}
+                        />
                     </Tag>
                 </Tooltip>
             )}
