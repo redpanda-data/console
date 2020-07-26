@@ -1048,16 +1048,23 @@ const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): Re
 )
 
 const helpEntries = [
-    makeHelpEntry('Basics', <ul style={{ margin: 0 }}>
-        <li>code is a javascript function body</li>
-        <li>the context is re-used between messages, but every partition has its own context</li>
-        <li>return true to allow a message, return false to discard the message</li>
+    makeHelpEntry('Basics', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
+        <li>Code is a javascript function body</li>
+        <li>The context is re-used between messages, but every partition has its own context</li>
+        <li>Return true to allow a message, Return false to discard the message</li>
     </ul>),
-    makeHelpEntry('Parameters', <ul style={{ margin: 0 }}>
-        <li><span className='codeBox'>offset</span>, <span className='codeBox'>partitionID</span></li>
-        <li><span className='codeBox'>partitionID</span>: ...</li>
+    makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
+        <li><span className='codeBox'>offset</span></li>
+        <li><span className='codeBox'>partitionID</span></li>
+        <li><span className='codeBox'>key</span></li>
+        <li><span className='codeBox'>value</span></li>
     </ul>),
-    makeHelpEntry('Examples', 'todo... '),
+    makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
+    <li><span className='codeBox'>return offset &gt; 10000 ;</span></li>
+    <li><span className='codeBox'>return partitionID === 2;</span></li>
+    <li><span className='codeBox'>return key == 'test-key';</span></li>
+    <li><span className='codeBox'>return value == 'test-value';</span></li>
+</ul>),
 ].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
 @observer
