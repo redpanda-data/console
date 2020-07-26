@@ -5,10 +5,11 @@
 - [CHANGE] Business: Reworked groups syncing (Google + GitHub)
 - [CHANGE] Business: GitHub team sync uses uses personal access tokens instead of GitHub apps (better support for multi organization environments)
 - [CHANGE] Business: Groups/Teams sync config has changed, see https://github.com/cloudhut/kowl/commit/0f22cd7b18268ecb3be88fe2bc3de8ac9e8febed
+- **[FEATURE] Search messages with an arbitrary JavaScript filter (https://github.com/cloudhut/kowl/issues/48)**
+- **[FEATURE] Get Kafka messages as they arrive (live tail)**
 - [ENHANCEMENT] Message table: You can now select the visible columns and their order (https://github.com/cloudhut/kowl/issues/52)
 - [ENHANCEMENT] Message table: The desired timestamp format can be configured (Only date, only time, unix timestamp, relative) (https://github.com/cloudhut/kowl/issues/52)
 - [ENHANCEMENT] Message table: The no key icon now shows a tooltip to explain the icon's meaning (https://github.com/cloudhut/kowl/issues/52)
-- **[ENHANCEMENT] Search messages with an arbitrary JavaScript filter (https://github.com/cloudhut/kowl/issues/48)**
 - [BUGFIX] After clicking the refresh button it didn't always change the state to "Refreshing" (https://github.com/cloudhut/kowl/issues/75)
 
 ## 1.0.0 / 2020-06-24
