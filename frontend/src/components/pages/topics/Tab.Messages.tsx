@@ -1104,10 +1104,8 @@ class MessageSearchFilterBar extends Component {
                         key={e.id}
                         closable
                         color={e.isActive ? 'blue' : undefined}
-                        onClick={() => e.isActive = !e.isActive}
                         onClose={() => settings.filters.remove(e)}
                     >
-                        <span>{e.name ? e.name : (e.code ? e.code : 'New Filter')}</span>
                         <SettingOutlined
                             className='settingIconFilter'
                             onClick={() => {
@@ -1117,6 +1115,9 @@ class MessageSearchFilterBar extends Component {
                                 this.hasChanges = false;
                             }}
                         />
+                        <span onClick={() => e.isActive = !e.isActive}>
+                                {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+                        </span>
                     </Tag>
                 </Tooltip>
             )}

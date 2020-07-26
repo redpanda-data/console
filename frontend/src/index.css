@@ -798,21 +798,23 @@ svg {
     transition-duration: 0s;
 }
 
+.filterTag {
+    padding-left: 0;
+    cursor: pointer;
+}
+
 .filterTag span {
     vertical-align: middle;
     height: 100%
 }
 
 .filterTag .settingIconFilter {
-    cursor: pointer;
-    border-left: 1px solid rgba(184, 184, 184, 0.4);
     border-right: 1px solid rgba(184, 184, 184, 0.4);
     padding: 0 5px;
     transition: 0.5 ease;
 }
 
 .filterTag .settingIconFilter:hover {
-    border-left: 1px solid rgba(184, 184, 184, 0.8);
     border-right: 1px solid rgba(184, 184, 184, 0.8);
     background: rgba(206, 206, 206, 0.2);
 }
