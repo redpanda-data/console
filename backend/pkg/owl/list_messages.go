@@ -16,8 +16,11 @@ const (
 )
 
 const (
+	// Recent = High water mark - number of results
 	StartOffsetRecent int64 = -1
+	// Oldest = Low water mark / oldest offset
 	StartOffsetOldest int64 = -2
+	// Newest = High water mark / Live tail
 	StartOffsetNewest int64 = -3
 )
 
