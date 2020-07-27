@@ -157,7 +157,7 @@ Loop:
 		<-time.After(50 * time.Millisecond)
 	}
 
-	progress.OnComplete(time.Since(start).Seconds()*1000, requestCancelled)
+	progress.OnComplete(time.Since(start).Milliseconds(), requestCancelled)
 
 	if requestCancelled {
 		return fmt.Errorf("request was cancelled while waiting for messages from workers (probably timeout) completedWorkers=%v startedWorksers=%v", completedWorkers, startedWorkers)
@@ -194,8 +194,8 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafk
 			p.StartOffset = mark.Low
 		} else if listReq.StartOffset == StartOffsetNewest {
 			// In Live tail mode we consume onwards until max results are reached. Start Offset is always high watermark
-			// and end offset is always MaxInt64, thus we can quit early here.
-			p.StartOffset = mark.High
+			// and end offset is always MaxInt64.
+			p.StartOffset = sarama.OffsetNewest
 			p.EndOffset = math.MaxInt64
 		} else {
 			p.StartOffset = listReq.StartOffset
@@ -226,7 +226,7 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafk
 				continue
 			}
 
-			if listReq.StartOffset == sarama.OffsetNewest {
+			if listReq.StartOffset == StartOffsetRecent {
 				isDrained := req.StartOffset == req.LowWaterMark
 				if isDrained {
 					req.IsDrained = true

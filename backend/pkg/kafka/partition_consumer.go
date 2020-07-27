@@ -30,7 +30,7 @@ type IListMessagesProgress interface {
 	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
 	OnMessage(message *TopicMessage)
 	OnMessageConsumed(size int64)
-	OnComplete(elapsedMs float64, isCancelled bool)
+	OnComplete(elapsedMs int64, isCancelled bool)
 	OnError(msg string)
 }
 
