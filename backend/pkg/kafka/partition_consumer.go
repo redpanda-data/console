@@ -143,7 +143,7 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp,
-				Key:         DirectEmbedding{ValueType: valueTypeText, Value: m.Key}, // TODO: Parse key
+				Key:         key,
 				Value:       value,
 			}
 

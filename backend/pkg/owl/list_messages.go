@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"math"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -14,11 +15,17 @@ const (
 	partitionsAll int32 = -1
 )
 
+const (
+	StartOffsetRecent int64 = -1
+	StartOffsetOldest int64 = -2
+	StartOffsetNewest int64 = -3
+)
+
 // ListMessageRequest carries all filter, sort and cancellation options for fetching messages from Kafka
 type ListMessageRequest struct {
 	TopicName             string
 	PartitionID           int32 // -1 for all partitions
-	StartOffset           int64 // -1 for newest, -2 for oldest offset
+	StartOffset           int64 // -1 for recent (high - n), -2 for oldest offset, -3 for newest offset
 	MessageCount          uint16
 	FilterInterpreterCode string
 }
@@ -178,10 +185,15 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafk
 			MaxMessageCount: 0,
 		}
 
-		if listReq.StartOffset == sarama.OffsetNewest {
-			p.StartOffset = mark.High
-		} else if listReq.StartOffset == sarama.OffsetOldest {
+		if listReq.StartOffset == StartOffsetRecent {
+			p.StartOffset = mark.High // StartOffset will be recalculated later
+		} else if listReq.StartOffset == StartOffsetOldest {
 			p.StartOffset = mark.Low
+		} else if listReq.StartOffset == StartOffsetNewest {
+			// In Live tail mode we consume onwards until max results are reached. Start Offset is always high watermark
+			// and end offset is always MaxInt64, thus we can quit early here.
+			p.StartOffset = mark.High
+			p.EndOffset = math.MaxInt64
 		} else {
 			p.StartOffset = listReq.StartOffset
 
