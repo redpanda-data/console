@@ -1083,9 +1083,9 @@ class MessageSearchFilterBar extends Component {
     ]);
 
     static readonly nameTip = <>
-        <LayoutBypass>
+        <LayoutBypass justifyContent='flex-start'>
             <Tooltip placement='top' title={<span>Enter a custom name that will be shown in the list.<br />Otherwise the the code itself will be used as the name.</span>}>
-                <QuestionCircleTwoTone twoToneColor='deepskyblue' style={{ fontSize: '15px', marginBottom: '3px', marginLeft: '2px' }} />
+                <QuestionCircleTwoTone twoToneColor='deepskyblue' style={{ fontSize: '15px' }} />
             </Tooltip>
         </LayoutBypass>
     </>
