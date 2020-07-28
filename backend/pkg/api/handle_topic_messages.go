@@ -17,7 +17,9 @@ type GetTopicMessagesResponse struct {
 	KafkaMessages *owl.ListMessageResponse `json:"kafkaMessages"`
 }
 
-type listMessagesRequest struct {
+// ListMessageRequest represents a search message request with all search parameter. This must be public as it's
+// used in Kowl business to implement the hooks.
+type ListMessagesRequest struct {
 	TopicName             string `json:"topicName"`
 	StartOffset           int64  `json:"startOffset"` // -1 for recent (newest - results), -2 for oldest offset, -3 for newest
 	PartitionID           int32  `json:"partitionId"` // -1 for all partition ids
@@ -25,7 +27,7 @@ type listMessagesRequest struct {
 	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
 }
 
-func (l *listMessagesRequest) OK() error {
+func (l *ListMessagesRequest) OK() error {
 	if l.TopicName == "" {
 		return fmt.Errorf("topic name is required")
 	}
@@ -49,7 +51,7 @@ func (l *listMessagesRequest) OK() error {
 	return nil
 }
 
-func (l *listMessagesRequest) DecodeInterpreterCode() (string, error) {
+func (l *ListMessagesRequest) DecodeInterpreterCode() (string, error) {
 	code, err := base64.StdEncoding.DecodeString(l.FilterInterpreterCode)
 	if err != nil {
 		return "", err
@@ -80,7 +82,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		defer wsClient.sendClose()
 
 		// Get search parameters. Close connection if search parameters are invalid
-		var req listMessagesRequest
+		var req ListMessagesRequest
 		err := wsClient.readJSON(&req)
 		if err != nil {
 			wsClient.writeJSON(rest.Error{
@@ -104,17 +106,17 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			return
 		}
 
-		// Check if logged in user is allowed to list messages for the given topic
-		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req.TopicName)
+		// Check if logged in user is allowed to list messages for the given request
+		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 		if !canViewMessages {
 			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to view messages in the requested topic"),
+				Err:      fmt.Errorf("requester has no permissions to view messages for the given request"),
 				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to view messages in that topic",
+				Message:  "You don't have permissions to view messages with the given search parameters",
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, logger, restErr)
