@@ -132,9 +132,9 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			FilterInterpreterCode: interpreterCode,
 		}
 
-		// Use 30min duration if we want to search a whole topic
+		// Use 30min duration if we want to search a whole topic or forward messages as they arrive
 		duration := 18 * time.Second
-		if listReq.FilterInterpreterCode != "" {
+		if listReq.FilterInterpreterCode != "" || listReq.StartOffset == owl.StartOffsetNewest {
 			duration = 30 * time.Minute
 		}
 		childCtx, cancel := context.WithTimeout(ctx, duration)
@@ -151,7 +151,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 		progress.Start()
 
-		err = api.OwlSvc.ListMessages(ctx, listReq, progress)
+		err = api.OwlSvc.ListMessages(childCtx, listReq, progress)
 		if err != nil {
 			progress.OnError(err.Error())
 		}

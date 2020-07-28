@@ -18,7 +18,7 @@ func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) 
 	req := &ListMessageRequest{
 		TopicName:    "test",
 		PartitionID:  partitionsAll, // All partitions
-		StartOffset:  sarama.OffsetNewest,
+		StartOffset:  StartOffsetRecent,
 		MessageCount: 3,
 	}
 
@@ -44,7 +44,7 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 	req := &ListMessageRequest{
 		TopicName:    "test",
 		PartitionID:  partitionsAll, // All partitions
-		StartOffset:  sarama.OffsetOldest,
+		StartOffset:  StartOffsetOldest,
 		MessageCount: 100,
 	}
 
@@ -123,4 +123,32 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 		actual := calculateConsumeRequests(table.req, marks)
 		assert.Equal(t, table.expected, actual, "expected other result for single partition test. Case: ", i)
 	}
+}
+
+func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
+	// Request less messages than we have partitions, if filter code is set we handle consume requests different than
+	// usual - as we don't care about the distribution between partitions.
+	marks := map[int32]*kafka.WaterMark{
+		0: {PartitionID: 0, Low: 0, High: 300},
+		1: {PartitionID: 1, Low: 0, High: 300},
+		2: {PartitionID: 2, Low: 0, High: 300},
+	}
+
+	req := &ListMessageRequest{
+		TopicName:             "test",
+		PartitionID:           partitionsAll, // All partitions
+		StartOffset:           StartOffsetOldest,
+		MessageCount:          2,
+		FilterInterpreterCode: "random string that simulates some javascript code",
+	}
+
+	// Expected result should be able to return all 100 requested messages as evenly distributed as possible
+	expected := map[int32]*kafka.PartitionConsumeRequest{
+		0: {PartitionID: 0, IsDrained: false, StartOffset: marks[0].Low, EndOffset: marks[0].High - 1, MaxMessageCount: 2, LowWaterMark: marks[0].Low, HighWaterMark: marks[0].High},
+		1: {PartitionID: 1, IsDrained: false, StartOffset: marks[1].Low, EndOffset: marks[1].High - 1, MaxMessageCount: 2, LowWaterMark: marks[1].Low, HighWaterMark: marks[1].High},
+		2: {PartitionID: 2, IsDrained: false, StartOffset: marks[2].Low, EndOffset: marks[2].High - 1, MaxMessageCount: 2, LowWaterMark: marks[2].Low, HighWaterMark: marks[2].High},
+	}
+	actual := calculateConsumeRequests(req, marks)
+
+	assert.Equal(t, expected, actual, "expected other result for all partitions with filter enabled")
 }
