@@ -187,7 +187,7 @@ export class OptionGroup<T> extends Component<{
     }
 }
 
-export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed: string, messagesConsumed: string, progressText: string }> {
+export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed?: string, messagesConsumed?: string, progressText: string }> {
 
     static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
     static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;

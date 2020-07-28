@@ -252,9 +252,9 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         identityKey='messageSearch'
                         fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
                         statusText={api.MessageSearchPhase}
-                        bytesConsumed={prettyBytes(api.MessagesBytesConsumed)}
-                        messagesConsumed={String(api.MessagesTotalConsumed)}
                         progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`}
+                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.MessagesBytesConsumed) : undefined}
+                        messagesConsumed={searchParams.filtersEnabled ? String(api.MessagesTotalConsumed) : undefined}
                     />
                 }
 
