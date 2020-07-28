@@ -20,6 +20,7 @@ import { uiState } from "../../../state/uiState";
 import qs from 'query-string';
 import { parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
+import { filterConverter } from "../../../utils/filterHelper";
 import { numberToThousandsString, renderTimestamp, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
 
 import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
@@ -519,7 +520,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 functionNames.push(name);
                 functions.push(`
 function ${name}() {
-    ${e.code.includes('return ') ? e.code : 'return (' + e.code + ')'}
+    ${filterConverter(e.code)}
 }`);
             });
 
@@ -1084,11 +1085,6 @@ class MessageSearchFilterBar extends Component {
 
     @observable hasChanges = false; // used by editor; shows "revert changes" when true
 
-    static readonly tooltipText = QuickTable([
-        ["Click:", "Toggle active"],
-        ["Click on Cog:", "Edit filter"]
-    ]);
-
     static readonly nameTip = <>
         <LayoutBypass>
             <Tooltip placement='top' title={<span>Enter a custom name that will be shown in the list.<br />Otherwise the the code itself will be used as the name.</span>}>
@@ -1104,29 +1100,27 @@ class MessageSearchFilterBar extends Component {
 
             {/* Existing Tags List  */}
             {settings.filters?.map(e =>
-                <Tooltip key={e.id} title={MessageSearchFilterBar.tooltipText} mouseEnterDelay={0.2}>
-                    <Tag
-                        style={{ userSelect: 'none' }}
-                        className='filterTag'
-                        key={e.id}
-                        closable
-                        color={e.isActive ? 'blue' : undefined}
-                        onClose={() => settings.filters.remove(e)}
-                    >
-                        <SettingOutlined
-                            className='settingIconFilter'
-                            onClick={() => {
-                                this.currentIsNew = false;
-                                this.currentFilterBackup = ToJson(e);
-                                this.currentFilter = e;
-                                this.hasChanges = false;
-                            }}
-                        />
-                        <span onClick={() => e.isActive = !e.isActive}>
-                                {e.name ? e.name : (e.code ? e.code : 'New Filter')}
-                        </span>
-                    </Tag>
-                </Tooltip>
+                <Tag
+                    style={{ userSelect: 'none' }}
+                    className='filterTag'
+                    key={e.id}
+                    closable
+                    color={e.isActive ? 'blue' : undefined}
+                    onClose={() => settings.filters.remove(e)}
+                >
+                    <SettingOutlined
+                        className='settingIconFilter'
+                        onClick={() => {
+                            this.currentIsNew = false;
+                            this.currentFilterBackup = ToJson(e);
+                            this.currentFilter = e;
+                            this.hasChanges = false;
+                        }}
+                    />
+                    <span className='filterName' style={{display: 'inline-block'}} onClick={() => e.isActive = !e.isActive}>
+                        {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+                    </span>
+                </Tag>
             )}
 
             {/* Add Filter Button */}
