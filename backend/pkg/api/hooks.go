@@ -69,7 +69,7 @@ func (*defaultHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, 
 func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
-func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ string) (bool, *rest.Error) {
+func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ ListMessagesRequest) (bool, *rest.Error) {
 	return true, nil
 }
 func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
