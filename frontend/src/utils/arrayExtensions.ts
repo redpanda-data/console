@@ -21,6 +21,7 @@ declare global {
         pushDistinct<T>(this: T[], ...elements: T[]): void;
 
         genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[];
+        joinStr(this: (string | null | undefined)[], separator: string): string;
 
         toMap<TItem, TKey, TValue>(this: TItem[], computeKey: (item: TItem) => TKey, computeValue: (item: TItem) => TValue): Map<TKey, TValue>;
     }
@@ -156,4 +157,19 @@ Array.prototype.toMap = function toMap<TItem, TKey, TValue>(this: TItem[], compu
     }
 
     return map;
+};
+
+Array.prototype.joinStr = function joinStr(this: (string | null | undefined)[], separator: string): string {
+    let r = "";
+    for (const str of this) {
+        if (str === null || str === undefined || str === "")
+            continue;
+
+        if (r.length == 0)
+            r = str;
+        else
+            r += (separator + str);
+    }
+
+    return r;
 };

@@ -262,7 +262,7 @@ const apiStore = {
                 case 'message':
                     let m = msg.message as TopicMessage;
 
-                    if (m.key && typeof m.key === 'string' && m.key.length > 0) {
+                    if (m.key != null && m.key != undefined && m.key != "" && m.keyType == 'binary') {
                         try {
                             m.key = atob(m.key); // unpack base64 encoded key
                         } catch (error) {
@@ -285,6 +285,7 @@ const apiStore = {
                         }
                         m.valueBinHexPreview = hex;
                     }
+
 
                     //m = observable.object(m, undefined, { deep: false });
 

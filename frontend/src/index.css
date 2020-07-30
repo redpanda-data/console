@@ -809,6 +809,31 @@ svg {
     transition-duration: 0s;
 }
 
+.filterTag {
+    padding-left: 0;
+    cursor: pointer;
+}
+
+.ant-tag.filterTag > .anticon + span {
+    margin-left: 0;
+}
+
+.filterTag span {
+    vertical-align: middle;
+    height: 100%
+}
+
+.filterTag .settingIconFilter, .filterTag .filterName {
+    border-right: 1px solid rgba(184, 184, 184, 0.4);
+    padding: 0 8px;
+    transition: 0.5 ease;
+}
+
+.filterTag .settingIconFilter:hover {
+    border-right: 1px solid rgba(184, 184, 184, 0.8);
+    background: rgba(206, 206, 206, 0.2);
+}
+
 @keyframes ant-progress-active {
 
     /* improve visibility of animation */
@@ -844,16 +869,24 @@ svg {
 
 .ant-tooltip-inner {
     min-height: 20px;
-    padding: 3px 6px;
+    padding: .5em .75em;
     color: rgba(255, 255, 255, 85%);
     border-radius: 4px;
     background-color: hsla(210, 14%, 20%, 0.9);
+    text-align: center;
+    font-size: 11px;
+    font-family: Verdana, "Segoe UI", Helvetica, sans-serif;
+    line-height: 1.5;
 }
 
 .ant-tooltip-arrow::before {
     background-color: hsla(210, 14%, 20%, 0.9);
     width: 8px;
     height: 8px;
+}
+
+.quickTable {
+    text-align: initial;
 }
 
 /* Helper classes */

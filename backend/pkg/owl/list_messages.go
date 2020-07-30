@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"math"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -14,11 +15,20 @@ const (
 	partitionsAll int32 = -1
 )
 
+const (
+	// Recent = High water mark - number of results
+	StartOffsetRecent int64 = -1
+	// Oldest = Low water mark / oldest offset
+	StartOffsetOldest int64 = -2
+	// Newest = High water mark / Live tail
+	StartOffsetNewest int64 = -3
+)
+
 // ListMessageRequest carries all filter, sort and cancellation options for fetching messages from Kafka
 type ListMessageRequest struct {
 	TopicName             string
 	PartitionID           int32 // -1 for all partitions
-	StartOffset           int64 // -1 for newest, -2 for oldest offset
+	StartOffset           int64 // -1 for recent (high - n), -2 for oldest offset, -3 for newest offset
 	MessageCount          uint16
 	FilterInterpreterCode string
 }
@@ -44,12 +54,12 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	// which means that concurrent requests will not work with one shared Consumer
 	consumer, err := sarama.NewConsumerFromClient(s.kafkaSvc.Client)
 	if err != nil {
-		return fmt.Errorf("Couldn't create consumer: %w", err)
+		return fmt.Errorf("couldn't create consumer: %w", err)
 	}
 	defer func() {
 		err = consumer.Close()
 		if err != nil {
-			logger.Error("Closing consumer failed", zap.Error(err))
+			logger.Error("closing consumer failed", zap.Error(err))
 		}
 	}()
 
@@ -82,16 +92,20 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 
 	// Start a partition consumer for all requested partitions
 	doneCh := make(chan struct{}, len(partitions)) // shared channel where completed workers notify us that they're done
+	messageCh := make(chan *kafka.TopicMessage)
 	startedWorkers := 0
 
 	// Get partition consume request by calculating start and end offsets for each partition
 	consumeRequests := calculateConsumeRequests(&listReq, marks)
+	childCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	for _, req := range consumeRequests {
 		pConsumer := kafka.PartitionConsumer{
 			Logger: logger.With(zap.Int32("partition_id", req.PartitionID)),
 
-			DoneCh:   doneCh,
-			Progress: progress,
+			DoneCh:    doneCh,
+			MessageCh: messageCh,
+			Progress:  progress,
 
 			Consumer:              consumer,
 			TopicName:             listReq.TopicName,
@@ -99,7 +113,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 			FilterInterpreterCode: listReq.FilterInterpreterCode,
 		}
 		startedWorkers++
-		go pConsumer.Run(ctx)
+		go pConsumer.Run(childCtx)
 	}
 
 	completedWorkers := 0
@@ -107,6 +121,25 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	requestCancelled := false
 
 	progress.OnPhase("Consuming messages")
+
+	go func(ch <-chan *kafka.TopicMessage, req ListMessageRequest) {
+		messagesToFetch := req.MessageCount
+		for {
+			select {
+			case msg := <-ch:
+				messagesToFetch--
+				progress.OnMessage(msg)
+
+				// When we are done quit routine and cancel context so that all partition consumers will stop as well
+				if messagesToFetch == 0 {
+					cancel()
+					return
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}(messageCh, listReq)
 
 	// Priority list of actions
 	// since we need to process cases by their priority, we must check them individually and
@@ -147,7 +180,7 @@ Loop:
 		<-time.After(50 * time.Millisecond)
 	}
 
-	progress.OnComplete(time.Since(start).Seconds()*1000, requestCancelled)
+	progress.OnComplete(time.Since(start).Milliseconds(), requestCancelled)
 
 	if requestCancelled {
 		return fmt.Errorf("request was cancelled while waiting for messages from workers (probably timeout) completedWorkers=%v startedWorksers=%v", completedWorkers, startedWorkers)
@@ -162,6 +195,7 @@ Loop:
 func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafka.WaterMark) map[int32]*kafka.PartitionConsumeRequest {
 	requests := make(map[int32]*kafka.PartitionConsumeRequest, len(marks))
 
+	predictableResults := listReq.StartOffset != StartOffsetNewest && listReq.FilterInterpreterCode == ""
 	// Init result map
 	notInitialized := int64(-1)
 	for _, mark := range marks {
@@ -178,10 +212,14 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafk
 			MaxMessageCount: 0,
 		}
 
-		if listReq.StartOffset == sarama.OffsetNewest {
-			p.StartOffset = mark.High
-		} else if listReq.StartOffset == sarama.OffsetOldest {
+		if listReq.StartOffset == StartOffsetRecent {
+			p.StartOffset = mark.High // StartOffset will be recalculated later
+		} else if listReq.StartOffset == StartOffsetOldest {
 			p.StartOffset = mark.Low
+		} else if listReq.StartOffset == StartOffsetNewest {
+			// In Live tail mode we consume onwards until max results are reached. Start Offset is always high watermark
+			// and end offset is always MaxInt64.
+			p.StartOffset = sarama.OffsetNewest
 		} else {
 			p.StartOffset = listReq.StartOffset
 
@@ -191,7 +229,23 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafk
 			}
 		}
 
+		// Special handling for live tail and requests with enabled filter code as we don't know how many results on each
+		// partition we'll get (which is required for the "roundrobin" approach).
+		if !predictableResults {
+			// We don't care about balanced results across partitions
+			p.MaxMessageCount = int64(listReq.MessageCount)
+			if listReq.StartOffset == StartOffsetNewest {
+				p.EndOffset = math.MaxInt64
+			}
+		}
+
 		requests[mark.PartitionID] = p
+	}
+
+	if !predictableResults {
+		// Predictable results are required for the balancing method we usually try to apply. If that's not possible
+		// we can quit early as there won't be any balancing across partitions enforced.
+		return requests
 	}
 
 	// We strive to return an equal number of messages across all requested partitions.
@@ -211,7 +265,7 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafk
 				continue
 			}
 
-			if listReq.StartOffset == sarama.OffsetNewest {
+			if listReq.StartOffset == StartOffsetRecent {
 				isDrained := req.StartOffset == req.LowWaterMark
 				if isDrained {
 					req.IsDrained = true

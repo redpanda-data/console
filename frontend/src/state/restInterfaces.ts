@@ -43,15 +43,19 @@ export interface GetTopicConsumersResponse {
 }
 
 
-
+export type MessageDataType = 'json' | 'xml' | 'avro' | 'text' | 'binary';
 
 export interface TopicMessage {
     offset: number,
     timestamp: number,
     partitionID: number,
-    key: string | object, // base64 encoded key of the message
+
+    keyType: MessageDataType,
+    key: any, // base64 encoded key of the message
+
+    valueType: MessageDataType, // actual format of the message (before the backend converted it to json)
     value: any, // json representation of the message value (xml, avro, etc will get converted)
-    valueType: 'json' | 'xml' | 'avro' | 'text' | 'binary', // actual format of the message (before the backend converted it to json)
+
     size: number, // size in bytes of the kafka message
     isValueNull: boolean, // todo: rename to isTombstone
     // todo: we also need to add: keyType, keySize

@@ -30,7 +30,7 @@ type IListMessagesProgress interface {
 	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
 	OnMessage(message *TopicMessage)
 	OnMessageConsumed(size int64)
-	OnComplete(elapsedMs float64, isCancelled bool)
+	OnComplete(elapsedMs int64, isCancelled bool)
 	OnError(msg string)
 }
 
@@ -73,8 +73,9 @@ type PartitionConsumer struct {
 	Logger *zap.Logger // WithFields (topic, partitionId)
 
 	// Infrastructure
-	DoneCh   chan<- struct{} // notify parent that we're done
-	Progress IListMessagesProgress
+	DoneCh    chan<- struct{} // notify parent that we're done
+	MessageCh chan<- *TopicMessage
+	Progress  IListMessagesProgress
 
 	// Consumer Details / Parameters
 	Consumer  sarama.Consumer
@@ -120,7 +121,8 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				p.Progress.OnError(fmt.Sprintf("partition Consumer (partitionId=%v) failed to get the next message (see server log)", p.Req.PartitionID))
 				return
 			}
-			p.Progress.OnMessageConsumed(int64(len(m.Key) + len(m.Value)))
+			messageSize := len(m.Key) + len(m.Value)
+			p.Progress.OnMessageConsumed(int64(messageSize))
 
 			// Run Interpreter filter and check if message passes the filter
 			vType, value := p.getValue(m.Value)
@@ -143,7 +145,7 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp,
-				Key:         DirectEmbedding{ValueType: valueTypeText, Value: m.Key}, // TODO: Parse key
+				Key:         key,
 				Value:       value,
 			}
 
@@ -156,7 +158,15 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 			}
 			if isOK {
 				messageCount++
-				p.Progress.OnMessage(topicMessage)
+
+				// This is necessary because receiver might have quit before we processed the ctx.Done() and therefore
+				// the channel might be blocked which would eventually mean a goroutine leak.
+				select {
+				case <-ctx.Done():
+					return
+				case p.MessageCh <- topicMessage:
+					// Message successfully sent via channel
+				}
 			}
 
 			if m.Offset >= p.Req.EndOffset || messageCount == p.Req.MaxMessageCount {
