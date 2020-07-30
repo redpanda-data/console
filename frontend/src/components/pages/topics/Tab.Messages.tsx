@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Popover, Button, Select, Input, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Switch } from "antd";
+import { Table, Tooltip, Row, Popover, Button, Select, Input, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Switch, Menu, Dropdown } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
 import { PreviewTag, TopicOffsetOrigin, FilterEntry, ColumnList } from "../../../state/ui";
@@ -21,13 +21,12 @@ import qs from 'query-string';
 import { parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
 import { filterConverter } from "../../../utils/filterHelper";
-import { numberToThousandsString, renderTimestamp, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
-
+import { numberToThousandsString, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass, TimestampDisplay } from "../../../utils/tsxUtils";
 import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
-import { SyncIcon, XCircleIcon, PlusIcon, SettingsIcon } from '@primer/octicons-v2-react'
+import { SyncIcon, XCircleIcon, PlusIcon } from '@primer/octicons-v2-react'
 
 import queryString from 'query-string';
-import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, QuestionCircleTwoTone, FilterFilled, SettingFilled } from '@ant-design/icons';
+import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, EllipsisOutlined } from '@ant-design/icons';
 import { SortOrder } from "antd/lib/table/interface";
 import { IsDev } from "../../../utils/env";
 
@@ -38,6 +37,7 @@ import 'prismjs/prism.js';
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras"
 import 'prismjs/themes/prism.css';
+import { timeStamp } from "console";
 
 
 
@@ -381,11 +381,29 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             </span>
         </>
 
+        const copyDropdown = (record: TopicMessage) => (
+            <Menu>
+                <Menu.Item key="0" onClick={() => this.copyMessage(record, "key")}>
+                    Copy Key
+                </Menu.Item>
+                <Menu.Item key="1" onClick={() => this.copyMessage(record, "rawValue")}>
+                    Copy Value (Raw)
+                </Menu.Item>
+                <Menu.Item key="2" onClick={() => this.copyMessage(record, "jsonValue")}>
+                    Copy Value (JSON Format)
+                </Menu.Item>
+                <Menu.Item key="4" onClick={() => this.copyMessage(record, "timestamp")}>
+                    Copy Epoch Timestamp
+                </Menu.Item>
+            </Menu>
+        );
+
         const tsFormat = uiState.topicSettings.previewTimestamps;
+        const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
-            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => renderTimestamp(t, tsFormat) },
+            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
             { width: 3, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
             {
                 width: 'auto',
@@ -406,19 +424,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
                     return <Tooltip title='Column Settings' mouseEnterDelay={0.1}>
-                        <SettingFilled />
+                        <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
                     </Tooltip>
                 },
                 render: (text, record) => !record.isValueNull && (
-                    <span>
-                        <ZeroSizeWrapper width={32} height={0}>
-                            <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
-                        </ZeroSizeWrapper>
-                        {/* <ZeroSizeWrapper width={32} height={0}>
-                                <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
-                            </ZeroSizeWrapper> */}
-                        {/* <Divider type="vertical" /> */}
-                    </span>
+                    <Dropdown overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
+                        <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle' }} type='link'
+                            icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
+                    </Dropdown>
+                    // <ZeroSizeWrapper width={32} height={0}>
+                    //     <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
+                    // </ZeroSizeWrapper>
+                    // <ZeroSizeWrapper width={32} height={0}>
+                    //     <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
+                    // </ZeroSizeWrapper>
+                    // <Divider type="vertical" />
                 ),
             },
         ];
@@ -480,9 +500,30 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         return ta.localeCompare(tb);
     }
 
-    copyMessage(record: TopicMessage) {
-        navigator.clipboard.writeText(record.valueJson);
-        message.success('Message content (JSON) copied to clipboard', 5);
+    copyMessage(record: TopicMessage, field: "key" | "rawValue" | "jsonValue" | "timestamp") {
+
+        switch (field) {
+            case "key":
+                typeof record.key === "string" ?
+                    navigator.clipboard.writeText(record.key as string) :
+                    navigator.clipboard.writeText(JSON.stringify(record.key));
+                message.success('Key copied to clipboard', 5);
+                break;
+            case "rawValue":
+                navigator.clipboard.writeText(record.valueJson);
+                message.success('Raw Value copied to clipboard', 5);
+                break;
+            case "jsonValue":
+                navigator.clipboard.writeText(JSON.stringify(record.value, null, 4));
+                message.success('Message Value (JSON) copied to clipboard', 5);
+                break;
+            case "timestamp":
+                navigator.clipboard.writeText(record.timestamp.toString());
+                message.success('Epoch Timestamp copied to clipboard', 5);
+                break;
+            default:
+            // empty
+        }
     }
 
     copyLinkToMessage(record: TopicMessage) {
@@ -1061,11 +1102,11 @@ const helpEntries = [
         <li><span className='codeBox'>value</span></li>
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-    <li><span className='codeBox'>return offset &gt; 10000 ;</span></li>
-    <li><span className='codeBox'>return partitionID === 2;</span></li>
-    <li><span className='codeBox'>return key == 'test-key';</span></li>
-    <li><span className='codeBox'>return value == 'test-value';</span></li>
-</ul>),
+        <li><span className='codeBox'>return offset &gt; 10000 ;</span></li>
+        <li><span className='codeBox'>return partitionID === 2;</span></li>
+        <li><span className='codeBox'>return key == 'test-key';</span></li>
+        <li><span className='codeBox'>return value == 'test-value';</span></li>
+    </ul>),
 ].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
 @observer
@@ -1117,7 +1158,7 @@ class MessageSearchFilterBar extends Component {
                             this.hasChanges = false;
                         }}
                     />
-                    <span className='filterName' style={{display: 'inline-block'}} onClick={() => e.isActive = !e.isActive}>
+                    <span className='filterName' style={{ display: 'inline-block' }} onClick={() => e.isActive = !e.isActive}>
                         {e.name ? e.name : (e.code ? e.code : 'New Filter')}
                     </span>
                 </Tag>

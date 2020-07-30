@@ -655,6 +655,10 @@ tr td:nth-last-child(1) {
     transition-delay: 0ms;
 }
 
+.disableAnimation {
+    animation-duration: 0s !important;
+}
+
 tr button.ant-btn-link {
     opacity: 0;
 }
@@ -663,8 +667,16 @@ tr:hover button.ant-btn-link {
     opacity: 1;
 }
 
+tr button.ant-dropdown-open {
+    opacity: 1;
+}
+
 .ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-tbody>tr>td.msgTableActionColumn {
     padding-left: 0;
+}
+
+.ant-table.ant-table-middle .ant-table-tbody>tr>td.msgTableActionColumn {
+    padding: 0;
 }
 
 tr>td.msgTableActionColumn {
@@ -674,7 +686,6 @@ tr>td.msgTableActionColumn {
 /* Change color of the "filter" button (which changes what columns are displayed)  */
 th.msgTableActionColumn .anticon svg {
     min-width: 15px;
-    color: rgb(160, 160, 160);
 }
 
 th.msgTableActionColumn .ant-table-filter-trigger-container {
