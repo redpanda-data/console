@@ -1,7 +1,7 @@
 import { Component, ReactNode } from "react";
 import React from "react";
 import { TopicDetail, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Popover, Button, Select, Input, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Switch } from "antd";
+import { Table, Tooltip, Row, Popover, Button, Select, Input, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Switch, Menu, Dropdown } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
 import { PreviewTag, TopicOffsetOrigin, FilterEntry, ColumnList } from "../../../state/ui";
@@ -20,13 +20,13 @@ import { uiState } from "../../../state/uiState";
 import qs from 'query-string';
 import { parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { numberToThousandsString, renderTimestamp, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
-
+import { filterConverter } from "../../../utils/filterHelper";
+import { numberToThousandsString, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass, TimestampDisplay } from "../../../utils/tsxUtils";
 import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
-import { SyncIcon, XCircleIcon, PlusIcon, SettingsIcon } from '@primer/octicons-v2-react'
+import { SyncIcon, XCircleIcon, PlusIcon } from '@primer/octicons-v2-react'
 
 import queryString from 'query-string';
-import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, CopyOutlined, QuestionCircleTwoTone, FilterFilled, SettingFilled } from '@ant-design/icons';
+import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, EllipsisOutlined } from '@ant-design/icons';
 import { SortOrder } from "antd/lib/table/interface";
 import { IsDev } from "../../../utils/env";
 
@@ -37,6 +37,7 @@ import 'prismjs/prism.js';
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras"
 import 'prismjs/themes/prism.css';
+import { timeStamp } from "console";
 
 
 
@@ -380,11 +381,29 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             </span>
         </>
 
+        const copyDropdown = (record: TopicMessage) => (
+            <Menu>
+                <Menu.Item key="0" onClick={() => this.copyMessage(record, "key")}>
+                    Copy Key
+                </Menu.Item>
+                <Menu.Item key="1" onClick={() => this.copyMessage(record, "rawValue")}>
+                    Copy Value (Raw)
+                </Menu.Item>
+                <Menu.Item key="2" onClick={() => this.copyMessage(record, "jsonValue")}>
+                    Copy Value (JSON Format)
+                </Menu.Item>
+                <Menu.Item key="4" onClick={() => this.copyMessage(record, "timestamp")}>
+                    Copy Epoch Timestamp
+                </Menu.Item>
+            </Menu>
+        );
+
         const tsFormat = uiState.topicSettings.previewTimestamps;
+        const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
-            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => renderTimestamp(t, tsFormat) },
+            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
             { width: 3, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
             {
                 width: 'auto',
@@ -405,19 +424,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
                     return <Tooltip title='Column Settings' mouseEnterDelay={0.1}>
-                        <SettingFilled />
+                        <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
                     </Tooltip>
                 },
                 render: (text, record) => !record.isValueNull && (
-                    <span>
-                        <ZeroSizeWrapper width={32} height={0}>
-                            <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
-                        </ZeroSizeWrapper>
-                        {/* <ZeroSizeWrapper width={32} height={0}>
-                                <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
-                            </ZeroSizeWrapper> */}
-                        {/* <Divider type="vertical" /> */}
-                    </span>
+                    <Dropdown overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
+                        <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle' }} type='link'
+                            icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
+                    </Dropdown>
+                    // <ZeroSizeWrapper width={32} height={0}>
+                    //     <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
+                    // </ZeroSizeWrapper>
+                    // <ZeroSizeWrapper width={32} height={0}>
+                    //     <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
+                    // </ZeroSizeWrapper>
+                    // <Divider type="vertical" />
                 ),
             },
         ];
@@ -479,9 +500,30 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         return ta.localeCompare(tb);
     }
 
-    copyMessage(record: TopicMessage) {
-        navigator.clipboard.writeText(record.valueJson);
-        message.success('Message content (JSON) copied to clipboard', 5);
+    copyMessage(record: TopicMessage, field: "key" | "rawValue" | "jsonValue" | "timestamp") {
+
+        switch (field) {
+            case "key":
+                typeof record.key === "string" ?
+                    navigator.clipboard.writeText(record.key as string) :
+                    navigator.clipboard.writeText(JSON.stringify(record.key));
+                message.success('Key copied to clipboard', 5);
+                break;
+            case "rawValue":
+                navigator.clipboard.writeText(record.valueJson);
+                message.success('Raw Value copied to clipboard', 5);
+                break;
+            case "jsonValue":
+                navigator.clipboard.writeText(JSON.stringify(record.value, null, 4));
+                message.success('Message Value (JSON) copied to clipboard', 5);
+                break;
+            case "timestamp":
+                navigator.clipboard.writeText(record.timestamp.toString());
+                message.success('Epoch Timestamp copied to clipboard', 5);
+                break;
+            default:
+            // empty
+        }
     }
 
     copyLinkToMessage(record: TopicMessage) {
@@ -519,7 +561,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 functionNames.push(name);
                 functions.push(`
 function ${name}() {
-    ${e.code.includes('return ') ? e.code : 'return (' + e.code + ')'}
+    ${filterConverter(e.code)}
 }`);
             });
 
@@ -1048,16 +1090,23 @@ const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): Re
 )
 
 const helpEntries = [
-    makeHelpEntry('Basics', <ul style={{ margin: 0 }}>
-        <li>code is a javascript function body</li>
-        <li>the context is re-used between messages, but every partition has its own context</li>
-        <li>return true to allow a message, return false to discard the message</li>
+    makeHelpEntry('Basics', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
+        <li>Code is a javascript function body</li>
+        <li>The context is re-used between messages, but every partition has its own context</li>
+        <li>Return true to allow a message, Return false to discard the message</li>
     </ul>),
-    makeHelpEntry('Parameters', <ul style={{ margin: 0 }}>
-        <li><span className='codeBox'>offset</span>, <span className='codeBox'>partitionID</span></li>
-        <li><span className='codeBox'>partitionID</span>: ...</li>
+    makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
+        <li><span className='codeBox'>offset</span></li>
+        <li><span className='codeBox'>partitionID</span></li>
+        <li><span className='codeBox'>key</span></li>
+        <li><span className='codeBox'>value</span></li>
     </ul>),
-    makeHelpEntry('Examples', 'todo... '),
+    makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
+        <li><span className='codeBox'>return offset &gt; 10000 ;</span></li>
+        <li><span className='codeBox'>return partitionID === 2;</span></li>
+        <li><span className='codeBox'>return key == 'test-key';</span></li>
+        <li><span className='codeBox'>return value == 'test-value';</span></li>
+    </ul>),
 ].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
 @observer
@@ -1077,11 +1126,6 @@ class MessageSearchFilterBar extends Component {
 
     @observable hasChanges = false; // used by editor; shows "revert changes" when true
 
-    static readonly tooltipText = QuickTable([
-        ["Click:", "toggle active"],
-        ["Double Click:", "edit filter"]
-    ]);
-
     static readonly nameTip = <>
         <LayoutBypass justifyContent='flex-start'>
             <Tooltip placement='top' title={<span>Enter a custom name that will be shown in the list.<br />Otherwise the the code itself will be used as the name.</span>}>
@@ -1097,24 +1141,27 @@ class MessageSearchFilterBar extends Component {
 
             {/* Existing Tags List  */}
             {settings.filters?.map(e =>
-                <Tooltip key={e.id} title={MessageSearchFilterBar.tooltipText} mouseEnterDelay={0.2}>
-                    <Tag
-                        style={{ userSelect: 'none' }}
-                        key={e.id}
-                        closable
-                        color={e.isActive ? 'blue' : undefined}
-                        onClick={() => e.isActive = !e.isActive}
-                        onDoubleClick={() => {
+                <Tag
+                    style={{ userSelect: 'none' }}
+                    className='filterTag'
+                    key={e.id}
+                    closable
+                    color={e.isActive ? 'blue' : undefined}
+                    onClose={() => settings.filters.remove(e)}
+                >
+                    <SettingOutlined
+                        className='settingIconFilter'
+                        onClick={() => {
                             this.currentIsNew = false;
                             this.currentFilterBackup = ToJson(e);
                             this.currentFilter = e;
                             this.hasChanges = false;
                         }}
-                        onClose={() => settings.filters.remove(e)}
-                    >
+                    />
+                    <span className='filterName' style={{ display: 'inline-block' }} onClick={() => e.isActive = !e.isActive}>
                         {e.name ? e.name : (e.code ? e.code : 'New Filter')}
-                    </Tag>
-                </Tooltip>
+                    </span>
+                </Tag>
             )}
 
             {/* Add Filter Button */}

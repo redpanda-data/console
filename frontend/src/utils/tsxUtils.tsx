@@ -1,9 +1,11 @@
 import React, { useState, Component, CSSProperties } from "react";
-import { simpleUniqueId } from "./utils";
+import { simpleUniqueId, DebugTimerStore } from "./utils";
 import { Radio, message, Progress } from 'antd';
 import { MessageType } from "antd/lib/message";
 import prettyMilliseconds from 'pretty-ms';
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
+import { TimestampDisplayFormat } from "../state/ui";
+import { observer } from "mobx-react";
 
 
 
@@ -27,27 +29,23 @@ export function numberToThousandsString(n: number): JSX.Element {
     return <>{result}</>
 }
 
-export function renderTimestamp(unixEpochSecond: number, format?: string): string {
-    let timestamp = "";
-    switch (format) {
-        case 'onlyDate':
-            timestamp = new Date(unixEpochSecond * 1000).toDateString()
-            break;
-        case 'onlyTime':
-            timestamp = new Date(unixEpochSecond * 1000).toLocaleTimeString()
-            break;
-        case 'unixSeconds':
-            timestamp = unixEpochSecond.toString();
-            break;
-        case 'relative':
-            timestamp = prettyMilliseconds(Date.now() - unixEpochSecond * 1000, { compact: true }) + ' ago';
-            break;
-        default:
-            timestamp = new Date(unixEpochSecond * 1000).toLocaleString();
-    }
+@observer
+export class TimestampDisplay extends Component<{ unixEpochSecond: number, format: TimestampDisplayFormat }>{
+    render() {
+        const { unixEpochSecond: ts, format } = this.props;
+        if (format == 'relative') DebugTimerStore.Instance.useSeconds();
 
-    return timestamp;
+        switch (format) {
+            case 'onlyDate': return new Date(ts * 1000).toDateString();
+            case 'onlyTime': return new Date(ts * 1000).toLocaleTimeString();
+            case 'unixSeconds': return ts.toString();
+            case 'relative': return prettyMilliseconds(Date.now() - ts * 1000, { compact: true }) + ' ago';
+        }
+
+        return new Date(ts * 1000).toLocaleString();
+    }
 }
+
 
 export const ZeroSizeWrapper = (p: { width: number, height: number, children?: React.ReactNode }) => {
     return <span style={{
