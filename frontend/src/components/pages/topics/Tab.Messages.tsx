@@ -20,6 +20,7 @@ import { uiState } from "../../../state/uiState";
 import qs from 'query-string';
 import { parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
+import { filterConverter } from "../../../utils/filterHelper";
 import { numberToThousandsString, renderTimestamp, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
 
 import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
@@ -519,7 +520,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 functionNames.push(name);
                 functions.push(`
 function ${name}() {
-    ${e.code.includes('return ') ? e.code : 'return (' + e.code + ')'}
+    ${filterConverter(e.code)}
 }`);
             });
 
@@ -1048,16 +1049,23 @@ const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): Re
 )
 
 const helpEntries = [
-    makeHelpEntry('Basics', <ul style={{ margin: 0 }}>
-        <li>code is a javascript function body</li>
-        <li>the context is re-used between messages, but every partition has its own context</li>
-        <li>return true to allow a message, return false to discard the message</li>
+    makeHelpEntry('Basics', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
+        <li>Code is a javascript function body</li>
+        <li>The context is re-used between messages, but every partition has its own context</li>
+        <li>Return true to allow a message, Return false to discard the message</li>
     </ul>),
-    makeHelpEntry('Parameters', <ul style={{ margin: 0 }}>
-        <li><span className='codeBox'>offset</span>, <span className='codeBox'>partitionID</span></li>
-        <li><span className='codeBox'>partitionID</span>: ...</li>
+    makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
+        <li><span className='codeBox'>offset</span></li>
+        <li><span className='codeBox'>partitionID</span></li>
+        <li><span className='codeBox'>key</span></li>
+        <li><span className='codeBox'>value</span></li>
     </ul>),
-    makeHelpEntry('Examples', 'todo... '),
+    makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
+    <li><span className='codeBox'>return offset &gt; 10000 ;</span></li>
+    <li><span className='codeBox'>return partitionID === 2;</span></li>
+    <li><span className='codeBox'>return key == 'test-key';</span></li>
+    <li><span className='codeBox'>return value == 'test-value';</span></li>
+</ul>),
 ].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
 @observer
@@ -1077,11 +1085,6 @@ class MessageSearchFilterBar extends Component {
 
     @observable hasChanges = false; // used by editor; shows "revert changes" when true
 
-    static readonly tooltipText = QuickTable([
-        ["Click:", "toggle active"],
-        ["Double Click:", "edit filter"]
-    ]);
-
     static readonly nameTip = <>
         <LayoutBypass justifyContent='flex-start'>
             <Tooltip placement='top' title={<span>Enter a custom name that will be shown in the list.<br />Otherwise the the code itself will be used as the name.</span>}>
@@ -1097,24 +1100,27 @@ class MessageSearchFilterBar extends Component {
 
             {/* Existing Tags List  */}
             {settings.filters?.map(e =>
-                <Tooltip key={e.id} title={MessageSearchFilterBar.tooltipText} mouseEnterDelay={0.2}>
-                    <Tag
-                        style={{ userSelect: 'none' }}
-                        key={e.id}
-                        closable
-                        color={e.isActive ? 'blue' : undefined}
-                        onClick={() => e.isActive = !e.isActive}
-                        onDoubleClick={() => {
+                <Tag
+                    style={{ userSelect: 'none' }}
+                    className='filterTag'
+                    key={e.id}
+                    closable
+                    color={e.isActive ? 'blue' : undefined}
+                    onClose={() => settings.filters.remove(e)}
+                >
+                    <SettingOutlined
+                        className='settingIconFilter'
+                        onClick={() => {
                             this.currentIsNew = false;
                             this.currentFilterBackup = ToJson(e);
                             this.currentFilter = e;
                             this.hasChanges = false;
                         }}
-                        onClose={() => settings.filters.remove(e)}
-                    >
+                    />
+                    <span className='filterName' style={{display: 'inline-block'}} onClick={() => e.isActive = !e.isActive}>
                         {e.name ? e.name : (e.code ? e.code : 'New Filter')}
-                    </Tag>
-                </Tooltip>
+                    </span>
+                </Tag>
             )}
 
             {/* Add Filter Button */}
