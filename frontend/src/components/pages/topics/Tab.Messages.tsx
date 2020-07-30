@@ -21,7 +21,7 @@ import qs from 'query-string';
 import { parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
 import { filterConverter } from "../../../utils/filterHelper";
-import { numberToThousandsString, renderTimestamp, ZeroSizeWrapper, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass } from "../../../utils/tsxUtils";
+import { numberToThousandsString, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass, TimestampDisplay } from "../../../utils/tsxUtils";
 import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
 import { SyncIcon, XCircleIcon, PlusIcon } from '@primer/octicons-v2-react'
 
@@ -403,7 +403,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
-            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => renderTimestamp(t, tsFormat) },
+            { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
             { width: 3, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
             {
                 width: 'auto',
@@ -424,21 +424,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
                     return <Tooltip title='Column Settings' mouseEnterDelay={0.1}>
-                        <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color : '#a092a0' }}/>
+                        <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
                     </Tooltip>
                 },
                 render: (text, record) => !record.isValueNull && (
-                        <Dropdown overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
-                            <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle' }} type='link' 
-                                icon={<EllipsisOutlined style={{fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center'}} />} size='middle'/>
-                        </Dropdown>
-                        // <ZeroSizeWrapper width={32} height={0}>
-                        //     <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
-                        // </ZeroSizeWrapper>
-                        // <ZeroSizeWrapper width={32} height={0}>
-                        //     <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
-                        // </ZeroSizeWrapper>
-                        // <Divider type="vertical" />
+                    <Dropdown overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
+                        <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle' }} type='link'
+                            icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
+                    </Dropdown>
+                    // <ZeroSizeWrapper width={32} height={0}>
+                    //     <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
+                    // </ZeroSizeWrapper>
+                    // <ZeroSizeWrapper width={32} height={0}>
+                    //     <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
+                    // </ZeroSizeWrapper>
+                    // <Divider type="vertical" />
                 ),
             },
         ];
@@ -502,7 +502,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     copyMessage(record: TopicMessage, field: "key" | "rawValue" | "jsonValue" | "timestamp") {
 
-        switch(field) {
+        switch (field) {
             case "key":
                 typeof record.key === "string" ?
                     navigator.clipboard.writeText(record.key as string) :
@@ -522,7 +522,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 message.success('Epoch Timestamp copied to clipboard', 5);
                 break;
             default:
-                // empty
+            // empty
         }
     }
 
@@ -1102,11 +1102,11 @@ const helpEntries = [
         <li><span className='codeBox'>value</span></li>
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-    <li><span className='codeBox'>return offset &gt; 10000 ;</span></li>
-    <li><span className='codeBox'>return partitionID === 2;</span></li>
-    <li><span className='codeBox'>return key == 'test-key';</span></li>
-    <li><span className='codeBox'>return value == 'test-value';</span></li>
-</ul>),
+        <li><span className='codeBox'>return offset &gt; 10000 ;</span></li>
+        <li><span className='codeBox'>return partitionID === 2;</span></li>
+        <li><span className='codeBox'>return key == 'test-key';</span></li>
+        <li><span className='codeBox'>return value == 'test-value';</span></li>
+    </ul>),
 ].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
 @observer
@@ -1158,7 +1158,7 @@ class MessageSearchFilterBar extends Component {
                             this.hasChanges = false;
                         }}
                     />
-                    <span className='filterName' style={{display: 'inline-block'}} onClick={() => e.isActive = !e.isActive}>
+                    <span className='filterName' style={{ display: 'inline-block' }} onClick={() => e.isActive = !e.isActive}>
                         {e.name ? e.name : (e.code ? e.code : 'New Filter')}
                     </span>
                 </Tag>
