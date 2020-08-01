@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo
+    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -166,6 +166,7 @@ const apiStore = {
 
     Topics: null as (TopicDetail[] | null),
     TopicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
+    TopicPermissions: new Map<string, TopicPermissions>(),
     TopicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     TopicConsumers: new Map<string, TopicConsumer[]>(),
 
@@ -335,6 +336,11 @@ const apiStore = {
             .then(v => this.TopicConfig.set(v.topicDescription.topicName, v.topicDescription.configEntries), addError);
     },
 
+    refreshTopicPermissions(topicName: string, force?: boolean) {
+        cachedApiRequest<TopicPermissions>(`/api/permissions/topics/${topicName}`, force)
+            .then(x => this.TopicPermissions.set(topicName, x), addError);
+    },
+
     refreshTopicPartitions(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse>(`/api/topics/${topicName}/partitions`, force)
             .then(v => this.TopicPartitions.set(v.topicName, v.partitions), addError);
@@ -364,9 +370,10 @@ const apiStore = {
     refreshAdminInfo(force?: boolean) {
         cachedApiRequest<AdminInfo>(`/api/admin`, force)
             .then(v => {
-                for (let u of v.users)
-                    u.roles = u.roleNames.map(n => v.roles.find(r => r.name == n)!);
-                this.AdminInfo = v
+                ////// wip
+                // for (let u of v.users)
+                //     u.roles = u.roleNames.map(n => v.roles.find(r => r.name == n)!);
+                // this.AdminInfo = v
             }, addError);
     },
 }

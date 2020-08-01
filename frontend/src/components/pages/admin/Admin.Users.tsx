@@ -21,30 +21,31 @@ export class AdminUsers extends Component<{}> {
         if (!api.AdminInfo) return this.skeleton;
         const users = api.AdminInfo.users;
 
-        const table = <Table
-            size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
-            showSorterTooltip={false}
+        return <div>wip</div>
+        // const table = <Table
+        //     size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
+        //     showSorterTooltip={false}
 
-            dataSource={users}
-            rowKey={x => x.name}
-            rowClassName={() => 'hoverLink'}
-            columns={[
-                { width: 1, title: 'Name', dataIndex: 'name', sorter: sortField('name') },
-                { width: 1, title: 'Roles', dataIndex: 'roleNames', render: (t, r, i) => r.roleNames.join(', ') }, // can't sort
-                { width: 1, title: 'Login', dataIndex: 'loginProvider', sorter: sortField('loginProvider') },
-                { title: '', render: r => (<span></span>) },
-            ]}
-            // expandIconAsCell={false}
-            // expandIconColumnIndex={0}
-            expandRowByClick={true}
-            expandedRowRender={(user: UserDetails) => {
-                return user.roles.map(r => <RoleComponent role={r} />)
-            }}
-        />
+        //     dataSource={users}
+        //     rowKey={x => x.name}
+        //     rowClassName={() => 'hoverLink'}
+        //     columns={[
+        //         { width: 1, title: 'Name', dataIndex: 'name', sorter: sortField('name') },
+        //         { width: 1, title: 'Roles', dataIndex: 'roleNames', render: (t, r, i) => r.roleNames.join(', ') }, // can't sort
+        //         { width: 1, title: 'Login', dataIndex: 'loginProvider', sorter: sortField('loginProvider') },
+        //         { title: '', render: r => (<span></span>) },
+        //     ]}
+        //     // expandIconAsCell={false}
+        //     // expandIconColumnIndex={0}
+        //     expandRowByClick={true}
+        //     expandedRowRender={(user: UserDetails) => {
+        //         return user.roles.map(r => <RoleComponent role={r} />)
+        //     }}
+        // />
 
-        return <MotionAlways>
-            {table}
-        </MotionAlways>
+        // return <MotionAlways>
+        //     {table}
+        // </MotionAlways>
     }
 
     skeleton = <>

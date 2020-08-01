@@ -195,50 +195,81 @@ export interface Seat {
 export interface UserData {
     user: User;
     seat: Seat;
-    canManageKowl: boolean,
+    canManageKowl: boolean;
 }
 
 
 
-export interface Permission {
-    resource: string;
-    includes: string[] | undefined;
-    excludes: string[] | undefined;
-    allowedActions: string[] | undefined;
+export interface AdminInfo {
+    roles: Role[];
+    roleBindings: RoleBinding[];
+    users: UserDetails[];
 }
+
+export interface UserDetails {
+    internalIdentifier: string;
+    oauthUserId: string;
+    loginProviderId: number;
+    loginProvider: string;
+    bindingIds: string[]; // rolebindings
+    audits: {
+        [roleName: string]: PermissionAudit[];
+    };
+}
+
+export interface PermissionAudit {
+    roleName: string; // Role.name
+    grantedBy: string; // RoleBinding.ephemeralId
+}
+
+export interface RoleBinding {
+    ephemeralId: string;
+    metadata: { [key: string]: string; };
+    subjects: Subject[];
+    role: string; // Role.name
+}
+
 export interface Role {
     name: string;
     permissions: Permission[];
 }
-export interface UserDetails {
-    name: string;
-    loginProvider: string;
-    roleNames: string[];
-    //seat: Seat; // seat this user occupies
 
-    // resolved by frontend, not transmitted!
-    roles: Role[];
+export interface Permission {
+    resourceId: number;
+    resourceName: string;
+    allowedActions: (string | string)[];
+    // resource: string;
+    // includes: string[] | undefined;
+    // excludes: string[] | undefined;
+    // allowedActions: string[] | undefined;
 }
-export interface LoginProviderGroup {
+
+export interface Subject {
     name: string;
-    provider: string;
-    userNames: string[];
+
+    organization: string;
+
+    subjectKind: number;
+    subjectKindName: string;
+
+    provider: number;
+    providerName: string;
 }
-export interface SubjectDefinition {
-    kind: 'user' | 'group';
-    provider: string; // github or google, in various casings...
-    name: string; // name of the person or group
-    organization: string | undefined; // for github teams
-}
-export interface RoleBinding {
-    metadata: object;
-    subjects: SubjectDefinition[];
-    roleName: string;
-}
-// AdminInfo = all users and their roles, permissions; all login methods, ...
-export interface AdminInfo {
-    users: UserDetails[];
-    roles: Role[]; // list of all roles
-    groups: LoginProviderGroup[];
-    roleBindings: RoleBinding[];
+
+
+
+
+
+
+
+
+
+
+export interface TopicPermissions {
+    canSeeTopic: boolean;
+    canViewTopicPartitions: boolean;
+    canSeeTopicConfig: boolean;
+    canUseSearchFilters: boolean;
+    canViewTopicMessages: boolean;
+    canViewTopicConsumers: boolean;
 }
