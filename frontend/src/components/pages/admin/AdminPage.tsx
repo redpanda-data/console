@@ -36,14 +36,6 @@ export default class AdminPage extends PageComponent {
         api.refreshAdminInfo(force);
     }
 
-    // onTabChanged(key: string) {
-    //     const location = appGlobal.history.location;
-    //     if (location.pathname !== key) {
-    //         location.pathname = key;
-    //         appGlobal.history.replace(location);
-    //     }
-    // }
-
     render() {
         if (!api.AdminInfo) return this.skeleton;
 
@@ -59,9 +51,9 @@ export default class AdminPage extends PageComponent {
                         <AdminRoles />
                     </Tabs.TabPane>
 
-                    <Tabs.TabPane key="bindings" tab="Bindings">
+                    {/* <Tabs.TabPane key="bindings" tab="Bindings">
                         <AdminRoleBindings />
-                    </Tabs.TabPane>
+                    </Tabs.TabPane> */}
 
                     <Tabs.TabPane key="debug" tab="Debug">
                         <code><pre>{ToJson(api.AdminInfo, 4)}</pre></code>

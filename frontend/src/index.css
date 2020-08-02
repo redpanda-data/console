@@ -338,8 +338,7 @@ span>.icon-container~span {
 }
 
 .codeBox {
-    margin-top: 1em;
-    margin-bottom: 0;
+    margin: 0;
     padding: 0.2em 0.4em 0.1em;
     font-size: 85%;
     background: rgb(241, 241, 241);
@@ -382,11 +381,13 @@ span>.icon-container~span {
 
 .versionDate {
     opacity: 0;
+    font-size: 0px;
     transition: all 0.4s ease-out 0.2s;
 }
 
 .version:hover .versionDate {
     opacity: 1;
+    font-size: inherit;
 }
 
 .versionTitle {}
@@ -655,6 +656,10 @@ tr td:nth-last-child(1) {
     transition-delay: 0ms;
 }
 
+.disableAnimation {
+    animation-duration: 0s !important;
+}
+
 tr button.ant-btn-link {
     opacity: 0;
 }
@@ -663,8 +668,16 @@ tr:hover button.ant-btn-link {
     opacity: 1;
 }
 
+tr button.ant-dropdown-open {
+    opacity: 1;
+}
+
 .ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-tbody>tr>td.msgTableActionColumn {
     padding-left: 0;
+}
+
+.ant-table.ant-table-middle .ant-table-tbody>tr>td.msgTableActionColumn {
+    padding: 0;
 }
 
 tr>td.msgTableActionColumn {
@@ -674,7 +687,6 @@ tr>td.msgTableActionColumn {
 /* Change color of the "filter" button (which changes what columns are displayed)  */
 th.msgTableActionColumn .anticon svg {
     min-width: 15px;
-    color: rgb(160, 160, 160);
 }
 
 th.msgTableActionColumn .ant-table-filter-trigger-container {
@@ -689,10 +701,15 @@ th.msgTableActionColumn .ant-table-filter-trigger-container {
 }
 
 .roleTitle {
-    font-size: 110%;
-    font-weight: bold;
-    border-bottom: solid 1px rgba(0, 0, 0, 0.1);
-    margin-bottom: .5rem;
+    margin-bottom: 1em;
+    /* padding: 0 8px; */
+    cursor: default;
+    font-size: .7rem;
+    font-weight: 600;
+    /* todo: use open sans for all "small text" like labels and small headings */
+    font-family: "Open Sans";
+    color: rgb(139, 139, 139);
+    /* border-bottom: solid 1px rgba(0, 0, 0, 0.1); */
 }
 
 .ant-table.ant-table-middle .ant-table-thead>tr>th.ant-table-cell.ant-table-row-expand-icon-cell {
@@ -796,6 +813,32 @@ svg {
 .ant-progress-success-bg,
 .ant-progress-bg {
     transition-duration: 0s;
+}
+
+.filterTag {
+    padding-left: 0;
+    cursor: pointer;
+}
+
+.ant-tag.filterTag>.anticon+span {
+    margin-left: 0;
+}
+
+.filterTag span {
+    vertical-align: middle;
+    height: 100%
+}
+
+.filterTag .settingIconFilter,
+.filterTag .filterName {
+    border-right: 1px solid rgba(184, 184, 184, 0.4);
+    padding: 0 8px;
+    transition: 0.5 ease;
+}
+
+.filterTag .settingIconFilter:hover {
+    border-right: 1px solid rgba(184, 184, 184, 0.8);
+    background: rgba(206, 206, 206, 0.2);
 }
 
 @keyframes ant-progress-active {
@@ -904,3 +947,123 @@ svg {
     padding: 0px 10px;
     border-radius: 50px;
 }
+
+.resourceLabel {
+    font-weight: 600;
+    font-size: 100%;
+    color: hsl(0, 0%, 30%);
+    font-family: "Open Sans";
+    cursor: default;
+}
+
+.resourceName {
+    text-transform: capitalize;
+    font-weight: bold;
+    font-size: 90%;
+    padding-bottom: 2px;
+    display: inline-block;
+    padding: 0px 3px;
+}
+
+.resourceLabelSub {
+    color: #606060;
+}
+
+.permissionsList {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+/* Permission "Actions" */
+.permissionsList span {
+    margin-right: 3px;
+    margin-top: 2px;
+    padding: 1px 8px;
+    font-size: 85%;
+    text-transform: capitalize;
+    border-radius: 20px;
+    background: rgba(124, 211, 255, 0.35);
+    color: hsl(208, 32%, 55%);
+    border-width: 0;
+}
+
+.joinerOr {
+    font-size: 80%;
+    font-weight: bolder;
+    padding-bottom: 4px;
+    margin: 0 3px;
+    padding: 0 1px;
+    font-family: sans-serif;
+    text-transform: lowercase;
+    background: transparent;
+}
+
+.permissionRegex span.codeBox {
+    padding: 2px 4px;
+    font-size: 12px;
+    color: hsl(0, 0%, 40%);
+    background: rgb(219, 219, 219);
+    border-width: 0px;
+}
+
+.ant-collapse>.ant-collapse-item>.ant-collapse-header {
+    padding: 6px;
+    padding-left: 40px;
+}
+
+.roleBindingId {
+    font-size: 70%;
+    font-weight: 600;
+    color: #aaa;
+    display: flex;
+}
+
+.expander {
+    background: none;
+}
+
+.expander .ant-collapse-item {
+    border: 0;
+}
+
+.ant-collapse-header {
+    user-select: none;
+}
+
+.subjectListExpander {
+    font-size: 85%;
+    padding: 0;
+}
+
+.subjectListExpander.ant-collapse>.ant-collapse-item>.ant-collapse-header {
+    padding: 0 0 0 24px;
+    border-radius: 3px;
+    /* border: 1px transparent solid; */
+    color: #777;
+}
+
+.subjectListExpander.ant-collapse>.ant-collapse-item>.ant-collapse-header:hover {
+    /* border-color: hsla(205, 100%, 50%, 0.15); */
+    transition-duration: 0ms;
+    background-color: hsla(0, 0%, 0%, 0.08);
+}
+
+.subjectListExpander.ant-collapse>.ant-collapse-item>.ant-collapse-header span[role=img] {
+    left: 8px;
+    font-size: 10px;
+}
+
+.tableRowHighlightSpecial {
+    background-color: rgba(255, 187, 0, 0.185);
+}
+
+/* .tableRowHighlightSpecial td:first-child::before {
+    content: ' ';
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: -30px;
+    width: 30px;
+    background: red;
+} */

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 
 	"github.com/cloudhut/common/rest"
 )
@@ -81,15 +82,18 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 		defer wsClient.sendClose()
 
+		sendError := func(msg string) {
+			wsClient.writeJSON(struct {
+				Type    string `json:"type"`
+				Message string `json:"message"`
+			}{"error", msg})
+		}
+
 		// Get search parameters. Close connection if search parameters are invalid
 		var req ListMessagesRequest
 		err := wsClient.readJSON(&req)
 		if err != nil {
-			wsClient.writeJSON(rest.Error{
-				Err:     err,
-				Status:  http.StatusBadRequest,
-				Message: "Failed to parse list message request",
-			})
+			sendError("Failed to parse list message request")
 			return
 		}
 		go wsClient.readLoop()
@@ -98,29 +102,31 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		// Validate request parameter
 		err = req.OK()
 		if err != nil {
-			wsClient.writeJSON(rest.Error{
-				Err:     err,
-				Status:  http.StatusBadRequest,
-				Message: fmt.Sprintf("Failed to validate list message request: %v", err),
-			})
+			sendError(fmt.Sprintf("Failed to validate list message request: %v", err))
 			return
 		}
 
 		// Check if logged in user is allowed to list messages for the given request
-		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req)
+		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req.TopicName)
 		if restErr != nil {
-			rest.SendRESTError(w, r, logger, restErr)
+			wsClient.writeJSON(restErr)
 			return
 		}
 		if !canViewMessages {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to view messages for the given request"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to view messages with the given search parameters",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, logger, restErr)
+			sendError("You don't have permissions to view messages in this topic")
 			return
+		}
+
+		if len(req.FilterInterpreterCode) > 0 {
+			canUseMessageSearchFilters, restErr := api.Hooks.Owl.CanUseMessageSearchFilters(r.Context(), req.TopicName)
+			if restErr != nil {
+				sendError(restErr.Message)
+				return
+			}
+			if !canUseMessageSearchFilters {
+				sendError("You don't have permissions to use message filters in this topic")
+				return
+			}
 		}
 
 		interpreterCode, _ := req.DecodeInterpreterCode() // Error has been checked in validation function

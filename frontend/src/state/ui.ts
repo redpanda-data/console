@@ -54,6 +54,7 @@ export class FilterEntry {
     @observable code: string = 'return true\n//allow all messages'; // js code the user entered
 }
 
+export type TimestampDisplayFormat = 'default' | 'onlyDate' | 'onlyTime' | 'unixSeconds' | 'relative';
 export enum TopicOffsetOrigin { EndMinusResults = -1, Start = -2, End = -3, Custom = 0 }
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams']
 // Settings for an individual topic
@@ -81,7 +82,7 @@ export class TopicDetailsSettings {
     // @observable previewResultLimit: 3; // todo
     @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
 
-    @observable previewTimestamps = 'default' as 'default' | 'onlyDate' | 'onlyTime' | 'unixSeconds' | 'relative';
+    @observable previewTimestamps = 'default' as TimestampDisplayFormat;
     @observable previewColumnFields = [] as ColumnList[];
 
     @observable consumerPageSize = 20;
