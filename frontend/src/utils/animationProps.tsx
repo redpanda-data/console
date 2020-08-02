@@ -1,7 +1,8 @@
 import React, { FC, CSSProperties } from "react";
 import { Transition, motion, useInvertedScale } from "framer-motion";
 import { alwaysChanging } from "./utils";
-import { PositionProperty } from "csstype";
+
+export type PositionProp = "static" | "absolute" | "initial" | "inherit" | "-moz-initial" | "revert" | "unset" | "-webkit-sticky" | "fixed" | "relative" | "sticky" | undefined;
 
 const time = 0.25; // 0.15
 const dist = 2;
@@ -18,9 +19,9 @@ const transition: Transition = {
 
 export const animProps = {
     transition: transition,
-    initial: { opacity: 0, x: dx100em[0], position: 'static' as PositionProperty },
-    animate: { opacity: 1, x: dx100em[1], position: 'static' as PositionProperty },
-    exit: { opacity: 0, x: dx100em[2], position: 'absolute' as PositionProperty, width: 'auto' },
+    initial: { opacity: 0, x: dx100em[0], position: 'static' },
+    animate: { opacity: 1, x: dx100em[1], position: 'static' },
+    exit: { opacity: 0, x: dx100em[2], position: 'absolute', width: 'auto' },
 };
 
 export const animProps_span_searchResult = {
