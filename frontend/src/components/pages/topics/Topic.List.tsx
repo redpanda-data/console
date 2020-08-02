@@ -168,7 +168,7 @@ const renderName = (topic: TopicDetail) => {
             value: actions.includes(a) ? iconAllowed : iconForbidden
         })), {
             gapWidth: '6px', gapHeight: '2px', keyAlign: 'right',
-            keyStyle: { fontSize: '86%', fontWeight: 700 },
+            keyStyle: { fontSize: '86%', fontWeight: 700, textTransform: 'capitalize' },
             tableStyle: { margin: 'auto' }
         })}
     </div>
