@@ -110,34 +110,32 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		// Check if logged in user is allowed to list messages for the given request
 		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req.TopicName)
 		if restErr != nil {
-			rest.SendRESTError(w, r, logger, restErr)
+			wsClient.writeJSON(restErr)
 			return
 		}
 		if !canViewMessages {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to view messages for the given request"),
+			wsClient.writeJSON(rest.Error{
+				Err:      err,
 				Status:   http.StatusForbidden,
 				Message:  "You don't have permissions to view messages in this topic",
 				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, logger, restErr)
+			})
 			return
 		}
 
 		if len(req.FilterInterpreterCode) > 0 {
 			canUseMessageSearchFilters, restErr := api.Hooks.Owl.CanUseMessageSearchFilters(r.Context(), req.TopicName)
 			if restErr != nil {
-				rest.SendRESTError(w, r, logger, restErr)
+				wsClient.writeJSON(restErr)
 				return
 			}
 			if !canUseMessageSearchFilters {
-				restErr := &rest.Error{
-					Err:      fmt.Errorf("requester has no permissions to message search filters for the given request"),
-					Status:   http.StatusForbidden,
+				wsClient.writeJSON(rest.Error{
+					Err:      err,
+					Status:   http.StatusBadRequest,
 					Message:  "You don't have permissions to use message filters in this topic",
 					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, logger, restErr)
+				})
 				return
 			}
 		}
