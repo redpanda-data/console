@@ -74,6 +74,9 @@ func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *res
 func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ ListMessagesRequest) (bool, *rest.Error) {
 	return true, nil
 }
+func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ ListMessagesRequest) (bool, *rest.Error) {
+	return true, nil
+}
 func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
