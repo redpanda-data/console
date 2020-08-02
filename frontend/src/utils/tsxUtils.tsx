@@ -65,8 +65,8 @@ export const copyIcon = <svg viewBox="0 0 14 16" version="1.1" width="14" height
 const DefaultQuickTableOptions = {
     tableClassName: undefined as string | undefined,
     keyAlign: 'left' as 'left' | 'right' | 'center',
-    gutterWidth: '.5em' as string | number,
-    gutterHeight: 0 as string | number,
+    gapWidth: '16px' as string | number,
+    gapHeight: 0 as string | number,
     keyStyle: undefined as React.CSSProperties | undefined,
     valueStyle: undefined as React.CSSProperties | undefined,
     tableStyle: undefined as React.CSSProperties | undefined,
@@ -101,7 +101,7 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
         }
     }
 
-    const showVerticalGutter = (typeof o.gutterHeight === 'number' && o.gutterHeight > 0) || typeof o.gutterHeight === 'string';
+    const showVerticalGutter = (typeof o.gapHeight === 'number' && o.gapHeight > 0) || typeof o.gapHeight === 'string';
     const classNames = [o.tableClassName, "quickTable"].joinStr(" ");
 
     return <table className={classNames} style={o.tableStyle}>
@@ -110,13 +110,13 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
                 <React.Fragment key={i}>
                     <tr>
                         <td style={{ textAlign: o.keyAlign, ...o.keyStyle }}>{obj.key}</td>
-                        <td style={{ paddingLeft: o.gutterWidth }}></td>
+                        <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
                         <td style={{ ...o.valueStyle }}>{obj.value}</td>
                     </tr>
 
                     {showVerticalGutter && (i < entries.length - 1) &&
                         <tr>
-                            <td style={{ padding: 0, paddingBottom: o.gutterHeight }}></td>
+                            <td style={{ padding: 0, paddingBottom: o.gapHeight }}></td>
                         </tr>
                     }
                 </React.Fragment>
@@ -132,7 +132,6 @@ export function ObjToKv(obj: any): { key: string, value: any }[] {
     }
     return ar;
 }
-
 
 const style_flexColumn: CSSProperties = { display: 'flex', flexDirection: 'column' };
 export const Label = (p: { text: string, textSuffix?: React.ReactNode, className?: string, style?: CSSProperties, children?: React.ReactNode }) => {

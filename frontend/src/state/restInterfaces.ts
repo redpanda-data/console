@@ -213,8 +213,15 @@ export interface UserDetails {
     loginProvider: string;
     bindingIds: string[]; // rolebindings
     audits: {
-        [roleName: string]: PermissionAudit[];
+        [roleName: string]: string[]; // roleName to (RoleBinding.ephemeralID)[]
     };
+
+    // Added by frontend:
+    bindings: RoleBinding[];
+    grantedRoles: {
+        role: Role;
+        grantedBy: RoleBinding[];
+    }[];
 }
 
 export interface PermissionAudit {
@@ -226,7 +233,10 @@ export interface RoleBinding {
     ephemeralId: string;
     metadata: { [key: string]: string; };
     subjects: Subject[];
-    role: string; // Role.name
+    roleName: string;
+
+    // Added by frontend:
+    resolvedRole: Role;
 }
 
 export interface Role {
@@ -235,13 +245,14 @@ export interface Role {
 }
 
 export interface Permission {
-    resourceId: number;
     resourceName: string;
-    allowedActions: (string | string)[];
-    // resource: string;
-    // includes: string[] | undefined;
-    // excludes: string[] | undefined;
-    // allowedActions: string[] | undefined;
+    resourceId: number;
+
+    // Those 3 may be missing or contain a single empty string.
+    // The frontend fixes / normalizes those cases to '[]'.
+    allowedActions: string[];
+    includes: string[];
+    excludes: string[];
 }
 
 export interface Subject {

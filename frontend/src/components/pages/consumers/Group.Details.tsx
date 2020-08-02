@@ -356,8 +356,8 @@ const consumerGroupStateTable = QuickTable([
     makeStateEntry('dead', "Dead", "Consumer group does not have any members and it's metadata has been removed"),
     makeStateEntry('unknown', "Unknown", "Group state is not known"),
 ], {
-    gutterHeight: '.5em',
-    gutterWidth: '.5em',
+    gapHeight: '.5em',
+    gapWidth: '.5em',
     keyStyle: { verticalAlign: 'top' },
 });
 

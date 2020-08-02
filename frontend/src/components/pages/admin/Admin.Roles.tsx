@@ -1,6 +1,6 @@
 import { Component, ReactNode } from "react";
 import React from "react";
-import { TopicDetail, TopicConfigEntry, TopicMessage, Partition, UserDetails, Role } from "../../../state/restInterfaces";
+import { TopicDetail, TopicConfigEntry, TopicMessage, Partition, UserDetails, Role, RoleBinding, Permission } from "../../../state/restInterfaces";
 import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
 import { observer } from "mobx-react";
 import { api, } from "../../../state/backendApi";
@@ -20,6 +20,8 @@ import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import Card from "../../misc/Card";
 import Icon from '@ant-design/icons';
+import { QuickTable } from "../../../utils/tsxUtils";
+import { RoleBindingComponent } from "./Admin.RoleBindings";
 
 
 const { Text } = Typography;
@@ -63,22 +65,63 @@ export class AdminRoles extends Component<{}> {
     </>
 }
 
-export class RoleComponent extends Component<{ role: Role }>{
+export class RoleComponent extends Component<{ role: Role, grantedBy?: RoleBinding[] }>{
     render() {
-        const r = this.props.role;
+        const { role, grantedBy } = this.props;
 
-        return <div>wip</div>
+        return <div style={{ display: 'grid', gridTemplateColumns: '50% 1px 50%', gridColumnGap: '4px' }}>
 
-        // return <Card style={{ display: 'inline-block', marginRight: '1em' }}>
-        //     <div className='roleTitle'>{r.name}</div>
-        //     {r.permissions.filter(p => p != null).map((p, i) =>
-        //         <div key={i} style={{ paddingLeft: '.5rem', marginBottom: '1rem' }}>
+            <div>
+                <div className='roleTitle'>Role Permissions</div>
+                <div style={{ paddingLeft: '.5rem', display: 'grid', gridAutoFlow: 'row', gridGap: '20px' }}>
+                    {role.permissions.map((p, index) => <PermissionComponent key={index} permission={p} />)}
+                </div>
+            </div>
 
-        //             <div><b>Resource:</b> {p.resource}</div>
-        //             <b>Actions:</b> {p.allowedActions?.join(", ")}<br />
-        //             {p.includes && !(p.includes[0] == "*") && (<><b>When:</b> {p.includes.join(" OR ")}<br /></>)}
-        //             {p.excludes && (<><b>Except:</b> {p.excludes.join(" OR ")}</>)}
-        //         </div>)}
-        // </Card>
+            {grantedBy && <>
+                <div style={{ background: '#dcdcdc' }} /> {/* seperator */}
+                <div style={{ paddingLeft: '1em' }}>
+                    <div className='roleTitle'>Granted By</div>
+                    <div style={{ paddingLeft: '.5rem', display: 'grid', gridAutoFlow: 'row', gridGap: '20px' }}>
+                        {this.props.grantedBy?.map(x => <RoleBindingComponent key={x.ephemeralId} binding={x} />)}
+                    </div>
+                </div>
+            </>}
+        </div>
     }
+}
+
+const joinerOr = <span className='joinerOr'>or</span>;
+
+export class PermissionComponent extends Component<{ permission: Permission }>{
+    render() {
+        const p = this.props.permission;
+        const rows: [any, any][] = [
+            [<span className='resourceLabel'>Resource</span>, <span className='codeBox resourceName'>{p.resourceName}</span>],
+        ];
+        if (p.allowedActions.length > 0)
+            rows.push([<span className="resourceLabelSub">Actions</span>, stringsToBoxes(p.allowedActions, null, 'permissionsList')]);
+        if (p.includes.length > 0 && !(p.includes[0] == "*") && !(p.includes[0] == "^*$") && !(p.includes[0] == "^.*$"))
+            rows.push([<span className="resourceLabelSub">When</span>, stringsToBoxes(p.includes, joinerOr, 'permissionRegex')]);
+        if (p.excludes.length > 0)
+            rows.push([<span className="resourceLabelSub">Except</span>, stringsToBoxes(p.excludes, joinerOr, 'permissionRegex')]);
+
+        const t = QuickTable(rows, {
+            tableClassName: 'permissionTable',
+            tableStyle: { width: 'auto' },
+            gapWidth: '8px',
+            keyStyle: { fontSize: '80%', whiteSpace: 'nowrap', width: '1%' },
+            keyAlign: 'right',
+        });
+
+        return t;
+    }
+}
+
+
+function stringsToBoxes(ar: string[], joiner?: ReactNode, wrapperClass?: string): ReactNode {
+    let r = ar.map<ReactNode>((str, index) => <span key={index} className='codeBox'>{str}</span>);
+    if (joiner) r = r.genericJoin(() => joiner);
+
+    return <div className={wrapperClass}>{r}</div>;
 }
