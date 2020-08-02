@@ -19,9 +19,9 @@ const transition: Transition = {
 
 export const animProps = {
     transition: transition,
-    initial: { opacity: 0, x: dx100em[0], position: 'static' },
-    animate: { opacity: 1, x: dx100em[1], position: 'static' },
-    exit: { opacity: 0, x: dx100em[2], position: 'absolute', width: 'auto' },
+    initial: { opacity: 0, x: dx100em[0], position: 'static' as PositionProp },
+    animate: { opacity: 1, x: dx100em[1], position: 'static' as PositionProp },
+    exit: { opacity: 0, x: dx100em[2], position: 'absolute' as PositionProp, width: 'auto' },
 };
 
 export const animProps_span_searchResult = {
