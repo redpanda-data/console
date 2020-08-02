@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo
+    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -14,6 +14,8 @@ import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
 import { TopicMessageSearchSettings } from "./ui";
+import { ObjToKv } from "../utils/tsxUtils";
+import { ArrowBothIcon } from "@primer/octicons-v2-react";
 
 const REST_TIMEOUT_SEC = IsDev ? 5 : 25;
 const REST_CACHE_DURATION_SEC = 20;
@@ -166,6 +168,7 @@ const apiStore = {
 
     Topics: null as (TopicDetail[] | null),
     TopicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
+    TopicPermissions: new Map<string, TopicPermissions>(),
     TopicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     TopicConsumers: new Map<string, TopicConsumer[]>(),
 
@@ -335,6 +338,11 @@ const apiStore = {
             .then(v => this.TopicConfig.set(v.topicDescription.topicName, v.topicDescription.configEntries), addError);
     },
 
+    refreshTopicPermissions(topicName: string, force?: boolean) {
+        cachedApiRequest<TopicPermissions>(`/api/permissions/topics/${topicName}`, force)
+            .then(x => this.TopicPermissions.set(topicName, x), addError);
+    },
+
     refreshTopicPartitions(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse>(`/api/topics/${topicName}/partitions`, force)
             .then(v => this.TopicPartitions.set(v.topicName, v.partitions), addError);
@@ -363,10 +371,36 @@ const apiStore = {
 
     refreshAdminInfo(force?: boolean) {
         cachedApiRequest<AdminInfo>(`/api/admin`, force)
-            .then(v => {
-                for (let u of v.users)
-                    u.roles = u.roleNames.map(n => v.roles.find(r => r.name == n)!);
-                this.AdminInfo = v
+            .then(info => {
+                // normalize responses (missing arrays, or arrays with an empty string)
+                // todo: not needed anymore, responses are always correct now
+                for (const role of info.roles)
+                    for (const permission of role.permissions)
+                        for (const k of ['allowedActions', 'includes', 'excludes']) {
+                            const ar: string[] = (permission as any)[k] ?? [];
+                            (permission as any)[k] = ar.filter(x => x.length > 0);
+                        }
+
+                // resolve role of each binding
+                for (const binding of info.roleBindings) {
+                    binding.resolvedRole = info.roles.first(r => r.name == binding.roleName)!;
+                    if (binding.resolvedRole == null) console.error("could not resolve roleBinding to role: " + ToJson(binding));
+                }
+
+                // resolve bindings, and roles of each user
+                for (const user of info.users) {
+                    user.bindings = user.bindingIds.map(id => info.roleBindings.first(rb => rb.ephemeralId == id)!);
+                    if (user.bindings.any(b => b == null)) console.error("one or more rolebindings could not be resolved for user: " + ToJson(user));
+
+                    user.grantedRoles = [];
+                    for (const roleName in user.audits)
+                        user.grantedRoles.push({
+                            role: info.roles.first(r => r.name == roleName)!,
+                            grantedBy: user.audits[roleName].map(bindingId => info.roleBindings.first(b => b.ephemeralId == bindingId)!),
+                        });
+                }
+
+                this.AdminInfo = info;
             }, addError);
     },
 }

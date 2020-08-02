@@ -1,9 +1,11 @@
 import React, { useState, Component, CSSProperties } from "react";
-import { simpleUniqueId } from "./utils";
+import { simpleUniqueId, DebugTimerStore } from "./utils";
 import { Radio, message, Progress } from 'antd';
 import { MessageType } from "antd/lib/message";
 import prettyMilliseconds from 'pretty-ms';
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
+import { TimestampDisplayFormat } from "../state/ui";
+import { observer } from "mobx-react";
 
 
 
@@ -27,27 +29,23 @@ export function numberToThousandsString(n: number): JSX.Element {
     return <>{result}</>
 }
 
-export function renderTimestamp(unixEpochSecond: number, format?: string): string {
-    let timestamp = "";
-    switch (format) {
-        case 'onlyDate':
-            timestamp = new Date(unixEpochSecond * 1000).toDateString()
-            break;
-        case 'onlyTime':
-            timestamp = new Date(unixEpochSecond * 1000).toLocaleTimeString()
-            break;
-        case 'unixSeconds':
-            timestamp = unixEpochSecond.toString();
-            break;
-        case 'relative':
-            timestamp = prettyMilliseconds(Date.now() - unixEpochSecond * 1000, { compact: true }) + ' ago';
-            break;
-        default:
-            timestamp = new Date(unixEpochSecond * 1000).toLocaleString();
-    }
+@observer
+export class TimestampDisplay extends Component<{ unixEpochSecond: number, format: TimestampDisplayFormat }>{
+    render() {
+        const { unixEpochSecond: ts, format } = this.props;
+        if (format == 'relative') DebugTimerStore.Instance.useSeconds();
 
-    return timestamp;
+        switch (format) {
+            case 'onlyDate': return new Date(ts * 1000).toDateString();
+            case 'onlyTime': return new Date(ts * 1000).toLocaleTimeString();
+            case 'unixSeconds': return ts.toString();
+            case 'relative': return prettyMilliseconds(Date.now() - ts * 1000, { compact: true }) + ' ago';
+        }
+
+        return new Date(ts * 1000).toLocaleString();
+    }
 }
+
 
 export const ZeroSizeWrapper = (p: { width: number, height: number, children?: React.ReactNode }) => {
     return <span style={{
@@ -67,8 +65,8 @@ export const copyIcon = <svg viewBox="0 0 14 16" version="1.1" width="14" height
 const DefaultQuickTableOptions = {
     tableClassName: undefined as string | undefined,
     keyAlign: 'left' as 'left' | 'right' | 'center',
-    gutterWidth: '.5em' as string | number,
-    gutterHeight: 0 as string | number,
+    gapWidth: '16px' as string | number,
+    gapHeight: 0 as string | number,
     keyStyle: undefined as React.CSSProperties | undefined,
     valueStyle: undefined as React.CSSProperties | undefined,
     tableStyle: undefined as React.CSSProperties | undefined,
@@ -103,7 +101,7 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
         }
     }
 
-    const showVerticalGutter = (typeof o.gutterHeight === 'number' && o.gutterHeight > 0) || typeof o.gutterHeight === 'string';
+    const showVerticalGutter = (typeof o.gapHeight === 'number' && o.gapHeight > 0) || typeof o.gapHeight === 'string';
     const classNames = [o.tableClassName, "quickTable"].joinStr(" ");
 
     return <table className={classNames} style={o.tableStyle}>
@@ -112,13 +110,13 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
                 <React.Fragment key={i}>
                     <tr>
                         <td style={{ textAlign: o.keyAlign, ...o.keyStyle }}>{obj.key}</td>
-                        <td style={{ paddingLeft: o.gutterWidth }}></td>
+                        <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
                         <td style={{ ...o.valueStyle }}>{obj.value}</td>
                     </tr>
 
                     {showVerticalGutter && (i < entries.length - 1) &&
                         <tr>
-                            <td style={{ padding: 0, paddingBottom: o.gutterHeight }}></td>
+                            <td style={{ padding: 0, paddingBottom: o.gapHeight }}></td>
                         </tr>
                     }
                 </React.Fragment>
@@ -134,7 +132,6 @@ export function ObjToKv(obj: any): { key: string, value: any }[] {
     }
     return ar;
 }
-
 
 const style_flexColumn: CSSProperties = { display: 'flex', flexDirection: 'column' };
 export const Label = (p: { text: string, textSuffix?: React.ReactNode, className?: string, style?: CSSProperties, children?: React.ReactNode }) => {
@@ -187,7 +184,7 @@ export class OptionGroup<T> extends Component<{
     }
 }
 
-export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed: string, messagesConsumed: string, progressText: string }> {
+export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed?: string, messagesConsumed?: string, progressText: string }> {
 
     static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
     static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
