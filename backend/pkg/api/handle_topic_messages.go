@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 
 	"github.com/cloudhut/common/rest"
 )
@@ -17,7 +18,9 @@ type GetTopicMessagesResponse struct {
 	KafkaMessages *owl.ListMessageResponse `json:"kafkaMessages"`
 }
 
-type listMessagesRequest struct {
+// ListMessageRequest represents a search message request with all search parameter. This must be public as it's
+// used in Kowl business to implement the hooks.
+type ListMessagesRequest struct {
 	TopicName             string `json:"topicName"`
 	StartOffset           int64  `json:"startOffset"` // -1 for recent (newest - results), -2 for oldest offset, -3 for newest
 	PartitionID           int32  `json:"partitionId"` // -1 for all partition ids
@@ -25,7 +28,7 @@ type listMessagesRequest struct {
 	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
 }
 
-func (l *listMessagesRequest) OK() error {
+func (l *ListMessagesRequest) OK() error {
 	if l.TopicName == "" {
 		return fmt.Errorf("topic name is required")
 	}
@@ -49,7 +52,7 @@ func (l *listMessagesRequest) OK() error {
 	return nil
 }
 
-func (l *listMessagesRequest) DecodeInterpreterCode() (string, error) {
+func (l *ListMessagesRequest) DecodeInterpreterCode() (string, error) {
 	code, err := base64.StdEncoding.DecodeString(l.FilterInterpreterCode)
 	if err != nil {
 		return "", err
@@ -79,15 +82,18 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 		defer wsClient.sendClose()
 
+		sendError := func(msg string) {
+			wsClient.writeJSON(struct {
+				Type    string `json:"type"`
+				Message string `json:"message"`
+			}{"error", msg})
+		}
+
 		// Get search parameters. Close connection if search parameters are invalid
-		var req listMessagesRequest
+		var req ListMessagesRequest
 		err := wsClient.readJSON(&req)
 		if err != nil {
-			wsClient.writeJSON(rest.Error{
-				Err:     err,
-				Status:  http.StatusBadRequest,
-				Message: "Failed to parse list message request",
-			})
+			sendError("Failed to parse list message request")
 			return
 		}
 		go wsClient.readLoop()
@@ -96,29 +102,31 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		// Validate request parameter
 		err = req.OK()
 		if err != nil {
-			wsClient.writeJSON(rest.Error{
-				Err:     err,
-				Status:  http.StatusBadRequest,
-				Message: fmt.Sprintf("Failed to validate list message request: %v", err),
-			})
+			sendError(fmt.Sprintf("Failed to validate list message request: %v", err))
 			return
 		}
 
-		// Check if logged in user is allowed to list messages for the given topic
+		// Check if logged in user is allowed to list messages for the given request
 		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req.TopicName)
 		if restErr != nil {
-			rest.SendRESTError(w, r, logger, restErr)
+			wsClient.writeJSON(restErr)
 			return
 		}
 		if !canViewMessages {
-			restErr := &rest.Error{
-				Err:      fmt.Errorf("requester has no permissions to view messages in the requested topic"),
-				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to view messages in that topic",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, logger, restErr)
+			sendError("You don't have permissions to view messages in this topic")
 			return
+		}
+
+		if len(req.FilterInterpreterCode) > 0 {
+			canUseMessageSearchFilters, restErr := api.Hooks.Owl.CanUseMessageSearchFilters(r.Context(), req.TopicName)
+			if restErr != nil {
+				sendError(restErr.Message)
+				return
+			}
+			if !canUseMessageSearchFilters {
+				sendError("You don't have permissions to use message filters in this topic")
+				return
+			}
 		}
 
 		interpreterCode, _ := req.DecodeInterpreterCode() // Error has been checked in validation function

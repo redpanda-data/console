@@ -114,9 +114,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         */
         //setTimeout(hide, 2000);
 
-        const searchProgressIndicatorReaction = autorun(() => {
-
-        });
+        // const searchProgressIndicatorReaction = autorun(() => {
+        // });
 
         this.messageSource.filterText = uiState.topicSettings.quickSearch;
     }
@@ -163,6 +162,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
         const spaceStyle = { marginRight: '16px', marginTop: '12px' };
+        const canUseFilters = api.TopicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
+
         return <React.Fragment>
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 {/* Search Settings*/}
@@ -204,7 +205,9 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 </Label>
                 <Label text='Filter' style={{ ...spaceStyle }}>
                     <div style={{ height: '32px', paddingTop: '3px' }}>
-                        <Switch checked={searchParams.filtersEnabled} onChange={v => searchParams.filtersEnabled = v} />
+                        <Tooltip title="You don't have permissions to use search filters in this topic" trigger={canUseFilters ? 'none' : 'hover'}>
+                            <Switch checked={searchParams.filtersEnabled && canUseFilters} onChange={v => searchParams.filtersEnabled = v} disabled={!canUseFilters} />
+                        </Tooltip>
                     </div>
                 </Label>
 
@@ -541,6 +544,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
+        const canUseFilters = api.TopicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
 
         if (searchParams.offsetOrigin != TopicOffsetOrigin.Custom)
             searchParams.startOffset = searchParams.offsetOrigin;
@@ -552,7 +556,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         })
 
         let filterCode: string = "";
-        if (searchParams.filtersEnabled) {
+        if (searchParams.filtersEnabled && canUseFilters) {
             const functionNames: string[] = [];
             const functions: string[] = [];
 

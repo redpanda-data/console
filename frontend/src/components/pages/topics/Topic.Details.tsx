@@ -104,6 +104,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         api.refreshTopicPartitions(this.props.topicName, force);
 
         api.refreshTopicConfig(this.props.topicName, force);
+
+        api.refreshTopicPermissions(this.props.topicName, force);
     }
 
 

@@ -47,8 +47,8 @@ const VersionInfo = () => {
     // Local Development Mode
     //   Kowl - DEV
     if (IsDev) return <>
-        <div className='versionTitle'>{AppName} - DEV</div>
-        <div className='versionGitData'>{"b27cxxaf"} {"f3axxb7"}</div>
+        <div className='versionTitle'>{AppName} DEV</div>
+        <div className='versionGitData'>{"b27cxaf"} {"f3axxb7"}</div>
         <div className='versionDate'>Tue Dez 42 3920</div>
     </>
 
@@ -56,7 +56,7 @@ const VersionInfo = () => {
     //   Kowl Business - CI
     //   b27c2a3f f3acf4b7
     if (env.REACT_APP_BUILT_FROM_PUSH) return <>
-        <div className='versionTitle'>{AppName} - CI</div>
+        <div className='versionTitle'>{AppName} CI</div>
         <div>
             <span>{env.REACT_APP_KOWL_GIT_REF != 'master' && env.REACT_APP_KOWL_GIT_REF + "-"}</span>
             <span>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 7)}</span>
