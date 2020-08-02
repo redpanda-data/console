@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+
 	"github.com/cloudhut/common/rest"
 
 	"github.com/go-chi/chi"
@@ -35,6 +36,7 @@ type OwlHooks interface {
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicMessages(ctx context.Context, req ListMessagesRequest) (bool, *rest.Error)
+	CanUseMessageSearchFilters(ctx context.Context, req ListMessagesRequest) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
 

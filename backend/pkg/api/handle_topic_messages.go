@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 
 	"github.com/cloudhut/common/rest"
 )
@@ -116,11 +117,29 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("requester has no permissions to view messages for the given request"),
 				Status:   http.StatusForbidden,
-				Message:  "You don't have permissions to view messages with the given search parameters",
+				Message:  "You don't have permissions to view messages in this topic",
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, logger, restErr)
 			return
+		}
+
+		if len(req.FilterInterpreterCode) > 0 {
+			canUseMessageSearchFilters, restErr := api.Hooks.Owl.CanUseMessageSearchFilters(r.Context(), req)
+			if restErr != nil {
+				rest.SendRESTError(w, r, logger, restErr)
+				return
+			}
+			if !canUseMessageSearchFilters {
+				restErr := &rest.Error{
+					Err:      fmt.Errorf("requester has no permissions to message search filters for the given request"),
+					Status:   http.StatusForbidden,
+					Message:  "You don't have permissions to use message filters in this topic",
+					IsSilent: false,
+				}
+				rest.SendRESTError(w, r, logger, restErr)
+				return
+			}
 		}
 
 		interpreterCode, _ := req.DecodeInterpreterCode() // Error has been checked in validation function
