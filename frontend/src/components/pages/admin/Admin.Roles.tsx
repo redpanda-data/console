@@ -102,9 +102,9 @@ export class PermissionComponent extends Component<{ permission: Permission }>{
         if (p.allowedActions.length > 0)
             rows.push([<span className="resourceLabelSub">Actions</span>, stringsToBoxes(p.allowedActions, null, 'permissionsList')]);
         if (p.includes.length > 0 && !(p.includes[0] == "*") && !(p.includes[0] == "^*$") && !(p.includes[0] == "^.*$"))
-            rows.push([<span className="resourceLabelSub">When</span>, stringsToBoxes(p.includes, joinerOr, 'permissionRegex')]);
+            rows.push([<span className="resourceLabelSub">Includes</span>, stringsToBoxes(p.includes, joinerOr, 'permissionRegex')]);
         if (p.excludes.length > 0)
-            rows.push([<span className="resourceLabelSub">Except</span>, stringsToBoxes(p.excludes, joinerOr, 'permissionRegex')]);
+            rows.push([<span className="resourceLabelSub">Excludes</span>, stringsToBoxes(p.excludes, joinerOr, 'permissionRegex')]);
 
         const t = QuickTable(rows, {
             tableClassName: 'permissionTable',
