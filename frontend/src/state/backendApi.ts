@@ -335,22 +335,22 @@ const apiStore = {
 
     refreshTopicConfig(topicName: string, force?: boolean) {
         cachedApiRequest<TopicConfigResponse>(`/api/topics/${topicName}/configuration`, force)
-            .then(v => this.TopicConfig.set(v.topicDescription.topicName, v.topicDescription.configEntries), addError);
+            .then(v => this.TopicConfig.set(topicName, v?.topicDescription?.configEntries ?? null), addError);
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
         cachedApiRequest<TopicPermissions>(`/api/permissions/topics/${topicName}`, force)
-            .then(x => this.TopicPermissions.set(topicName, x), addError);
+            .then(x => this.TopicPermissions.set(topicName, x ?? null), addError);
     },
 
     refreshTopicPartitions(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse>(`/api/topics/${topicName}/partitions`, force)
-            .then(v => this.TopicPartitions.set(v.topicName, v.partitions), addError);
+            .then(v => this.TopicPartitions.set(topicName, v?.partitions ?? null), addError);
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
         cachedApiRequest<GetTopicConsumersResponse>(`/api/topics/${topicName}/consumers`, force)
-            .then(v => this.TopicConsumers.set(v.topicName, v.topicConsumers), addError);
+            .then(v => this.TopicConsumers.set(topicName, v.topicConsumers), addError);
     },
 
 
