@@ -1,7 +1,7 @@
 import { Component } from "react";
 import React from "react";
 import { UserDetails } from "../../../state/restInterfaces";
-import { Table, Skeleton, Select, Input, Typography, Collapse } from "antd";
+import { Table, Skeleton, Select, Input, Typography, Collapse, Tooltip } from "antd";
 import { observer } from "mobx-react";
 import { api, } from "../../../state/backendApi";
 import { sortField } from "../../misc/common";
@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import { animProps, MotionAlways } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
 import { RoleComponent } from "./Admin.Roles";
+import { UserOutlined } from "@ant-design/icons";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -27,9 +28,15 @@ export class AdminUsers extends Component<{}> {
 
             dataSource={users}
             rowKey={x => x.internalIdentifier + x.oauthUserId + x.loginProvider}
-            rowClassName={() => 'hoverLink'}
+            rowClassName={user => 'hoverLink' + (user.internalIdentifier == api.UserData?.user.internalIdentifier ? ' tableRowHighlightSpecial' : null)}
             columns={[
-                { width: 1, title: 'Identifier', dataIndex: 'internalIdentifier', sorter: sortField('internalIdentifier') },
+                {
+                    width: 1, title: 'Identifier', dataIndex: 'internalIdentifier', sorter: sortField('internalIdentifier'), render: (t, r) => {
+                        if (r.internalIdentifier == api.UserData?.user.internalIdentifier)
+                            return <span><Tooltip title="You are currently logged in as this user"><UserOutlined style={{ fontSize: '16px', padding: '2px', color: '#ff9e3a' }} /></Tooltip>{' '}{t}</span>
+                        return t;
+                    }
+                },
                 { width: 1, title: 'OAuthUserID', dataIndex: 'oauthUserId', sorter: sortField('oauthUserId') },
                 { width: 1, title: 'Roles', dataIndex: 'roles', render: (text, user) => user.grantedRoles.map(r => r.role.name).join(', ') }, // can't sort
                 { width: 1, title: 'Login', dataIndex: 'loginProvider', sorter: sortField('loginProvider') },

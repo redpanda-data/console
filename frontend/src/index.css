@@ -381,11 +381,13 @@ span>.icon-container~span {
 
 .versionDate {
     opacity: 0;
+    font-size: 0px;
     transition: all 0.4s ease-out 0.2s;
 }
 
 .version:hover .versionDate {
     opacity: 1;
+    font-size: inherit;
 }
 
 .versionTitle {}
@@ -1051,3 +1053,17 @@ svg {
     left: 8px;
     font-size: 10px;
 }
+
+.tableRowHighlightSpecial {
+    background-color: rgba(255, 187, 0, 0.185);
+}
+
+/* .tableRowHighlightSpecial td:first-child::before {
+    content: ' ';
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: -30px;
+    width: 30px;
+    background: red;
+} */
