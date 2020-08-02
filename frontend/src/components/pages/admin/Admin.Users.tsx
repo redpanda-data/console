@@ -6,10 +6,11 @@ import { observer } from "mobx-react";
 import { api, } from "../../../state/backendApi";
 import { sortField } from "../../misc/common";
 import { motion } from "framer-motion";
-import { animProps, MotionAlways } from "../../../utils/animationProps";
+import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
 import { RoleComponent } from "./Admin.Roles";
 import { UserOutlined } from "@ant-design/icons";
+import { observable } from "mobx";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -18,9 +19,14 @@ const InputGroup = Input.Group;
 @observer
 export class AdminUsers extends Component<{}> {
 
+    @observable quickSearch = '';
+
     render() {
         if (!api.AdminInfo) return this.skeleton;
-        const users = api.AdminInfo.users;
+        const users = this.quickSearch.length > 0
+            ? api.AdminInfo.users.filter(u => u.internalIdentifier.includes(this.quickSearch) || u.oauthUserId.includes(this.quickSearch))
+            : api.AdminInfo.users;
+
 
         const table = <Table
             size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
@@ -56,9 +62,18 @@ export class AdminUsers extends Component<{}> {
             }
         />
 
-        return <MotionAlways>
+        return <MotionDiv>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                <Input placeholder='Quick Search' allowClear={true} size='middle'
+                    style={{ width: '300px', padding: '2px 8px', whiteSpace: 'nowrap' }}
+                    value={this.quickSearch}
+                    onChange={e => this.quickSearch = e.target.value}
+                    addonAfter={null}
+                />
+            </div>
+
             {table}
-        </MotionAlways>
+        </MotionDiv>
     }
 
     skeleton = <>
