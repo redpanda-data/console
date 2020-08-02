@@ -128,7 +128,6 @@ export class Expander extends Component<{ title: ReactNode, className?: string }
 export class SubjectComponent extends Component<{ subject: Subject }>{
     render() {
         const s = this.props.subject;
-
         // todo: this is a placeholder, to be completely replaced...
 
         return <>
@@ -138,7 +137,7 @@ export class SubjectComponent extends Component<{ subject: Subject }>{
                 <span style={{ textTransform: 'capitalize' }}>{s.subjectKindName}</span>
                 {': '}
                 <span>{s.name}</span>
-                <span>{s.organization && ` (Org: ${s.organization}`}</span>
+                <span>{s.organization && ` (Org: ${s.organization})`}</span>
             </div>
         </>
     }

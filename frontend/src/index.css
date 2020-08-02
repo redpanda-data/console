@@ -561,6 +561,10 @@ span>.icon-container~span {
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
+.ant-menu-dark .ant-menu-item>a {
+    color: hsl(205 50% 55% / 1);
+}
+
 .ant-menu.ant-menu-dark .ant-menu-item-selected,
 .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
     background-color: hsla(209, 72%, 59%, 0.68);
