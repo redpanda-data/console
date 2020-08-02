@@ -108,7 +108,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		// Check if logged in user is allowed to list messages for the given request
-		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req)
+		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req.TopicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -125,7 +125,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		if len(req.FilterInterpreterCode) > 0 {
-			canUseMessageSearchFilters, restErr := api.Hooks.Owl.CanUseMessageSearchFilters(r.Context(), req)
+			canUseMessageSearchFilters, restErr := api.Hooks.Owl.CanUseMessageSearchFilters(r.Context(), req.TopicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, logger, restErr)
 				return
