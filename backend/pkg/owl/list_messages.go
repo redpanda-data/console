@@ -237,6 +237,12 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafk
 			if listReq.StartOffset == StartOffsetNewest {
 				p.EndOffset = math.MaxInt64
 			}
+			if listReq.StartOffset == StartOffsetRecent {
+				p.StartOffset = p.HighWaterMark - 1 - int64(listReq.MessageCount)
+				if p.StartOffset < 0 {
+					p.StartOffset = 0
+				}
+			}
 		}
 
 		requests[mark.PartitionID] = p

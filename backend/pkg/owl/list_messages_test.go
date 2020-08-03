@@ -134,21 +134,43 @@ func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
 		2: {PartitionID: 2, Low: 0, High: 300},
 	}
 
-	req := &ListMessageRequest{
-		TopicName:             "test",
-		PartitionID:           partitionsAll, // All partitions
-		StartOffset:           StartOffsetOldest,
-		MessageCount:          2,
-		FilterInterpreterCode: "random string that simulates some javascript code",
+	tt := []struct {
+		req      *ListMessageRequest
+		expected map[int32]*kafka.PartitionConsumeRequest
+	}{
+		{
+
+			&ListMessageRequest{
+				TopicName:             "test",
+				PartitionID:           partitionsAll, // All partitions
+				StartOffset:           StartOffsetOldest,
+				MessageCount:          2,
+				FilterInterpreterCode: "random string that simulates some javascript code",
+			},
+			map[int32]*kafka.PartitionConsumeRequest{
+				0: {PartitionID: 0, IsDrained: false, StartOffset: 0, EndOffset: 299, MaxMessageCount: 2, LowWaterMark: 0, HighWaterMark: 300},
+				1: {PartitionID: 1, IsDrained: false, StartOffset: 0, EndOffset: 299, MaxMessageCount: 2, LowWaterMark: 0, HighWaterMark: 300},
+				2: {PartitionID: 2, IsDrained: false, StartOffset: 0, EndOffset: 299, MaxMessageCount: 2, LowWaterMark: 0, HighWaterMark: 300},
+			},
+		},
+		{
+			&ListMessageRequest{
+				TopicName:             "test",
+				PartitionID:           partitionsAll, // All partitions
+				StartOffset:           StartOffsetRecent,
+				MessageCount:          50,
+				FilterInterpreterCode: "random string that simulates some javascript code",
+			},
+			map[int32]*kafka.PartitionConsumeRequest{
+				0: {PartitionID: 0, IsDrained: false, StartOffset: 249, EndOffset: 299, MaxMessageCount: 50, LowWaterMark: 0, HighWaterMark: 300},
+				1: {PartitionID: 1, IsDrained: false, StartOffset: 249, EndOffset: 299, MaxMessageCount: 50, LowWaterMark: 0, HighWaterMark: 300},
+				2: {PartitionID: 2, IsDrained: false, StartOffset: 249, EndOffset: 299, MaxMessageCount: 50, LowWaterMark: 0, HighWaterMark: 300},
+			},
+		},
 	}
 
-	// Expected result should be able to return all 100 requested messages as evenly distributed as possible
-	expected := map[int32]*kafka.PartitionConsumeRequest{
-		0: {PartitionID: 0, IsDrained: false, StartOffset: marks[0].Low, EndOffset: marks[0].High - 1, MaxMessageCount: 2, LowWaterMark: marks[0].Low, HighWaterMark: marks[0].High},
-		1: {PartitionID: 1, IsDrained: false, StartOffset: marks[1].Low, EndOffset: marks[1].High - 1, MaxMessageCount: 2, LowWaterMark: marks[1].Low, HighWaterMark: marks[1].High},
-		2: {PartitionID: 2, IsDrained: false, StartOffset: marks[2].Low, EndOffset: marks[2].High - 1, MaxMessageCount: 2, LowWaterMark: marks[2].Low, HighWaterMark: marks[2].High},
+	for i, table := range tt {
+		actual := calculateConsumeRequests(table.req, marks)
+		assert.Equal(t, table.expected, actual, "expected other result for all partitions with filter enable. Case: ", i)
 	}
-	actual := calculateConsumeRequests(req, marks)
-
-	assert.Equal(t, expected, actual, "expected other result for all partitions with filter enabled")
 }
