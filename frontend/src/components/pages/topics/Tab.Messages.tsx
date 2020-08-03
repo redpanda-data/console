@@ -251,7 +251,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 </div>
 
                 {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-                {api.MessageSearchPhase && searchParams.filters.length &&
+                {
+                    Boolean(api.MessageSearchPhase && api.MessageSearchPhase.length > 0) &&
+                         <StatusIndicator
+                        identityKey='messageSearch'
+                        fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
+                        statusText={api.MessageSearchPhase!}
+                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`}
+                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.MessagesBytesConsumed) : undefined}
+                        messagesConsumed={searchParams.filtersEnabled ? String(api.MessagesTotalConsumed) : undefined}
+                    />
+   
+                }
+
+                {/* 
+                api.MessageSearchPhase && api.MessageSearchPhase.length > 0 && searchParams.filters.length>0 &&
                     <StatusIndicator
                         identityKey='messageSearch'
                         fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
@@ -260,6 +274,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.MessagesBytesConsumed) : undefined}
                         messagesConsumed={searchParams.filtersEnabled ? String(api.MessagesTotalConsumed) : undefined}
                     />
+                    */
                 }
 
                 {/* Filter Tags */}
