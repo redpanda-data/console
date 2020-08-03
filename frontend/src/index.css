@@ -562,7 +562,7 @@ span>.icon-container~span {
 }
 
 .ant-menu-dark .ant-menu-item>a {
-    color: hsl(205 50% 55% / 1);
+    color: hsl(205 50% 70% / 60%);
 }
 
 .ant-menu.ant-menu-dark .ant-menu-item-selected,
