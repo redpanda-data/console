@@ -9,7 +9,7 @@ import { observable, autorun, computed, action, transaction, decorate, extendObs
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/utils";
 import { objToQuery } from "../utils/queryHelper";
-import { IsDev } from "../utils/env";
+import { IsDev, IsBusiness } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
@@ -339,6 +339,7 @@ const apiStore = {
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
+        if (!IsBusiness) return; // permissions endpoint only exists in kowl-business
         cachedApiRequest<TopicPermissions>(`/api/permissions/topics/${topicName}`, force)
             .then(x => this.TopicPermissions.set(topicName, x ?? null), addError);
     },
