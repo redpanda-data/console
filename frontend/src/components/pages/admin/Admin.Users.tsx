@@ -63,7 +63,7 @@ export class AdminUsers extends Component<{}> {
         />
 
         return <MotionDiv>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>
                 <Input placeholder='Quick Search' allowClear={true} size='middle'
                     style={{ width: '300px', padding: '2px 8px', whiteSpace: 'nowrap' }}
                     value={this.quickSearch}
