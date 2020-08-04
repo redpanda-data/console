@@ -20,7 +20,7 @@ import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { numberToThousandsString, QuickTable, ObjToKv } from "../../../utils/tsxUtils";
+import { numberToThousandsString, QuickTable, ObjToKv, DefaultSkeleton } from "../../../utils/tsxUtils";
 import Card from "../../misc/Card";
 import { RoleComponent } from "./Admin.Roles";
 import Icon from '@ant-design/icons';
@@ -33,7 +33,7 @@ const InputGroup = Input.Group;
 export class AdminRoleBindings extends Component {
 
     render() {
-        if (!api.AdminInfo) return this.skeleton;
+        if (!api.AdminInfo) return DefaultSkeleton;
         const roleBindings = api.AdminInfo.roleBindings;
 
         return "bindings, along with a listing of all members in each subject group will be added later"
@@ -86,12 +86,6 @@ export class AdminRoleBindings extends Component {
         //     {table}
         // </MotionAlways>
     }
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }
 
 export class RoleBindingComponent extends Component<{ binding: RoleBinding }>{

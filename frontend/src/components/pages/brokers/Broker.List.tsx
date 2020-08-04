@@ -15,6 +15,7 @@ import { prettyBytesOrNA } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CrownOutlined } from '@ant-design/icons';
+import { DefaultSkeleton } from "../../../utils/tsxUtils";
 
 
 @observer
@@ -41,7 +42,7 @@ class BrokerList extends PageComponent {
     }
 
     render() {
-        if (!api.ClusterInfo) return this.skeleton;
+        if (!api.ClusterInfo) return DefaultSkeleton;
         if (api.ClusterInfo.brokers.length == 0) return <Empty />
 
         const info = api.ClusterInfo;
@@ -98,13 +99,6 @@ class BrokerList extends PageComponent {
     setResult(filteredData: Broker[]) {
         this.filteredBrokers = filteredData;
     }
-
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }
 
 export default BrokerList;

@@ -16,6 +16,7 @@ import { containsIgnoreCase } from "../../../utils/utils";
 import Card from "../../misc/Card";
 import { editQuery } from "../../../utils/queryHelper";
 import { uiState } from "../../../state/uiState";
+import { DefaultSkeleton } from "../../../utils/tsxUtils";
 
 
 @observer
@@ -57,7 +58,7 @@ class GroupList extends PageComponent {
     }
 
     render() {
-        if (!api.ConsumerGroups) return this.skeleton;
+        if (!api.ConsumerGroups) return DefaultSkeleton;
         if (api.ConsumerGroups.length == 0) return <Empty />
 
         const groups = api.ConsumerGroups;
@@ -139,12 +140,6 @@ class GroupList extends PageComponent {
             <span> {p.group.groupId}</span>
         </>
     }
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }
 
 export default GroupList;

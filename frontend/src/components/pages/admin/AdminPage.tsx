@@ -18,6 +18,7 @@ import { AdminUsers } from "./Admin.Users";
 import { AdminRoles } from "./Admin.Roles";
 import { Route, Link } from "react-router-dom";
 import { AdminRoleBindings } from "./Admin.RoleBindings";
+import { DefaultSkeleton } from "../../../utils/tsxUtils";
 
 
 @observer
@@ -37,7 +38,7 @@ export default class AdminPage extends PageComponent {
     }
 
     render() {
-        if (!api.AdminInfo) return this.skeleton;
+        if (!api.AdminInfo) return DefaultSkeleton;
 
         return <motion.div {...animProps} style={{ margin: '0 1rem' }}>
             <Card>
@@ -64,10 +65,4 @@ export default class AdminPage extends PageComponent {
         </motion.div>
 
     }
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }

@@ -17,7 +17,7 @@ import { TopicConfigEntry, TopicDetail, TopicAction } from "../../../state/restI
 import Card from "../../misc/Card";
 import { TopicConsumers } from "./Tab.Consumers";
 import { simpleUniqueId } from "../../../utils/utils";
-import { Label, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
+import { Label, ObjToKv, OptionGroup, DefaultSkeleton } from "../../../utils/tsxUtils";
 import { LockIcon } from "@primer/octicons-v2-react";
 import { computed, observable } from "mobx";
 
@@ -156,7 +156,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     render() {
         const topic = this.topic;
         const topicConfig = this.topicConfig;
-        if (topic === undefined || topicConfig === undefined) return this.skeleton;
+        if (topic === undefined || topicConfig === undefined) return DefaultSkeleton;
         if (topic === null) return this.topicNotFound();
 
         setTimeout(() => topicConfig && this.addBaseFavs(topicConfig), 10);
@@ -231,12 +231,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             extra={<Button type="primary" onClick={() => appGlobal.history.goBack()}>Go Back</Button>}
         />
     }
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }
 
 

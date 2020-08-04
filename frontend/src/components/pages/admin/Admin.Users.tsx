@@ -11,6 +11,7 @@ import '../../../utils/arrayExtensions';
 import { RoleComponent } from "./Admin.Roles";
 import { UserOutlined } from "@ant-design/icons";
 import { observable } from "mobx";
+import { DefaultSkeleton } from "../../../utils/tsxUtils";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -22,7 +23,7 @@ export class AdminUsers extends Component<{}> {
     @observable quickSearch = '';
 
     render() {
-        if (!api.AdminInfo) return this.skeleton;
+        if (!api.AdminInfo) return DefaultSkeleton;
         const users = this.quickSearch.length > 0
             ? api.AdminInfo.users.filter(u => u.internalIdentifier.includes(this.quickSearch) || u.oauthUserId.includes(this.quickSearch))
             : api.AdminInfo.users;
@@ -75,10 +76,4 @@ export class AdminUsers extends Component<{}> {
             {table}
         </MotionDiv>
     }
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }

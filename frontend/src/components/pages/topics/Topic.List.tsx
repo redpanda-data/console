@@ -17,7 +17,7 @@ import { uiState } from "../../../state/uiState";
 import Card from "../../misc/Card";
 import { editQuery } from "../../../utils/queryHelper";
 import Icon from '@ant-design/icons';
-import { QuickTable } from "../../../utils/tsxUtils";
+import { QuickTable, DefaultSkeleton } from "../../../utils/tsxUtils";
 import { EyeClosedIcon, CheckIcon, CircleSlashIcon } from "@primer/octicons-v2-react";
 const { Text } = Typography;
 const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
@@ -72,7 +72,7 @@ class TopicList extends PageComponent {
     }
 
     render() {
-        if (!api.Topics) return this.skeleton;
+        if (!api.Topics) return DefaultSkeleton;
         if (api.Topics.length == 0) return <Empty />
 
         const topics = this.getTopics();
@@ -130,12 +130,6 @@ class TopicList extends PageComponent {
             </motion.div>
         );
     }
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }
 
 const iconAllowed = <span style={{ color: 'green' }}><CheckIcon size={16} /></span>

@@ -21,7 +21,7 @@ import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
 import { FilterableDataSource } from "../../../utils/filterableDataSource";
 import { FavoritePopover, FormatValue } from "./Tab.Config";
-import { numberToThousandsString } from "../../../utils/tsxUtils";
+import { numberToThousandsString, DefaultSkeleton } from "../../../utils/tsxUtils";
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -43,9 +43,7 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
     render() {
         const topic = this.props.topic;
         let partitions = api.TopicPartitions.get(topic.topicName);
-        if (!partitions) {
-            return this.skeleton;
-        }
+        if (!partitions) return DefaultSkeleton;
 
         let warning: JSX.Element = <></>
         if (topic.cleanupPolicy.toLowerCase() == 'compact')
@@ -78,10 +76,4 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
             {table}
         </MotionAlways>
     }
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }

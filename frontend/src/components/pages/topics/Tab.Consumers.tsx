@@ -14,6 +14,7 @@ import { animProps } from "../../../utils/animationProps";
 import { appGlobal } from "../../../state/appGlobal";
 import { sortField, makePaginationConfig } from "../../misc/common";
 import { uiState } from "../../../state/uiState";
+import { DefaultSkeleton } from "../../../utils/tsxUtils";
 
 @observer
 export class TopicConsumers extends Component<{ topic: TopicDetail }> {
@@ -27,7 +28,7 @@ export class TopicConsumers extends Component<{ topic: TopicDetail }> {
 
     render() {
         const consumers = api.TopicConsumers.get(this.props.topic.topicName);
-        if (!consumers) return this.skeleton;
+        if (!consumers) return DefaultSkeleton;
 
         return <div>
             <Table
@@ -52,12 +53,6 @@ export class TopicConsumers extends Component<{ topic: TopicDetail }> {
                 ]} />
         </div>
     }
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }
 
 

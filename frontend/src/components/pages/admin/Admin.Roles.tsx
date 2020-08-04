@@ -20,7 +20,7 @@ import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
 import Card from "../../misc/Card";
 import Icon from '@ant-design/icons';
-import { QuickTable } from "../../../utils/tsxUtils";
+import { QuickTable, DefaultSkeleton } from "../../../utils/tsxUtils";
 import { RoleBindingComponent } from "./Admin.RoleBindings";
 
 
@@ -34,7 +34,7 @@ const InputGroup = Input.Group;
 export class AdminRoles extends Component<{}> {
 
     render() {
-        if (!api.AdminInfo) return this.skeleton;
+        if (!api.AdminInfo) return DefaultSkeleton;
         const roles = api.AdminInfo.roles;
 
         const table = <Table
@@ -57,12 +57,6 @@ export class AdminRoles extends Component<{}> {
             {table}
         </MotionAlways>
     }
-
-    skeleton = <>
-        <motion.div {...animProps} key={'loader'} style={{ margin: '2rem' }}>
-            <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-        </motion.div>
-    </>
 }
 
 export class RoleComponent extends Component<{ role: Role, grantedBy?: RoleBinding[] }>{

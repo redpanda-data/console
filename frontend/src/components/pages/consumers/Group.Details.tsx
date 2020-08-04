@@ -15,7 +15,7 @@ import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, Chec
 import { Radio } from 'antd';
 import { TablePaginationConfig } from "antd/lib/table";
 import Octicon, { SkipIcon } from "@primer/octicons-react";
-import { OptionGroup, QuickTable } from "../../../utils/tsxUtils";
+import { OptionGroup, QuickTable, DefaultSkeleton } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
 
 
@@ -23,7 +23,6 @@ import { uiSettings } from "../../../state/ui";
 class GroupDetails extends PageComponent<{ groupId: string }> {
     @observable viewMode: 'topic' | 'member' = 'topic';
     @observable onlyShowPartitionsWithLag: boolean = false;
-    @observable forbiddenResourcesEncountered: boolean = false;
 
     initPage(p: PageInitHelper): void {
         const group = this.props.groupId;
@@ -46,39 +45,17 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     refreshData(force: boolean) {
         console.log('GroupDetails.Refresh()');
         api.refreshConsumerGroups(force);
-        api.refreshTopics(force); // we also need the topics, so we know how many partitions each topic has
     };
 
     render() {
         // Get info about the group
         const groupName = this.props.groupId;
-        if (!api.ConsumerGroups) return this.skeleton;
+        if (!api.ConsumerGroups) return DefaultSkeleton;
         const group = api.ConsumerGroups.find(e => e.groupId == groupName);
-        if (!group) return this.skeleton;
-        if (!api.Topics) return this.skeleton;
+        if (!group) return DefaultSkeleton;
 
         // Get info about each topic
         const requiredTopics = group.members.flatMap(m => m.assignments.map(a => a.topicName)).distinct();
-        let allDataLoaded = true;
-        for (const topicName of requiredTopics) {
-            if (api.Topics.find(t => t.topicName == topicName) == undefined) {
-                console.log('waiting for topic details of "' + topicName + '"...');
-                setTimeout(() => api.refreshTopics(), 1);
-                allDataLoaded = false;
-            }
-            const partitions = api.TopicPartitions.get(topicName);
-            if (partitions === undefined) {
-                console.log('waiting for partitions of topic "' + topicName + '"...');
-                setTimeout(() => api.refreshTopicPartitions(topicName), 1);
-                allDataLoaded = false;
-            } else if (partitions === null) {
-                console.log('no permissions to view partitions of topic "' + topicName + '"');
-                setTimeout(() => this.forbiddenResourcesEncountered = true, 1);
-            }
-        }
-        if (!allDataLoaded)
-            return this.skeleton;
-
 
         const totalPartitions = group.members.flatMap(m => m.assignments).sum(a => a.partitionIds.length);
         const partitionsWithOffset = group.lag.topicLags.sum(tl => tl.partitionsWithOffset);
@@ -123,14 +100,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                         />
                     </Space>
 
-                    {this.forbiddenResourcesEncountered &&
-                        <div style={{ padding: '.5em 1em' }}>
-                            Displayed information may be incomplete because you don't have permissions for all required resources
-                        </div>
-                    }
-
-
-
                     {this.viewMode == 'member'
                         ? <GroupByMembers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
                         : <GroupByTopics group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
@@ -140,10 +109,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
             </MotionDiv>
         );
     }
-
-    skeleton = <MotionDiv identityKey='loader' style={{ margin: '2rem' }}>
-        <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
-    </MotionDiv>
 }
 
 

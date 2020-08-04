@@ -1,11 +1,13 @@
 import React, { useState, Component, CSSProperties } from "react";
 import { simpleUniqueId, DebugTimerStore } from "./utils";
-import { Radio, message, Progress } from 'antd';
+import { Radio, message, Progress, Skeleton } from 'antd';
 import { MessageType } from "antd/lib/message";
 import prettyMilliseconds from 'pretty-ms';
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 import { TimestampDisplayFormat } from "../state/ui";
 import { observer } from "mobx-react";
+import { motion } from "framer-motion";
+import { animProps } from "./animationProps";
 
 
 
@@ -46,16 +48,6 @@ export class TimestampDisplay extends Component<{ unixEpochSecond: number, forma
     }
 }
 
-
-export const ZeroSizeWrapper = (p: { width: number, height: number, children?: React.ReactNode }) => {
-    return <span style={{
-        width: p.width, height: p.height,
-        display: 'inline-flex', placeContent: 'center', placeItems: 'center',
-
-    }}>
-        {p.children}
-    </span>;
-};
 
 
 export const copyIcon = <svg viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true">
@@ -238,6 +230,7 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
     }
 }
 
+// todo: layoutbypass and zerosizewrapper do the same thing, merge them.
 export class LayoutBypass extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string }> {
 
     static readonly style: CSSProperties = {
@@ -263,3 +256,32 @@ export class LayoutBypass extends Component<{ width?: string, height?: string, j
         </span>
     }
 }
+
+export const ZeroSizeWrapper = (p: { width: number, height: number, children?: React.ReactNode }) => {
+    return <span style={{
+        width: p.width, height: p.height,
+        display: 'inline-flex', placeContent: 'center', placeItems: 'center',
+
+    }}>
+        {p.children}
+    </span>;
+};
+
+
+const defaultSkeletonStyle = { margin: '2rem' };
+const innerSkeleton = <Skeleton loading={true} active={true} paragraph={{ rows: 8 }} />
+export const DefaultSkeleton = (
+    <motion.div {...animProps} key={'defaultSkeleton'} style={defaultSkeletonStyle}>
+        {innerSkeleton}
+    </motion.div>
+);
+
+// export class DefaultSkeleton extends Component<{ identityKey?: string }> {
+//     render() {
+//         return (
+//             <motion.div {...animProps} key={this.props.identityKey ?? 'defaultSkeleton'} style={defaultSkeletonStyle}>
+//                 {innerSkeleton}
+//             </motion.div>
+//         )
+//     }
+// }
