@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { Component, ReactNode } from 'react';
 import { observer } from "mobx-react"
-import { Layout, Menu, PageHeader, Button } from 'antd';
+import { Layout, Menu, PageHeader, Button, Tooltip, Popover } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
 import { RenderTrap, DebugDisplay } from './misc/common';
 import { DebugTimerStore, ToJson } from '../utils/utils';
-import { api } from '../state/backendApi';
+import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
 import { MotionDiv, MotionDivInvertedScale } from '../utils/animationProps';
@@ -29,6 +29,7 @@ import { observable } from 'mobx';
 import { SyncIcon } from '@primer/octicons-v2-react';
 import { motion } from 'framer-motion';
 import { LayoutBypass } from '../utils/tsxUtils';
+import prettyMilliseconds from 'pretty-ms';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -163,6 +164,13 @@ const AppSide = observer(() => (
 const DataAgeInfo = observer(() => {
 
     const spinnerSize = '16px';
+    const refreshTextFunc = (): ReactNode => {
+        return <div style={{ maxWidth: '350px' }}>
+            Click to force a refresh of the data shown in the current page.
+            When switching pages, any data older than <span className='codeBox'>{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be refreshed automatically.
+        </div>
+        // TODO: small table that shows what cached data we have and how old it is
+    }
 
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div style={{
@@ -180,7 +188,11 @@ const DataAgeInfo = observer(() => {
             api.ActiveRequests.length == 0
                 ?
                 <>
-                    < Button icon={< SyncIcon size={16} />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
+                    {/* <Tooltip title={refreshTextFunc} placement='right'>
+                    </Tooltip> */}
+                    <Popover title='Force Refresh' content={refreshTextFunc} placement='right' overlayClassName='popoverSmall'>
+                        < Button icon={< SyncIcon size={16} />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
+                    </Popover>
                     {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
                 </>
                 :

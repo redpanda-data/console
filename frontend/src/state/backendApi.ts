@@ -18,7 +18,7 @@ import { ObjToKv } from "../utils/tsxUtils";
 import { ArrowBothIcon } from "@primer/octicons-v2-react";
 
 const REST_TIMEOUT_SEC = IsDev ? 5 : 25;
-const REST_CACHE_DURATION_SEC = 20;
+export const REST_CACHE_DURATION_SEC = 20;
 const REST_DEBUG_BASE_URL = null// || "http://localhost:9090"; // only uncommented using "npm run build && serve -s build"
 
 export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T | null> {

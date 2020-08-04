@@ -1071,3 +1071,19 @@ svg {
     width: 30px;
     background: red;
 } */
+.popoverSmall {}
+
+.popoverSmall .ant-popover-inner-content {
+    /* reduced from 12 16 */
+    padding: 8px 16px;
+    font-size: 85%;
+}
+
+.popoverSmall .ant-popover-title {
+    min-height: 10px;
+    font-size: 90%;
+}
+
+.popoverSmall .ant-popover-inner {
+    border-radius: 4px;
+}
