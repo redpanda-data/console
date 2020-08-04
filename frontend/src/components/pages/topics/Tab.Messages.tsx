@@ -253,7 +253,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                 {
                     Boolean(api.MessageSearchPhase && api.MessageSearchPhase.length > 0) &&
-                         <StatusIndicator
+                    <StatusIndicator
                         identityKey='messageSearch'
                         fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
                         statusText={api.MessageSearchPhase!}
@@ -261,10 +261,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.MessagesBytesConsumed) : undefined}
                         messagesConsumed={searchParams.filtersEnabled ? String(api.MessagesTotalConsumed) : undefined}
                     />
-   
+
                 }
 
-                {/* 
+                {/*
                 api.MessageSearchPhase && api.MessageSearchPhase.length > 0 && searchParams.filters.length>0 &&
                     <StatusIndicator
                         identityKey='messageSearch'
@@ -1207,14 +1207,24 @@ class MessageSearchFilterBar extends Component {
                 onCancel={() => this.currentFilter = null}
 
                 destroyOnClose={true}
-                footer={null}
+                // footer={null}
 
-                bodyStyle={{ paddingTop: '18px' }}
+                okText='Close'
+                cancelButtonProps={{ style: { display: 'none' } }}
+                maskClosable={true}
+                footer={<div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <div style={{ fontFamily: '"Open Sans", sans-serif', fontSize: '10.5px', color: '#828282' }}>
+                        Changes are saved automatically
+                    </div>
+                    <Button type='primary' onClick={() => this.currentFilter = null} >Close</Button>
+                </div>}
+
+                bodyStyle={{ paddingTop: '18px', paddingBottom: '12px', display: 'flex', gap: '12px', flexDirection: 'column' }}
             >
                 {this.currentFilter && <>
 
                     {/* Title */}
-                    <span style={{ display: 'inline-flex', alignItems: 'center', marginTop: '1em' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', marginBottom: '8px' }}>
                         <span className='h3' style={{ marginRight: '0.3em' }}>Edit Filter</span>
                         <Button style={{
                             opacity: this.hasChanges ? 1 : 0,
@@ -1230,14 +1240,18 @@ class MessageSearchFilterBar extends Component {
                         </Button>
                     </span>
 
+                    {/* Name */}
+                    <Label text='Display Name'>
+                        <Input
+                            style={{ padding: '2px 8px' }}
+                            value={this.currentFilter!.name}
+                            onChange={e => { this.currentFilter!.name = e.target.value; this.hasChanges = true; }}
+                            placeholder='will be shown instead of the code'
+                            size='small' />
+                    </Label>
+
                     {/* Code Box */}
                     <Label text='Filter Code'>
-                        {/* <TextArea
-                            autoFocus={true}
-                            value={this.currentFilter!.code}
-                            onChange={e => { this.currentFilter!.code = e.target.value; this.hasChanges = true; }}
-                            autoSize={{ minRows: 4, maxRows: 20 }}
-                        /> */}
                         <Editor
                             value={this.currentFilter!.code}
                             onValueChange={code => { this.currentFilter!.code = code; this.hasChanges = true; }}
@@ -1257,17 +1271,13 @@ class MessageSearchFilterBar extends Component {
                     </Label>
 
                     {/* Help Bar */}
-                    <Alert type='info' style={{ marginTop: '.5em', padding: '3px 8px', }} message={<>
+                    <Alert type='info' style={{ margin: '0px', padding: '3px 8px', }} message={<>
                         <span style={{ fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%', color: '#0009' }}>
                             <span>Help:</span>
                             {helpEntries}
                         </span>
                     </>} />
 
-                    {/* Name */}
-                    <Label text='Display Name' textSuffix={MessageSearchFilterBar.nameTip} className='marginTop1em'>
-                        <Input value={this.currentFilter!.name} onChange={e => { this.currentFilter!.name = e.target.value; this.hasChanges = true; }} placeholder='(optional)' />
-                    </Label>
                 </>}
             </Modal>
         </div>

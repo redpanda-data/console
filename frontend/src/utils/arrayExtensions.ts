@@ -7,6 +7,7 @@ declare global {
         removeAll(selector: (x: T) => boolean): number;
 
         first<T>(this: T[], selector: (x: T) => boolean): T | undefined;
+        last<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
 
         sum<T>(this: T[], selector: (x: T) => number): number;
         max<T>(this: T[], selector: (x: T) => number): number;
@@ -54,7 +55,12 @@ Array.prototype.first = function first<T>(this: T[], selector: (x: T) => boolean
     return undefined;
 };
 
-
+Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean): T | undefined {
+    for (let i = this.length - 1; i >= 0; i--)
+        if (!selector || selector(this[i]))
+            return this[i];
+    return undefined;
+};
 
 Array.prototype.sum = function sum<T>(this: T[], selector: (x: T) => number) {
     return this.reduce((pre, cur) => pre + selector(cur), 0);

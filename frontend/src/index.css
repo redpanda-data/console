@@ -836,7 +836,7 @@ svg {
 .filterTag .settingIconFilter,
 .filterTag .filterName {
     border-right: 1px solid rgba(184, 184, 184, 0.4);
-    padding: 0 8px;
+    padding: 0 6px;
     transition: 0.5 ease;
 }
 
@@ -1086,4 +1086,47 @@ svg {
 
 .popoverSmall .ant-popover-inner {
     border-radius: 4px;
+}
+
+.pageTitle {
+    /* background: rgba(255, 0, 0, 0.089); */
+}
+
+.ant-breadcrumb a {
+    display: inline-block;
+    padding: 4px 5px;
+    transition-duration: 0ms;
+}
+
+.ant-breadcrumb a:hover {
+    background-color: #97d4ff3f;
+    border-radius: 5px;
+}
+
+.ant-page-header.has-breadcrumb {
+    padding-top: 18px;
+}
+
+.ant-breadcrumb-separator {
+    margin: 0px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.userPreferencesButton {
+    opacity: 0.8;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+    color: #888;
+    background-color: hsl(216 20% 92% / 1);
+    ;
+}
+
+.userPreferencesButton:hover {
+    opacity: 1;
+    background-color: #fff;
+}
+
+.userPreferencesButton .octicon {
+    transform: rotateZ(45deg);
 }

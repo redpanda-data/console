@@ -1,6 +1,6 @@
 import React, { Component, ReactNode } from 'react';
 import { observer } from "mobx-react"
-import { Layout, Menu, PageHeader, Button, Tooltip, Popover } from 'antd';
+import { Layout, Menu, PageHeader, Button, Tooltip, Popover, Dropdown } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
 import { RenderTrap, DebugDisplay } from './misc/common';
@@ -17,19 +17,20 @@ import Title from 'antd/lib/typography/Title';
 import logo2 from '../assets/logo2.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
 import { IsProd, IsDev, AppName, IsBusiness } from '../utils/env';
-import { TopBar } from './misc/TopBar';
+import { UserButton } from './misc/UserButton';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
-import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled } from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined } from '@ant-design/icons';
 import Draggable from 'react-draggable';
 import { observable } from 'mobx';
-import { SyncIcon } from '@primer/octicons-v2-react';
+import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
 import { motion } from 'framer-motion';
 import { LayoutBypass } from '../utils/tsxUtils';
 import prettyMilliseconds from 'pretty-ms';
+import { UserPreferencesButton } from './misc/UserPreferences';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -161,7 +162,7 @@ const AppSide = observer(() => (
 
 
 
-const DataAgeInfo = observer(() => {
+const DataRefreshButton = observer(() => {
 
     const spinnerSize = '16px';
     const refreshTextFunc = (): ReactNode => {
@@ -174,23 +175,23 @@ const DataAgeInfo = observer(() => {
 
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div style={{
-        background: 'hsl(216, 66%, 92%)',
-        color: 'hsl(205, 100%, 50%)',
         height: '32px',
         display: 'inline-flex',
+        marginLeft: '10px',
+
+        background: 'hsl(216, 66%, 92%)',
+        color: 'hsl(205, 100%, 50%)',
+
         borderRadius: '30px',
         placeContent: 'center',
         placeItems: 'center',
-
-        marginBottom: '0.5em', // same as the h1
+        whiteSpace: 'nowrap',
     }}>
         {
             api.ActiveRequests.length == 0
                 ?
                 <>
-                    {/* <Tooltip title={refreshTextFunc} placement='right'>
-                    </Tooltip> */}
-                    <Popover title='Force Refresh' content={refreshTextFunc} placement='right' overlayClassName='popoverSmall'>
+                    <Popover title='Force Refresh' content={refreshTextFunc} placement='rightTop' overlayClassName='popoverSmall'>
                         < Button icon={< SyncIcon size={16} />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
                     </Popover>
                     {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
@@ -206,7 +207,7 @@ const DataAgeInfo = observer(() => {
 
 const AppPageHeader = observer(() => {
 
-    let breadcrumbs = uiState.pageBreadcrumbs.map(v => ({ path: v.linkTo, breadcrumbName: v.title }));
+    const breadcrumbs = uiState.pageBreadcrumbs.map(v => ({ path: v.linkTo, breadcrumbName: v.title }));
 
     const selectedClusterName = uiState.selectedClusterName;
     if (selectedClusterName) {
@@ -215,16 +216,32 @@ const AppPageHeader = observer(() => {
         breadcrumbs.unshift(rootBreadcrumb);
     }
 
-    const itemRender = (r: AntBreadcrumbRoute) => <NavLink to={r.path}>{r.breadcrumbName}</NavLink>;
+    const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
+        ? <span>
+            <NavLink to={r.path}>
+                <div style={{ fontWeight: 700, fontSize: '125%', display: 'inline-flex', height: '1px', verticalAlign: 'middle', paddingBottom: '6px', alignItems: 'center' }}>{r.breadcrumbName}</div>
+            </NavLink>
+            <LayoutBypass justifyContent='start'>
+                <DataRefreshButton />
+            </LayoutBypass>
+        </span>
+        : <NavLink to={r.path}>{r.breadcrumbName}</NavLink>
 
-    return <MotionDiv identityKey={uiState.pageTitle}>
+    return <MotionDiv identityKey={uiState.pageTitle} className='pageTitle' style={{ display: 'flex', paddingRight: '16px', alignItems: 'center', marginBottom: '10px' }}>
         <PageHeader
-            breadcrumb={{ routes: breadcrumbs, itemRender: itemRender, separator: '>' }}
-            // onBack={onBack}
-            title={<><Title level={3}>{uiState.pageTitle}</Title></>}
-            subTitle={<DataAgeInfo />}
-            footer={<></>}
+            breadcrumb={{
+                routes: breadcrumbs,
+                separator: <LayoutBypass width='10px'><ChevronRightIcon size={14} verticalAlign='unset' /></LayoutBypass>,
+                params: breadcrumbs.last(),
+                itemRender: breadcrumbRender
+            }}
+            title={null}
         />
+
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <UserPreferencesButton />
+            <UserButton />
+        </div>
     </MotionDiv>
 });
 
@@ -235,9 +252,6 @@ const AppContent = observer(() =>
 
         {/* Debug User */}
         {uiState.isUsingDebugUserLogin && <DebugUserInfoBar />}
-
-        {/* Cluster, User */}
-        {IsBusiness && <TopBar />}
 
         {/* Page */}
         <Content style={{ display: 'flex', flexDirection: 'column', padding: '8px 6px 8px 4px', zIndex: 1 }}>
