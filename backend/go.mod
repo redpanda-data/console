@@ -1,10 +1,8 @@
 module github.com/cloudhut/kowl/backend
 
-go 1.13
+go 1.14
 
 require (
-	github.com/AppsFlyer/go-sundheit v0.1.1
-	github.com/InVisionApp/go-logger v1.0.1
 	github.com/Shopify/sarama v1.26.1
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/basgys/goxml2json v1.1.0
@@ -14,25 +12,19 @@ require (
 	github.com/cloudhut/common v0.3.1-0.20200223165657-be7d32e836fc
 	github.com/deathowl/go-metrics-prometheus v0.0.0-20190530215645-35bace25558f
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.3.3 // indirect
-	github.com/gorilla/schema v1.1.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/klauspost/compress v1.10.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/onsi/ginkgo v1.12.0 // indirect
-	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.4.1
 	github.com/prometheus/common v0.9.1
 	github.com/prometheus/procfs v0.0.9 // indirect
 	github.com/robertkrimen/otto v0.0.0-20191219234010-c382bd3c16ff
-	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/valyala/fastjson v1.4.5
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c
-	go.opencensus.io v0.22.3 // indirect
 	go.uber.org/atomic v1.6.0 // indirect
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.13.0

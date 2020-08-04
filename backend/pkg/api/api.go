@@ -1,9 +1,6 @@
 package api
 
 import (
-	"time"
-
-	health "github.com/AppsFlyer/go-sundheit"
 	"github.com/Shopify/sarama"
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
@@ -21,8 +18,6 @@ type API struct {
 	Logger   *zap.Logger
 	KafkaSvc *kafka.Service
 	OwlSvc   *owl.Service
-
-	health health.Health
 
 	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
 }
@@ -66,18 +61,6 @@ func New(cfg *Config) *API {
 func (api *API) Start() {
 	api.KafkaSvc.RegisterMetrics()
 	api.KafkaSvc.Start()
-
-	// Start automatic health checks that will be reported on our '/health' route
-	// TODO: Implement startup/readiness/liveness probe, might be blocked by: https://github.com/AppsFlyer/go-sundheit/issues/16
-	api.health = health.New()
-
-	api.health.RegisterCheck(&health.Config{
-		Check: &KafkaHealthCheck{
-			kafkaService: api.KafkaSvc,
-		},
-		InitialDelay:    3 * time.Second,
-		ExecutionPeriod: 25 * time.Second,
-	})
 
 	// Server
 	server := rest.NewServer(&api.Cfg.REST, api.Logger, api.routes())

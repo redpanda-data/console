@@ -1,7 +1,6 @@
 package api
 
 import (
-	healthhttp "github.com/AppsFlyer/go-sundheit/http"
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
@@ -47,7 +46,8 @@ func (api *API) routes() *chi.Mux {
 		router.Group(func(r chi.Router) {
 			r.Route("/admin", func(r chi.Router) {
 				r.Handle("/metrics", promhttp.Handler())
-				r.Handle("/health", healthhttp.HandleHealthJSON(api.health))
+				r.Handle("/health", api.handleLivenessProbe())
+				r.Handle("/startup", api.handleStartupProbe())
 			})
 
 			// Path must be prefixed with /debug otherwise it will be overridden, see: https://golang.org/pkg/net/http/pprof/
