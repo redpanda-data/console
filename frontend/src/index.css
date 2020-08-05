@@ -1130,3 +1130,19 @@ svg {
 .userPreferencesButton .octicon {
     transform: rotateZ(45deg);
 }
+
+/* ant design menuitem hover is barely visible */
+.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background-color: hsl(205 100% 70% / 1);
+}
+
+.ant-select-item,
+.ant-select-item-option {
+    transition-duration: 0ms;
+}
+
+.ant-select-dropdown {
+    /* transition-duration: 0ms; */
+    animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+    animation-duration: 100ms;
+}
