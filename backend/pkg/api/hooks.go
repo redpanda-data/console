@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"net/http"
 
 	"github.com/cloudhut/common/rest"
 
@@ -35,10 +37,11 @@ type OwlHooks interface {
 	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(ctx context.Context, req string) (bool, *rest.Error)
-	CanUseMessageSearchFilters(ctx context.Context, req string) (bool, *rest.Error)
+	CanViewTopicMessages(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanUseMessageSearchFilters(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
+	PrintListMessagesAuditLog(r *http.Request, req *owl.ListMessageRequest)
 
 	// ConsumerGroup Hooks
 	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
@@ -84,6 +87,7 @@ func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string,
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
 }
+func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *owl.ListMessageRequest) {}
 func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }

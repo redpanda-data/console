@@ -139,6 +139,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			MessageCount:          req.MaxResults,
 			FilterInterpreterCode: interpreterCode,
 		}
+		api.Hooks.Owl.PrintListMessagesAuditLog(r, &listReq)
 
 		// Use 30min duration if we want to search a whole topic or forward messages as they arrive
 		duration := 18 * time.Second
