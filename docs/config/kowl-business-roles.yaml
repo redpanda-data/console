@@ -16,4 +16,5 @@ roles:
 
       - resource: topics
         includes: ["battle-logs"]
-        allowedActions: ["seeTopic", "viewPartitions", "viewConfig"] # Other actions are "viewMessages", "useSearchFilter", "viewConsumers"
+        # Other actions are "viewMessages", "useSearchFilter", "viewConsumers"
+        allowedActions: ["seeTopic", "viewPartitions", "viewConfig"]
