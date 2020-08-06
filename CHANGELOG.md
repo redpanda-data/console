@@ -1,6 +1,6 @@
 # Changelog
 
-## Master / unreleased
+## 1.1.0 / 2020-08-06
 
 - [CHANGE] Business: Reworked groups syncing (Google + GitHub)
 - [CHANGE] Business: GitHub team sync uses uses personal access tokens instead of GitHub apps (better support for multi organization environments)
