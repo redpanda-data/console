@@ -13,7 +13,8 @@ roleBindings:
         name: john.doe@yourcompany.com
       - kind: group
         provider: GitHub
-        name: kafka-owl-devs # This always resolves to the team within the Org where you installed the GitHub app
+        organization: cloudhut
+        name: kafka-owl-devs # This resolves to the team within the org
       - kind: user
         provider: GitHub
         name: rikimaru0345
