@@ -1,6 +1,6 @@
 import React, { Component, ReactNode } from 'react';
 import { observer } from "mobx-react"
-import { Menu, Select, Avatar, Popconfirm, Dropdown, Button, Modal, Input, message } from 'antd';
+import { Menu, Select, Avatar, Popconfirm, Dropdown, Button, Modal, Input, message, Checkbox } from 'antd';
 import { uiSettings } from '../../state/ui';
 import { RenderTrap, Spacer } from './common';
 import { api } from '../../state/backendApi';
@@ -13,22 +13,11 @@ import { observable } from 'mobx';
 const { Option } = Select;
 type Action = () => void;
 
-/*
-settings:
-- import, export, reset
-- message search max results options: 10, 50, 500, ...
-
-- statistics bar:
-    - enabled: (default: true)
-    - (later) size: auto (default), small (just like small width mode, but always), tiny (even more reduced paddings/fonts)
-*/
 @observer
 export class UserPreferencesButton extends Component {
     @observable isOpen = false;
 
     render() {
-
-        return null;
 
         return <>
             <UserPreferencesDialog visible={this.isOpen} onClose={() => this.isOpen = false} />
@@ -41,8 +30,9 @@ export class UserPreferencesButton extends Component {
 
 const settingsTabs: { name: string, component: () => ReactNode }[] = [
     { name: "Statistics Bar", component: () => <StatsBarTab /> },
-    { name: "Message Search", component: () => <MessageSearchTab /> },
-    { name: "Import/Export", component: () => <ImportExportTab /> },
+    // pagination position
+    // { name: "Message Search", component: () => <MessageSearchTab /> },
+    // { name: "Import/Export", component: () => <ImportExportTab /> },
 ];
 
 @observer
@@ -99,17 +89,40 @@ class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Actio
 class StatsBarTab extends Component {
     @observable visibility = 'visible';
     render() {
-        return (
-            <Label text='Visibility'>
-                <Select value={this.visibility} onChange={v => this.visibility = v}>
+        return <div>
+            <p>Controls on what pages kowl shows the statistics bar</p>
+
+            <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
+
+                {/* <Label text='Brokers' style={{ gridColumn: 1 }}>
+                    <Checkbox children='Enabled' checked={uiSettings.brokerList.showStatisticsBar} onChange={e => uiSettings.brokerList.showStatisticsBar = e.target.checked} />
+                </Label> */}
+
+                {/* <Label text='Topic List' style={{ gridColumn: 1 }}>
+                    <Checkbox children='Enabled' checked={uiSettings.topicList.showStatisticsBar} onChange={e => uiSettings.topicList.showStatisticsBar = e.target.checked} />
+                </Label> */}
+                <Label text='Topic Details' style={{ gridColumn: 1 }}>
+                    <Checkbox children='Enabled' checked={uiSettings.topicDetailsShowStatisticsBar} onChange={e => uiSettings.topicDetailsShowStatisticsBar = e.target.checked} />
+                </Label>
+
+                {/* <Label text='Consumer Group List' style={{ gridColumn: 1 }}>
+                    <Checkbox children='Enabled' checked={uiSettings.consumerGroupList.showStatisticsBar} onChange={e => uiSettings.consumerGroupList.showStatisticsBar = e.target.checked} />
+                </Label> */}
+                <Label text='Consumer Group Details' style={{ gridColumn: 1 }}>
+                    <Checkbox children='Enabled' checked={uiSettings.consumerGroupDetails.showStatisticsBar} onChange={e => uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked} />
+                </Label>
+            </div>
+            {/* <Label text='Brokers'>
+                <Select value={state.visibility} onChange={v => this.visibility = v}>
                     <Select.Option value='visible'>Show (default)</Select.Option>
                     <Select.Option value='hidden'>Hide</Select.Option>
                     <Select.Option value='perTopic' disabled>Per Topic (not yet implemented)</Select.Option>
                 </Select>
-            </Label>
-        )
+            </Label> */}
+        </div>
     }
 }
+
 
 @observer
 class MessageSearchTab extends Component {

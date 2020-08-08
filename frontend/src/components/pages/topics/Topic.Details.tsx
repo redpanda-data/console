@@ -1,5 +1,5 @@
 import React, { Component, CSSProperties, useState } from "react";
-import { Row, Tabs, Skeleton, Radio, Checkbox, Button, Select, Input, Typography, Result, Space, Popover } from "antd";
+import { Row, Tabs, Skeleton, Radio, Checkbox, Button, Select, Input, Typography, Result, Space, Popover, Tooltip } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
@@ -18,8 +18,9 @@ import Card from "../../misc/Card";
 import { TopicConsumers } from "./Tab.Consumers";
 import { simpleUniqueId } from "../../../utils/utils";
 import { Label, ObjToKv, OptionGroup, DefaultSkeleton } from "../../../utils/tsxUtils";
-import { LockIcon } from "@primer/octicons-v2-react";
+import { LockIcon, EyeClosedIcon } from "@primer/octicons-v2-react";
 import { computed, observable } from "mobx";
+import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
 
 const { Text } = Typography;
 
@@ -163,10 +164,12 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
-                {/* QuickInfo */}
-                <Card>
-                    <TopicQuickInfoStatistic topicName={topic.topicName} />
-                </Card>
+                {uiSettings.topicDetailsShowStatisticsBar &&
+                    <Card className='statisticsBar'>
+                        <HideStatisticsBarButton onClick={() => uiSettings.topicDetailsShowStatisticsBar = false} />
+                        <TopicQuickInfoStatistic topicName={topic.topicName} />
+                    </Card>
+                }
 
                 {/* Tabs:  Messages, Configuration */}
                 <Card>

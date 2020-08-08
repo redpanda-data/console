@@ -571,6 +571,10 @@ span>.icon-container~span {
     background-color: hsla(209, 72%, 59%, 0.68);
 }
 
+.ant-checkbox-wrapper {
+    user-select: none;
+}
+
 .ant-checkbox-checked .ant-checkbox-inner {
     background-color: hsla(209, 75%, 66%, 1);
     border-color: hsla(209, 50%, 55%, 1);
@@ -754,6 +758,7 @@ tr.consumerGroupNoMemberAssigned {
     text-transform: uppercase;
     /* background: linear-gradient(90deg, rgba(0, 0, 0, 20%) 5%, rgba(0, 0, 0, 0) 100%) bottom no-repeat;
     background-size: 100% 1px; */
+    user-select: none;
 }
 
 .ant-space-horizontal {
@@ -1094,6 +1099,9 @@ svg {
 }
 
 .ant-breadcrumb {
+    /* don't allow wrapping */
+    white-space: nowrap;
+
     a {
         display: inline-block;
         padding: 4px 5px;
@@ -1190,4 +1198,34 @@ svg {
     padding-left: 2px;
     color: hsla(0, 0%, 40%, 1);
     cursor: default;
+}
+
+.hideStatsBarButton {
+    opacity: 0;
+    transition: opacity 150ms;
+    color: #888;
+    display: flex;
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    padding: 5px;
+    border-radius: 32px;
+    transform: translate(-27px, -20px);
+
+    &:hover {
+        background: #b0e2ff7a;
+        color: hsla(205, 50%, 50%, 1);
+    }
+
+    svg {
+        vertical-align: baseline;
+    }
+}
+
+.statisticsBar {
+    &:hover {
+        .hideStatsBarButton {
+            opacity: 1;
+        }
+    }
 }
