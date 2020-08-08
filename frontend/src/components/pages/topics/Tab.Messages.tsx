@@ -23,7 +23,7 @@ import { editQuery } from "../../../utils/queryHelper";
 import { filterConverter } from "../../../utils/filterHelper";
 import { numberToThousandsString, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass, TimestampDisplay } from "../../../utils/tsxUtils";
 import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
-import { SyncIcon, XCircleIcon, PlusIcon } from '@primer/octicons-v2-react'
+import { SyncIcon, XCircleIcon, PlusIcon, SkipIcon } from '@primer/octicons-v2-react'
 
 import queryString from 'query-string';
 import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, EllipsisOutlined } from '@ant-design/icons';
@@ -670,7 +670,7 @@ const renderKey = (value: any, record: TopicMessage) => {
 
     if (value == undefined || value == null || text.length == 0 || text == '{}')
         return <Tooltip title="Empty Key" mouseEnterDelay={0.1}>
-            <span style={{ opacity: 0.66, marginLeft: '2px' }}><Octicon icon={OctoSkip} /></span>
+            <span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span>
         </Tooltip>
 
     if (text.length > 45) {

@@ -14,9 +14,9 @@ import Card from "../../misc/Card";
 import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { Radio } from 'antd';
 import { TablePaginationConfig } from "antd/lib/table";
-import Octicon, { SkipIcon } from "@primer/octicons-react";
 import { OptionGroup, QuickTable, DefaultSkeleton } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
+import { SkipIcon } from "@primer/octicons-v2-react";
 
 
 @observer
@@ -191,7 +191,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                         { width: 100, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
                         {
                             width: 'auto', title: 'Assigned Member', dataIndex: 'id', sorter: sortField('id'),
-                            render: (t, r) => (renderMergedID(r.id, r.clientId)) ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><Octicon icon={SkipIcon} /> no assigned member</span>
+                            render: (t, r) => (renderMergedID(r.id, r.clientId)) ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /> no assigned member</span>
                         },
                         { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
                         { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
