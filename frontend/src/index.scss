@@ -823,15 +823,15 @@ svg {
 .filterTag {
     padding-left: 0;
     cursor: pointer;
+
+    span {
+        vertical-align: middle;
+        height: 100%
+    }
 }
 
 .ant-tag.filterTag>.anticon+span {
     margin-left: 0;
-}
-
-.filterTag span {
-    vertical-align: middle;
-    height: 100%
 }
 
 .filterTag .settingIconFilter,
@@ -1026,10 +1026,10 @@ svg {
 
 .expander {
     background: none;
-}
 
-.expander .ant-collapse-item {
-    border: 0;
+    .ant-collapse-item {
+        border: 0;
+    }
 }
 
 .ant-collapse-header {
@@ -1072,36 +1072,38 @@ svg {
     width: 30px;
     background: red;
 } */
-.popoverSmall {}
+.popoverSmall {
+    .ant-popover-inner-content {
+        /* reduced from 12 16 */
+        padding: 8px 16px;
+        font-size: 85%;
+    }
 
-.popoverSmall .ant-popover-inner-content {
-    /* reduced from 12 16 */
-    padding: 8px 16px;
-    font-size: 85%;
-}
+    .ant-popover-title {
+        min-height: 10px;
+        font-size: 90%;
+    }
 
-.popoverSmall .ant-popover-title {
-    min-height: 10px;
-    font-size: 90%;
-}
-
-.popoverSmall .ant-popover-inner {
-    border-radius: 4px;
+    .ant-popover-inner {
+        border-radius: 4px;
+    }
 }
 
 .pageTitle {
     /* background: rgba(255, 0, 0, 0.089); */
 }
 
-.ant-breadcrumb a {
-    display: inline-block;
-    padding: 4px 5px;
-    transition-duration: 0ms;
-}
+.ant-breadcrumb {
+    a {
+        display: inline-block;
+        padding: 4px 5px;
+        transition-duration: 0ms;
 
-.ant-breadcrumb a:hover {
-    background-color: #97d4ff3f;
-    border-radius: 5px;
+        :hover {
+            background-color: #97d4ff3f;
+            border-radius: 5px;
+        }
+    }
 }
 
 .ant-page-header.has-breadcrumb {
@@ -1157,27 +1159,29 @@ svg {
     padding: 0;
 }
 
-.preferencesDialog *[display=flex] {
-    max-height: 100%;
-}
+.preferencesDialog {
+    *[display=flex] {
+        max-height: 100%;
+    }
 
-.preferencesDialog .ant-modal-content {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-}
+    .ant-modal-content {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
 
-.preferencesDialog .ant-modal-body {
-    flex-grow: 1;
-}
+    .ant-modal-body {
+        flex-grow: 1;
+    }
 
-.preferencesDialog .ant-menu-vertical .ant-menu-item {
-    height: 32px;
-    line-height: 32px;
-}
+    .ant-menu-vertical .ant-menu-item {
+        height: 32px;
+        line-height: 32px;
+    }
 
-.preferencesDialog .ant-menu-vertical .ant-menu-item:not(:last-child) {
-    margin-bottom: 2px;
+    .ant-menu-vertical .ant-menu-item:not(:last-child) {
+        margin-bottom: 2px;
+    }
 }
 
 .smallText {
