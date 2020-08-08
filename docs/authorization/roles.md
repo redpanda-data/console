@@ -8,7 +8,7 @@ In Kowl Business we use Role-based access control (RBAC) to regulate what a user
 
 ## Roles
 
-A Role defines a set of allowed permissions. Permissions are purely additive (there are no "deny" rules). Roles can then be bound to one or more users (see [Role Bindings](#role-bindings)).
+A Role defines a set of allowed permissions. Permissions are purely additive (there are no "deny" rules). Roles can then be bound to one or more users (see [Role Bindings](./role-bindings.md)).
 
 Roles must be defined in it's own YAML file. Each role requires a name and a set of permissions which belong to it:
 
@@ -22,7 +22,7 @@ roles:
         allowedActions: ["admin"]
 ```
 
-A full example can be found [here](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business-roles.yaml).
+A full example can be found [here](../config/kowl-business-roles.yaml).
 
 ### Permissions
 

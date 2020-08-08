@@ -6,7 +6,7 @@
 
 ## Role Bindings
 
-A role binding grants the permissions defined in a [role](#roles) to a user or set of users. It holds a list of subjects (users or groups) and a reference to the role being granted. Optionally you can add metadata (key-value pairs) which may help you to manage your role bindings.
+A role binding grants the permissions defined in a [role](./roles.md) to a user or set of users. It holds a list of subjects (users or groups) and a reference to the role being granted. Optionally you can add metadata (key-value pairs) which may help you to manage your role bindings.
 
 Example:
 
@@ -25,9 +25,9 @@ roleBindings:
     roleName: developer
 ```
 
-This role binding binds all Google accounts which are a member of `dev-team-cloudhut@yourcompany.com` to the role named `developer`. You can find a reference config for role bindings [here](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business-role-bindings.yaml).
+This role binding binds all Google accounts which are a member of `dev-team-cloudhut@yourcompany.com` to the role named `developer`. You can find a reference config for role bindings [here](../config/kowl-business-role-bindings.yaml).
 
-> :triangular_flag_on_post: In order to use groups for role bindings you need configure the [RBAC Sync on Groups](#https://github.com/cloudhut/kowl/wiki/RBAC-Sync-on-Groups).
+> :triangular_flag_on_post: In order to use groups for role bindings you need configure the [RBAC Sync on Groups](./groups-sync.md).
 
 > :triangular_flag_on_post: Users which have multiple roles assigned through role bindings will inherit the union of these roles' permissions.
 

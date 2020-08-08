@@ -6,11 +6,11 @@
 
 Kowl Business provides authentication via OAuth using Google or GitHub (more providers and schemes will be added in the future). You can use one or more login providers for Kowl. In order to enable OAuth authentication you must create an OAuth application for your organization first. This page guides you through the setup process.
 
-> :triangular_flag_on_post: Some authentication integrations also allow syncing user permissions based on groups, which are managed within the login provider's ecosystem (e. g. GitHub teams). See [RBAC Sync on Groups](https://github.com/cloudhut/kowl/wiki/RBAC-Sync-on-Groups) for more details.
+> :triangular_flag_on_post: Some authentication integrations also allow syncing user permissions based on groups, which are managed within the login provider's ecosystem (e. g. GitHub teams). See [RBAC Sync on Groups](../authorization/groups-sync.md) for more details.
 
 ## Google
 
-Before configuring Kowl you must create an OAuth application in Google. If you are unsure how to do this, we've created a [guide](https://github.com/cloudhut/kowl/blob/master/docs/provider-setup/google.md) for you.
+Before configuring Kowl you must create an OAuth application in Google. If you are unsure how to do this, we've created a [guide](../provider-setup/google.md) for you.
 
 ### Configure Google OAuth
 
@@ -24,7 +24,7 @@ login:
   google:
     enabled: true
     clientId:
-    clientSecret: # This can be set via the --login.google.clientSecret flag as well
+    clientSecret: # This can be set via the --login.google.client-secret flag as well
 ```
 
 ## GitHub
@@ -43,5 +43,5 @@ login:
   github:
     enabled: true
     clientId:
-    clientSecret: # This can be set via the --login.github.clientSecret flag as well
+    clientSecret: # This can be set via the --login.github.client-secret flag as well
 ```

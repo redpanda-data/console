@@ -42,7 +42,7 @@ Once you've entered all details, proceed by clicking "Create". A dialog box will
 
 ## 4. Google Groups Sync (optional)
 
-If desired you can bind permissions (Roles) to Google Groups defined in your organization (see [Permissions](https://github.com/cloudhut/kowl/wiki/Permissions)). Therefore you must grant Kowl permissions to resolve the memberships of all bound Google Groups.
+If desired you can bind permissions (Roles) to Google Groups defined in your organization (see [Role Bindings](../authorization/role-bindings.md)). Therefore you must grant Kowl permissions to resolve the memberships of all bound Google Groups.
 
 GCP Referece docs: https://developers.google.com/admin-sdk/directory/v1/guides/delegation
 

@@ -8,13 +8,13 @@ Docker images are available on Quay.io for [Kowl](https://quay.io/repository/clo
 
 ## Binaries
 
-We do not provide any precompiled binaries as of now. For Kowl you can obviously build them on your own by mimicing the steps in the [Dockerfile](https://github.com/cloudhut/kowl/blob/master/Dockerfile). If you want us to provide binaries please let us know in the issues. If there's enough interest we'll provide them in the future as part of our release process.
+We do not provide any precompiled binaries as of now. For Kowl you can obviously build them on your own by mimicing the steps in the [Dockerfile](../Dockerfile). If you want us to provide binaries please let us know in the issues. If there's enough interest we'll provide them in the future as part of our release process.
 
 ## OAuth Setup
 
 Kowl Business supports Authentication and Authorization. In order to configure OAuth you first must setup the OAuth application in your desired identity provider:
 
-- [Google OAuth setup](https://github.com/cloudhut/kowl/blob/master/docs/provider-setup/google.md#google-oauth-provider-setup)
+- [Google OAuth setup](./provider-setup/google.md#google-oauth-provider-setup)
 - GitHub OAuth setup (TODO)
 
 ## Deployment
@@ -31,7 +31,7 @@ If you want to create your own manifest you can either browse through the Helm c
 
 Kowl must be configured using flags and a YAML config file. Flags must be used to set the path to your YAML config file. Additionally you can use flags for all sensitive input (such as Kafka passwords). All available flags along with a reference YAML config are described below.
 
-If your Kafka cluster requires TLS authentication you can make certificates available via volume mounts. Afterwards you need to configure the paths to your certificates in the YAML config as shown in the reference config (see section [config file](#config-file)).
+If your Kafka cluster requires TLS authentication you can make certificates available via volume mounts. Afterwards you need to configure the paths to your certificates in the YAML config as shown in the reference config (see section [config files](#config-files)).
 
 #### Flags
 
@@ -60,10 +60,10 @@ As the Business version is an extension of the normal Kowl version these flags a
 
 All available settings which can be configured in your YAML configs can be found here and should document themselves:
 
-[/docs/config/kowl.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml)
+[/docs/config/kowl.yaml](./config/kowl.yaml)
 
-[/docs/config/kowl-business.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business.yaml)
+[/docs/config/kowl-business.yaml](./config/kowl-business.yaml)
 
-[/docs/config/kowl-business-roles.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business-roles.yaml)
+[/docs/config/kowl-business-roles.yaml](./config/kowl-business-roles.yaml)
 
-[/docs/config/kowl-business-role-bindings.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business-role-bindings.yaml)
+[/docs/config/kowl-business-role-bindings.yaml](./config/kowl-business-role-bindings.yaml)

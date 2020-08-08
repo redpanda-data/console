@@ -25,9 +25,9 @@ But it could also be a nested group like this:
 ```
 Group: software-engineers@mycompany.com
 Members:
+- bi-reports@other-company.com (External Group, managed within a different organization)
 - dev-team-checkout@mycompany.com (Group)
 - dev-team-landing@mycompany.com (Group)
-- bi-reports@other-company.com (External Group, managed within a different organization)
 - security-officer@mycompany.com (User)
 ```
 
@@ -35,7 +35,7 @@ Kowl supports either case (externally managed groups being a bit tricky).
 
 ### Configuration
 
-To configure the Google groups sync you need to create a service account in Google Cloud and later on make this account available in Kowl. [This guide](https://github.com/cloudhut/kowl/blob/master/docs/provider-setup/google.md#4-google-groups-sync-optional) describes the process how to create the service account so that you'll end up with a JSON file which we'll need in the next section.
+To configure the Google groups sync you need to create a service account in Google Cloud and later on make this account available in Kowl. [This guide](../provider-setup/google.md#4-google-groups-sync-optional) describes the process how to create the service account so that you'll end up with a JSON file which we'll need in the next section.
 
 Once you have created the service account and granted the permissions as shown in the guide, you need to make the service account (JSON file) accessible for Kowl. If you are going to run it in Kubernetes you could use volumes and volume mounts. 
 
@@ -46,19 +46,32 @@ login:
     enabled: true
     clientId: xy-hash.apps.googleusercontent.com
     # clientSecret: set via --login.google.client-secret flag
-    serviceAccountFilepath: ./configs/sa-google-admin.json
-    domain: mycompany.com
-    targetPrincipal: admin@mycompany.com
+    directory:
+        serviceAccountFilepath: ./configs/sa-google-admin.json
+        targetPrincipal: admin@mycompany.com
 ```
 
 Only the following three properties are new and therefore relevant for the RBAC Sync on Groups:
 
 `serviceAccountFilepath` : Path to the JSON file which represents the service account
 
-`domain` : Domain which you want to resolve groups on (e.g. `mycompany.com`)
-
 `targetPrincipal` : An administrative email address on your organization's domain. This is the identity which will be impersonated by Kowl (e.g. `admin@mycompany.com).
 
 ## GitHub
 
-To be created...
+### Configuration
+
+To configure the Google groups sync you need to create a personal access token. The GitHub account you create the token for requires the permissions to resolve the memberships of the teams and organizations you want to use in your role bindings. 
+
+Once you have created the personal access token, you need to add it to the Kowl config. You can either pass it via the arguments or simply put it into your YAML config:
+
+```yaml
+login:
+  # jwtSecret: set via --login.jwt-secret flag
+  github:
+    enabled: false
+    clientId:
+    clientSecret: # This can be set via the --login.github.client-secret flag as well
+    directory:
+      personalAccessToken: # This can be set via the --login.github.directory.personal-access-token flag as well
+```
