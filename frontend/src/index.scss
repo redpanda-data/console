@@ -536,7 +536,7 @@ span>.icon-container~span {
     height: 85px;
     font-size: 1.5em;
     font-weight: bold;
-    color: rgba(23, 23, 23);
+    color: rgb(23, 23, 23);
     background: #3a618899;
     border-radius: 2px;
     display: flex;
@@ -563,7 +563,7 @@ span>.icon-container~span {
 }
 
 .ant-menu-dark .ant-menu-item>a {
-    color: hsl(205 50% 70% / 60%);
+    color: hsla(205, 50%, 70%, 60%);
 }
 
 .ant-menu.ant-menu-dark .ant-menu-item-selected,
@@ -1119,8 +1119,7 @@ svg {
     transition-duration: 150ms;
     transition-timing-function: ease-out;
     color: #888;
-    background-color: hsl(216 20% 92% / 1);
-    ;
+    background-color: hsla(216, 20%, 92%, 1);
 }
 
 .userPreferencesButton:hover {
@@ -1134,7 +1133,7 @@ svg {
 
 /* ant design menuitem hover is barely visible */
 .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-    background-color: hsl(205 100% 70% / 1);
+    background-color: hsla(205, 100%, 70%, 1);
 }
 
 .ant-menu-item,
@@ -1185,6 +1184,6 @@ svg {
     font-family: "Open Sans", sans-serif;
     font-size: 10.5px;
     padding-left: 2px;
-    color: hsl(0 0% 40% / 1);
+    color: hsla(0, 0%, 40%, 1);
     cursor: default;
 }
