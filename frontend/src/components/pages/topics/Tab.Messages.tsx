@@ -1166,7 +1166,7 @@ class MessageSearchFilterBar extends Component {
             {settings.filters?.map(e =>
                 <Tag
                     style={{ userSelect: 'none' }}
-                    className='filterTag'
+                    className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
                     key={e.id}
                     closable
                     color={e.isActive ? 'blue' : undefined}

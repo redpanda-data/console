@@ -1229,3 +1229,9 @@ svg {
         }
     }
 }
+
+.filterTagDisabled {
+    .filterName {
+        text-decoration: line-through rgba(46, 46, 46, 0.66);
+    }
+}
