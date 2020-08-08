@@ -1108,6 +1108,10 @@ const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): Re
     </Popover>
 )
 
+// TODO Explain:
+// - multiple filters are combined with &&
+// - 'return' is optional if you only have an expression! as is ';'
+// - more examples for 'value', along with 'find(...)'
 const helpEntries = [
     makeHelpEntry('Basics', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
         <li>Code is a javascript function body</li>
