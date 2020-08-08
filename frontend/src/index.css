@@ -490,6 +490,7 @@ span>.icon-container~span {
     /* background      : url('assets/pattern.png') repeat-x;
     background-position: bottom; */
     /* background      : linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('assets/pattern.png') repeat; */
+    overflow-y: hidden;
 }
 
 .loginRight::after {

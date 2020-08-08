@@ -83,8 +83,8 @@ class Login extends Component {
                 </div>
 
                 <div className='loginRight'>
-                    <div style={{ float: 'left', height: '100%', width: '110px' }}>
-                        <img src={SvgLoginWave} style={{ width: 'auto', height: '100%', zoom: '102%' }} />
+                    <div style={{ float: 'left', height: '100%', width: '120px', overflow: 'hidden' }}>
+                        <img src={SvgLoginWave} style={{ width: 'auto', height: 'calc(100% + 1px)', transform: 'translateX(-1px)' }} />
                         {/* <embed style={{ height:'100%'}} type="image/svg+xml" src={SvgLoginWave} /> */}
                     </div>
                     <div className="loginContainerRight">
