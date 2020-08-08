@@ -1,6 +1,10 @@
 # Kowl
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/cloudhut/kowl/blob/master/LICENSE) [![Go Report Card](https://goreportcard.com/badge/github.com/cloudhut/kowl)](https://goreportcard.com/report/github.com/cloudhut/kowl) ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cloudhut/kowl?sort=semver) [![Docker Repository on Quay](https://img.shields.io/badge/docker%20image-ready-green "Docker Repository on Quay")](https://quay.io/repository/cloudhut/kowl)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/cloudhut/kowl/blob/master/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cloudhut/kowl)](https://goreportcard.com/report/github.com/cloudhut/kowl)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cloudhut/kowl?sort=semver)
+[![Discord Chat](https://img.shields.io/badge/discord-online-brightgreen.svg)](https://discord.gg/KQj7P6v)
+[![Docker Repository on Quay](https://img.shields.io/badge/docker%20image-ready-green "Docker Repository on Quay")](https://quay.io/repository/cloudhut/kowl)
 
 Kowl (previously known as Kafka Owl) is a web application that helps you to explore messages in your Apache Kafka cluster and get better insights on what is actually happening in your Kafka cluster in the most comfortable way:
 
@@ -30,7 +34,7 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 ## Documentation
 
-The documentation for Kowl & Kowl Business is available in this repository's [Wiki](https://github.com/cloudhut/kowl/wiki).
+The documentation for Kowl & Kowl Business is available at [/docs](./docs).
 
 ## Sponsors
 
