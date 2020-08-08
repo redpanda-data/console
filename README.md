@@ -8,7 +8,7 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 ## Features
 
-- **Message viewer:** Explore your topics' messages in our message viewer through ad-hoc queries and dynamic filters.
+- **Message viewer:** Explore your topics' messages in our message viewer through ad-hoc queries and dynamic filters. Find any message you want using JavaScript functions to filter messages.
 - **Consumer groups:** List all your active consumer groups along with their active group offsets. You can view a visualization of group lags either by topic (sum of all partition lags), single partitions or the sum of all partition lags (group lag)
 - **Topic overview:** Browse through the list of your Kafka topics, check their configuration, space usage, list all consumers who consume a single topic or watch partition details (such as low and high water marks, message count, ...).
 - **Cluster overview:**: List available brokers, their space usage, rack id and other information to get a high level overview of your brokers in your cluster.
