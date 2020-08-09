@@ -36,6 +36,8 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 The documentation, including links to our Terraform module & Helm chart for Kowl (Business) is available at [/docs](./docs).
 
+If you want to run Kowl locally take a look at the docker compose sample: [/docs/local](./docs/local)
+
 ## Sponsors
 
 <a href="https://www.rewe-digital.com/" target="_blank"><img src="./docs/assets/sponsors/rewe-digital-logo.png" width="150" /></a>
