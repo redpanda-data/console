@@ -1114,21 +1114,22 @@ const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): Re
 // - more examples for 'value', along with 'find(...)'
 const helpEntries = [
     makeHelpEntry('Basics', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li>Code is a javascript function body</li>
-        <li>The context is re-used between messages, but every partition has its own context</li>
+        <li>The filter code is a javascript function body (click 'parameters' to see what arguments are available)</li>
         <li>Return true to allow a message, Return false to discard the message</li>
+        <li>The context is re-used between messages, but every partition has its own context</li>
+        <li>You can omit the 'return' keyword if your filter is just an 'expression'</li>
+        <li>Multiple filters are combined with 'and'. Meaning that ALL filters have to return true for the message to pass.</li>
     </ul>),
     makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li><span className='codeBox'>offset</span></li>
-        <li><span className='codeBox'>partitionID</span></li>
-        <li><span className='codeBox'>key</span></li>
-        <li><span className='codeBox'>value</span></li>
+        <li><span className='codeBox'>offset</span> (number)</li>
+        <li><span className='codeBox'>partitionId</span> (number)</li>
+        <li><span className='codeBox'>key</span> (string)</li>
+        <li><span className='codeBox'>value</span> (object)</li>
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li><span className='codeBox'>return offset &gt; 10000 ;</span></li>
-        <li><span className='codeBox'>return partitionID === 2;</span></li>
-        <li><span className='codeBox'>return key == 'test-key';</span></li>
-        <li><span className='codeBox'>return value == 'test-value';</span></li>
+        <li><span className='codeBox'>offset &gt; 10000</span></li>
+        <li><span className='codeBox'>if (key == 'example') return true</span></li>
+        <li><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
     </ul>),
 ].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
@@ -1166,7 +1167,7 @@ class MessageSearchFilterBar extends Component {
             {settings.filters?.map(e =>
                 <Tag
                     style={{ userSelect: 'none' }}
-                    className='filterTag'
+                    className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
                     key={e.id}
                     closable
                     color={e.isActive ? 'blue' : undefined}

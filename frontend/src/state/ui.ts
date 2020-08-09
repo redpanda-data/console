@@ -93,12 +93,13 @@ export class TopicDetailsSettings {
 
 }
 
-
 const uiSettings = observable({
     sideBarOpen: true,
     selectedClusterIndex: 0,
     perTopicSettings: [] as TopicDetailsSettings[], // don't use directly, instead use uiState.topicDetails
     topicDetailsActiveTabKey: undefined as TopicTabId | undefined,
+
+    topicDetailsShowStatisticsBar: true, // for now: global for all topic details
 
     // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
     brokerList: {
@@ -122,6 +123,7 @@ const uiSettings = observable({
 
     consumerGroupDetails: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
+        showStatisticsBar: true,
     },
 
     previewNotificationHideUntil: 0, // utc seconds

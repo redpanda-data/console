@@ -17,6 +17,8 @@ import { TablePaginationConfig } from "antd/lib/table";
 import { OptionGroup, QuickTable, DefaultSkeleton } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
 import { SkipIcon } from "@primer/octicons-v2-react";
+import { uiState } from "../../../state/uiState";
+import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
 
 
 @observer
@@ -64,18 +66,21 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         return (
             <MotionDiv style={{ margin: '0 1rem' }}>
                 {/* States can be: Dead, Initializing, Rebalancing, Stable */}
-                <Card>
-                    <Row >
-                        <Statistic title='State' valueRender={() => <GroupState group={group} />} />
-                        <ProtocolType group={group} />
-                        <Statistic title='Members' value={group.members.length} />
-                        <Statistic title='Assigned Topics' value={requiredTopics.length} />
-                        <Statistic title='Topics with offset' value={topicsWithOffset} />
-                        <Statistic title='Assigned Partitions' value={totalPartitions} />
-                        <Statistic title='Partitions with offset' value={partitionsWithOffset} />
-                        <Statistic title='Total Lag' value={group.lagSum} />
-                    </Row>
-                </Card>
+                {uiSettings.consumerGroupDetails.showStatisticsBar &&
+                    <Card className='statisticsBar'>
+                        <Row >
+                            <HideStatisticsBarButton onClick={() => uiSettings.consumerGroupDetails.showStatisticsBar = false} />
+                            <Statistic title='State' valueRender={() => <GroupState group={group} />} />
+                            <ProtocolType group={group} />
+                            <Statistic title='Members' value={group.members.length} />
+                            <Statistic title='Assigned Topics' value={requiredTopics.length} />
+                            <Statistic title='Topics with offset' value={topicsWithOffset} />
+                            <Statistic title='Assigned Partitions' value={totalPartitions} />
+                            <Statistic title='Partitions with offset' value={partitionsWithOffset} />
+                            <Statistic title='Total Lag' value={group.lagSum} />
+                        </Row>
+                    </Card>
+                }
 
                 <Card>
                     {/* Settings: GroupBy, Partitions */}
