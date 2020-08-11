@@ -1,13 +1,14 @@
 package api
 
 import (
+	"path/filepath"
+
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-	"path/filepath"
 )
 
 // All the routes for the application are defined in one place.
@@ -83,8 +84,9 @@ func (api *API) routes() *chi.Mux {
 			router.Group(func(r chi.Router) {
 				r.Use(cache)
 
-				r.Get("/", api.handleGetIndex(index))
-				r.Get("/*", api.handleGetStaticFile(index, dir))
+				getIndexHandler := api.handleGetIndex(index)
+				r.Get("/", getIndexHandler)
+				r.Get("/*", api.handleGetStaticFile(getIndexHandler, dir))
 			})
 		} else {
 			api.Logger.Info("no static files will be served as serving the frontend has been disabled")

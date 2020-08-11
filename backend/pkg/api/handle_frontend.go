@@ -37,7 +37,7 @@ func (api *API) handleGetIndex(index []byte) http.HandlerFunc {
 
 // handleGetStaticFile tries to open the requested file. If this file does not exist it will return the
 // SPA (index.html) instead.
-func (api *API) handleGetStaticFile(index []byte, rootPath string) http.HandlerFunc {
+func (api *API) handleGetStaticFile(handleGetIndex http.HandlerFunc, rootPath string) http.HandlerFunc {
 	root := http.Dir(rootPath)
 	fs := http.StripPrefix("/", http.FileServer(root))
 
@@ -46,7 +46,8 @@ func (api *API) handleGetStaticFile(index []byte, rootPath string) http.HandlerF
 		if os.IsNotExist(err) {
 			api.Logger.Debug("requested file not found", zap.String("file", r.RequestURI))
 			// everything else goes to index as well
-			w.Write(index)
+
+			handleGetIndex(w, r)
 			return
 		}
 		defer f.Close()
