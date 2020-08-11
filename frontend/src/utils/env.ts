@@ -39,6 +39,11 @@ export const IsDev = isDev;
 export const IsBusiness = Boolean(env.REACT_APP_BUSINESS);
 export const AppName = IsBusiness ? 'Kowl Business' : 'Kowl';
 
+const baseUrlRaw: string = (window as any)["BASE_URL"];
+export const baseUrl = (baseUrlRaw == '__BASE_URL_REPLACE_MARKER__')
+    ? undefined
+    : baseUrlRaw;
+
 export function getBuildDate(): Date | undefined {
     const timestamp = +env.REACT_APP_KOWL_TIMESTAMP;
     if (timestamp == 0) return undefined;

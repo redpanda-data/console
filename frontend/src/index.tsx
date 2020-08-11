@@ -13,6 +13,7 @@ import 'mobx-react-lite/batchingForReactDom'
 
 import App from "./components/App";
 import { appGlobal } from "./state/appGlobal";
+import { baseUrl } from "./utils/env";
 
 const HistorySetter = withRouter((p: RouteComponentProps) => {
     appGlobal.history = p.history;
@@ -20,7 +21,7 @@ const HistorySetter = withRouter((p: RouteComponentProps) => {
 });
 
 ReactDOM.render(
-    <BrowserRouter>
+    <BrowserRouter basename={baseUrl}>
         <HistorySetter />
         <App />
     </BrowserRouter>,
