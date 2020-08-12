@@ -19,8 +19,9 @@ func (api *API) handleGetIndex(index []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// check for 'X-Forwarded-Prefix' and if set,
 		// add it as a prefix to all occurences of    (src="/)|(href="/)
-		if xForwardedPrefixAr, exists := r.Header["X-Forwarded-Prefix"]; exists && len(xForwardedPrefixAr) > 0 {
-			xForwardedPrefix := xForwardedPrefixAr[0]
+
+		xForwardedPrefix := r.Header.Get("X-Forwarded-Prefix")
+		if xForwardedPrefix != "" {
 			index = bytes.ReplaceAll(index, srcAttribute, []byte(fmt.Sprintf(`src="%s/`+xForwardedPrefix)))
 			index = bytes.ReplaceAll(index, hrefAttribute, []byte(fmt.Sprintf(`href="%s/`+xForwardedPrefix)))
 			index = bytes.ReplaceAll(index, baseURLMarker, []byte(xForwardedPrefix))
