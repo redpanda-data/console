@@ -17,9 +17,10 @@ func (api *API) handleGetIndex(index []byte) http.HandlerFunc {
 	baseURLMarker := []byte(`__BASE_URL_REPLACE_MARKER__`)
 
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		// check for 'X-Forwarded-Prefix' and if set,
 		// add it as a prefix to all occurences of    (src="/)|(href="/)
-
+		// https://github.com/cloudhut/kowl/issues/107
 		xForwardedPrefix := r.Header.Get("X-Forwarded-Prefix")
 		if xForwardedPrefix != "" {
 			index = bytes.ReplaceAll(index, srcAttribute, []byte(fmt.Sprintf(`src="%s/`+xForwardedPrefix)))
