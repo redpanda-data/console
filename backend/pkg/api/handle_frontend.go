@@ -10,14 +10,12 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	srcAttribute  = []byte(`src="/`)
-	hrefAttribute = []byte(`href="/`)
-	baseURLMarker = []byte(`__BASE_URL_REPLACE_MARKER__`)
-)
-
 // handleGetIndex returns the SPA (index.html)
 func (api *API) handleGetIndex(index []byte) http.HandlerFunc {
+	srcAttribute := []byte(`src="/`)
+	hrefAttribute := []byte(`href="/`)
+	baseURLMarker := []byte(`__BASE_URL_REPLACE_MARKER__`)
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		// check for 'X-Forwarded-Prefix' and if set,
 		// add it as a prefix to all occurences of    (src="/)|(href="/)
