@@ -111,6 +111,8 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 			TopicName:             listReq.TopicName,
 			Req:                   req,
 			FilterInterpreterCode: listReq.FilterInterpreterCode,
+
+			Deserializer: &s.kafkaSvc.Deserializer,
 		}
 		startedWorkers++
 		go pConsumer.Run(childCtx)

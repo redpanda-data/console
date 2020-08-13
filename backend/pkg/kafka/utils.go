@@ -46,6 +46,9 @@ func (d *DirectEmbedding) MarshalJSON() ([]byte, error) {
 	return d.Value, nil
 }
 
+// Parse message content for the JavaScript VM so that it can be evaluated within the interpreter. To do that we try
+// to return a JSON object (for XML, JSON, avro formatted messages). If the message uses a different encoding the message
+// is simply converted to a string.
 func (d *DirectEmbedding) Parse() (interface{}, error) {
 	var parsed interface{}
 	parsed = d.Value

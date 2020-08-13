@@ -1,14 +1,11 @@
 package api
 
 import (
-	"github.com/Shopify/sarama"
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
-	"github.com/prometheus/common/log"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // API represents the server and all it's dependencies to serve incoming user requests
@@ -26,27 +23,10 @@ type API struct {
 func New(cfg *Config) *API {
 	logger := logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
 
-	// Create separate logger for sarama
-	saramaLogger, err := zap.NewStdLogAt(logger.With(zap.String("source", "sarama")), zapcore.DebugLevel)
+	kafkaSvc, err := kafka.NewService(cfg.Kafka, logger, cfg.MetricsNamespace)
 	if err != nil {
-		log.Fatal("failed to create std logger for sarama", zap.Error(err))
+		logger.Fatal("failed to create kafka service", zap.Error(err))
 	}
-	sarama.Logger = saramaLogger
-
-	// Sarama Config
-	saramaConfig, err := kafka.NewSaramaConfig(&cfg.Kafka)
-	if err != nil {
-		log.Fatal("failed to create a valid sarama config", zap.Error(err))
-	}
-
-	// Sarama Client
-	logger.Info("connecting to Kafka cluster")
-	client, err := sarama.NewClient(cfg.Kafka.Brokers, saramaConfig)
-	if err != nil {
-		logger.Fatal("failed to create kafka client", zap.Error(err))
-	}
-
-	kafkaSvc := &kafka.Service{Client: client, Logger: logger, MetricsNamespace: cfg.MetricsNamespace}
 
 	return &API{
 		Cfg:      cfg,

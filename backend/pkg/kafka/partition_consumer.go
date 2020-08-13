@@ -40,10 +40,10 @@ type TopicMessage struct {
 	Offset      int64 `json:"offset"`
 	Timestamp   int64 `json:"timestamp"`
 
-	Key       DirectEmbedding `json:"key"`
-	KeyType   string          `json:"keyType"`
-	Value     DirectEmbedding `json:"value"`
-	ValueType string          `json:"valueType"`
+	Key       *deserializedPayload `json:"key"`
+	KeyType   string               `json:"keyType"`
+	Value     *deserializedPayload `json:"value"`
+	ValueType string               `json:"valueType"`
 
 	Size        int  `json:"size"`
 	IsValueNull bool `json:"isValueNull"`
@@ -65,8 +65,8 @@ type interpreterArguments struct {
 	PartitionID int32
 	Offset      int64
 	Timestamp   time.Time
-	Key         DirectEmbedding
-	Value       DirectEmbedding
+	Key         interface{}
+	Value       interface{}
 }
 
 type PartitionConsumer struct {
@@ -82,6 +82,7 @@ type PartitionConsumer struct {
 	TopicName string
 	Req       *PartitionConsumeRequest
 
+	Deserializer          *deserializer
 	VM                    *otto.Otto
 	FilterInterpreterCode string
 }
@@ -125,17 +126,17 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 			p.Progress.OnMessageConsumed(int64(messageSize))
 
 			// Run Interpreter filter and check if message passes the filter
-			vType, value := p.getValue(m.Value)
-			kType, key := p.getValue(m.Key)
+			value := p.Deserializer.DeserializePayload(m.Value)
+			key := p.Deserializer.DeserializePayload(m.Key)
 
 			topicMessage := &TopicMessage{
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp.Unix(),
 				Key:         key,
-				KeyType:     string(kType),
+				KeyType:     string(key.RecognizedEncoding),
 				Value:       value,
-				ValueType:   string(vType),
+				ValueType:   string(value.RecognizedEncoding),
 				Size:        len(m.Value),
 				IsValueNull: m.Value == nil,
 			}
@@ -145,8 +146,8 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp,
-				Key:         key,
-				Value:       value,
+				Key:         key.Object,
+				Value:       value.Object,
 			}
 
 			isOK, err := isMessageOK(args)
@@ -277,19 +278,8 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 			}
 		}()
 
-		// 2. Run JavaScript code inside of VM
-		// Parse kafka key and message to a Go type (interface{} for JSON, string for text, etc)
-		key, err := args.Key.Parse()
-		if err != nil {
-			return false, fmt.Errorf("failed to parse key (partition '%v', offset '%v')", args.PartitionID, args.Offset)
-		}
-		value, err := args.Value.Parse()
-		if err != nil {
-			return false, fmt.Errorf("failed to parse value (partition '%v', offset '%v')", args.PartitionID, args.Offset)
-		}
-
 		// Call Javascript function and check if it could be evaluated and whether it returned true or false
-		val, err := interpreter.Call("isMessageOk", args.PartitionID, args.Offset, args.Timestamp, key, value)
+		val, err := interpreter.Call("isMessageOk", args.PartitionID, args.Offset, args.Timestamp, args.Key, args.Value)
 		if err != nil {
 			return false, fmt.Errorf("failed to evaluate javascript code: %w", err)
 		}
