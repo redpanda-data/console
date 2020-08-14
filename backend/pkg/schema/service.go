@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/linkedin/goavro/v2"
 	"golang.org/x/sync/singleflight"
-	"sync"
 )
 
 // Service for fetching schemas from a schema registry. It has to provide an interface for other packages which is safe
@@ -17,7 +16,6 @@ type Service struct {
 
 	// Schema Cache by schema id
 	cacheByID map[uint32]*goavro.Codec
-	cacheLock sync.RWMutex
 }
 
 // NewService to access schema registry. Returns an error if connection can't be established.
@@ -27,7 +25,6 @@ func NewSevice(cfg Config) *Service {
 		requestGroup:   singleflight.Group{},
 		registryClient: newClient(cfg),
 		cacheByID:      make(map[uint32]*goavro.Codec),
-		cacheLock:      sync.RWMutex{},
 	}
 }
 
@@ -37,35 +34,38 @@ func (s *Service) CheckConnectivity() error {
 }
 
 func (s *Service) GetAvroSchemaByID(schemaID uint32) (*goavro.Codec, error) {
-	// 1. Check if codec is available in cache
-	s.cacheLock.RLock()
-	cachedCodec, exists := s.cacheByID[schemaID]
-	s.cacheLock.RUnlock()
-	if exists {
-		return cachedCodec, nil
-	}
-
-	// 2. Not available so let's request it from schema registry but make sure to suppress duplicate requests
+	// Singleflight makes sure to not run the function body if there are concurrent requests. We use this to avoid
+	// duplicate requests against the schema registry
 	key := fmt.Sprintf("get-avro-schema-%d", schemaID)
-	defer s.requestGroup.Forget(key)
 	v, err, _ := s.requestGroup.Do(key, func() (interface{}, error) {
-		return s.registryClient.GetSchemaByID(schemaID)
+		if codec, exists := s.cacheByID[schemaID]; exists {
+			return codec, nil
+		}
+
+		schemaRes, err := s.registryClient.GetSchemaByID(schemaID)
+		if err != nil {
+			// If schema registry returns an error we want to retry it next time, so let's forget the key
+			s.requestGroup.Forget(key)
+			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
+		}
+
+		codec, err := goavro.NewCodec(schemaRes.Schema)
+		if err != nil {
+			// If codec compilation returns an error we want to retry it next time (maybe the schema has changed or response
+			// was corrupted), so let's forget the key
+			s.requestGroup.Forget(key)
+			return nil, fmt.Errorf("failed to create codec from schema string: %w", err)
+		}
+
+		s.cacheByID[schemaID] = codec
+
+		return codec, nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch schema from schema registry: %w", err)
+		return nil, err
 	}
 
-	// 3. Compile schema string to avro codec
-	schemaRes := v.(*SchemaResponse)
-	codec, err := goavro.NewCodec(schemaRes.Schema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create codec from schema string: %w", err)
-	}
-
-	// 4. Add to cache
-	s.cacheLock.Lock()
-	s.cacheByID[schemaID] = codec
-	s.cacheLock.Unlock()
+	codec := v.(*goavro.Codec)
 
 	return codec, nil
 }
