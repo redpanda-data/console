@@ -1,28 +1,12 @@
 package kafka
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"github.com/robertkrimen/otto"
-	"strings"
-	"time"
-	"unicode/utf8"
-
 	"github.com/Shopify/sarama"
-	xj "github.com/basgys/goxml2json"
-	"github.com/valyala/fastjson"
+	"github.com/robertkrimen/otto"
 	"go.uber.org/zap"
-)
-
-type valueType string
-
-const (
-	valueTypeJSON   valueType = "json"
-	valueTypeXML    valueType = "xml"
-	valueTypeText   valueType = "text"
-	valueTypeBinary valueType = "binary"
+	"time"
 )
 
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
@@ -178,48 +162,6 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 			return // search request aborted
 		}
 	}
-}
-
-// getValue returns the valueType along with it's DirectEmbedding which implements a custom Marshaller,
-// so that it can return a string in the desired representation, regardless whether it's binary, text, xml
-// or JSON data.
-func (p *PartitionConsumer) getValue(value []byte) (valueType, DirectEmbedding) {
-	if len(value) == 0 {
-		return "", DirectEmbedding{ValueType: "", Value: value}
-	}
-
-	trimmed := bytes.TrimLeft(value, " \t\r\n")
-	if len(trimmed) == 0 {
-		return valueTypeText, DirectEmbedding{ValueType: valueTypeText, Value: value}
-	}
-
-	// 1. Test for valid JSON
-	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
-	if startsWithJSON {
-		err := fastjson.Validate(string(trimmed))
-		if err == nil {
-			return valueTypeJSON, DirectEmbedding{ValueType: valueTypeJSON, Value: trimmed}
-		}
-	}
-
-	// 2. Test for valid XML
-	startsWithXML := trimmed[0] == '<'
-	if startsWithXML {
-		r := strings.NewReader(string(trimmed))
-		json, err := xj.Convert(r)
-		if err == nil {
-			return valueTypeXML, DirectEmbedding{ValueType: valueTypeXML, Value: json.Bytes()}
-		}
-	}
-
-	// 3. Test for UTF-8 validity
-	isUTF8 := utf8.Valid(value)
-	if isUTF8 {
-		return valueTypeText, DirectEmbedding{ValueType: valueTypeText, Value: value}
-	}
-
-	b64 := []byte(base64.StdEncoding.EncodeToString(value))
-	return valueTypeBinary, DirectEmbedding{ValueType: valueTypeBinary, Value: b64}
 }
 
 // SetupInterpreter initializes the JavaScript interpreter along with the given JS code. It returns a wrapper function
