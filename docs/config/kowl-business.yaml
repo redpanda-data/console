@@ -28,14 +28,21 @@ kafka:
   #   keyFilepath:
   #   passphrase: # This can be set via the --kafka.tls.passphrase flag as well
   #   insecureSkipTlsVerify: false
-  # server:
-  #   listenPort: 8080
-  #   gracefulShutdownTimeout: 30s
-  #   listenPort: 8080
-  #   readTimeout: 30s
-  #   writeTimeout: 30s
-  #   idleTimeout: 30s
-  #   compressionLevel: 4
+  # schemaRegistry:
+  #   enabled: true
+  #   urls: [] # Url with scheme is required, e.g. ["http://localhost:8081"]
+  #   username: # Basic auth username
+  #   password: # Basic auth password
+  #   bearerToken:
+
+# server:
+#   listenPort: 8080
+#   gracefulShutdownTimeout: 30s
+#   listenPort: 8080
+#   readTimeout: 30s
+#   writeTimeout: 30s
+#   idleTimeout: 30s
+#   compressionLevel: 4
 
 # logger:
 #   level: info
