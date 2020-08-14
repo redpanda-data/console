@@ -29,7 +29,7 @@ func newClient(cfg Config) *Client {
 	client := resty.New().
 		SetHostURL(registryUrl).
 		SetHeader("User-Agent", "Kowl").
-		SetHeader("Accept", "Accept: application/vnd.schemaregistry.v1+json").
+		SetHeader("Accept", "application/vnd.schemaregistry.v1+json").
 		SetError(&RestError{}).
 		SetTimeout(5 * time.Second)
 
@@ -78,14 +78,14 @@ func (c *Client) GetSchemaByID(id uint32) (*SchemaResponse, error) {
 
 // CheckConnectivity checks whether the schema registry can be access by GETing the /subjects
 func (c *Client) CheckConnectivity() error {
-	url := "/subjects"
+	url := "subjects"
 	res, err := c.client.R().Get(url)
 	if err != nil {
 		return err
 	}
 
 	if res.IsError() {
-		return fmt.Errorf("response is an error. Status: %d", res.StatusCode())
+		return fmt.Errorf("response is an error. Status: %d - %s", res.StatusCode())
 	}
 
 	return nil
