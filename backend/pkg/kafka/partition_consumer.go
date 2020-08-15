@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Shopify/sarama"
-	"github.com/robertkrimen/otto"
+	"github.com/dop251/goja"
 	"go.uber.org/zap"
 	"time"
 )
@@ -67,7 +67,6 @@ type PartitionConsumer struct {
 	Req       *PartitionConsumeRequest
 
 	Deserializer          *deserializer
-	VM                    *otto.Otto
 	FilterInterpreterCode string
 }
 
@@ -138,7 +137,7 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 			if err != nil {
 				// TODO: This might be changed to debug level, because operators probably do not care about user failures?
 				p.Logger.Info("failed to check if message is ok", zap.Error(err))
-				p.Progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v')", m.Partition, m.Offset))
+				p.Progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v'). Error: %v", m.Partition, m.Offset, err))
 				return
 			}
 			if isOK {
@@ -173,18 +172,11 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		return func(args interpreterArguments) (bool, error) { return true, nil }, nil
 	}
 
-	vm := otto.New()
-	vm.Interrupt = make(chan func(), 1)
-
-	code := fmt.Sprintf(`interpreter = {isMessageOk: function(partitionId, offset, timestamp, key, value) {%s}}`, p.FilterInterpreterCode)
-	_, err := vm.Run(code)
+	vm := goja.New()
+	code := fmt.Sprintf(`var isMessageOk = function() {%s}`, p.FilterInterpreterCode)
+	_, err := vm.RunString(code)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile given interpreter code: %w", err)
-	}
-
-	interpreter, err := vm.Object("interpreter")
-	if err != nil {
-		return nil, err
 	}
 
 	// We use named return parameter here because this way we can return a error message in recover().
@@ -196,24 +188,13 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		errTimeout := "interpreter execution has taken too long"
-		defer func() {
-			if caught := recover(); caught != nil {
-				if caught == errTimeout {
-					err = fmt.Errorf(errTimeout)
-					return
-				}
-				panic(caught) // Something else happened, repanic!
-			}
-		}()
-
 		// Send interrupt signal to VM if execution has taken too long
 		go func() {
 			timer := time.NewTimer(400 * time.Millisecond)
 
 			select {
 			case <-timer.C:
-				vm.Interrupt <- func() { panic(errTimeout) }
+				vm.Interrupt("timeout after 400ms")
 				return
 			case <-ctx.Done():
 				return
@@ -221,16 +202,17 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		}()
 
 		// Call Javascript function and check if it could be evaluated and whether it returned true or false
-		val, err := interpreter.Call("isMessageOk", args.PartitionID, args.Offset, args.Timestamp, args.Key, args.Value)
+		vm.Set("partitionID", args.PartitionID)
+		vm.Set("offset", args.Offset)
+		vm.Set("timestamp", args.Timestamp)
+		vm.Set("key", args.Key)
+		vm.Set("value", args.Value)
+		isOkRes, err := vm.RunString("isMessageOk()")
 		if err != nil {
 			return false, fmt.Errorf("failed to evaluate javascript code: %w", err)
 		}
-		isOk, err = val.ToBoolean()
-		if err != nil {
-			return false, fmt.Errorf("failed to cast return type to boolean: %w", err)
-		}
 
-		return isOk, nil
+		return isOkRes.ToBoolean(), nil
 	}
 
 	return isMessageOk, nil
