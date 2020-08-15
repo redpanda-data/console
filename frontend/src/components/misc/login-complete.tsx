@@ -18,7 +18,7 @@ class LoginCompletePage extends Component<{ provider: string }> {
         const pathName = location.pathname;
         const query = location.search;
 
-        const url = "/auth/callbacks/" + provider + query;
+        const url = "./auth/callbacks/" + provider + query;
 
         // todo: auth/callbacks/providerName
 

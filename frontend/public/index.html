@@ -3,18 +3,32 @@
 
 <head>
     <meta charset="utf-8" />
+    <title>Kowl</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="WebApp to explore Kafka Messages, Topics, ..." />
+    <script>
+        {
+            basePath = "__BASE_PATH_REPLACE_MARKER__";
+            window["BASE_URL"] = basePath;
+
+            if (!basePath.startsWith('__BASE')) {
+                window.__getLocation = function () {
+                    return window.location;
+                };
+                var l = window.__getLocation();
+                var base = document.createElement('base');
+                base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + ((basePath.length > 1) ? '/' + basePath : '');
+                document.getElementsByTagName('head')[0].appendChild(base);
+            }
+        }
+    </script>
+
     <link rel="shortcut icon" type="image/png" href="%PUBLIC_URL%/favicon.png" />
     <link href="https://fonts.googleapis.com/css?family=Quicksand:400,500,600,700&display=swap" rel="stylesheet">
     <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet"> -->
     <!-- <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet"> -->
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="WebApp to explore Kafka Messages, Topics, ..." />
-    <title>Kowl</title>
-    <script>
-        window["BASE_URL"] = "__BASE_URL_REPLACE_MARKER__";
-    </script>
     <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/

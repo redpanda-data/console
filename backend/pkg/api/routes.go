@@ -19,9 +19,11 @@ func (api *API) routes() *chi.Mux {
 
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
 	recoverer := middleware.Recoverer{Logger: api.Logger}
+	handleBasePath := createHandleBasePathMiddleware(api.Cfg.REST.BasePath, api.Cfg.REST.SetBasePathFromXForwardedPrefix, api.Cfg.REST.StripPrefix)
 	baseRouter.Use(recoverer.Wrap,
 		chimiddleware.RealIP,
-		chimiddleware.URLFormat,
+		requirePrefix(api.Cfg.REST.BasePath),
+		handleBasePath,
 		chimiddleware.StripSlashes, // Doesn't really help for the Frontend because the SPA is in charge of it
 	)
 
@@ -77,7 +79,7 @@ func (api *API) routes() *chi.Mux {
 			}
 
 			// SPA Files
-			index, err := api.getIndexFile(dir)
+			index, err := api.loadIndexFile(dir)
 			if err != nil {
 				api.Logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
 			}

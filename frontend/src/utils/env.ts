@@ -40,7 +40,7 @@ export const IsBusiness = Boolean(env.REACT_APP_BUSINESS);
 export const AppName = IsBusiness ? 'Kowl Business' : 'Kowl';
 
 const baseUrlRaw: string = (window as any)["BASE_URL"];
-export const baseUrl = (baseUrlRaw == '__BASE_URL_REPLACE_MARKER__')
+export const baseUrl = (baseUrlRaw == '__BASE_PATH_REPLACE_MARKER__')
     ? undefined
     : baseUrlRaw;
 

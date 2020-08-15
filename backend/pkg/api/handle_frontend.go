@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -10,22 +9,30 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	/// DEBUG
+	forcedPrefix = "rararara/kowl/abc/"
+)
+
 // handleGetIndex returns the SPA (index.html)
 func (api *API) handleGetIndex(index []byte) http.HandlerFunc {
-	srcAttribute := []byte(`src="/`)
-	hrefAttribute := []byte(`href="/`)
-	baseURLMarker := []byte(`__BASE_URL_REPLACE_MARKER__`)
+	// srcAttribute := []byte(`src="/`)
+	// hrefAttribute := []byte(`href="/`)
+	basePathMarker := []byte(`__BASE_PATH_REPLACE_MARKER__`)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		// check for 'X-Forwarded-Prefix' and if set,
-		// add it as a prefix to all occurences of    (src="/)|(href="/)
-		// https://github.com/cloudhut/kowl/issues/107
-		xForwardedPrefix := r.Header.Get("X-Forwarded-Prefix")
-		if xForwardedPrefix != "" {
-			index = bytes.ReplaceAll(index, srcAttribute, []byte(fmt.Sprintf(`src="%s/`+xForwardedPrefix)))
-			index = bytes.ReplaceAll(index, hrefAttribute, []byte(fmt.Sprintf(`href="%s/`+xForwardedPrefix)))
-			index = bytes.ReplaceAll(index, baseURLMarker, []byte(xForwardedPrefix))
+		if basePath, ok := r.Context().Value(BasePathCtxKey).(string); ok && len(basePath) > 0 {
+			// check if there's a prefix we have to set and add it to all occurences of (src="/)|(href="/)
+			// https://github.com/cloudhut/kowl/issues/107
+
+			//
+			// TODO: do we still need to modify all src/href?
+			//		 we're now setting homepage:'.', so maybe we only have to insert the base path marker?
+			//
+			index = bytes.ReplaceAll(index, basePathMarker, []byte(basePath))
+			// index = bytes.ReplaceAll(index, srcAttribute, []byte(fmt.Sprintf(`src="%s/`+basePath)))
+			// index = bytes.ReplaceAll(index, hrefAttribute, []byte(fmt.Sprintf(`href="%s/`+basePath)))
 		}
 
 		_, err := w.Write(index)
@@ -56,8 +63,8 @@ func (api *API) handleGetStaticFile(handleGetIndex http.HandlerFunc, rootPath st
 	}
 }
 
-// getIndexFile loads the index.html or returns an error.
-func (api *API) getIndexFile(filePath string) ([]byte, error) {
+// loadIndexFile loads the index.html or returns an error.
+func (api *API) loadIndexFile(filePath string) ([]byte, error) {
 	indexPath := filePath + "/index.html"
 	index, err := ioutil.ReadFile(indexPath)
 	if err != nil {

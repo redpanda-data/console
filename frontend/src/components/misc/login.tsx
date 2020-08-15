@@ -23,7 +23,7 @@ interface ProvidersResponse {
 }
 
 async function getProviders() {
-    const response = await fetch('/auth/providers', {
+    const response = await fetch('./auth/providers', {
         method: 'GET',
         cache: 'no-cache',
         mode: 'no-cors'

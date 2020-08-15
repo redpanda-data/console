@@ -3,6 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "proxy": "http://localhost:9090",
+    "homepage": ".",
     "dependencies": {
         "@ant-design/icons": "^4.1.0",
         "@primer/octicons-react": "^10.0.0",

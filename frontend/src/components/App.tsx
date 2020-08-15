@@ -313,7 +313,7 @@ export default class App extends Component {
         if (api.UserData === undefined) {
             devPrint('user is undefined (probably a fresh page load)');
 
-            fetchWithTimeout('/api/users/me', 10 * 1000).then(async r => {
+            fetchWithTimeout('./api/users/me', 10 * 1000).then(async r => {
                 if (r.ok) {
                     devPrint('user fetched');
                     api.UserData = await r.json() as UserData;
