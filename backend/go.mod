@@ -9,7 +9,7 @@ require (
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bxcodec/faker v2.0.1+incompatible
-	github.com/cloudhut/common v0.3.1-0.20200223165657-be7d32e836fc
+	github.com/cloudhut/common v0.3.1-0.20200815122328-71c17501f356
 	github.com/deathowl/go-metrics-prometheus v0.0.0-20190530215645-35bace25558f
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/protobuf v1.3.3 // indirect
