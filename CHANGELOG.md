@@ -1,5 +1,9 @@
 # Changelog
 
+## Master / unreleased
+
+- [FEATURE] Add support for message headers
+
 ## 1.1.0 / 2020-08-06
 
 - [CHANGE] Business: Reworked groups syncing (Google + GitHub)

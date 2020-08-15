@@ -24,6 +24,7 @@ type TopicMessage struct {
 	Offset      int64 `json:"offset"`
 	Timestamp   int64 `json:"timestamp"`
 
+	Headers   []MessageHeader      `json:"headers"`
 	Key       *deserializedPayload `json:"key"`
 	KeyType   string               `json:"keyType"`
 	Value     *deserializedPayload `json:"value"`
@@ -31,6 +32,14 @@ type TopicMessage struct {
 
 	Size        int  `json:"size"`
 	IsValueNull bool `json:"isValueNull"`
+}
+
+// MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
+// a byte array, but keys are supposed to be strings only. Value however can be encoded in any format.
+type MessageHeader struct {
+	Key           string               `json:"key"`
+	Value         *deserializedPayload `json:"value"`
+	ValueEncoding messageEncoding      `json:"valueEncoding"`
 }
 
 // PartitionConsumeRequest is a partitionID along with it's calculated start and end offset.
@@ -117,6 +126,7 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp.Unix(),
+				Headers:     p.DeserializeHeaders(m.Headers),
 				Key:         key,
 				KeyType:     string(key.RecognizedEncoding),
 				Value:       value,
@@ -234,4 +244,19 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 	}
 
 	return isMessageOk, nil
+}
+
+func (p *PartitionConsumer) DeserializeHeaders(headers []*sarama.RecordHeader) []MessageHeader {
+	res := make([]MessageHeader, len(headers))
+	for i, header := range headers {
+		key := string(header.Key)
+		value := p.Deserializer.DeserializePayload(header.Value)
+		res[i] = MessageHeader{
+			Key:           key,
+			Value:         value,
+			ValueEncoding: value.RecognizedEncoding,
+		}
+	}
+
+	return res
 }
