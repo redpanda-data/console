@@ -55,11 +55,12 @@ type PartitionConsumeRequest struct {
 }
 
 type interpreterArguments struct {
-	PartitionID int32
-	Offset      int64
-	Timestamp   time.Time
-	Key         interface{}
-	Value       interface{}
+	PartitionID  int32
+	Offset       int64
+	Timestamp    time.Time
+	Key          interface{}
+	Value        interface{}
+	HeadersByKey map[string]interface{}
 }
 
 type PartitionConsumer struct {
@@ -120,12 +121,13 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 			// Run Interpreter filter and check if message passes the filter
 			value := p.Deserializer.DeserializePayload(m.Value)
 			key := p.Deserializer.DeserializePayload(m.Key)
+			headers := p.DeserializeHeaders(m.Headers)
 
 			topicMessage := &TopicMessage{
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp.Unix(),
-				Headers:     p.DeserializeHeaders(m.Headers),
+				Headers:     headers,
 				Key:         key,
 				KeyType:     string(key.RecognizedEncoding),
 				Value:       value,
@@ -134,13 +136,19 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				IsValueNull: m.Value == nil,
 			}
 
+			headersByKey := make(map[string]interface{}, len(headers))
+			for _, header := range headers {
+				headersByKey[header.Key] = header.Value.Object
+			}
+
 			// Check if message passes filter code
 			args := interpreterArguments{
-				PartitionID: m.Partition,
-				Offset:      m.Offset,
-				Timestamp:   m.Timestamp,
-				Key:         key.Object,
-				Value:       value.Object,
+				PartitionID:  m.Partition,
+				Offset:       m.Offset,
+				Timestamp:    m.Timestamp,
+				Key:          key.Object,
+				Value:        value.Object,
+				HeadersByKey: headersByKey,
 			}
 
 			isOK, err := isMessageOK(args)
@@ -217,6 +225,7 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		vm.Set("timestamp", args.Timestamp)
 		vm.Set("key", args.Key)
 		vm.Set("value", args.Value)
+		vm.Set("headers", args.HeadersByKey)
 		isOkRes, err := vm.RunString("isMessageOk()")
 		if err != nil {
 			return false, fmt.Errorf("failed to evaluate javascript code: %w", err)
