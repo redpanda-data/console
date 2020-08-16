@@ -22,7 +22,7 @@ func (api *API) routes() *chi.Mux {
 	handleBasePath := createHandleBasePathMiddleware(api.Cfg.REST.BasePath, api.Cfg.REST.SetBasePathFromXForwardedPrefix, api.Cfg.REST.StripPrefix)
 	baseRouter.Use(recoverer.Wrap,
 		chimiddleware.RealIP,
-		requirePrefix(api.Cfg.REST.BasePath),
+		requirePrefix(api.Cfg.REST.BasePath), // only for debugging
 		handleBasePath,
 		chimiddleware.StripSlashes, // Doesn't really help for the Frontend because the SPA is in charge of it
 	)
@@ -73,22 +73,18 @@ func (api *API) routes() *chi.Mux {
 
 		if api.Cfg.ServeFrontend {
 			// Check if the frontend directory 'build' exists
-			dir, err := filepath.Abs(api.Cfg.FrontendPath)
+			frontendDir, err := filepath.Abs(api.Cfg.FrontendPath)
 			if err != nil {
-				api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", dir), zap.Error(err))
+				api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", frontendDir), zap.Error(err))
 			}
 
 			// SPA Files
-			index, err := api.loadIndexFile(dir)
-			if err != nil {
-				api.Logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
-			}
 			router.Group(func(r chi.Router) {
 				r.Use(cache)
 
-				getIndexHandler := api.handleGetIndex(index)
-				r.Get("/", getIndexHandler)
-				r.Get("/*", api.handleGetStaticFile(getIndexHandler, dir))
+				handleIndex, handleResources := api.createFrontendHandlers(frontendDir)
+				r.Get("/", handleIndex)
+				r.Get("/*", handleResources)
 			})
 		} else {
 			api.Logger.Info("no static files will be served as serving the frontend has been disabled")
