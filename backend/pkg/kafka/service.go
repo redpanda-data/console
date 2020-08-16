@@ -15,6 +15,7 @@ import (
 type Service struct {
 	Logger           *zap.Logger
 	Client           sarama.Client
+	AdminClient      sarama.ClusterAdmin
 	SchemaService    *schema.Service
 	Deserializer     deserializer
 	MetricsNamespace string
@@ -44,6 +45,12 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	}
 	logger.Info("connected to at least one Kafka broker")
 
+	// Sarama Admin Client
+	adminClient, err := sarama.NewClusterAdminFromClient(client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kafka admin client: %w", err)
+	}
+
 	// Schema Registry
 	var schemaSvc *schema.Service
 	if cfg.Schema.Enabled {
@@ -58,6 +65,7 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	return &Service{
 		Logger:           logger,
 		Client:           client,
+		AdminClient:      adminClient,
 		SchemaService:    schemaSvc,
 		Deserializer:     deserializer{SchemaService: schemaSvc},
 		MetricsNamespace: metricsNamespace,
