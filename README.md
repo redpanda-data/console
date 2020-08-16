@@ -32,11 +32,20 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 \*If you want to participate in the free beta sign in here: https://license.cloudhut.dev/ . You'll get a forever free license for 2 seats. If you need more than 2 seats, just drop us an email at info@cloudhut.dev
 
-## Documentation
+## Getting Started
 
-The documentation, including links to our Terraform module & Helm chart for Kowl (Business) is available at [/docs](./docs).
+### Prerequisites
 
-If you want to run Kowl locally take a look at the docker compose sample: [/docs/local](./docs/local)
+- Kafka Cluster (v1.0.0+) connectivity
+- At least one OAuth app for SSO (Kowl business only)
+
+### Installing
+
+We offer pre built docker images for Kowl (Business), a Helm chart and a Terraform module to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](./docs/installation.md).
+
+### Docker Compose (running locally)
+
+If you want to run Kowl locally take a look at the docker compose sample: [/docs/local](./docs/local).
 
 ## Sponsors
 
