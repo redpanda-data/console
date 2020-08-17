@@ -3,25 +3,24 @@ package owl
 import (
 	"context"
 	"fmt"
+	"sync"
+
 	"github.com/Shopify/sarama"
 	"golang.org/x/sync/errgroup"
-	"strconv"
-	"sync"
 )
 
 type ClusterConfig struct {
-	BrokerIDs     []string                    `json:"brokerIDs"`
 	BrokerConfigs []*BrokerConfig             `json:"brokerConfigs"`
 	RequestErrors []*BrokerConfigRequestError `json:"requestErrors"`
 }
 
 type BrokerConfigRequestError struct {
-	BrokerID     string `json:"brokerId"`
+	BrokerID     int32  `json:"brokerId"`
 	ErrorMessage string `json:"errorMessage"`
 }
 
 type BrokerConfig struct {
-	BrokerID      string               `json:"brokerId"`
+	BrokerID      int32                `json:"brokerId"`
 	ConfigEntries []*BrokerConfigEntry `json:"configEntries"`
 }
 
@@ -31,7 +30,7 @@ type BrokerConfigEntry struct {
 	IsDefault bool   `json:"isDefault"`
 }
 
-// GetBrokerConfigs tries to fetch all config resources for all brokers in the cluster. If at least one response from a
+// GetClusterConfig tries to fetch all config resources for all brokers in the cluster. If at least one response from a
 // broker can be returned this function won't return an error. If all requests fail an error will be returned.
 func (s *Service) GetClusterConfig(ctx context.Context) (ClusterConfig, error) {
 	metadata, err := s.kafkaSvc.DescribeCluster()
@@ -39,9 +38,9 @@ func (s *Service) GetClusterConfig(ctx context.Context) (ClusterConfig, error) {
 		return ClusterConfig{}, fmt.Errorf("failed to get broker ids: %w", err)
 	}
 
-	brokerIDs := make([]string, len(metadata.Brokers))
+	brokerIDs := make([]int32, len(metadata.Brokers))
 	for i, broker := range metadata.Brokers {
-		brokerIDs[i] = strconv.Itoa(int(broker.ID()))
+		brokerIDs[i] = broker.ID()
 	}
 
 	// Send one broker config request for each broker concurrently
@@ -53,7 +52,7 @@ func (s *Service) GetClusterConfig(ctx context.Context) (ClusterConfig, error) {
 	wg := sync.WaitGroup{}
 	for _, brokerID := range brokerIDs {
 		wg.Add(1)
-		go func(bId string) {
+		go func(bId int32) {
 			defer wg.Done()
 			cfg, reqErr := s.GetBrokerConfig(ctx, bId)
 			resCh <- chResponse{
@@ -87,13 +86,12 @@ func (s *Service) GetClusterConfig(ctx context.Context) (ClusterConfig, error) {
 	}
 
 	return ClusterConfig{
-		BrokerIDs:     brokerIDs,
 		BrokerConfigs: brokerConfigs,
 		RequestErrors: requestErrors,
 	}, nil
 }
 
-func (s *Service) GetBrokerConfig(ctx context.Context, brokerID string) (*BrokerConfig, *BrokerConfigRequestError) {
+func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) (*BrokerConfig, *BrokerConfigRequestError) {
 	eg, _ := errgroup.WithContext(ctx)
 
 	var configEntries []sarama.ConfigEntry
