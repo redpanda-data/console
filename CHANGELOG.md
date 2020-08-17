@@ -1,7 +1,8 @@
 # Changelog
 
-## Next Version (master branch; completed features that will be part of the next release)
-- **[FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))**
+## Master / unreleased
+
+- [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
 
 
 ## 1.1.0 / 2020-08-06
