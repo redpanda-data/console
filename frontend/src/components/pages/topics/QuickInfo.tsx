@@ -6,7 +6,8 @@ import { api } from "../../../state/backendApi";
 import prettyBytes from 'pretty-bytes';
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
-import { FavoritePopover, FormatValue } from "./Tab.Config";
+import { FavoritePopover, FormatConfigValue } from "./Tab.Config";
+import { uiSettings } from "../../../state/ui";
 
 
 // todo: rename QuickInfo
@@ -38,7 +39,7 @@ export const TopicQuickInfoStatistic = observer((p: { topicName: string }) => {
                 .map(fav => topicConfig!.find(tce => tce.name === fav))
                 .filter(tce => tce)
                 .map(configEntry =>
-                    FavoritePopover(configEntry!, <Statistic title={(configEntry!.name)} value={FormatValue(configEntry!)} />)
+                    FavoritePopover(configEntry!, <Statistic title={(configEntry!.name)} value={FormatConfigValue(configEntry!.name, configEntry!.value, uiSettings.topicList.valueDisplay)} />)
                 )
         }
     </Row>

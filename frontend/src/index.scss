@@ -1235,3 +1235,49 @@ svg {
         text-decoration: line-through rgba(46, 46, 46, 0.66);
     }
 }
+
+.noPadding .ant-table-cell {
+    padding: 0 !important;
+
+    div.error {
+        background: #ffc8c8;
+        padding: 8px 16px;
+    }
+
+    div.brokerConfigView {
+        padding: 16px 16px 8px 16px;
+
+        // .ant-descriptions-bordered.ant-descriptions-small .ant-descriptions-item-label, .ant-descriptions-bordered.ant-descriptions-small .ant-descriptions-item-content
+        .ant-descriptions-row {
+
+            .ant-descriptions-item-label,
+            .ant-descriptions-item-content {
+                padding: 6px 16px;
+                border-bottom: 1px solid hsl(228, 20%, 92%);
+            }
+
+            .ant-descriptions-item-label {
+                background: hsl(220, 19%, 95%);
+                border-right: 1px solid hsl(228, 20%, 90%);
+            }
+
+            .ant-descriptions-item-content {
+                max-width: 400px;
+                white-space: normal;
+                background: hsl(220, 19%, 97%);
+            }
+        }
+
+        .brokerConfigViewSettings {
+            .ant-radio-button-wrapper {
+                height: 28px;
+                line-height: 26px;
+                padding: 0px 14px;
+            }
+        }
+    }
+
+    .codeBox {
+        background: hsl(0, 45%, 80%, );
+    }
+}

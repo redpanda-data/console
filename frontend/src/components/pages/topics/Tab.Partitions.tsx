@@ -1,33 +1,14 @@
 import { Component, ReactNode } from "react";
 import React from "react";
-import { TopicDetail, TopicConfigEntry, TopicMessage, Partition } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
+import { TopicDetail, } from "../../../state/restInterfaces";
+import { Table, Alert, } from "antd";
 import { observer } from "mobx-react";
 import { api, } from "../../../state/backendApi";
-import { uiSettings, PreviewTag } from "../../../state/ui";
-import ReactJson, { CollapsedFieldProps } from 'react-json-view'
-import { PageComponent, PageInitHelper } from "../Page";
-import prettyMilliseconds from 'pretty-ms';
-import prettyBytes from 'pretty-bytes';
-import topicConfigInfo from '../../../assets/topicConfigInfo.json'
-import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
-import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction } from "mobx";
-import { findElementDeep, cullText, getAllKeys } from "../../../utils/utils";
-import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
-import Paragraph from "antd/lib/typography/Paragraph";
-import { ColumnProps } from "antd/lib/table";
+import { sortField, makePaginationConfig } from "../../misc/common";
+import { MotionAlways } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { FavoritePopover, FormatValue } from "./Tab.Config";
 import { numberToThousandsString, DefaultSkeleton } from "../../../utils/tsxUtils";
-
-const { Text } = Typography;
-const { Option } = Select;
-const InputGroup = Input.Group;
-
-
 
 
 @observer

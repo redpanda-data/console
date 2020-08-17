@@ -187,13 +187,14 @@ export interface ClusterConfig {
 
 export interface BrokerConfig {
     brokerId: number;
-    configEntries: {
-        name: string;
-        value: string;
-        isDefault: boolean;
-    }[];
+    configEntries: BrokerConfigEntry[];
 }
 
+export interface BrokerConfigEntry {
+    name: string;
+    value: string;
+    isDefault: boolean;
+}
 
 
 

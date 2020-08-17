@@ -52,7 +52,7 @@ export const TopicConfiguration = observer(
                     })
                     .map(e => (
                         <Descriptions.Item key={e.name} label={DataName(e)}>
-                            {DataValue(e)}
+                            {DataValue(e.name, e.value, e.isDefault, uiSettings.topicList.valueDisplay)}
                         </Descriptions.Item>
                     ))}
             </Descriptions>
@@ -162,12 +162,10 @@ function DataName(configEntry: TopicConfigEntry) {
     return FavoritePopover(configEntry, configEntry.name);
 }
 
-function DataValue(configEntry: TopicConfigEntry) {
-    const value = FormatValue(configEntry);
+export function DataValue(name: string, value: string, isDefault: boolean, formatType: 'friendly' | 'raw' | 'both') {
+    value = FormatConfigValue(name, value, formatType);
 
-    if (configEntry.isDefault) {
-        return <code>{value}</code>;
-    }
+    if (isDefault) return <code>{value}</code>
 
     return (
         <Tooltip title="Value is different from the default">
@@ -179,11 +177,10 @@ function DataValue(configEntry: TopicConfigEntry) {
     );
 }
 
-export function FormatValue(configEntry: TopicConfigEntry): string {
-    const value = configEntry.value;
+export function FormatConfigValue(name: string, value: string, formatType: 'friendly' | 'raw' | 'both'): string {
     let suffix: string;
 
-    switch (uiSettings.topicList.valueDisplay) {
+    switch (formatType) {
         case "friendly":
             suffix = "";
             break;
@@ -193,17 +190,17 @@ export function FormatValue(configEntry: TopicConfigEntry): string {
 
         case "raw":
         default:
-            return configEntry.value;
+            return value;
     }
 
     const num = Number(value);
 
     // Special case 1
-    if (configEntry.name == "flush.messages" && num > Math.pow(2, 60))
+    if (name == "flush.messages" && num > Math.pow(2, 60))
         return "Never" + suffix; // messages between each fsync
 
     // Special case 2
-    if (configEntry.name == "retention.bytes" && num < 0)
+    if (name == "retention.bytes" && num < 0)
         return "Infinite" + suffix; // max bytes to keep before discarding old log segments
 
     // Special case 3
@@ -211,7 +208,7 @@ export function FormatValue(configEntry: TopicConfigEntry): string {
 
 
     // Time
-    if (configEntry.name.endsWith(".ms")) {
+    if (name.endsWith(".ms")) {
         // More than 100 years -> Infinite
         if (num > 3155695200000 || num == -1) return "Infinite" + suffix;
         // Convert into a readable format
@@ -219,12 +216,12 @@ export function FormatValue(configEntry: TopicConfigEntry): string {
     }
 
     // Bytes
-    if (configEntry.name.endsWith(".bytes")) {
+    if (name.endsWith(".bytes")) {
         return prettyBytes(num) + suffix;
     }
 
     // Ratio
-    if (configEntry.name.endsWith(".ratio")) {
+    if (name.endsWith(".ratio")) {
         return (num * 100).toLocaleString() + "%"
     }
 
