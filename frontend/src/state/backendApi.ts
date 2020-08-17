@@ -3,19 +3,15 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/utils";
-import { objToQuery } from "../utils/queryHelper";
-import { IsDev, IsBusiness } from "../utils/env";
+import { ToJson, LazyMap, TimeSince } from "../utils/utils";
+import { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
-import { TopicMessageSearchSettings } from "./ui";
-import { ObjToKv } from "../utils/tsxUtils";
-import { ArrowBothIcon } from "@primer/octicons-v2-react";
 
 const REST_TIMEOUT_SEC = IsDev ? 5 : 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -179,7 +175,7 @@ const apiStore = {
     // null = call completed, and we're not logged in
     UserData: undefined as (UserData | null | undefined),
     async logout() {
-        await fetch('/logout');
+        await fetch('./logout');
         this.UserData = null;
     },
 
@@ -203,7 +199,7 @@ const apiStore = {
         const isHttps = window.location.protocol.startsWith('https');
         const protocol = isHttps ? 'wss://' : 'ws://';
         const host = IsDev ? 'localhost:9090' : window.location.host;
-        const url = protocol + host + '/api/topics/' + searchRequest.topicName + '/messages';
+        const url = protocol + host + (basePathS ?? '') + '/api/topics/' + searchRequest.topicName + '/messages';
 
         console.log("connecting to \"" + url + "\"");
 
@@ -315,7 +311,7 @@ const apiStore = {
     },
 
     refreshTopics(force?: boolean) {
-        cachedApiRequest<GetTopicsResponse>('/api/topics', force)
+        cachedApiRequest<GetTopicsResponse>('./api/topics', force)
             .then(v => {
                 for (const t of v.topics) {
                     if (!t.allowedActions) continue;
@@ -334,34 +330,34 @@ const apiStore = {
     },
 
     refreshTopicConfig(topicName: string, force?: boolean) {
-        cachedApiRequest<TopicConfigResponse>(`/api/topics/${topicName}/configuration`, force)
+        cachedApiRequest<TopicConfigResponse>(`./api/topics/${topicName}/configuration`, force)
             .then(v => this.TopicConfig.set(topicName, v?.topicDescription?.configEntries ?? null), addError);
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
         if (!IsBusiness) return; // permissions endpoint only exists in kowl-business
-        cachedApiRequest<TopicPermissions>(`/api/permissions/topics/${topicName}`, force)
+        cachedApiRequest<TopicPermissions>(`./api/permissions/topics/${topicName}`, force)
             .then(x => this.TopicPermissions.set(topicName, x ?? null), addError);
     },
 
     refreshTopicPartitions(topicName: string, force?: boolean) {
-        cachedApiRequest<GetPartitionsResponse>(`/api/topics/${topicName}/partitions`, force)
+        cachedApiRequest<GetPartitionsResponse>(`./api/topics/${topicName}/partitions`, force)
             .then(v => this.TopicPartitions.set(topicName, v?.partitions ?? null), addError);
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
-        cachedApiRequest<GetTopicConsumersResponse>(`/api/topics/${topicName}/consumers`, force)
+        cachedApiRequest<GetTopicConsumersResponse>(`./api/topics/${topicName}/consumers`, force)
             .then(v => this.TopicConsumers.set(topicName, v.topicConsumers), addError);
     },
 
 
     refreshCluster(force?: boolean) {
-        cachedApiRequest<ClusterInfoResponse>(`/api/cluster`, force)
+        cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
             .then(v => this.ClusterInfo = v.clusterInfo, addError);
     },
 
     refreshConsumerGroups(force?: boolean) {
-        cachedApiRequest<GetConsumerGroupsResponse>('/api/consumer-groups', force)
+        cachedApiRequest<GetConsumerGroupsResponse>('./api/consumer-groups', force)
             .then(v => {
                 for (const g of v.consumerGroups) {
                     g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
@@ -371,7 +367,7 @@ const apiStore = {
     },
 
     refreshAdminInfo(force?: boolean) {
-        cachedApiRequest<AdminInfo>(`/api/admin`, force)
+        cachedApiRequest<AdminInfo>(`./api/admin`, force)
             .then(info => {
                 // normalize responses (missing arrays, or arrays with an empty string)
                 // todo: not needed anymore, responses are always correct now

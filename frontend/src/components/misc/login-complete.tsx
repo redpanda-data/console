@@ -7,6 +7,7 @@ import { UserData } from "../../state/restInterfaces";
 import { appGlobal } from "../../state/appGlobal";
 import fetchWithTimeout from "../../utils/fetchWithTimeout";
 import { uiState } from "../../state/uiState";
+import { basePathS } from "../../utils/env";
 
 class LoginCompletePage extends Component<{ provider: string }> {
 
@@ -15,12 +16,8 @@ class LoginCompletePage extends Component<{ provider: string }> {
     }
 
     async completeLogin(provider: string, location: Location) {
-        const pathName = location.pathname;
         const query = location.search;
-
-        const url = "/auth/callbacks/" + provider + query;
-
-        // todo: auth/callbacks/providerName
+        const url = "./auth/callbacks/" + provider + query;
 
         try {
             const response = await fetchWithTimeout(url, 10 * 1000, { method: 'GET', cache: 'no-cache', mode: 'no-cors' });
@@ -36,7 +33,7 @@ class LoginCompletePage extends Component<{ provider: string }> {
             }
         } catch (err) {
             uiState.loginError = String(err);
-            appGlobal.history.push('/login');
+            appGlobal.history.push(basePathS + '/login');
             return;
         }
 
@@ -49,7 +46,7 @@ class LoginCompletePage extends Component<{ provider: string }> {
         // } else{
         //     navigate('/');
         // }
-        window.location.assign('/');
+        window.location.assign(basePathS ?? '/');
     }
 
     render() {

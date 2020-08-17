@@ -12,11 +12,10 @@ import { MotionDiv, MotionDivInvertedScale } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
-import Title from 'antd/lib/typography/Title';
 
 import logo2 from '../assets/logo2.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsProd, IsDev, AppName, IsBusiness } from '../utils/env';
+import { IsDev, AppName, IsBusiness, basePathS } from '../utils/env';
 import { UserButton } from './misc/UserButton';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
@@ -24,10 +23,8 @@ import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined } from '@ant-design/icons';
-import Draggable from 'react-draggable';
 import { observable } from 'mobx';
 import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
-import { motion } from 'framer-motion';
 import { LayoutBypass } from '../utils/tsxUtils';
 import prettyMilliseconds from 'pretty-ms';
 import { UserPreferencesButton } from './misc/UserPreferences';
@@ -298,7 +295,7 @@ export default class App extends Component {
             return null; // free version has no login handling
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />
-        const path = window.location.pathname;
+        const path = window.location.pathname.removePrefix(basePathS ?? '');
         const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); }
 
         if (path.startsWith('/login'))
@@ -306,14 +303,14 @@ export default class App extends Component {
 
         if (api.UserData === null && !path.startsWith('/login')) {
             devPrint('known not logged in, hard redirect');
-            window.location.pathname = '/login'; // definitely not logged in, and in wrong url: hard redirect!
+            window.location.pathname = basePathS + '/login'; // definitely not logged in, and in wrong url: hard redirect!
             return preLogin;
         }
 
         if (api.UserData === undefined) {
             devPrint('user is undefined (probably a fresh page load)');
 
-            fetchWithTimeout('/api/users/me', 10 * 1000).then(async r => {
+            fetchWithTimeout('./api/users/me', 10 * 1000).then(async r => {
                 if (r.ok) {
                     devPrint('user fetched');
                     api.UserData = await r.json() as UserData;
