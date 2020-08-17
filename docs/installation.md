@@ -21,6 +21,11 @@ Kowl Business supports Authentication and Authorization. In order to configure O
 
 While Kowl was written to be deployed in Kubernetes it does not have any specific dependencies. You can run it with any other container orchestrator or on bare metal.
 
+### Hosting and Proxies
+
+If you want to, you can host Kowl under a sub path (so for example `domain.com/some/sub/path` instead of `domain.com/`).
+See the [this document](./config/hosting.md) for more information.
+
 ### Kubernetes
 
 We maintain a [Helm chart](https://github.com/cloudhut/charts) as well as a [Terraform module](https://github.com/cloudhut/terraform-modules) which makes it easy to deploy Kowl or it's business version on Kubernetes. Please refer to these repos for further documentation and/or help.
