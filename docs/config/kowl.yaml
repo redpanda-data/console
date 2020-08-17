@@ -41,9 +41,9 @@ kafka:
   # writeTimeout: 30s
   # idleTimeout: 30s
   # compressionLevel: 4
-  # basePath: /a/b/c/     # Sub-path under which kowl is hosted. See 'docs/config/hosting.md' for more information.  Default: empty string
-  # setBasePathFromXForwardedPrefix: true  # Whether or not to check the 'X-Forwarded-Prefix' header to (potentially) override 'basePath'. Default: true
-  # stripPrefix: true     # Whether or not kowl should strip the prefix internally. Default: true
+  # basePath: # Sub-path under which kowl is hosted. See 'docs/config/hosting.md' for more information
+  # setBasePathFromXForwardedPrefix: true # Whether or not to check the 'X-Forwarded-Prefix' header to (potentially) override 'basePath'
+  # stripPrefix: true # Whether or not kowl should strip the prefix internally
 
 
 # logger:

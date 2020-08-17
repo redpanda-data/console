@@ -37,7 +37,7 @@ As you can see in [config/kowl.yaml](./kowl.yaml) the config entries can be foun
     Default: `true`
 
 ## Example
-For the curious, here is an example scenario that, albeit pretty contreived, should illustrate nicely how double removal could a problem:
+For the curious, here is an example scenario that, albeit pretty contreived, should illustrate nicely how double removal could be a problem:
 
 > - Traefik configured to route `/topics` to Kowl and enabled "StripPrefix" middleware
 > - Kowl configured with the default settings
