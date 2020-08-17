@@ -9,55 +9,34 @@
     <meta name="description" content="WebApp to explore Kafka Messages, Topics, ..." />
     <script>
         {
-            basePath = "__BASE_PATH_REPLACE_MARKER__";
-            window["BASE_URL"] = basePath;
+            baseUrl = "__BASE_PATH_REPLACE_MARKER__";
+            window["BASE_URL"] = baseUrl;
 
-            if (!basePath.startsWith('__BASE')) {
+            if (!baseUrl.startsWith('__BASE')) {
                 window.__getLocation = function () {
                     return window.location;
                 };
                 var l = window.__getLocation();
                 var base = document.createElement('base');
-                base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + ((basePath.length > 1) ? '/' + basePath : '');
+                base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + baseUrl;
                 document.getElementsByTagName('head')[0].appendChild(base);
             }
         }
     </script>
 
-    <link rel="shortcut icon" type="image/png" href="%PUBLIC_URL%/favicon.png" />
     <link href="https://fonts.googleapis.com/css?family=Quicksand:400,500,600,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet"> -->
     <!-- <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet"> -->
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
+    <link rel="shortcut icon" type="image/png" href="./favicon.png" />
+
+    <link rel="manifest" href="./manifest.json" />
 </head>
 
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
 </body>
 
 </html>

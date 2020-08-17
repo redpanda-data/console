@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -28,6 +29,11 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 		var index []byte
 
 		if basePath, ok := r.Context().Value(BasePathCtxKey).(string); ok && len(basePath) > 0 {
+
+			// prefix must end with slash! otherwise the last segment gets cut off: 'a/b/c' -> "can't find host/a/b/resouce"
+			if !strings.HasSuffix(basePath, "/") {
+				basePath = basePath + "/"
+			}
 			// If we're running under a prefix, we need to let the frontend know
 			// https://github.com/cloudhut/kowl/issues/107
 			index = bytes.ReplaceAll(indexOriginal, basePathMarker, []byte(basePath))

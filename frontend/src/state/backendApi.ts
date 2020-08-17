@@ -3,19 +3,15 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetTopicMessagesResponse, ListMessageResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { ToJson, touch, Cooldown, LazyMap, Timer, TimeSince } from "../utils/utils";
-import { objToQuery } from "../utils/queryHelper";
-import { IsDev, IsBusiness, baseUrl } from "../utils/env";
+import { ToJson, LazyMap, TimeSince } from "../utils/utils";
+import { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
-import { TopicMessageSearchSettings } from "./ui";
-import { ObjToKv } from "../utils/tsxUtils";
-import { ArrowBothIcon } from "@primer/octicons-v2-react";
 
 const REST_TIMEOUT_SEC = IsDev ? 5 : 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -203,8 +199,7 @@ const apiStore = {
         const isHttps = window.location.protocol.startsWith('https');
         const protocol = isHttps ? 'wss://' : 'ws://';
         const host = IsDev ? 'localhost:9090' : window.location.host;
-        const baseUrlPrefix = baseUrl ? ('/' + baseUrl.removeSuffix('/')) : '';
-        const url = protocol + host + baseUrlPrefix + '/api/topics/' + searchRequest.topicName + '/messages';
+        const url = protocol + host + (basePathS ?? '') + '/api/topics/' + searchRequest.topicName + '/messages';
 
         console.log("connecting to \"" + url + "\"");
 

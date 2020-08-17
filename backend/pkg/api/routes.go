@@ -22,7 +22,7 @@ func (api *API) routes() *chi.Mux {
 	handleBasePath := createHandleBasePathMiddleware(api.Cfg.REST.BasePath, api.Cfg.REST.SetBasePathFromXForwardedPrefix, api.Cfg.REST.StripPrefix)
 	baseRouter.Use(recoverer.Wrap,
 		chimiddleware.RealIP,
-		requirePrefix(api.Cfg.REST.BasePath), // only for debugging
+		// requirePrefix(api.Cfg.REST.BasePath), // only for debugging
 		handleBasePath,
 		chimiddleware.StripSlashes, // Doesn't really help for the Frontend because the SPA is in charge of it
 	)
