@@ -1,5 +1,10 @@
 # Changelog
 
+## Master / unreleased
+
+- [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
+
+
 ## 1.1.0 / 2020-08-06
 
 - [CHANGE] Business: Reworked groups syncing (Google + GitHub)

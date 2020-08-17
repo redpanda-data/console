@@ -39,6 +39,15 @@ export const IsDev = isDev;
 export const IsBusiness = Boolean(env.REACT_APP_BUSINESS);
 export const AppName = IsBusiness ? 'Kowl Business' : 'Kowl';
 
+const basePathRaw: string = (window as any)["BASE_URL"];
+const basePath = (typeof basePathRaw === 'string' && !basePathRaw.startsWith('__BASE_PATH'))
+    ? basePathRaw
+    : undefined;
+export const basePathNo = basePath ? basePath.removePrefix('/').removeSuffix('/') : undefined;
+export const basePathS = basePathNo ? '/' + basePathNo : undefined;
+export const basePathE = basePathNo ? basePathNo + '/' : undefined;
+
+
 export function getBuildDate(): Date | undefined {
     const timestamp = +env.REACT_APP_KOWL_TIMESTAMP;
     if (timestamp == 0) return undefined;

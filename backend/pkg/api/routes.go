@@ -1,13 +1,14 @@
 package api
 
 import (
+	"path/filepath"
+
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-	"path/filepath"
 )
 
 // All the routes for the application are defined in one place.
@@ -18,9 +19,11 @@ func (api *API) routes() *chi.Mux {
 
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
 	recoverer := middleware.Recoverer{Logger: api.Logger}
+	handleBasePath := createHandleBasePathMiddleware(api.Cfg.REST.BasePath, api.Cfg.REST.SetBasePathFromXForwardedPrefix, api.Cfg.REST.StripPrefix)
 	baseRouter.Use(recoverer.Wrap,
 		chimiddleware.RealIP,
-		chimiddleware.URLFormat,
+		// requirePrefix(api.Cfg.REST.BasePath), // only for debugging
+		handleBasePath,
 		chimiddleware.StripSlashes, // Doesn't really help for the Frontend because the SPA is in charge of it
 	)
 
@@ -71,21 +74,18 @@ func (api *API) routes() *chi.Mux {
 
 		if api.Cfg.ServeFrontend {
 			// Check if the frontend directory 'build' exists
-			dir, err := filepath.Abs(api.Cfg.FrontendPath)
+			frontendDir, err := filepath.Abs(api.Cfg.FrontendPath)
 			if err != nil {
-				api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", dir), zap.Error(err))
+				api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", frontendDir), zap.Error(err))
 			}
 
 			// SPA Files
-			index, err := api.getIndexFile(dir)
-			if err != nil {
-				api.Logger.Fatal("cannot load frontend index file", zap.String("directory", dir), zap.Error(err))
-			}
 			router.Group(func(r chi.Router) {
 				r.Use(cache)
 
-				r.Get("/", api.handleGetIndex(index))
-				r.Get("/*", api.handleGetStaticFile(index, dir))
+				handleIndex, handleResources := api.createFrontendHandlers(frontendDir)
+				r.Get("/", handleIndex)
+				r.Get("/*", handleResources)
 			})
 		} else {
 			api.Logger.Info("no static files will be served as serving the frontend has been disabled")

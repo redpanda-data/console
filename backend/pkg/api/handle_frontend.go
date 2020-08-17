@@ -1,51 +1,70 @@
 package api
 
 import (
+	"bytes"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 )
 
-// getIndexFile loads and prepares the template index.html.
-// Before returning, this method injects the needed server variables (like
-// for example __COMMIT_SHA__) so the file is ready to be sent to a connecting browser.
-func (api *API) getIndexFile(filePath string) ([]byte, error) {
-	indexPath := filePath + "/index.html"
-	index, err := ioutil.ReadFile(indexPath)
-	if err != nil {
-		return nil, err
-	}
-	return index, nil
-}
+// createFrontendHandlers creates two handlers: one to handle the '/' route and one to handle any other route
+func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.HandlerFunc, handleFrontendResources http.HandlerFunc) {
 
-// handleGetStaticFile tries to open the requested file. If this file does not exist it will return the
-// SPA (index.html) instead.
-func (api *API) handleGetStaticFile(index []byte, rootPath string) http.HandlerFunc {
-	root := http.Dir(rootPath)
+	indexPath := frontendDir + "/index.html"
+	indexOriginal, err := ioutil.ReadFile(indexPath)
+	if err != nil {
+		api.Logger.Fatal("cannot load frontend index file", zap.String("directory", frontendDir), zap.Error(err))
+		return nil, nil
+	}
+
+	basePathMarker := []byte(`__BASE_PATH_REPLACE_MARKER__`)
+
+	//
+	// 1. handler for '/' returning index.html
+	//
+	handleIndex = func(w http.ResponseWriter, r *http.Request) {
+		var index []byte
+
+		if basePath, ok := r.Context().Value(BasePathCtxKey).(string); ok && len(basePath) > 0 {
+
+			// prefix must end with slash! otherwise the last segment gets cut off: 'a/b/c' -> "can't find host/a/b/resouce"
+			if !strings.HasSuffix(basePath, "/") {
+				basePath = basePath + "/"
+			}
+			// If we're running under a prefix, we need to let the frontend know
+			// https://github.com/cloudhut/kowl/issues/107
+			index = bytes.ReplaceAll(indexOriginal, basePathMarker, []byte(basePath))
+		} else {
+			// no change
+			index = indexOriginal
+		}
+
+		_, err := w.Write(index)
+		if err != nil {
+			api.Logger.Error("failed to write index file to response writer", zap.Error(err))
+		}
+	}
+
+	//
+	// 2. handler for any other path, returning the static file or fallback to index
+	//
+	root := http.Dir(frontendDir)
 	fs := http.StripPrefix("/", http.FileServer(root))
 
-	return func(w http.ResponseWriter, r *http.Request) {
+	handleFrontendResources = func(w http.ResponseWriter, r *http.Request) {
 		f, err := root.Open(r.RequestURI)
 		if os.IsNotExist(err) {
 			api.Logger.Debug("requested file not found", zap.String("file", r.RequestURI))
-			// everything else goes to index as well
-			w.Write(index)
+			handleIndex(w, r) // everything else goes to index as well
 			return
 		}
 		defer f.Close()
 
 		fs.ServeHTTP(w, r)
 	}
-}
 
-// handleGetIndex returns the SPA (index.html)
-func (api *API) handleGetIndex(index []byte) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(index)
-		if err != nil {
-			api.Logger.Error("failed to write index file to response writer", zap.Error(err))
-		}
-	}
+	return
 }

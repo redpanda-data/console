@@ -3,19 +3,20 @@ package api
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
 type Config struct {
 	ConfigFilepath   string
 	MetricsNamespace string `yaml:"metricsNamespace"`
-	ServeFrontend    bool   `yaml:"serveFrontend"`
-	FrontendPath     string `yaml:"frontendPath"`
+	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
+	FrontendPath     string `yaml:"frontendPath"`  // path to frontend files (index.html), set to './build' by default
 
 	REST   rest.Config    `yaml:"server"`
 	Kafka  kafka.Config   `yaml:"kafka"`
