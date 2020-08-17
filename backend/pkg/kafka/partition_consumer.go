@@ -1,28 +1,12 @@
 package kafka
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"github.com/robertkrimen/otto"
-	"strings"
-	"time"
-	"unicode/utf8"
-
 	"github.com/Shopify/sarama"
-	xj "github.com/basgys/goxml2json"
-	"github.com/valyala/fastjson"
+	"github.com/dop251/goja"
 	"go.uber.org/zap"
-)
-
-type valueType string
-
-const (
-	valueTypeJSON   valueType = "json"
-	valueTypeXML    valueType = "xml"
-	valueTypeText   valueType = "text"
-	valueTypeBinary valueType = "binary"
+	"time"
 )
 
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
@@ -40,10 +24,10 @@ type TopicMessage struct {
 	Offset      int64 `json:"offset"`
 	Timestamp   int64 `json:"timestamp"`
 
-	Key       DirectEmbedding `json:"key"`
-	KeyType   string          `json:"keyType"`
-	Value     DirectEmbedding `json:"value"`
-	ValueType string          `json:"valueType"`
+	Key       *deserializedPayload `json:"key"`
+	KeyType   string               `json:"keyType"`
+	Value     *deserializedPayload `json:"value"`
+	ValueType string               `json:"valueType"`
 
 	Size        int  `json:"size"`
 	IsValueNull bool `json:"isValueNull"`
@@ -65,8 +49,8 @@ type interpreterArguments struct {
 	PartitionID int32
 	Offset      int64
 	Timestamp   time.Time
-	Key         DirectEmbedding
-	Value       DirectEmbedding
+	Key         interface{}
+	Value       interface{}
 }
 
 type PartitionConsumer struct {
@@ -82,7 +66,7 @@ type PartitionConsumer struct {
 	TopicName string
 	Req       *PartitionConsumeRequest
 
-	VM                    *otto.Otto
+	Deserializer          *deserializer
 	FilterInterpreterCode string
 }
 
@@ -125,17 +109,17 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 			p.Progress.OnMessageConsumed(int64(messageSize))
 
 			// Run Interpreter filter and check if message passes the filter
-			vType, value := p.getValue(m.Value)
-			kType, key := p.getValue(m.Key)
+			value := p.Deserializer.DeserializePayload(m.Value)
+			key := p.Deserializer.DeserializePayload(m.Key)
 
 			topicMessage := &TopicMessage{
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp.Unix(),
 				Key:         key,
-				KeyType:     string(kType),
+				KeyType:     string(key.RecognizedEncoding),
 				Value:       value,
-				ValueType:   string(vType),
+				ValueType:   string(value.RecognizedEncoding),
 				Size:        len(m.Value),
 				IsValueNull: m.Value == nil,
 			}
@@ -145,15 +129,15 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp,
-				Key:         key,
-				Value:       value,
+				Key:         key.Object,
+				Value:       value.Object,
 			}
 
 			isOK, err := isMessageOK(args)
 			if err != nil {
 				// TODO: This might be changed to debug level, because operators probably do not care about user failures?
 				p.Logger.Info("failed to check if message is ok", zap.Error(err))
-				p.Progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v')", m.Partition, m.Offset))
+				p.Progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v'). Error: %v", m.Partition, m.Offset, err))
 				return
 			}
 			if isOK {
@@ -179,48 +163,6 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 	}
 }
 
-// getValue returns the valueType along with it's DirectEmbedding which implements a custom Marshaller,
-// so that it can return a string in the desired representation, regardless whether it's binary, text, xml
-// or JSON data.
-func (p *PartitionConsumer) getValue(value []byte) (valueType, DirectEmbedding) {
-	if len(value) == 0 {
-		return "", DirectEmbedding{ValueType: "", Value: value}
-	}
-
-	trimmed := bytes.TrimLeft(value, " \t\r\n")
-	if len(trimmed) == 0 {
-		return valueTypeText, DirectEmbedding{ValueType: valueTypeText, Value: value}
-	}
-
-	// 1. Test for valid JSON
-	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
-	if startsWithJSON {
-		err := fastjson.Validate(string(trimmed))
-		if err == nil {
-			return valueTypeJSON, DirectEmbedding{ValueType: valueTypeJSON, Value: trimmed}
-		}
-	}
-
-	// 2. Test for valid XML
-	startsWithXML := trimmed[0] == '<'
-	if startsWithXML {
-		r := strings.NewReader(string(trimmed))
-		json, err := xj.Convert(r)
-		if err == nil {
-			return valueTypeXML, DirectEmbedding{ValueType: valueTypeXML, Value: json.Bytes()}
-		}
-	}
-
-	// 3. Test for UTF-8 validity
-	isUTF8 := utf8.Valid(value)
-	if isUTF8 {
-		return valueTypeText, DirectEmbedding{ValueType: valueTypeText, Value: value}
-	}
-
-	b64 := []byte(base64.StdEncoding.EncodeToString(value))
-	return valueTypeBinary, DirectEmbedding{ValueType: valueTypeBinary, Value: b64}
-}
-
 // SetupInterpreter initializes the JavaScript interpreter along with the given JS code. It returns a wrapper function
 // which accepts all Kafka message properties (offset, key, value, ...) and returns true (message shall be returned) or false
 // (message shall be filtered).
@@ -230,18 +172,11 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		return func(args interpreterArguments) (bool, error) { return true, nil }, nil
 	}
 
-	vm := otto.New()
-	vm.Interrupt = make(chan func(), 1)
-
-	code := fmt.Sprintf(`interpreter = {isMessageOk: function(partitionId, offset, timestamp, key, value) {%s}}`, p.FilterInterpreterCode)
-	_, err := vm.Run(code)
+	vm := goja.New()
+	code := fmt.Sprintf(`var isMessageOk = function() {%s}`, p.FilterInterpreterCode)
+	_, err := vm.RunString(code)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile given interpreter code: %w", err)
-	}
-
-	interpreter, err := vm.Object("interpreter")
-	if err != nil {
-		return nil, err
 	}
 
 	// We use named return parameter here because this way we can return a error message in recover().
@@ -253,52 +188,31 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		errTimeout := "interpreter execution has taken too long"
-		defer func() {
-			if caught := recover(); caught != nil {
-				if caught == errTimeout {
-					err = fmt.Errorf(errTimeout)
-					return
-				}
-				panic(caught) // Something else happened, repanic!
-			}
-		}()
-
 		// Send interrupt signal to VM if execution has taken too long
 		go func() {
 			timer := time.NewTimer(400 * time.Millisecond)
 
 			select {
 			case <-timer.C:
-				vm.Interrupt <- func() { panic(errTimeout) }
+				vm.Interrupt("timeout after 400ms")
 				return
 			case <-ctx.Done():
 				return
 			}
 		}()
 
-		// 2. Run JavaScript code inside of VM
-		// Parse kafka key and message to a Go type (interface{} for JSON, string for text, etc)
-		key, err := args.Key.Parse()
-		if err != nil {
-			return false, fmt.Errorf("failed to parse key (partition '%v', offset '%v')", args.PartitionID, args.Offset)
-		}
-		value, err := args.Value.Parse()
-		if err != nil {
-			return false, fmt.Errorf("failed to parse value (partition '%v', offset '%v')", args.PartitionID, args.Offset)
-		}
-
 		// Call Javascript function and check if it could be evaluated and whether it returned true or false
-		val, err := interpreter.Call("isMessageOk", args.PartitionID, args.Offset, args.Timestamp, key, value)
+		vm.Set("partitionID", args.PartitionID)
+		vm.Set("offset", args.Offset)
+		vm.Set("timestamp", args.Timestamp)
+		vm.Set("key", args.Key)
+		vm.Set("value", args.Value)
+		isOkRes, err := vm.RunString("isMessageOk()")
 		if err != nil {
 			return false, fmt.Errorf("failed to evaluate javascript code: %w", err)
 		}
-		isOk, err = val.ToBoolean()
-		if err != nil {
-			return false, fmt.Errorf("failed to cast return type to boolean: %w", err)
-		}
 
-		return isOk, nil
+		return isOkRes.ToBoolean(), nil
 	}
 
 	return isMessageOk, nil

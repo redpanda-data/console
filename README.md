@@ -12,7 +12,7 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 ## Features
 
-- **Message viewer:** Explore your topics' messages in our message viewer through ad-hoc queries and dynamic filters. Find any message you want using JavaScript functions to filter messages. Supported encodings are: JSON, XML, Text and Binary (hex view). Avro support is being worked on (https://github.com/cloudhut/kowl/issues/9)
+- **Message viewer:** Explore your topics' messages in our message viewer through ad-hoc queries and dynamic filters. Find any message you want using JavaScript functions to filter messages. Supported encodings are: JSON, Avro, XML, Text and Binary (hex view)
 - **Consumer groups:** List all your active consumer groups along with their active group offsets. You can view a visualization of group lags either by topic (sum of all partition lags), single partitions or the sum of all partition lags (group lag)
 - **Topic overview:** Browse through the list of your Kafka topics, check their configuration, space usage, list all consumers who consume a single topic or watch partition details (such as low and high water marks, message count, ...).
 - **Cluster overview:** List available brokers, their space usage, rack id and other information to get a high level overview of your brokers in your cluster.
@@ -32,11 +32,20 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 \*If you want to participate in the free beta sign in here: https://license.cloudhut.dev/ . You'll get a forever free license for 2 seats. If you need more than 2 seats, just drop us an email at info@cloudhut.dev
 
-## Documentation
+## Getting Started
 
-The documentation, including links to our Terraform module & Helm chart for Kowl (Business) is available at [/docs](./docs).
+### Prerequisites
 
-If you want to run Kowl locally take a look at the docker compose sample: [/docs/local](./docs/local)
+- Kafka Cluster (v1.0.0+) connectivity
+- At least one OAuth app for SSO (Kowl business only)
+
+### Installing
+
+We offer pre built docker images for Kowl (Business), a Helm chart and a Terraform module to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](./docs/installation.md).
+
+### Docker Compose (running locally)
+
+If you want to run Kowl locally take a look at the docker compose sample: [/docs/local](./docs/local).
 
 ## Sponsors
 

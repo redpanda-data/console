@@ -1,6 +1,9 @@
 package kafka
 
 import (
+	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/schema"
+	"go.uber.org/zap/zapcore"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -10,9 +13,55 @@ import (
 
 // Service acts as interface to interact with the Kafka Cluster
 type Service struct {
-	MetricsNamespace string
-	Client           sarama.Client
 	Logger           *zap.Logger
+	Client           sarama.Client
+	SchemaService    *schema.Service
+	Deserializer     deserializer
+	MetricsNamespace string
+}
+
+// NewService creates a new Kafka service and immediately checks connectivity to all components. If any of these external
+// dependencies fail an error wil be returned.
+func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Service, error) {
+	// Create separate logger for sarama
+	saramaLogger, err := zap.NewStdLogAt(logger.With(zap.String("source", "sarama")), zapcore.DebugLevel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create std logger for sarama: %w", err)
+	}
+	sarama.Logger = saramaLogger
+
+	// Sarama Config
+	saramaConfig, err := NewSaramaConfig(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create a valid sarama config: %w", err)
+	}
+
+	// Sarama Client
+	logger.Info("connecting to Kafka cluster")
+	client, err := sarama.NewClient(cfg.Brokers, saramaConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kafka client: %w", err)
+	}
+	logger.Info("connected to at least one Kafka broker")
+
+	// Schema Registry
+	var schemaSvc *schema.Service
+	if cfg.Schema.Enabled {
+		logger.Info("connecting to schema registry")
+		schemaSvc = schema.NewSevice(cfg.Schema)
+		err := schemaSvc.CheckConnectivity()
+		if err != nil {
+			return nil, fmt.Errorf("failed to verify connectivity to schema registry: %w", err)
+		}
+	}
+
+	return &Service{
+		Logger:           logger,
+		Client:           client,
+		SchemaService:    schemaSvc,
+		Deserializer:     deserializer{SchemaService: schemaSvc},
+		MetricsNamespace: metricsNamespace,
+	}, nil
 }
 
 // Start initializes the Kafka Service and takes care of stuff like KeepAlive

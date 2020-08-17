@@ -26,6 +26,12 @@ kafka:
   #   keyFilepath:
   #   passphrase: # This can be set via the --kafka.tls.passphrase flag as well
   #   insecureSkipTlsVerify: false
+  # schemaRegistry:
+  #   enabled: true
+  #   urls: [] # Url with scheme is required, e.g. ["http://localhost:8081"]
+  #   username: # Basic auth username
+  #   password: # Basic auth password
+  #   bearerToken:
 
 # server:
   # listenPort: 8080
@@ -38,6 +44,7 @@ kafka:
   # basePath: /a/b/c/     # Sub-path under which kowl is hosted. See 'docs/config/hosting.md' for more information.  Default: empty string
   # setBasePathFromXForwardedPrefix: true  # Whether or not to check the 'X-Forwarded-Prefix' header to (potentially) override 'basePath'. Default: true
   # stripPrefix: true     # Whether or not kowl should strip the prefix internally. Default: true
+
 
 # logger:
 #   level: info
