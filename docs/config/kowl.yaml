@@ -34,13 +34,17 @@ kafka:
   #   bearerToken:
 
 # server:
-#   listenPort: 8080
-#   gracefulShutdownTimeout: 30s
-#   listenPort: 8080
-#   readTimeout: 30s
-#   writeTimeout: 30s
-#   idleTimeout: 30s
-#   compressionLevel: 4
+  # listenPort: 8080
+  # gracefulShutdownTimeout: 30s
+  # listenPort: 8080
+  # readTimeout: 30s
+  # writeTimeout: 30s
+  # idleTimeout: 30s
+  # compressionLevel: 4
+  # basePath: # Sub-path under which kowl is hosted. See 'docs/config/hosting.md' for more information
+  # setBasePathFromXForwardedPrefix: true # Whether or not to check the 'X-Forwarded-Prefix' header to (potentially) override 'basePath'
+  # stripPrefix: true # Whether or not kowl should strip the prefix internally
+
 
 # logger:
 #   level: info

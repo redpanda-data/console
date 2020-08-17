@@ -3,10 +3,8 @@ import { History } from 'history';
 import { api } from './backendApi';
 import { uiState } from './uiState';
 
-
 class AppGlobal {
     private _history = (null as unknown as History<any>);
-
     get history() { return this._history };
 
     set history(h: History<any>) {
@@ -22,6 +20,6 @@ class AppGlobal {
         uiState.pathName = h.location.pathname;
     };
 
-    onRefresh: (()=>void) = () => {};
+    onRefresh: (() => void) = () => { };
 }
 export const appGlobal = new AppGlobal();

@@ -13,14 +13,19 @@ import 'mobx-react-lite/batchingForReactDom'
 
 import App from "./components/App";
 import { appGlobal } from "./state/appGlobal";
+import { basePathS } from "./utils/env";
 
 const HistorySetter = withRouter((p: RouteComponentProps) => {
     appGlobal.history = p.history;
     return <></>;
 });
 
+
+// > A properly formatted basename should have a leading slash, but no trailing slash.
+// https://reactrouter.com/web/api/BrowserRouter
+
 ReactDOM.render(
-    <BrowserRouter>
+    <BrowserRouter basename={basePathS}>
         <HistorySetter />
         <App />
     </BrowserRouter>,
