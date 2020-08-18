@@ -31,3 +31,28 @@ func (api *API) handleDescribeCluster() http.HandlerFunc {
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
 }
+
+func (api *API) handleClusterConfig() http.HandlerFunc {
+	type response struct {
+		ClusterConfig owl.ClusterConfig `json:"clusterConfig"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		clusterConfig, err := api.OwlSvc.GetClusterConfig(r.Context())
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusInternalServerError,
+				Message:  "Could not get cluster config",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		response := response{
+			ClusterConfig: clusterConfig,
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
+	}
+}

@@ -8,6 +8,7 @@ import { TimestampDisplayFormat } from "../state/ui";
 import { observer } from "mobx-react";
 import { motion } from "framer-motion";
 import { animProps } from "./animationProps";
+import { SizeType } from "antd/lib/config-provider/SizeContext";
 
 
 
@@ -154,14 +155,15 @@ export class OptionGroup<T> extends Component<{
     options: { [key: string]: any },
     value: T,
     onChange: (value: T) => void,
-    children?: never
+    children?: never,
+    size?: SizeType,
 }> {
 
     render() {
         const p = this.props;
 
         const radioGroup = (
-            <Radio.Group value={p.value} onChange={e => p.onChange(e.target.value)}>
+            <Radio.Group value={p.value} onChange={e => p.onChange(e.target.value)} size={p.size ?? 'middle'}>
                 {ObjToKv(p.options).map(kv =>
                     <Radio.Button key={kv.key} value={kv.value}>{kv.key}</Radio.Button>
                 )}

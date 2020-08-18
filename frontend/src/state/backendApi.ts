@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -160,6 +160,7 @@ const apiStore = {
     // Data
     Clusters: ['A', 'B', 'C'],
     ClusterInfo: null as (ClusterInfo | null),
+    ClusterConfig: null as (ClusterConfig | null),
     AdminInfo: null as (AdminInfo | null),
 
     Topics: null as (TopicDetail[] | null),
@@ -354,6 +355,11 @@ const apiStore = {
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
             .then(v => this.ClusterInfo = v.clusterInfo, addError);
+    },
+
+    refreshClusterConfig(force?: boolean) {
+        cachedApiRequest<ClusterConfigResponse>(`./api/cluster/config`, force)
+            .then(v => this.ClusterConfig = v.clusterConfig, addError);
     },
 
     refreshConsumerGroups(force?: boolean) {
