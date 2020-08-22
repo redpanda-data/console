@@ -53,6 +53,12 @@ export interface TopicMessage {
     keyType: MessageDataType,
     key: any, // base64 encoded key of the message
 
+    headers: {
+        key: string,
+        value: string,
+        valueEncoding: MessageDataType // for now: always text
+    }[]
+
     valueType: MessageDataType, // actual format of the message (before the backend converted it to json)
     value: any, // json representation of the message value (xml, avro, etc will get converted)
 

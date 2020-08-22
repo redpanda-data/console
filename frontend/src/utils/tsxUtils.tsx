@@ -101,9 +101,9 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
             {entries.map((obj, i) =>
                 <React.Fragment key={i}>
                     <tr>
-                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }}>{obj.key}</td>
+                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className='keyCell'>{obj.key}</td>
                         <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
-                        <td style={{ ...o.valueStyle }}>{obj.value}</td>
+                        <td style={{ ...o.valueStyle }} className='valueCell'>{obj.value}</td>
                     </tr>
 
                     {showVerticalGutter && (i < entries.length - 1) &&
