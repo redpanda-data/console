@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -165,6 +165,7 @@ const apiStore = {
 
     Topics: null as (TopicDetail[] | null),
     TopicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
+    TopicDocumentation: new Map<string, string>(),
     TopicPermissions: new Map<string, TopicPermissions>(),
     TopicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     TopicConsumers: new Map<string, TopicConsumer[]>(),
@@ -333,6 +334,11 @@ const apiStore = {
     refreshTopicConfig(topicName: string, force?: boolean) {
         cachedApiRequest<TopicConfigResponse>(`./api/topics/${topicName}/configuration`, force)
             .then(v => this.TopicConfig.set(topicName, v?.topicDescription?.configEntries ?? null), addError);
+    },
+
+    refreshTopicDocumentation(topicName: string, force?: boolean) {
+        cachedApiRequest<TopicDocumentationResponse>(`./api/topics/${topicName}/documentation`, force)
+            .then(v => this.TopicDocumentation.set(topicName, atob(v.documentation.markdown)), addError);
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
