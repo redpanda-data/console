@@ -21,10 +21,11 @@ import { Label, ObjToKv, OptionGroup, DefaultSkeleton } from "../../../utils/tsx
 import { LockIcon, EyeClosedIcon } from "@primer/octicons-v2-react";
 import { computed, observable } from "mobx";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
+import { TopicDocumentation } from "./Tab.Docu";
 
 const { Text } = Typography;
 
-const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration'] as const;
+const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation'] as const;
 export type TopicTabId = typeof TopicTabIds[number];
 
 class TopicTab {
@@ -81,6 +82,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', t => <TopicConsumers topic={t} />),
             new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', t => <TopicPartitions topic={t} />),
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', t => <TopicConfiguration topic={t} />),
+            new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', t => <TopicDocumentation topic={t} />),
         ];
     }
 
