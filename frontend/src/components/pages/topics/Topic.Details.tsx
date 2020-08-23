@@ -28,17 +28,24 @@ const { Text } = Typography;
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation'] as const;
 export type TopicTabId = typeof TopicTabIds[number];
 
+// A tab (specifying title+content) that disable/lock itself if the user doesn't have some required permissions.
 class TopicTab {
     constructor(
-        private topicGetter: () => TopicDetail | undefined | null,
+        public readonly topicGetter: () => TopicDetail | undefined | null,
         public id: TopicTabId,
         private requiredPermission: TopicAction,
         public titleText: string,
-        private contentFunc: (topic: TopicDetail) => React.ReactNode
+        private contentFunc: (topic: TopicDetail) => React.ReactNode,
+        private disableHooks?: ((topic: TopicDetail) => React.ReactNode | undefined)[]
     ) { }
 
     @computed get isEnabled(): boolean {
         const topic = this.topicGetter();
+
+        if (topic && this.disableHooks)
+            for (const h of this.disableHooks)
+                if (h(topic)) return false;
+
         if (!topic)
             return true; // no data yet
         if (!topic.allowedActions || topic.allowedActions[0] == 'all')
@@ -53,6 +60,13 @@ class TopicTab {
 
     @computed get title(): React.ReactNode {
         if (this.isEnabled) return this.titleText;
+
+        const topic = this.topicGetter();
+        if (topic && this.disableHooks)
+            for (const h of this.disableHooks) {
+                const replacementTitle = h(topic);
+                if (replacementTitle) return replacementTitle;
+            }
 
         return 1 &&
             <Popover content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}>
@@ -77,12 +91,27 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         super(props);
 
         const topic = () => this.topic;
+        const hasDocu = (t: TopicDetail) => {
+            const docu = api.TopicDocumentation.get(t.topicName);
+            if (docu && docu.length > 0) return true;
+            return false;
+        }
+        const noDocuInfo = <div>
+            <div>There is no topic documentation available for this topic.</div>
+            <div>Check out the documentation to see how to add it.</div>
+        </div>
+        const noDocuTitle = (t: TopicDetail) => <Popover content={noDocuInfo}>
+            <span>Documentation</span>
+        </Popover>
+
         this.topicTabs = [
             new TopicTab(topic, 'messages', 'viewMessages', 'Messages', t => <TopicMessageView topic={t} />),
             new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', t => <TopicConsumers topic={t} />),
             new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', t => <TopicPartitions topic={t} />),
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', t => <TopicConfiguration topic={t} />),
-            new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', t => <TopicDocumentation topic={t} />),
+            new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', t => <TopicDocumentation topic={t} />, [
+                t => hasDocu(t) ? null : noDocuTitle(t)
+            ]),
         ];
     }
 
@@ -109,6 +138,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         api.refreshTopicConfig(this.props.topicName, force);
 
         api.refreshTopicPermissions(this.props.topicName, force);
+
+        api.refreshTopicDocumentation(this.props.topicName);
     }
 
 
