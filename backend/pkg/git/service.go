@@ -3,6 +3,14 @@ package git
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"path"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
@@ -11,13 +19,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"go.uber.org/zap"
-	"os"
-	"os/signal"
-	"path"
-	"strings"
-	"sync"
-	"syscall"
-	"time"
 )
 
 // Service provides functionality to serve files from a git repository. The contents are stored in memory.
@@ -149,18 +150,19 @@ func (c *Service) setDocumentations(markdowns map[string][]byte) {
 	c.markdownsByName = markdowns
 }
 
-// GetTopicDocumentation returns the cached markdown content for a given topicName. The topicName parameter must match
-// the filename in the git repository (case sensitive). If there's no match an error will be returned.
-func (c *Service) GetTopicDocumentation(topicName string) ([]byte, error) {
+// GetTopicDocumentation returns the cached markdown content for a given topicName.
+// The topicName parameter must match the filename in the git repository (case sensitive).
+// If there's no match, an empty string (empty byte array) will be returned.
+func (c *Service) GetTopicDocumentation(topicName string) []byte {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
 	contents, exists := c.markdownsByName[topicName]
 	if !exists {
-		return nil, fmt.Errorf("for the given topicname there's no documentation available")
+		return []byte("")
 	}
 
-	return contents, nil
+	return contents
 }
 
 // readMarkdowns recursively reads the file systems' files until it has read all files or max depth is reached.

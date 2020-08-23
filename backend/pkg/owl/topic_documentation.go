@@ -13,11 +13,7 @@ func (s *Service) GetTopicDocumentation(topicName string) (*TopicDocumentation, 
 		return nil, fmt.Errorf("git service is not configured")
 	}
 
-	markdown, err := s.gitSvc.GetTopicDocumentation(topicName)
-	if err != nil {
-		// TODO: Add 404 handling?
-		return nil, err
-	}
+	markdown := s.gitSvc.GetTopicDocumentation(topicName)
 
 	return &TopicDocumentation{
 		Markdown: markdown,
