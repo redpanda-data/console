@@ -1281,3 +1281,35 @@ svg {
         background: hsl(0, 45%, 80%, );
     }
 }
+
+.topicDocumentation {
+    padding: 0 16px;
+
+    p {
+        margin-left: 2px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        margin-top: 0.8em;
+    }
+
+    pre {
+        // margin-left: 12px;
+        padding: 12px;
+        font-family: monospace;
+        font-size: 14px;
+        line-height: 1.45;
+        color: #333;
+        background-color: #f6f8fa;
+        border-radius: 3px;
+        overflow: auto;
+    }
+}

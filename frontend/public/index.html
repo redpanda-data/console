@@ -15,8 +15,8 @@
             window.__getLocation = function () {
                 return window.location;
             };
-            var l = window.__getLocation();
-            var base = document.createElement('base');
+            let l = window.__getLocation();
+            let base = document.createElement('base');
             if (!baseUrl.startsWith('__BASE')) {
                 base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + baseUrl;
             } else {
