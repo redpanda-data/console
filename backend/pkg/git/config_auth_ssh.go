@@ -6,7 +6,7 @@ type SSHConfig struct {
 	Enabled            bool   `yaml:"enabled"`
 	Username           string `yaml:"username"`
 	PrivateKey         string `yaml:"privateKey"` // user can either pass the key directly or let Kowl load it from disk
-	PrivateKeyFilePath string `yaml:"privateKeyFilePath"`
+	PrivateKeyFilePath string `yaml:"privateKeyFilepath"`
 	Passphrase         string `yaml:"passphrase"`
 }
 

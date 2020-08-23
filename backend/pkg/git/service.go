@@ -6,6 +6,7 @@ import (
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
@@ -69,10 +70,15 @@ func (c *Service) CloneDocumentation(ctx context.Context) error {
 	c.docuFs = fs
 
 	// 1. Clone repository
+	var referenceName plumbing.ReferenceName
+	if c.Cfg.TopicDocumentationRepo.Branch != "" {
+		referenceName = plumbing.NewBranchReferenceName(c.Cfg.TopicDocumentationRepo.Branch)
+	}
 	c.logger.Info("cloning git repository for topic documentation", zap.String("url", c.Cfg.TopicDocumentationRepo.URL))
 	repo, err := git.CloneContext(ctx, memory.NewStorage(), fs, &git.CloneOptions{
-		URL:  c.Cfg.TopicDocumentationRepo.URL,
-		Auth: c.auth,
+		URL:           c.Cfg.TopicDocumentationRepo.URL,
+		Auth:          c.auth,
+		ReferenceName: referenceName,
 	})
 	if err != nil {
 		return err

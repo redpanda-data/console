@@ -7,9 +7,9 @@ import (
 
 type RepositoryConfig struct {
 	Enabled         bool          `yaml:"enabled"`
-	URL             string        `yaml:"url"`
+	URL             string        `yaml:"repoUrl"`
 	Branch          string        `yaml:"branch"`
-	RefreshInterval time.Duration `yaml:"refreshInterval"` // TODO: Check time duration parsing
+	RefreshInterval time.Duration `yaml:"refreshInterval"`
 }
 
 // Validate given input for config properties

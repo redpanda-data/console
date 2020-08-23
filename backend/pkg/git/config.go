@@ -7,7 +7,7 @@ import (
 // Config for Git Service
 type Config struct {
 	// There might come more repositories (e. g. protobuf?) which we want to serve
-	TopicDocumentationRepo RepositoryConfig `yaml:"topicDocumentationRepository"`
+	TopicDocumentationRepo RepositoryConfig `yaml:"topicDocumentation"`
 
 	// Authentication Configs
 	BasicAuth BasicAuthConfig `yaml:"basicAuth"`
