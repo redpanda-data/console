@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-// handleGetPartitions returns an overview of all partitions and their watermarks in the given topic
+// handleGetTopicDocumentation returns the respective topic documentation from the git repository
 func (api *API) handleGetTopicDocumentation() http.HandlerFunc {
 	type response struct {
 		TopicName     string                  `json:"topicName"`
@@ -20,7 +20,6 @@ func (api *API) handleGetTopicDocumentation() http.HandlerFunc {
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		doc, err := api.OwlSvc.GetTopicDocumentation(topicName)
-		// TODO: 404
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
