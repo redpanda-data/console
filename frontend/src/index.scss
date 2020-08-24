@@ -1309,8 +1309,27 @@ svg {
         font-size: 14px;
         line-height: 1.45;
         color: #333;
-        background-color: #f6f8fa;
+        background-color: #f5f8fb;
         border-radius: 3px;
         overflow: auto;
+    }
+
+    table {
+        margin-bottom: 16px;
+
+        td,
+        th {
+            padding: 6px 13px;
+            border: 1px solid hsl(210deg, 7%, 86%);
+        }
+
+        th {
+            font-weight: 600;
+        }
+
+        th,
+        tr:nth-child(2n) {
+            background-color: #f5f8fb;
+        }
     }
 }
