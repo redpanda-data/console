@@ -200,7 +200,7 @@ const apiStore = {
         const isHttps = window.location.protocol.startsWith('https');
         const protocol = isHttps ? 'wss://' : 'ws://';
         const host = IsDev ? 'localhost:9090' : window.location.host;
-        const url = protocol + host + (basePathS ?? '') + '/api/topics/' + searchRequest.topicName + '/messages';
+        const url = protocol + host + basePathS + '/api/topics/' + searchRequest.topicName + '/messages';
 
         console.log("connecting to \"" + url + "\"");
 
