@@ -568,7 +568,7 @@ span>.icon-container~span {
 
 .ant-menu.ant-menu-dark .ant-menu-item-selected,
 .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
-    background-color: hsla(209, 72%, 59%, 0.68);
+    background-color: hsla(209, 70%, 55%, 0.6);
 }
 
 .ant-checkbox-wrapper {
@@ -580,7 +580,8 @@ span>.icon-container~span {
     border-color: hsla(209, 50%, 55%, 1);
 }
 
-.ant-btn-primary {
+.ant-btn-primary,
+.ant-switch-checked {
     background-color: hsla(209, 66%, 55%, 1);
     border-color: transparent;
 }
