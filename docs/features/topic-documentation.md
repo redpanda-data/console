@@ -4,7 +4,8 @@ If you wish to embed your topic's documentation into the Kowl user interface you
 
 ## How does it work
 
-Kowl clones the provided git repository, iterates through all files in the repository (up to a max depth of 5 subfolders) and saves all filenames with a `.md` extension. The content of these files will be stored as well. If there is any Kafka topic name which matches the filename Kowl will render the Markdown from this file in the UI.
+Kowl clones the provided git repository, recursively iterates through all directories in the repository (up to a max depth of 5) and stores all `.md` files it finds in memory.
+The "Documentation" tab in the frontend will show the markdown of the file matching the name of the Kafka topic.
 
 | Path/Filename        | Kafka Topic Name | Matches            |
 | -------------------- | ---------------- | ------------------ |
