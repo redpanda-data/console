@@ -2,6 +2,7 @@
 
 ## Master / unreleased
 
+- [FEATURE] Add support for message headers
 - [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
 
 
