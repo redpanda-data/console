@@ -568,7 +568,7 @@ span>.icon-container~span {
 
 .ant-menu.ant-menu-dark .ant-menu-item-selected,
 .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
-    background-color: hsla(209, 72%, 59%, 0.68);
+    background-color: hsla(209, 70%, 55%, 0.6);
 }
 
 .ant-checkbox-wrapper {
@@ -580,7 +580,8 @@ span>.icon-container~span {
     border-color: hsla(209, 50%, 55%, 1);
 }
 
-.ant-btn-primary {
+.ant-btn-primary,
+.ant-switch-checked {
     background-color: hsla(209, 66%, 55%, 1);
     border-color: transparent;
 }
@@ -1323,5 +1324,56 @@ svg {
 
     .codeBox {
         background: hsl(0, 45%, 80%, );
+    }
+}
+
+.topicDocumentation {
+    padding: 0 16px;
+
+    p {
+        margin-left: 2px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        margin-top: 0.8em;
+    }
+
+    pre {
+        // margin-left: 12px;
+        padding: 12px;
+        font-family: monospace;
+        font-size: 14px;
+        line-height: 1.45;
+        color: #333;
+        background-color: #f5f8fb;
+        border-radius: 3px;
+        overflow: auto;
+    }
+
+    table {
+        margin-bottom: 16px;
+
+        td,
+        th {
+            padding: 6px 13px;
+            border: 1px solid hsl(210deg, 7%, 86%);
+        }
+
+        th {
+            font-weight: 600;
+        }
+
+        th,
+        tr:nth-child(2n) {
+            background-color: #f5f8fb;
+        }
     }
 }

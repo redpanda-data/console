@@ -792,8 +792,8 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
             }
             else if (mode == 'hex') {
                 const str = msg.value as string;
-                var hex = '';
-                for (var i = 0; i < str.length; i++) {
+                let hex = '';
+                for (let i = 0; i < str.length; i++) {
                     let n = str.charCodeAt(i).toString(16);
                     if (n.length == 1) n = '0' + n;
                     hex += n + ' ';
@@ -803,9 +803,9 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
             }
             else {
                 const str = msg.value as string;
-                var result = '';
+                let result = '';
                 const isPrintable = /[\x20-\x7E]/;
-                for (var i = 0; i < str.length; i++) {
+                for (let i = 0; i < str.length; i++) {
                     let ch = String.fromCharCode(str.charCodeAt(i)); // str.charAt(i);
                     ch = isPrintable.test(ch) ? ch : '. ';
                     result += ch + ' ';

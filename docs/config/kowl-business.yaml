@@ -35,6 +35,24 @@ kafka:
   #   password: # Basic auth password
   #   bearerToken:
 
+# Git config to use for embedded topic documentation, see /docs/features/topic-documentation.md for more details
+# git:
+#   topicDocumentation:
+#     enabled: false
+#     repoUrl:
+#     branch:
+#     refreshInterval: 1m
+#   basicAuth:
+#     enabled: false
+#     username:
+#     password: #  This can be set via the via the --git.basic-auth.password flag as well
+#   ssh:
+#     enabled: false
+#     username:
+#     privateKey: # This can be set via the via the --git.ssh.private-key flag as well
+#     privateKeyFilepath:
+#     passphrase: # This can be set via the via the --git.ssh.passphrase flag as well
+
 # server:
 #   listenPort: 8080
 #   gracefulShutdownTimeout: 30s
@@ -43,7 +61,7 @@ kafka:
 #   writeTimeout: 30s
 #   idleTimeout: 30s
 #   compressionLevel: 4
-#   basePath: # Sub-path under which kowl is hosted. See 'docs/config/hosting.md' for more information
+#   basePath: # Sub-path under which kowl is hosted. See 'docs/features/hosting.md' for more information
 #   setBasePathFromXForwardedPrefix: true # Whether or not to check the 'X-Forwarded-Prefix' header to (potentially) override 'basePath'
 #   stripPrefix: true # Whether or not kowl should strip the prefix internally
 

@@ -23,7 +23,7 @@ While Kowl was written to be deployed in Kubernetes it does not have any specifi
 
 ### Hosting and Proxies
 
-If you want to host Kowl under a sub path (e.g. `domain.com/some/sub/path` instead of `domain.com/`) take a look at [/docs/config/hosting.md](./config/hosting.md) for more information.
+If you want to host Kowl under a sub path (e.g. `domain.com/some/sub/path` instead of `domain.com/`) take a look at [/docs/features/hosting.md](./features/hosting.md) for more information.
 
 ### Kubernetes
 

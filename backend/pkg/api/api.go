@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"go.uber.org/zap"
@@ -15,6 +16,7 @@ type API struct {
 	Logger   *zap.Logger
 	KafkaSvc *kafka.Service
 	OwlSvc   *owl.Service
+	GitSvc   *git.Service
 
 	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
 }
@@ -28,11 +30,17 @@ func New(cfg *Config) *API {
 		logger.Fatal("failed to create kafka service", zap.Error(err))
 	}
 
+	gitSvc, err := git.NewService(cfg.Git, logger)
+	if err != nil {
+		logger.Fatal("failed to create git service", zap.Error(err))
+	}
+
 	return &API{
 		Cfg:      cfg,
 		Logger:   logger,
 		KafkaSvc: kafkaSvc,
-		OwlSvc:   owl.NewService(kafkaSvc, logger),
+		OwlSvc:   owl.NewService(logger, kafkaSvc, gitSvc),
+		GitSvc:   gitSvc,
 		Hooks:    newDefaultHooks(),
 	}
 }
@@ -42,9 +50,14 @@ func (api *API) Start() {
 	api.KafkaSvc.RegisterMetrics()
 	api.KafkaSvc.Start()
 
+	err := api.OwlSvc.Start()
+	if err != nil {
+		api.Logger.Fatal("failed to start owl service", zap.Error(err))
+	}
+
 	// Server
 	server := rest.NewServer(&api.Cfg.REST, api.Logger, api.routes())
-	err := server.Start()
+	err = server.Start()
 	if err != nil {
 		api.Logger.Fatal("REST Server returned an error", zap.Error(err))
 	}

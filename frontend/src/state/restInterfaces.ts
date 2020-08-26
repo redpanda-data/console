@@ -100,8 +100,15 @@ export interface TopicDescription {
 export interface TopicConfigResponse {
     topicDescription: TopicDescription
 }
-
-
+export interface TopicConfigResponse {
+    topicDescription: TopicDescription
+}
+export interface TopicDocumentationResponse {
+    topicName: string;
+    documentation: {
+        markdown: string; // base64
+    }
+}
 
 
 

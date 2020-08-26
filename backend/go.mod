@@ -13,6 +13,8 @@ require (
 	github.com/dlclark/regexp2 v1.2.0 // indirect
 	github.com/dop251/goja v0.0.0-20200814103526-379ac97e7e26
 	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/go-git/go-billy/v5 v5.0.0
+	github.com/go-git/go-git/v5 v5.1.0
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gorilla/websocket v1.4.2
