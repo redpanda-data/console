@@ -105,6 +105,10 @@ const uiSettings = observable({
     brokerList: {
         hideEmptyColumns: false,
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
+
+        valueDisplay: 'friendly' as 'friendly' | 'raw',
+        propsFilter: 'onlyChanged' as 'all' | 'onlyChanged',
+        propsOrder: 'alphabetical' as 'changedFirst' | 'default' | 'alphabetical',
     },
 
     topicList: {

@@ -179,6 +179,31 @@ export interface ClusterInfoResponse {
 }
 
 
+export interface ClusterConfigResponse {
+    clusterConfig: ClusterConfig;
+}
+
+export interface ClusterConfig {
+    brokerConfigs: BrokerConfig[];
+    requestErrors: {
+        brokerId: number;
+        errorMessage: string;
+    }[];
+}
+
+export interface BrokerConfig {
+    brokerId: number;
+    configEntries: BrokerConfigEntry[];
+}
+
+export interface BrokerConfigEntry {
+    name: string;
+    value: string;
+    isDefault: boolean;
+}
+
+
+
 
 // Current user
 export interface User {

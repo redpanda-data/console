@@ -46,7 +46,7 @@ class LoginCompletePage extends Component<{ provider: string }> {
         // } else{
         //     navigate('/');
         // }
-        window.location.assign(basePathS ?? '/');
+        window.location.assign(basePathS || '/');
     }
 
     render() {

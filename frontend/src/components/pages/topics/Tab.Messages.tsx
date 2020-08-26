@@ -20,9 +20,8 @@ import { uiState } from "../../../state/uiState";
 import qs from 'query-string';
 import { parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { filterConverter } from "../../../utils/filterHelper";
-import { numberToThousandsString, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass, TimestampDisplay } from "../../../utils/tsxUtils";
-import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
+import { filterConverter, sanitizeString } from "../../../utils/filterHelper";
+import { numberToThousandsString, Label, OptionGroup, StatusIndicator, LayoutBypass, TimestampDisplay } from "../../../utils/tsxUtils";
 import { SyncIcon, XCircleIcon, PlusIcon, SkipIcon } from '@primer/octicons-v2-react'
 
 import queryString from 'query-string';
@@ -37,8 +36,6 @@ import 'prismjs/prism.js';
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras"
 import 'prismjs/themes/prism.css';
-import { timeStamp } from "console";
-import { triggerAsyncId } from "async_hooks";
 
 
 
@@ -606,7 +603,7 @@ function ${name}() {
             partitionId: searchParams.partitionID,
             startOffset: searchParams.startOffset,
             maxResults: searchParams.maxResults,
-            filterInterpreterCode: btoa(filterCode),
+            filterInterpreterCode: btoa(sanitizeString(filterCode)),
         };
 
         transaction(async () => {

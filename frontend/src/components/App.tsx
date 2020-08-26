@@ -295,7 +295,7 @@ export default class App extends Component {
             return null; // free version has no login handling
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />
-        const path = window.location.pathname.removePrefix(basePathS ?? '');
+        const path = window.location.pathname.removePrefix(basePathS);
         const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); }
 
         if (path.startsWith('/login'))
