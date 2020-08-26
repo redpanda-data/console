@@ -21,7 +21,7 @@ import qs from 'query-string';
 import { parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
 import { filterConverter, sanitizeString } from "../../../utils/filterHelper";
-import { numberToThousandsString, Label, OptionGroup, StatusIndicator, LayoutBypass, TimestampDisplay } from "../../../utils/tsxUtils";
+import { numberToThousandsString, Label, OptionGroup, StatusIndicator, LayoutBypass, TimestampDisplay, QuickTable } from "../../../utils/tsxUtils";
 import { SyncIcon, XCircleIcon, PlusIcon, SkipIcon } from '@primer/octicons-v2-react'
 
 import queryString from 'query-string';
