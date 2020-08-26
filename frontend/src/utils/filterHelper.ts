@@ -24,3 +24,18 @@ export function filterConverter(code: string) {
 
     return code.includes('return ') ? code : 'return (' + code + ')';
 }
+
+export function sanitizeString(input: string) {
+    return input.split('')
+        .map((char: string) => {
+            if (char.charCodeAt(0) > 0 && char.charCodeAt(0) < 128) {
+                return char;
+            } else if (char.charCodeAt(0) >= 128 && char.charCodeAt(0) <= 255) {
+                //Hex escape encoding
+                return `/x${char.charCodeAt(0).toString(16)}`.replace('/', '\\');
+            } else if (char.charCodeAt(0) > 255) {
+                return '';
+            }
+        })
+        .join('');
+};

@@ -20,9 +20,8 @@ import { uiState } from "../../../state/uiState";
 import qs from 'query-string';
 import { parse as parseUrl, format as formatUrl } from "url";
 import { editQuery } from "../../../utils/queryHelper";
-import { filterConverter } from "../../../utils/filterHelper";
-import { numberToThousandsString, Label, OptionGroup, StatusIndicator, QuickTable, LayoutBypass, TimestampDisplay } from "../../../utils/tsxUtils";
-import Octicon, { SkipIcon as OctoSkip } from '@primer/octicons-react';
+import { filterConverter, sanitizeString } from "../../../utils/filterHelper";
+import { numberToThousandsString, Label, OptionGroup, StatusIndicator, LayoutBypass, TimestampDisplay, QuickTable } from "../../../utils/tsxUtils";
 import { SyncIcon, XCircleIcon, PlusIcon, SkipIcon } from '@primer/octicons-v2-react'
 
 import queryString from 'query-string';
@@ -37,7 +36,6 @@ import 'prismjs/prism.js';
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras"
 import 'prismjs/themes/prism.css';
-import { timeStamp } from "console";
 
 
 
@@ -432,6 +430,9 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
             {
+                width: 1, title: 'Headers', dataIndex: 'headers', sorter: (a, b, order) => b.headers.length - a.headers.length, render: (t, r) => r.headers.length,
+            },
+            {
                 width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
                 sorter: (a, b) => b.size - a.size
             },
@@ -463,14 +464,20 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         // If the previewColumnFields is empty then use the default columns, otherwise filter it based on it
         const filteredColumns: (ColumnProps<TopicMessage>)[] =
-            uiState.topicSettings.previewColumnFields.length == 0 ?
-                columns : uiState.topicSettings.previewColumnFields
+            uiState.topicSettings.previewColumnFields.length == 0
+                ? columns
+                : uiState.topicSettings.previewColumnFields
                     .map(columnList =>
                         columns.find(c => c.dataIndex === columnList.dataIndex)
                     )
                     .filter(column => !!column)
                     // Add the action tab at the end
                     .concat(columns[columns.length - 1]) as (ColumnProps<TopicMessage>)[];
+
+        // remove headers column if no message has headers
+        const hasHeaders = this.messageSource.data.any(m => m.headers.length > 0);
+        if (!hasHeaders) filteredColumns.removeAll(c => c.dataIndex == 'headers');
+
 
         return <>
             <ConfigProvider renderEmpty={this.empty}>
@@ -596,7 +603,7 @@ function ${name}() {
             partitionId: searchParams.partitionID,
             startOffset: searchParams.startOffset,
             maxResults: searchParams.maxResults,
-            filterInterpreterCode: btoa(filterCode),
+            filterInterpreterCode: btoa(sanitizeString(filterCode)),
         };
 
         transaction(async () => {
@@ -767,6 +774,13 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 
 
 function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+    return <div>
+        {(msg.headers.length > 0) && RenderMessageHeaders(msg)}
+        <div>{RenderMessageValue(msg, shouldExpand)}</div>
+    </div>
+}
+
+function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
         if (!msg || !msg.value) return <code>null</code>
         const shouldCollapse = shouldExpand ? shouldExpand : false;
@@ -826,6 +840,15 @@ function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
     catch (e) {
         return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {e.toString()}</span>
     }
+}
+
+function RenderMessageHeaders(msg: TopicMessage) {
+    return <div className='messageHeaders'>
+        <div className='title'>Message Headers</div>
+        {QuickTable(msg.headers, {
+            tableStyle: { width: 'auto', paddingLeft: '1em' },
+        })}
+    </div>
 }
 
 @observer
@@ -943,6 +966,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
         { title: 'Partition', dataIndex: 'partitionID' },
         { title: 'Timestamp', dataIndex: 'timestamp' },
         { title: 'Key', dataIndex: 'key' },
+        { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
         { title: 'Size', dataIndex: 'size' },
     ];

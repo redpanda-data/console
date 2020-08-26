@@ -24,6 +24,7 @@ type TopicMessage struct {
 	Offset      int64 `json:"offset"`
 	Timestamp   int64 `json:"timestamp"`
 
+	Headers   []MessageHeader      `json:"headers"`
 	Key       *deserializedPayload `json:"key"`
 	KeyType   string               `json:"keyType"`
 	Value     *deserializedPayload `json:"value"`
@@ -31,6 +32,14 @@ type TopicMessage struct {
 
 	Size        int  `json:"size"`
 	IsValueNull bool `json:"isValueNull"`
+}
+
+// MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
+// a byte array, but keys are supposed to be strings only. Value however can be encoded in any format.
+type MessageHeader struct {
+	Key           string               `json:"key"`
+	Value         *deserializedPayload `json:"value"`
+	ValueEncoding messageEncoding      `json:"valueEncoding"`
 }
 
 // PartitionConsumeRequest is a partitionID along with it's calculated start and end offset.
@@ -46,11 +55,12 @@ type PartitionConsumeRequest struct {
 }
 
 type interpreterArguments struct {
-	PartitionID int32
-	Offset      int64
-	Timestamp   time.Time
-	Key         interface{}
-	Value       interface{}
+	PartitionID  int32
+	Offset       int64
+	Timestamp    time.Time
+	Key          interface{}
+	Value        interface{}
+	HeadersByKey map[string]interface{}
 }
 
 type PartitionConsumer struct {
@@ -111,11 +121,13 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 			// Run Interpreter filter and check if message passes the filter
 			value := p.Deserializer.DeserializePayload(m.Value)
 			key := p.Deserializer.DeserializePayload(m.Key)
+			headers := p.DeserializeHeaders(m.Headers)
 
 			topicMessage := &TopicMessage{
 				PartitionID: m.Partition,
 				Offset:      m.Offset,
 				Timestamp:   m.Timestamp.Unix(),
+				Headers:     headers,
 				Key:         key,
 				KeyType:     string(key.RecognizedEncoding),
 				Value:       value,
@@ -124,13 +136,19 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 				IsValueNull: m.Value == nil,
 			}
 
+			headersByKey := make(map[string]interface{}, len(headers))
+			for _, header := range headers {
+				headersByKey[header.Key] = header.Value.Object
+			}
+
 			// Check if message passes filter code
 			args := interpreterArguments{
-				PartitionID: m.Partition,
-				Offset:      m.Offset,
-				Timestamp:   m.Timestamp,
-				Key:         key.Object,
-				Value:       value.Object,
+				PartitionID:  m.Partition,
+				Offset:       m.Offset,
+				Timestamp:    m.Timestamp,
+				Key:          key.Object,
+				Value:        value.Object,
+				HeadersByKey: headersByKey,
 			}
 
 			isOK, err := isMessageOK(args)
@@ -207,6 +225,7 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 		vm.Set("timestamp", args.Timestamp)
 		vm.Set("key", args.Key)
 		vm.Set("value", args.Value)
+		vm.Set("headers", args.HeadersByKey)
 		isOkRes, err := vm.RunString("isMessageOk()")
 		if err != nil {
 			return false, fmt.Errorf("failed to evaluate javascript code: %w", err)
@@ -216,4 +235,19 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 	}
 
 	return isMessageOk, nil
+}
+
+func (p *PartitionConsumer) DeserializeHeaders(headers []*sarama.RecordHeader) []MessageHeader {
+	res := make([]MessageHeader, len(headers))
+	for i, header := range headers {
+		key := string(header.Key)
+		value := p.Deserializer.DeserializePayload(header.Value)
+		res[i] = MessageHeader{
+			Key:           key,
+			Value:         value,
+			ValueEncoding: value.RecognizedEncoding,
+		}
+	}
+
+	return res
 }
