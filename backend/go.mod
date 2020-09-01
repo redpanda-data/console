@@ -1,6 +1,6 @@
 module github.com/cloudhut/kowl/backend
 
-go 1.14
+go 1.15
 
 require (
 	github.com/Shopify/sarama v1.27.0
@@ -25,12 +25,11 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c
-	go.uber.org/atomic v1.6.0 // indirect
 	go.uber.org/zap v1.15.0
-	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
+	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/mod v0.2.0 // indirect
-	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
+	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	golang.org/x/tools v0.0.0-20200214225126-5916a50871fb // indirect
