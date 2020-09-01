@@ -7,10 +7,13 @@ import SvgLoginWave from '../../assets/login_wave.svg';
 import PngLogo from '../../assets/logo2.png';
 import { uiState } from '../../state/uiState';
 import Icon, { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
+import OktaLogo from '../../utils/svg/OktaLogo';
+
 
 const iconMap = new Map([
     ["google", <GoogleOutlined style={{ marginBottom: '6px' }} />],
     ["github", <GithubOutlined style={{ marginBottom: '6px' }} />],
+    ["okta", <span style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{OktaLogo}</span>],
 ]);
 
 interface Provider {
@@ -53,7 +56,9 @@ class Login extends Component {
     }
 
     render() {
-        const ar = this.providersResponse ? this.providersResponse.providers : null;
+        let ar = this.providersResponse ? this.providersResponse.providers : null;
+        if (ar)
+            ar = ar.sort((a, b) => a.displayName.localeCompare(b.displayName));
 
         return <div className='login'>
 
@@ -65,7 +70,7 @@ class Login extends Component {
                 maskClosable={false}
                 onOk={() => { uiState.loginError = null; }}
             >
-                <p>{uiState.loginError}</p>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{uiState.loginError}</p>
             </Modal>
 
             <div className='loginContainer'>
@@ -139,3 +144,4 @@ class Login extends Component {
     }
 }
 export default Login;
+

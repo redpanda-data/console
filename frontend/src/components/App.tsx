@@ -275,8 +275,7 @@ export default class App extends Component {
                 <Switch>
                     {/* Login (and callbacks) */}
                     <Route exact path='/login' component={Login} />
-                    <Route exact path='/login/callbacks/google'><LoginCompletePage provider='google' /></Route>
-                    <Route exact path='/login/callbacks/github'><LoginCompletePage provider='github' /></Route>
+                    <Route path='/login/callbacks/:provider' render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
 
                     {/* Default View */}
                     <Route path="*">
@@ -295,7 +294,7 @@ export default class App extends Component {
             return null; // free version has no login handling
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />
-        const path = window.location.pathname.removePrefix(basePathS);
+        const path = window.location.pathname.removePrefix(basePathS ?? '');
         const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); }
 
         if (path.startsWith('/login'))

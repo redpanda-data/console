@@ -8,8 +8,10 @@ import { appGlobal } from "../../state/appGlobal";
 import fetchWithTimeout from "../../utils/fetchWithTimeout";
 import { uiState } from "../../state/uiState";
 import { basePathS } from "../../utils/env";
+import { match } from "react-router-dom";
+import { queryToObj } from "../../utils/queryHelper";
 
-class LoginCompletePage extends Component<{ provider: string }> {
+class LoginCompletePage extends Component<{ provider: string, match: match<any> }> {
 
     componentDidMount() {
         this.completeLogin(this.props.provider, window.location);
@@ -17,6 +19,17 @@ class LoginCompletePage extends Component<{ provider: string }> {
 
     async completeLogin(provider: string, location: Location) {
         const query = location.search;
+
+        const queryObj = queryToObj(query);
+        if (queryObj.error || queryObj.error_description) {
+            let errorString = '';
+            if (queryObj.error) errorString += `Error: ${queryObj.error}\n`;
+            if (queryObj.error_description) errorString += `Description: ${queryObj.error_description}\n`;
+            uiState.loginError = errorString.trim();
+            appGlobal.history.push(basePathS + '/login');
+            return;
+        }
+
         const url = "./auth/callbacks/" + provider + query;
 
         try {
