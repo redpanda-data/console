@@ -12,7 +12,7 @@ Kowl Business provides authentication via OAuth using Google or GitHub (more pro
 
 Before configuring Kowl you must create an OAuth application in Google. If you are unsure how to do this, we've created a [guide](../provider-setup/google.md) for you.
 
-### Configure Google OAuth
+### Configure Google Login
 
 In your YAML config you can configure the OAuth access like this. Only users who have at least one permission (defined in RoleBindings) will be able to login.
 
@@ -29,9 +29,9 @@ login:
 
 ## GitHub
 
-Before configuring Kowl you must create an OAuth application at GitHub.
+Before configuring Kowl you must create an OAuth application at GitHub. If you are unsure how to do this, we've created a [guide](../provider-setup/github.md) for you.
 
-### Configure GitHub OAuth
+### Configure GitHub Login
 
 In your YAML config you can configure the OAuth access like this. Only users who have at least one permission (defined in RoleBindings) will be able to login.
 
@@ -44,4 +44,24 @@ login:
     enabled: true
     clientId:
     clientSecret: # This can be set via the --login.github.client-secret flag as well
+```
+
+## Okta
+
+Before configuring Kowl you must create an OIDC application at Okta. If you are unsure how to do this, we've created a [guide](../provider-setup/okta.md) for you.
+
+### Configure Okta Login
+
+In your YAML config you can configure the OAuth access like this. Only users who have at least one permission (defined in RoleBindings) will be able to login.
+
+```yaml
+login:
+  # jwtSecret can be any random password, but it must be the same across all replicas you run. It is used to sign JWTs
+  # which are used for user sessions. If you change the JWT secret all users will need to login again.
+  jwtSecret: # This can be set via the --login.jwt-secret flag as well
+  okta:
+    enabled: true
+    url: # Your organization's URL, e.g.: https://mycompany.okta.com
+    clientId:
+    clientSecret: # This can be set via the --login.okta.client-secret flag as well
 ```

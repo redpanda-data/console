@@ -61,7 +61,7 @@ Only the following three properties are new and therefore relevant for the RBAC 
 
 ### Configuration
 
-To configure the GitHub groups sync you need to create a personal access token. The GitHub account you create the token for requires the permissions to resolve the memberships of the teams and organizations you want to use in your role bindings. 
+To configure the GitHub groups sync you need to create a personal access token. The GitHub account you create the token for requires the permissions to resolve the memberships of the teams and organizations you want to use in your role bindings. [This guide](../provider-setup/github.md#2-github-groups-sync-optional) describes the process how to create the personal access token which we'll need in the next section.
 
 Once you have created the personal access token, you need to add it to the Kowl config. You can either pass it via the arguments or simply put it into your YAML config:
 
