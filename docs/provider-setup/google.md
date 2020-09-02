@@ -1,4 +1,4 @@
-# Google OAuth Provider Setup
+# Google OAuth / OIDC Provider Setup
 
 This section guides you through the required steps to setup an OAuth application at Google.
 At the end of this guide you'll have an OAuth client id and client secret. If you are going
