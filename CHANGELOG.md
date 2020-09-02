@@ -4,8 +4,8 @@
 
 - **[FEATURE] Embed topic documentation using Markdown files from Git repositories ([/docs/features/topic-documentation.md](/docs/features/topic-documentation.md))**
 - **[FEATURE] Add support for message headers**
-- **[FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))**
-- **[FEATURE] Add support Okta as a login provider**
+- **[FEATURE] Add support for Okta as an identity provider**
+- [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
 - [BUGFIX] Kowl now shows the error reported by a login provider (should the login fail)
 
 ## 1.1.0 / 2020-08-06
