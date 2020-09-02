@@ -18,4 +18,10 @@ roleBindings:
       - kind: user
         provider: GitHub
         name: rikimaru0345
+      - kind: group
+        provider: Okta
+        name: 00qri1afoAa12G9js04x6 # Okta Group ID
+      - kind: user
+        provider: Okta
+        name: weeco91@gmail.com # Okta user login
     roleName: developer

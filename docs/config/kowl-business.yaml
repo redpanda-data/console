@@ -103,6 +103,14 @@ login:
     # Below properties are required if you want to create roleBindings on GitHub teams instead of users
     # directory:
     #   personalAccessToken: # This can be set via the --login.github.directory.personal-access-token flag as well
+  okta:
+    enabled: false
+    url: # Your organization's URL, e.g.: https://mycompany.okta.com
+    clientId:
+    clientSecret: # This can be set via the --login.okta.client-secret flag as well
+    # Below properties are required if you want to create roleBindings on Okta groups instead of users
+    # directory:
+    #   apiToken: # This can be set via the --login.okta.directory.api-token flag as well
 
 business:
   rolesFilepath:
