@@ -420,7 +420,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
-            { width: 3, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
+            { width: 2, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
             {
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
@@ -429,9 +429,9 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
-            {
-                width: 1, title: 'Headers', dataIndex: 'headers', sorter: (a, b, order) => b.headers.length - a.headers.length, render: (t, r) => r.headers.length,
-            },
+            // {
+            //     width: 1, title: 'Headers', dataIndex: 'headers', sorter: (a, b, order) => b.headers.length - a.headers.length, render: (t, r) => r.headers.length,
+            // },
             {
                 width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
                 sorter: (a, b) => b.size - a.size
@@ -475,8 +475,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     .concat(columns[columns.length - 1]) as (ColumnProps<TopicMessage>)[];
 
         // remove headers column if no message has headers
-        const hasHeaders = this.messageSource.data.any(m => m.headers.length > 0);
-        if (!hasHeaders) filteredColumns.removeAll(c => c.dataIndex == 'headers');
+        // const hasHeaders = this.messageSource.data.any(m => m.headers.length > 0);
+        // if (!hasHeaders) filteredColumns.removeAll(c => c.dataIndex == 'headers');
 
 
         return <>
