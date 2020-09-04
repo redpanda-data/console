@@ -1,22 +1,23 @@
 {
     "compilerOptions": {
-        "target": "es2019",
-        "lib": [
-            "dom",
-            "dom.iterable",
-            "esnext"
-        ],
-        "allowJs": true,
+        "target": "ES5",
+        "lib": [],
+        "moduleResolution": "node",
+        "module": "commonjs",
+        "allowJs": false,
         "skipLibCheck": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "strict": true,
-        "moduleResolution": "node",
+        "strict": false,
         "isolatedModules": false,
-        "noEmit": true,
-        "strictPropertyInitialization": false
+        "strictPropertyInitialization": false,
+        "outDir": "compiled",
+        "removeComments": true,
+        "noEmitHelpers": true,
+        "noEmitOnError": true,
+        "noImplicitUseStrict": true,
     },
     "include": [
-        "./"
+        "findFunction.ts"
     ],
 }

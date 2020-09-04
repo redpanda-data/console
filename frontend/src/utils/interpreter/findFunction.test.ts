@@ -1,35 +1,49 @@
 //
-// Usage (dev):
-//  npx ts-node src/utils/interpreter/findFunction.test.ts
+// Usage:
+//   cd frontend/src/utils/interpreter
+//   npx ts-node findFunction.test.ts
+//
+// Important:
+//   The typescript compiler in ts-node looks for a tsconfig.json in
+//   the current working directory, meaning that you must navigate to the
+//   interpreter folder first before you can run the test.
+//
 //
 // Usage (build):
-// npm run test-interpreter-code
+//   npm run test-interpreter-code
 //
 
-import { expect, expectEq, expectRefEq, successfulTests } from './helpers';
-import './global';
 require('./findFunction');
+import './global';
+import { expect, successfulTests, expectEq } from './helpers';
+import { exit } from 'process';
+
+console.log('running "findFunction" tests...');
 
 declare global {
     function find(propName: string, ignoreCase?: boolean): any;
     function find(isMatch: (obj: object | Array<any>, key: string) => boolean): any;
+    function find(pattern: object, ignoreCase?: boolean): any;
     function findAll(propName: string, ignoreCase?: boolean): any[];
     function findAll(isMatch: (obj: object | Array<any>, key: string) => boolean): any[];
+    function findAll(pattern: object, ignoreCase?: boolean): any[];
 
     interface Object {
         find(propName: string, ignoreCase?: boolean): any;
         find(isMatch: (obj: object | Array<any>, key: string) => boolean): any;
+        find(pattern: object, ignoreCase?: boolean): any;
         findAll(propName: string, ignoreCase?: boolean): any[];
         findAll(isMatch: (obj: object | Array<any>, key: string) => boolean): any[];
+        findAll(pattern: object, ignoreCase?: boolean): any[];
     }
 }
 
 
-console.log('running "findFunction" tests...');
+
 global.value = {
     name: "n1",
     score: "s1",
-    subObj: {
+    nested: {
         name: "n2",
         score: 1,
     },
@@ -41,30 +55,45 @@ global.value = {
     ]
 };
 
-
-
-
+//
+// - find by name
+//
 expect(() => find('name') == 'n1');
 expect(() => find('sCoRe', true) == 's1');
-expect(() => find('subObj') != null);
+expect(() => find('asdaadf') === undefined);
+expect(() => find('stars') === 10);
+expect(() => find('points') === 123);
+expect(() => find('TEAM', true) === 1);
+expect(() => find('TEAM', false) === undefined);
+expect(() => find('TEAM') === undefined);
+expect(() => find('team', true) === 1);
+expect(() => find('team', false) === 1);
+expect(() => find('team') === 1);
+expect(() => typeof find('nested') === 'object');
 
-const subObj = find('subObj') as object;
-expect(() => subObj != null);
-expect(() => subObj.find('score') === 1);
-expect(() => subObj.find((obj, prop) => prop == 'score') === 1);
-expect(() => subObj.find((obj, prop) => false) === undefined);
-expect(() => subObj.find('asdasfa') === undefined);
+//
+// - find on nested object
+//
+const nested = find('nested') as object;
+expect(() => nested != null);
+expect(() => nested.find('score') === 1);
+expect(() => nested.find((obj, prop) => prop == 'score') === 1);
+expect(() => nested.find((obj, prop) => false) === undefined);
+expect(() => nested.find('asdasfa') === undefined);
+
+//
+// - find by pattern
+//
+expect(() => find({ name: 'n2' }).score === 1);
+expect(() => find({ score: '4 stars' }).name === 'n4');
+expect(() => find({ team: 'red' }).score.stars === 10);
+expectEq({
+    name: 'findAll pattern equality',
+    actual: findAll({ team: 1 }),
+    expected: [global.value.ar[0], global.value.ar[1]],
+});
 
 
-// expectRefEq({
-//     name: "can find array",
-//     actual: find('ar'),
-//     expected: value.ar
-// })
-
-// expect(() => {
-//     find({ name: 'n3' }).score === 2
-// })
 
 console.log('');
 console.log('---');
