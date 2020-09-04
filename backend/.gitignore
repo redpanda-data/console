@@ -26,3 +26,6 @@ build
 config.yaml
 config
 config-*.yaml
+
+frontend/src/utils/interpreter/compiled
+
