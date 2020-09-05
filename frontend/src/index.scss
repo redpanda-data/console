@@ -64,11 +64,24 @@ code {
 .icon-container {
     position: absolute;
     width: auto;
-    transform: translateX(-85%);
+    transform: translateX(-80%) translateY(-1px);
+
+    .expanded-icon {
+        display: inline-block;
+        transform: translateX(-2px);
+    }
 }
 
 span>.icon-container~span {
     display: inline !important;
+}
+
+.node-ellipsis {
+    line-height: 0px !important;
+}
+
+.object-meta-data {
+    user-select: none;
 }
 
 /* - fix root indenting */

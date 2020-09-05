@@ -832,6 +832,7 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                     indentWidth={5}
                     iconStyle='triangle'
                     collapsed={2}
+                    // onSelect={p => console.log(p)}
                     shouldCollapse={shouldCollapse}
                 />
             </>
@@ -1012,6 +1013,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
     render() {
 
         const tagSuggestions = this.props.allCurrentKeys.filter(k => this.props.tags.all(t => t.value != k));
+        console.log('tag suggestions', this.props.allCurrentKeys)
 
         return <>
             <AnimatePresence>
@@ -1038,7 +1040,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
                                 <AutoComplete
                                     ref={r => { if (r) { r.focus(); } }}
 
-                                    dataSource={tagSuggestions}
+                                    options={tagSuggestions.map(t => ({ label: t, value: t }))}
 
                                     size="small"
                                     style={{ width: 130 }}
