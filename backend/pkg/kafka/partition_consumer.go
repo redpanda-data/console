@@ -3,10 +3,12 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/Shopify/sarama"
+	"github.com/cloudhut/kowl/backend/pkg/interpreter"
 	"github.com/dop251/goja"
 	"go.uber.org/zap"
-	"time"
 )
 
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
@@ -195,6 +197,11 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 	_, err := vm.RunString(code)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile given interpreter code: %w", err)
+	}
+
+	_, err = vm.RunString(interpreter.FindFunction)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile findFunction: %w", err)
 	}
 
 	// We use named return parameter here because this way we can return a error message in recover().

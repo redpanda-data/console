@@ -9,7 +9,7 @@ declare var value: any; // set/injected by backend
 
 // declare function find(propName: string, ignoreCase?:boolean): any;
 // declare function find(isMatch: (obj:object|Array<any>)=>boolean): any;
-// declare function find(pattern: object, ignoreCase?:boolean): any;
+// declare function find(pattern: object, ignoreCase?:boolean): object|undefined;
 function find(this: any | undefined, arg1: any, arg2: any): any {
     const self = (this != null)
         ? this // called on object
@@ -24,7 +24,7 @@ function find(this: any | undefined, arg1: any, arg2: any): any {
 
 // declare function findAll(propName: string, ignoreCase?:boolean): any[];
 // declare function findAll(isMatch: (obj:object|Array<any>)=>boolean): any[];
-// declare function findAll(pattern: object, ignoreCase?:boolean): any[];
+// declare function findAll(pattern: object, ignoreCase?:boolean): object[];
 function findAll(this: any | undefined, arg1: any, arg2: any): any {
     const self = (this != null)
         ? this // called on object
