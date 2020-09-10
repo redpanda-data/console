@@ -2,8 +2,9 @@ package schema
 
 import (
 	"fmt"
-	"github.com/go-resty/resty/v2"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 // Client that talks to the (Confluent) Schema Registry via REST
@@ -35,10 +36,10 @@ func newClient(cfg Config) *Client {
 
 	// Configure credentials
 	if cfg.Username != "" {
-		client.SetBasicAuth(cfg.Username, cfg.Password)
+		client = client.SetBasicAuth(cfg.Username, cfg.Password)
 	}
 	if cfg.BearerToken != "" {
-		client.SetAuthToken(cfg.BearerToken)
+		client = client.SetAuthToken(cfg.BearerToken)
 	}
 
 	return &Client{
@@ -270,7 +271,8 @@ func (c *Client) CheckConnectivity() error {
 	}
 
 	if res.IsError() {
-		return fmt.Errorf("response is an error. Status: %d", res.StatusCode())
+		body := string(res.Body())
+		return fmt.Errorf("response is an error. Status: %d - %s", res.StatusCode(), body)
 	}
 
 	return nil
