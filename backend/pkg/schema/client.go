@@ -35,10 +35,10 @@ func newClient(cfg Config) *Client {
 
 	// Configure credentials
 	if cfg.Username != "" {
-		client.SetBasicAuth(cfg.Username, cfg.Password)
+		client = client.SetBasicAuth(cfg.Username, cfg.Password)
 	}
 	if cfg.BearerToken != "" {
-		client.SetAuthToken(cfg.BearerToken)
+		client = client.SetAuthToken(cfg.BearerToken)
 	}
 
 	return &Client{
