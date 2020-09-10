@@ -85,7 +85,8 @@ func (c *Client) CheckConnectivity() error {
 	}
 
 	if res.IsError() {
-		return fmt.Errorf("response is an error. Status: %d - %s", res.StatusCode())
+		body := string(res.Body())
+		return fmt.Errorf("response is an error. Status: %d - %s", res.StatusCode(), body)
 	}
 
 	return nil
