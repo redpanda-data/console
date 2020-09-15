@@ -322,3 +322,28 @@ export interface TopicPermissions {
     canViewTopicMessages: boolean;
     canViewTopicConsumers: boolean;
 }
+
+// SCHEMA REGISTRY
+export interface SchemaOverviewResponse {
+    schemaOverview: SchemaOverview
+}
+
+export interface SchemaOverview {
+    mode: string;
+    compatibilityLevel: string;
+    subjects: SchemaSubject[];
+    requestErrors: SchemaOverviewRequestError[];
+}
+
+export interface SchemaOverviewRequestError {
+    requestDescription: string;
+    errorMessage: string;
+}
+
+export interface SchemaSubject {
+    name: string;
+    compatibilityLevel: string;
+    versionsCount: number;
+    latestVersion: string;
+    requestError: string;
+}
