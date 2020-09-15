@@ -1,15 +1,15 @@
-import React from "react";
-import { observer } from "mobx-react";
-import { PageComponent, PageInitHelper } from "../Page";
-import { api } from "../../../state/backendApi";
-import { Table } from "antd";
+import { appGlobal } from '../../../state/appGlobal';
 
 @observer
 class SchemaList extends PageComponent<{}> {
     initPage(p: PageInitHelper): void {
         p.title = 'Scheme Registry';
         p.addBreadcrumb('Schema Registry', '/schemas');
-        api.refreshSchemaOverview(false);
+        this.refreshData(false);
+        appGlobal.onRefresh = () => this.refreshData(true)
+    }
+    refreshData(force?: boolean) {
+        api.refreshSchemaOverview(force);
     }
     render() {
         console.dir({overview: api.SchemaOverview})
