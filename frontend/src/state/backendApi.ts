@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -149,6 +149,10 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
     return entry.lastPromise;
 }
 
+async function getSchemaOverview(force?: boolean) {
+    return cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>
+}
+
 
 let currentWS: WebSocket | null = null;
 
@@ -162,6 +166,8 @@ const apiStore = {
     ClusterInfo: null as (ClusterInfo | null),
     ClusterConfig: null as (ClusterConfig | null),
     AdminInfo: null as (AdminInfo | null),
+
+    SchemaOverview: null as (SchemaOverview | null),
 
     Topics: null as (TopicDetail[] | null),
     TopicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
@@ -411,6 +417,12 @@ const apiStore = {
 
                 this.AdminInfo = info;
             }, addError);
+    },
+
+    refreshSchemaOverview(force?: boolean) {
+        getSchemaOverview(force)
+            .then(({ schemaOverview }) => (this.SchemaOverview = schemaOverview))
+            .catch(addError)
     },
 }
 
