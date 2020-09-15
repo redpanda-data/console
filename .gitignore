@@ -14,3 +14,6 @@ fixname.sh
 # Helper Scripts
 run-docker.sh
 run-backend.sh
+
+# Local Formatting
+.prettierrc
