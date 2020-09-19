@@ -31,8 +31,8 @@ class SchemaList extends PageComponent<{}> {
                     <Table
                         /* TODO: display any request errors */
                         /* TODO: styling of table rows when hovering */
-                        onRow={record => ({
-                            onClick: () => appGlobal.history.push(`/schema-registry/${record.name}`)
+                        onRow={({ name, latestVersion}) => ({
+                            onClick: () => appGlobal.history.push(`/schema-registry/${name}?version=${latestVersion}`)
                         })}
                         columns={[
                             { title: 'Name', dataIndex: 'name' },
