@@ -9,7 +9,7 @@ import { appGlobal } from '../../../state/appGlobal';
 @observer
 class SchemaList extends PageComponent<{}> {
     initPage(p: PageInitHelper): void {
-        p.title = 'Scheme Registry';
+        p.title = 'Schema Registry';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true)
