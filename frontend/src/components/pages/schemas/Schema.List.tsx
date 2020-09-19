@@ -10,7 +10,7 @@ import { appGlobal } from '../../../state/appGlobal';
 class SchemaList extends PageComponent<{}> {
     initPage(p: PageInitHelper): void {
         p.title = 'Scheme Registry';
-        p.addBreadcrumb('Schema Registry', '/schemas');
+        p.addBreadcrumb('Schema Registry', '/schema-registry');
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true)
     }
