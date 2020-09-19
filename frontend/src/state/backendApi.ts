@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -153,6 +153,10 @@ async function getSchemaOverview(force?: boolean) {
     return cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>
 }
 
+async function getSchemaDetails(subjectName: string, version: number, force?: boolean) {
+    return cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
+}
+
 
 let currentWS: WebSocket | null = null;
 
@@ -168,6 +172,7 @@ const apiStore = {
     AdminInfo: null as (AdminInfo | null),
 
     SchemaOverview: null as (SchemaOverview | null),
+    SchemaDetails: null as (SchemaDetails | null),
 
     Topics: null as (TopicDetail[] | null),
     TopicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
@@ -424,6 +429,12 @@ const apiStore = {
             .then(({ schemaOverview }) => (this.SchemaOverview = schemaOverview))
             .catch(addError)
     },
+
+    refreshSchemaDetails(subjectName: string, version: number, force?: boolean) {
+        getSchemaDetails(subjectName, version, force)
+            .then(({ schemaDetails }) => (this.SchemaDetails = schemaDetails))
+            .catch(addError)
+    }
 }
 
 export interface MessageSearchRequest {
