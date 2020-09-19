@@ -21,6 +21,7 @@ import { api } from "../state/backendApi";
 import { DebugTimerStore, ToJson } from "../utils/utils";
 import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined } from '@ant-design/icons';
 import SchemaList from "./pages/schemas/Schema.List";
+import SchemaDetails from "./pages/schemas/Schema.Details";
 
 //
 //	Route Types
@@ -192,6 +193,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', <FunnelPlotOutlined />),
 
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry'),
+    MakeRoute<{ schemaName: string }>('/schema-registry/:schemaName', SchemaDetails, 'Schema Registry'),
 
 
     MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => api.UserData?.canManageKowl ?? false),

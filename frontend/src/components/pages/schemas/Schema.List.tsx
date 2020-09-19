@@ -30,7 +30,10 @@ class SchemaList extends PageComponent<{}> {
                 <Card>
                     <Table
                         /* TODO: display any request errors */
-                        /* TODO: page for and links to subject details */
+                        /* TODO: styling of table rows when hovering */
+                        onRow={record => ({
+                            onClick: () => appGlobal.history.push(`/schema-registry/${record.name}`)
+                        })}
                         columns={[
                             { title: 'Name', dataIndex: 'name' },
                             { title: 'Compatibility Level', dataIndex: 'compatibilityLevel' },
