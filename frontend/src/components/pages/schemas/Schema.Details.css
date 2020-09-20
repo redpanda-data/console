@@ -1,0 +1,13 @@
+.schemaDataTerm {
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline;
+}
+
+.schemaDataDefinition {
+    display: inline;
+}
+
+.schemaDataDefinition::before {
+    content: ": ";
+}
