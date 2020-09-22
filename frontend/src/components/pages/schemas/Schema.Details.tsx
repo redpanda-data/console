@@ -6,6 +6,8 @@ import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
 import ReactJson from 'react-json-view';
 import './Schema.Details.css';
+import { motion } from 'framer-motion';
+import { animProps } from '../../../utils/animationProps';
 
 export interface SchemaDetailsProps {
     subjectName: string;
@@ -54,8 +56,7 @@ class SchemaDetails extends PageComponent<SchemaDetailsProps> {
             schema: { type = '', name = '', namespace = '', doc = '', fields = [] },
         } = api.SchemaDetails || { schema: {} };
         return (
-            <>
-                <PageHeader title={this.props.subjectName} />
+            <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 <Card>
                     <p>
                         Subject ID: <strong>{schemaId}</strong>
@@ -94,7 +95,7 @@ class SchemaDetails extends PageComponent<SchemaDetailsProps> {
                         </Col>
                     </Row>
                 </Card>
-            </>
+            </motion.div>
         );
     }
 }

@@ -5,6 +5,8 @@ import { api } from '../../../state/backendApi';
 import { Row, Statistic, Table } from 'antd';
 import Card from '../../misc/Card';
 import { appGlobal } from '../../../state/appGlobal';
+import { motion } from 'framer-motion';
+import { animProps } from '../../../utils/animationProps';
 
 @observer
 class SchemaList extends PageComponent<{}> {
@@ -20,7 +22,7 @@ class SchemaList extends PageComponent<{}> {
     render() {
         const { mode, compatibilityLevel, subjects} = {...api.SchemaOverview}
         return (
-            <>
+            <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 <Card>
                     <Row>
                         <Statistic title="Mode" value={mode}></Statistic>
@@ -45,7 +47,7 @@ class SchemaList extends PageComponent<{}> {
                         pagination={false}
                     ></Table>
                 </Card>
-            </>
+            </motion.div>
         );
     }
 }

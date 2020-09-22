@@ -192,6 +192,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <FunnelPlotOutlined />),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', <FunnelPlotOutlined />),
 
+    // TODO: agree on an icon
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry'),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetails, 'Schema Registry'),
 
