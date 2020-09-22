@@ -31,8 +31,9 @@ class SchemaList extends PageComponent<{}> {
                 </Card>
                 <Card>
                     <Table
-                        /* TODO: display any request errors */
-                        /* TODO: styling of table rows when hovering */
+                        // TODO: display any request errors
+                        // TODO: styling of table rows when hovering
+                        // TODO: quick search?
                         onRow={({ name, latestVersion}) => ({
                             onClick: () => appGlobal.history.push(`/schema-registry/${name}?version=${latestVersion}`)
                         })}
