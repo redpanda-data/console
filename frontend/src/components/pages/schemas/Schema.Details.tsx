@@ -5,11 +5,11 @@ import React from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
-import ReactJson from 'react-json-view';
 import './Schema.Details.css';
 import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
+import { KowlJsonView } from '../../misc/KowlJsonView';
 
 const { Option } = Select;
 
@@ -88,13 +88,13 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                         </Col>
                     </Row>
                     <Row gutter={32}>
-                        <Col span="12">
-                            <ReactJson
+                            <KowlJsonView
                                 src={api.SchemaDetails || {}}
                                 style={{
                                     border: 'solid thin lightgray',
                                     borderRadius: '.25em',
                                     padding: '1em 1em 1em 2em',
+                                    marginBottom: '1.5rem',
                                 }}
                             />
                         </Col>
