@@ -81,7 +81,6 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                             <span>
                                 <Label text="Version">
                                     <Select defaultValue={this.props.query.version} onChange={(version) => appGlobal.history.push(`/schema-registry/${this.props.subjectName}?version=${version}`)}>
-                                        <Option value={0}>Version 0</Option>
                                         {renderOptions(api.SchemaDetails?.registeredVersions)}
                                     </Select>
                                 </Label>
