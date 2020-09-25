@@ -7,6 +7,7 @@ import Card from '../../misc/Card';
 import { appGlobal } from '../../../state/appGlobal';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
+import { sortField } from '../../misc/common';
 
 @observer
 class SchemaList extends PageComponent<{}> {
@@ -33,15 +34,16 @@ class SchemaList extends PageComponent<{}> {
                     <Table
                         // TODO: display any request errors
                         // TODO: quick search?
+                        size="middle"
                         onRow={({ name, latestVersion}) => ({
                             onClick: () => appGlobal.history.push(`/schema-registry/${name}?version=${latestVersion}`)
                         })}
                         rowClassName={() => 'hoverLink'}
                         columns={[
-                            { title: 'Name', dataIndex: 'name' },
-                            { title: 'Compatibility Level', dataIndex: 'compatibilityLevel' },
-                            { title: 'Versions', dataIndex: 'versionsCount' },
-                            { title: 'Latest Version', dataIndex: 'latestVersion' },
+                            { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
+                            { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel') },
+                            { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount') },
+                            { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount') },
                         ]}
                         dataSource={subjects}
                         // TODO: Useful pagination settings
