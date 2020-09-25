@@ -36,6 +36,7 @@ import 'prismjs/prism.js';
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras"
 import 'prismjs/themes/prism.css';
+import { KowlJsonView } from "../../misc/KowlJsonView";
 
 
 
@@ -822,18 +823,7 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                         style={{ float: 'right', margin: '1em', zIndex: 10 }} />
                 </Affix> */}
 
-                <ReactJson
-                    style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}
-                    displayDataTypes={false} displayObjectSize={true} enableClipboard={false}
-                    src={msg.value}
-                    name={null}
-                    collapseStringsAfterLength={40}
-                    groupArraysAfterLength={100}
-                    indentWidth={5}
-                    iconStyle='triangle'
-                    collapsed={2}
-                    shouldCollapse={shouldCollapse}
-                />
+                <KowlJsonView src={msg.value} shouldCollapse={shouldCollapse} />
             </>
         )
     }
