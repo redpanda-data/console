@@ -32,11 +32,11 @@ class SchemaList extends PageComponent<{}> {
                 <Card>
                     <Table
                         // TODO: display any request errors
-                        // TODO: styling of table rows when hovering
                         // TODO: quick search?
                         onRow={({ name, latestVersion}) => ({
                             onClick: () => appGlobal.history.push(`/schema-registry/${name}?version=${latestVersion}`)
                         })}
+                        rowClassName={() => 'hoverLink'}
                         columns={[
                             { title: 'Name', dataIndex: 'name' },
                             { title: 'Compatibility Level', dataIndex: 'compatibilityLevel' },
