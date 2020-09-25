@@ -1,4 +1,4 @@
-import { Col, PageHeader, Row, Select, Statistic, Table } from 'antd';
+import { Col, Descriptions, Row, Select, Statistic, Table } from 'antd';
 import Card from '../../misc/Card';
 import { observer } from 'mobx-react';
 import React from 'react';
@@ -7,7 +7,7 @@ import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
 import ReactJson from 'react-json-view';
 import './Schema.Details.css';
-import { Label } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 
@@ -22,14 +22,13 @@ export interface SchemaDetailsProps {
 
 function renderSchemaDataList(entries: string[][]) {
     return (
-        <dl>
-            {entries.map(([key, value]) => (
-                <div>
-                    <dt className="schemaDataTerm">{key}</dt>
-                    <dd className="schemaDataDefinition">{value}</dd>
-                </div>
-            ))}
-        </dl>
+        <Descriptions bordered size="small" colon={true} layout="horizontal" column={1}>
+            {entries
+                .filter(([_, text]) => text !== undefined)
+                .map(([label, text]) => (
+                    <Descriptions.Item label={label}>{text}</Descriptions.Item>
+                ))}
+        </Descriptions>
     );
 }
 
@@ -62,13 +61,12 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
     }
 
     render() {
-        // TODO: crud / edit actions already available?
-        // TODO: edit button already possible / what should it do?
-        // TODO: handle schema details null better than now
+        if (!api.SchemaDetails) return DefaultSkeleton;
+
         const {
             schemaId,
-            schema: { type = '', name = '', namespace = '', doc = '', fields = [] },
-        } = api.SchemaDetails || { schema: {} };
+            schema: { type, name, namespace, doc, fields },
+        } = api.SchemaDetails;
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 <Card>
