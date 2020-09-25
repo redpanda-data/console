@@ -2,12 +2,13 @@ import React from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { Row, Statistic, Table } from 'antd';
+import { Empty, Row, Statistic, Table } from 'antd';
 import Card from '../../misc/Card';
 import { appGlobal } from '../../../state/appGlobal';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { sortField } from '../../misc/common';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 
 @observer
 class SchemaList extends PageComponent<{}> {
@@ -21,7 +22,9 @@ class SchemaList extends PageComponent<{}> {
         api.refreshSchemaOverview(force);
     }
     render() {
-        const { mode, compatibilityLevel, subjects} = {...api.SchemaOverview}
+        if (!api.SchemaOverview) return DefaultSkeleton;
+
+        const { mode, compatibilityLevel, subjects, requestErrors } = { ...api.SchemaOverview };
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 <Card>
@@ -31,24 +34,27 @@ class SchemaList extends PageComponent<{}> {
                     </Row>
                 </Card>
                 <Card>
-                    <Table
-                        // TODO: display any request errors
-                        // TODO: quick search?
-                        size="middle"
-                        onRow={({ name, latestVersion}) => ({
-                            onClick: () => appGlobal.history.push(`/schema-registry/${name}?version=${latestVersion}`)
-                        })}
-                        rowClassName={() => 'hoverLink'}
-                        columns={[
-                            { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
-                            { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel'), width: 150 },
-                            { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount'), width: 80 },
-                            { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
-                        ]}
-                        dataSource={subjects}
-                        // TODO: Useful pagination settings
-                        pagination={false}
-                    ></Table>
+                    {subjects.length === 0 ? (
+                        <Empty />
+                    ) : (
+                        <Table
+                            // TODO: quick search?
+                            size="middle"
+                            onRow={({ name, latestVersion }) => ({
+                                onClick: () => appGlobal.history.push(`/schema-registry/${name}?version=${latestVersion}`),
+                            })}
+                            rowClassName={() => 'hoverLink'}
+                            columns={[
+                                { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
+                                { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel'), width: 150 },
+                                { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount'), width: 80 },
+                                { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
+                            ]}
+                            dataSource={subjects}
+                            // TODO: Useful pagination settings
+                            pagination={false}
+                        ></Table>
+                    )}
                 </Card>
             </motion.div>
         );
