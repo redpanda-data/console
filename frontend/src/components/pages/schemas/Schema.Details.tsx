@@ -68,6 +68,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
             schemaId,
             schema: { type, name, namespace, doc, fields },
         } = api.SchemaDetails;
+
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 <Card>
@@ -77,7 +78,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                     </Row>
                 </Card>
                 <Card>
-                    <Row gutter={[32, 8]}>
+                    <Row gutter={[32, 24]}>
                         <Col span="24">
                             <span>
                                 <Label text="Version">
@@ -89,6 +90,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                         </Col>
                     </Row>
                     <Row gutter={32}>
+                        <Col xl={{ span: 12, order: 1 }} xs={{ span: 24, order: 2 }}>
                             <KowlJsonView
                                 src={api.SchemaDetails || {}}
                                 style={{
@@ -99,7 +101,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                                 }}
                             />
                         </Col>
-                        <Col span="12">
+                        <Col xl={{ span: 12, order: 2 }} xs={{ span: 24, order: 1 }}>
                             {renderSchemaDataList([
                                 ['type', type],
                                 ['name', name],
@@ -107,6 +109,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                                 ['doc', doc],
                             ])}
                             <Table
+                                size="middle"
                                 columns={[
                                     { title: 'Name', dataIndex: 'name', className: 'whiteSpaceDefault', sorter: sortField('name') },
                                     { title: 'Type', dataIndex: 'type', className: 'whiteSpaceDefault', sorter: sortField('type') },
@@ -116,7 +119,9 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                                 dataSource={fields}
                                 pagination={false}
                                 style={{
-                                    maxWidth: '100%'
+                                    maxWidth: '100%',
+                                    marginTop: '1.5rem',
+                                    marginBottom: '1.5rem',
                                 }}
                             ></Table>
                         </Col>
