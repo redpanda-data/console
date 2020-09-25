@@ -38,7 +38,7 @@ function renderOptions(options: number[] = []) {
 }
 
 @observer
-class SchemaDetails extends PageComponent<SchemaDetailsProps> {
+class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
     initPage(p: PageInitHelper): void {
         const {
             subjectName,
@@ -129,4 +129,4 @@ class SchemaDetails extends PageComponent<SchemaDetailsProps> {
     }
 }
 
-export default SchemaDetails;
+export default SchemaDetailsView;
