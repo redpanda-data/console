@@ -10,6 +10,7 @@ import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { KowlJsonView } from '../../misc/KowlJsonView';
+import { sortField } from '../../misc/common';
 
 const { Option } = Select;
 
@@ -107,8 +108,8 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                             ])}
                             <Table
                                 columns={[
-                                    { title: 'Name', dataIndex: 'name', className: 'whiteSpaceDefault' },
-                                    { title: 'Type', dataIndex: 'type', className: 'whiteSpaceDefault' },
+                                    { title: 'Name', dataIndex: 'name', className: 'whiteSpaceDefault', sorter: sortField('name') },
+                                    { title: 'Type', dataIndex: 'type', className: 'whiteSpaceDefault', sorter: sortField('type') },
                                     { title: 'Default', dataIndex: 'default', className: 'whiteSpaceDefault' },
                                     { title: 'Documentation', dataIndex: 'doc', className: 'whiteSpaceDefault' },
                                 ]}
