@@ -41,9 +41,9 @@ class SchemaList extends PageComponent<{}> {
                         rowClassName={() => 'hoverLink'}
                         columns={[
                             { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
-                            { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel') },
-                            { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount') },
-                            { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount') },
+                            { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel'), width: 150 },
+                            { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount'), width: 80 },
+                            { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
                         ]}
                         dataSource={subjects}
                         // TODO: Useful pagination settings
