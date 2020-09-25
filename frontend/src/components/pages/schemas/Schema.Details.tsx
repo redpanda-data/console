@@ -5,14 +5,11 @@ import React from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
-import './Schema.Details.css';
 import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { KowlJsonView } from '../../misc/KowlJsonView';
 import { sortField } from '../../misc/common';
-
-const { Option } = Select;
 
 export interface SchemaDetailsProps {
     subjectName: string;
@@ -34,7 +31,7 @@ function renderSchemaDataList(entries: string[][]) {
 }
 
 function renderOptions(options: number[] = []) {
-    return options.map((option) => <Option value={option}>Version {option}</Option>);
+    return options.map((option) => <Select.Option value={option}>Version {option}</Select.Option>);
 }
 
 @observer
