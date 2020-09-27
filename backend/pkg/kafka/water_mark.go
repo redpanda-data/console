@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"fmt"
 	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
 )
@@ -154,6 +155,11 @@ func (s *Service) HighWaterMarks(topicPartitions map[string][]int32) (map[string
 				res[topic] = make(map[int32]int64)
 			}
 			for partitionID, offset := range block {
+				if offset.Err != sarama.ErrNoError {
+					s.Logger.Error("failed to fetch high watermarks because at least one offset could not be fetched",
+						zap.Int16("sarama_error_code", int16(offset.Err)))
+					return nil, fmt.Errorf("failed to fetch high watermarks because at least one offset could not be fetched")
+				}
 				// We can not access offset.Offset here, this is a bug in sarama, where they don't read the offset for v2+
 				// We must read it from an array which is always set and has the length 1
 				res[topic][partitionID] = offset.Offsets[0]
