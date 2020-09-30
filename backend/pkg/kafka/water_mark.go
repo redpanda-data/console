@@ -156,8 +156,10 @@ func (s *Service) HighWaterMarks(topicPartitions map[string][]int32) (map[string
 			}
 			for partitionID, offset := range block {
 				if offset.Err != sarama.ErrNoError {
-					s.Logger.Error("failed to fetch high watermarks because at least one offset could not be fetched",
-						zap.Int16("sarama_error_code", int16(offset.Err)))
+					s.Logger.Error("failed to fetch high watermarks because offset could not be fetched",
+						zap.Int16("sarama_error_code", int16(offset.Err)),
+						zap.String("topic_name", topic),
+						zap.Int32("partition_id", partitionID))
 					return nil, fmt.Errorf("failed to fetch high watermarks because at least one offset could not be fetched")
 				}
 				// We can not access offset.Offset here, this is a bug in sarama, where they don't read the offset for v2+
