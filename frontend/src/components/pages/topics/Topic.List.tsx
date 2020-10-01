@@ -101,6 +101,7 @@ class TopicList extends PageComponent {
                 </Card>
 
                 <Card>
+                    {/* TODO: use search bar component; be sure to move "hide internal topics" checkbox to this component before*/}
                     <SearchBar<TopicDetail> dataSource={this.getTopics} isFilterMatch={this.isFilterMatch} ref={this.searchBar} />
 
                     <Table

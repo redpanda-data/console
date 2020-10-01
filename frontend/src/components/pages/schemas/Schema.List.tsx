@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { RefObject } from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
@@ -9,10 +9,12 @@ import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { makePaginationConfig, sortField } from '../../misc/common';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { SchemaOverviewRequestError } from '../../../state/restInterfaces';
+import { SchemaOverviewRequestError, SchemaSubject } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 
 import './Schema.List.scss';
+import SearchBar from '../../misc/SearchBar';
+import { observable } from 'mobx';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -31,6 +33,7 @@ function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
 @observer
 class SchemaList extends PageComponent<{}> {
     paginationConfig = makePaginationConfig(uiSettings.schemaList.pageSize);
+    @observable searchBar: RefObject<SearchBar<SchemaSubject>> = React.createRef();
 
     initPage(p: PageInitHelper): void {
         p.title = 'Schema Registry';
@@ -38,13 +41,22 @@ class SchemaList extends PageComponent<{}> {
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
+
     refreshData(force?: boolean) {
         api.refreshSchemaOverview(force);
     }
+
+    isFilterMatch(filterString: string, subject: SchemaSubject) {
+        return subject.name.includes(filterString);
+    }
+
     render() {
         if (!api.SchemaOverview) return DefaultSkeleton;
+        if (api.SchemaOverview.subjects.length <= 0) return <Empty />
 
-        const { mode, compatibilityLevel, subjects, requestErrors } = { ...api.SchemaOverview };
+        const { mode, compatibilityLevel, requestErrors } = { ...api.SchemaOverview };
+
+        const subjects = this.searchBar.current ? this.searchBar.current.data : ([] as SchemaSubject[]);
 
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
@@ -56,31 +68,29 @@ class SchemaList extends PageComponent<{}> {
                 </Card>
                 {renderRequestErrors(requestErrors)}
                 <Card>
-                    {subjects.length === 0 ? (
-                        <Empty />
-                    ) : (
-                        <Table
-                            // TODO: quick search?
-                            size="middle"
-                            onRow={({ name, latestVersion }) => ({
-                                onClick: () => appGlobal.history.push(`/schema-registry/${name}?version=${latestVersion}`),
-                            })}
-                            rowClassName={() => 'hoverLink'}
-                            columns={[
-                                { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
-                                { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel'), width: 150 },
-                                { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount'), width: 80 },
-                                { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
-                            ]}
-                            dataSource={subjects}
-                            pagination={this.paginationConfig}
-                            onChange={(pagination) => {
-                                if (pagination.pageSize) uiSettings.schemaList.pageSize = pagination.pageSize;
-                                this.paginationConfig.current = pagination.current;
-                                this.paginationConfig.pageSize = pagination.pageSize;
-                            }}
-                        ></Table>
-                    )}
+                    <SearchBar<SchemaSubject> dataSource={() => api.SchemaOverview?.subjects || []} ref={this.searchBar} isFilterMatch={this.isFilterMatch} />
+
+                    <Table
+                        size="middle"
+                        onRow={({ name, latestVersion }) => ({
+                            onClick: () => appGlobal.history.push(`/schema-registry/${name}?version=${latestVersion}`),
+                        })}
+                        rowClassName={() => 'hoverLink'}
+                        columns={[
+                            { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
+                            { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel'), width: 150 },
+                            { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount'), width: 80 },
+                            { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
+                        ]}
+                        rowKey="name"
+                        dataSource={subjects}
+                        pagination={this.paginationConfig}
+                        onChange={(pagination) => {
+                            if (pagination.pageSize) uiSettings.schemaList.pageSize = pagination.pageSize;
+                            this.paginationConfig.current = pagination.current;
+                            this.paginationConfig.pageSize = pagination.pageSize;
+                        }}
+                    ></Table>
                 </Card>
             </motion.div>
         );
