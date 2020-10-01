@@ -24,14 +24,14 @@ function renderSchemaDataList(entries: string[][]) {
             {entries
                 .filter(([_, text]) => text !== undefined)
                 .map(([label, text]) => (
-                    <Descriptions.Item label={label}>{text}</Descriptions.Item>
+                    <Descriptions.Item label={label} key={label}>{text}</Descriptions.Item>
                 ))}
         </Descriptions>
     );
 }
 
 function renderOptions(options: number[] = []) {
-    return options.map((option) => <Select.Option value={option}>Version {option}</Select.Option>);
+    return options.map((option) => <Select.Option value={option} key={option}>Version {option}</Select.Option>);
 }
 
 @observer
@@ -113,6 +113,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                                     { title: 'Default', dataIndex: 'default', className: 'whiteSpaceDefault' },
                                     { title: 'Documentation', dataIndex: 'doc', className: 'whiteSpaceDefault' },
                                 ]}
+                                rowKey="name"
                                 dataSource={fields}
                                 pagination={false}
                                 style={{
