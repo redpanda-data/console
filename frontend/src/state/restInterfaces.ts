@@ -365,13 +365,13 @@ export interface Schema {
     doc: string;
     name: string;
     namespace: string;
-    type: string; // TODO: can be enum?
+    type: string;
     fields: SchemaField[];
 }
 
 export interface SchemaField {
     name: string;
-    type: string; // TODO: can be enum?
+    type: string;
     doc: string;
-    default?: string; // TODO: really a string?
+    default?: string;
 }
