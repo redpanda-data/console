@@ -130,6 +130,10 @@ const uiSettings = observable({
         showStatisticsBar: true,
     },
 
+    schemaList: {
+        pageSize: DEFAULT_TABLE_PAGE_SIZE
+    },
+
     previewNotificationHideUntil: 0, // utc seconds
 
     userDefaults: {

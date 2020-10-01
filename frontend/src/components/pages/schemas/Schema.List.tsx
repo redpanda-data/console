@@ -7,11 +7,12 @@ import Card from '../../misc/Card';
 import { appGlobal } from '../../../state/appGlobal';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
-import { sortField } from '../../misc/common';
+import { makePaginationConfig, sortField } from '../../misc/common';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { SchemaOverviewRequestError } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
 
-import './Schema.List.scss'
+import './Schema.List.scss';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -29,6 +30,8 @@ function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
 
 @observer
 class SchemaList extends PageComponent<{}> {
+    paginationConfig = makePaginationConfig(uiSettings.schemaList.pageSize);
+
     initPage(p: PageInitHelper): void {
         p.title = 'Schema Registry';
         p.addBreadcrumb('Schema Registry', '/schema-registry');
@@ -70,8 +73,12 @@ class SchemaList extends PageComponent<{}> {
                                 { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
                             ]}
                             dataSource={subjects}
-                            // TODO: Useful pagination settings
-                            pagination={false}
+                            pagination={this.paginationConfig}
+                            onChange={(pagination) => {
+                                if (pagination.pageSize) uiSettings.schemaList.pageSize = pagination.pageSize;
+                                this.paginationConfig.current = pagination.current;
+                                this.paginationConfig.pageSize = pagination.pageSize;
+                            }}
                         ></Table>
                     )}
                 </Card>
