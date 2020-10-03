@@ -171,7 +171,8 @@ const apiStore = {
     ClusterConfig: null as (ClusterConfig | null),
     AdminInfo: null as (AdminInfo | null),
 
-    SchemaOverview: null as (SchemaOverview | null),
+    SchemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
+    SchemaOverviewIsConfigured: undefined as boolean | undefined,
     SchemaDetails: null as (SchemaDetails | null),
 
     Topics: null as (TopicDetail[] | null),
@@ -426,7 +427,7 @@ const apiStore = {
 
     refreshSchemaOverview(force?: boolean) {
         getSchemaOverview(force)
-            .then(({ schemaOverview }) => (this.SchemaOverview = schemaOverview))
+            .then(({ schemaOverview, isConfigured }) => [this.SchemaOverview, this.SchemaOverviewIsConfigured] = [schemaOverview, isConfigured])
             .catch(addError)
     },
 

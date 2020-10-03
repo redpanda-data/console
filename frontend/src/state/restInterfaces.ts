@@ -327,6 +327,7 @@ export interface TopicPermissions {
 // SCHEMA REGISTRY
 export interface SchemaOverviewResponse {
     schemaOverview: SchemaOverview;
+    isConfigured: boolean;
 }
 
 export interface SchemaOverview {
