@@ -37,17 +37,16 @@ function renderNotConfigured() {
                 <div style={{ marginBottom: '1.5rem' }}>
                     <h2>Not Configured</h2>
 
-                    <p>Kowl has not been configured to connect to any schema registry yet.</p>
                     <p>
-                        In in massa non arcu malesuada venenatis in et elit. Praesent finibus, nunc eu bibendum molestie,<br />
-                        elit nulla auctor velit, eget placerat nunc lacus ut enim. Proin nec bibendum diam.
+                        Schema Registry is not configured in Kowl.<br />
+                        To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Kowl config.
                     </p>
                 </div>
 
                 {/* todo: fix link once we have a better guide */}
                 <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
                     <Button type="primary">
-                        Schema Config Documentation
+                        Kowl Config Documentation
                 </Button>
                 </a>
             </Empty>
