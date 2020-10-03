@@ -215,9 +215,7 @@ const AppPageHeader = observer(() => {
 
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
         ? <span>
-            <NavLink to={r.path}>
-                <div style={{ fontWeight: 700, fontSize: '125%', display: 'inline-flex', height: '1px', verticalAlign: 'middle', paddingBottom: '6px', alignItems: 'center' }}>{r.breadcrumbName}</div>
-            </NavLink>
+            <div className='breadcrumbLast'>{r.breadcrumbName}</div>
             <LayoutBypass justifyContent='start'>
                 <DataRefreshButton />
             </LayoutBypass>

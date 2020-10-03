@@ -1396,3 +1396,15 @@ svg {
         }
     }
 }
+
+.breadcrumbLast {
+    display: inline-flex;
+    height: 1px;
+    font-size: 125%;
+    font-weight: 700;
+    vertical-align: middle;
+    padding-bottom: 6px;
+    align-items: center;
+
+    cursor: default;
+}
