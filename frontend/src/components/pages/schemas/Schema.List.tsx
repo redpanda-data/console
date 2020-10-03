@@ -32,19 +32,18 @@ function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
 
 function renderNotConfigured() {
     return <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
-        <Card style={{ padding: '3rem 2rem' }}>
-            <Empty description={<>
-                <span>
+        <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
+            <Empty description={null}>
+                <div style={{ marginBottom: '1.5rem' }}>
                     <h2>Not Configured</h2>
 
                     <p>Kowl has not been configured to connect to any schema registry yet.</p>
-
                     <p>
                         In in massa non arcu malesuada venenatis in et elit. Praesent finibus, nunc eu bibendum molestie,<br />
-                    elit nulla auctor velit, eget placerat nunc lacus ut enim. Proin nec bibendum diam.
-                 </p>
-                </span>
-            </>}>
+                        elit nulla auctor velit, eget placerat nunc lacus ut enim. Proin nec bibendum diam.
+                    </p>
+                </div>
+
                 {/* todo: fix link once we have a better guide */}
                 <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
                     <Button type="primary">
