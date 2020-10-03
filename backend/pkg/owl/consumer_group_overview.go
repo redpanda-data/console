@@ -2,6 +2,7 @@ package owl
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/Shopify/sarama"
@@ -38,24 +39,24 @@ type GroupMemberAssignment struct {
 func (s *Service) GetConsumerGroupsOverview(ctx context.Context) ([]*ConsumerGroupOverview, error) {
 	groups, err := s.kafkaSvc.ListConsumerGroups(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list consumer groups: %w", err)
 	}
 
-	describedGroups, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groups)
+	describedGroups, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groups.GroupIDs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to describe consumer groups: %w", err)
 	}
 
-	groupLags, err := s.getConsumerGroupLags(ctx, groups)
+	groupLags, err := s.getConsumerGroupLags(ctx, groups.GroupIDs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get consumer group lags: %w", err)
 	}
 
 	res := make([]*ConsumerGroupOverview, 0)
 	for id, group := range describedGroups {
 		converted, err := s.convertSaramaGroupDescriptions(group.Groups, groupLags, id)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to convert group descriptions into group members: %w", err)
 		}
 		res = append(res, converted...)
 	}

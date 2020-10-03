@@ -7,6 +7,7 @@
 - **[FEATURE] Add support for Okta as an identity provider**
 - [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
 - [BUGFIX] Kowl now shows the error reported by a login provider (should the login fail)
+- [BUGFIX] Better handling for broker restarts on consumer groups and topics page
 
 ## 1.1.0 / 2020-08-06
 

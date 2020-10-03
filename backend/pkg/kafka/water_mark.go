@@ -78,6 +78,15 @@ func (s *Service) WaterMarks(topic string, partitionIDs []int32) (map[int32]*Wat
 
 		for _, blockByPartition := range r.Offsets.Blocks {
 			for partition, block := range blockByPartition {
+				if block.Err == sarama.ErrNotLeaderForPartition {
+					s.Logger.Info("failed to fetch topic watermarks because metadata is outdated. Metadata will be refreshed and request rescheduled",
+						zap.String("topic", topic))
+					// This might happen due to outdated metadata (e. g. because some kafka brokers restarted recently)
+					err := s.Client.RefreshMetadata()
+					if err == nil {
+						return s.WaterMarks(topic, partitionIDs)
+					}
+				}
 				if block.Err != sarama.ErrNoError {
 					return nil, block.Err
 				}
@@ -155,6 +164,15 @@ func (s *Service) HighWaterMarks(topicPartitions map[string][]int32) (map[string
 				res[topic] = make(map[int32]int64)
 			}
 			for partitionID, offset := range block {
+				if offset.Err == sarama.ErrNotLeaderForPartition {
+					s.Logger.Info("failed to fetch topic high watermarks because metadata is outdated. All topics metadata will be refreshed and request rescheduled")
+					// This might happen due to outdated metadata (e. g. because some kafka brokers restarted recently)
+					err := s.Client.RefreshMetadata()
+					if err == nil {
+						return s.HighWaterMarks(topicPartitions)
+					}
+				}
+
 				if offset.Err != sarama.ErrNoError {
 					s.Logger.Error("failed to fetch high watermarks because offset could not be fetched",
 						zap.Int16("sarama_error_code", int16(offset.Err)),
