@@ -131,7 +131,8 @@ const uiSettings = observable({
     },
 
     schemaList: {
-        pageSize: DEFAULT_TABLE_PAGE_SIZE
+        pageSize: DEFAULT_TABLE_PAGE_SIZE,
+        quickSearch: ''
     },
 
     previewNotificationHideUntil: 0, // utc seconds

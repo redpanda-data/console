@@ -1,27 +1,21 @@
-import React, { Component, RefObject } from 'react';
-import { Table, Empty, Skeleton, Checkbox, Row, Statistic, Input, Typography, AutoComplete, Button, Popover, Switch, Divider, Descriptions, Col } from 'antd';
+import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
+import { Checkbox, Col, Empty, Popover, Row, Statistic, Table } from 'antd';
+import { motion } from 'framer-motion';
+import { autorun, IReactionDisposer, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { api } from '../../../state/backendApi';
-import { uiSettings } from '../../../state/ui';
-import { PageComponent, PageInitHelper } from '../Page';
-import { makePaginationConfig, sortField } from '../../misc/common';
-import { motion, AnimatePresence } from 'framer-motion';
-import { animProps, MotionDiv, MotionSpan, animProps_span_searchResult } from '../../../utils/animationProps';
+import React, { RefObject } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
-import { FilterableDataSource } from '../../../utils/filterableDataSource';
-import { TopicDetail, TopicAction, TopicActions } from '../../../state/restInterfaces';
-import { observable, autorun, IReactionDisposer } from 'mobx';
-import prettyBytes from 'pretty-bytes';
-import { prettyBytesOrNA, DebugTimerStore } from '../../../utils/utils';
-import { uiState } from '../../../state/uiState';
-import Card from '../../misc/Card';
+import { api } from '../../../state/backendApi';
+import { TopicActions, TopicDetail } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
+import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
-import Icon from '@ant-design/icons';
-import { QuickTable, DefaultSkeleton } from '../../../utils/tsxUtils';
-import { EyeClosedIcon, CheckIcon, CircleSlashIcon } from '@primer/octicons-v2-react';
+import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
+import { prettyBytesOrNA } from '../../../utils/utils';
+import Card from '../../misc/Card';
+import { makePaginationConfig, sortField } from '../../misc/common';
 import SearchBar from '../../misc/SearchBar';
-const { Text } = Typography;
-const statisticStyle: React.CSSProperties = { margin: 0, marginRight: '2em', padding: '.2em' };
+import { PageComponent, PageInitHelper } from '../Page';
 
 @observer
 class TopicList extends PageComponent {
@@ -104,7 +98,13 @@ class TopicList extends PageComponent {
                 <Card>
                     <Row justify="space-between" align="middle">
                         <Col span="auto">
-                            <SearchBar<TopicDetail> dataSource={this.getTopics} isFilterMatch={this.isFilterMatch} ref={this.searchBar} />
+                            <SearchBar<TopicDetail>
+                                dataSource={this.getTopics}
+                                isFilterMatch={this.isFilterMatch}
+                                ref={this.searchBar}
+                                filterText={uiSettings.topicList.quickSearch}
+                                onChange={(filterText) => (uiSettings.topicList.quickSearch = filterText)}
+                            />
                         </Col>
                         <Col>
                             <Checkbox style={{ paddingLeft: '1rem', marginLeft: 'auto' }} checked={uiSettings.topicList.hideInternalTopics} onChange={(e) => (uiSettings.topicList.hideInternalTopics = e.target.checked)}>

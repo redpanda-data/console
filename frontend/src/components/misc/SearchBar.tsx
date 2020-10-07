@@ -2,14 +2,13 @@ import { Checkbox, Input } from 'antd';
 import { AnimatePresence } from 'framer-motion';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react'
-import { uiSettings } from '../../state/ui';
 import { animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
 
 // todo: extract out where the filterText is retreived from / saved.
 //       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
 @observer
-class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMatch: (filter: string, item: TItem) => boolean }> {
+class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMatch: (filter: string, item: TItem) => boolean, filterText: string, onChange: (value: string) => void }> {
 
     private filteredSource = {} as FilterableDataSource<TItem>;
     get data() { return this.filteredSource.data; }
@@ -24,7 +23,14 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
     constructor(p: any) {
         super(p);
         this.filteredSource = new FilterableDataSource<TItem>(this.props.dataSource, this.props.isFilterMatch);
-        this.filteredSource.filterText = uiSettings.topicList.quickSearch;
+        this.filteredSource.filterText = this.props.filterText;
+
+        this.onChange = this.onChange.bind(this)
+    }
+
+    onChange(e: React.ChangeEvent<HTMLInputElement>) {
+        this.filteredSource.filterText = e.target.value
+        this.props.onChange(e.target.value)
     }
 
     componentWillUnmount() {
@@ -39,8 +45,8 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
                 dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
             > */}
             <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: '350px' }}
-                onChange={e => this.filteredSource.filterText = uiSettings.topicList.quickSearch = e.target.value}
-                value={uiSettings.topicList.quickSearch}
+                onChange={this.onChange}
+                value={this.props.filterText}
             // addonAfter={
             //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
             //         <Icon type='setting' style={{ color: '#0006' }} />

@@ -31,27 +31,28 @@ function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
 }
 
 function renderNotConfigured() {
-    return <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
-        <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
-            <Empty description={null}>
-                <div style={{ marginBottom: '1.5rem' }}>
-                    <h2>Not Configured</h2>
+    return (
+        <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
+            <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
+                <Empty description={null}>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <h2>Not Configured</h2>
 
-                    <p>
-                        Schema Registry is not configured in Kowl.<br />
-                        To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Kowl config.
-                    </p>
-                </div>
+                        <p>
+                            Schema Registry is not configured in Kowl.
+                            <br />
+                            To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Kowl config.
+                        </p>
+                    </div>
 
-                {/* todo: fix link once we have a better guide */}
-                <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
-                    <Button type="primary">
-                        Kowl Config Documentation
-                </Button>
-                </a>
-            </Empty>
-        </Card>
-    </motion.div>
+                    {/* todo: fix link once we have a better guide */}
+                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
+                        <Button type="primary">Kowl Config Documentation</Button>
+                    </a>
+                </Empty>
+            </Card>
+        </motion.div>
+    );
 }
 
 @observer
@@ -76,11 +77,10 @@ class SchemaList extends PageComponent<{}> {
 
     render() {
         if (api.SchemaOverview === undefined) return DefaultSkeleton; // request in progress
-        if (api.SchemaOverview === null || api.SchemaOverviewIsConfigured === false)
-            return renderNotConfigured(); // actually no data to display after successful request
+        if (api.SchemaOverview === null || api.SchemaOverviewIsConfigured === false) return renderNotConfigured(); // actually no data to display after successful request
 
         // todo: what if there are lets say 5 schemas, but all we got was 5 entries in 'requestErrors' instead?
-        if (api.SchemaOverview.subjects.length <= 0) return <Empty />
+        if (api.SchemaOverview.subjects.length <= 0) return <Empty />;
 
         const { mode, compatibilityLevel, requestErrors } = { ...api.SchemaOverview };
 
@@ -96,7 +96,13 @@ class SchemaList extends PageComponent<{}> {
                 </Card>
                 {renderRequestErrors(requestErrors)}
                 <Card>
-                    <SearchBar<SchemaSubject> dataSource={() => api.SchemaOverview?.subjects || []} ref={this.searchBar} isFilterMatch={this.isFilterMatch} />
+                    <SearchBar<SchemaSubject>
+                        dataSource={() => api.SchemaOverview?.subjects || []}
+                        ref={this.searchBar}
+                        isFilterMatch={this.isFilterMatch}
+                        filterText={uiSettings.schemaList.quickSearch}
+                        onChange={(filterText) => (uiSettings.schemaList.quickSearch = filterText)}
+                    />
 
                     <Table
                         size="middle"
