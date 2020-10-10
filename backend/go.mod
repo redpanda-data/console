@@ -19,7 +19,7 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/jarcoal/httpmock v1.0.6
-	github.com/klauspost/compress v1.10.11 // indirect
+	github.com/klauspost/compress v1.11.0 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
