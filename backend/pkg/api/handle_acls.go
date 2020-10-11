@@ -10,11 +10,6 @@ import (
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 )
 
-// GetACLsOverviewResponse represents the data which is returned for listing ACLs
-type GetACLsOverviewResponse struct {
-	AclResources []*owl.AclResource `json:"aclResources"`
-}
-
 type getAclsOverviewRequest struct {
 	// The resource type.
 	ResourceType int `schema:"resourceType"`
@@ -72,6 +67,11 @@ func (g *getAclsOverviewRequest) ToSaramaFilter() sarama.AclFilter {
 }
 
 func (api *API) handleGetACLsOverview() http.HandlerFunc {
+	// response represents the data which is returned for listing ACLs
+	type response struct {
+		AclResources []*owl.AclResource `json:"aclResources"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse request from url parameters
 		decoder := schema.NewDecoder()
@@ -113,9 +113,9 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			return
 		}
 
-		response := GetACLsOverviewResponse{
+		res := response{
 			AclResources: aclResources,
 		}
-		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
