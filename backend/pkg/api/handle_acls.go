@@ -101,6 +101,22 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			return
 		}
 
+		// Check if logged in user is allowed to list ACLs
+		isAllowed, restErr := api.Hooks.Owl.CanListACLs(r.Context())
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !isAllowed {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      fmt.Errorf("requester is not allowed to list ACLs"),
+				Status:   http.StatusForbidden,
+				Message:  "You are not allowed to list ACLs",
+				IsSilent: true,
+			})
+			return
+		}
+
 		aclResources, err := api.OwlSvc.ListAllACLs(req.ToSaramaFilter())
 		if err != nil {
 			restErr := &rest.Error{
