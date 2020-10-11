@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -149,6 +149,14 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
     return entry.lastPromise;
 }
 
+async function getSchemaOverview(force?: boolean) {
+    return cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>
+}
+
+async function getSchemaDetails(subjectName: string, version: number, force?: boolean) {
+    return cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
+}
+
 
 let currentWS: WebSocket | null = null;
 
@@ -162,6 +170,10 @@ const apiStore = {
     ClusterInfo: null as (ClusterInfo | null),
     ClusterConfig: null as (ClusterConfig | null),
     AdminInfo: null as (AdminInfo | null),
+
+    SchemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
+    SchemaOverviewIsConfigured: undefined as boolean | undefined,
+    SchemaDetails: null as (SchemaDetails | null),
 
     Topics: null as (TopicDetail[] | null),
     TopicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
@@ -412,6 +424,18 @@ const apiStore = {
                 this.AdminInfo = info;
             }, addError);
     },
+
+    refreshSchemaOverview(force?: boolean) {
+        getSchemaOverview(force)
+            .then(({ schemaOverview, isConfigured }) => [this.SchemaOverview, this.SchemaOverviewIsConfigured] = [schemaOverview, isConfigured])
+            .catch(addError)
+    },
+
+    refreshSchemaDetails(subjectName: string, version: number, force?: boolean) {
+        getSchemaDetails(subjectName, version, force)
+            .then(({ schemaDetails }) => (this.SchemaDetails = schemaDetails))
+            .catch(addError)
+    }
 }
 
 export interface MessageSearchRequest {

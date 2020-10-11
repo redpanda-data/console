@@ -1,3 +1,4 @@
+import SchemaList from "../components/pages/schemas/Schema.List";
 
 
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
@@ -321,4 +322,57 @@ export interface TopicPermissions {
     canUseSearchFilters: boolean;
     canViewTopicMessages: boolean;
     canViewTopicConsumers: boolean;
+}
+
+// SCHEMA REGISTRY
+export interface SchemaOverviewResponse {
+    schemaOverview: SchemaOverview;
+    isConfigured: boolean;
+}
+
+export interface SchemaOverview {
+    mode: string;
+    compatibilityLevel: string;
+    subjects: SchemaSubject[];
+    requestErrors: SchemaOverviewRequestError[];
+}
+
+export interface SchemaOverviewRequestError {
+    requestDescription: string;
+    errorMessage: string;
+}
+
+export interface SchemaSubject { // @martin wtf is schemaSubject? why is this name so confusing?
+    name: string;
+    compatibilityLevel: string;
+    versionsCount: number;
+    latestVersion: string;
+    requestError: string;
+}
+
+export interface SchemaDetailsResponse {
+    schemaDetails: SchemaDetails
+}
+
+export interface SchemaDetails {
+    string: string;
+    schemaId: number;
+    version: number;
+    schema: Schema;
+    registeredVersions: number[];
+}
+
+export interface Schema {
+    doc: string;
+    name: string;
+    namespace: string;
+    type: string;
+    fields: SchemaField[];
+}
+
+export interface SchemaField {
+    name: string;
+    type: string;
+    doc: string;
+    default?: string;
 }

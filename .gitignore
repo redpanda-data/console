@@ -10,3 +10,10 @@ fixname.sh
 **/.vscode
 **/.idea
 **/*.code-workspace
+
+# Helper Scripts
+run-docker.sh
+run-backend.sh
+
+# Local Formatting
+.prettierrc
