@@ -21,8 +21,8 @@ type AclRule struct {
 }
 
 // ListAllACLs returns a list of all stored ACLs.
-func (s *Service) ListAllACLs() ([]*AclResource, error) {
-	aclResponses, err := s.kafkaSvc.ListAllACLs()
+func (s *Service) ListAllACLs(req sarama.AclFilter) ([]*AclResource, error) {
+	aclResponses, err := s.kafkaSvc.ListACLs(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ACLs from Kafka: %w", err)
 	}

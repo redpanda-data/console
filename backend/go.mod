@@ -17,6 +17,7 @@ require (
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
+	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/jarcoal/httpmock v1.0.6
 	github.com/klauspost/compress v1.11.0 // indirect
