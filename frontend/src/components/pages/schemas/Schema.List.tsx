@@ -59,6 +59,7 @@ function renderNotConfigured() {
 class SchemaList extends PageComponent<{}> {
     paginationConfig = makePaginationConfig(uiSettings.schemaList.pageSize);
     @observable searchBar: RefObject<SearchBar<SchemaSubject>> = React.createRef();
+    @observable filteredSchemaSubjects: SchemaSubject[];
 
     initPage(p: PageInitHelper): void {
         p.title = 'Schema Registry';
@@ -84,8 +85,6 @@ class SchemaList extends PageComponent<{}> {
 
         const { mode, compatibilityLevel, requestErrors } = { ...api.SchemaOverview };
 
-        const subjects = this.searchBar.current ? this.searchBar.current.data : ([] as SchemaSubject[]);
-
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 <Card>
@@ -98,10 +97,10 @@ class SchemaList extends PageComponent<{}> {
                 <Card>
                     <SearchBar<SchemaSubject>
                         dataSource={() => api.SchemaOverview?.subjects || []}
-                        ref={this.searchBar}
                         isFilterMatch={this.isFilterMatch}
                         filterText={uiSettings.schemaList.quickSearch}
-                        onChange={(filterText) => (uiSettings.schemaList.quickSearch = filterText)}
+                        onQueryChanged={(filterText) => (uiSettings.schemaList.quickSearch = filterText)}
+                        onFilteredDataChanged={data => this.filteredSchemaSubjects = data}
                     />
 
                     <Table
@@ -117,7 +116,7 @@ class SchemaList extends PageComponent<{}> {
                             { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
                         ]}
                         rowKey="name"
-                        dataSource={subjects}
+                        dataSource={this.filteredSchemaSubjects ?? []}
                         pagination={this.paginationConfig}
                         onChange={(pagination) => {
                             if (pagination.pageSize) uiSettings.schemaList.pageSize = pagination.pageSize;

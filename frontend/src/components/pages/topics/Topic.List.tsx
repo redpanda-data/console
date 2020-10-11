@@ -20,8 +20,8 @@ import { PageComponent, PageInitHelper } from '../Page';
 @observer
 class TopicList extends PageComponent {
     pageConfig = makePaginationConfig(uiSettings.topicList.pageSize);
-    @observable searchBar: RefObject<SearchBar<TopicDetail>> = React.createRef();
     quickSearchReaction: IReactionDisposer;
+    @observable filteredTopics: TopicDetail[];
 
     initPage(p: PageInitHelper): void {
         p.title = 'Topics';
@@ -69,7 +69,6 @@ class TopicList extends PageComponent {
 
         const topics = this.getTopics();
 
-        const data = this.searchBar.current ? this.searchBar.current.data : ([] as TopicDetail[]);
         const partitionCountReal = topics.sum((x) => x.partitionCount);
         const partitionCountOnlyReplicated = topics.sum((x) => x.partitionCount * (x.replicationFactor - 1));
 
@@ -101,9 +100,9 @@ class TopicList extends PageComponent {
                             <SearchBar<TopicDetail>
                                 dataSource={this.getTopics}
                                 isFilterMatch={this.isFilterMatch}
-                                ref={this.searchBar}
                                 filterText={uiSettings.topicList.quickSearch}
-                                onChange={(filterText) => (uiSettings.topicList.quickSearch = filterText)}
+                                onQueryChanged={(filterText) => (uiSettings.topicList.quickSearch = filterText)}
+                                onFilteredDataChanged={data => this.filteredTopics = data}
                             />
                         </Col>
                         <Col>
@@ -126,7 +125,7 @@ class TopicList extends PageComponent {
                             this.pageConfig.pageSize = pagination.pageSize;
                         }}
                         rowClassName={() => 'hoverLink'}
-                        dataSource={data}
+                        dataSource={this.filteredTopics ?? []}
                         rowKey={(x) => x.topicName}
                         showSorterTooltip={false}
                         columns={[

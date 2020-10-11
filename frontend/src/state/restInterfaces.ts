@@ -342,7 +342,7 @@ export interface SchemaOverviewRequestError {
     errorMessage: string;
 }
 
-export interface SchemaSubject {
+export interface SchemaSubject { // @martin wtf is schemaSubject? why is this name so confusing?
     name: string;
     compatibilityLevel: string;
     versionsCount: number;

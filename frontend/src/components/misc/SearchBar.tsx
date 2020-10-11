@@ -1,5 +1,6 @@
 import { Checkbox, Input } from 'antd';
 import { AnimatePresence } from 'framer-motion';
+import { autorun, IReactionDisposer, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react'
 import { animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
@@ -8,10 +9,17 @@ import { FilterableDataSource } from '../../utils/filterableDataSource';
 // todo: extract out where the filterText is retreived from / saved.
 //       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
 @observer
-class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMatch: (filter: string, item: TItem) => boolean, filterText: string, onChange: (value: string) => void }> {
+class SearchBar<TItem> extends Component<{
+    dataSource: () => TItem[],
+    isFilterMatch: (filter: string, item: TItem) => boolean,
+    filterText: string,
+    onQueryChanged: (value: string) => void,
+    onFilteredDataChanged: (data: TItem[]) => void,
+}> {
 
     private filteredSource = {} as FilterableDataSource<TItem>;
     get data() { return this.filteredSource.data; }
+    autorunDisposer: IReactionDisposer | undefined = undefined;
 
     /*
         todo: autocomplete:
@@ -28,13 +36,26 @@ class SearchBar<TItem> extends Component<{ dataSource: () => TItem[], isFilterMa
         this.onChange = this.onChange.bind(this)
     }
 
+    componentDidMount() {
+        this.autorunDisposer = autorun(() => {
+            transaction(() => {
+                const data = this.data;
+                setImmediate(() => {
+                    this.props.onFilteredDataChanged(data);
+                });
+            });
+        });
+    }
+
     onChange(e: React.ChangeEvent<HTMLInputElement>) {
         this.filteredSource.filterText = e.target.value
-        this.props.onChange(e.target.value)
+        this.props.onQueryChanged(e.target.value)
     }
 
     componentWillUnmount() {
         this.filteredSource.dispose();
+        if (this.autorunDisposer) this.autorunDisposer();
+        // this.autorunDisposer?.();
     }
 
     render() {
