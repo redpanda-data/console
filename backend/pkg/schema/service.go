@@ -19,13 +19,18 @@ type Service struct {
 }
 
 // NewService to access schema registry. Returns an error if connection can't be established.
-func NewSevice(cfg Config) *Service {
+func NewSevice(cfg Config) (*Service, error) {
+	client, err := newClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create schema registry client: %w", err)
+	}
+
 	return &Service{
 		cfg:            cfg,
 		requestGroup:   singleflight.Group{},
-		registryClient: newClient(cfg),
+		registryClient: client,
 		cacheByID:      make(map[uint32]*goavro.Codec),
-	}
+	}, nil
 }
 
 // CheckConnectivity to schema registry. Returns no error if connectivity is fine.

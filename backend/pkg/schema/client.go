@@ -1,7 +1,10 @@
 package schema
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -22,8 +25,7 @@ func (e RestError) Error() string {
 	return fmt.Sprintf("schema registry request failed: %d - %s", e.ErrorCode, e.Message)
 }
 
-func newClient(cfg Config) *Client {
-	// TODO: Add support for custom TLS certificates
+func newClient(cfg Config) (*Client, error) {
 	// TODO: Add support to fallback to other registry urls if provided
 	registryUrl := cfg.URLs[0] // Array length is checked in config validate()
 
@@ -42,10 +44,22 @@ func newClient(cfg Config) *Client {
 		client = client.SetAuthToken(cfg.BearerToken)
 	}
 
+	// Use custom root ca if desired
+	if cfg.TLS.CaFilepath != "" {
+		ca, err := ioutil.ReadFile(cfg.TLS.CaFilepath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read ca file for schema registry client: %w", err)
+		}
+		pool := x509.NewCertPool()
+		pool.AppendCertsFromPEM(ca)
+
+		client.SetTLSClientConfig(&tls.Config{RootCAs: pool})
+	}
+
 	return &Client{
 		cfg:    cfg,
 		client: client,
-	}
+	}, nil
 }
 
 type SchemaResponse struct {
