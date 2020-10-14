@@ -34,6 +34,8 @@ kafka:
   #   username: # Basic auth username
   #   password: # Basic auth password
   #   bearerToken:
+  #   tls:
+  #     caFilepath: # Path to a custom CA file. If not specified the system's / trusted root ca is used.
 
 # Git config to use for embedded topic documentation, see /docs/features/topic-documentation.md for more details
 # git:
