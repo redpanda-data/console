@@ -3,15 +3,18 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { ToJson, LazyMap, TimeSince } from "../utils/utils";
+import { ToJson, LazyMap, TimeSince, Clone } from "../utils/utils";
 import { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
+import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
+import { objToQuery } from "../utils/queryHelper";
+import { ObjToKv } from "../utils/tsxUtils";
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -169,6 +172,8 @@ const apiStore = {
     TopicPermissions: new Map<string, TopicPermissions>(),
     TopicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     TopicConsumers: new Map<string, TopicConsumer[]>(),
+
+    ACLs: new Map<string, AclResource[]>(), // query string -> results array
 
     ConsumerGroups: null as (GroupDescription[] | null),
 
@@ -357,6 +362,16 @@ const apiStore = {
             .then(v => this.TopicConsumers.set(topicName, v.topicConsumers), addError);
     },
 
+    // /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
+    refreshAcls(listParameters: AclRequest, force?: boolean) {
+        const query = AclRequestToQuery(listParameters);
+
+        // Reset cache every once in a while, more sophisticated caching (like kicking the oldest entry) can be done later (if the need ever arises)
+        if (this.ACLs.size > 30) this.ACLs.clear();
+
+        cachedApiRequest<AclResponse>(`./api/acls?${query}`, force)
+            .then(v => this.ACLs.set(query, v.aclResources), addError);
+    },
 
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
@@ -412,6 +427,12 @@ const apiStore = {
                 this.AdminInfo = info;
             }, addError);
     },
+}
+
+export function AclRequestToQuery(request: AclRequest): string {
+    const filters = ObjToKv(request).filter(kv => !!kv.value);
+    const query = filters.map(x => `${x.key}=${x.value}`).join('&');
+    return query;
 }
 
 export interface MessageSearchRequest {
