@@ -200,7 +200,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </Select>
                 </Label>
                 <Label text='Filter' style={{ ...spaceStyle }}>
-                    <div style={{ height: '32px', paddingTop: '3px' }}>
+                    <div style={{ height: '32px', paddingTop: '4px' }}>
                         <Tooltip title="You don't have permissions to use search filters in this topic" trigger={canUseFilters ? 'none' : 'hover'}>
                             <Switch checked={searchParams.filtersEnabled && canUseFilters} onChange={v => searchParams.filtersEnabled = v} disabled={!canUseFilters} />
                         </Tooltip>
