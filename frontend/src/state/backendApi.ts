@@ -7,7 +7,7 @@ import {
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { ToJson, LazyMap, TimeSince, Clone } from "../utils/utils";
+import { ToJson, LazyMap, TimeSince } from "../utils/utils";
 import { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
@@ -173,7 +173,7 @@ const apiStore = {
     TopicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     TopicConsumers: new Map<string, TopicConsumer[]>(),
 
-    ACLs: new Map<string, AclResource[]>(), // query string -> results array
+    ACLs: undefined as AclResource[] | undefined,
 
     ConsumerGroups: null as (GroupDescription[] | null),
 
@@ -362,15 +362,10 @@ const apiStore = {
             .then(v => this.TopicConsumers.set(topicName, v.topicConsumers), addError);
     },
 
-    // /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
-    refreshAcls(listParameters: AclRequest, force?: boolean) {
-        const query = AclRequestToQuery(listParameters);
-
-        // Reset cache every once in a while, more sophisticated caching (like kicking the oldest entry) can be done later (if the need ever arises)
-        if (this.ACLs.size > 30) this.ACLs.clear();
-
+    refreshAcls(request: AclRequest, force?: boolean) {
+        const query = aclRequestToQuery(request);
         cachedApiRequest<AclResponse>(`./api/acls?${query}`, force)
-            .then(v => this.ACLs.set(query, v.aclResources), addError);
+            .then(v => this.ACLs = v.aclResources, addError);
     },
 
     refreshCluster(force?: boolean) {
@@ -429,7 +424,7 @@ const apiStore = {
     },
 }
 
-export function AclRequestToQuery(request: AclRequest): string {
+export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);
     const query = filters.map(x => `${x.key}=${x.value}`).join('&');
     return query;

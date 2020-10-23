@@ -19,7 +19,7 @@ import { SettingsPage } from "./pages/Settings";
 import AdminPage from "./pages/admin/AdminPage";
 import { api } from "../state/backendApi";
 import { DebugTimerStore, ToJson } from "../utils/utils";
-import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, UnorderedListOutlined, FileProtectOutlined } from '@ant-design/icons';
 import AclList from "./pages/acls/Acl.List";
 
 //
@@ -191,7 +191,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <FunnelPlotOutlined />),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', <FunnelPlotOutlined />),
 
-    MakeRoute<{}>('/acls', AclList, 'ACLs', <UnorderedListOutlined />),
+    MakeRoute<{}>('/acls', AclList, 'ACLs', <FileProtectOutlined />),
 
     MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => api.UserData?.canManageKowl ?? false),
 

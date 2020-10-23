@@ -1,22 +1,26 @@
 import React, { ReactNode, Component } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Tooltip, Space, Descriptions } from "antd";
+import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Tooltip, Space, Descriptions, Select, Input } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "../Page";
-import { api } from "../../../state/backendApi";
+import { aclRequestToQuery, api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { AclOperation, AclPermissionType, AclResource, AclResourcePatternTypeFilter, AclResourceType, Broker, BrokerConfigEntry } from "../../../state/restInterfaces";
+import { AclOperation, AclPermissionType, AclRequestDefault, AclResource, AclResourcePatternTypeFilter, AclResourceType, Broker, BrokerConfigEntry } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
-import { observable, computed } from "mobx";
+import { observable, computed, autorun, IReactionDisposer } from "mobx";
 import prettyBytes from "pretty-bytes";
-import { prettyBytesOrNA } from "../../../utils/utils";
+import { clone, prettyBytesOrNA } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CrownOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, OptionGroup } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, Label, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 import { DataValue } from "../topics/Tab.Config";
+import { uiState } from "../../../state/uiState";
+import { ElementOf } from "antd/lib/_util/type";
+
+const InputGroup = Input.Group;
 
 // todo:
 // - remove debug code
@@ -30,6 +34,9 @@ class AclList extends PageComponent {
 
     @observable filteredBrokers: Broker[];
 
+    availableResourceTypes: { value: string, label: string }[] = [];
+    @observable resourceTypeFilter: string = "";
+
     initPage(p: PageInitHelper): void {
         p.title = 'ACLs';
         p.addBreadcrumb('ACLs', '/acls');
@@ -39,33 +46,30 @@ class AclList extends PageComponent {
     }
 
     refreshData(force: boolean) {
-
-        // debug:
-        api.ACLs.clear();
-
-        api.refreshAcls({
-            permissionType: AclPermissionType.AclPermissionAny,
-            operation: AclOperation.AclOperationAny,
-            resourcePatternTypeFilter: AclResourcePatternTypeFilter.AclPatternAny,
-            resourceType: AclResourceType.AclResourceAny,
-        }, force);
+        api.refreshAcls(AclRequestDefault, force);
     }
 
     render() {
-        if (!api.ACLs.size) return DefaultSkeleton;
+        if (!api.ACLs) return DefaultSkeleton;
 
-        // debug:
-        let temp: AclResource[];
-        for (const x of api.ACLs) {
-            temp = x[1];
-            break;
-        }
-        const resources = temp!;
-        const columns: ColumnProps<AclResource>[] = [
-            { width: '80px', title: 'Type', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
+        // issue: we can't easily filter by 'resourceType' (because it is a string, and we have to use an enum for requests...)
+        // so we have to cheat by building our own list of what types are available
+        this.availableResourceTypes = api.ACLs.map(res => res.resourceType).distinct().map(str => ({ value: str, label: capitalize(str.toLowerCase()) }));
+        this.availableResourceTypes.unshift({ label: 'Any', value: '' });
+        const resources = api.ACLs
+            .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
+            .map(res => res.acls.map(rule => ({ ...res, ...rule })))
+            .flat();
+
+        const columns: ColumnProps<ElementOf<typeof resources>>[] = [
+            { width: '120px', title: 'Resource', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
+            { width: '120px', title: 'Permission', dataIndex: 'permissionType', sorter: sortField('permissionType') },
+            { width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal') },
+            { width: '160px', title: 'Operation', dataIndex: 'operation', sorter: sortField('operation') },
+            { width: 'auto', title: 'Pattern', dataIndex: 'resourcePatternType', sorter: sortField('resourcePatternType') },
             { width: 'auto', title: 'Name', dataIndex: 'resourceName', sorter: sortField('resourceName') },
-            { width: '120px', title: 'Pattern', dataIndex: 'resourcePatternType', sorter: sortField('resourcePatternType') }
-        ]
+            { width: '120px', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
+        ];
 
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
@@ -77,6 +81,8 @@ class AclList extends PageComponent {
                 </Card> */}
 
                 <Card>
+                    <this.SearchControls />
+
                     <Table
                         style={{ margin: '0', padding: '0' }} size={'middle'}
                         pagination={this.pageConfig}
@@ -96,117 +102,105 @@ class AclList extends PageComponent {
         </>
     }
 
+    SearchControls = observer(() => {
+        const state = uiState.aclSearchParams!;
+
+        return (
+            <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+
+                <Label text='Resource Type'>
+                    <Select
+                        options={this.availableResourceTypes}
+                        value={this.resourceTypeFilter}
+                        onChange={(val, op) => {
+                            this.resourceTypeFilter = val;
+                        }}
+                        style={{ width: '11em' }}
+                        size='middle' />
+                </Label>
+
+                {/*
+                <Label text='Resource Type'>
+                    <Select<AclResourceType> value={state.resourceType} onChange={x => state.resourceType = x} style={{ width: '11em' }} size='middle'>
+                        {OptionValues.Types.map(v => <Select.Option key={v.value} value={v.value} >{v.name}</Select.Option>)}
+                    </Select>
+                </Label>
+
+                <Label text='Resource Name'>
+                    <Input placeholder='' allowClear={true}
+                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
+                        value={state.resourceName} onChange={e => state.resourceName = e.target.value}
+                    />
+                </Label>
+
+                <Label text='Pattern Type'>
+                    <Select<AclResourcePatternTypeFilter> value={state.resourcePatternTypeFilter} onChange={x => state.resourcePatternTypeFilter = x} style={{ width: '11em' }} size='middle'>
+                        {OptionValues.PatternTypeFilters.map(v => <Select.Option key={v.value} value={v.value} >{v.name}</Select.Option>)}
+                    </Select>
+                </Label>
+
+                <Label text='Principal'>
+                    <Input placeholder='' allowClear={true}
+                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
+                        value={state.principal} onChange={e => state.principal = e.target.value}
+                    />
+                </Label>
+                <Label text='Host'>
+                    <Input placeholder='' allowClear={true}
+                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
+                        value={state.host} onChange={e => state.host = e.target.value}
+                    />
+                </Label>
+
+                <Label text='Operation'>
+                    <Select<AclOperation> value={state.operation} onChange={x => state.operation = x} style={{ width: '11em' }} size='middle'>
+                        {OptionValues.Operations.map(v => <Select.Option key={v.value} value={v.value} >{v.name}</Select.Option>)}
+                    </Select>
+                </Label>
+
+                <Label text='Permission'>
+                    <Select<AclPermissionType> value={state.permissionType} onChange={x => state.permissionType = x} style={{ width: '11em' }} size='middle'>
+                        {OptionValues.Permissions.map(v => <Select.Option key={v.value} value={v.value} >{v.name}</Select.Option>)}
+                    </Select>
+                </Label>
+                */}
+
+            </div>
+        );
+    })
 }
 
 export default AclList;
 
-@observer
-class BrokerDetails extends Component<{ brokerId: number }>{
-    render() {
-        if (!api.ClusterConfig) return DefaultSkeleton;
-        const id = this.props.brokerId;
-
-        //
-        // Normal Display
-        const configEntries = api.ClusterConfig.brokerConfigs.first(e => e.brokerId == id)?.configEntries;
-        if (configEntries) return <BrokerConfigView entries={configEntries} />
-
-        //
-        // Error
-        const error = api.ClusterConfig.requestErrors.first(e => e.brokerId == id);
-        if (error) return <>
-            <div className='error'>
-                <h3>Error</h3>
-                <div>
-                    <p>
-                        The backend encountered an error reading the configuration for this broker.<br />
-                    Click the blue reload button at the top of the page to try again.
-                </p>
-                </div>
-                <div className='codeBox'>
-                    {error?.errorMessage ?? '(no error message was set)'}
-                </div>
-            </div>
-        </>
-
-        //
-        // Mising Entry??
-        return <div className='error'>
-            <h3>Error</h3>
-            <div>
-                <p>The backend did not return a response for this broker</p>
-            </div>
-        </div>
-    }
-
+function capitalize(str: string): string {
+    if (!str) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-@observer
-class BrokerConfigView extends Component<{ entries: BrokerConfigEntry[] }> {
-    render() {
-        const entries = this.props.entries;
-        return <div className='brokerConfigView'>
-            <DetailsDisplaySettings />
-            <Descriptions
-                bordered
-                size="small"
-                colon={true}
-                layout="horizontal"
-                column={1}
-                style={{ display: "inline-block" }}
-            >
-                {entries.filter(e => uiSettings.brokerList.propsFilter == 'onlyChanged' ? !e.isDefault : true)
-                    .sort((a, b) => {
-                        if (uiSettings.brokerList.propsOrder == 'default') return 0;
-                        if (uiSettings.brokerList.propsOrder == 'alphabetical') return a.name.localeCompare(b.name);
-                        const v1 = a.isDefault ? 1 : 0;
-                        const v2 = b.isDefault ? 1 : 0;
-                        return v1 - v2;
-                    })
-                    .map(e => (
-                        <Descriptions.Item key={e.name} label={e.name}>
-                            {DataValue(e.name, e.value, e.isDefault, uiSettings.brokerList.valueDisplay)}
-                        </Descriptions.Item>
-                    ))}
-            </Descriptions>
+function enumEntries(e: any): { name: string, value: number }[] {
+    let result = [];
+    for (const key in e)
+        if (typeof e[key] === 'number')
+            result.push({ name: key, value: e[key] });
 
-        </div>
-    }
+    result = result.filter(e => e.value != 0);
+
+    for (const e of result)
+        e.name = e.name
+            .removePrefix('Acl')
+            .removePrefix('Resource')
+            .removePrefix('Operation')
+            .removePrefix('Pattern')
+            .removePrefix('Permission');
+
+    return result;
 }
 
-
-const DetailsDisplaySettings = observer(() =>
-    <div style={{ marginLeft: '1px', marginBottom: '1em' }} className='brokerConfigViewSettings'>
-        <Row>
-            <Space size='middle'>
-
-                <OptionGroup label='Formatting'
-                    options={{
-                        "Friendly": 'friendly',
-                        "Raw": 'raw'
-                    }}
-                    value={uiSettings.brokerList.valueDisplay}
-                    onChange={s => uiSettings.brokerList.valueDisplay = s}
-                />
-
-                <OptionGroup label='Filter'
-                    options={{
-                        "Show All": 'all',
-                        "Only Changed": 'onlyChanged'
-                    }}
-                    value={uiSettings.brokerList.propsFilter}
-                    onChange={s => uiSettings.brokerList.propsFilter = s}
-                />
-
-                <OptionGroup label='Sort'
-                    options={{
-                        "Changed First": 'changedFirst',
-                        "Alphabetical": 'alphabetical',
-                        "None": 'default',
-                    }}
-                    value={uiSettings.brokerList.propsOrder}
-                    onChange={s => uiSettings.brokerList.propsOrder = s}
-                />
-            </Space>
-        </Row>
-    </div>);
+const OptionValues = {
+    Types: enumEntries(AclResourceType),
+    PatternTypeFilters: enumEntries(AclResourcePatternTypeFilter),
+    Operations: enumEntries(AclOperation),
+    Permissions: enumEntries(AclPermissionType),
+} as const;
+//console.log('enum entries are:', resourceTypes.map(e => ({ name: e.name.replace(/([A-Z]+)/g, " $1"), value: e.value })));
+// console.log('enum entries are:', OptionValues);

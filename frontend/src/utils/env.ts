@@ -1,4 +1,4 @@
-import { ToJson, Clone } from "./utils";
+import { ToJson } from "./utils";
 import './extensions';
 
 // const assertions and mapped types are awesome!

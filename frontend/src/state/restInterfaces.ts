@@ -371,6 +371,16 @@ export interface AclRequest {
     permissionType: AclPermissionType;
 }
 
+export const AclRequestDefault = {
+    resourceType: AclResourceType.AclResourceAny,
+    resourceName: "",
+    resourcePatternTypeFilter: AclResourcePatternTypeFilter.AclPatternAny,
+    principal: "",
+    host: "",
+    operation: AclOperation.AclOperationAny,
+    permissionType: AclPermissionType.AclPermissionAny,
+} as const;
+
 export interface AclResponse {
     aclResources: AclResource[];
 }
