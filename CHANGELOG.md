@@ -6,6 +6,7 @@
 - **[FEATURE] Support for message headers**
 - **[FEATURE] Support for Okta as an identity provider**
 - **[FEATURE] UI for schema registry (list all registered schemas including schema history)**
+- **[FEATURE] Avro support for deserializing messages**
 - [FEATURE] List all Kafka ACLs
 - [FEATURE] Business: Okta support
 - [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
