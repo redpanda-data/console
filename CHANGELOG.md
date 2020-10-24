@@ -3,11 +3,17 @@
 ## Master / unreleased
 
 - **[FEATURE] Embed topic documentation using Markdown files from Git repositories ([/docs/features/topic-documentation.md](/docs/features/topic-documentation.md))**
-- **[FEATURE] Add support for message headers**
-- **[FEATURE] Add support for Okta as an identity provider**
+- **[FEATURE] Support for message headers**
+- **[FEATURE] Support for Okta as an identity provider**
+- **[FEATURE] UI for schema registry (list all registered schemas including schema history)**
+- [FEATURE] List all Kafka ACLs
+- [FEATURE] Business: Okta support
 - [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
+- [ENHANCEMENT] Possibility to hide the statistics bar
+- [ENHANCEMENT] Support custom certificates for schema registry client
 - [BUGFIX] Kowl now shows the error reported by a login provider (should the login fail)
 - [BUGFIX] Better handling for broker restarts on consumer groups and topics page
+- [BUGFIX] Allow all UTF-8 characters in JavaScript filter code
 
 ## 1.1.0 / 2020-08-06
 
