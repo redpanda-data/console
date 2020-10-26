@@ -307,14 +307,6 @@ export interface Subject {
 }
 
 
-
-
-
-
-
-
-
-
 export interface TopicPermissions {
     canSeeTopic: boolean;
     canViewTopicPartitions: boolean;
@@ -324,7 +316,92 @@ export interface TopicPermissions {
     canViewTopicConsumers: boolean;
 }
 
-// SCHEMA REGISTRY
+
+//
+// ACLs
+
+// See: https://github.com/Shopify/sarama/blob/master/acl_types.go
+export enum AclResourceType {
+    AclResourceUnknown,
+    AclResourceAny,
+    AclResourceTopic,
+    AclResourceGroup,
+    AclResourceCluster,
+    AclResourceTransactionalID
+}
+
+export enum AclResourcePatternTypeFilter {
+    AclPatternUnknown,
+    AclPatternAny,
+    AclPatternMatch,
+    AclPatternLiteral,
+    AclPatternPrefixed
+}
+
+export enum AclOperation {
+    AclOperationUnknown,
+    AclOperationAny,
+    AclOperationAll,
+    AclOperationRead,
+    AclOperationWrite,
+    AclOperationCreate,
+    AclOperationDelete,
+    AclOperationAlter,
+    AclOperationDescribe,
+    AclOperationClusterAction,
+    AclOperationDescribeConfigs,
+    AclOperationAlterConfigs,
+    AclOperationIdempotentWrite
+}
+
+export enum AclPermissionType {
+    AclPermissionUnknown,
+    AclPermissionAny,
+    AclPermissionDeny,
+    AclPermissionAllow
+}
+
+// list all:
+//   /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
+export interface AclRequest {
+    resourceType: AclResourceType;
+    resourceName?: string;
+    resourcePatternTypeFilter: AclResourcePatternTypeFilter;
+    principal?: string;
+    host?: string;
+    operation: AclOperation;
+    permissionType: AclPermissionType;
+}
+
+export const AclRequestDefault = {
+    resourceType: AclResourceType.AclResourceAny,
+    resourceName: "",
+    resourcePatternTypeFilter: AclResourcePatternTypeFilter.AclPatternAny,
+    principal: "",
+    host: "",
+    operation: AclOperation.AclOperationAny,
+    permissionType: AclPermissionType.AclPermissionAny,
+} as const;
+
+export interface AclResponse {
+    aclResources: AclResource[];
+}
+
+export interface AclResource {
+    resourceType: string;
+    resourceName: string;
+    resourcePatternType: string;
+    acls: AclRule[];
+}
+
+export interface AclRule {
+    principal: string;
+    host: string;
+    operation: string;
+    permissionType: string;
+}
+
+
 export interface SchemaOverviewResponse {
     schemaOverview: SchemaOverview;
     isConfigured: boolean;

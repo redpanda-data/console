@@ -19,9 +19,11 @@ import { SettingsPage } from "./pages/Settings";
 import AdminPage from "./pages/admin/AdminPage";
 import { api } from "../state/backendApi";
 import { DebugTimerStore, ToJson } from "../utils/utils";
-import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, PartitionOutlined } from '@ant-design/icons';
+import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, PartitionOutlined, UnorderedListOutlined, FileProtectOutlined } from '@ant-design/icons';
 import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
+import AclList from "./pages/acls/Acl.List";
+
 
 //
 //	Route Types
@@ -192,9 +194,10 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <FunnelPlotOutlined />),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', <FunnelPlotOutlined />),
 
+    MakeRoute<{}>('/acls', AclList, 'ACLs', <FileProtectOutlined />),
+  
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <PartitionOutlined />),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
-
 
     MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => api.UserData?.canManageKowl ?? false),
 

@@ -27,7 +27,7 @@
         "react-json-view": "^1.19.1",
         "react-markdown": "^4.3.1",
         "react-router-dom": "^5.1.2",
-        "react-scripts": "^3.4.3",
+        "react-scripts": "^3.4.4",
         "react-simple-code-editor": "^0.11.0"
     },
     "scripts": {
