@@ -6,12 +6,12 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { aclRequestToQuery, api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { AclOperation, AclPermissionType, AclRequestDefault, AclResource, AclResourcePatternTypeFilter, AclResourceType, Broker, BrokerConfigEntry } from "../../../state/restInterfaces";
+import { AclOperation, AclPermissionType, AclRequestDefault, AclResource, AclResourcePatternTypeFilter, AclResourceType, AclRule, Broker, BrokerConfigEntry } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer } from "mobx";
 import prettyBytes from "pretty-bytes";
-import { clone, prettyBytesOrNA } from "../../../utils/utils";
+import { clone, containsIgnoreCase, prettyBytesOrNA } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CrownOutlined } from '@ant-design/icons';
@@ -19,8 +19,11 @@ import { DefaultSkeleton, Label, ObjToKv, OptionGroup } from "../../../utils/tsx
 import { DataValue } from "../topics/Tab.Config";
 import { uiState } from "../../../state/uiState";
 import { ElementOf } from "antd/lib/_util/type";
+import SearchBar from "../../misc/SearchBar";
 
 const InputGroup = Input.Group;
+
+type AclRuleFlat = AclResource & AclRule
 
 // todo:
 // - remove debug code
@@ -36,6 +39,8 @@ class AclList extends PageComponent {
 
     availableResourceTypes: { value: string, label: string }[] = [];
     @observable resourceTypeFilter: string = "";
+
+    @observable filterText = "";
 
     initPage(p: PageInitHelper): void {
         p.title = 'ACLs';
@@ -59,9 +64,10 @@ class AclList extends PageComponent {
         const resources = api.ACLs
             .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
             .map(res => res.acls.map(rule => ({ ...res, ...rule })))
-            .flat();
+            .flat()
+            .filter(this.isFilterMatch); // quick search
 
-        const columns: ColumnProps<ElementOf<typeof resources>>[] = [
+        const columns: ColumnProps<AclRuleFlat>[] = [
             { width: '120px', title: 'Resource', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
             { width: '120px', title: 'Permission', dataIndex: 'permissionType', sorter: sortField('permissionType') },
             { width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal') },
@@ -102,12 +108,24 @@ class AclList extends PageComponent {
         </>
     }
 
+    isFilterMatch = (item: AclRuleFlat) => {
+        const text = this.filterText;
+        if (containsIgnoreCase(item.host, text)) return true;
+        if (containsIgnoreCase(item.operation, text)) return true;
+        if (containsIgnoreCase(item.permissionType, text)) return true;
+        if (containsIgnoreCase(item.principal, text)) return true;
+        if (containsIgnoreCase(item.resourceName, text)) return true;
+        if (containsIgnoreCase(item.resourcePatternType, text)) return true;
+        if (containsIgnoreCase(item.resourceType, text)) return true;
+
+        return false;
+    };
+
     SearchControls = observer(() => {
-        const state = uiState.aclSearchParams!;
+        //const state = uiState.aclSearchParams!;
 
         return (
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-
                 <Label text='Resource Type'>
                     <Select
                         options={this.availableResourceTypes}
@@ -119,52 +137,10 @@ class AclList extends PageComponent {
                         size='middle' />
                 </Label>
 
-                {/*
-                <Label text='Resource Type'>
-                    <Select<AclResourceType> value={state.resourceType} onChange={x => state.resourceType = x} style={{ width: '11em' }} size='middle'>
-                        {OptionValues.Types.map(v => <Select.Option key={v.value} value={v.value} >{v.name}</Select.Option>)}
-                    </Select>
-                </Label>
-
-                <Label text='Resource Name'>
-                    <Input placeholder='' allowClear={true}
-                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
-                        value={state.resourceName} onChange={e => state.resourceName = e.target.value}
-                    />
-                </Label>
-
-                <Label text='Pattern Type'>
-                    <Select<AclResourcePatternTypeFilter> value={state.resourcePatternTypeFilter} onChange={x => state.resourcePatternTypeFilter = x} style={{ width: '11em' }} size='middle'>
-                        {OptionValues.PatternTypeFilters.map(v => <Select.Option key={v.value} value={v.value} >{v.name}</Select.Option>)}
-                    </Select>
-                </Label>
-
-                <Label text='Principal'>
-                    <Input placeholder='' allowClear={true}
-                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
-                        value={state.principal} onChange={e => state.principal = e.target.value}
-                    />
-                </Label>
-                <Label text='Host'>
-                    <Input placeholder='' allowClear={true}
-                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
-                        value={state.host} onChange={e => state.host = e.target.value}
-                    />
-                </Label>
-
-                <Label text='Operation'>
-                    <Select<AclOperation> value={state.operation} onChange={x => state.operation = x} style={{ width: '11em' }} size='middle'>
-                        {OptionValues.Operations.map(v => <Select.Option key={v.value} value={v.value} >{v.name}</Select.Option>)}
-                    </Select>
-                </Label>
-
-                <Label text='Permission'>
-                    <Select<AclPermissionType> value={state.permissionType} onChange={x => state.permissionType = x} style={{ width: '11em' }} size='middle'>
-                        {OptionValues.Permissions.map(v => <Select.Option key={v.value} value={v.value} >{v.name}</Select.Option>)}
-                    </Select>
-                </Label>
-                */}
-
+                <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px', marginLeft: 'auto' }}
+                    onChange={x => this.filterText = x.target.value}
+                    value={this.filterText}
+                />
             </div>
         );
     })
