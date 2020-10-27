@@ -34,8 +34,8 @@ const InputGroup = Input.Group;
 export class AdminRoles extends Component<{}> {
 
     render() {
-        if (!api.AdminInfo) return DefaultSkeleton;
-        const roles = api.AdminInfo.roles;
+        if (!api.adminInfo) return DefaultSkeleton;
+        const roles = api.adminInfo.roles;
 
         const table = <Table
             size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}

@@ -38,7 +38,7 @@ function sanitizeUrl(uri: string, children?: React.ReactNode, title?: string | u
 
 export class TopicDocumentation extends Component<{ topic: TopicDetail }> {
     render() {
-        let docu = api.TopicDocumentation.get(this.props.topic.topicName);
+        let docu = api.topicDocumentation.get(this.props.topic.topicName);
         if (!docu) return DefaultSkeleton;
 
         return <div className='topicDocumentation'>

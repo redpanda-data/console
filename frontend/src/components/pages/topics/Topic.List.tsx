@@ -54,8 +54,8 @@ class TopicList extends PageComponent {
     }
 
     getTopics() {
-        if (!api.Topics) return [];
-        return api.Topics.filter((t) => (uiSettings.topicList.hideInternalTopics && t.isInternal ? false : true));
+        if (!api.topics) return [];
+        return api.topics.filter((t) => (uiSettings.topicList.hideInternalTopics && t.isInternal ? false : true));
     }
 
     isFilterMatch(filter: string, item: TopicDetail): boolean {
@@ -64,8 +64,8 @@ class TopicList extends PageComponent {
     }
 
     render() {
-        if (!api.Topics) return DefaultSkeleton;
-        if (api.Topics.length == 0) return <Empty />;
+        if (!api.topics) return DefaultSkeleton;
+        if (api.topics.length == 0) return <Empty />;
 
         const topics = this.getTopics();
 

@@ -19,8 +19,8 @@ class UIState {
     @observable pageBreadcrumbs: BreadcrumbEntry[] = []
 
     @computed get selectedClusterName(): string | null {
-        if (uiSettings.selectedClusterIndex in api.Clusters)
-            return api.Clusters[uiSettings.selectedClusterIndex];
+        if (uiSettings.selectedClusterIndex in api.clusters)
+            return api.clusters[uiSettings.selectedClusterIndex];
         return null;
     }
 

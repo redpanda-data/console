@@ -25,7 +25,7 @@ class BrokerList extends PageComponent {
     pageConfig = makePaginationConfig(100, true);
 
     @observable filteredBrokers: Broker[];
-    @computed get hasRack() { return api.ClusterInfo?.brokers?.sum(b => b.rack ? 1 : 0) }
+    @computed get hasRack() { return api.clusterInfo?.brokers?.sum(b => b.rack ? 1 : 0) }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Brokers';
@@ -44,10 +44,10 @@ class BrokerList extends PageComponent {
     }
 
     render() {
-        if (!api.ClusterInfo) return DefaultSkeleton;
-        if (api.ClusterInfo.brokers.length == 0) return <Empty />
+        if (!api.clusterInfo) return DefaultSkeleton;
+        if (api.clusterInfo.brokers.length == 0) return <Empty />
 
-        const info = api.ClusterInfo;
+        const info = api.clusterInfo;
         const brokers = info.brokers;
 
         const renderIdColumn = (text: string, record: Broker) => {
@@ -114,17 +114,17 @@ export default BrokerList;
 @observer
 class BrokerDetails extends Component<{ brokerId: number }>{
     render() {
-        if (!api.ClusterConfig) return DefaultSkeleton;
+        if (!api.clusterConfig) return DefaultSkeleton;
         const id = this.props.brokerId;
 
         //
         // Normal Display
-        const configEntries = api.ClusterConfig.brokerConfigs.first(e => e.brokerId == id)?.configEntries;
+        const configEntries = api.clusterConfig.brokerConfigs.first(e => e.brokerId == id)?.configEntries;
         if (configEntries) return <BrokerConfigView entries={configEntries} />
 
         //
         // Error
-        const error = api.ClusterConfig.requestErrors.first(e => e.brokerId == id);
+        const error = api.clusterConfig.requestErrors.first(e => e.brokerId == id);
         if (error) return <>
             <div className='error'>
                 <h3>Error</h3>

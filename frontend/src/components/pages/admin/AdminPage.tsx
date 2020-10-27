@@ -38,7 +38,7 @@ export default class AdminPage extends PageComponent {
     }
 
     render() {
-        if (!api.AdminInfo) return DefaultSkeleton;
+        if (!api.adminInfo) return DefaultSkeleton;
 
         return <motion.div {...animProps} style={{ margin: '0 1rem' }}>
             <Card>
@@ -57,7 +57,7 @@ export default class AdminPage extends PageComponent {
                     </Tabs.TabPane> */}
 
                     <Tabs.TabPane key="debug" tab="Debug">
-                        <code><pre>{ToJson(api.AdminInfo, 4)}</pre></code>
+                        <code><pre>{ToJson(api.adminInfo, 4)}</pre></code>
                     </Tabs.TabPane>
 
                 </Tabs>

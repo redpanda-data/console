@@ -52,8 +52,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     render() {
         // Get info about the group
         const groupName = this.props.groupId;
-        if (!api.ConsumerGroups) return DefaultSkeleton;
-        const group = api.ConsumerGroups.find(e => e.groupId == groupName);
+        if (!api.consumerGroups) return DefaultSkeleton;
+        const group = api.consumerGroups.find(e => e.groupId == groupName);
         if (!group) return DefaultSkeleton;
 
         // Get info about each topic

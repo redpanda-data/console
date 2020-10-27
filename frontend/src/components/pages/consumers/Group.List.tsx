@@ -58,10 +58,10 @@ class GroupList extends PageComponent {
     }
 
     render() {
-        if (!api.ConsumerGroups) return DefaultSkeleton;
-        if (api.ConsumerGroups.length == 0) return <Empty />
+        if (!api.consumerGroups) return DefaultSkeleton;
+        if (api.consumerGroups.length == 0) return <Empty />
 
-        const groups = api.ConsumerGroups;
+        const groups = api.consumerGroups;
         const stateGroups = groups.groupInto(g => g.state);
 
         return <>

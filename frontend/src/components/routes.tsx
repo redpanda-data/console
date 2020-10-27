@@ -199,7 +199,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <PartitionOutlined />),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => api.UserData?.canManageKowl ?? false),
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => api.userData?.canManageKowl ?? false),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
 

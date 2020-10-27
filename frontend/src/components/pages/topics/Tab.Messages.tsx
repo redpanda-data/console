@@ -58,7 +58,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     @observable fetchError = null as Error | null;
 
     pageConfig = makePaginationConfig(uiState.topicSettings.messagesPageSize);
-    messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch, 16);
+    messageSource = new FilterableDataSource<TopicMessage>(() => api.messages, this.isFilterMatch, 16);
 
     autoSearchReaction: IReactionDisposer | null = null;
     quickSearchReaction: IReactionDisposer | null = null;
@@ -158,7 +158,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
         const spaceStyle = { marginRight: '16px', marginTop: '12px' };
-        const canUseFilters = api.TopicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
+        const canUseFilters = api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
 
         return <React.Fragment>
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -212,7 +212,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     <div style={{ display: 'flex' }}>
 
                         <AnimatePresence>
-                            {api.MessageSearchPhase == null &&
+                            {api.messageSearchPhase == null &&
                                 <MotionSpan identityKey='btnRefresh' overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title='Repeat current search'>
                                         <Button type='primary' onClick={() => this.searchFunc('manual')}>
@@ -221,7 +221,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                                     </Tooltip>
                                 </MotionSpan>
                             }
-                            {api.MessageSearchPhase != null &&
+                            {api.messageSearchPhase != null &&
                                 <MotionSpan identityKey='btnCancelSearch' overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title='Stop searching'>
                                         <Button type='primary' danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
@@ -248,14 +248,14 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                 {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                 {
-                    Boolean(api.MessageSearchPhase && api.MessageSearchPhase.length > 0) &&
+                    Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&
                     <StatusIndicator
                         identityKey='messageSearch'
-                        fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
-                        statusText={api.MessageSearchPhase!}
-                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`}
-                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.MessagesBytesConsumed) : undefined}
-                        messagesConsumed={searchParams.filtersEnabled ? String(api.MessagesTotalConsumed) : undefined}
+                        fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults}
+                        statusText={api.messageSearchPhase!}
+                        progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined}
+                        messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined}
                     />
 
                 }
@@ -318,7 +318,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (this.currentSearchRun)
             return console.log(`searchFunc: function already in progress (trigger:${source})`);
 
-        const phase = untracked(() => api.MessageSearchPhase);
+        const phase = untracked(() => api.messageSearchPhase);
         if (phase)
             return console.log(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
 
@@ -353,7 +353,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             return null;
         }
 
-        const displayText = this.messageSource.data.length == api.Messages.length
+        const displayText = this.messageSource.data.length == api.messages.length
             ? 'Filter matched all messages'
             : <><b>{this.messageSource.data.length}</b> results</>;
 
@@ -569,7 +569,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
-        const canUseFilters = api.TopicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
+        const canUseFilters = api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
 
         if (searchParams.offsetOrigin != TopicOffsetOrigin.Custom)
             searchParams.startOffset = searchParams.offsetOrigin;
