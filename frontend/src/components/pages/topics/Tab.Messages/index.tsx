@@ -1,4 +1,4 @@
-import { DeleteOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownloadOutlined, EllipsisOutlined, FieldTimeOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
 import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
@@ -18,24 +18,23 @@ import React, { Component, ReactNode } from "react";
 import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
-import { api } from "../../../state/backendApi";
-import { TopicDetail, TopicMessage } from "../../../state/restInterfaces";
-import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../state/ui";
-import { uiState } from "../../../state/uiState";
-import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../utils/animationProps";
-import '../../../utils/arrayExtensions';
-import { IsDev } from "../../../utils/env";
-import { isClipboardAvailable } from "../../../utils/featureDetection";
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { filterConverter, sanitizeString } from "../../../utils/filterHelper";
-import { editQuery } from "../../../utils/queryHelper";
-import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../utils/tsxUtils";
-import { cullText, findElementDeep, ToJson } from "../../../utils/utils";
-import { makePaginationConfig, range, sortField } from "../../misc/common";
-import { KowlJsonView } from "../../misc/KowlJsonView";
-import { NoClipboardPopover } from "../../misc/NoClipboardPopover";
-
-
+import { api } from "../../../../state/backendApi";
+import { TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
+import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
+import { uiState } from "../../../../state/uiState";
+import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
+import '../../../../utils/arrayExtensions';
+import { IsDev } from "../../../../utils/env";
+import { isClipboardAvailable } from "../../../../utils/featureDetection";
+import { FilterableDataSource } from "../../../../utils/filterableDataSource";
+import { filterConverter, sanitizeString } from "../../../../utils/filterHelper";
+import { editQuery } from "../../../../utils/queryHelper";
+import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../../utils/tsxUtils";
+import { cullText, findElementDeep, ToJson } from "../../../../utils/utils";
+import { makePaginationConfig, range, sortField } from "../../../misc/common";
+import { KowlJsonView } from "../../../misc/KowlJsonView";
+import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
+import styles from './Styles.module.css';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -1177,46 +1176,67 @@ class MessageSearchFilterBar extends Component {
     render() {
         const settings = uiState.topicSettings.searchParams;
 
-        return <div style={{ display: 'flex', flexWrap: 'wrap', flexDirection: 'row' }}>
+        return <div className={styles.filterbar}>
 
-            {/* Existing Tags List  */}
-            {settings.filters?.map(e =>
-                <Tag
-                    style={{ userSelect: 'none' }}
-                    className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
-                    key={e.id}
-                    closable
-                    color={e.isActive ? 'blue' : undefined}
-                    onClose={() => settings.filters.remove(e)}
-                >
-                    <SettingOutlined
-                        className='settingIconFilter'
-                        onClick={() => {
-                            this.currentIsNew = false;
-                            this.currentFilterBackup = ToJson(e);
-                            this.currentFilter = e;
-                            this.hasChanges = false;
-                        }}
-                    />
-                    <span className='filterName' style={{ display: 'inline-block' }} onClick={() => e.isActive = !e.isActive}>
-                        {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+            <div className={styles.filters}>
+                {/* Existing Tags List  */}
+                {settings.filters?.map(e =>
+                    <Tag
+                        style={{ userSelect: 'none' }}
+                        className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
+                        key={e.id}
+                        closable
+                        color={e.isActive ? 'blue' : undefined}
+                        onClose={() => settings.filters.remove(e)}
+                    >
+                        <SettingOutlined
+                            className='settingIconFilter'
+                            onClick={() => {
+                                this.currentIsNew = false;
+                                this.currentFilterBackup = ToJson(e);
+                                this.currentFilter = e;
+                                this.hasChanges = false;
+                            }}
+                        />
+                        <span className={`filterName ${styles.filterName}`} onClick={() => e.isActive = !e.isActive}>
+                            {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+                        </span>
+                    </Tag>
+                )}
+
+                {/* Add Filter Button */}
+                <Tag onClick={() => transaction(() => {
+                    this.currentIsNew = true;
+                    this.currentFilterBackup = null;
+                    this.currentFilter = new FilterEntry();
+                    this.hasChanges = false;
+                    settings.filters.push(this.currentFilter);
+                })}>
+                    <span className={styles.addFilter}> {/* marginRight: '4px' */}
+                        <PlusIcon size='small' />
                     </span>
+                    {/* <span>New Filter</span> */}
                 </Tag>
-            )}
+            </div>
 
-            {/* Add Filter Button */}
-            <Tag onClick={() => transaction(() => {
-                this.currentIsNew = true;
-                this.currentFilterBackup = null;
-                this.currentFilter = new FilterEntry();
-                this.hasChanges = false;
-                settings.filters.push(this.currentFilter);
-            })}>
-                <span style={{ verticalAlign: 'middle', marginTop: '-3px', }}> {/* marginRight: '4px' */}
-                    <PlusIcon size='small' />
-                </span>
-                {/* <span>New Filter</span> */}
-            </Tag>
+                {console.log(api.messageSearchPhase)}
+
+            {api.messageSearchPhase === null || api.messageSearchPhase === 'Done' 
+                ? (
+                    <div className={styles.metaSection}>
+                        <span><DownloadOutlined /> {api.messagesBytesConsumed} B</span>
+                        <span><FieldTimeOutlined /> {api.messagesElapsedMs} ms</span>
+                    </div>
+                )            
+                : (
+                    <div className={`${styles.metaSection} ${styles.isLoading}`}>
+                        <span className={`spinner ${styles.spinner}`} />
+                        <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
+                    </div>
+                )
+            }
+
+
 
 
             {/* Editor */}

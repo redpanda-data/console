@@ -67,7 +67,7 @@ export interface TopicMessage {
     isValueNull: boolean, // todo: rename to isTombstone
     // todo: we also need to add: keyType, keySize
     // todo: rename size to valueSize
-    // todo: Tab.Messages.tsx: isFilterMatch(): use 'keyJson' instead
+    // todo: Tab.Messages/index.tsx: isFilterMatch(): use 'keyJson' instead
 
     // Added by the frontend (sometimes)
     valueJson: string,
