@@ -262,6 +262,7 @@ const apiStore = {
 
                 case 'done':
                     this.messagesElapsedMs = msg.elapsedMs;
+                    this.messagesBytesConsumed = msg.bytesConsumed;
                     // this.MessageSearchCancelled = msg.isCancelled;
                     this.messageSearchPhase = "Done";
                     this.messageSearchPhase = null;
