@@ -3,15 +3,12 @@ package owl
 import (
 	"context"
 	"fmt"
-	"sync"
-
-	"github.com/Shopify/sarama"
-	"golang.org/x/sync/errgroup"
+	"go.uber.org/zap"
+	"strconv"
 )
 
 type ClusterConfig struct {
-	BrokerConfigs []*BrokerConfig             `json:"brokerConfigs"`
-	RequestErrors []*BrokerConfigRequestError `json:"requestErrors"`
+	BrokerConfigs []BrokerConfig `json:"brokerConfigs"`
 }
 
 type BrokerConfigRequestError struct {
@@ -21,6 +18,7 @@ type BrokerConfigRequestError struct {
 
 type BrokerConfig struct {
 	BrokerID      int32                `json:"brokerId"`
+	Error         error                `json:"error"`
 	ConfigEntries []*BrokerConfigEntry `json:"configEntries"`
 }
 
@@ -33,96 +31,67 @@ type BrokerConfigEntry struct {
 // GetClusterConfig tries to fetch all config resources for all brokers in the cluster. If at least one response from a
 // broker can be returned this function won't return an error. If all requests fail an error will be returned.
 func (s *Service) GetClusterConfig(ctx context.Context) (ClusterConfig, error) {
-	metadata, err := s.kafkaSvc.DescribeCluster()
+	metadata, err := s.kafkaSvc.GetMetadata(ctx)
 	if err != nil {
 		return ClusterConfig{}, fmt.Errorf("failed to get broker ids: %w", err)
 	}
 
 	brokerIDs := make([]int32, len(metadata.Brokers))
 	for i, broker := range metadata.Brokers {
-		brokerIDs[i] = broker.ID()
+		brokerIDs[i] = broker.NodeID
 	}
 
-	// Send one broker config request for each broker concurrently
-	type chResponse struct {
-		config *BrokerConfig
-		err    *BrokerConfigRequestError
-	}
-	resCh := make(chan chResponse)
-	wg := sync.WaitGroup{}
-	for _, brokerID := range brokerIDs {
-		wg.Add(1)
-		go func(bId int32) {
-			defer wg.Done()
-			cfg, reqErr := s.GetBrokerConfig(ctx, bId)
-			resCh <- chResponse{
-				config: cfg,
-				err:    reqErr,
-			}
-		}(brokerID)
-	}
-
-	// Close channel once all go routines are done
-	go func() {
-		wg.Wait()
-		close(resCh)
-	}()
-
-	haveAllRequestsFailed := true
-	brokerConfigs := make([]*BrokerConfig, 0, len(metadata.Brokers))
-	requestErrors := make([]*BrokerConfigRequestError, 0, len(metadata.Brokers))
-	for res := range resCh {
-		if res.config != nil {
-			brokerConfigs = append(brokerConfigs, res.config)
-			haveAllRequestsFailed = false
-		}
-		if res.err != nil {
-			requestErrors = append(requestErrors, res.err)
-		}
-	}
-
-	if haveAllRequestsFailed {
-		return ClusterConfig{}, fmt.Errorf("all broker requests have failed")
+	// Request all brokers' configs
+	cfgs, err := s.GetBrokerConfig(ctx, "")
+	if err != nil {
+		return ClusterConfig{}, fmt.Errorf("failed to get broker configs: %w", err)
 	}
 
 	return ClusterConfig{
-		BrokerConfigs: brokerConfigs,
-		RequestErrors: requestErrors,
+		BrokerConfigs: cfgs,
 	}, nil
 }
 
-func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) (*BrokerConfig, *BrokerConfigRequestError) {
-	eg, _ := errgroup.WithContext(ctx)
+func (s *Service) GetBrokerConfig(ctx context.Context, brokerID string) ([]BrokerConfig, error) {
+	res, err := s.kafkaSvc.DescribeBrokerConfig(ctx, brokerID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to describe broker configs: %w", err)
+	}
 
-	var configEntries []sarama.ConfigEntry
-	eg.Go(func() error {
-		var err error
-		configEntries, err = s.kafkaSvc.DescribeBrokerConfig(brokerID, []string{})
+	brokerConfigs := make([]BrokerConfig, 0)
+	for _, brokerResponse := range res {
+		brokerID, err := strconv.Atoi(brokerResponse.ResourceName)
 		if err != nil {
-			return err
+			s.logger.Warn("failed to parse broker id as int from failed broker config response",
+				zap.String("returned_value", brokerResponse.ResourceName))
+			brokerID = -1
 		}
-		return nil
-	})
 
-	if err := eg.Wait(); err != nil {
-		return nil, &BrokerConfigRequestError{
-			BrokerID:     brokerID,
-			ErrorMessage: err.Error(),
+		brokerConfig := BrokerConfig{
+			BrokerID:      int32(brokerID),
+			Error:         nil,
+			ConfigEntries: nil,
 		}
+
+		// On error set error message and continue to next broker response
+		if brokerResponse.ErrorCode != 0 {
+			brokerConfig.Error = fmt.Errorf("failed to get broker config: %v", brokerResponse.ErrorMessage)
+			brokerConfigs = append(brokerConfigs, brokerConfig)
+			continue
+		}
+
+		// Prepare config entries
+		configEntries := make([]*BrokerConfigEntry, len(brokerResponse.Configs))
+		for i, entry := range configEntries {
+			e := &BrokerConfigEntry{
+				Name:      entry.Name,
+				Value:     entry.Value,
+				IsDefault: entry.IsDefault,
+			}
+			configEntries[i] = e
+		}
+		brokerConfigs = append(brokerConfigs, brokerConfig)
 	}
 
-	// Transform response into our desired format
-	formattedEntries := make([]*BrokerConfigEntry, len(configEntries))
-	for i, config := range configEntries {
-		formattedEntries[i] = &BrokerConfigEntry{
-			Name:      config.Name,
-			Value:     config.Value,
-			IsDefault: config.Default,
-		}
-	}
-
-	return &BrokerConfig{
-		BrokerID:      brokerID,
-		ConfigEntries: formattedEntries,
-	}, nil
+	return brokerConfigs, nil
 }

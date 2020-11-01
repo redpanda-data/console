@@ -19,7 +19,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		topics, err := api.OwlSvc.GetTopicsOverview()
+		topics, err := api.OwlSvc.GetTopicsOverview(r.Context())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

@@ -1,8 +1,11 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap/zapcore"
 	"time"
 
@@ -14,6 +17,7 @@ import (
 // Service acts as interface to interact with the Kafka Cluster
 type Service struct {
 	Logger           *zap.Logger
+	KafkaClient      *kgo.Client
 	Client           sarama.Client
 	AdminClient      sarama.ClusterAdmin
 	SchemaService    *schema.Service
@@ -45,6 +49,21 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	}
 	logger.Info("connected to at least one Kafka broker")
 
+	// Kafka client
+	kgoOpts, err := NewKgoConfig(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
+	}
+
+	kafkaClient, err := kgo.NewClient(kgoOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kafka client: %w", err)
+	}
+	err = testConnection(logger, kafkaClient, time.Second*15)
+	if err != nil {
+		return nil, fmt.Errorf("failed to test kafka connection: %w", err)
+	}
+
 	// Sarama Admin Client
 	adminClient, err := sarama.NewClusterAdminFromClient(client)
 	if err != nil {
@@ -68,6 +87,7 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 
 	return &Service{
 		Logger:           logger,
+		KafkaClient:      kafkaClient,
 		Client:           client,
 		AdminClient:      adminClient,
 		SchemaService:    schemaSvc,
@@ -88,6 +108,28 @@ func (s *Service) Start() {
 	// Custom keep alive for Kafka, because: https://github.com/Shopify/sarama/issues/1487
 	// The KeepAlive property in sarama doesn't work either, because of golang's buggy net module: https://github.com/golang/go/issues/31490
 	go s.keepAlive()
+}
+
+// testConnection tries to fetch Broker metadata and prints some information if connection succeeds. An error will be
+// returned if connecting fails.
+func testConnection(logger *zap.Logger, client *kgo.Client, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	req := kmsg.MetadataRequest{
+		Topics: []kmsg.MetadataRequestTopic{},
+	}
+	res, err := req.RequestWith(ctx, client)
+	if err != nil {
+		return fmt.Errorf("failed to request metadata: %w", err)
+	}
+
+	logger.Info("successfully connected to kafka cluster",
+		zap.Int("advertised_broker_count", len(res.Brokers)),
+		zap.Int("topics_count", len(res.Topics)),
+		zap.Int32("controller_id", res.ControllerID))
+
+	return nil
 }
 
 func (s *Service) keepAlive() {

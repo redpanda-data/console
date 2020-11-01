@@ -1,9 +1,10 @@
 package owl
 
 import (
+	"context"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"sort"
 
-	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
 )
 
@@ -21,8 +22,8 @@ type TopicOverview struct {
 }
 
 // GetTopicsOverview returns a TopicOverview for all Kafka Topics
-func (s *Service) GetTopicsOverview() ([]*TopicOverview, error) {
-	topics, err := s.kafkaSvc.ListTopics()
+func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, error) {
+	metadata, err := s.kafkaSvc.GetMetadata(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -34,16 +35,17 @@ func (s *Service) GetTopicsOverview() ([]*TopicOverview, error) {
 	}
 
 	// 3. Create config resources request objects for all topics
-	topicNames := make([]string, len(topics))
-	for i, topic := range topics {
-		if topic.Err != sarama.ErrNoError {
+	topicNames := make([]string, len(metadata.Topics))
+	for i, topic := range metadata.Topics {
+		err := kerr.ErrorForCode(topic.ErrorCode)
+		if err != nil {
 			s.logger.Error("failed to get topic metadata while listing topics",
-				zap.String("topic_name", topic.Name),
-				zap.Error(topic.Err))
-			return nil, topic.Err
+				zap.String("topic_name", topic.Topic),
+				zap.Error(err))
+			return nil, err
 		}
 
-		topicNames[i] = topic.Name
+		topicNames[i] = topic.Topic
 	}
 
 	configs, err := s.GetTopicsConfigs(topicNames, []string{"cleanup.policy"})
@@ -53,14 +55,14 @@ func (s *Service) GetTopicsOverview() ([]*TopicOverview, error) {
 
 	// x. Merge information from all requests and construct the TopicOverview object
 	res := make([]*TopicOverview, len(topicNames))
-	for i, topic := range topics {
+	for i, topic := range metadata.Topics {
 		size := int64(-1)
-		if value, ok := sizeByTopic[topic.Name]; ok {
+		if value, ok := sizeByTopic[topic.Topic]; ok {
 			size = value
 		}
 
 		policy := "unknown"
-		if val, ok := configs[topic.Name]; ok {
+		if val, ok := configs[topic.Topic]; ok {
 			entry := val.GetConfigEntryByName("cleanup.policy")
 			if entry != nil {
 				policy = entry.Value
@@ -68,7 +70,7 @@ func (s *Service) GetTopicsOverview() ([]*TopicOverview, error) {
 		}
 
 		res[i] = &TopicOverview{
-			TopicName:         topic.Name,
+			TopicName:         topic.Topic,
 			IsInternal:        topic.IsInternal,
 			PartitionCount:    len(topic.Partitions),
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
