@@ -448,7 +448,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 render: (text, record) => !record.isValueNull && (
                     <NoClipboardPopover placement='left'>
                         <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                            <Dropdown overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
+                            <Dropdown disabled={!isClipboardAvailable} overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
                                 <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle' }} type='link'
                                     icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
                             </Dropdown>
