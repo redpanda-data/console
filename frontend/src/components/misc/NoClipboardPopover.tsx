@@ -1,5 +1,4 @@
 import { Popover } from 'antd';
-import { PopoverProps } from 'antd/lib/popover';
 import React, { FunctionComponent, ReactElement } from 'react';
 import { isClipboardAvailable } from '../../utils/featureDetection';
 
