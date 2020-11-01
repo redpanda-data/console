@@ -1,42 +1,39 @@
-import { Component, ReactNode } from "react";
-import React from "react";
-import { TopicDetail, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Popover, Button, Select, Input, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Switch, Menu, Dropdown } from "antd";
-import { observer } from "mobx-react";
-import { api } from "../../../state/backendApi";
-import { PreviewTag, TopicOffsetOrigin, FilterEntry, ColumnList } from "../../../state/ui";
-import ReactJson, { CollapsedFieldProps } from 'react-json-view'
-import prettyBytes from 'pretty-bytes';
-import { sortField, range, makePaginationConfig } from "../../misc/common";
-import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction, autorun, IReactionDisposer, untracked } from "mobx";
-import { findElementDeep, cullText, ToJson } from "../../../utils/utils";
-import { MotionDiv, MotionSpan, animProps_span_messagesStatus } from "../../../utils/animationProps";
-import Paragraph from "antd/lib/typography/Paragraph";
+import { DeleteOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
+import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
-import '../../../utils/arrayExtensions';
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { uiState } from "../../../state/uiState";
-import qs from 'query-string';
-import { parse as parseUrl, format as formatUrl } from "url";
-import { editQuery } from "../../../utils/queryHelper";
-import { filterConverter, sanitizeString } from "../../../utils/filterHelper";
-import { numberToThousandsString, Label, OptionGroup, StatusIndicator, LayoutBypass, TimestampDisplay, QuickTable } from "../../../utils/tsxUtils";
-import { SyncIcon, XCircleIcon, PlusIcon, SkipIcon } from '@primer/octicons-v2-react'
-
-import queryString from 'query-string';
-import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, EllipsisOutlined } from '@ant-design/icons';
 import { SortOrder } from "antd/lib/table/interface";
-import { IsDev } from "../../../utils/env";
-
-import Editor from 'react-simple-code-editor';
-
+import Paragraph from "antd/lib/typography/Paragraph";
+import { AnimatePresence, motion } from "framer-motion";
+import { autorun, computed, IReactionDisposer, observable, transaction, untracked } from "mobx";
+import { observer } from "mobx-react";
+import prettyBytes from 'pretty-bytes';
 import Prism, { languages as PrismLanguages } from "prismjs";
-import 'prismjs/prism.js';
 import 'prismjs/components/prism-javascript';
-import "prismjs/components/prism-js-extras"
+import "prismjs/components/prism-js-extras";
+import 'prismjs/prism.js';
 import 'prismjs/themes/prism.css';
+import { default as qs, default as queryString } from 'query-string';
+import React, { Component, ReactNode } from "react";
+import { CollapsedFieldProps } from 'react-json-view';
+import Editor from 'react-simple-code-editor';
+import { format as formatUrl, parse as parseUrl } from "url";
+import { api } from "../../../state/backendApi";
+import { TopicDetail, TopicMessage } from "../../../state/restInterfaces";
+import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../state/ui";
+import { uiState } from "../../../state/uiState";
+import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../utils/animationProps";
+import '../../../utils/arrayExtensions';
+import { IsDev } from "../../../utils/env";
+import { isClipboardAvailable } from "../../../utils/featureDetection";
+import { FilterableDataSource } from "../../../utils/filterableDataSource";
+import { filterConverter, sanitizeString } from "../../../utils/filterHelper";
+import { editQuery } from "../../../utils/queryHelper";
+import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../utils/tsxUtils";
+import { cullText, findElementDeep, ToJson } from "../../../utils/utils";
+import { makePaginationConfig, range, sortField } from "../../misc/common";
 import { KowlJsonView } from "../../misc/KowlJsonView";
+import { NoClipboardPopover } from "../../misc/NoClipboardPopover";
 
 
 
@@ -400,16 +397,17 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         const copyDropdown = (record: TopicMessage) => (
             <Menu>
-                <Menu.Item key="0" onClick={() => this.copyMessage(record, "key")}>
+                <Menu.Item key="0" onClick={() => this.copyMessage(record, 'key')}>
                     Copy Key
                 </Menu.Item>
-                <Menu.Item key="1" onClick={() => this.copyMessage(record, "rawValue")}>
+
+                <Menu.Item key="1" onClick={() => this.copyMessage(record, 'rawValue')}>
                     Copy Value (Raw)
                 </Menu.Item>
-                <Menu.Item key="2" onClick={() => this.copyMessage(record, "jsonValue")}>
+                <Menu.Item key="2" onClick={() => this.copyMessage(record, 'jsonValue')}>
                     Copy Value (JSON Format)
                 </Menu.Item>
-                <Menu.Item key="4" onClick={() => this.copyMessage(record, "timestamp")}>
+                <Menu.Item key="4" onClick={() => this.copyMessage(record, 'timestamp')}>
                     Copy Epoch Timestamp
                 </Menu.Item>
             </Menu>
@@ -448,10 +446,14 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </Tooltip>
                 },
                 render: (text, record) => !record.isValueNull && (
-                    <Dropdown overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
-                        <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle' }} type='link'
-                            icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
-                    </Dropdown>
+                    <NoClipboardPopover placement='left'>
+                        <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
+                            <Dropdown disabled={!isClipboardAvailable} overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
+                                <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle', pointerEvents: 'none' }} type='link'
+                                    icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
+                            </Dropdown>
+                        </div>
+                    </NoClipboardPopover>
                     // <ZeroSizeWrapper width={32} height={0}>
                     //     <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
                     // </ZeroSizeWrapper>
