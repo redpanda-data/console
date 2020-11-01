@@ -1205,7 +1205,7 @@ class MessageSearchFilterBar extends Component {
                     </Tag>
                 )}
 
-                {/* Add Filter Button */}Styles.module
+                {/* Add Filter Button */}
                 <Tag onClick={() => transaction(() => {
                     this.currentIsNew = true;
                     this.currentFilterBackup = null;
