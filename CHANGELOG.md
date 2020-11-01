@@ -12,9 +12,11 @@
 - [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
 - [ENHANCEMENT] Possibility to hide the statistics bar
 - [ENHANCEMENT] Support custom certificates for schema registry client
+- [ENHANCEMENT] Show elapsed time and consumed bytes after filtered message consumption is done
 - [BUGFIX] Kowl now shows the error reported by a login provider (should the login fail)
 - [BUGFIX] Better handling for broker restarts on consumer groups and topics page
 - [BUGFIX] Allow all UTF-8 characters in JavaScript filter code
+- [BUGFIX] Inform user about missing clipboard access instead of silent fails on message copy
 
 ## 1.1.0 / 2020-08-06
 
