@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { autorun, computed, IReactionDisposer, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
 import prettyBytes from 'pretty-bytes';
+import prettyMilliseconds from "pretty-ms";
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras";
@@ -34,7 +35,7 @@ import { cullText, findElementDeep, ToJson } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
-import styles from './Styles.module.css';
+import styles from './styles.module.scss';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -1204,7 +1205,7 @@ class MessageSearchFilterBar extends Component {
                     </Tag>
                 )}
 
-                {/* Add Filter Button */}
+                {/* Add Filter Button */}Styles.module
                 <Tag onClick={() => transaction(() => {
                     this.currentIsNew = true;
                     this.currentFilterBackup = null;
@@ -1224,8 +1225,8 @@ class MessageSearchFilterBar extends Component {
             {api.messageSearchPhase === null || api.messageSearchPhase === 'Done' 
                 ? (
                     <div className={styles.metaSection}>
-                        <span><DownloadOutlined /> {api.messagesBytesConsumed} B</span>
-                        <span><FieldTimeOutlined /> {api.messagesElapsedMs} ms</span>
+                        <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(api.messagesBytesConsumed)}</span>
+                        <span><FieldTimeOutlined className={styles.timeIcon} /> {prettyMilliseconds(api.messagesElapsedMs || -1)}</span>
                     </div>
                 )            
                 : (
