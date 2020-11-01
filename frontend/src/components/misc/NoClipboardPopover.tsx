@@ -1,4 +1,5 @@
 import { Popover } from 'antd';
+import { PopoverProps } from 'antd/lib/popover';
 import React, { FunctionComponent, ReactElement } from 'react';
 import { isClipboardAvailable } from '../../utils/featureDetection';
 
@@ -11,11 +12,12 @@ const popoverContent = (
 
 export const NoClipboardPopover: FunctionComponent<{
     children: ReactElement;
-}> = ({ children }) =>
+    placement?: 'left'|'top'
+}> = ({ children, placement = 'top' }) =>
     isClipboardAvailable ? (
         <>{children}</>
     ) : (
-        <Popover title="Clipboard unavailable" content={popoverContent} arrowPointAtCenter={true}>
+        <Popover title="Clipboard unavailable" content={popoverContent} arrowPointAtCenter={true} placement={placement}>
             {children}
         </Popover>
     );
