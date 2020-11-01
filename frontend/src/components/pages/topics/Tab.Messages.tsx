@@ -397,7 +397,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         const copyDropdown = (record: TopicMessage) => (
             <NoClipboardPopover>
-                <Menu>
+                <Menu selectable={false}>
                     <Menu.Item disabled={!isClipboardAvailable} key="0" onClick={() => this.copyMessage(record, 'key')}>
                         Copy Key
                     </Menu.Item>
