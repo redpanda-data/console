@@ -20,20 +20,19 @@
     margin-left: auto;
     width: 200px; 
     display: flex;
-    justify-content: space-between; 
+    justify-content: flex-end; 
     font-size: 12px; 
     font-weight: 500; 
     padding: 0 5px; 
     align-items: center;
 }
 
-.metaSection.isLoading {
-    justify-content: center;
-}
-
 .metaSection {
     .bytesIcon {
         color: #1890ff;
+    }
+    .time {
+        margin-left: 20px;
     }
     .timeIcon {
         color: #1890ff;
