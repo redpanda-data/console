@@ -23,10 +23,10 @@ export class AdminUsers extends Component<{}> {
     @observable quickSearch = '';
 
     render() {
-        if (!api.AdminInfo) return DefaultSkeleton;
+        if (!api.adminInfo) return DefaultSkeleton;
         const users = this.quickSearch.length > 0
-            ? api.AdminInfo.users.filter(u => u.internalIdentifier.includes(this.quickSearch) || u.oauthUserId.includes(this.quickSearch))
-            : api.AdminInfo.users;
+            ? api.adminInfo.users.filter(u => u.internalIdentifier.includes(this.quickSearch) || u.oauthUserId.includes(this.quickSearch))
+            : api.adminInfo.users;
 
 
         const table = <Table
@@ -35,11 +35,11 @@ export class AdminUsers extends Component<{}> {
 
             dataSource={users}
             rowKey={x => x.internalIdentifier + x.oauthUserId + x.loginProvider}
-            rowClassName={user => 'hoverLink' + (user.internalIdentifier == api.UserData?.user.internalIdentifier ? ' tableRowHighlightSpecial' : null)}
+            rowClassName={user => 'hoverLink' + (user.internalIdentifier == api.userData?.user.internalIdentifier ? ' tableRowHighlightSpecial' : null)}
             columns={[
                 {
                     width: 1, title: 'Identifier', dataIndex: 'internalIdentifier', sorter: sortField('internalIdentifier'), render: (t, r) => {
-                        if (r.internalIdentifier == api.UserData?.user.internalIdentifier)
+                        if (r.internalIdentifier == api.userData?.user.internalIdentifier)
                             return <span><Tooltip title="You are currently logged in as this user"><UserOutlined style={{ fontSize: '16px', padding: '2px', color: '#ff9e3a' }} /></Tooltip>{' '}{t}</span>
                         return t;
                     }

@@ -38,7 +38,7 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
             const obj = JSON.parse(text);
             console.log("complete login response: " + text);
             if (response.ok) {
-                api.UserData = obj as UserData;
+                api.userData = obj as UserData;
             } else {
                 // try to read as error object
                 const err = obj as { statusCode: number, message: string }
@@ -50,7 +50,7 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
             return;
         }
 
-        console.log('login complete, user: ' + JSON.stringify(api.UserData));
+        console.log('login complete, user: ' + JSON.stringify(api.userData));
 
         // const targetUrl = store.urlBeforeLogin;
         // store.urlBeforeLogin = null;

@@ -59,12 +59,12 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
     }
 
     render() {
-        if (!api.SchemaDetails) return DefaultSkeleton;
+        if (!api.schemaDetails) return DefaultSkeleton;
 
         const {
             schemaId,
             schema: { type, name, namespace, doc, fields },
-        } = api.SchemaDetails;
+        } = api.schemaDetails;
 
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
@@ -80,7 +80,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                             <span>
                                 <Label text="Version">
                                     <Select defaultValue={this.props.query.version} onChange={(version) => appGlobal.history.push(`/schema-registry/${this.props.subjectName}?version=${version}`)}>
-                                        {renderOptions(api.SchemaDetails?.registeredVersions)}
+                                        {renderOptions(api.schemaDetails?.registeredVersions)}
                                     </Select>
                                 </Label>
                             </span>
@@ -89,7 +89,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                     <Row gutter={32}>
                         <Col xl={{ span: 12, order: 1 }} xs={{ span: 24, order: 2 }}>
                             <KowlJsonView
-                                src={api.SchemaDetails || {}}
+                                src={api.schemaDetails || {}}
                                 style={{
                                     border: 'solid thin lightgray',
                                     borderRadius: '.25em',

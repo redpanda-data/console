@@ -33,8 +33,8 @@ const InputGroup = Input.Group;
 export class AdminRoleBindings extends Component {
 
     render() {
-        if (!api.AdminInfo) return DefaultSkeleton;
-        const roleBindings = api.AdminInfo.roleBindings;
+        if (!api.adminInfo) return DefaultSkeleton;
+        const roleBindings = api.adminInfo.roleBindings;
 
         return "bindings, along with a listing of all members in each subject group will be added later"
 

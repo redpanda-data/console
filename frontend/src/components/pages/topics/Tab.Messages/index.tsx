@@ -1,4 +1,4 @@
-import { DeleteOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FieldTimeOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
 import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { autorun, computed, IReactionDisposer, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
 import prettyBytes from 'pretty-bytes';
+import prettyMilliseconds from "pretty-ms";
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras";
@@ -18,24 +19,23 @@ import React, { Component, ReactNode } from "react";
 import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
-import { api } from "../../../state/backendApi";
-import { TopicDetail, TopicMessage } from "../../../state/restInterfaces";
-import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../state/ui";
-import { uiState } from "../../../state/uiState";
-import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../utils/animationProps";
-import '../../../utils/arrayExtensions';
-import { IsDev } from "../../../utils/env";
-import { isClipboardAvailable } from "../../../utils/featureDetection";
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { filterConverter, sanitizeString } from "../../../utils/filterHelper";
-import { editQuery } from "../../../utils/queryHelper";
-import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../utils/tsxUtils";
-import { cullText, findElementDeep, ToJson } from "../../../utils/utils";
-import { makePaginationConfig, range, sortField } from "../../misc/common";
-import { KowlJsonView } from "../../misc/KowlJsonView";
-import { NoClipboardPopover } from "../../misc/NoClipboardPopover";
-
-
+import { api } from "../../../../state/backendApi";
+import { TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
+import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
+import { uiState } from "../../../../state/uiState";
+import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
+import '../../../../utils/arrayExtensions';
+import { IsDev } from "../../../../utils/env";
+import { isClipboardAvailable } from "../../../../utils/featureDetection";
+import { FilterableDataSource } from "../../../../utils/filterableDataSource";
+import { filterConverter, sanitizeString } from "../../../../utils/filterHelper";
+import { editQuery } from "../../../../utils/queryHelper";
+import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../../utils/tsxUtils";
+import { cullText, findElementDeep, ToJson } from "../../../../utils/utils";
+import { makePaginationConfig, range, sortField } from "../../../misc/common";
+import { KowlJsonView } from "../../../misc/KowlJsonView";
+import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
+import styles from './styles.module.scss';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -58,7 +58,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     @observable fetchError = null as Error | null;
 
     pageConfig = makePaginationConfig(uiState.topicSettings.messagesPageSize);
-    messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch, 16);
+    messageSource = new FilterableDataSource<TopicMessage>(() => api.messages, this.isFilterMatch, 16);
 
     autoSearchReaction: IReactionDisposer | null = null;
     quickSearchReaction: IReactionDisposer | null = null;
@@ -158,7 +158,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
         const spaceStyle = { marginRight: '16px', marginTop: '12px' };
-        const canUseFilters = api.TopicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
+        const canUseFilters = api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
 
         return <React.Fragment>
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -200,7 +200,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </Select>
                 </Label>
                 <Label text='Filter' style={{ ...spaceStyle }}>
-                    <div style={{ height: '32px', paddingTop: '3px' }}>
+                    <div style={{ height: '32px', paddingTop: '4px' }}>
                         <Tooltip title="You don't have permissions to use search filters in this topic" trigger={canUseFilters ? 'none' : 'hover'}>
                             <Switch checked={searchParams.filtersEnabled && canUseFilters} onChange={v => searchParams.filtersEnabled = v} disabled={!canUseFilters} />
                         </Tooltip>
@@ -212,7 +212,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     <div style={{ display: 'flex' }}>
 
                         <AnimatePresence>
-                            {api.MessageSearchPhase == null &&
+                            {api.messageSearchPhase == null &&
                                 <MotionSpan identityKey='btnRefresh' overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title='Repeat current search'>
                                         <Button type='primary' onClick={() => this.searchFunc('manual')}>
@@ -221,7 +221,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                                     </Tooltip>
                                 </MotionSpan>
                             }
-                            {api.MessageSearchPhase != null &&
+                            {api.messageSearchPhase != null &&
                                 <MotionSpan identityKey='btnCancelSearch' overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title='Stop searching'>
                                         <Button type='primary' danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
@@ -248,14 +248,14 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                 {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                 {
-                    Boolean(api.MessageSearchPhase && api.MessageSearchPhase.length > 0) &&
+                    Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&
                     <StatusIndicator
                         identityKey='messageSearch'
-                        fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
-                        statusText={api.MessageSearchPhase!}
-                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`}
-                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.MessagesBytesConsumed) : undefined}
-                        messagesConsumed={searchParams.filtersEnabled ? String(api.MessagesTotalConsumed) : undefined}
+                        fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults}
+                        statusText={api.messageSearchPhase!}
+                        progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined}
+                        messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined}
                     />
 
                 }
@@ -318,7 +318,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (this.currentSearchRun)
             return console.log(`searchFunc: function already in progress (trigger:${source})`);
 
-        const phase = untracked(() => api.MessageSearchPhase);
+        const phase = untracked(() => api.messageSearchPhase);
         if (phase)
             return console.log(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
 
@@ -353,7 +353,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             return null;
         }
 
-        const displayText = this.messageSource.data.length == api.Messages.length
+        const displayText = this.messageSource.data.length == api.messages.length
             ? 'Filter matched all messages'
             : <><b>{this.messageSource.data.length}</b> results</>;
 
@@ -569,7 +569,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
-        const canUseFilters = api.TopicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
+        const canUseFilters = api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
 
         if (searchParams.offsetOrigin != TopicOffsetOrigin.Custom)
             searchParams.startOffset = searchParams.offsetOrigin;
@@ -1177,46 +1177,67 @@ class MessageSearchFilterBar extends Component {
     render() {
         const settings = uiState.topicSettings.searchParams;
 
-        return <div style={{ display: 'flex', flexWrap: 'wrap', flexDirection: 'row' }}>
+        return <div className={styles.filterbar}>
 
-            {/* Existing Tags List  */}
-            {settings.filters?.map(e =>
-                <Tag
-                    style={{ userSelect: 'none' }}
-                    className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
-                    key={e.id}
-                    closable
-                    color={e.isActive ? 'blue' : undefined}
-                    onClose={() => settings.filters.remove(e)}
-                >
-                    <SettingOutlined
-                        className='settingIconFilter'
-                        onClick={() => {
-                            this.currentIsNew = false;
-                            this.currentFilterBackup = ToJson(e);
-                            this.currentFilter = e;
-                            this.hasChanges = false;
-                        }}
-                    />
-                    <span className='filterName' style={{ display: 'inline-block' }} onClick={() => e.isActive = !e.isActive}>
-                        {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+            <div className={styles.filters}>
+                {/* Existing Tags List  */}
+                {settings.filters?.map(e =>
+                    <Tag
+                        style={{ userSelect: 'none' }}
+                        className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
+                        key={e.id}
+                        closable
+                        color={e.isActive ? 'blue' : undefined}
+                        onClose={() => settings.filters.remove(e)}
+                    >
+                        <SettingOutlined
+                            className='settingIconFilter'
+                            onClick={() => {
+                                this.currentIsNew = false;
+                                this.currentFilterBackup = ToJson(e);
+                                this.currentFilter = e;
+                                this.hasChanges = false;
+                            }}
+                        />
+                        <span className={`filterName ${styles.filterName}`} onClick={() => e.isActive = !e.isActive}>
+                            {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+                        </span>
+                    </Tag>
+                )}
+
+                {/* Add Filter Button */}
+                <Tag onClick={() => transaction(() => {
+                    this.currentIsNew = true;
+                    this.currentFilterBackup = null;
+                    this.currentFilter = new FilterEntry();
+                    this.hasChanges = false;
+                    settings.filters.push(this.currentFilter);
+                })}>
+                    <span className={styles.addFilter}> {/* marginRight: '4px' */}
+                        <PlusIcon size='small' />
                     </span>
+                    {/* <span>New Filter</span> */}
                 </Tag>
-            )}
+            </div>
 
-            {/* Add Filter Button */}
-            <Tag onClick={() => transaction(() => {
-                this.currentIsNew = true;
-                this.currentFilterBackup = null;
-                this.currentFilter = new FilterEntry();
-                this.hasChanges = false;
-                settings.filters.push(this.currentFilter);
-            })}>
-                <span style={{ verticalAlign: 'middle', marginTop: '-3px', }}> {/* marginRight: '4px' */}
-                    <PlusIcon size='small' />
-                </span>
-                {/* <span>New Filter</span> */}
-            </Tag>
+                {console.log(api.messageSearchPhase)}
+
+            {api.messageSearchPhase === null || api.messageSearchPhase === 'Done' 
+                ? (
+                    <div className={styles.metaSection}>
+                        <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(api.messagesBytesConsumed)}</span>
+                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {prettyMilliseconds(api.messagesElapsedMs || -1)}</span>
+                    </div>
+                )            
+                : (
+                    <div className={`${styles.metaSection} ${styles.isLoading}`}>
+                        <span className={`spinner ${styles.spinner}`} />
+                        <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
+                    </div>
+                )
+            }
+
+
 
 
             {/* Editor */}

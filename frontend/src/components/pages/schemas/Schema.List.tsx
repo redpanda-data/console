@@ -77,13 +77,13 @@ class SchemaList extends PageComponent<{}> {
     }
 
     render() {
-        if (api.SchemaOverview === undefined) return DefaultSkeleton; // request in progress
-        if (api.SchemaOverview === null || api.SchemaOverviewIsConfigured === false) return renderNotConfigured(); // actually no data to display after successful request
+        if (api.schemaOverview === undefined) return DefaultSkeleton; // request in progress
+        if (api.schemaOverview === null || api.schemaOverviewIsConfigured === false) return renderNotConfigured(); // actually no data to display after successful request
 
         // todo: what if there are lets say 5 schemas, but all we got was 5 entries in 'requestErrors' instead?
-        if (api.SchemaOverview.subjects.length <= 0) return <Empty />;
+        if (api.schemaOverview.subjects.length <= 0) return <Empty />;
 
-        const { mode, compatibilityLevel, requestErrors } = { ...api.SchemaOverview };
+        const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
 
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
@@ -96,7 +96,7 @@ class SchemaList extends PageComponent<{}> {
                 {renderRequestErrors(requestErrors)}
                 <Card>
                     <SearchBar<SchemaSubject>
-                        dataSource={() => api.SchemaOverview?.subjects || []}
+                        dataSource={() => api.schemaOverview?.subjects || []}
                         isFilterMatch={this.isFilterMatch}
                         filterText={uiSettings.schemaList.quickSearch}
                         onQueryChanged={(filterText) => (uiSettings.schemaList.quickSearch = filterText)}
