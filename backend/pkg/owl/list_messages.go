@@ -65,7 +65,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 
 	progress.OnPhase("Get Partitions")
 	// Create array of partitionIDs which shall be consumed (always do that to ensure the topic exists at all)
-	partitions, err := s.kafkaSvc.ListPartitions(listReq.TopicName)
+	partitions, err := s.kafkaSvc.ListPartitionIDs(ctx, listReq.TopicName)
 	if err != nil {
 		return fmt.Errorf("failed to get partitions: %w", err)
 	}
@@ -83,7 +83,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 	}
 
 	progress.OnPhase("Get Watermarks")
-	marks, err := s.kafkaSvc.WaterMarks(listReq.TopicName, partitionIDs)
+	marks, err := s.kafkaSvc.GetPartitionMarks(ctx, listReq.TopicName, partitionIDs)
 	if err != nil {
 		return fmt.Errorf("failed to get watermarks: %w", err)
 	}
@@ -194,7 +194,7 @@ Loop:
 // calculateConsumeRequests is supposed to calculate the start and end offsets for each partition consumer, so that
 // we'll end up with ${messageCount} messages in total. To do so we'll take the known low and high watermarks into
 // account. Gaps between low and high watermarks (caused by compactions) will be neglected for now.
-func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]*kafka.WaterMark) map[int32]*kafka.PartitionConsumeRequest {
+func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka.PartitionMarks) map[int32]*kafka.PartitionConsumeRequest {
 	requests := make(map[int32]*kafka.PartitionConsumeRequest, len(marks))
 
 	predictableResults := listReq.StartOffset != StartOffsetNewest && listReq.FilterInterpreterCode == ""

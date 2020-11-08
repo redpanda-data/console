@@ -11,7 +11,7 @@ import (
 func (s *Service) DescribeBrokerConfig(ctx context.Context, brokerID string, configNames []string) ([]kmsg.DescribeConfigsResponseResource, error) {
 	brokerConfigsRequest := kmsg.DescribeConfigsRequestResource{
 		ResourceType: 4,           // Broker
-		ResourceName: brokerID,    // Empty string for all brokers
+		ResourceName: brokerID,    // Empty string for all brokers (only works for dynamic broker configs)
 		ConfigNames:  configNames, // Nil requests all
 	}
 	req := kmsg.DescribeConfigsRequest{

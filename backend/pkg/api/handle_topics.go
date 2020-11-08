@@ -87,7 +87,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 			return
 		}
 
-		partitions, err := api.OwlSvc.ListTopicPartitions(topicName)
+		partitions, err := api.OwlSvc.ListTopicPartitions(r.Context(), topicName)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
@@ -134,7 +134,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 			return
 		}
 
-		description, err := api.OwlSvc.GetTopicConfigs(topicName, []string{})
+		description, err := api.OwlSvc.GetTopicConfigs(r.Context(), topicName, []string{})
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

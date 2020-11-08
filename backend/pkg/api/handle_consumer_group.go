@@ -9,7 +9,7 @@ import (
 
 // GetConsumerGroupsResponse represents the data which is returned for listing topics
 type GetConsumerGroupsResponse struct {
-	ConsumerGroups []*owl.ConsumerGroupOverview `json:"consumerGroups"`
+	ConsumerGroups []owl.ConsumerGroupOverview `json:"consumerGroups"`
 }
 
 func (api *API) handleGetConsumerGroups() http.HandlerFunc {
@@ -26,7 +26,7 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 			return
 		}
 
-		visibleGroups := make([]*owl.ConsumerGroupOverview, 0, len(describedGroups))
+		visibleGroups := make([]owl.ConsumerGroupOverview, 0, len(describedGroups))
 		for _, group := range describedGroups {
 			canSee, restErr := api.Hooks.Owl.CanSeeConsumerGroup(r.Context(), group.GroupID)
 			if restErr != nil {

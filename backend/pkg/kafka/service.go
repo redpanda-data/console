@@ -50,7 +50,7 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	logger.Info("connected to at least one Kafka broker")
 
 	// Kafka client
-	kgoOpts, err := NewKgoConfig(&cfg)
+	kgoOpts, err := NewKgoConfig(&cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
 	}

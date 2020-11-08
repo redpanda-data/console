@@ -23,7 +23,7 @@ type TopicOverview struct {
 
 // GetTopicsOverview returns a TopicOverview for all Kafka Topics
 func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, error) {
-	metadata, err := s.kafkaSvc.GetMetadata(ctx)
+	metadata, err := s.kafkaSvc.GetMetadata(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, erro
 		topicNames[i] = topic.Topic
 	}
 
-	configs, err := s.GetTopicsConfigs(topicNames, []string{"cleanup.policy"})
+	configs, err := s.GetTopicsConfigs(ctx, topicNames, []string{"cleanup.policy"})
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,8 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, erro
 		if val, ok := configs[topic.Topic]; ok {
 			entry := val.GetConfigEntryByName("cleanup.policy")
 			if entry != nil {
-				policy = entry.Value
+				// This should be safe to dereference as only sensitive values will be nil
+				policy = *(entry.Value)
 			}
 		}
 

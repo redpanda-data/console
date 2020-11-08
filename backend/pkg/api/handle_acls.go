@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Shopify/sarama"
 	"github.com/gorilla/schema"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
@@ -54,15 +55,15 @@ func (g *getAclsOverviewRequest) OK() error {
 }
 
 // ToSaramaFilter returns a sarama compatible request struct
-func (g *getAclsOverviewRequest) ToSaramaFilter() sarama.AclFilter {
-	return sarama.AclFilter{
-		ResourceType:              sarama.AclResourceType(g.ResourceType),
-		ResourceName:              g.ResourceName,
-		ResourcePatternTypeFilter: sarama.AclResourcePatternType(g.ResourcePatternTypeFilter),
-		Principal:                 g.Principal,
-		Host:                      g.Host,
-		Operation:                 sarama.AclOperation(g.Operation),
-		PermissionType:            sarama.AclPermissionType(g.PermissionType),
+func (g *getAclsOverviewRequest) ToKafkaRequest() kmsg.DescribeACLsRequest {
+	return kmsg.DescribeACLsRequest{
+		ResourceType:        kmsg.ACLResourceType(g.ResourceType),
+		ResourceName:        g.ResourceName,
+		ResourcePatternType: kmsg.ACLResourcePatternType(g.ResourcePatternTypeFilter),
+		Principal:           g.Principal,
+		Host:                g.Host,
+		Operation:           kmsg.ACLOperation(g.Operation),
+		PermissionType:      kmsg.ACLPermissionType(g.PermissionType),
 	}
 }
 
@@ -117,7 +118,7 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			return
 		}
 
-		aclResources, err := api.OwlSvc.ListAllACLs(req.ToSaramaFilter())
+		aclResources, err := api.OwlSvc.ListAllACLs(r.Context(), req.ToKafkaRequest())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
