@@ -9,7 +9,6 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/cloudhut/common v0.3.1-0.20200815122328-71c17501f356
-	github.com/deathowl/go-metrics-prometheus v0.0.0-20190530215645-35bace25558f
 	github.com/dlclark/regexp2 v1.2.0 // indirect
 	github.com/dop251/goja v0.0.0-20200814103526-379ac97e7e26
 	github.com/go-chi/chi v4.1.2+incompatible
@@ -20,6 +19,7 @@ require (
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/jarcoal/httpmock v1.0.6
+	github.com/jcmturner/gokrb5/v8 v8.4.1
 	github.com/linkedin/goavro/v2 v2.9.8
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1

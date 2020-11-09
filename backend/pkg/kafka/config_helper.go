@@ -5,9 +5,13 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/jcmturner/gokrb5/v8/client"
+	krbconfig "github.com/jcmturner/gokrb5/v8/config"
+	"github.com/jcmturner/gokrb5/v8/keytab"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kversion"
 	"github.com/twmb/franz-go/pkg/sasl"
+	"github.com/twmb/franz-go/pkg/sasl/kerberos"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"go.uber.org/zap"
@@ -68,7 +72,35 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger) ([]kgo.Opt, error) {
 
 		// Kerberos
 		if cfg.SASL.Mechanism == "GSSAPI" {
-			// TODO!
+			kerbCfg, err := krbconfig.Load(cfg.SASL.GSSAPIConfig.KerberosConfigPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create kerberos config from specified config filepath: %w", err)
+			}
+			var krbClient *client.Client
+			switch cfg.SASL.GSSAPIConfig.AuthType {
+			case "USER_AUTH:":
+				krbClient = client.NewWithPassword(
+					cfg.SASL.GSSAPIConfig.Username,
+					cfg.SASL.GSSAPIConfig.Realm,
+					cfg.SASL.GSSAPIConfig.Password,
+					kerbCfg)
+			case "KEYTAB_AUTH":
+				ktb, err := keytab.Load(cfg.SASL.GSSAPIConfig.KeyTabPath)
+				if err != nil {
+					return nil, fmt.Errorf("failed to load keytab: %w", err)
+				}
+				krbClient = client.NewWithKeytab(
+					cfg.SASL.GSSAPIConfig.Username,
+					cfg.SASL.GSSAPIConfig.Realm,
+					ktb,
+					kerbCfg)
+			}
+			kerberosMechanism := kerberos.Auth{
+				Client:           krbClient,
+				Service:          cfg.SASL.GSSAPIConfig.ServiceName,
+				PersistAfterAuth: true,
+			}.AsMechanism()
+			opts = append(opts, kgo.SASL(kerberosMechanism))
 		}
 	}
 
