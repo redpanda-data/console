@@ -1,3 +1,4 @@
+import SchemaList from "../components/pages/schemas/Schema.List";
 
 
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
@@ -66,7 +67,7 @@ export interface TopicMessage {
     isValueNull: boolean, // todo: rename to isTombstone
     // todo: we also need to add: keyType, keySize
     // todo: rename size to valueSize
-    // todo: Tab.Messages.tsx: isFilterMatch(): use 'keyJson' instead
+    // todo: Tab.Messages/index.tsx: isFilterMatch(): use 'keyJson' instead
 
     // Added by the frontend (sometimes)
     valueJson: string,
@@ -306,14 +307,6 @@ export interface Subject {
 }
 
 
-
-
-
-
-
-
-
-
 export interface TopicPermissions {
     canSeeTopic: boolean;
     canViewTopicPartitions: boolean;
@@ -321,4 +314,142 @@ export interface TopicPermissions {
     canUseSearchFilters: boolean;
     canViewTopicMessages: boolean;
     canViewTopicConsumers: boolean;
+}
+
+
+//
+// ACLs
+
+// See: https://github.com/Shopify/sarama/blob/master/acl_types.go
+export enum AclResourceType {
+    AclResourceUnknown,
+    AclResourceAny,
+    AclResourceTopic,
+    AclResourceGroup,
+    AclResourceCluster,
+    AclResourceTransactionalID
+}
+
+export enum AclResourcePatternTypeFilter {
+    AclPatternUnknown,
+    AclPatternAny,
+    AclPatternMatch,
+    AclPatternLiteral,
+    AclPatternPrefixed
+}
+
+export enum AclOperation {
+    AclOperationUnknown,
+    AclOperationAny,
+    AclOperationAll,
+    AclOperationRead,
+    AclOperationWrite,
+    AclOperationCreate,
+    AclOperationDelete,
+    AclOperationAlter,
+    AclOperationDescribe,
+    AclOperationClusterAction,
+    AclOperationDescribeConfigs,
+    AclOperationAlterConfigs,
+    AclOperationIdempotentWrite
+}
+
+export enum AclPermissionType {
+    AclPermissionUnknown,
+    AclPermissionAny,
+    AclPermissionDeny,
+    AclPermissionAllow
+}
+
+// list all:
+//   /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
+export interface AclRequest {
+    resourceType: AclResourceType;
+    resourceName?: string;
+    resourcePatternTypeFilter: AclResourcePatternTypeFilter;
+    principal?: string;
+    host?: string;
+    operation: AclOperation;
+    permissionType: AclPermissionType;
+}
+
+export const AclRequestDefault = {
+    resourceType: AclResourceType.AclResourceAny,
+    resourceName: "",
+    resourcePatternTypeFilter: AclResourcePatternTypeFilter.AclPatternAny,
+    principal: "",
+    host: "",
+    operation: AclOperation.AclOperationAny,
+    permissionType: AclPermissionType.AclPermissionAny,
+} as const;
+
+export interface AclResponse {
+    aclResources: AclResource[];
+}
+
+export interface AclResource {
+    resourceType: string;
+    resourceName: string;
+    resourcePatternType: string;
+    acls: AclRule[];
+}
+
+export interface AclRule {
+    principal: string;
+    host: string;
+    operation: string;
+    permissionType: string;
+}
+
+
+export interface SchemaOverviewResponse {
+    schemaOverview: SchemaOverview;
+    isConfigured: boolean;
+}
+
+export interface SchemaOverview {
+    mode: string;
+    compatibilityLevel: string;
+    subjects: SchemaSubject[];
+    requestErrors: SchemaOverviewRequestError[];
+}
+
+export interface SchemaOverviewRequestError {
+    requestDescription: string;
+    errorMessage: string;
+}
+
+export interface SchemaSubject { // @martin wtf is schemaSubject? why is this name so confusing?
+    name: string;
+    compatibilityLevel: string;
+    versionsCount: number;
+    latestVersion: string;
+    requestError: string;
+}
+
+export interface SchemaDetailsResponse {
+    schemaDetails: SchemaDetails
+}
+
+export interface SchemaDetails {
+    string: string;
+    schemaId: number;
+    version: number;
+    schema: Schema;
+    registeredVersions: number[];
+}
+
+export interface Schema {
+    doc: string;
+    name: string;
+    namespace: string;
+    type: string;
+    fields: SchemaField[];
+}
+
+export interface SchemaField {
+    name: string;
+    type: string;
+    doc: string;
+    default?: string;
 }

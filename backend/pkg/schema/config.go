@@ -14,6 +14,9 @@ type Config struct {
 	Username    string `yaml:"username"`
 	Password    string `yaml:"password"`
 	BearerToken string `yaml:"bearerToken"`
+
+	// TLS / Custom CA
+	TLS TLSConfig `yaml:"tls"`
 }
 
 // RegisterFlags registers all nested config flags.

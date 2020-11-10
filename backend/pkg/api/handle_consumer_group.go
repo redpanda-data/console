@@ -19,7 +19,7 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 			restErr := &rest.Error{
 				Err:      err,
 				Status:   http.StatusInternalServerError,
-				Message:  "Could not describe consumer groups in the Kafka cluster",
+				Message:  "Could not get consumer groups overview",
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, api.Logger, restErr)

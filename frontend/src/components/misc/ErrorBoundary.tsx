@@ -5,6 +5,8 @@ import { ToJson } from "../../utils/utils";
 import { Button, Layout, message, Space } from "antd";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { envVarDebugAr } from "../../utils/env";
+import { NoClipboardPopover } from "./NoClipboardPopover";
+import { isClipboardAvailable } from "../../utils/featureDetection";
 
 const { Content, Footer, Sider, Header } = Layout;
 
@@ -127,9 +129,11 @@ export class ErrorBoundary extends React.Component {
                     <Button icon={<CloseOutlined />} type='primary' size='large' style={{ width: '16rem' }} onClick={() => this.dismiss()}>
                         Dismiss
                     </Button>
-                    <Button icon={<CopyOutlined />} ghost type='primary' size='large' onClick={() => this.copyError()}>
-                        Copy Info
-                    </Button>
+                    <NoClipboardPopover>
+                        <Button icon={<CopyOutlined />} ghost type='primary' size='large' disabled={!isClipboardAvailable} onClick={() => this.copyError()}>
+                            Copy Info
+                        </Button>
+                    </NoClipboardPopover>
                 </Space>
             </div>
             <Content>

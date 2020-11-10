@@ -92,7 +92,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         const topic = () => this.topic;
         const hasDocu = (t: TopicDetail) => {
-            const docu = api.TopicDocumentation.get(t.topicName);
+            const docu = api.topicDocumentation.get(t.topicName);
             if (docu && docu.length > 0) return true;
             return false;
         }
@@ -144,13 +144,13 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
 
     @computed get topic(): undefined | TopicDetail | null { // undefined = not yet known, null = known to be null
-        if (!api.Topics) return undefined;
-        const topic = api.Topics.find(e => e.topicName == this.props.topicName);
+        if (!api.topics) return undefined;
+        const topic = api.topics.find(e => e.topicName == this.props.topicName);
         if (!topic) return null;
         return topic;
     }
     @computed get topicConfig(): undefined | TopicConfigEntry[] | null {
-        return api.TopicConfig.get(this.props.topicName);
+        return api.topicConfig.get(this.props.topicName);
     }
 
     get selectedTabId(): TopicTabId {

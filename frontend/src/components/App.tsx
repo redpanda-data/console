@@ -185,7 +185,7 @@ const DataRefreshButton = observer(() => {
         whiteSpace: 'nowrap',
     }}>
         {
-            api.ActiveRequests.length == 0
+            api.activeRequests.length == 0
                 ?
                 <>
                     <Popover title='Force Refresh' content={refreshTextFunc} placement='rightTop' overlayClassName='popoverSmall' >
@@ -215,9 +215,7 @@ const AppPageHeader = observer(() => {
 
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
         ? <span>
-            <NavLink to={r.path}>
-                <div style={{ fontWeight: 700, fontSize: '125%', display: 'inline-flex', height: '1px', verticalAlign: 'middle', paddingBottom: '6px', alignItems: 'center' }}>{r.breadcrumbName}</div>
-            </NavLink>
+            <div className='breadcrumbLast'>{r.breadcrumbName}</div>
             <LayoutBypass justifyContent='start'>
                 <DataRefreshButton />
             </LayoutBypass>
@@ -300,26 +298,26 @@ export default class App extends Component {
         if (path.startsWith('/login'))
             return null; // already in login process, don't interrupt!
 
-        if (api.UserData === null && !path.startsWith('/login')) {
+        if (api.userData === null && !path.startsWith('/login')) {
             devPrint('known not logged in, hard redirect');
             window.location.pathname = basePathS + '/login'; // definitely not logged in, and in wrong url: hard redirect!
             return preLogin;
         }
 
-        if (api.UserData === undefined) {
+        if (api.userData === undefined) {
             devPrint('user is undefined (probably a fresh page load)');
 
             fetchWithTimeout('./api/users/me', 10 * 1000).then(async r => {
                 if (r.ok) {
                     devPrint('user fetched');
-                    api.UserData = await r.json() as UserData;
+                    api.userData = await r.json() as UserData;
                 } else if (r.status == 401) { // unauthorized / not logged in
                     devPrint('not logged in');
-                    api.UserData = null;
+                    api.userData = null;
                 } else if (r.status == 404) { // not found: server must be non-business version
                     devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging')
                     uiState.isUsingDebugUserLogin = true;
-                    api.UserData = {
+                    api.userData = {
                         canManageKowl: false,
                         seat: null as any,
                         user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
@@ -330,7 +328,7 @@ export default class App extends Component {
             return preLogin;
         } else {
             if (!uiState.isUsingDebugUserLogin)
-                devPrint('user is set: ' + JSON.stringify(api.UserData));
+                devPrint('user is set: ' + JSON.stringify(api.userData));
             return null;
         }
     }

@@ -23,7 +23,10 @@ func NewSaramaConfig(cfg *Config) (*sarama.Config, error) {
 	}
 	sConfig.ClientID = cfg.ClientID
 	sConfig.Version = version
-	sConfig.Net.KeepAlive = 30 * time.Second
+	sConfig.Net.KeepAlive = 15 * time.Second
+	sConfig.Net.DialTimeout = 15 * time.Second
+	sConfig.Net.ReadTimeout = 15 * time.Second
+	sConfig.Net.WriteTimeout = 15 * time.Second
 
 	// Configure TLS
 	if cfg.TLS.Enabled {

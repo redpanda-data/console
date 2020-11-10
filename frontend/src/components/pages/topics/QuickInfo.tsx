@@ -13,13 +13,13 @@ import { uiSettings } from "../../../state/ui";
 // todo: rename QuickInfo
 export const TopicQuickInfoStatistic = observer((p: { topicName: string }) => {
 
-    const topic = api.Topics?.first(t => t.topicName == p.topicName);
+    const topic = api.topics?.first(t => t.topicName == p.topicName);
     if (topic === undefined) return null; // not ready yet
 
-    let topicConfig = filterTopicConfig(api.TopicConfig.get(p.topicName));
+    let topicConfig = filterTopicConfig(api.topicConfig.get(p.topicName));
     if (!topicConfig) return null;
 
-    const partitions = api.TopicPartitions.get(p.topicName);
+    const partitions = api.topicPartitions.get(p.topicName);
     let messageSum: null | string;
     if (partitions === undefined) messageSum = '...'; // waiting...
     else if (partitions === null) messageSum = null; // hide

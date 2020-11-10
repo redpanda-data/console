@@ -1,6 +1,8 @@
 import { observable, computed } from "mobx";
 import { PageDefinition } from "../components/routes";
+import { clone } from "../utils/utils";
 import { api } from "./backendApi";
+import { AclRequest, AclRequestDefault } from "./restInterfaces";
 import { uiSettings, TopicDetailsSettings as TopicSettings } from "./ui";
 
 
@@ -17,8 +19,8 @@ class UIState {
     @observable pageBreadcrumbs: BreadcrumbEntry[] = []
 
     @computed get selectedClusterName(): string | null {
-        if (uiSettings.selectedClusterIndex in api.Clusters)
-            return api.Clusters[uiSettings.selectedClusterIndex];
+        if (uiSettings.selectedClusterIndex in api.clusters)
+            return api.clusters[uiSettings.selectedClusterIndex];
         return null;
     }
 
@@ -62,6 +64,8 @@ class UIState {
 
         throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
     }
+
+    @observable aclSearchParams: AclRequest = clone(AclRequestDefault);
 
     @observable loginError: string | null = null;
     @observable isUsingDebugUserLogin: boolean = false;

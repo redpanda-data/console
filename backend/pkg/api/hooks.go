@@ -43,6 +43,9 @@ type OwlHooks interface {
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
 	PrintListMessagesAuditLog(r *http.Request, req *owl.ListMessageRequest)
 
+	// ACL Hooks
+	CanListACLs(ctx context.Context) (bool, *rest.Error)
+
 	// ConsumerGroup Hooks
 	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
 	AllowedConsumerGroupActions(ctx context.Context, groupName string) ([]string, *rest.Error)
@@ -88,6 +91,9 @@ func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string,
 	return []string{"all"}, nil
 }
 func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *owl.ListMessageRequest) {}
+func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
 func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }

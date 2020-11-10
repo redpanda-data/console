@@ -12,8 +12,8 @@ const { Option } = Select;
 
 export const UserButton = observer(() => {
     if (!IsBusiness) return null;
-    if (!api.UserData || !api.UserData.user || !api.UserData.user.meta.name) return null;
-    const user = api.UserData.user;
+    if (!api.userData || !api.userData.user || !api.userData.user.meta.name) return null;
+    const user = api.userData.user;
 
     const userMenu = <Menu className="avatarMenu">
         <Menu.Item style={{ pointerEvents: 'none' }}>
@@ -45,7 +45,7 @@ const ClusterSelect = observer(() =>
         style={{ width: 200 }}
         onChange={(v) => { uiSettings.selectedClusterIndex = v }}
     >
-        {api.Clusters.map((v, i) =>
+        {api.clusters.map((v, i) =>
             <Option key={v} value={i}>{v}</Option>
         )}
     </Select>

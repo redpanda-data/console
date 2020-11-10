@@ -25,7 +25,7 @@ const IndexPage = observer(() => {
 			</Paragraph>
 
             <div style={{ display: 'flex', margin: '2em 0' }}>
-                {api.Clusters.map((c, i) => <ClusterCard key={c} cluster={c} />)}
+                {api.clusters.map((c, i) => <ClusterCard key={c} cluster={c} />)}
             </div>
             <Button danger onClick={() => uiSettings.selectedClusterIndex = -1}>Debug: Reset cluster selection</Button>
         </div>
@@ -36,7 +36,7 @@ const ClusterCard = (p: { cluster: string }) => <>
 
     <Card
         style={{ width: 300, marginRight: '2em' }}
-        onClick={() => uiSettings.selectedClusterIndex = api.Clusters.indexOf(p.cluster)}
+        onClick={() => uiSettings.selectedClusterIndex = api.clusters.indexOf(p.cluster)}
         hoverable={true}
         title={p.cluster}
         about='about'

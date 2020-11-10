@@ -695,6 +695,25 @@ tr button.ant-dropdown-open {
     opacity: 1;
 }
 
+// todo: fix table layout (ellipsis, never greater than min-content, only expand one row to let the table fill its parent, expand in predefined ratios, ...)
+tr td.ellipsis {
+    position: relative;
+}
+
+.ellipsis:before {
+    content: '&nbsp;';
+    visibility: hidden;
+}
+
+.ellipsis span {
+    position: absolute;
+    left: 0;
+    right: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-tbody>tr>td.msgTableActionColumn {
     padding-left: 0;
 }
@@ -1389,4 +1408,17 @@ svg {
             background-color: #f5f8fb;
         }
     }
+}
+
+.breadcrumbLast {
+    display: inline-flex;
+    margin-left: .5rem;
+    height: 1px;
+    font-size: 125%;
+    font-weight: 700;
+    vertical-align: middle;
+    padding-bottom: 6px;
+    align-items: center;
+
+    cursor: default;
 }

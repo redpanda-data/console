@@ -19,13 +19,18 @@ type Service struct {
 }
 
 // NewService to access schema registry. Returns an error if connection can't be established.
-func NewSevice(cfg Config) *Service {
+func NewSevice(cfg Config) (*Service, error) {
+	client, err := newClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create schema registry client: %w", err)
+	}
+
 	return &Service{
 		cfg:            cfg,
 		requestGroup:   singleflight.Group{},
-		registryClient: newClient(cfg),
+		registryClient: client,
 		cacheByID:      make(map[uint32]*goavro.Codec),
-	}
+	}, nil
 }
 
 // CheckConnectivity to schema registry. Returns no error if connectivity is fine.
@@ -45,6 +50,7 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (*goavro.Codec, error) {
 		schemaRes, err := s.registryClient.GetSchemaByID(schemaID)
 		if err != nil {
 			// If schema registry returns an error we want to retry it next time, so let's forget the key
+			// TODO: Check whether this could end up in a DoS if we stream search a topic with binary messages
 			s.requestGroup.Forget(key)
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}
@@ -68,4 +74,28 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (*goavro.Codec, error) {
 	codec := v.(*goavro.Codec)
 
 	return codec, nil
+}
+
+func (s *Service) GetSubjects() (*SubjectsResponse, error) {
+	return s.registryClient.GetSubjects()
+}
+
+func (s *Service) GetSubjectVersions(subject string) (*SubjectVersionsResponse, error) {
+	return s.registryClient.GetSubjectVersions(subject)
+}
+
+func (s *Service) GetSchemaBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
+	return s.registryClient.GetSchemaBySubject(subject, version)
+}
+
+func (s *Service) GetMode() (*ModeResponse, error) {
+	return s.registryClient.GetMode()
+}
+
+func (s *Service) GetConfig() (*ConfigResponse, error) {
+	return s.registryClient.GetConfig()
+}
+
+func (s *Service) GetSubjectConfig(subject string) (*ConfigResponse, error) {
+	return s.registryClient.GetSubjectConfig(subject)
 }

@@ -57,7 +57,7 @@ export function ToJson(obj: any, space?: string | number | undefined): string {
 }
 
 // Clone object using serialization
-export function Clone<T>(obj: T): T {
+export function clone<T>(obj: T): T {
     if (!obj) return obj;
     return JSON.parse(ToJson(obj));
 }
@@ -91,11 +91,11 @@ export class Cooldown {
     timestamp: number = 0; // time of last trigger
     duration: number = 0; // how long the CD takes to charge
 
-	/**
-	 * @description Create a cooldown with the given duration
-	 * @param duration time the cooldown takes to complete in ms
-	 * @param start `running` to start 'on cooldown', `ready` to start already charged
-	 */
+    /**
+     * @description Create a cooldown with the given duration
+     * @param duration time the cooldown takes to complete in ms
+     * @param start `running` to start 'on cooldown', `ready` to start already charged
+     */
     constructor(duration: number, start: ('ready' | 'running') = 'running') {
         this.duration = duration;
         if (start === 'running') {
@@ -221,11 +221,11 @@ export class LazyMap<K, V> extends Map<K, V> {
         super();
     }
 
-	/**
-	 * @description Returns the value corrosponding to key
-	 * @param key Key of the value
-	 * @param create An optional `create` method to use instead of `defaultCreate` to create missing values
-	 */
+    /**
+     * @description Returns the value corrosponding to key
+     * @param key Key of the value
+     * @param create An optional `create` method to use instead of `defaultCreate` to create missing values
+     */
     get(key: K, create?: (key: K) => V): V {
         let v = super.get(key);
         if (v !== undefined) {

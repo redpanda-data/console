@@ -55,7 +55,11 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	var schemaSvc *schema.Service
 	if cfg.Schema.Enabled {
 		logger.Info("connecting to schema registry")
-		schemaSvc = schema.NewSevice(cfg.Schema)
+		schemaSvc, err = schema.NewSevice(cfg.Schema)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create schema service: %w", err)
+		}
+
 		err := schemaSvc.CheckConnectivity()
 		if err != nil {
 			return nil, fmt.Errorf("failed to verify connectivity to schema registry: %w", err)
@@ -117,6 +121,14 @@ func (s *Service) keepAlive() {
 				log.Warn("heartbeat: lost connection to broker", zap.Error(err), zap.String("broker", broker.Addr()), zap.Int32("id", broker.ID()))
 				_ = broker.Close()
 				_ = broker.Open(s.Client.Config())
+
+				log.Info("trying to refresh cluster metadata after we've lost connection to at least one broker")
+				metadataErr := s.Client.RefreshMetadata()
+				if metadataErr == nil {
+					log.Info("refreshed cluster metadata successfully")
+				} else {
+					log.Warn("failed to refresh cluster metadata after we've lost connection to at least one broker")
+				}
 				continue
 			}
 

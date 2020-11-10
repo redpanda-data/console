@@ -38,6 +38,14 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 				return err
 			}
 
+			for _, groupRes := range r.Groups {
+				if groupRes.Err == sarama.ErrNotCoordinatorForConsumer {
+					// Asynchronously refresh the group coordinator, this is the only way to purge the cache as of now,
+					// as sarama doesn't offer an interface for purging cached coordinator entries... :(
+					go s.Client.RefreshCoordinator(groupRes.GroupId)
+				}
+			}
+
 			mutex.Lock()
 			res[b.ID()] = r
 			mutex.Unlock()
