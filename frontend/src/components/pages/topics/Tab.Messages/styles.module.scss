@@ -5,6 +5,9 @@
 
 .filters {
     width: calc(100% - 200px);
+    display: inline-flex;
+    row-gap: 2px;
+    flex-wrap: wrap;
 }
 
 .filterName {
@@ -18,12 +21,12 @@
 
 .metaSection {
     margin-left: auto;
-    width: 200px; 
+    width: 200px;
     display: flex;
-    justify-content: flex-end; 
-    font-size: 12px; 
-    font-weight: 500; 
-    padding: 0 5px; 
+    justify-content: flex-end;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 5px;
     align-items: center;
 }
 
@@ -31,9 +34,11 @@
     .bytesIcon {
         color: #1890ff;
     }
+
     .time {
         margin-left: 20px;
     }
+
     .timeIcon {
         color: #1890ff;
     }

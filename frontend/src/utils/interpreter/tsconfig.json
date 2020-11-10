@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "target": "ES5",
+        "lib": [],
+        "moduleResolution": "node",
+        "module": "commonjs",
+        "allowJs": false,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": false,
+        "isolatedModules": false,
+        "strictPropertyInitialization": false,
+        "outDir": "compiled",
+        "removeComments": true,
+        "noEmitHelpers": true,
+        "noEmitOnError": true,
+        "noImplicitUseStrict": true,
+    },
+    "include": [
+        "findFunction.ts"
+    ],
+}

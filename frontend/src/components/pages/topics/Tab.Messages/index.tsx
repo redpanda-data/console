@@ -1,4 +1,4 @@
-import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FieldTimeOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
 import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
@@ -14,7 +14,7 @@ import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras";
 import 'prismjs/prism.js';
 import 'prismjs/themes/prism.css';
-import { default as qs, default as queryString } from 'query-string';
+import queryString from 'query-string';
 import React, { Component, ReactNode } from "react";
 import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
@@ -28,7 +28,7 @@ import '../../../../utils/arrayExtensions';
 import { IsDev } from "../../../../utils/env";
 import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
-import { filterConverter, sanitizeString } from "../../../../utils/filterHelper";
+import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
 import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../../utils/tsxUtils";
 import { cullText, findElementDeep, ToJson } from "../../../../utils/utils";
@@ -36,6 +36,8 @@ import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
 import styles from './styles.module.scss';
+import filterExample1 from '../../../../assets/filter-example-1.png';
+import filterExample2 from '../../../../assets/filter-example-2.png';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -73,7 +75,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     componentDidMount() {
         // unpack query parameters (if any)
         const searchParams = uiState.topicSettings.searchParams;
-        const query = qs.parse(window.location.search);
+        const query = queryString.parse(window.location.search);
         console.log("parsing query: " + ToJson(query));
         if (query.p != null) searchParams.partitionID = Number(query.p);
         if (query.s != null) searchParams.maxResults = Number(query.s);
@@ -590,7 +592,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 functionNames.push(name);
                 functions.push(`
 function ${name}() {
-    ${filterConverter(e.code)}
+    ${wrapFilterFragment(e.code)}
 }`);
             });
 
@@ -1004,6 +1006,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
     render() {
 
         const tagSuggestions = this.props.allCurrentKeys.filter(k => this.props.tags.all(t => t.value != k));
+        console.log('tag suggestions', this.props.allCurrentKeys)
 
         return <>
             <AnimatePresence>
@@ -1029,9 +1032,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
                             }}>
                                 <AutoComplete
                                     ref={r => { if (r) { r.focus(); } }}
-
-                                    dataSource={tagSuggestions}
-
+                                    options={tagSuggestions.map(t => ({ label: t, value: t }))}
                                     size="small"
                                     style={{ width: 130 }}
                                     value={this.inputValue}
@@ -1143,9 +1144,11 @@ const helpEntries = [
         <li><span className='codeBox'>value</span> (object)</li>
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li><span className='codeBox'>offset &gt; 10000</span></li>
-        <li><span className='codeBox'>if (key == 'example') return true</span></li>
-        <li><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>offset &gt; 10000</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>if (key == 'example') return true</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} loading='lazy' /></div></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} loading='lazy' /></div></li>
     </ul>),
 ].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
@@ -1220,15 +1223,15 @@ class MessageSearchFilterBar extends Component {
                 </Tag>
             </div>
 
-                {console.log(api.messageSearchPhase)}
+            {console.log(api.messageSearchPhase)}
 
-            {api.messageSearchPhase === null || api.messageSearchPhase === 'Done' 
+            {api.messageSearchPhase === null || api.messageSearchPhase === 'Done'
                 ? (
                     <div className={styles.metaSection}>
                         <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(api.messagesBytesConsumed)}</span>
                         <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {prettyMilliseconds(api.messagesElapsedMs || -1)}</span>
                     </div>
-                )            
+                )
                 : (
                     <div className={`${styles.metaSection} ${styles.isLoading}`}>
                         <span className={`spinner ${styles.spinner}`} />
