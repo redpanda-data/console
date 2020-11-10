@@ -35,7 +35,6 @@ import { cullText, findElementDeep, ToJson } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
-import '../../../utils/arrayExtensions';
 import styles from './styles.module.scss';
 
 const { Text } = Typography;
