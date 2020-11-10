@@ -1032,9 +1032,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
                             }}>
                                 <AutoComplete
                                     ref={r => { if (r) { r.focus(); } }}
-
                                     options={tagSuggestions.map(t => ({ label: t, value: t }))}
-
                                     size="small"
                                     style={{ width: 130 }}
                                     value={this.inputValue}
