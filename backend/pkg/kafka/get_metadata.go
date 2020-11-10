@@ -14,6 +14,11 @@ func (s *Service) GetMetadata(ctx context.Context, topics []string) (*kmsg.Metad
 		metadataRequestTopics[i] = kmsg.MetadataRequestTopic{Topic: topic}
 	}
 
+	// Set metadata request topics to nil so that all topics will be requested
+	if len(metadataRequestTopics) == 0 {
+		metadataRequestTopics = nil
+	}
+
 	req := kmsg.MetadataRequest{
 		Topics: metadataRequestTopics,
 	}
