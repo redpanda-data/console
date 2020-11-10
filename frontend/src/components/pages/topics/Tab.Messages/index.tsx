@@ -36,6 +36,8 @@ import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
 import styles from './styles.module.scss';
+import filterExample1 from '../../../../assets/filter-example-1.png';
+import filterExample2 from '../../../../assets/filter-example-2.png';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -1144,9 +1146,11 @@ const helpEntries = [
         <li><span className='codeBox'>value</span> (object)</li>
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li><span className='codeBox'>offset &gt; 10000</span></li>
-        <li><span className='codeBox'>if (key == 'example') return true</span></li>
-        <li><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>offset &gt; 10000</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>if (key == 'example') return true</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} loading='lazy' /></div></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} loading='lazy' /></div></li>
     </ul>),
 ].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
