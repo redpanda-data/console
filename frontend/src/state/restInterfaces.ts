@@ -235,6 +235,7 @@ export interface UserData {
     user: User;
     seat: Seat;
     canManageKowl: boolean;
+    canListAcls: boolean;
 }
 
 

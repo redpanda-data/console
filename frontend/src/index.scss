@@ -575,13 +575,44 @@ span>.icon-container~span {
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
-.ant-menu-dark .ant-menu-item>a {
+.ant-menu-dark .ant-menu-item a {
     color: hsla(205, 50%, 70%, 60%);
 }
 
 .ant-menu.ant-menu-dark .ant-menu-item-selected,
 .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
     background-color: hsla(209, 70%, 55%, 0.6);
+}
+
+.ant-menu-item-disabled {
+    cursor: default;
+    user-select: none;
+}
+
+.ant-menu-dark .ant-menu-item a::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: hsla(0deg, 0%, 0%, 0%);
+    content: '';
+}
+
+.ant-menu-dark .ant-menu-item-disabled a {
+    color: hsl(205deg, 50%, 70%) !important;
+}
+
+.ant-menu-dark .ant-menu-item-disabled {
+    opacity: .5;
+}
+
+.menu-permission-tooltip {
+    user-select: none;
+
+    .ant-tooltip-arrow {
+        display: none;
+    }
 }
 
 .ant-checkbox-wrapper {

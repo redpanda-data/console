@@ -1,7 +1,7 @@
 
-import { Menu } from "antd";
+import { Menu, Tooltip } from "antd";
 import { Link, Switch } from "react-router-dom";
-import React from "react";
+import React, { Component } from "react";
 import { Section } from "./misc/common";
 import { Route, Redirect } from "react-router";
 import { queryToObj } from "../utils/queryHelper";
@@ -23,6 +23,7 @@ import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, P
 import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
+import { observable } from "mobx";
 
 
 //
@@ -42,7 +43,7 @@ export interface PageDefinition<TRouteParams = {}> {
     routeJsx: JSX.Element
     icon?: JSX.Element
     menuItemKey?: string, // set by 'CreateRouteMenuItems'
-    showCondition?: () => boolean,
+    showCallback?: () => MenuItemState,
 }
 export interface SeparatorEntry { isSeparator: boolean; }
 
@@ -60,7 +61,8 @@ export const RouteMenu = observer((p: {}) =>
         style={{ border: 0, background: 'none' }}
     >
         {CreateRouteMenuItems(APP_ROUTES)}
-    </Menu>)
+    </Menu>
+)
 
 // Generate content for <Menu> from all routes
 export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArray {
@@ -71,18 +73,31 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
             if (entry.path.includes(':'))
                 return null; // only root-routes (no param) can be in menu
 
-            if (entry.showCondition)
-                if (entry.showCondition() == false)
-                    return null;
+            let isEnabled = true;
+            if (entry.showCallback) {
+                const visibility = entry.showCallback();
+                if (!visibility.visible) return null;
+                isEnabled = visibility.enabled;
+            }
+            const isDisabled = !isEnabled;
 
-            return (
-                <Menu.Item key={entry.path}>
-                    <Link to={entry.path}>
-                        {entry.icon}
-                        <span>{entry.title}</span>
-                    </Link>
-                </Menu.Item>
-            )
+            // {/*  */}
+            return <Menu.Item key={entry.path} disabled={isDisabled}>
+                <Tooltip
+                    overlayClassName='menu-permission-tooltip'
+                    overlay={<span>You don't have premissions<br />to view this page</span>}
+                    align={{ points: ['cc', 'cc'], offset: [0, 0] }}
+                    trigger={isDisabled ? 'hover' : 'none'}
+                    mouseEnterDelay={0.05}
+                >
+                    <div style={{ display: isDisabled ? 'block' : 'contents' }}>
+                        <Link to={entry.path} style={{ pointerEvents: isEnabled ? 'all' : 'none' }}>
+                            {entry.icon}
+                            <span>{entry.title}</span>
+                        </Link>
+                    </div>
+                </Tooltip>
+            </Menu.Item>
         }
         else if (isSeparator(entry)) {
             return <div key={index} className='menu-divider' />
@@ -146,7 +161,12 @@ export const RouteView = (() =>
     </AnimatePresence>
 )
 
-function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRouteParams>, title: string, icon?: JSX.Element, exact: boolean = true, showCondition?: () => boolean): PageDefinition<TRouteParams> {
+interface MenuItemState {
+    visible: boolean;
+    enabled: boolean;
+}
+
+function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRouteParams>, title: string, icon?: JSX.Element, exact: boolean = true, showCallback?: () => MenuItemState): PageDefinition<TRouteParams> {
 
     const route: PageDefinition<TRouteParams> = {
         title,
@@ -154,7 +174,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
         pageType: page,
         routeJsx: (null as unknown as JSX.Element), // will be set below
         icon,
-        showCondition,
+        showCallback: showCallback,
     }
 
     // todo: verify that path and route params match
@@ -194,12 +214,12 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <FunnelPlotOutlined />),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', <FunnelPlotOutlined />),
 
-    MakeRoute<{}>('/acls', AclList, 'ACLs', <FileProtectOutlined />),
-  
+    MakeRoute<{}>('/acls', AclList, 'ACLs', <FileProtectOutlined />, true, () => ({ visible: true, enabled: api.userData?.canListAcls ?? true })),
+
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <PartitionOutlined />),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => api.userData?.canManageKowl ?? false),
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
 

@@ -319,6 +319,7 @@ export default class App extends Component {
                     uiState.isUsingDebugUserLogin = true;
                     api.userData = {
                         canManageKowl: false,
+                        canListAcls: true,
                         seat: null as any,
                         user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                     };
