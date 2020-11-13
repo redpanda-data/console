@@ -64,7 +64,7 @@ func (c clientHooks) OnConnect(meta kgo.BrokerMetadata, dialDur time.Duration, _
 }
 
 func (c clientHooks) OnDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
-	c.logger.Info("kafka broker disconnected",
+	c.logger.Debug("kafka broker disconnected",
 		zap.String("host", meta.Host))
 }
 

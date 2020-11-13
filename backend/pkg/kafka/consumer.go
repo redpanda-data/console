@@ -3,8 +3,8 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/Shopify/sarama"
 	"github.com/dop251/goja"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 	"time"
 )
@@ -54,6 +54,13 @@ type PartitionConsumeRequest struct {
 	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the Consumer will stop.
 }
 
+type TopicConsumeRequest struct {
+	TopicName             string
+	MaxMessageCount       int
+	Partitions            map[int32]*PartitionConsumeRequest
+	FilterInterpreterCode string
+}
+
 type interpreterArguments struct {
 	PartitionID  int32
 	Offset       int64
@@ -63,77 +70,75 @@ type interpreterArguments struct {
 	HeadersByKey map[string]interface{}
 }
 
-type PartitionConsumer struct {
-	Logger *zap.Logger // WithFields (topic, partitionId)
-
-	// Infrastructure
-	DoneCh    chan<- struct{} // notify parent that we're done
-	MessageCh chan<- *TopicMessage
-	Progress  IListMessagesProgress
-
-	// Consumer Details / Parameters
-	Consumer  sarama.Consumer
-	TopicName string
-	Req       *PartitionConsumeRequest
-
-	Deserializer          *deserializer
-	FilterInterpreterCode string
-}
-
-func (p *PartitionConsumer) Run(ctx context.Context) {
-	defer func() {
-		p.DoneCh <- struct{}{}
-	}()
-
-	// Create PartitionConsumer
-	pConsumer, err := p.Consumer.ConsumePartition(p.TopicName, p.Req.PartitionID, p.Req.StartOffset)
+func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgress, consumeRequest TopicConsumeRequest) error {
+	// 1. Create new kgo client
+	client, err := s.NewKgoClient()
 	if err != nil {
-		p.Logger.Error("couldn't consume partition", zap.Error(err))
-		p.Progress.OnError(fmt.Sprintf("couldn't consume partition %v: %v", p.Req.PartitionID, err.Error()))
-		return
-	}
-	defer func() {
-		if errC := pConsumer.Close(); errC != nil {
-			p.Logger.Error("failed to close partition consumer", zap.Error(errC))
-		}
-	}()
-
-	// Setup JS interpreter
-	isMessageOK, err := p.SetupInterpreter()
-	if err != nil {
-		p.Logger.Error("failed to setup interpreter", zap.Error(err))
-		p.Progress.OnError(fmt.Sprintf("failed to setup interpreter: %v", err.Error()))
-		return
+		return fmt.Errorf("failed to create new kafka client: %w", err)
 	}
 
-	messageCount := int64(0)
+	// 2. Setup JavaScript interpreter
+	isMessageOK, err := s.setupInterpreter(consumeRequest.FilterInterpreterCode)
+	if err != nil {
+		s.Logger.Error("failed to setup interpreter", zap.Error(err))
+		progress.OnError(fmt.Sprintf("failed to setup interpreter: %v", err.Error()))
+		return err
+	}
+
+	// 3. Assign partitions with right start offsets
+	partitionOffsets := make(map[string]map[int32]kgo.Offset)
+	partitionOffsets[consumeRequest.TopicName] = make(map[int32]kgo.Offset)
+	for _, req := range consumeRequest.Partitions {
+		offset := kgo.NewOffset().At(req.StartOffset)
+		partitionOffsets[consumeRequest.TopicName][req.PartitionID] = offset
+	}
+	client.AssignPartitions(
+		kgo.ConsumePartitions(partitionOffsets),
+		// kgo.FetchMaxWait(time.Second*1),
+	)
+
+	// 4. Consume messages and check if filter code accepts the given records
+	messageCount := 0
 	for {
-		select {
-		case m, ok := <-pConsumer.Messages():
-			if !ok {
-				p.Logger.Error("partition Consumer message channel has unexpectedly closed")
-				p.Progress.OnError(fmt.Sprintf("partition Consumer (partitionId=%v) failed to get the next message (see server log)", p.Req.PartitionID))
-				return
+		// TODO: Add select and check for ctx done?
+		fetches := client.PollFetches(ctx)
+		errors := fetches.Errors()
+		if len(errors) > 0 {
+			return fmt.Errorf("'%v' errors while fetching records: %w", len(errors), errors[0].Err)
+		}
+		iter := fetches.RecordIter()
+
+		// Iterate on all messages from this poll
+		for !iter.Done() {
+			record := iter.Next()
+			partitionReq := consumeRequest.Partitions[record.Partition]
+
+			if record.Offset > partitionReq.EndOffset {
+				// reached end offset within this partition, we strive to fulfil the consume request so that we achieve
+				// equal distribution across the partitions
+				// TODO: Adapt client assigned partitions?
+				continue
 			}
-			messageSize := len(m.Key) + len(m.Value)
-			p.Progress.OnMessageConsumed(int64(messageSize))
+
+			messageSize := len(record.Key) + len(record.Value)
+			progress.OnMessageConsumed(int64(messageSize))
 
 			// Run Interpreter filter and check if message passes the filter
-			value := p.Deserializer.DeserializePayload(m.Value)
-			key := p.Deserializer.DeserializePayload(m.Key)
-			headers := p.DeserializeHeaders(m.Headers)
+			value := s.Deserializer.DeserializePayload(record.Value)
+			key := s.Deserializer.DeserializePayload(record.Key)
+			headers := s.DeserializeHeaders(record.Headers)
 
 			topicMessage := &TopicMessage{
-				PartitionID: m.Partition,
-				Offset:      m.Offset,
-				Timestamp:   m.Timestamp.Unix(),
+				PartitionID: record.Partition,
+				Offset:      record.Offset,
+				Timestamp:   record.Timestamp.Unix(),
 				Headers:     headers,
 				Key:         key,
 				KeyType:     string(key.RecognizedEncoding),
 				Value:       value,
 				ValueType:   string(value.RecognizedEncoding),
-				Size:        len(m.Value),
-				IsValueNull: m.Value == nil,
+				Size:        len(record.Value),
+				IsValueNull: record.Value == nil,
 			}
 
 			headersByKey := make(map[string]interface{}, len(headers))
@@ -143,9 +148,9 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 
 			// Check if message passes filter code
 			args := interpreterArguments{
-				PartitionID:  m.Partition,
-				Offset:       m.Offset,
-				Timestamp:    m.Timestamp,
+				PartitionID:  record.Partition,
+				Offset:       record.Offset,
+				Timestamp:    record.Timestamp,
 				Key:          key.Object,
 				Value:        value.Object,
 				HeadersByKey: headersByKey,
@@ -154,48 +159,43 @@ func (p *PartitionConsumer) Run(ctx context.Context) {
 			isOK, err := isMessageOK(args)
 			if err != nil {
 				// TODO: This might be changed to debug level, because operators probably do not care about user failures?
-				p.Logger.Info("failed to check if message is ok", zap.Error(err))
-				p.Progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v'). Error: %v", m.Partition, m.Offset, err))
-				return
+				s.Logger.Info("failed to check if message is ok", zap.Error(err))
+				progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v'). Error: %v", record.Partition, record.Offset, err))
+				return nil
 			}
 			if isOK {
 				messageCount++
-
-				// This is necessary because receiver might have quit before we processed the ctx.Done() and therefore
-				// the channel might be blocked which would eventually mean a goroutine leak.
-				select {
-				case <-ctx.Done():
-					return
-				case p.MessageCh <- topicMessage:
-					// Message successfully sent via channel
-				}
+				progress.OnMessage(topicMessage)
 			}
 
-			if m.Offset >= p.Req.EndOffset || messageCount == p.Req.MaxMessageCount {
-				return // reached end offset
+			// Do we need more messages to satisfy the user request? Return if request is satisfied
+			isRequestSatisfied := messageCount == consumeRequest.MaxMessageCount
+			if isRequestSatisfied {
+				return nil
 			}
-		case <-ctx.Done():
-			p.Logger.Debug("consume request aborted because context has been cancelled")
-			return // search request aborted
 		}
 	}
+
+	return nil
 }
 
 // SetupInterpreter initializes the JavaScript interpreter along with the given JS code. It returns a wrapper function
 // which accepts all Kafka message properties (offset, key, value, ...) and returns true (message shall be returned) or false
 // (message shall be filtered).
-func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) (bool, error), error) {
+func (s *Service) setupInterpreter(interpreterCode string) (func(args interpreterArguments) (bool, error), error) {
 	// In case there's no code for the interpreter let's return a dummy function which always allows all messages
-	if p.FilterInterpreterCode == "" {
+	if interpreterCode == "" {
 		return func(args interpreterArguments) (bool, error) { return true, nil }, nil
 	}
 
 	vm := goja.New()
-	code := fmt.Sprintf(`var isMessageOk = function() {%s}`, p.FilterInterpreterCode)
+	code := fmt.Sprintf(`var isMessageOk = function() {%s}`, interpreterCode)
 	_, err := vm.RunString(code)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile given interpreter code: %w", err)
 	}
+
+	// TODO: Add call to add find function
 
 	// We use named return parameter here because this way we can return a error message in recover().
 	// Returning a proper error is important because we want to stop the consumer for this partition
@@ -237,13 +237,12 @@ func (p *PartitionConsumer) SetupInterpreter() (func(args interpreterArguments) 
 	return isMessageOk, nil
 }
 
-func (p *PartitionConsumer) DeserializeHeaders(headers []*sarama.RecordHeader) []MessageHeader {
+func (s *Service) DeserializeHeaders(headers []kgo.RecordHeader) []MessageHeader {
 	res := make([]MessageHeader, len(headers))
 	for i, header := range headers {
-		key := string(header.Key)
-		value := p.Deserializer.DeserializePayload(header.Value)
+		value := s.Deserializer.DeserializePayload(header.Value)
 		res[i] = MessageHeader{
-			Key:           key,
+			Key:           header.Key,
 			Value:         value,
 			ValueEncoding: value.RecognizedEncoding,
 		}

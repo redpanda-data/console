@@ -24,7 +24,7 @@ type ListMessagesRequest struct {
 	TopicName             string `json:"topicName"`
 	StartOffset           int64  `json:"startOffset"` // -1 for recent (newest - results), -2 for oldest offset, -3 for newest
 	PartitionID           int32  `json:"partitionId"` // -1 for all partition ids
-	MaxResults            uint16 `json:"maxResults"`
+	MaxResults            int    `json:"maxResults"`
 	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
 }
 

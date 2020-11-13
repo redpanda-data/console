@@ -1,54 +1,59 @@
 package kafka
 
 import (
-	"github.com/Shopify/sarama"
-	"go.uber.org/zap"
+	"context"
+	"fmt"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
-// LogDirResponse can have an error (if the broker failed to return data)
-// or the actual response
-type LogDirResponse struct {
-	*sarama.DescribeLogDirsResponse
-	Err error
+type LogDirResponseSharded struct {
+	LogDirResponses []LogDirResponse
+	RequestsSent    int
+	RequestsFailed  int
 }
 
-// DescribeLogDirs concurrently fetches LogDirs from all Brokers
-// and returns them in a map where the BrokerID is the key.
-// map[BrokerID]LogDirResponse
-func (s *Service) DescribeLogDirs() map[int32]*LogDirResponse {
-	// 1. Fetch Log Dirs from all brokers
-	type response struct {
-		BrokerID int32
-		Res      *sarama.DescribeLogDirsResponse
-		Err      error
+// LogDirResponse can have an error (if the broker failed to return data) or the actual LogDir response
+type LogDirResponse struct {
+	BrokerMetadata kgo.BrokerMetadata
+	LogDirs        kmsg.DescribeLogDirsResponse
+	Error          error
+}
+
+// DescribeLogeDirs requests directory information for topic partitions. This request was added in KIP-113 and is
+// included in Kafka 1.1.0+ releases.
+//
+// Use nil for topicPartitions to describe all topics and partitions.
+func (s *Service) DescribeLogDirs(ctx context.Context, topicPartitions []kmsg.DescribeLogDirsRequestTopic) (LogDirResponseSharded, error) {
+	req := kmsg.DescribeLogDirsRequest{
+		Topics: topicPartitions,
 	}
+	shardedResp := s.KafkaClient.RequestSharded(ctx, &req)
 
-	brokers := s.Client.Brokers()
-	req := &sarama.DescribeLogDirsRequest{}
-	resCh := make(chan response, len(brokers))
-
-	for _, broker := range brokers {
-		go func(b *sarama.Broker) {
-			res, err := b.DescribeLogDirs(req)
-			resCh <- response{
-				BrokerID: b.ID(),
-				Res:      res,
-				Err:      err,
-			}
-		}(broker)
+	result := LogDirResponseSharded{
+		LogDirResponses: make([]LogDirResponse, 0, len(shardedResp)),
+		RequestsSent:    0,
+		RequestsFailed:  0,
 	}
-
-	// 2. Put log dir responses into a structured map as they arrive
-	result := make(map[int32]*LogDirResponse)
-	for i := 0; i < len(brokers); i++ {
-		r := <-resCh
-		if r.Err != nil {
-			s.Logger.Warn("listing log dir size for broker has failed", zap.Error(r.Err), zap.Int32("broker", r.BrokerID))
-			continue
+	var lastErr error
+	for _, kresp := range shardedResp {
+		result.RequestsSent++
+		if kresp.Err != nil {
+			result.RequestsFailed++
+			lastErr = kresp.Err
 		}
 
-		result[r.BrokerID] = &LogDirResponse{r.Res, r.Err}
+		res := kresp.Resp.(*kmsg.DescribeLogDirsResponse)
+		result.LogDirResponses = append(result.LogDirResponses, LogDirResponse{
+			BrokerMetadata: kresp.Meta,
+			LogDirs:        *res,
+			Error:          kresp.Err,
+		})
 	}
 
-	return result
+	if result.RequestsSent > 0 && result.RequestsSent == result.RequestsFailed {
+		return result, fmt.Errorf("all '%v' requests have failed, first error: %w", len(shardedResp), lastErr)
+	}
+
+	return result, nil
 }

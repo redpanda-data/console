@@ -27,14 +27,6 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, erro
 	if err != nil {
 		return nil, err
 	}
-
-	// 3. Get log dir sizes for each topic
-	sizeByTopic, err := s.logDirSizeByTopic()
-	if err != nil {
-		return nil, err
-	}
-
-	// 3. Create config resources request objects for all topics
 	topicNames := make([]string, len(metadata.Topics))
 	for i, topic := range metadata.Topics {
 		err := kerr.ErrorForCode(topic.ErrorCode)
@@ -48,17 +40,25 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, erro
 		topicNames[i] = topic.Topic
 	}
 
+	// 3. Get log dir sizes for each topic
+	logDirsByTopic, err := s.logDirsByTopic(ctx, topicNames)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Create config resources request objects for all topics
 	configs, err := s.GetTopicsConfigs(ctx, topicNames, []string{"cleanup.policy"})
 	if err != nil {
 		return nil, err
 	}
 
-	// x. Merge information from all requests and construct the TopicOverview object
+	// 4. Merge information from all requests and construct the TopicOverview object
 	res := make([]*TopicOverview, len(topicNames))
 	for i, topic := range metadata.Topics {
 		size := int64(-1)
-		if value, ok := sizeByTopic[topic.Topic]; ok {
-			size = value
+		// TODO: Propagate partial responses/errors to frontend. Size may be wrong/incomplete due to missing responses
+		if value, ok := logDirsByTopic.TopicLogDirs[topic.Topic]; ok {
+			size = value.TotalSizeBytes
 		}
 
 		policy := "unknown"

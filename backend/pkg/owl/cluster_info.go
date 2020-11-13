@@ -26,12 +26,12 @@ type Broker struct {
 func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	eg, _ := errgroup.WithContext(ctx)
 
-	var sizeByBroker map[int32]int64
+	var logDirsByBroker []LogDirsByBroker
 	var metadata *kmsg.MetadataResponse
 
 	eg.Go(func() error {
 		var err error
-		sizeByBroker, err = s.logDirSizeByBroker()
+		logDirsByBroker, err = s.logDirsByBroker(ctx)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	brokers := make([]*Broker, len(metadata.Brokers))
 	for i, broker := range metadata.Brokers {
 		size := int64(-1)
-		if value, ok := sizeByBroker[broker.NodeID]; ok {
+		if value, ok := logDirsByBroker[broker.NodeID]; ok {
 			size = value
 		}
 

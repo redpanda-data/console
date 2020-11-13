@@ -24,7 +24,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/twmb/franz-go v0.6.2-0.20201109224928-9deb57490f20
+	github.com/twmb/franz-go v0.6.2-0.20201110232312-43cf65be0f27
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c
 	go.uber.org/zap v1.15.0
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect

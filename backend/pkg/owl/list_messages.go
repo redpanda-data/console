@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"go.uber.org/zap"
 )
 
 const (
@@ -29,7 +28,7 @@ type ListMessageRequest struct {
 	TopicName             string
 	PartitionID           int32 // -1 for all partitions
 	StartOffset           int64 // -1 for recent (high - n), -2 for oldest offset, -3 for newest offset
-	MessageCount          uint16
+	MessageCount          int
 	FilterInterpreterCode string
 }
 
@@ -46,25 +45,9 @@ type ListMessageResponse struct {
 // return it. The second return parameter is a bool which indicates whether the requested topic exists.
 func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress kafka.IListMessagesProgress) error {
 	start := time.Now()
-	logger := s.logger.With(zap.String("topic", listReq.TopicName))
-
-	progress.OnPhase("Create Topic Consumer")
-	// We must create a new Consumer for every request,
-	// because each consumer can only consume every topic+partition once at the same time
-	// which means that concurrent requests will not work with one shared Consumer
-	consumer, err := sarama.NewConsumerFromClient(s.kafkaSvc.Client)
-	if err != nil {
-		return fmt.Errorf("couldn't create consumer: %w", err)
-	}
-	defer func() {
-		err = consumer.Close()
-		if err != nil {
-			logger.Error("closing consumer failed", zap.Error(err))
-		}
-	}()
 
 	progress.OnPhase("Get Partitions")
-	// Create array of partitionIDs which shall be consumed (always do that to ensure the topic exists at all)
+	// Create array of partitionIDs which shall be consumed (always do that to ensure the requested topic exists at all)
 	partitions, err := s.kafkaSvc.ListPartitionIDs(ctx, listReq.TopicName)
 	if err != nil {
 		return fmt.Errorf("failed to get partitions: %w", err)
@@ -88,104 +71,26 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		return fmt.Errorf("failed to get watermarks: %w", err)
 	}
 
-	progress.OnPhase("Setup consumer agents")
-
-	// Start a partition consumer for all requested partitions
-	doneCh := make(chan struct{}, len(partitions)) // shared channel where completed workers notify us that they're done
-	messageCh := make(chan *kafka.TopicMessage)
-	startedWorkers := 0
-
 	// Get partition consume request by calculating start and end offsets for each partition
 	consumeRequests := calculateConsumeRequests(&listReq, marks)
-	childCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	for _, req := range consumeRequests {
-		pConsumer := kafka.PartitionConsumer{
-			Logger: logger.With(zap.Int32("partition_id", req.PartitionID)),
-
-			DoneCh:    doneCh,
-			MessageCh: messageCh,
-			Progress:  progress,
-
-			Consumer:              consumer,
-			TopicName:             listReq.TopicName,
-			Req:                   req,
-			FilterInterpreterCode: listReq.FilterInterpreterCode,
-
-			Deserializer: &s.kafkaSvc.Deserializer,
-		}
-		startedWorkers++
-		go pConsumer.Run(childCtx)
+	topicConsumeRequest := kafka.TopicConsumeRequest{
+		TopicName:             listReq.TopicName,
+		MaxMessageCount:       listReq.MessageCount,
+		Partitions:            consumeRequests,
+		FilterInterpreterCode: listReq.FilterInterpreterCode,
 	}
-
-	completedWorkers := 0
-	allWorkersDone := false
-	requestCancelled := false
 
 	progress.OnPhase("Consuming messages")
-
-	go func(ch <-chan *kafka.TopicMessage, req ListMessageRequest) {
-		messagesToFetch := req.MessageCount
-		for {
-			select {
-			case msg := <-ch:
-				messagesToFetch--
-				progress.OnMessage(msg)
-
-				// When we are done quit routine and cancel context so that all partition consumers will stop as well
-				if messagesToFetch == 0 {
-					cancel()
-					return
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}(messageCh, listReq)
-
-	// Priority list of actions
-	// since we need to process cases by their priority, we must check them individually and
-	// can't rely on 'select' since it picks a random case if multiple are ready.
-Loop:
-	for {
-		// 1. Request cancelled?
-		select {
-		case <-ctx.Done():
-			requestCancelled = true
-			logger.Debug("ListMessages: ctx.Done")
-			break Loop
-		default:
-		}
-
-		// 2. All workers done?
-		if allWorkersDone {
-			logger.Debug("ListMessages: all workers done")
-			break Loop
-		}
-
-		// 3. Count completed workers
-		keepCounting := true
-		for keepCounting {
-			select {
-			case <-doneCh:
-				completedWorkers++
-			default:
-				keepCounting = false
-			}
-		}
-
-		if completedWorkers == startedWorkers {
-			allWorkersDone = true
-		}
-
-		// Throttle so we don't spin-wait
-		<-time.After(50 * time.Millisecond)
+	err = s.kafkaSvc.FetchMessages(ctx, progress, topicConsumeRequest)
+	if err != nil {
+		progress.OnError(err.Error())
+		return nil
 	}
 
-	progress.OnComplete(time.Since(start).Milliseconds(), requestCancelled)
-
-	if requestCancelled {
-		return fmt.Errorf("request was cancelled while waiting for messages from workers (probably timeout) completedWorkers=%v startedWorksers=%v", completedWorkers, startedWorkers)
+	isCancelled := ctx.Err() != nil
+	progress.OnComplete(time.Since(start).Milliseconds(), isCancelled)
+	if isCancelled {
+		return fmt.Errorf("request was cancelled while waiting for messages")
 	}
 
 	return nil
@@ -201,7 +106,7 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka
 	// Init result map
 	notInitialized := int64(-1)
 	for _, mark := range marks {
-		p := &kafka.PartitionConsumeRequest{
+		p := kafka.PartitionConsumeRequest{
 			PartitionID:   mark.PartitionID,
 			IsDrained:     false,
 			LowWaterMark:  mark.Low,
@@ -247,7 +152,7 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka
 			}
 		}
 
-		requests[mark.PartitionID] = p
+		requests[mark.PartitionID] = &p
 	}
 
 	if !predictableResults {
