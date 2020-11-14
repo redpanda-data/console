@@ -8,7 +8,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"time"
 
-	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
 )
 
@@ -19,7 +18,6 @@ type Service struct {
 
 	KafkaClientHooks kgo.Hook
 	KafkaClient      *kgo.Client
-	AdminClient      sarama.ClusterAdmin
 	SchemaService    *schema.Service
 	Deserializer     deserializer
 	MetricsNamespace string
@@ -28,28 +26,6 @@ type Service struct {
 // NewService creates a new Kafka service and immediately checks connectivity to all components. If any of these external
 // dependencies fail an error wil be returned.
 func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Service, error) {
-	// Create separate logger for sarama
-	/*
-		saramaLogger, err := zap.NewStdLogAt(logger.With(zap.String("source", "sarama")), zapcore.DebugLevel)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create std logger for sarama: %w", err)
-		}
-		sarama.Logger = saramaLogger*/
-
-	// Sarama Config
-	saramaConfig, err := NewSaramaConfig(&cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a valid sarama config: %w", err)
-	}
-
-	// Sarama Client
-	logger.Info("connecting to Kafka cluster")
-	client, err := sarama.NewClient(cfg.Brokers, saramaConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create kafka client: %w", err)
-	}
-	logger.Info("connected to at least one Kafka broker")
-
 	// Kafka client
 	hooksChildLogger := logger.With(zap.String("source", "kafka_client_hooks"))
 	clientHooks := newClientHooks(hooksChildLogger, "kowl")
@@ -68,16 +44,10 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		return nil, fmt.Errorf("failed to test kafka connection: %w", err)
 	}
 
-	// Sarama Admin Client
-	adminClient, err := sarama.NewClusterAdminFromClient(client)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create kafka admin client: %w", err)
-	}
-
 	// Schema Registry
 	var schemaSvc *schema.Service
 	if cfg.Schema.Enabled {
-		logger.Info("connecting to schema registry")
+		logger.Info("creating schema registry client and testing connectivity")
 		schemaSvc, err = schema.NewSevice(cfg.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create schema service: %w", err)
@@ -87,6 +57,7 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		if err != nil {
 			return nil, fmt.Errorf("failed to verify connectivity to schema registry: %w", err)
 		}
+		logger.Info("successfully tested schema registry connectivity")
 	}
 
 	return &Service{
@@ -94,7 +65,6 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		Logger:           logger,
 		KafkaClientHooks: clientHooks,
 		KafkaClient:      kafkaClient,
-		AdminClient:      adminClient,
 		SchemaService:    schemaSvc,
 		Deserializer:     deserializer{SchemaService: schemaSvc},
 		MetricsNamespace: metricsNamespace,
@@ -121,6 +91,8 @@ func (s *Service) NewKgoClient() (*kgo.Client, error) {
 func testConnection(logger *zap.Logger, client *kgo.Client, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+
+	logger.Info("connecting to Kafka seed brokers, trying to fetch cluster metadata")
 
 	req := kmsg.MetadataRequest{
 		Topics: nil,
