@@ -1,5 +1,7 @@
 # Changelog
 
+## Master / unreleased
+
 ## 1.2.0 / 2020-11-14
 
 - **[FEATURE] Embed topic documentation using Markdown files from Git repositories ([/docs/features/topic-documentation.md](/docs/features/topic-documentation.md))**
