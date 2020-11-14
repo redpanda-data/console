@@ -94,84 +94,86 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	}
 	client.AssignPartitions(
 		kgo.ConsumePartitions(partitionOffsets),
-		// kgo.FetchMaxWait(time.Second*1),
 	)
 
 	// 4. Consume messages and check if filter code accepts the given records
 	messageCount := 0
 	for {
-		// TODO: Add select and check for ctx done?
-		fetches := client.PollFetches(ctx)
-		errors := fetches.Errors()
-		if len(errors) > 0 {
-			return fmt.Errorf("'%v' errors while fetching records: %w", len(errors), errors[0].Err)
-		}
-		iter := fetches.RecordIter()
-
-		// Iterate on all messages from this poll
-		for !iter.Done() {
-			record := iter.Next()
-			partitionReq := consumeRequest.Partitions[record.Partition]
-
-			if record.Offset > partitionReq.EndOffset {
-				// reached end offset within this partition, we strive to fulfil the consume request so that we achieve
-				// equal distribution across the partitions
-				// TODO: Adapt client assigned partitions?
-				continue
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("interruppted message consuming because context is cancelled")
+		default:
+			fetches := client.PollFetches(ctx)
+			errors := fetches.Errors()
+			if len(errors) > 0 {
+				return fmt.Errorf("'%v' errors while fetching records: %w", len(errors), errors[0].Err)
 			}
+			iter := fetches.RecordIter()
 
-			messageSize := len(record.Key) + len(record.Value)
-			progress.OnMessageConsumed(int64(messageSize))
+			// Iterate on all messages from this poll
+			for !iter.Done() {
+				record := iter.Next()
+				partitionReq := consumeRequest.Partitions[record.Partition]
 
-			// Run Interpreter filter and check if message passes the filter
-			value := s.Deserializer.DeserializePayload(record.Value)
-			key := s.Deserializer.DeserializePayload(record.Key)
-			headers := s.DeserializeHeaders(record.Headers)
+				if record.Offset > partitionReq.EndOffset {
+					// reached end offset within this partition, we strive to fulfil the consume request so that we achieve
+					// equal distribution across the partitions
+					continue
+				}
 
-			topicMessage := &TopicMessage{
-				PartitionID: record.Partition,
-				Offset:      record.Offset,
-				Timestamp:   record.Timestamp.Unix(),
-				Headers:     headers,
-				Key:         key,
-				KeyType:     string(key.RecognizedEncoding),
-				Value:       value,
-				ValueType:   string(value.RecognizedEncoding),
-				Size:        len(record.Value),
-				IsValueNull: record.Value == nil,
-			}
+				messageSize := len(record.Key) + len(record.Value)
+				progress.OnMessageConsumed(int64(messageSize))
 
-			headersByKey := make(map[string]interface{}, len(headers))
-			for _, header := range headers {
-				headersByKey[header.Key] = header.Value.Object
-			}
+				// Run Interpreter filter and check if message passes the filter
+				value := s.Deserializer.DeserializePayload(record.Value)
+				key := s.Deserializer.DeserializePayload(record.Key)
+				headers := s.DeserializeHeaders(record.Headers)
 
-			// Check if message passes filter code
-			args := interpreterArguments{
-				PartitionID:  record.Partition,
-				Offset:       record.Offset,
-				Timestamp:    record.Timestamp,
-				Key:          key.Object,
-				Value:        value.Object,
-				HeadersByKey: headersByKey,
-			}
+				topicMessage := &TopicMessage{
+					PartitionID: record.Partition,
+					Offset:      record.Offset,
+					Timestamp:   record.Timestamp.Unix(),
+					Headers:     headers,
+					Key:         key,
+					KeyType:     string(key.RecognizedEncoding),
+					Value:       value,
+					ValueType:   string(value.RecognizedEncoding),
+					Size:        len(record.Value),
+					IsValueNull: record.Value == nil,
+				}
 
-			isOK, err := isMessageOK(args)
-			if err != nil {
-				// TODO: This might be changed to debug level, because operators probably do not care about user failures?
-				s.Logger.Info("failed to check if message is ok", zap.Error(err))
-				progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v'). Error: %v", record.Partition, record.Offset, err))
-				return nil
-			}
-			if isOK {
-				messageCount++
-				progress.OnMessage(topicMessage)
-			}
+				headersByKey := make(map[string]interface{}, len(headers))
+				for _, header := range headers {
+					headersByKey[header.Key] = header.Value.Object
+				}
 
-			// Do we need more messages to satisfy the user request? Return if request is satisfied
-			isRequestSatisfied := messageCount == consumeRequest.MaxMessageCount
-			if isRequestSatisfied {
-				return nil
+				// Check if message passes filter code
+				args := interpreterArguments{
+					PartitionID:  record.Partition,
+					Offset:       record.Offset,
+					Timestamp:    record.Timestamp,
+					Key:          key.Object,
+					Value:        value.Object,
+					HeadersByKey: headersByKey,
+				}
+
+				isOK, err := isMessageOK(args)
+				if err != nil {
+					// TODO: This might be changed to debug level, because operators probably do not care about user failures?
+					s.Logger.Info("failed to check if message is ok", zap.Error(err))
+					progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v'). Error: %v", record.Partition, record.Offset, err))
+					return nil
+				}
+				if isOK {
+					messageCount++
+					progress.OnMessage(topicMessage)
+				}
+
+				// Do we need more messages to satisfy the user request? Return if request is satisfied
+				isRequestSatisfied := messageCount == consumeRequest.MaxMessageCount
+				if isRequestSatisfied {
+					return nil
+				}
 			}
 		}
 	}
