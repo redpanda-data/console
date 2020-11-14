@@ -14,6 +14,10 @@ roles:
         excludes: ["battle-logs"]
         allowedActions: ["viewer"]
 
+      # ACLs do not have includes or excludes as there are no permissions implemented for individual ACL rules
+      - resource: acls
+        allowedActions: ["viewAcl"]
+
       - resource: topics
         includes: ["battle-logs"]
         # Other actions are "viewMessages", "useSearchFilter", "viewConsumers"

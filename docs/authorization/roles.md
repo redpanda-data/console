@@ -36,6 +36,7 @@ Specifies the resource kind on which the permissions shall be applied. To date t
 |---|---|
 | application | Kowl specific permissions |
 | topics | Kafka topics |
+| acls | Kafka ACLs |
 | consumerGroups | Kafka consumer groups |
 | cluster | Kafka cluster wide actions |
 
@@ -87,6 +88,9 @@ This is an overview of all actions by resource:
 
 `viewConsumers` : View all consumers which consume that topic
 
+##### Resource: ACLs
+
+`viewAcl` : List all ACL rules defined in the cluster
 
 ##### Resource: Consumer Groups
 
@@ -100,6 +104,7 @@ We regularly add new features and therefore we also add new actions. Every time 
 |---|---|---|
 | `application` | `view` | [`viewConfig`]
 | `topics` | `view` | [`seeTopic`, `viewPartitions`, `viewConfig`, `viewMessages`, `useSearchFilter`, `viewConsumers`]
+| `acls` | `view` | [`viewAcl`]
 | `consumerGroups` | `view` | [`seeConsumerGroup`]
 | `application`, `topics`, `consumerGroups` | `edit` | [`view`]
 | `application`, `topics`, `consumerGroups` | `admin` | [`edit`]
