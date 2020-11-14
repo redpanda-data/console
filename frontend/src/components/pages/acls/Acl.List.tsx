@@ -1,27 +1,21 @@
-import React, { ReactNode, Component } from "react";
+import React, { } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Tooltip, Space, Descriptions, Select, Input } from "antd";
+import { Empty, Table, Select, Input, Button } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "../Page";
-import { aclRequestToQuery, api } from "../../../state/backendApi";
+import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { AclOperation, AclPermissionType, AclRequestDefault, AclResource, AclResourcePatternTypeFilter, AclResourceType, AclRule, Broker, BrokerConfigEntry } from "../../../state/restInterfaces";
+import { AclRequestDefault, AclResource, AclRule, Broker } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
-import { observable, computed, autorun, IReactionDisposer } from "mobx";
-import prettyBytes from "pretty-bytes";
-import { clone, containsIgnoreCase, prettyBytesOrNA } from "../../../utils/utils";
+import { observable } from "mobx";
+import { containsIgnoreCase } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
-import Icon, { CrownOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, Label, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
-import { DataValue } from "../topics/Tab.Config";
-import { uiState } from "../../../state/uiState";
-import { ElementOf } from "antd/lib/_util/type";
-import SearchBar from "../../misc/SearchBar";
+import { DefaultSkeleton, Label } from "../../../utils/tsxUtils";
+import { LockIcon } from "@primer/octicons-v2-react";
 
-const InputGroup = Input.Group;
 
 type AclRuleFlat = AclResource & AclRule
 
@@ -51,10 +45,12 @@ class AclList extends PageComponent {
     }
 
     refreshData(force: boolean) {
+        if (api.userData != null && !api.userData.canListAcls) return;
         api.refreshAcls(AclRequestDefault, force);
     }
 
     render() {
+        if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
         if (!api.ACLs) return DefaultSkeleton;
 
         // issue: we can't easily filter by 'resourceType' (because it is a string, and we have to use an enum for requests...)
@@ -130,7 +126,7 @@ class AclList extends PageComponent {
                     <Select
                         options={this.availableResourceTypes}
                         value={this.resourceTypeFilter}
-                        onChange={(val, op) => {
+                        onChange={(val) => {
                             this.resourceTypeFilter = val;
                         }}
                         style={{ width: '11em' }}
@@ -153,30 +149,27 @@ function capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function enumEntries(e: any): { name: string, value: number }[] {
-    let result = [];
-    for (const key in e)
-        if (typeof e[key] === 'number')
-            result.push({ name: key, value: e[key] });
 
-    result = result.filter(e => e.value != 0);
-
-    for (const e of result)
-        e.name = e.name
-            .removePrefix('Acl')
-            .removePrefix('Resource')
-            .removePrefix('Operation')
-            .removePrefix('Pattern')
-            .removePrefix('Permission');
-
-    return result;
-}
-
-const OptionValues = {
-    Types: enumEntries(AclResourceType),
-    PatternTypeFilters: enumEntries(AclResourcePatternTypeFilter),
-    Operations: enumEntries(AclOperation),
-    Permissions: enumEntries(AclPermissionType),
-} as const;
 //console.log('enum entries are:', resourceTypes.map(e => ({ name: e.name.replace(/([A-Z]+)/g, " $1"), value: e.value })));
 // console.log('enum entries are:', OptionValues);
+
+const PermissionDenied = <>
+    <motion.div {...animProps} key={'aclNoPerms'} style={{ margin: '0 1rem' }}>
+        <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
+            <Empty description={null}>
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h2><span><LockIcon verticalAlign='middle' size={20} /></span> Permission Denied</h2>
+                    <p>
+                        You are not allowed to view this page.
+                            <br />
+                            Contact the administrator if you think this is an error.
+                        </p>
+                </div>
+
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/authorization/roles.md">
+                    <Button type="primary">Kowl documentation for roles and permissions</Button>
+                </a>
+            </Empty>
+        </Card>
+    </motion.div>
+</>
