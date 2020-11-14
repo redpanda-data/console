@@ -1,15 +1,14 @@
 # Changelog
 
-## Master / unreleased
+## 1.2.0 / 2020-11-14
 
 - **[FEATURE] Embed topic documentation using Markdown files from Git repositories ([/docs/features/topic-documentation.md](/docs/features/topic-documentation.md))**
 - **[FEATURE] Support for message headers**
-- **[FEATURE] Support for Okta as an identity provider**
 - **[FEATURE] UI for schema registry (list all registered schemas including schema history)**
 - **[FEATURE] Avro support for deserializing messages**
 - [FEATURE] List all Kafka ACLs
-- [FEATURE] Business: Okta support
-- [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
+- [FEATURE] Business: Support for Okta as an identity provider
+- [FEATURE] Support for hosting Kowl under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
 - [ENHANCEMENT] Possibility to hide the statistics bar
 - [ENHANCEMENT] Support custom certificates for schema registry client
 - [ENHANCEMENT] Show elapsed time and consumed bytes after filtered message consumption is done
