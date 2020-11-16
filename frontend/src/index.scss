@@ -1301,19 +1301,40 @@ svg {
 }
 
 .messageHeaders {
-    margin-bottom: 2em;
+    margin-bottom: 1.5em;
     margin-top: .5em;
-    padding-bottom: 1em;
+    padding-bottom: .5em;
     border-bottom: 1px solid #ddd;
 
     .title {
-        padding-bottom: 8px;
+        padding-bottom: 6px;
         font-family: "Open Sans", sans-serif;
         font-size: 11px;
         font-weight: 600;
         // padding-left: 2px;
         color: hsla(0, 0%, 50%, 1);
-        cursor: default;
+
+        .titleBtn {
+            border: 1px solid transparent;
+            padding: 3px 6px;
+            border-radius: 3px;
+
+            cursor: pointer;
+            user-select: none;
+
+            transition: background-color 80ms ease-out, border-color 80ms ease-out, color 80ms ease-out;
+
+            &:hover {
+                color: hsl(205, 100%, 50%);
+                background-color: hsla(0, 0%, 100%, 0.85);
+                border-color: hsla(205, 100%, 50%, 1);
+            }
+        }
+    }
+
+    .quickTable {
+        margin-bottom: .5rem;
+        margin-top: .5rem;
     }
 
     .keyCell {

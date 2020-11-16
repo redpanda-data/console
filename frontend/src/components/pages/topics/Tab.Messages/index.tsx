@@ -780,7 +780,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 
 function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     return <div>
-        {(msg.headers.length > 0) && RenderMessageHeaders(msg)}
+        {(msg.headers.length > 0) && <MessageHeaders msg={msg} />}
         <div>{RenderMessageValue(msg, shouldExpand)}</div>
     </div>
 }
@@ -836,14 +836,24 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
     }
 }
 
-function RenderMessageHeaders(msg: TopicMessage) {
+const MessageHeaders = observer((props: { msg: TopicMessage }) => {
+    const headers = props.msg.headers
+    const jsonHeaders = headers.map(h => ({
+        key: ToJson(h.key),
+        value: ToJson(h.value),
+        valueEncoding: ToJson(h.valueEncoding)
+    }));
+    const showHeaders = uiState.topicSettings.showMessageHeaders;
+    const titleText = (showHeaders ? "Hide" : "Show") + " Message Headers";
     return <div className='messageHeaders'>
-        <div className='title'>Message Headers</div>
-        {QuickTable(msg.headers, {
+        <div className='title'>
+            <span className='titleBtn' onClick={() => uiState.topicSettings.showMessageHeaders = !showHeaders}>{titleText}</span>
+        </div>
+        {showHeaders && QuickTable(jsonHeaders, {
             tableStyle: { width: 'auto', paddingLeft: '1em' },
         })}
     </div>
-}
+});
 
 @observer
 class PreviewSettings extends Component<{ allCurrentKeys: string[], getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {

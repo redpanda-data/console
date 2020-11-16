@@ -2,6 +2,10 @@
 
 ## Master / unreleased
 
+## 1.2.1 / 2020-11-16
+- [ENHANCEMENT] Message headers can be expanded/collapsed now
+- [BUGFIX] Kowl now handles message headers containing structured data (JSON) correctly
+
 ## 1.2.0 / 2020-11-14
 
 - **[FEATURE] Embed topic documentation using Markdown files from Git repositories ([/docs/features/topic-documentation.md](/docs/features/topic-documentation.md))**

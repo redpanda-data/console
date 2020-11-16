@@ -55,8 +55,8 @@ export interface TopicMessage {
     key: any, // base64 encoded key of the message
 
     headers: {
-        key: string,
-        value: string,
+        key: string | object,
+        value: string | object,
         valueEncoding: MessageDataType // for now: always text
     }[]
 

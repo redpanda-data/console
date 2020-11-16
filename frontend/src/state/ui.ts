@@ -7,9 +7,9 @@ const settingsName = 'uiSettings-v3';
 
 
 /*
-	todo:
-	- remember UI settings using local storage
-	- topic: message filter, display settings, ...
+    todo:
+    - remember UI settings using local storage
+    - topic: message filter, display settings, ...
 */
 
 export interface PreviewTag {
@@ -81,6 +81,7 @@ export class TopicDetailsSettings {
     @observable previewShowResultCount = false;
     // @observable previewResultLimit: 3; // todo
     @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
+    @observable showMessageHeaders = false;
 
     @observable previewTimestamps = 'default' as TimestampDisplayFormat;
     @observable previewColumnFields = [] as ColumnList[];
