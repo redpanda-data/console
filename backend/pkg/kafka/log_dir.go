@@ -52,7 +52,7 @@ func (s *Service) DescribeLogDirs(ctx context.Context, topicPartitions []kmsg.De
 	}
 
 	if result.RequestsSent > 0 && result.RequestsSent == result.RequestsFailed {
-		return result, fmt.Errorf("all '%v' requests have failed, first error: %w", len(shardedResp), lastErr)
+		return result, fmt.Errorf("all '%v' requests have failed, last error: %w", len(shardedResp), lastErr)
 	}
 
 	return result, nil

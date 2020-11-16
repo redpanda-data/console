@@ -38,27 +38,19 @@ type GroupMemberAssignment struct {
 
 // GetConsumerGroupsOverview returns a ConsumerGroupOverview for all available consumer groups
 func (s *Service) GetConsumerGroupsOverview(ctx context.Context) ([]ConsumerGroupOverview, error) {
-	groups, err := s.kafkaSvc.ListConsumerGroups(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list consumer groups: %w", err)
-	}
-	groupIDs := make([]string, len(groups.Groups))
-	for i, group := range groups.Groups {
-		groupIDs[i] = group.Group
-	}
-
-	describedGroups, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groupIDs)
+	allGroups := []string{}
+	describedGroupsSharded, err := s.kafkaSvc.DescribeConsumerGroups(ctx, allGroups)
 	if err != nil {
 		return nil, fmt.Errorf("failed to describe consumer groups: %w", err)
 	}
 
-	groupLags, err := s.getConsumerGroupLags(ctx, groupIDs)
+	groupLags, err := s.getConsumerGroupLags(ctx, describedGroupsSharded.GetGroupIDs())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get consumer group lags: %w", err)
 	}
 
 	res := make([]ConsumerGroupOverview, 0)
-	converted, err := s.convertKgoGroupDescriptions(describedGroups.Groups, groupLags)
+	converted, err := s.convertKgoGroupDescriptions(describedGroupsSharded.GetDescribedGroups(), groupLags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert group descriptions into group members: %w", err)
 	}

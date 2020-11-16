@@ -3,35 +3,66 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+type ListConsumerGroupsResponseSharded struct {
+	Groups         []ListConsumerGroupsResponse
+	RequestsSent   int
+	RequestsFailed int
+}
+
+func (l *ListConsumerGroupsResponseSharded) GetGroupIDs() []string {
+	groupIDs := make([]string, 0)
+	for _, groupResp := range l.Groups {
+		if groupResp.Error != nil {
+			continue
+		}
+		for _, group := range groupResp.Groups.Groups {
+			groupIDs = append(groupIDs, group.Group)
+		}
+	}
+	return groupIDs
+}
+
+// LogDirResponse can have an error (if the broker failed to return data) or the actual LogDir response
 type ListConsumerGroupsResponse struct {
-	Groups []kmsg.ListGroupsResponseGroup
-	Errors []error
+	BrokerMetadata kgo.BrokerMetadata
+	Groups         *kmsg.ListGroupsResponse
+	Error          error
 }
 
 // ListConsumerGroups returns an array of Consumer group ids. Failed broker requests will be returned in the response.
 // If all broker requests fail an error will be returned.
-func (s *Service) ListConsumerGroups(ctx context.Context) (*ListConsumerGroupsResponse, error) {
+func (s *Service) ListConsumerGroups(ctx context.Context) (*ListConsumerGroupsResponseSharded, error) {
 	req := kmsg.ListGroupsRequest{}
+	shardedResp := s.KafkaClient.RequestSharded(ctx, &req)
 
-	// TODO: Use sharded request so that we can return all errors
-	errors := make([]error, 0)
-	res, err := req.RequestWith(ctx, s.KafkaClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list consumer groups: %w", err)
+	result := &ListConsumerGroupsResponseSharded{
+		Groups:         make([]ListConsumerGroupsResponse, len(shardedResp)),
+		RequestsSent:   0,
+		RequestsFailed: 0,
+	}
+	var lastErr error
+	for _, kresp := range shardedResp {
+		result.RequestsSent++
+		if kresp.Err != nil {
+			result.RequestsFailed++
+			lastErr = kresp.Err
+		}
+		res := kresp.Resp.(*kmsg.ListGroupsResponse)
+
+		result.Groups = append(result.Groups, ListConsumerGroupsResponse{
+			BrokerMetadata: kresp.Meta,
+			Groups:         res,
+			Error:          kresp.Err,
+		})
 	}
 
-	err = kerr.ErrorForCode(res.ErrorCode)
-	if err != nil {
-		errDescriptive := fmt.Errorf("list consumer group inner error: %w", err)
-		errors = append(errors, errDescriptive)
+	if result.RequestsSent > 0 && result.RequestsSent == result.RequestsFailed {
+		return result, fmt.Errorf("all '%v' requests have failed, last error: %w", len(shardedResp), lastErr)
 	}
 
-	return &ListConsumerGroupsResponse{
-		Groups: res.Groups,
-		Errors: errors,
-	}, nil
+	return result, nil
 }
