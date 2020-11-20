@@ -109,7 +109,10 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 				return nil, err
 			}
 			caCertPool = x509.NewCertPool()
-			caCertPool.AppendCertsFromPEM(ca)
+			isSuccessful := caCertPool.AppendCertsFromPEM(ca)
+			if !isSuccessful {
+				logger.Warn("failed to append ca file to cert pool, is this a valid PEM format?")
+			}
 		}
 
 		// If configured load TLS cert & key - Mutual TLS
