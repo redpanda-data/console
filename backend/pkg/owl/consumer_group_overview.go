@@ -38,8 +38,12 @@ type GroupMemberAssignment struct {
 
 // GetConsumerGroupsOverview returns a ConsumerGroupOverview for all available consumer groups
 func (s *Service) GetConsumerGroupsOverview(ctx context.Context) ([]ConsumerGroupOverview, error) {
-	allGroups := []string{}
-	describedGroupsSharded, err := s.kafkaSvc.DescribeConsumerGroups(ctx, allGroups)
+	groups, err := s.kafkaSvc.ListConsumerGroups(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list consumer groups: %w", err)
+	}
+
+	describedGroupsSharded, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groups.GetGroupIDs())
 	if err != nil {
 		return nil, fmt.Errorf("failed to describe consumer groups: %w", err)
 	}

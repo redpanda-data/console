@@ -16,7 +16,7 @@ type ListConsumerGroupsResponseSharded struct {
 func (l *ListConsumerGroupsResponseSharded) GetGroupIDs() []string {
 	groupIDs := make([]string, 0)
 	for _, groupResp := range l.Groups {
-		if groupResp.Error != nil {
+		if groupResp.Error != nil || groupResp.Groups == nil {
 			continue
 		}
 		for _, group := range groupResp.Groups.Groups {
