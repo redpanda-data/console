@@ -450,7 +450,7 @@ export interface Schema {
 
 export interface SchemaField {
     name: string;
-    type: string;
-    doc: string;
-    default?: string;
+    type: string | object | null | undefined;
+    doc?: string | null | undefined;
+    default?: string | object | null | undefined;
 }

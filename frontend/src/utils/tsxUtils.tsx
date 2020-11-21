@@ -1,5 +1,5 @@
 import React, { useState, Component, CSSProperties } from "react";
-import { simpleUniqueId, DebugTimerStore } from "./utils";
+import { simpleUniqueId, DebugTimerStore, ToJson } from "./utils";
 import { Radio, message, Progress, Skeleton } from 'antd';
 import { MessageType } from "antd/lib/message";
 import prettyMilliseconds from 'pretty-ms';
@@ -102,9 +102,9 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
             {entries.map((obj, i) =>
                 <React.Fragment key={i}>
                     <tr>
-                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className='keyCell'>{obj.key}</td>
+                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className='keyCell'>{toSafeString(obj.key)}</td>
                         <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
-                        <td style={{ ...o.valueStyle }} className='valueCell'>{obj.value}</td>
+                        <td style={{ ...o.valueStyle }} className='valueCell'>{toSafeString(obj.value)}</td>
                     </tr>
 
                     {showVerticalGutter && (i < entries.length - 1) &&
@@ -116,6 +116,12 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
             )}
         </tbody>
     </table>
+}
+
+export function toSafeString(x: any): string {
+    if (typeof x === 'undefined' || x === null) return "";
+    if (typeof x === 'string' || typeof x === 'boolean') return String(x);
+    return ToJson(x);
 }
 
 export function ObjToKv(obj: any): { key: string, value: any }[] {

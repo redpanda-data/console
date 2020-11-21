@@ -1,15 +1,17 @@
-import { Col, Descriptions, Row, Select, Statistic, Table } from 'antd';
+import { Col, Descriptions, Row, Select, Statistic, Table, Tag } from 'antd';
 import Card from '../../misc/Card';
 import { observer } from 'mobx-react';
 import React from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
-import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, Label, OptionGroup, QuickTable, toSafeString } from '../../../utils/tsxUtils';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { KowlJsonView } from '../../misc/KowlJsonView';
 import { sortField } from '../../misc/common';
+import { SchemaField } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
 
 export interface SchemaDetailsProps {
     subjectName: string;
@@ -18,29 +20,16 @@ export interface SchemaDetailsProps {
     };
 }
 
-function renderSchemaDataList(entries: string[][]) {
-    return (
-        <Descriptions bordered size="small" colon={true} layout="horizontal" column={1}>
-            {entries
-                .filter(([_, text]) => text !== undefined)
-                .map(([label, text]) => (
-                    <Descriptions.Item label={label} key={label}>{text}</Descriptions.Item>
-                ))}
-        </Descriptions>
-    );
-}
-
-function renderOptions(options: number[] = []) {
-    return options.map((option) => <Select.Option value={option} key={option}>Version {option}</Select.Option>);
+function renderSchemaType(value: any, record: SchemaField, index: number) {
+    return toSafeString(value);
 }
 
 @observer
 class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
     initPage(p: PageInitHelper): void {
-        const {
-            subjectName,
-            query: { version },
-        } = this.props;
+        const subjectName = this.props.subjectName;
+        const version = this.props.query.version;
+
         p.title = subjectName;
         p.addBreadcrumb('Schema Registry', '/schema-registry');
         p.addBreadcrumb(subjectName, `/schema-registry/${subjectName}?version=${version}`);
@@ -66,6 +55,8 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
             schema: { type, name, namespace, doc, fields },
         } = api.schemaDetails;
 
+        const versions = api.schemaDetails?.registeredVersions ?? [];
+
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 <Card>
@@ -75,20 +66,51 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                     </Row>
                 </Card>
                 <Card>
-                    <Row gutter={[32, 24]}>
-                        <Col span="24">
-                            <span>
-                                <Label text="Version">
-                                    <Select defaultValue={this.props.query.version} onChange={(version) => appGlobal.history.push(`/schema-registry/${this.props.subjectName}?version=${version}`)}>
-                                        {renderOptions(api.schemaDetails?.registeredVersions)}
-                                    </Select>
-                                </Label>
-                            </span>
-                        </Col>
-                    </Row>
-                    <Row gutter={32}>
-                        <Col xl={{ span: 12, order: 1 }} xs={{ span: 24, order: 2 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', columnGap: '1.5em', marginBottom: '1em' }}>
+                        <Label text="Version">
+                            <Select style={{ minWidth: '200px' }}
+                                defaultValue={this.props.query.version}
+                                onChange={(version) => appGlobal.history.push(`/schema-registry/${this.props.subjectName}?version=${version}`)}
+                                disabled={versions.length == 0}
+                            >
+                                {versions.map(v => <Select.Option value={v} key={v}>Version {v}</Select.Option>)}
+                            </Select>
+                        </Label>
+
+                        <Label text='Details' style={{ alignSelf: 'stretch' }}>
+                            <div style={{ display: 'inline-flex', flexWrap: 'wrap', minHeight: '32px', alignItems: 'center', rowGap: '.3em' }}>
+                                {Object.entries({
+                                    "Type": type,
+                                    "Name": name,
+                                    "Namespace": namespace,
+                                }).map(([k, v]) => {
+                                    if (!k || v === undefined || v === null) return null;
+                                    return <Tag color='blue' key={k}><span style={{ color: '#2d5b86' }}>{k}:</span> {toSafeString(v)}</Tag>
+                                })}
+                                {!!doc && <a href={doc}>
+                                    <Tag color='blue' style={{ cursor: 'pointer' }}><span style={{ color: '#2d5b86' }}>Documentation:</span> <a style={{ textDecoration: 'underline' }} href={doc}>{doc}</a></Tag>
+                                </a>}
+                            </div>
+
+                        </Label>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5em' }}>
+                        <OptionGroup label=''
+                            options={{
+                                "Show Fields": 'fields',
+                                "Show raw JSON": 'json',
+                            }}
+                            value={uiSettings.schemaDetails.viewMode}
+                            onChange={s => uiSettings.schemaDetails.viewMode = s}
+                        />
+                    </div>
+
+                    <div>
+                        {uiSettings.schemaDetails.viewMode == 'json' &&
                             <KowlJsonView
+                                shouldCollapse={false}
+                                collapsed={false}
                                 src={api.schemaDetails || {}}
                                 style={{
                                     border: 'solid thin lightgray',
@@ -97,19 +119,14 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                                     marginBottom: '1.5rem',
                                 }}
                             />
-                        </Col>
-                        <Col xl={{ span: 12, order: 2 }} xs={{ span: 24, order: 1 }}>
-                            {renderSchemaDataList([
-                                ['type', type],
-                                ['name', name],
-                                ['namespace', namespace],
-                                ['doc', doc],
-                            ])}
+                        }
+
+                        {uiSettings.schemaDetails.viewMode == 'fields' &&
                             <Table
-                                size="middle"
+                                size="small"
                                 columns={[
-                                    { title: 'Name', dataIndex: 'name', className: 'whiteSpaceDefault', sorter: sortField('name') },
-                                    { title: 'Type', dataIndex: 'type', className: 'whiteSpaceDefault', sorter: sortField('type') },
+                                    { title: 'Name', dataIndex: 'name', className: 'whiteSpaceDefault', }, // sorter: sortField('name')
+                                    { title: 'Type', dataIndex: 'type', className: 'whiteSpaceDefault', render: renderSchemaType }, //  sorter: sortField('type'),
                                     { title: 'Default', dataIndex: 'default', className: 'whiteSpaceDefault' },
                                     { title: 'Documentation', dataIndex: 'doc', className: 'whiteSpaceDefault' },
                                 ]}
@@ -121,9 +138,10 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                                     marginTop: '1.5rem',
                                     marginBottom: '1.5rem',
                                 }}
-                            ></Table>
-                        </Col>
-                    </Row>
+                            />
+                        }
+
+                    </div>
                 </Card>
             </motion.div>
         );
@@ -131,3 +149,4 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
 }
 
 export default SchemaDetailsView;
+

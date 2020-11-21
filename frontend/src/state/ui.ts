@@ -136,6 +136,10 @@ const uiSettings = observable({
         quickSearch: ''
     },
 
+    schemaDetails: {
+        viewMode: 'fields' as 'json' | 'fields',
+    },
+
     previewNotificationHideUntil: 0, // utc seconds
 
     userDefaults: {

@@ -7,6 +7,7 @@ import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { envVarDebugAr } from "../../utils/env";
 import { NoClipboardPopover } from "./NoClipboardPopover";
 import { isClipboardAvailable } from "../../utils/featureDetection";
+import { ObjToKv } from "../../utils/tsxUtils";
 
 const { Content, Footer, Sider, Header } = Layout;
 
@@ -91,6 +92,23 @@ export class ErrorBoundary extends React.Component {
             })
         } catch (ex) {
             this.infoItems.push({ name: "Environment", value: "(error retreiving env list)" });
+        }
+
+        // Location
+        try {
+            const loc = ObjToKv({
+                "Protocol": window?.location?.protocol ?? '<null>',
+                "Path": window?.location?.pathname ?? '<null>',
+                "Search": window?.location?.search ?? '<null>',
+                "Hash": window?.location?.hash ?? '<null>',
+            })
+            const pad = loc.max(e => e.key.length);
+            this.infoItems.push({
+                name: "Location",
+                value: ObjToKv(loc).map(e => e.key.padEnd(pad) + ': ' + e.value).join("\n")
+            })
+        } catch (ex) {
+            this.infoItems.push({ name: "Location", value: "(error printing location, please include the url in your bug report)" });
         }
 
 
