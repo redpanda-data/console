@@ -1,6 +1,8 @@
 # Changelog
 
-## Master / unreleased
+## 1.2.2 / 2020-11-23
+- [ENHANCEMENT] Schema registry page has been slightly redesigned so that very complex schemas are more comfortable to inspect
+- [BUGFIX] Fixed rendering errors in schema registry page
 
 ## 1.2.1 / 2020-11-16
 - [ENHANCEMENT] Message headers can be expanded/collapsed now
