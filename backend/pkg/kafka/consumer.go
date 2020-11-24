@@ -98,6 +98,7 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 
 	// 4. Consume messages and check if filter code accepts the given records
 	messageCount := 0
+	remainingPartitionRequests := len(consumeRequest.Partitions)
 	for {
 		select {
 		case <-ctx.Done():
@@ -169,8 +170,12 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 					progress.OnMessage(topicMessage)
 				}
 
+				if record.Offset >= partitionReq.EndOffset {
+					remainingPartitionRequests--
+				}
+
 				// Do we need more messages to satisfy the user request? Return if request is satisfied
-				isRequestSatisfied := messageCount == consumeRequest.MaxMessageCount
+				isRequestSatisfied := messageCount == consumeRequest.MaxMessageCount || remainingPartitionRequests == 0
 				if isRequestSatisfied {
 					return nil
 				}
