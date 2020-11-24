@@ -2,10 +2,11 @@ package main
 
 import (
 	"flag"
-	"go.uber.org/zap"
 	"os"
 	"strconv"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/flagext"
 	"github.com/cloudhut/kowl/backend/pkg/api"
@@ -13,7 +14,7 @@ import (
 
 func main() {
 	startupLogger := zap.NewExample()
-	printVersion(startupLogger)
+	versionSha := printVersion(startupLogger)
 
 	cfg := &api.Config{}
 	cfg.SetDefaults()
@@ -34,11 +35,11 @@ func main() {
 		startupLogger.Fatal("failed to validate config", zap.Error(err))
 	}
 
-	a := api.New(cfg)
+	a := api.New(cfg, versionSha)
 	a.Start()
 }
 
-func printVersion(logger *zap.Logger) {
+func printVersion(logger *zap.Logger) (sha string) {
 	sha1 := os.Getenv("REACT_APP_KOWL_GIT_SHA")
 	ref1 := os.Getenv("REACT_APP_KOWL_GIT_REF")
 	timestamp1 := os.Getenv("REACT_APP_KOWL_TIMESTAMP")
@@ -59,4 +60,6 @@ func printVersion(logger *zap.Logger) {
 			zap.String("built", timeStr1),
 			zap.String("git_sha", sha1))
 	}
+
+	return sha1
 }

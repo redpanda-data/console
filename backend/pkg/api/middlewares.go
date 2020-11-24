@@ -120,3 +120,16 @@ func ensurePrefixFormat(path string) string {
 
 	return path
 }
+
+func createSetVersionHeader(version string) func(next http.Handler) http.Handler {
+
+	m := func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("app-version", version)
+			next.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(fn)
+	}
+
+	return m
+}
