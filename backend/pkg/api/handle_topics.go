@@ -134,7 +134,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 			return
 		}
 
-		description, err := api.OwlSvc.GetTopicConfigs(r.Context(), topicName, []string{})
+		description, err := api.OwlSvc.GetTopicConfigs(r.Context(), topicName, nil)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
