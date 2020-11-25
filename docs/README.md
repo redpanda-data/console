@@ -5,7 +5,7 @@ In this folder you'll find documentation about how to configure Kowl and Kowl Bu
 If there are still open questions after reading this documentation please don't hesitate to submit an issue.
 
 - Getting started
-    - [Installation](./installation.md)
+    - [Install](INSTALL.md)
     - [Helm Chart](https://github.com/cloudhut/charts)
     - [Terraform Module](https://github.com/cloudhut/terraform-modules)
 - Features
@@ -18,7 +18,7 @@ If there are still open questions after reading this documentation please don't 
       - [Roles](./authorization/roles.md)
       - [RoleBindings](./authorization/role-bindings.md)
 - Reference Configs
-    - [kowl.yaml](./config/kowl.yaml)
-    - [kowl-business.yaml](./config/kowl-business.yaml)
-    - [kowl-business-role-bindings.yaml](./config/kowl-business-role-bindings.yaml)
-    - [kowl-business-roles.yaml](./config/kowl-business-roles.yaml)
+    - [kowl.yaml](/config/kowl.yaml)
+    - [kowl-business.yaml](/config/kowl-business.yaml)
+    - [kowl-business-role-bindings.yaml](/config/kowl-business-role-bindings.yaml)
+    - [kowl-business-roles.yaml](/config/kowl-business-roles.yaml)

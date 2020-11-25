@@ -5,7 +5,7 @@ Want to host Kowl under a sub-path (instead of `/`)? Then this is the document y
 ## Config Entries
 
 There are 3 config entries that should cover most scenarios.
-As you can see in [docs/config/kowl.yaml](../config/kowl.yaml) the config entries can be found in the `server:` group.
+As you can see in [/config/kowl.yaml](/config/kowl.yaml) the config entries can be found in the `server:` group.
 
 - `basePath`
     ---

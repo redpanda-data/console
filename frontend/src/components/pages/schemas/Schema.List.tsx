@@ -46,7 +46,7 @@ function renderNotConfigured() {
                     </div>
 
                     {/* todo: fix link once we have a better guide */}
-                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
+                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/config/kowl.yaml">
                         <Button type="primary">Kowl Config Documentation</Button>
                     </a>
                 </Empty>

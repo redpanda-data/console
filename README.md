@@ -41,7 +41,7 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 ### Installing
 
-We offer pre built docker images for Kowl (Business), a Helm chart and a Terraform module to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](./docs/installation.md).
+We offer pre built docker images for Kowl (Business), a Helm chart and a Terraform module to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](docs/INSTALL.md).
 
 ### Docker Compose (running locally)
 

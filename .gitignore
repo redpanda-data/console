@@ -1,5 +1,5 @@
 # Docker Compose
-docker-compose/zk-single-kafka-single
+docker/zk-single-kafka-single
 
 # Misc
 .DS_Store
@@ -8,7 +8,7 @@ fixname.sh
 
 # IDEs
 **/.vscode
-**/.idea
+.idea
 **/*.code-workspace
 
 # Helper Scripts

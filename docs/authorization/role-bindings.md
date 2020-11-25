@@ -25,7 +25,7 @@ roleBindings:
     roleName: developer
 ```
 
-This role binding binds all Google accounts which are a member of `dev-team-cloudhut@yourcompany.com` to the role named `developer`. You can find a reference config for role bindings [here](../config/kowl-business-role-bindings.yaml).
+This role binding binds all Google accounts which are a member of `dev-team-cloudhut@yourcompany.com` to the role named `developer`. You can find a reference config for role bindings [here](/config/kowl-business-role-bindings.yaml).
 
 > :triangular_flag_on_post: In order to use groups for role bindings you need configure the [RBAC Sync on Groups](./groups-sync.md).
 

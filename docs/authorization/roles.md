@@ -22,7 +22,7 @@ roles:
         allowedActions: ["admin"]
 ```
 
-A full example can be found [here](../config/kowl-business-roles.yaml).
+A full example can be found [here](/config/kowl-business-roles.yaml).
 
 ### Permissions
 

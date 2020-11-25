@@ -64,10 +64,10 @@ As the Business version is an extension of the normal Kowl version these flags a
 
 All available settings which can be configured in your YAML configs can be found here and should document themselves:
 
-[/docs/config/kowl.yaml](./config/kowl.yaml)
+[/config/kowl.yaml](/config/kowl.yaml)
 
-[/docs/config/kowl-business.yaml](./config/kowl-business.yaml)
+[/config/kowl-business.yaml](/config/kowl-business.yaml)
 
-[/docs/config/kowl-business-roles.yaml](./config/kowl-business-roles.yaml)
+[/config/kowl-business-roles.yaml](/config/kowl-business-roles.yaml)
 
-[/docs/config/kowl-business-role-bindings.yaml](./config/kowl-business-role-bindings.yaml)
+[/config/kowl-business-role-bindings.yaml](/config/kowl-business-role-bindings.yaml)
