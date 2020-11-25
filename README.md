@@ -43,9 +43,12 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 We offer pre built docker images for Kowl (Business), a Helm chart and a Terraform module to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](docs/INSTALL.md).
 
-### Docker Compose (running locally)
-
-If you want to run Kowl locally take a look at the docker compose sample: [/docs/local](./docs/local).
+### Docker Compose (local)
+```
+$ cd ${HOME}/kowl/docker
+$ docker-compose up
+$ open http://localhost:8080
+```
 
 ## Sponsors
 
