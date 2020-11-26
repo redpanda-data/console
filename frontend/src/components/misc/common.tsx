@@ -120,22 +120,23 @@ export class UpdatePopup extends Component {
     render() {
         if (!uiState.serverVersion) return null; // server version not known yet
         if (uiState.serverVersion == 'dev') return null; // don't show popup in dev
-        console.log('popup: new version available');
         if (uiState.updatePromtHiddenUntil !== undefined)
             if (new Date().getTime() < uiState.updatePromtHiddenUntil)
                 return null; // not yet
-        console.log('popup: not "dismissed until time"');
 
         const curVersion = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : 'null (dev)') + " " + env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
 
         return <Modal title='New version available'
             visible={true}
-            okText='Update, reload the page!' cancelText="No, ignore for now"
+            okText='Update' cancelText="Ignore for now"
             mask={true} closable={false} maskClosable={false} centered={true} keyboard={false}
             onCancel={() => uiState.updatePromtHiddenUntil = new Date().getTime() + hoursToMilliseconds(4)}
             onOk={() => window.location.reload()}
         >
-            <p>It is reccommended to reload the page so the frontend uses the same version.</p>
+            <p>
+                The Kowl backend server is running a different version than the frontend.<br />
+                It is reccommended to reload the page to update the frontend.
+            </p>
             <p>
                 <span>Current Version: <span className='codeBox'><code>{curVersion}</code></span></span><br />
                 <span>Server Version: <span className='codeBox'><code>{uiState.serverVersion}</code></span></span>
