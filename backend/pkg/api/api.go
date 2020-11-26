@@ -20,12 +20,14 @@ type API struct {
 
 	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
 
-	version string
+	version versionInfo
 }
 
 // New creates a new API instance
-func New(cfg *Config, version string) *API {
+func New(cfg *Config) *API {
 	logger := logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
+
+	version := loadVersionInfo(logger)
 
 	kafkaSvc, err := kafka.NewService(cfg.Kafka, logger, cfg.MetricsNamespace)
 	if err != nil {
