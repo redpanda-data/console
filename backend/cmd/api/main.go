@@ -15,6 +15,9 @@ import (
 func main() {
 	startupLogger := zap.NewExample()
 	versionSha := printVersion(startupLogger)
+	if versionSha == "" {
+		versionSha = "dev"
+	}
 
 	cfg := &api.Config{}
 	cfg.SetDefaults()

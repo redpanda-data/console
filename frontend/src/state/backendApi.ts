@@ -39,9 +39,12 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     }
     for (const [k, v] of res.headers)
         if (k.toLowerCase() == 'app-version') {
-            if (v != env.REACT_APP_KOWL_GIT_SHA && env.REACT_APP_KOWL_BUSINESS_GIT_SHA) {
-                console.log(`current frontend version '${env.REACT_APP_KOWL_GIT_SHA}' (${env.REACT_APP_KOWL_BUSINESS_GIT_SHA}) is out of date; backend has version '${v}';`)
-                window.location.reload();
+            const isUpToDate = v == env.REACT_APP_KOWL_GIT_SHA || v == env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
+            if (!isUpToDate) {
+                // console.log(`current frontend version '${env.REACT_APP_KOWL_GIT_SHA}' (${env.REACT_APP_KOWL_BUSINESS_GIT_SHA}) is out of date; backend has version '${v}';`)
+                uiState.serverVersion = v;
+            } else {
+                // console.log('spa is up to date: ' + v);
             }
             break;
         }

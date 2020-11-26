@@ -1,16 +1,11 @@
 import { observable, autorun } from "mobx";
-import { touch, assignDeep, randomId, simpleUniqueId, uniqueId4 } from "../utils/utils";
+import { touch, assignDeep, randomId, simpleUniqueId, uniqueId4, clone } from "../utils/utils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
+import { AclRequest, AclRequestDefault } from "./restInterfaces";
 
 const settingsName = 'uiSettings-v3';
 
-
-/*
-    todo:
-    - remember UI settings using local storage
-    - topic: message filter, display settings, ...
-*/
 
 export interface PreviewTag {
     value: string;
@@ -53,6 +48,7 @@ export class FilterEntry {
     @observable name: string = ''; // name of the filter, shown instead of the code when set
     @observable code: string = 'return true\n//allow all messages'; // js code the user entered
 }
+
 
 export type TimestampDisplayFormat = 'default' | 'onlyDate' | 'onlyTime' | 'unixSeconds' | 'relative';
 export enum TopicOffsetOrigin { EndMinusResults = -1, Start = -2, End = -3, Custom = 0 }
@@ -130,6 +126,8 @@ const uiSettings = observable({
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
         showStatisticsBar: true,
     },
+
+    aclSearchParams: clone(AclRequestDefault) as AclRequest,
 
     schemaList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,

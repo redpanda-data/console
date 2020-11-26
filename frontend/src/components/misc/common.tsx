@@ -1,11 +1,14 @@
-import React, { FC, Props, CSSProperties } from "react";
+import React, { FC, Props, CSSProperties, Component } from "react";
 import { PropsWithChildren } from "react";
 import { TablePaginationConfig } from "antd/lib/table";
 import { uiSettings } from "../../state/ui";
 import { CompareFn } from "antd/lib/table/interface";
 import Draggable from "react-draggable";
 import { observer } from "mobx-react";
-import { Grid, Tag } from "antd";
+import { Grid, Modal, Tag } from "antd";
+import { uiState } from "../../state/uiState";
+import { hoursToMilliseconds } from "../../utils/utils";
+import env from "../../utils/env";
 
 const { useBreakpoint } = Grid;
 
@@ -105,15 +108,40 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
     }
 }
 
-
-
-
-
-
 export function range(start: number, end: number): number[] {
     const ar = []
     for (let i = start; i < end; i++)
         ar.push(i);
     return ar;
+}
+
+@observer
+export class UpdatePopup extends Component {
+    render() {
+        if (!uiState.serverVersion) return null; // server version not known yet
+        if (uiState.serverVersion == 'dev') return null; // don't show popup in dev
+        console.log('popup: new version available');
+        if (uiState.updatePromtHiddenUntil !== undefined)
+            if (new Date().getTime() < uiState.updatePromtHiddenUntil)
+                return null; // not yet
+        console.log('popup: not "dismissed until time"');
+
+        const curVersion = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : 'null (dev)') + " " + env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
+
+        return <Modal title='New version available'
+            visible={true}
+            okText='Update, reload the page!' cancelText="No, ignore for now"
+            mask={true} closable={false} maskClosable={false} centered={true} keyboard={false}
+            onCancel={() => uiState.updatePromtHiddenUntil = new Date().getTime() + hoursToMilliseconds(4)}
+            onOk={() => window.location.reload()}
+        >
+            <p>It is reccommended to reload the page so the frontend uses the same version.</p>
+            <p>
+                <span>Current Version: <span className='codeBox'><code>{curVersion}</code></span></span><br />
+                <span>Server Version: <span className='codeBox'><code>{uiState.serverVersion}</code></span></span>
+            </p>
+            <p>Do you want to reload the page now?</p>
+        </Modal>
+    }
 }
 

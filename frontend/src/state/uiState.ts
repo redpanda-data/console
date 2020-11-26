@@ -65,10 +65,14 @@ class UIState {
         throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
     }
 
-    @observable aclSearchParams: AclRequest = clone(AclRequestDefault);
-
     @observable loginError: string | null = null;
     @observable isUsingDebugUserLogin: boolean = false;
+
+    // Every API response contains the 'app-version' header (which is set here after the request).
+    // If the version doesn't match the current frontend version a promt is shown (like 'new version available, want to reload to update?').
+    // If the user declines, updatePromtHiddenUntil is set to prevent the promt from showing up for some time.
+    @observable serverVersion: string | undefined = undefined;
+    @observable updatePromtHiddenUntil: number | undefined = undefined;
 }
 
 
