@@ -102,9 +102,9 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
             {entries.map((obj, i) =>
                 <React.Fragment key={i}>
                     <tr>
-                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className='keyCell'>{toSafeString(obj.key)}</td>
+                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className='keyCell'>{React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}</td>
                         <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
-                        <td style={{ ...o.valueStyle }} className='valueCell'>{toSafeString(obj.value)}</td>
+                        <td style={{ ...o.valueStyle }} className='valueCell'>{React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}</td>
                     </tr>
 
                     {showVerticalGutter && (i < entries.length - 1) &&
