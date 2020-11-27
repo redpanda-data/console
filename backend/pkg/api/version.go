@@ -35,10 +35,8 @@ func loadVersionInfo(logger *zap.Logger) versionInfo {
 
 	// Early out: dev mode
 	if version.gitSha == "" {
+		version.gitSha = "dev"
 		logger.Info("started "+name, zap.String("version", "dev"))
-		if version.gitSha == "" {
-			version.gitSha = "dev"
-		}
 		return version
 	}
 

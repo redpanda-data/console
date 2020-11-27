@@ -9,6 +9,7 @@ import { Grid, Modal, Tag } from "antd";
 import { uiState } from "../../state/uiState";
 import { hoursToMilliseconds } from "../../utils/utils";
 import env, { IsBusiness } from "../../utils/env";
+import { QuickTable } from "../../utils/tsxUtils";
 
 const { useBreakpoint } = Grid;
 
@@ -126,6 +127,22 @@ export class UpdatePopup extends Component {
 
         const curVersion = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : 'null (dev)');
         const curVersionBusiness = (!!env.REACT_APP_KOWL_BUSINESS_GIT_SHA ? env.REACT_APP_KOWL_BUSINESS_GIT_SHA : null);
+        const isFree = !uiState.serverVersionBusiness;
+
+        const tableData = [
+            {
+                key: "Current Version:",
+                value: isFree
+                    ? <span className='codeBox'>{curVersion}</span>
+                    : <><span className='codeBox'>{curVersion}</span>&nbsp;<span className='codeBox'>{curVersionBusiness}</span></>
+            },
+            {
+                key: "Server Version:",
+                value: isFree
+                    ? <span className='codeBox'>{uiState.serverVersion}</span>
+                    : <><span className='codeBox'>{uiState.serverVersion}</span>&nbsp;<span className='codeBox'>{uiState.serverVersionBusiness}</span></>
+            }
+        ];
 
         return <Modal title='New version available'
             visible={true}
@@ -139,17 +156,7 @@ export class UpdatePopup extends Component {
                 It is reccommended to reload the page to update the frontend.
             </p>
             <p>
-                <span>
-                    Current Version:
-                    <span className='codeBox'><code>{curVersion}</code></span>
-                    {IsBusiness ? <span className='codeBox'><code>{curVersionBusiness}</code></span> : null}
-                </span>
-                <br />
-                <span>
-                    Server Version:
-                    <span className='codeBox'><code>{uiState.serverVersion}</code></span>
-                    {IsBusiness ? <span className='codeBox'><code>{uiState.serverVersionBusiness}</code></span> : null}
-                </span>
+                {QuickTable(tableData, { keyAlign: 'right' })}
             </p>
             <p>Do you want to reload the page now?</p>
         </Modal>

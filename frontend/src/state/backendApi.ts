@@ -37,17 +37,15 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     if (res.status == 403) { // Forbidden
         return null;
     }
-    for (const [k, v] of res.headers)
-        if (k.toLowerCase() == 'app-version') {
-            const isUpToDate = v == env.REACT_APP_KOWL_GIT_SHA || v == env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
-            if (!isUpToDate) {
-                // console.log(`current frontend version '${env.REACT_APP_KOWL_GIT_SHA}' (${env.REACT_APP_KOWL_BUSINESS_GIT_SHA}) is out of date; backend has version '${v}';`)
+
+    for (const [k, v] of res.headers) {
+        if (k.toLowerCase() == 'app-version')
+            if (v != env.REACT_APP_KOWL_GIT_SHA)
                 uiState.serverVersion = v;
-            } else {
-                // console.log('spa is up to date: ' + v);
-            }
-            break;
-        }
+        if (k.toLowerCase() == 'app-version-business')
+            if (v != env.REACT_APP_KOWL_BUSINESS_GIT_SHA)
+                uiState.serverVersionBusiness = v;
+    }
 
     if (!res.ok)
         throw new Error("(" + res.status + ") " + res.statusText);
