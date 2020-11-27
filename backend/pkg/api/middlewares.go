@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -121,11 +122,17 @@ func ensurePrefixFormat(path string) string {
 	return path
 }
 
-func createSetVersionHeader(version string) func(next http.Handler) http.Handler {
+func createSetVersionInfoHeader(version versionInfo) func(next http.Handler) http.Handler {
+	timestampStr := fmt.Sprintf("%v", version.timestamp.Unix())
 
 	m := func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("app-version", version)
+			w.Header().Add("app-build-time", timestampStr)
+			w.Header().Add("app-version", version.gitSha)
+			if version.gitShaBusiness != "" {
+				w.Header().Add("app-version-business", version.gitShaBusiness)
+			}
+
 			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)

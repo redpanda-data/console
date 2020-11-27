@@ -8,7 +8,7 @@ import { observer } from "mobx-react";
 import { Grid, Modal, Tag } from "antd";
 import { uiState } from "../../state/uiState";
 import { hoursToMilliseconds } from "../../utils/utils";
-import env from "../../utils/env";
+import env, { IsBusiness } from "../../utils/env";
 
 const { useBreakpoint } = Grid;
 
@@ -124,7 +124,8 @@ export class UpdatePopup extends Component {
             if (new Date().getTime() < uiState.updatePromtHiddenUntil)
                 return null; // not yet
 
-        const curVersion = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : 'null (dev)') + " " + env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
+        const curVersion = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : 'null (dev)');
+        const curVersionBusiness = (!!env.REACT_APP_KOWL_BUSINESS_GIT_SHA ? env.REACT_APP_KOWL_BUSINESS_GIT_SHA : null);
 
         return <Modal title='New version available'
             visible={true}
@@ -138,8 +139,17 @@ export class UpdatePopup extends Component {
                 It is reccommended to reload the page to update the frontend.
             </p>
             <p>
-                <span>Current Version: <span className='codeBox'><code>{curVersion}</code></span></span><br />
-                <span>Server Version: <span className='codeBox'><code>{uiState.serverVersion}</code></span></span>
+                <span>
+                    Current Version:
+                    <span className='codeBox'><code>{curVersion}</code></span>
+                    {IsBusiness ? <span className='codeBox'><code>{curVersionBusiness}</code></span> : null}
+                </span>
+                <br />
+                <span>
+                    Server Version:
+                    <span className='codeBox'><code>{uiState.serverVersion}</code></span>
+                    {IsBusiness ? <span className='codeBox'><code>{uiState.serverVersionBusiness}</code></span> : null}
+                </span>
             </p>
             <p>Do you want to reload the page now?</p>
         </Modal>

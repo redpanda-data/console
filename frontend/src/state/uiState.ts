@@ -72,6 +72,7 @@ class UIState {
     // If the version doesn't match the current frontend version a promt is shown (like 'new version available, want to reload to update?').
     // If the user declines, updatePromtHiddenUntil is set to prevent the promt from showing up for some time.
     @observable serverVersion: string | undefined = undefined;
+    @observable serverVersionBusiness: string | undefined = undefined;
     @observable updatePromtHiddenUntil: number | undefined = undefined;
 }
 
