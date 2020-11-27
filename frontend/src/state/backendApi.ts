@@ -8,7 +8,7 @@ import {
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { ToJson, LazyMap, TimeSince, clone } from "../utils/utils";
-import { IsDev, IsBusiness, basePathS } from "../utils/env";
+import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
@@ -36,6 +36,15 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
     }
     if (res.status == 403) { // Forbidden
         return null;
+    }
+
+    for (const [k, v] of res.headers) {
+        if (k.toLowerCase() == 'app-version')
+            if (v != env.REACT_APP_KOWL_GIT_SHA)
+                uiState.serverVersion = v;
+        if (k.toLowerCase() == 'app-version-business')
+            if (v != env.REACT_APP_KOWL_BUSINESS_GIT_SHA)
+                uiState.serverVersionBusiness = v;
     }
 
     if (!res.ok)

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -119,4 +120,28 @@ func ensurePrefixFormat(path string) string {
 	}
 
 	return path
+}
+
+// Creates a middlware that adds version info headers to each response:
+// - app-build-time (unix timestamp)
+// - app-version (git sha)
+// - app-version-business (git sha)
+// The frontend uses those to detect if the backend server has been updated
+func createSetVersionInfoHeader(version versionInfo) func(next http.Handler) http.Handler {
+	timestampStr := fmt.Sprintf("%v", version.timestamp.Unix())
+
+	m := func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("app-build-time", timestampStr)
+			w.Header().Add("app-version", version.gitSha)
+			if version.gitShaBusiness != "" {
+				w.Header().Add("app-version-business", version.gitShaBusiness)
+			}
+
+			next.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(fn)
+	}
+
+	return m
 }

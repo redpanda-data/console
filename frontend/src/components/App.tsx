@@ -3,7 +3,7 @@ import { observer } from "mobx-react"
 import { Layout, Menu, PageHeader, Button, Tooltip, Popover, Dropdown } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
-import { RenderTrap, DebugDisplay } from './misc/common';
+import { RenderTrap, DebugDisplay, UpdatePopup } from './misc/common';
 import { DebugTimerStore, ToJson } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
@@ -256,6 +256,8 @@ const AppContent = observer(() =>
                 <RouteView />
             </ErrorDisplay>
         </Content>
+
+        <UpdatePopup />
 
     </Layout>
 );
