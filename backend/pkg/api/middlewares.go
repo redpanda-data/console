@@ -122,6 +122,11 @@ func ensurePrefixFormat(path string) string {
 	return path
 }
 
+// Creates a middlware that adds version info headers to each response:
+// - app-build-time (unix timestamp)
+// - app-version (git sha)
+// - app-version-business (git sha)
+// The frontend uses those to detect if the backend server has been updated
 func createSetVersionInfoHeader(version versionInfo) func(next http.Handler) http.Handler {
 	timestampStr := fmt.Sprintf("%v", version.timestamp.Unix())
 

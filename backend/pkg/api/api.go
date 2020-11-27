@@ -29,6 +29,23 @@ func New(cfg *Config) *API {
 
 	version := loadVersionInfo(logger)
 
+	// Print startup message
+	if version.isBusiness {
+		logger.Info("started "+version.productName,
+			zap.String("version", version.gitRef),
+			zap.String("git_sha", version.gitSha),
+			zap.String("built", version.timestampFriendly),
+			zap.String("version_business", version.gitRefBusiness),
+			zap.String("git_sha_business", version.gitShaBusiness),
+		)
+	} else {
+		logger.Info("started "+version.productName,
+			zap.String("version", version.gitRef),
+			zap.String("git_sha", version.gitSha),
+			zap.String("built", version.timestampFriendly),
+		)
+	}
+
 	kafkaSvc, err := kafka.NewService(cfg.Kafka, logger, cfg.MetricsNamespace)
 	if err != nil {
 		logger.Fatal("failed to create kafka service", zap.Error(err))
