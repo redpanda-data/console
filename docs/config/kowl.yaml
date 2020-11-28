@@ -68,7 +68,7 @@ kafka:
 #   stripPrefix: true # Whether or not kowl should strip the prefix internally
 
 # logger:
-#   level: info
+#   level: info # Valid values are: debug, info, warn, error, fatal
 
 # Only relevant for developers, who might want to run the frontend separately
 # serveFrontend: true
