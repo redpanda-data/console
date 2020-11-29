@@ -59,8 +59,8 @@ func (api *API) routes() *chi.Mux {
 
 		// API routes
 		router.Group(func(r chi.Router) {
-			api.Hooks.Route.ConfigAPIRouter(r)
 			r.Use(createSetVersionInfoHeader(api.version))
+			api.Hooks.Route.ConfigAPIRouter(r)
 
 			r.Route("/api", func(r chi.Router) {
 				r.Get("/cluster/config", api.handleClusterConfig())
