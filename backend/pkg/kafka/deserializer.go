@@ -63,7 +63,34 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 		return &deserializedPayload{NormalizedPayload: payload, Object: "", RecognizedEncoding: messageEncodingNone}
 	}
 
-	// 1. Test for Avro (reference: https://docs.confluent.io/current/schema-registry/serdes-develop/index.html#wire-format)
+	trimmed := bytes.TrimLeft(payload, " \t\r\n")
+	if len(trimmed) == 0 {
+		return &deserializedPayload{NormalizedPayload: payload, Object: string(payload), RecognizedEncoding: messageEncodingText}
+	}
+
+	// 1. Test for valid JSON
+	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
+	if startsWithJSON {
+		var obj interface{}
+		err := json.Unmarshal(payload, &obj)
+		if err == nil {
+			return &deserializedPayload{NormalizedPayload: trimmed, Object: obj, RecognizedEncoding: messageEncodingJSON}
+		}
+	}
+
+	// 2. Test for valid XML
+	startsWithXML := trimmed[0] == '<'
+	if startsWithXML {
+		r := strings.NewReader(string(trimmed))
+		jsonPayload, err := xj.Convert(r)
+		if err == nil {
+			var obj interface{}
+			_ = json.Unmarshal(jsonPayload.Bytes(), &obj) // no err possible unless the xml2json package is buggy
+			return &deserializedPayload{NormalizedPayload: jsonPayload.Bytes(), Object: obj, RecognizedEncoding: messageEncodingXML}
+		}
+	}
+
+	// 3. Test for Avro (reference: https://docs.confluent.io/current/schema-registry/serdes-develop/index.html#wire-format)
 	if d.SchemaService != nil && len(payload) > 5 {
 		// Check if magic byte is set
 		if payload[0] == byte(0) {
@@ -76,33 +103,6 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 					return &deserializedPayload{NormalizedPayload: normalized, Object: native, RecognizedEncoding: messageEncodingAvro}
 				}
 			}
-		}
-	}
-
-	trimmed := bytes.TrimLeft(payload, " \t\r\n")
-	if len(trimmed) == 0 {
-		return &deserializedPayload{NormalizedPayload: payload, Object: string(payload), RecognizedEncoding: messageEncodingText}
-	}
-
-	// 2. Test for valid JSON
-	startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
-	if startsWithJSON {
-		var obj interface{}
-		err := json.Unmarshal(payload, &obj)
-		if err == nil {
-			return &deserializedPayload{NormalizedPayload: trimmed, Object: obj, RecognizedEncoding: messageEncodingJSON}
-		}
-	}
-
-	// 3. Test for valid XML
-	startsWithXML := trimmed[0] == '<'
-	if startsWithXML {
-		r := strings.NewReader(string(trimmed))
-		jsonPayload, err := xj.Convert(r)
-		if err == nil {
-			var obj interface{}
-			_ = json.Unmarshal(jsonPayload.Bytes(), &obj) // no err possible unless the xml2json package is buggy
-			return &deserializedPayload{NormalizedPayload: jsonPayload.Bytes(), Object: obj, RecognizedEncoding: messageEncodingXML}
 		}
 	}
 
