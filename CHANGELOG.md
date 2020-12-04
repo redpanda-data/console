@@ -2,6 +2,7 @@
 
 ## unreleased / pending in master
 - [FEATURE] Support setting the listen adress of the webserver (config entry: `server.http.listen-address`, or flag: `listenAddress`). [#150](https://github.com/cloudhut/kowl/issues/150) 
+- [BUGFIX] Deserialize messages with Avro with a higher priority than UTF-8 messages, so that Avro serialized messages will always be recognized correctly
 
 
 ## 1.2.2 / 2020-11-23
