@@ -90,13 +90,7 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 		}
 	}
 
-	// 3. Test for UTF-8 validity
-	isUTF8 := utf8.Valid(payload)
-	if isUTF8 {
-		return &deserializedPayload{NormalizedPayload: payload, Object: string(payload), RecognizedEncoding: messageEncodingText}
-	}
-
-	// 4. Test for Avro (reference: https://docs.confluent.io/current/schema-registry/serdes-develop/index.html#wire-format)
+	// 3. Test for Avro (reference: https://docs.confluent.io/current/schema-registry/serdes-develop/index.html#wire-format)
 	if d.SchemaService != nil && len(payload) > 5 {
 		// Check if magic byte is set
 		if payload[0] == byte(0) {
@@ -110,6 +104,12 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 				}
 			}
 		}
+	}
+
+	// 4. Test for UTF-8 validity
+	isUTF8 := utf8.Valid(payload)
+	if isUTF8 {
+		return &deserializedPayload{NormalizedPayload: payload, Object: string(payload), RecognizedEncoding: messageEncodingText}
 	}
 
 	// Anything else is considered as binary content
