@@ -289,6 +289,17 @@ const apiStore = {
                 case 'message':
                     let m = msg.message as TopicMessage;
 
+                    // debug
+                    m.headers.push({
+                        key: 'test debug object',
+                        value: {
+                            a: 1,
+                            b: 'asdaf',
+                            c: [5, 2, 6, 7],
+                        },
+                        valueEncoding: "json"
+                    });
+
                     if (m.key != null && m.key != undefined && m.key != "" && m.keyType == 'binary') {
                         try {
                             m.key = atob(m.key); // unpack base64 encoded key

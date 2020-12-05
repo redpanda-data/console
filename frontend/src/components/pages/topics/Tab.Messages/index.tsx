@@ -871,21 +871,33 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
 });
 
 const MessageHeaders = observer((props: { msg: TopicMessage }) => {
-    const headers = props.msg.headers;
-    const jsonHeaders = headers.map(h => ({
-        key: ToJson(h.key),
-        value: ToJson(h.value),
-        valueEncoding: ToJson(h.valueEncoding)
-    }));
-    // const showHeaders = uiState.topicSettings.showMessageHeaders;
-    // const titleText = (showHeaders ? "Hide" : "Show") + " Message Headers";
+
     return <div className='messageHeaders'>
-        {/* <div className='title'>
-            <span className='titleBtn' onClick={() => uiState.topicSettings.showMessageHeaders = !showHeaders}>{titleText}</span>
-        </div> */}
-        {QuickTable(jsonHeaders, {
-            tableStyle: { width: 'auto', paddingLeft: '1em' },
-        })}
+        <div>
+            <Table
+                size='small'
+                indentSize={0}
+                dataSource={props.msg.headers}
+                pagination={false}
+                columns={[
+                    { width: 'auto', title: 'Key', dataIndex: 'key', render: v => toSafeString(v) },
+                    {
+                        width: 'auto', title: 'Value', dataIndex: 'value',
+                        render: v => typeof v === 'object'
+                            ? <div className='smallText hoverLink' style={{ paddingBottom: '1px' }}>Object - Expand to show</div>
+                            : toSafeString(v),
+                    },
+                    { width: '80', title: 'Encoding', dataIndex: 'valueEncoding' },
+                ]}
+                expandable={{
+                    rowExpandable: r => typeof r.value === 'object',
+                    expandIconColumnIndex: 1,
+                    expandRowByClick: true,
+                    expandedRowRender: r => <KowlJsonView src={r.value as object} />,
+                }}
+            />
+            <br />
+        </div>
     </div>
 });
 
