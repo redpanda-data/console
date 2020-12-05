@@ -1,6 +1,6 @@
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
-import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
+import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -30,8 +30,8 @@ import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
-import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../../utils/tsxUtils";
-import { cullText, findElementDeep, ToJson } from "../../../../utils/utils";
+import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
+import { cullText, findElementDeep, titleCase, ToJson } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
@@ -506,7 +506,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         expandRowByClick: false,
                         expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'value'),
                         rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
-                        expandedRowRender: record => RenderExpandedMessage(record),
+                        expandedRowRender: record => renderExpandedMessage(record),
                     }}
 
                     columns={filteredColumns}
@@ -778,14 +778,28 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 }
 
 
-function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
-    return <div>
-        {(msg.headers.length > 0) && <MessageHeaders msg={msg} />}
-        <div>{RenderMessageValue(msg, shouldExpand)}</div>
+function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+    return <div className='expandedMessage'>
+        <MessageMetaData msg={msg} />
+
+        {/* .ant-tabs-nav { width: ??; } */}
+        <Tabs animated={false}>
+            <Tabs.TabPane key='value' tab='Value'>
+                {renderMessageValue(msg, shouldExpand)}
+            </Tabs.TabPane>
+            <Tabs.TabPane key='key' tab='Key'>
+                <span className='cellDiv' style={{ width: 'auto' }}>
+                    <code style={{}}>{toSafeString(msg.key)}</code>
+                </span>
+            </Tabs.TabPane>
+            <Tabs.TabPane key='headers' tab='Headers' disabled={msg.headers.length == 0}>
+                <MessageHeaders msg={msg} />
+            </Tabs.TabPane>
+        </Tabs>
     </div>
 }
 
-function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
         if (!msg || !msg.value) return <code>null</code>
         const shouldCollapse = shouldExpand ? shouldExpand : false;
@@ -836,20 +850,40 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
     }
 }
 
+const MessageMetaData = observer((props: { msg: TopicMessage }) => {
+    const msg = props.msg;
+    const data = {
+        "Value": `${titleCase(msg.valueType)} (Schema ID 12345 / ${msg.size} bytes)`,
+        "Key": `${titleCase(msg.keyType)} (msg.keySize)`,
+        "Headers": msg.headers.length > 0 ? `${msg.headers.length}` : "No headers set",
+        "Compression": "(msg.compression)",
+        "Producer ID": "(msg.producerId)",
+    };
+
+    return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
+        {Object.entries(data).map(([k, v]) => <>
+            <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
+                <div style={{ fontWeight: 600 }}>{v}</div>
+                <div style={{ color: 'rgba(0, 0, 0, 0.4)' }}>{k}</div>
+            </div>
+        </>)}
+    </div>
+});
+
 const MessageHeaders = observer((props: { msg: TopicMessage }) => {
-    const headers = props.msg.headers
+    const headers = props.msg.headers;
     const jsonHeaders = headers.map(h => ({
         key: ToJson(h.key),
         value: ToJson(h.value),
         valueEncoding: ToJson(h.valueEncoding)
     }));
-    const showHeaders = uiState.topicSettings.showMessageHeaders;
-    const titleText = (showHeaders ? "Hide" : "Show") + " Message Headers";
+    // const showHeaders = uiState.topicSettings.showMessageHeaders;
+    // const titleText = (showHeaders ? "Hide" : "Show") + " Message Headers";
     return <div className='messageHeaders'>
-        <div className='title'>
+        {/* <div className='title'>
             <span className='titleBtn' onClick={() => uiState.topicSettings.showMessageHeaders = !showHeaders}>{titleText}</span>
-        </div>
-        {showHeaders && QuickTable(jsonHeaders, {
+        </div> */}
+        {QuickTable(jsonHeaders, {
             tableStyle: { width: 'auto', paddingLeft: '1em' },
         })}
     </div>

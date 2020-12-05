@@ -686,6 +686,19 @@ tr.tombstone .ant-table-row-expand-icon {
     text-align: center;
 }
 
+.expandedMessage {
+    .ant-tabs-nav {
+        .ant-tabs-tab {
+            flex: none;
+            padding: 0.6em 3.5em;
+        }
+
+        .ant-tabs-tab-active {
+            background: none;
+        }
+    }
+}
+
 .overflowYOverlay {
     overflow-y: overlay;
 }

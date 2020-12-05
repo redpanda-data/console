@@ -428,3 +428,9 @@ export function simpleUniqueId(prefix?: string) {
 export function uniqueId4(): string {
     return randomId() + randomId() + randomId() + randomId();
 }
+
+
+export function titleCase(str: string): string {
+    if (!str) return str;
+    return str[0].toUpperCase() + str.slice(1);
+}
