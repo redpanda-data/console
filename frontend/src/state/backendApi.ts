@@ -289,7 +289,7 @@ const apiStore = {
                 case 'message':
                     let m = msg.message as TopicMessage;
 
-                    // debug
+                    // debug: remove before merge
                     m.headers.push({
                         key: 'test debug object',
                         value: {
