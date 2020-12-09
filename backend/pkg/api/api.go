@@ -19,11 +19,32 @@ type API struct {
 	GitSvc   *git.Service
 
 	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
+
+	version versionInfo
 }
 
 // New creates a new API instance
 func New(cfg *Config) *API {
 	logger := logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
+
+	version := loadVersionInfo(logger)
+
+	// Print startup message
+	if version.isBusiness {
+		logger.Info("started "+version.productName,
+			zap.String("version", version.gitRef),
+			zap.String("git_sha", version.gitSha),
+			zap.String("built", version.timestampFriendly),
+			zap.String("version_business", version.gitRefBusiness),
+			zap.String("git_sha_business", version.gitShaBusiness),
+		)
+	} else {
+		logger.Info("started "+version.productName,
+			zap.String("version", version.gitRef),
+			zap.String("git_sha", version.gitSha),
+			zap.String("built", version.timestampFriendly),
+		)
+	}
 
 	kafkaSvc, err := kafka.NewService(cfg.Kafka, logger, cfg.MetricsNamespace)
 	if err != nil {
@@ -42,6 +63,7 @@ func New(cfg *Config) *API {
 		OwlSvc:   owl.NewService(logger, kafkaSvc, gitSvc),
 		GitSvc:   gitSvc,
 		Hooks:    newDefaultHooks(),
+		version:  version,
 	}
 }
 

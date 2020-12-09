@@ -1,20 +1,33 @@
 # Changelog
 
-## Master / unreleased
+## unreleased / pending in master
+- [FEATURE] Support setting the listen adress of the webserver (config entry: `server.http.listen-address`, or flag: `listenAddress`). [#150](https://github.com/cloudhut/kowl/issues/150) 
+
+
+## 1.2.2 / 2020-11-23
+- [ENHANCEMENT] Schema registry page has been slightly redesigned so that very complex schemas are more comfortable to inspect
+- [BUGFIX] Fixed rendering errors in schema registry page
+
+## 1.2.1 / 2020-11-16
+- [ENHANCEMENT] Message headers can be expanded/collapsed now
+- [BUGFIX] Kowl now handles message headers containing structured data (JSON) correctly
+
+## 1.2.0 / 2020-11-14
 
 - **[FEATURE] Embed topic documentation using Markdown files from Git repositories ([/docs/features/topic-documentation.md](/docs/features/topic-documentation.md))**
 - **[FEATURE] Support for message headers**
-- **[FEATURE] Support for Okta as an identity provider**
 - **[FEATURE] UI for schema registry (list all registered schemas including schema history)**
 - **[FEATURE] Avro support for deserializing messages**
 - [FEATURE] List all Kafka ACLs
-- [FEATURE] Business: Okta support
-- [FEATURE] Support for hosting under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
+- [FEATURE] Business: Support for Okta as an identity provider
+- [FEATURE] Support for hosting Kowl under a sub-path ([#107](https://github.com/cloudhut/kowl/issues/107) and [#117](https://github.com/cloudhut/kowl/issues/117))
 - [ENHANCEMENT] Possibility to hide the statistics bar
 - [ENHANCEMENT] Support custom certificates for schema registry client
+- [ENHANCEMENT] Show elapsed time and consumed bytes after filtered message consumption is done
 - [BUGFIX] Kowl now shows the error reported by a login provider (should the login fail)
 - [BUGFIX] Better handling for broker restarts on consumer groups and topics page
 - [BUGFIX] Allow all UTF-8 characters in JavaScript filter code
+- [BUGFIX] Inform user about missing clipboard access instead of silent fails on message copy
 
 ## 1.1.0 / 2020-08-06
 

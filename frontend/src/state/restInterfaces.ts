@@ -55,8 +55,8 @@ export interface TopicMessage {
     key: any, // base64 encoded key of the message
 
     headers: {
-        key: string,
-        value: string,
+        key: string | object,
+        value: string | object,
         valueEncoding: MessageDataType // for now: always text
     }[]
 
@@ -67,7 +67,7 @@ export interface TopicMessage {
     isValueNull: boolean, // todo: rename to isTombstone
     // todo: we also need to add: keyType, keySize
     // todo: rename size to valueSize
-    // todo: Tab.Messages.tsx: isFilterMatch(): use 'keyJson' instead
+    // todo: Tab.Messages/index.tsx: isFilterMatch(): use 'keyJson' instead
 
     // Added by the frontend (sometimes)
     valueJson: string,
@@ -235,6 +235,7 @@ export interface UserData {
     user: User;
     seat: Seat;
     canManageKowl: boolean;
+    canListAcls: boolean;
 }
 
 
@@ -449,7 +450,7 @@ export interface Schema {
 
 export interface SchemaField {
     name: string;
-    type: string;
-    doc: string;
-    default?: string;
+    type: string | object | null | undefined;
+    doc?: string | null | undefined;
+    default?: string | object | null | undefined;
 }

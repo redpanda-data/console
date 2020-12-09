@@ -1,11 +1,15 @@
-import React, { FC, Props, CSSProperties } from "react";
+import React, { FC, Props, CSSProperties, Component } from "react";
 import { PropsWithChildren } from "react";
 import { TablePaginationConfig } from "antd/lib/table";
 import { uiSettings } from "../../state/ui";
 import { CompareFn } from "antd/lib/table/interface";
 import Draggable from "react-draggable";
 import { observer } from "mobx-react";
-import { Grid, Tag } from "antd";
+import { Grid, Modal, Tag } from "antd";
+import { uiState } from "../../state/uiState";
+import { hoursToMilliseconds } from "../../utils/utils";
+import env, { IsBusiness } from "../../utils/env";
+import { QuickTable } from "../../utils/tsxUtils";
 
 const { useBreakpoint } = Grid;
 
@@ -105,15 +109,57 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
     }
 }
 
-
-
-
-
-
 export function range(start: number, end: number): number[] {
     const ar = []
     for (let i = start; i < end; i++)
         ar.push(i);
     return ar;
+}
+
+@observer
+export class UpdatePopup extends Component {
+    render() {
+        if (!uiState.serverVersion) return null; // server version not known yet
+        if (uiState.serverVersion == 'dev') return null; // don't show popup in dev
+        if (uiState.updatePromtHiddenUntil !== undefined)
+            if (new Date().getTime() < uiState.updatePromtHiddenUntil)
+                return null; // not yet
+
+        const curVersion = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : 'null (dev)');
+        const curVersionBusiness = (!!env.REACT_APP_KOWL_BUSINESS_GIT_SHA ? env.REACT_APP_KOWL_BUSINESS_GIT_SHA : null);
+        const isFree = !uiState.serverVersionBusiness;
+
+        const tableData = [
+            {
+                key: "Current Version:",
+                value: isFree
+                    ? <span className='codeBox'>{curVersion}</span>
+                    : <><span className='codeBox'>{curVersion}</span>&nbsp;<span className='codeBox'>{curVersionBusiness}</span></>
+            },
+            {
+                key: "Server Version:",
+                value: isFree
+                    ? <span className='codeBox'>{uiState.serverVersion}</span>
+                    : <><span className='codeBox'>{uiState.serverVersion}</span>&nbsp;<span className='codeBox'>{uiState.serverVersionBusiness}</span></>
+            }
+        ];
+
+        return <Modal title='New version available'
+            visible={true}
+            okText='Update' cancelText="Ignore for now"
+            mask={true} closable={false} maskClosable={false} centered={true} keyboard={false}
+            onCancel={() => uiState.updatePromtHiddenUntil = new Date().getTime() + hoursToMilliseconds(4)}
+            onOk={() => window.location.reload()}
+        >
+            <p>
+                The Kowl backend server is running a different version than the frontend.<br />
+                It is reccommended to reload the page to update the frontend.
+            </p>
+            <p>
+                {QuickTable(tableData, { keyAlign: 'right' })}
+            </p>
+            <p>Do you want to reload the page now?</p>
+        </Modal>
+    }
 }
 

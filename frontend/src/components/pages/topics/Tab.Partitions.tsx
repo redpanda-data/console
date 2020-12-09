@@ -23,7 +23,7 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
 
     render() {
         const topic = this.props.topic;
-        let partitions = api.TopicPartitions.get(topic.topicName);
+        let partitions = api.topicPartitions.get(topic.topicName);
         if (!partitions) return DefaultSkeleton;
 
         let warning: JSX.Element = <></>

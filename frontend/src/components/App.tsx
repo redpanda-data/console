@@ -3,7 +3,7 @@ import { observer } from "mobx-react"
 import { Layout, Menu, PageHeader, Button, Tooltip, Popover, Dropdown } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
-import { RenderTrap, DebugDisplay } from './misc/common';
+import { RenderTrap, DebugDisplay, UpdatePopup } from './misc/common';
 import { DebugTimerStore, ToJson } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
@@ -185,7 +185,7 @@ const DataRefreshButton = observer(() => {
         whiteSpace: 'nowrap',
     }}>
         {
-            api.ActiveRequests.length == 0
+            api.activeRequests.length == 0
                 ?
                 <>
                     <Popover title='Force Refresh' content={refreshTextFunc} placement='rightTop' overlayClassName='popoverSmall' >
@@ -257,6 +257,8 @@ const AppContent = observer(() =>
             </ErrorDisplay>
         </Content>
 
+        <UpdatePopup />
+
     </Layout>
 );
 
@@ -298,27 +300,28 @@ export default class App extends Component {
         if (path.startsWith('/login'))
             return null; // already in login process, don't interrupt!
 
-        if (api.UserData === null && !path.startsWith('/login')) {
+        if (api.userData === null && !path.startsWith('/login')) {
             devPrint('known not logged in, hard redirect');
             window.location.pathname = basePathS + '/login'; // definitely not logged in, and in wrong url: hard redirect!
             return preLogin;
         }
 
-        if (api.UserData === undefined) {
+        if (api.userData === undefined) {
             devPrint('user is undefined (probably a fresh page load)');
 
             fetchWithTimeout('./api/users/me', 10 * 1000).then(async r => {
                 if (r.ok) {
                     devPrint('user fetched');
-                    api.UserData = await r.json() as UserData;
+                    api.userData = await r.json() as UserData;
                 } else if (r.status == 401) { // unauthorized / not logged in
                     devPrint('not logged in');
-                    api.UserData = null;
+                    api.userData = null;
                 } else if (r.status == 404) { // not found: server must be non-business version
                     devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging')
                     uiState.isUsingDebugUserLogin = true;
-                    api.UserData = {
+                    api.userData = {
                         canManageKowl: false,
+                        canListAcls: true,
                         seat: null as any,
                         user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                     };
@@ -328,7 +331,7 @@ export default class App extends Component {
             return preLogin;
         } else {
             if (!uiState.isUsingDebugUserLogin)
-                devPrint('user is set: ' + JSON.stringify(api.UserData));
+                devPrint('user is set: ' + JSON.stringify(api.userData));
             return null;
         }
     }

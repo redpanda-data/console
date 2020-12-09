@@ -28,3 +28,5 @@ yarn-error.log*
 .vscode
 
 notes.md
+
+**/utils/interpreter/compiled

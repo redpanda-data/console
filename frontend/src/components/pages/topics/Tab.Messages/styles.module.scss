@@ -1,0 +1,55 @@
+.filterbar {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.filters {
+    width: calc(100% - 200px);
+    display: inline-flex;
+    row-gap: 2px;
+    flex-wrap: wrap;
+}
+
+.filterName {
+    display: inline-block;
+}
+
+.addFilter {
+    vertical-align: middle;
+    margin-top: -3px;
+}
+
+.metaSection {
+    margin-left: auto;
+    width: 200px;
+    display: flex;
+    justify-content: flex-end;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 5px;
+    align-items: center;
+}
+
+.metaSection {
+    .bytesIcon {
+        color: #1890ff;
+    }
+
+    .time {
+        margin-left: 20px;
+    }
+
+    .timeIcon {
+        color: #1890ff;
+    }
+}
+
+.spinner {
+    width: 12px;
+    height: 12px;
+}
+
+.spinnerText {
+    user-select: none;
+    margin-left: 10px;
+}

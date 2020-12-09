@@ -3,12 +3,12 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse,  AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { ToJson, LazyMap, TimeSince } from "../utils/utils";
-import { IsDev, IsBusiness, basePathS } from "../utils/env";
+import { ToJson, LazyMap, TimeSince, clone } from "../utils/utils";
+import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { uiState } from "./uiState";
 import { notification } from "antd";
@@ -38,6 +38,15 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
         return null;
     }
 
+    for (const [k, v] of res.headers) {
+        if (k.toLowerCase() == 'app-version')
+            if (v != env.REACT_APP_KOWL_GIT_SHA)
+                uiState.serverVersion = v;
+        if (k.toLowerCase() == 'app-version-business')
+            if (v != env.REACT_APP_KOWL_BUSINESS_GIT_SHA)
+                uiState.serverVersionBusiness = v;
+    }
+
     if (!res.ok)
         throw new Error("(" + res.status + ") " + res.statusText);
 
@@ -51,7 +60,7 @@ async function handle401(res: Response) {
     // Logout
     //   Clear our 'User' data if we have any
     //   Any old/invalid JWT will be cleared by the server
-    api.UserData = null;
+    api.userData = null;
 
     try {
         const text = await res.text();
@@ -97,14 +106,14 @@ class CacheEntry {
             }
         ).finally(() => {
             self.lastRequestTime = self.timeSinceRequestStarted.value;
-            const index = api.ActiveRequests.indexOf(this);
+            const index = api.activeRequests.indexOf(this);
             if (index > -1) {
-                api.ActiveRequests.splice(index, 1);
+                api.activeRequests.splice(index, 1);
             }
             self.isPending = false;
         });
 
-        api.ActiveRequests.push(this);
+        api.activeRequests.push(this);
     }
 
     lastResult: any | undefined; // set automatically
@@ -169,48 +178,47 @@ let currentWS: WebSocket | null = null;
 const apiStore = {
 
     // Data
-    Clusters: ['A', 'B', 'C'],
-    ClusterInfo: null as (ClusterInfo | null),
-    ClusterConfig: null as (ClusterConfig | null),
-    AdminInfo: null as (AdminInfo | null),
+    clusters: ['A', 'B', 'C'],
+    clusterInfo: null as (ClusterInfo | null),
+    clusterConfig: null as (ClusterConfig | null),
+    adminInfo: null as (AdminInfo | null),
 
-    SchemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
-    SchemaOverviewIsConfigured: undefined as boolean | undefined,
-    SchemaDetails: null as (SchemaDetails | null),
+    schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
+    schemaOverviewIsConfigured: undefined as boolean | undefined,
+    schemaDetails: null as (SchemaDetails | null),
 
-    Topics: null as (TopicDetail[] | null),
-    TopicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
-    TopicDocumentation: new Map<string, string>(),
-    TopicPermissions: new Map<string, TopicPermissions>(),
-    TopicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
-    TopicConsumers: new Map<string, TopicConsumer[]>(),
+    topics: null as (TopicDetail[] | null),
+    topicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
+    topicDocumentation: new Map<string, string>(),
+    topicPermissions: new Map<string, TopicPermissions>(),
+    topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
+    topicConsumers: new Map<string, TopicConsumer[]>(),
 
     ACLs: undefined as AclResource[] | undefined,
 
-    ConsumerGroups: null as (GroupDescription[] | null),
-
+    consumerGroups: null as (GroupDescription[] | null),
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
-    UserData: undefined as (UserData | null | undefined),
+    userData: undefined as (UserData | null | undefined),
     async logout() {
         await fetch('./logout');
-        this.UserData = null;
+        this.userData = null;
     },
 
     // Make currently running requests observable
-    ActiveRequests: [] as CacheEntry[],
+    activeRequests: [] as CacheEntry[],
 
     // Fetch errors
-    Errors: [] as any[],
+    errors: [] as any[],
 
 
-    MessageSearchPhase: null as string | null,
-    MessagesFor: '', // for what topic?
-    Messages: [] as TopicMessage[],
-    MessagesElapsedMs: null as null | number,
-    MessagesBytesConsumed: 0,
-    MessagesTotalConsumed: 0,
+    messageSearchPhase: null as string | null,
+    messagesFor: '', // for what topic?
+    messages: [] as TopicMessage[],
+    messagesElapsedMs: null as null | number,
+    messagesBytesConsumed: 0,
+    messagesTotalConsumed: 0,
 
 
     async startMessageSearch(searchRequest: MessageSearchRequest): Promise<void> {
@@ -229,16 +237,16 @@ const apiStore = {
 
         currentWS = new WebSocket(url);
         const ws = currentWS;
-        this.MessageSearchPhase = "Connecting";
-        this.MessagesBytesConsumed = 0;
-        this.MessagesTotalConsumed = 0;
+        this.messageSearchPhase = "Connecting";
+        this.messagesBytesConsumed = 0;
+        this.messagesTotalConsumed = 0;
 
         currentWS.onopen = ev => {
             if (ws !== currentWS) return; // newer request has taken over
             // reset state for new request
-            this.MessagesFor = searchRequest.topicName;
-            this.Messages = [];
-            this.MessagesElapsedMs = null;
+            this.messagesFor = searchRequest.topicName;
+            this.messages = [];
+            this.messagesElapsedMs = null;
             // send new request
             currentWS.send(JSON.stringify(searchRequest));
         }
@@ -253,19 +261,20 @@ const apiStore = {
 
             switch (msg.type) {
                 case 'phase':
-                    this.MessageSearchPhase = msg.phase;
+                    this.messageSearchPhase = msg.phase;
                     break;
 
                 case 'progressUpdate':
-                    this.MessagesBytesConsumed = msg.bytesConsumed;
-                    this.MessagesTotalConsumed = msg.messagesConsumed;
+                    this.messagesBytesConsumed = msg.bytesConsumed;
+                    this.messagesTotalConsumed = msg.messagesConsumed;
                     break;
 
                 case 'done':
-                    this.MessagesElapsedMs = msg.elapsedMs;
+                    this.messagesElapsedMs = msg.elapsedMs;
+                    this.messagesBytesConsumed = msg.bytesConsumed;
                     // this.MessageSearchCancelled = msg.isCancelled;
-                    this.MessageSearchPhase = "Done";
-                    this.MessageSearchPhase = null;
+                    this.messageSearchPhase = "Done";
+                    this.messageSearchPhase = null;
                     break;
 
                 case 'error':
@@ -307,7 +316,7 @@ const apiStore = {
 
                     //m = observable.object(m, undefined, { deep: false });
 
-                    this.Messages.push(m);
+                    this.messages.push(m);
                     break;
             }
         };
@@ -323,10 +332,10 @@ const apiStore = {
         currentWS.close();
         currentWS = null;
 
-        this.MessageSearchPhase = "Done";
-        this.MessagesBytesConsumed = 0;
-        this.MessagesTotalConsumed = 0;
-        this.MessageSearchPhase = null;
+        this.messageSearchPhase = "Done";
+        this.messagesBytesConsumed = 0;
+        this.messagesTotalConsumed = 0;
+        this.messageSearchPhase = null;
     },
 
     refreshTopics(force?: boolean) {
@@ -344,34 +353,34 @@ const apiStore = {
                     }
                     */
                 }
-                this.Topics = v.topics;
+                this.topics = v.topics;
             }, addError);
     },
 
     refreshTopicConfig(topicName: string, force?: boolean) {
         cachedApiRequest<TopicConfigResponse>(`./api/topics/${topicName}/configuration`, force)
-            .then(v => this.TopicConfig.set(topicName, v?.topicDescription?.configEntries ?? null), addError);
+            .then(v => this.topicConfig.set(topicName, v?.topicDescription?.configEntries ?? null), addError);
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
         cachedApiRequest<TopicDocumentationResponse>(`./api/topics/${topicName}/documentation`, force)
-            .then(v => this.TopicDocumentation.set(topicName, atob(v.documentation.markdown)), addError);
+            .then(v => this.topicDocumentation.set(topicName, atob(v.documentation.markdown)), addError);
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
         if (!IsBusiness) return; // permissions endpoint only exists in kowl-business
         cachedApiRequest<TopicPermissions>(`./api/permissions/topics/${topicName}`, force)
-            .then(x => this.TopicPermissions.set(topicName, x ?? null), addError);
+            .then(x => this.topicPermissions.set(topicName, x ?? null), addError);
     },
 
     refreshTopicPartitions(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse>(`./api/topics/${topicName}/partitions`, force)
-            .then(v => this.TopicPartitions.set(topicName, v?.partitions ?? null), addError);
+            .then(v => this.topicPartitions.set(topicName, v?.partitions ?? null), addError);
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
         cachedApiRequest<GetTopicConsumersResponse>(`./api/topics/${topicName}/consumers`, force)
-            .then(v => this.TopicConsumers.set(topicName, v.topicConsumers), addError);
+            .then(v => this.topicConsumers.set(topicName, v.topicConsumers), addError);
     },
 
     refreshAcls(request: AclRequest, force?: boolean) {
@@ -382,12 +391,12 @@ const apiStore = {
 
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
-            .then(v => this.ClusterInfo = v.clusterInfo, addError);
+            .then(v => this.clusterInfo = v.clusterInfo, addError);
     },
 
     refreshClusterConfig(force?: boolean) {
         cachedApiRequest<ClusterConfigResponse>(`./api/cluster/config`, force)
-            .then(v => this.ClusterConfig = v.clusterConfig, addError);
+            .then(v => this.clusterConfig = v.clusterConfig, addError);
     },
 
     refreshConsumerGroups(force?: boolean) {
@@ -396,7 +405,7 @@ const apiStore = {
                 for (const g of v.consumerGroups) {
                     g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
                 }
-                this.ConsumerGroups = v.consumerGroups;
+                this.consumerGroups = v.consumerGroups;
             }, addError);
     },
 
@@ -431,19 +440,19 @@ const apiStore = {
                         });
                 }
 
-                this.AdminInfo = info;
+                this.adminInfo = info;
             }, addError);
     },
 
     refreshSchemaOverview(force?: boolean) {
         getSchemaOverview(force)
-            .then(({ schemaOverview, isConfigured }) => [this.SchemaOverview, this.SchemaOverviewIsConfigured] = [schemaOverview, isConfigured])
+            .then(({ schemaOverview, isConfigured }) => [this.schemaOverview, this.schemaOverviewIsConfigured] = [schemaOverview, isConfigured])
             .catch(addError)
     },
 
     refreshSchemaDetails(subjectName: string, version: number, force?: boolean) {
         getSchemaDetails(subjectName, version, force)
-            .then(({ schemaDetails }) => (this.SchemaDetails = schemaDetails))
+            .then(({ schemaDetails }) => (this.schemaDetails = schemaDetails))
             .catch(addError)
     }
 }
@@ -464,7 +473,7 @@ export interface MessageSearchRequest {
 
 
 function addError(err: Error) {
-    api.Errors.push(err);
+    api.errors.push(err);
     // notification['error']({
     // 	message: 'REST: ' + err.name,
     // 	description: err.message,
@@ -474,7 +483,7 @@ function addError(err: Error) {
 
 
 type apiStoreType = typeof apiStore;
-export const api = observable(apiStore, { Messages: observable.shallow }) as apiStoreType;
+export const api = observable(apiStore, { messages: observable.shallow }) as apiStoreType;
 
 /*
 autorun(r => {

@@ -1,44 +1,43 @@
-import { Component, ReactNode } from "react";
-import React from "react";
-import { TopicDetail, TopicMessage } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Popover, Button, Select, Input, Typography, message, Tag, Alert, Empty, ConfigProvider, Modal, AutoComplete, Space, Switch, Menu, Dropdown } from "antd";
-import { observer } from "mobx-react";
-import { api } from "../../../state/backendApi";
-import { PreviewTag, TopicOffsetOrigin, FilterEntry, ColumnList } from "../../../state/ui";
-import ReactJson, { CollapsedFieldProps } from 'react-json-view'
-import prettyBytes from 'pretty-bytes';
-import { sortField, range, makePaginationConfig } from "../../misc/common";
-import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction, autorun, IReactionDisposer, untracked } from "mobx";
-import { findElementDeep, cullText, ToJson } from "../../../utils/utils";
-import { MotionDiv, MotionSpan, animProps_span_messagesStatus } from "../../../utils/animationProps";
-import Paragraph from "antd/lib/typography/Paragraph";
+import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
+import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
-import '../../../utils/arrayExtensions';
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { uiState } from "../../../state/uiState";
-import qs from 'query-string';
-import { parse as parseUrl, format as formatUrl } from "url";
-import { editQuery } from "../../../utils/queryHelper";
-import { filterConverter, sanitizeString } from "../../../utils/filterHelper";
-import { numberToThousandsString, Label, OptionGroup, StatusIndicator, LayoutBypass, TimestampDisplay, QuickTable } from "../../../utils/tsxUtils";
-import { SyncIcon, XCircleIcon, PlusIcon, SkipIcon } from '@primer/octicons-v2-react'
-
-import queryString from 'query-string';
-import { SettingOutlined, FilterOutlined, DeleteOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, EllipsisOutlined } from '@ant-design/icons';
 import { SortOrder } from "antd/lib/table/interface";
-import { IsDev } from "../../../utils/env";
-
-import Editor from 'react-simple-code-editor';
-
+import Paragraph from "antd/lib/typography/Paragraph";
+import { AnimatePresence, motion } from "framer-motion";
+import { autorun, computed, IReactionDisposer, observable, transaction, untracked } from "mobx";
+import { observer } from "mobx-react";
+import prettyBytes from 'pretty-bytes';
+import prettyMilliseconds from "pretty-ms";
 import Prism, { languages as PrismLanguages } from "prismjs";
-import 'prismjs/prism.js';
 import 'prismjs/components/prism-javascript';
-import "prismjs/components/prism-js-extras"
+import "prismjs/components/prism-js-extras";
+import 'prismjs/prism.js';
 import 'prismjs/themes/prism.css';
-import { KowlJsonView } from "../../misc/KowlJsonView";
-
-
+import queryString from 'query-string';
+import React, { Component, ReactNode } from "react";
+import { CollapsedFieldProps } from 'react-json-view';
+import Editor from 'react-simple-code-editor';
+import { format as formatUrl, parse as parseUrl } from "url";
+import { api } from "../../../../state/backendApi";
+import { TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
+import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
+import { uiState } from "../../../../state/uiState";
+import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
+import '../../../../utils/arrayExtensions';
+import { IsDev } from "../../../../utils/env";
+import { isClipboardAvailable } from "../../../../utils/featureDetection";
+import { FilterableDataSource } from "../../../../utils/filterableDataSource";
+import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
+import { editQuery } from "../../../../utils/queryHelper";
+import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../../utils/tsxUtils";
+import { cullText, findElementDeep, ToJson } from "../../../../utils/utils";
+import { makePaginationConfig, range, sortField } from "../../../misc/common";
+import { KowlJsonView } from "../../../misc/KowlJsonView";
+import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
+import styles from './styles.module.scss';
+import filterExample1 from '../../../../assets/filter-example-1.png';
+import filterExample2 from '../../../../assets/filter-example-2.png';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -61,7 +60,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     @observable fetchError = null as Error | null;
 
     pageConfig = makePaginationConfig(uiState.topicSettings.messagesPageSize);
-    messageSource = new FilterableDataSource<TopicMessage>(() => api.Messages, this.isFilterMatch, 16);
+    messageSource = new FilterableDataSource<TopicMessage>(() => api.messages, this.isFilterMatch, 16);
 
     autoSearchReaction: IReactionDisposer | null = null;
     quickSearchReaction: IReactionDisposer | null = null;
@@ -76,7 +75,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     componentDidMount() {
         // unpack query parameters (if any)
         const searchParams = uiState.topicSettings.searchParams;
-        const query = qs.parse(window.location.search);
+        const query = queryString.parse(window.location.search);
         console.log("parsing query: " + ToJson(query));
         if (query.p != null) searchParams.partitionID = Number(query.p);
         if (query.s != null) searchParams.maxResults = Number(query.s);
@@ -161,7 +160,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
         const spaceStyle = { marginRight: '16px', marginTop: '12px' };
-        const canUseFilters = api.TopicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
+        const canUseFilters = api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
 
         return <React.Fragment>
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -203,7 +202,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </Select>
                 </Label>
                 <Label text='Filter' style={{ ...spaceStyle }}>
-                    <div style={{ height: '32px', paddingTop: '3px' }}>
+                    <div style={{ height: '32px', paddingTop: '4px' }}>
                         <Tooltip title="You don't have permissions to use search filters in this topic" trigger={canUseFilters ? 'none' : 'hover'}>
                             <Switch checked={searchParams.filtersEnabled && canUseFilters} onChange={v => searchParams.filtersEnabled = v} disabled={!canUseFilters} />
                         </Tooltip>
@@ -215,7 +214,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     <div style={{ display: 'flex' }}>
 
                         <AnimatePresence>
-                            {api.MessageSearchPhase == null &&
+                            {api.messageSearchPhase == null &&
                                 <MotionSpan identityKey='btnRefresh' overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title='Repeat current search'>
                                         <Button type='primary' onClick={() => this.searchFunc('manual')}>
@@ -224,7 +223,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                                     </Tooltip>
                                 </MotionSpan>
                             }
-                            {api.MessageSearchPhase != null &&
+                            {api.messageSearchPhase != null &&
                                 <MotionSpan identityKey='btnCancelSearch' overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title='Stop searching'>
                                         <Button type='primary' danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
@@ -251,14 +250,14 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
                 {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                 {
-                    Boolean(api.MessageSearchPhase && api.MessageSearchPhase.length > 0) &&
+                    Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&
                     <StatusIndicator
                         identityKey='messageSearch'
-                        fillFactor={(api.Messages?.length ?? 0) / searchParams.maxResults}
-                        statusText={api.MessageSearchPhase!}
-                        progressText={`${api.Messages?.length ?? 0} / ${searchParams.maxResults}`}
-                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.MessagesBytesConsumed) : undefined}
-                        messagesConsumed={searchParams.filtersEnabled ? String(api.MessagesTotalConsumed) : undefined}
+                        fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults}
+                        statusText={api.messageSearchPhase!}
+                        progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`}
+                        bytesConsumed={searchParams.filtersEnabled ? prettyBytes(api.messagesBytesConsumed) : undefined}
+                        messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined}
                     />
 
                 }
@@ -321,7 +320,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (this.currentSearchRun)
             return console.log(`searchFunc: function already in progress (trigger:${source})`);
 
-        const phase = untracked(() => api.MessageSearchPhase);
+        const phase = untracked(() => api.messageSearchPhase);
         if (phase)
             return console.log(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
 
@@ -356,7 +355,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             return null;
         }
 
-        const displayText = this.messageSource.data.length == api.Messages.length
+        const displayText = this.messageSource.data.length == api.messages.length
             ? 'Filter matched all messages'
             : <><b>{this.messageSource.data.length}</b> results</>;
 
@@ -400,16 +399,17 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         const copyDropdown = (record: TopicMessage) => (
             <Menu>
-                <Menu.Item key="0" onClick={() => this.copyMessage(record, "key")}>
+                <Menu.Item key="0" onClick={() => this.copyMessage(record, 'key')}>
                     Copy Key
                 </Menu.Item>
-                <Menu.Item key="1" onClick={() => this.copyMessage(record, "rawValue")}>
+
+                <Menu.Item key="1" onClick={() => this.copyMessage(record, 'rawValue')}>
                     Copy Value (Raw)
                 </Menu.Item>
-                <Menu.Item key="2" onClick={() => this.copyMessage(record, "jsonValue")}>
+                <Menu.Item key="2" onClick={() => this.copyMessage(record, 'jsonValue')}>
                     Copy Value (JSON Format)
                 </Menu.Item>
-                <Menu.Item key="4" onClick={() => this.copyMessage(record, "timestamp")}>
+                <Menu.Item key="4" onClick={() => this.copyMessage(record, 'timestamp')}>
                     Copy Epoch Timestamp
                 </Menu.Item>
             </Menu>
@@ -448,10 +448,14 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     </Tooltip>
                 },
                 render: (text, record) => !record.isValueNull && (
-                    <Dropdown overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
-                        <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle' }} type='link'
-                            icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
-                    </Dropdown>
+                    <NoClipboardPopover placement='left'>
+                        <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
+                            <Dropdown disabled={!isClipboardAvailable} overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
+                                <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle', pointerEvents: isClipboardAvailable ? 'auto' : 'none' }} type='link'
+                                    icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
+                            </Dropdown>
+                        </div>
+                    </NoClipboardPopover>
                     // <ZeroSizeWrapper width={32} height={0}>
                     //     <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
                     // </ZeroSizeWrapper>
@@ -567,7 +571,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
-        const canUseFilters = api.TopicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
+        const canUseFilters = api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
 
         if (searchParams.offsetOrigin != TopicOffsetOrigin.Custom)
             searchParams.startOffset = searchParams.offsetOrigin;
@@ -588,7 +592,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 functionNames.push(name);
                 functions.push(`
 function ${name}() {
-    ${filterConverter(e.code)}
+    ${wrapFilterFragment(e.code)}
 }`);
             });
 
@@ -776,7 +780,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 
 function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     return <div>
-        {(msg.headers.length > 0) && RenderMessageHeaders(msg)}
+        {(msg.headers.length > 0) && <MessageHeaders msg={msg} />}
         <div>{RenderMessageValue(msg, shouldExpand)}</div>
     </div>
 }
@@ -832,14 +836,24 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
     }
 }
 
-function RenderMessageHeaders(msg: TopicMessage) {
+const MessageHeaders = observer((props: { msg: TopicMessage }) => {
+    const headers = props.msg.headers
+    const jsonHeaders = headers.map(h => ({
+        key: ToJson(h.key),
+        value: ToJson(h.value),
+        valueEncoding: ToJson(h.valueEncoding)
+    }));
+    const showHeaders = uiState.topicSettings.showMessageHeaders;
+    const titleText = (showHeaders ? "Hide" : "Show") + " Message Headers";
     return <div className='messageHeaders'>
-        <div className='title'>Message Headers</div>
-        {QuickTable(msg.headers, {
+        <div className='title'>
+            <span className='titleBtn' onClick={() => uiState.topicSettings.showMessageHeaders = !showHeaders}>{titleText}</span>
+        </div>
+        {showHeaders && QuickTable(jsonHeaders, {
             tableStyle: { width: 'auto', paddingLeft: '1em' },
         })}
     </div>
-}
+});
 
 @observer
 class PreviewSettings extends Component<{ allCurrentKeys: string[], getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
@@ -1002,6 +1016,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
     render() {
 
         const tagSuggestions = this.props.allCurrentKeys.filter(k => this.props.tags.all(t => t.value != k));
+        console.log('tag suggestions', this.props.allCurrentKeys)
 
         return <>
             <AnimatePresence>
@@ -1027,9 +1042,7 @@ class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: stri
                             }}>
                                 <AutoComplete
                                     ref={r => { if (r) { r.focus(); } }}
-
-                                    dataSource={tagSuggestions}
-
+                                    options={tagSuggestions.map(t => ({ label: t, value: t }))}
                                     size="small"
                                     style={{ width: 130 }}
                                     value={this.inputValue}
@@ -1141,9 +1154,11 @@ const helpEntries = [
         <li><span className='codeBox'>value</span> (object)</li>
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li><span className='codeBox'>offset &gt; 10000</span></li>
-        <li><span className='codeBox'>if (key == 'example') return true</span></li>
-        <li><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>offset &gt; 10000</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>if (key == 'example') return true</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} loading='lazy' /></div></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} loading='lazy' /></div></li>
     </ul>),
 ].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
 
@@ -1175,46 +1190,67 @@ class MessageSearchFilterBar extends Component {
     render() {
         const settings = uiState.topicSettings.searchParams;
 
-        return <div style={{ display: 'flex', flexWrap: 'wrap', flexDirection: 'row' }}>
+        return <div className={styles.filterbar}>
 
-            {/* Existing Tags List  */}
-            {settings.filters?.map(e =>
-                <Tag
-                    style={{ userSelect: 'none' }}
-                    className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
-                    key={e.id}
-                    closable
-                    color={e.isActive ? 'blue' : undefined}
-                    onClose={() => settings.filters.remove(e)}
-                >
-                    <SettingOutlined
-                        className='settingIconFilter'
-                        onClick={() => {
-                            this.currentIsNew = false;
-                            this.currentFilterBackup = ToJson(e);
-                            this.currentFilter = e;
-                            this.hasChanges = false;
-                        }}
-                    />
-                    <span className='filterName' style={{ display: 'inline-block' }} onClick={() => e.isActive = !e.isActive}>
-                        {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+            <div className={styles.filters}>
+                {/* Existing Tags List  */}
+                {settings.filters?.map(e =>
+                    <Tag
+                        style={{ userSelect: 'none' }}
+                        className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
+                        key={e.id}
+                        closable
+                        color={e.isActive ? 'blue' : undefined}
+                        onClose={() => settings.filters.remove(e)}
+                    >
+                        <SettingOutlined
+                            className='settingIconFilter'
+                            onClick={() => {
+                                this.currentIsNew = false;
+                                this.currentFilterBackup = ToJson(e);
+                                this.currentFilter = e;
+                                this.hasChanges = false;
+                            }}
+                        />
+                        <span className={`filterName ${styles.filterName}`} onClick={() => e.isActive = !e.isActive}>
+                            {e.name ? e.name : (e.code ? e.code : 'New Filter')}
+                        </span>
+                    </Tag>
+                )}
+
+                {/* Add Filter Button */}
+                <Tag onClick={() => transaction(() => {
+                    this.currentIsNew = true;
+                    this.currentFilterBackup = null;
+                    this.currentFilter = new FilterEntry();
+                    this.hasChanges = false;
+                    settings.filters.push(this.currentFilter);
+                })}>
+                    <span className={styles.addFilter}> {/* marginRight: '4px' */}
+                        <PlusIcon size='small' />
                     </span>
+                    {/* <span>New Filter</span> */}
                 </Tag>
-            )}
+            </div>
 
-            {/* Add Filter Button */}
-            <Tag onClick={() => transaction(() => {
-                this.currentIsNew = true;
-                this.currentFilterBackup = null;
-                this.currentFilter = new FilterEntry();
-                this.hasChanges = false;
-                settings.filters.push(this.currentFilter);
-            })}>
-                <span style={{ verticalAlign: 'middle', marginTop: '-3px', }}> {/* marginRight: '4px' */}
-                    <PlusIcon size='small' />
-                </span>
-                {/* <span>New Filter</span> */}
-            </Tag>
+            {console.log(api.messageSearchPhase)}
+
+            {api.messageSearchPhase === null || api.messageSearchPhase === 'Done'
+                ? (
+                    <div className={styles.metaSection}>
+                        <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(api.messagesBytesConsumed)}</span>
+                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {prettyMilliseconds(api.messagesElapsedMs || -1)}</span>
+                    </div>
+                )
+                : (
+                    <div className={`${styles.metaSection} ${styles.isLoading}`}>
+                        <span className={`spinner ${styles.spinner}`} />
+                        <span className={`pulsating ${styles.spinnerText}`}>Fetching data...</span>
+                    </div>
+                )
+            }
+
+
 
 
             {/* Editor */}

@@ -5,6 +5,9 @@ import { ToJson } from "../../utils/utils";
 import { Button, Layout, message, Space } from "antd";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { envVarDebugAr } from "../../utils/env";
+import { NoClipboardPopover } from "./NoClipboardPopover";
+import { isClipboardAvailable } from "../../utils/featureDetection";
+import { ObjToKv } from "../../utils/tsxUtils";
 
 const { Content, Footer, Sider, Header } = Layout;
 
@@ -91,6 +94,23 @@ export class ErrorBoundary extends React.Component {
             this.infoItems.push({ name: "Environment", value: "(error retreiving env list)" });
         }
 
+        // Location
+        try {
+            const loc = ObjToKv({
+                "Protocol": window?.location?.protocol ?? '<null>',
+                "Path": window?.location?.pathname ?? '<null>',
+                "Search": window?.location?.search ?? '<null>',
+                "Hash": window?.location?.hash ?? '<null>',
+            })
+            const pad = loc.max(e => e.key.length);
+            this.infoItems.push({
+                name: "Location",
+                value: ObjToKv(loc).map(e => e.key.padEnd(pad) + ': ' + e.value).join("\n")
+            })
+        } catch (ex) {
+            this.infoItems.push({ name: "Location", value: "(error printing location, please include the url in your bug report)" });
+        }
+
 
         // Remove indentation from stack traces
         for (const e of this.infoItems)
@@ -127,9 +147,11 @@ export class ErrorBoundary extends React.Component {
                     <Button icon={<CloseOutlined />} type='primary' size='large' style={{ width: '16rem' }} onClick={() => this.dismiss()}>
                         Dismiss
                     </Button>
-                    <Button icon={<CopyOutlined />} ghost type='primary' size='large' onClick={() => this.copyError()}>
-                        Copy Info
-                    </Button>
+                    <NoClipboardPopover>
+                        <Button icon={<CopyOutlined />} ghost type='primary' size='large' disabled={!isClipboardAvailable} onClick={() => this.copyError()}>
+                            Copy Info
+                        </Button>
+                    </NoClipboardPopover>
                 </Space>
             </div>
             <Content>

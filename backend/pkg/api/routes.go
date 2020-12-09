@@ -59,6 +59,7 @@ func (api *API) routes() *chi.Mux {
 
 		// API routes
 		router.Group(func(r chi.Router) {
+			r.Use(createSetVersionInfoHeader(api.version))
 			api.Hooks.Route.ConfigAPIRouter(r)
 
 			r.Route("/api", func(r chi.Router) {

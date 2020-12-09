@@ -1,16 +1,11 @@
 import { observable, autorun } from "mobx";
-import { touch, assignDeep, randomId, simpleUniqueId, uniqueId4 } from "../utils/utils";
+import { touch, assignDeep, randomId, simpleUniqueId, uniqueId4, clone } from "../utils/utils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
+import { AclRequest, AclRequestDefault } from "./restInterfaces";
 
 const settingsName = 'uiSettings-v3';
 
-
-/*
-	todo:
-	- remember UI settings using local storage
-	- topic: message filter, display settings, ...
-*/
 
 export interface PreviewTag {
     value: string;
@@ -54,6 +49,7 @@ export class FilterEntry {
     @observable code: string = 'return true\n//allow all messages'; // js code the user entered
 }
 
+
 export type TimestampDisplayFormat = 'default' | 'onlyDate' | 'onlyTime' | 'unixSeconds' | 'relative';
 export enum TopicOffsetOrigin { EndMinusResults = -1, Start = -2, End = -3, Custom = 0 }
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams']
@@ -81,6 +77,7 @@ export class TopicDetailsSettings {
     @observable previewShowResultCount = false;
     // @observable previewResultLimit: 3; // todo
     @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
+    @observable showMessageHeaders = false;
 
     @observable previewTimestamps = 'default' as TimestampDisplayFormat;
     @observable previewColumnFields = [] as ColumnList[];
@@ -130,9 +127,15 @@ const uiSettings = observable({
         showStatisticsBar: true,
     },
 
+    aclSearchParams: clone(AclRequestDefault) as AclRequest,
+
     schemaList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
         quickSearch: ''
+    },
+
+    schemaDetails: {
+        viewMode: 'fields' as 'json' | 'fields',
     },
 
     previewNotificationHideUntil: 0, // utc seconds

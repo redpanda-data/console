@@ -31,7 +31,7 @@ const { Text } = Typography;
 // Full topic configuration
 export const TopicConfiguration = observer(
     (p: { topic: TopicDetail }) => {
-        const config = api.TopicConfig.get(p.topic.topicName);
+        const config = api.topicConfig.get(p.topic.topicName);
 
         return <>
             <ConfigDisplaySettings />

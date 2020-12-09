@@ -64,11 +64,24 @@ code {
 .icon-container {
     position: absolute;
     width: auto;
-    transform: translateX(-85%);
+    transform: translateX(-80%) translateY(-1px);
+
+    .expanded-icon {
+        display: inline-block;
+        transform: translateX(-2px);
+    }
 }
 
 span>.icon-container~span {
     display: inline !important;
+}
+
+.node-ellipsis {
+    line-height: 0px !important;
+}
+
+.object-meta-data {
+    user-select: none;
 }
 
 /* - fix root indenting */
@@ -562,13 +575,44 @@ span>.icon-container~span {
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
-.ant-menu-dark .ant-menu-item>a {
+.ant-menu-dark .ant-menu-item a {
     color: hsla(205, 50%, 70%, 60%);
 }
 
 .ant-menu.ant-menu-dark .ant-menu-item-selected,
 .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
     background-color: hsla(209, 70%, 55%, 0.6);
+}
+
+.ant-menu-item-disabled {
+    cursor: default;
+    user-select: none;
+}
+
+.ant-menu-dark .ant-menu-item a::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: hsla(0deg, 0%, 0%, 0%);
+    content: '';
+}
+
+.ant-menu-dark .ant-menu-item-disabled a {
+    color: hsl(205deg, 50%, 70%) !important;
+}
+
+.ant-menu-dark .ant-menu-item-disabled {
+    opacity: .5;
+}
+
+.menu-permission-tooltip {
+    user-select: none;
+
+    .ant-tooltip-arrow {
+        display: none;
+    }
 }
 
 .ant-checkbox-wrapper {
@@ -1257,19 +1301,40 @@ svg {
 }
 
 .messageHeaders {
-    margin-bottom: 2em;
+    margin-bottom: 1.5em;
     margin-top: .5em;
-    padding-bottom: 1em;
+    padding-bottom: .5em;
     border-bottom: 1px solid #ddd;
 
     .title {
-        padding-bottom: 8px;
+        padding-bottom: 6px;
         font-family: "Open Sans", sans-serif;
         font-size: 11px;
         font-weight: 600;
         // padding-left: 2px;
         color: hsla(0, 0%, 50%, 1);
-        cursor: default;
+
+        .titleBtn {
+            border: 1px solid transparent;
+            padding: 3px 6px;
+            border-radius: 3px;
+
+            cursor: pointer;
+            user-select: none;
+
+            transition: background-color 80ms ease-out, border-color 80ms ease-out, color 80ms ease-out;
+
+            &:hover {
+                color: hsl(205, 100%, 50%);
+                background-color: hsla(0, 0%, 100%, 0.85);
+                border-color: hsla(205, 100%, 50%, 1);
+            }
+        }
+    }
+
+    .quickTable {
+        margin-bottom: .5rem;
+        margin-top: .5rem;
     }
 
     .keyCell {

@@ -27,7 +27,7 @@ export class TopicConsumers extends Component<{ topic: TopicDetail }> {
     pageConfig = makePaginationConfig(20);
 
     render() {
-        const consumers = api.TopicConsumers.get(this.props.topic.topicName);
+        const consumers = api.topicConsumers.get(this.props.topic.topicName);
         if (!consumers) return DefaultSkeleton;
 
         return <div>

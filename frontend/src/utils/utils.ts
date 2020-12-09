@@ -291,12 +291,11 @@ export function containsIgnoreCase(str: string, search: string): boolean {
     return str.toLowerCase().indexOf(search.toLowerCase()) >= 0;
 }
 
+
 const collator = new Intl.Collator(undefined, {
     usage: 'search',
     sensitivity: 'base',
 });
-
-
 type FoundProperty = { propertyName: string, path: string[], value: any }
 type PropertySearchOptions = { caseSensitive: boolean, returnFirstResult: boolean; }
 type PropertySearchResult = 'continue' | 'abort';
@@ -333,7 +332,6 @@ function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchR
 
         // descend into object
         if (typeof value === 'object') {
-
             ctx.currentPath.push(key);
             const childResult = findElementDeep2(ctx, value);
             ctx.currentPath.pop();
