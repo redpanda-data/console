@@ -230,6 +230,8 @@ github.com/twmb/franz-go v0.6.2-0.20201119224310-5b3da022e837 h1:hyiTrn/YY/eyD9N
 github.com/twmb/franz-go v0.6.2-0.20201119224310-5b3da022e837/go.mod h1:3WEjsC9414FVKTzxWI34JWmEt1Tz1bbgHr0DIp31QxY=
 github.com/twmb/franz-go v0.6.2-0.20201119231517-5370cb5bc301 h1:jMK0Btisi31KfpZNyfPsZah/S7/ELZj9mIStWTNOfc0=
 github.com/twmb/franz-go v0.6.2-0.20201119231517-5370cb5bc301/go.mod h1:3WEjsC9414FVKTzxWI34JWmEt1Tz1bbgHr0DIp31QxY=
+github.com/twmb/franz-go v0.6.2-0.20201204214010-95450a007840 h1:C2fs7Mc37oGQ3myLvm4yRI75bLjzFl6sR5UDzr6ynJM=
+github.com/twmb/franz-go v0.6.2-0.20201204214010-95450a007840/go.mod h1:3WEjsC9414FVKTzxWI34JWmEt1Tz1bbgHr0DIp31QxY=
 github.com/twmb/go-rbtree v1.0.0 h1:KxN7dXJ8XaZ4cvmHV1qqXTshxX3EBvX/toG5+UR49Mg=
 github.com/twmb/go-rbtree v1.0.0/go.mod h1:UlIAI8gu3KRPkXSobZnmJfVwCJgEhD/liWzT5ppzIyc=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
