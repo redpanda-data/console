@@ -11,6 +11,7 @@ export interface BreadcrumbEntry {
     linkTo: string;
 }
 
+
 class UIState {
     @observable private _pageTitle: string = ' '
     @computed get pageTitle() { return this._pageTitle; }

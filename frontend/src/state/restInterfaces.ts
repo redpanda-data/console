@@ -21,6 +21,8 @@ export class GetTopicsResponse {
     topics: TopicDetail[];
 }
 
+
+
 export interface Partition {
     id: number;
     waterMarkLow: number;

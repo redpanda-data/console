@@ -19,11 +19,12 @@ import { SettingsPage } from "./pages/Settings";
 import AdminPage from "./pages/admin/AdminPage";
 import { api } from "../state/backendApi";
 import { DebugTimerStore, ToJson } from "../utils/utils";
-import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, PartitionOutlined, UnorderedListOutlined, FileProtectOutlined } from '@ant-design/icons';
+import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, PartitionOutlined, UnorderedListOutlined, FileProtectOutlined, QuestionCircleFilled } from '@ant-design/icons';
 import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
 import { observable } from "mobx";
+import ReassignPartitions from "./pages/brokers/ReassignPartitions";
 
 
 //
@@ -207,6 +208,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <HddOutlined />),
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <QuestionCircleFilled />),
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', <ProfileOutlined />),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics', <ProfileOutlined />),
