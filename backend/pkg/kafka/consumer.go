@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/interpreter"
 	"github.com/dop251/goja"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
@@ -203,7 +204,11 @@ func (s *Service) setupInterpreter(interpreterCode string) (func(args interprete
 		return nil, fmt.Errorf("failed to compile given interpreter code: %w", err)
 	}
 
-	// TODO: Add call to add find function
+	// Make find() function available inside of the JavaScript VM
+	_, err = vm.RunString(interpreter.FindFunction)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile findFunction: %w", err)
+	}
 
 	// We use named return parameter here because this way we can return a error message in recover().
 	// Returning a proper error is important because we want to stop the consumer for this partition
