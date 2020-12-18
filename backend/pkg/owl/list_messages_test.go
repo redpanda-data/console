@@ -9,7 +9,7 @@ import (
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {
 	// Request less messages than we have partitions
-	marks := map[int32]*kafka.WaterMark{
+	marks := map[int32]*kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 10},
 		2: {PartitionID: 2, Low: 10, High: 30},
@@ -35,7 +35,7 @@ func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) 
 
 func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 	// Unbalanced message distribution across 3 partitions
-	marks := map[int32]*kafka.WaterMark{
+	marks := map[int32]*kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 11},
 		2: {PartitionID: 2, Low: 10, High: 31},
@@ -60,7 +60,7 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 }
 
 func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
-	marks := map[int32]*kafka.WaterMark{
+	marks := map[int32]*kafka.PartitionMarks{
 		14: {PartitionID: 14, Low: 100, High: 301},
 	}
 	lowMark := marks[14].Low
@@ -128,7 +128,7 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
 	// Request less messages than we have partitions, if filter code is set we handle consume requests different than
 	// usual - as we don't care about the distribution between partitions.
-	marks := map[int32]*kafka.WaterMark{
+	marks := map[int32]*kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 300},
 		2: {PartitionID: 2, Low: 0, High: 300},

@@ -2,9 +2,9 @@ package owl
 
 import (
 	"context"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"sort"
 
-	"github.com/Shopify/sarama"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -16,22 +16,22 @@ type ClusterInfo struct {
 
 // Broker described by some basic broker properties
 type Broker struct {
-	BrokerID   int32  `json:"brokerId"`
-	LogDirSize int64  `json:"logDirSize"`
-	Address    string `json:"address"`
-	Rack       string `json:"rack"`
+	BrokerID   int32   `json:"brokerId"`
+	LogDirSize int64   `json:"logDirSize"`
+	Address    string  `json:"address"`
+	Rack       *string `json:"rack"`
 }
 
 // GetClusterInfo returns generic information about all brokers in a Kafka cluster and returns them
 func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	eg, _ := errgroup.WithContext(ctx)
 
-	var sizeByBroker map[int32]int64
-	var metadata *sarama.MetadataResponse
+	var logDirsByBroker map[int32]LogDirsByBroker
+	var metadata *kmsg.MetadataResponse
 
 	eg.Go(func() error {
 		var err error
-		sizeByBroker, err = s.logDirSizeByBroker()
+		logDirsByBroker, err = s.logDirsByBroker(ctx)
 		if err != nil {
 			return err
 		}
@@ -40,7 +40,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	eg.Go(func() error {
 		var err error
-		metadata, err = s.kafkaSvc.DescribeCluster()
+		metadata, err = s.kafkaSvc.GetMetadata(ctx, nil)
 		if err != nil {
 			return err
 		}
@@ -53,15 +53,15 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	brokers := make([]*Broker, len(metadata.Brokers))
 	for i, broker := range metadata.Brokers {
 		size := int64(-1)
-		if value, ok := sizeByBroker[broker.ID()]; ok {
-			size = value
+		if value, ok := logDirsByBroker[broker.NodeID]; ok {
+			size = value.TotalSizeBytes
 		}
 
 		brokers[i] = &Broker{
-			BrokerID:   broker.ID(),
+			BrokerID:   broker.NodeID,
 			LogDirSize: size,
-			Address:    broker.Addr(),
-			Rack:       broker.Rack(),
+			Address:    broker.Host,
+			Rack:       broker.Rack,
 		}
 	}
 	sort.Slice(brokers, func(i, j int) bool {
