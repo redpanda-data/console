@@ -1,6 +1,8 @@
 # Changelog
 
 ## unreleased / pending in master
+
+- [CHANGE] We removed the Kafka library and replaced it with [franz-go}(https://github.com/twmb/franz-go). This allows us to add a lot more features in the future.
 - [FEATURE] Support setting the listen adress of the webserver (config entry: `server.http.listen-address`, or flag: `listenAddress`). [#150](https://github.com/cloudhut/kowl/issues/150) 
 
 
