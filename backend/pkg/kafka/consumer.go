@@ -25,11 +25,12 @@ type TopicMessage struct {
 	Offset      int64 `json:"offset"`
 	Timestamp   int64 `json:"timestamp"`
 
-	Headers   []MessageHeader      `json:"headers"`
-	Key       *deserializedPayload `json:"key"`
-	KeyType   string               `json:"keyType"`
-	Value     *deserializedPayload `json:"value"`
-	ValueType string               `json:"valueType"`
+	Compression     string `json:"compression"`
+	IsTransactional bool   `json:"isTransactional"`
+
+	Headers []MessageHeader      `json:"headers"`
+	Key     *deserializedPayload `json:"key"`
+	Value   *deserializedPayload `json:"value"`
 
 	Size        int  `json:"size"`
 	IsValueNull bool `json:"isValueNull"`
@@ -133,16 +134,16 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 				headers := s.DeserializeHeaders(record.Headers)
 
 				topicMessage := &TopicMessage{
-					PartitionID: record.Partition,
-					Offset:      record.Offset,
-					Timestamp:   record.Timestamp.Unix(),
-					Headers:     headers,
-					Key:         key,
-					KeyType:     string(key.RecognizedEncoding),
-					Value:       value,
-					ValueType:   string(value.RecognizedEncoding),
-					Size:        len(record.Value),
-					IsValueNull: record.Value == nil,
+					PartitionID:     record.Partition,
+					Offset:          record.Offset,
+					Timestamp:       record.Timestamp.Unix(),
+					Headers:         headers,
+					Compression:     compressionTypeDisplayname(record.Attrs.CompressionType()),
+					IsTransactional: record.Attrs.IsTransactional(),
+					Key:             key,
+					Value:           value,
+					Size:            len(record.Value),
+					IsValueNull:     record.Value == nil,
 				}
 
 				headersByKey := make(map[string]interface{}, len(headers))
@@ -262,4 +263,21 @@ func (s *Service) DeserializeHeaders(headers []kgo.RecordHeader) []MessageHeader
 	}
 
 	return res
+}
+
+func compressionTypeDisplayname(compressionType uint8) string {
+	switch compressionType {
+	case 0:
+		return "uncompressed"
+	case 1:
+		return "gzip"
+	case 2:
+		return "snappy"
+	case 3:
+		return "lz4"
+	case 4:
+		return "zstd"
+	default:
+		return "unknown"
+	}
 }
