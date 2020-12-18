@@ -19,7 +19,9 @@ func (s *Service) ListTopicConsumers(ctx context.Context, topicName string) ([]*
 		return nil, fmt.Errorf("failed to list consumer groups: %w", err)
 	}
 
-	lags, err := s.getConsumerGroupLags(ctx, groups.GroupIDs)
+	groupIDs := groups.GetGroupIDs()
+
+	lags, err := s.getConsumerGroupLags(ctx, groupIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get consumer group lags: %w", err)
 	}

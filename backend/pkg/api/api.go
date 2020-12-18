@@ -69,9 +69,6 @@ func New(cfg *Config) *API {
 
 // Start the API server and block
 func (api *API) Start() {
-	api.KafkaSvc.RegisterMetrics()
-	api.KafkaSvc.Start()
-
 	err := api.OwlSvc.Start()
 	if err != nil {
 		api.Logger.Fatal("failed to start owl service", zap.Error(err))
