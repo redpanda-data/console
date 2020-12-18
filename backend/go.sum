@@ -226,6 +226,8 @@ github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/twmb/franz-go v0.6.1 h1:+ES/6MkgA6YMSuBzJVjU0ti25KSXPpb7yW1F7B9dN0I=
 github.com/twmb/franz-go v0.6.1/go.mod h1:3WEjsC9414FVKTzxWI34JWmEt1Tz1bbgHr0DIp31QxY=
+github.com/twmb/franz-go v0.6.2-0.20201204220215-385cecb928e9 h1:dOnSApIdEfvOrPEhnR/6VD1Mhq2yxhWaiPvO52l+1XI=
+github.com/twmb/franz-go v0.6.2-0.20201204220215-385cecb928e9/go.mod h1:3WEjsC9414FVKTzxWI34JWmEt1Tz1bbgHr0DIp31QxY=
 github.com/twmb/go-rbtree v1.0.0 h1:KxN7dXJ8XaZ4cvmHV1qqXTshxX3EBvX/toG5+UR49Mg=
 github.com/twmb/go-rbtree v1.0.0/go.mod h1:UlIAI8gu3KRPkXSobZnmJfVwCJgEhD/liWzT5ppzIyc=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
