@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, GetConsumerGroupResponse
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -196,7 +196,7 @@ const apiStore = {
 
     ACLs: undefined as AclResource[] | undefined,
 
-    consumerGroups: null as (GroupDescription[] | null),
+    consumerGroups: new Map<string, GroupDescription>(),
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -399,13 +399,23 @@ const apiStore = {
             .then(v => this.clusterConfig = v.clusterConfig, addError);
     },
 
+
+    refreshConsumerGroup(groupId: string, force?: boolean) {
+        cachedApiRequest<GetConsumerGroupResponse>(`./api/consumer-groups/${groupId}`, force)
+            .then(v => this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup), addError);
+    },
+
     refreshConsumerGroups(force?: boolean) {
         cachedApiRequest<GetConsumerGroupsResponse>('./api/consumer-groups', force)
             .then(v => {
                 for (const g of v.consumerGroups) {
                     g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
                 }
-                this.consumerGroups = v.consumerGroups;
+                transaction(() => {
+                    this.consumerGroups.clear();
+                    for (const g of v.consumerGroups)
+                        this.consumerGroups.set(g.groupId, g);
+                });
             }, addError);
     },
 

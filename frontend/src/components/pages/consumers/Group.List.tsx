@@ -59,9 +59,9 @@ class GroupList extends PageComponent {
 
     render() {
         if (!api.consumerGroups) return DefaultSkeleton;
-        if (api.consumerGroups.length == 0) return <Empty />
+        if (api.consumerGroups.size == 0) return <Empty />
 
-        const groups = api.consumerGroups;
+        const groups = Array.from(api.consumerGroups.values());
         const stateGroups = groups.groupInto(g => g.state);
 
         return <>
@@ -82,9 +82,9 @@ class GroupList extends PageComponent {
                     <Table
                         style={{ margin: '0', padding: '0' }} size={'middle'}
                         onRow={(record) =>
-                            ({
-                                onClick: () => appGlobal.history.push('/groups/' + record.groupId),
-                            })}
+                        ({
+                            onClick: () => appGlobal.history.push('/groups/' + record.groupId),
+                        })}
                         pagination={this.pageConfig}
                         onChange={(pagination) => {
                             if (pagination.pageSize) uiSettings.consumerGroupList.pageSize = pagination.pageSize;

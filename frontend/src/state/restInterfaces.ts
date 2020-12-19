@@ -163,7 +163,9 @@ export interface TopicLag {
 export interface GetConsumerGroupsResponse {
     consumerGroups: GroupDescription[];
 }
-
+export interface GetConsumerGroupResponse {
+    consumerGroup: GroupDescription;
+}
 
 
 
