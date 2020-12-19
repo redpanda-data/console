@@ -40,6 +40,7 @@ type TopicLag struct {
 // PartitionLag describes the kafka lag for a partition for a single consumer group
 type PartitionLag struct {
 	PartitionID int32 `json:"partitionId"`
+	Offset      int64 `json:"offset"`
 	Lag         int64 `json:"lag"`
 }
 
@@ -139,7 +140,7 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 					lag = 0
 				}
 				t.SummedLag += lag
-				t.PartitionLags = append(t.PartitionLags, PartitionLag{PartitionID: pID, Lag: lag})
+				t.PartitionLags = append(t.PartitionLags, PartitionLag{PartitionID: pID, Offset: groupOffset, Lag: lag})
 			}
 			topicLags = append(topicLags, &t)
 		}
