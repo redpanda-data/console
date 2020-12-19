@@ -1,6 +1,10 @@
 package api
 
 import (
+	"fmt"
+	"github.com/go-chi/chi"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
@@ -14,14 +18,8 @@ type GetConsumerGroupsResponse struct {
 
 func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		describedGroups, err := api.OwlSvc.GetConsumerGroupsOverview(r.Context())
-		if err != nil {
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  "Could not get consumer groups overview",
-				IsSilent: false,
-			}
+		describedGroups, restErr := api.OwlSvc.GetConsumerGroupsOverview(r.Context(), nil)
+		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
@@ -50,5 +48,43 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 			ConsumerGroups: describedGroups,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
+	}
+}
+
+func (api *API) handleGetConsumerGroup() http.HandlerFunc {
+	type response struct {
+		ConsumerGroup owl.ConsumerGroupOverview `json:"consumerGroup"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		groupID := chi.URLParam(r, "groupId")
+
+		canSee, restErr := api.Hooks.Owl.CanSeeConsumerGroup(r.Context(), groupID)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canSee {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to view consumer group"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to view this consumer group",
+				InternalLogs: []zapcore.Field{zap.String("group_id", groupID)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		describedGroups, restErr := api.OwlSvc.GetConsumerGroupsOverview(r.Context(), []string{groupID})
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		var res response
+		if len(describedGroups) == 1 {
+			res = response{ConsumerGroup: describedGroups[0]}
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }

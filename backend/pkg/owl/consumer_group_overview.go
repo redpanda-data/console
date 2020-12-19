@@ -3,8 +3,10 @@ package owl
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"net/http"
 	"sort"
 
 	"go.uber.org/zap"
@@ -37,26 +39,65 @@ type GroupMemberAssignment struct {
 }
 
 // GetConsumerGroupsOverview returns a ConsumerGroupOverview for all available consumer groups
-func (s *Service) GetConsumerGroupsOverview(ctx context.Context) ([]ConsumerGroupOverview, error) {
+// Pass nil for groupIDs if you want to fetch all available groups.
+func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []string) ([]ConsumerGroupOverview, *rest.Error) {
 	groups, err := s.kafkaSvc.ListConsumerGroups(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list consumer groups: %w", err)
+		return nil, &rest.Error{
+			Err:      fmt.Errorf("failed to list consumer groups: %w", err),
+			Status:   http.StatusInternalServerError,
+			Message:  "Failed to list consumer groups",
+			IsSilent: false,
+		}
 	}
 
-	describedGroupsSharded, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groups.GetGroupIDs())
+	if groupIDs == nil {
+		groupIDs = groups.GetGroupIDs()
+	} else {
+		// Not existent consumer groups will be reported as "dead" by Kafka. We would like to report them as 404 instead.
+		// Hence we'll check if the passed group IDs exist in the response
+		for _, id := range groupIDs {
+			_, exists := find(groups.GetGroupIDs(), id)
+			if !exists {
+				return nil, &rest.Error{
+					Err:      fmt.Errorf("requested group id '%v' does not exist in Kafka cluster", id),
+					Status:   http.StatusNotFound,
+					Message:  fmt.Sprintf("Requested group id '%v' does not exist in Kafka cluster", id),
+					IsSilent: false,
+				}
+			}
+		}
+	}
+
+	describedGroupsSharded, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groupIDs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to describe consumer groups: %w", err)
+		return nil, &rest.Error{
+			Err:      fmt.Errorf("failed to describe consumer groups: %w", err),
+			Status:   http.StatusNotFound,
+			Message:  fmt.Sprintf("Failed to describe consumer groups: %v", err.Error()),
+			IsSilent: false,
+		}
 	}
 
 	groupLags, err := s.getConsumerGroupLags(ctx, describedGroupsSharded.GetGroupIDs())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get consumer group lags: %w", err)
+		return nil, &rest.Error{
+			Err:      fmt.Errorf("failed to get consumer group lags: %w", err),
+			Status:   http.StatusNotFound,
+			Message:  fmt.Sprintf("Failed to get consumer group lags: %v", err.Error()),
+			IsSilent: false,
+		}
 	}
 
 	res := make([]ConsumerGroupOverview, 0)
 	converted, err := s.convertKgoGroupDescriptions(describedGroupsSharded.GetDescribedGroups(), groupLags)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert group descriptions into group members: %w", err)
+		return nil, &rest.Error{
+			Err:      fmt.Errorf("failed to convert group descriptions into group members: %w", err),
+			Status:   http.StatusNotFound,
+			Message:  fmt.Sprintf("Failed to convert group descriptions into group members"),
+			IsSilent: false,
+		}
 	}
 	res = append(res, converted...)
 	sort.Slice(res, func(i, j int) bool { return res[i].GroupID < res[j].GroupID })
