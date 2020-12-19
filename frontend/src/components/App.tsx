@@ -25,7 +25,7 @@ import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined } from '@ant-design/icons';
 import { observable } from 'mobx';
 import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
-import { LayoutBypass } from '../utils/tsxUtils';
+import { LayoutBypass, RadioOptionGroup } from '../utils/tsxUtils';
 import prettyMilliseconds from 'pretty-ms';
 import { UserPreferencesButton } from './misc/UserPreferences';
 
@@ -282,6 +282,9 @@ export default class App extends Component {
                         <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
                             <AppSide />
                             <AppContent />
+
+                            {/* <Test /> */}
+
                         </Layout>
                     </Route>
                 </Switch>
@@ -336,3 +339,45 @@ export default class App extends Component {
         }
     }
 }
+
+// const asdad = observable({
+//     value: 3
+// })
+
+// const Test = observer(() => {
+
+//     const options = [
+//         { value: 1, title: 'Option A', text: 'The first option' },
+//         { value: 2, title: 'Option B', text: 'The second option. This text is longer, pretty long actually, hopefully long enough that there will be some line-wrapping going on...' },
+//         { value: 3, title: 'Option C', text: 'The third option' },
+//     ]
+
+//     return <div id='test' style={{
+//         position: 'absolute',
+//         width: '100%', height: '100%',
+//         zIndex: 1,
+//     }}>
+//         <div style={{
+//             borderRadius: '6px',
+//             // position: 'absolute',
+//             background: 'white',
+//             margin: 'auto',
+//             width: '400px',
+//             height: '500px',
+//             marginTop: '40px',
+//             marginLeft: 'auto',
+//             marginRight: 'auto',
+//             border: '1px hsl(0deg 0% 91%) solid',
+//         }}>
+
+//             <div style={{ margin: '2rem' }}>
+
+//                 <RadioOptionGroup
+//                     options={options}
+//                     onChange={x => { asdad.value = x; }}
+//                     value={asdad.value}
+//                 />
+//             </div>
+//         </div>
+//     </div>
+// });

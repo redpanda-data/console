@@ -1474,3 +1474,54 @@ svg {
 
     cursor: default;
 }
+
+.radioOptionGroup {
+    $borderRadius: 8px;
+
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+
+    border: 1px solid hsl(0deg, 0%, 94%);
+    border-radius: $borderRadius;
+
+    user-select: none;
+
+    .ant-radio-wrapper {
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        margin: 0;
+        display: inline-block;
+
+        // & span:nth-child(1) {
+        //     display: inline-block;
+        // }
+
+        &>span:nth-child(2) {
+            display: contents;
+        }
+    }
+
+    .ant-radio-wrapper:first-child {
+        border-radius: $borderRadius $borderRadius 0px 0px;
+    }
+
+    .ant-radio-wrapper:last-child {
+        border-radius: 0px 0px $borderRadius $borderRadius;
+    }
+
+    .ant-radio-wrapper:not(:last-child) {
+        border-bottom: 1px solid hsl(0deg, 0%, 94%);
+    }
+
+    .ant-radio-wrapper:hover:not(.ant-radio-wrapper-checked) {
+        background: hsl(0deg, 0%, 99%);
+    }
+
+    .ant-radio-wrapper-checked {
+        background: #e5f7ff;
+        box-shadow: 0px 0px 2px 1px #1890ff61;
+        z-index: 1;
+    }
+}
