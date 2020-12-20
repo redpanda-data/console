@@ -16,8 +16,8 @@ type EditConsumerGroupOffsetsResponseTopic struct {
 }
 
 type EditConsumerGroupOffsetsResponseTopicPartition struct {
-	ID    int32 `json:"partitionID"`
-	Error error `json:"error"`
+	ID    int32  `json:"partitionID"`
+	Error string `json:"error"`
 }
 
 //
@@ -33,9 +33,14 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 	for i, topic := range commitResponse.Topics {
 		partitions := make([]EditConsumerGroupOffsetsResponseTopicPartition, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
+			err := kerr.ErrorForCode(partition.ErrorCode)
+			var errMsg string
+			if err != nil {
+				errMsg = err.Error()
+			}
 			partitions[j] = EditConsumerGroupOffsetsResponseTopicPartition{
 				ID:    partition.Partition,
-				Error: kerr.ErrorForCode(partition.ErrorCode),
+				Error: errMsg,
 			}
 		}
 		res.Topics[i] = EditConsumerGroupOffsetsResponseTopic{
