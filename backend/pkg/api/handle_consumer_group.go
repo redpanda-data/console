@@ -150,7 +150,24 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 			return
 		}
 
-		// 2. Submit edit offset request
+		// 2. Check if logged in user is allowed to edit Consumer Group (always true for Kowl, but not for Kowl Business)
+		canEdit, restErr := api.Hooks.Owl.CanEditConsumerGroup(r.Context(), req.GroupID)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canEdit {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to edit consumer group"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to edit this consumer group",
+				InternalLogs: []zapcore.Field{zap.String("group_id", req.GroupID)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		// 3. Submit edit offset request
 		kmsgReq := make([]kmsg.OffsetCommitRequestTopic, len(req.Topics))
 		for i, topic := range req.Topics {
 			partitions := make([]kmsg.OffsetCommitRequestTopicPartition, len(topic.Partitions))
@@ -166,7 +183,7 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 			kmsgReq[i] = topicReq
 		}
 
-		// 3. Check response and pass it to the frontend
+		// 4. Check response and pass it to the frontend
 		commitRes, err := api.OwlSvc.EditConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
 		if err != nil {
 			restErr := &rest.Error{
