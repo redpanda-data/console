@@ -44,24 +44,30 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'json' | 'xml' | 'avro' | 'text' | 'binary';
+export type MessageDataType = 'none' | 'json' | 'xml' | 'avro' | 'text' | 'binary';
+export type CompressionType = 'uncompressed' | 'gzip' | 'snappy' | 'lz4' | 'zstd' | 'unknown';
+export interface Payload {
+    payload: any, // json obj
+    encoding: MessageDataType, // actual format of the message (before the backend converted it to json)
+    avroSchemaId: number,
+    size: number,
+}
 
 export interface TopicMessage {
     offset: number,
     timestamp: number,
     partitionID: number,
 
-    keyType: MessageDataType,
-    key: any, // base64 encoded key of the message
-
     headers: {
         key: string | object,
-        value: string | object,
-        valueEncoding: MessageDataType // for now: always text
+        value: Payload,
     }[]
 
-    valueType: MessageDataType, // actual format of the message (before the backend converted it to json)
-    value: any, // json representation of the message value (xml, avro, etc will get converted)
+    compression: CompressionType,
+    isTransactional: boolean,
+
+    key: Payload,
+    value: Payload,
 
     size: number, // size in bytes of the kafka message
     isValueNull: boolean, // todo: rename to isTombstone

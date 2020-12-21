@@ -5,10 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
-	xj "github.com/basgys/goxml2json"
-	"github.com/cloudhut/kowl/backend/pkg/schema"
 	"strings"
 	"unicode/utf8"
+
+	xj "github.com/basgys/goxml2json"
+	"github.com/cloudhut/kowl/backend/pkg/schema"
 )
 
 // deserializer can deserialize messages from various formats (json, xml, avro, ..) into a Go native form.
@@ -57,6 +58,7 @@ type deserializedPayload struct {
 	Object             interface{}     `json:"-"`
 	RecognizedEncoding messageEncoding `json:"encoding"`
 	AvroSchemaID       uint32          `json:"avroSchemaId"`
+	Size               int             `json:"size"` // number of 'raw' bytes
 }
 
 // DeserializePayload tries to deserialize a given byte array.
@@ -70,7 +72,7 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 		return &deserializedPayload{Payload: normalizedPayload{
 			Payload:            payload,
 			RecognizedEncoding: messageEncodingNone,
-		}, Object: "", RecognizedEncoding: messageEncodingNone}
+		}, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(payload)}
 	}
 
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
@@ -78,7 +80,7 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 		return &deserializedPayload{Payload: normalizedPayload{
 			Payload:            payload,
 			RecognizedEncoding: messageEncodingText,
-		}, Object: string(payload), RecognizedEncoding: messageEncodingText}
+		}, Object: string(payload), RecognizedEncoding: messageEncodingText, Size: len(payload)}
 	}
 
 	// 1. Test for valid JSON
@@ -90,7 +92,7 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 			return &deserializedPayload{Payload: normalizedPayload{
 				Payload:            trimmed,
 				RecognizedEncoding: messageEncodingJSON,
-			}, Object: obj, RecognizedEncoding: messageEncodingJSON}
+			}, Object: obj, RecognizedEncoding: messageEncodingJSON, Size: len(payload)}
 		}
 	}
 
@@ -105,7 +107,7 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 			return &deserializedPayload{Payload: normalizedPayload{
 				Payload:            jsonPayload.Bytes(),
 				RecognizedEncoding: messageEncodingXML,
-			}, Object: obj, RecognizedEncoding: messageEncodingXML}
+			}, Object: obj, RecognizedEncoding: messageEncodingXML, Size: len(payload)}
 		}
 	}
 
@@ -126,7 +128,9 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 						},
 						Object:             native,
 						RecognizedEncoding: messageEncodingAvro,
-						AvroSchemaID:       schemaID}
+						AvroSchemaID:       schemaID,
+						Size:               len(payload),
+					}
 				}
 			}
 		}
@@ -138,12 +142,12 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 		return &deserializedPayload{Payload: normalizedPayload{
 			Payload:            payload,
 			RecognizedEncoding: messageEncodingText,
-		}, Object: string(payload), RecognizedEncoding: messageEncodingText}
+		}, Object: string(payload), RecognizedEncoding: messageEncodingText, Size: len(payload)}
 	}
 
 	// Anything else is considered as binary content
 	return &deserializedPayload{Payload: normalizedPayload{
 		Payload:            payload,
 		RecognizedEncoding: messageEncodingBinary,
-	}, Object: payload, RecognizedEncoding: messageEncodingBinary}
+	}, Object: payload, RecognizedEncoding: messageEncodingBinary, Size: len(payload)}
 }

@@ -289,32 +289,22 @@ const apiStore = {
                 case 'message':
                     let m = msg.message as TopicMessage;
 
-                    // debug: remove before merge
-                    m.headers.push({
-                        key: 'test debug object',
-                        value: {
-                            a: 1,
-                            b: 'asdaf',
-                            c: [5, 2, 6, 7],
-                        },
-                        valueEncoding: "json"
-                    });
-
-                    if (m.key != null && m.key != undefined && m.key != "" && m.keyType == 'binary') {
+                    const keyData = m.key.payload;
+                    if (keyData != null && keyData != undefined && keyData != "" && m.key.encoding == 'binary') {
                         try {
-                            m.key = atob(m.key); // unpack base64 encoded key
+                            m.key.payload = atob(m.key.payload); // unpack base64 encoded key
                         } catch (error) {
                             // Empty
                             // Only unpack if the key is base64 based
                         }
                     }
 
-                    m.valueJson = JSON.stringify(m.value);
+                    m.valueJson = JSON.stringify(m.value.payload);
 
-                    if (m.valueType == 'binary') {
-                        m.value = atob(m.value);
+                    if (m.value.encoding == 'binary') {
+                        m.value.payload = atob(m.value.payload);
 
-                        const str = m.value as string;
+                        const str = m.value.payload as string;
                         let hex = '';
                         for (let i = 0; i < str.length && i < 50; i++) {
                             let n = str.charCodeAt(i).toString(16);

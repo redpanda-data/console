@@ -20,7 +20,7 @@ import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
 import { api } from "../../../../state/backendApi";
-import { TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
+import { Payload, TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
 import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
@@ -38,6 +38,7 @@ import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
 import styles from './styles.module.scss';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
+import { MarkGithubIcon } from '@primer/octicons-react';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -677,7 +678,8 @@ function ${name}() {
     </>} />
 }
 
-const renderKey = (value: any, record: TopicMessage) => {
+const renderKey = (p: Payload, record: TopicMessage) => {
+    const value = p.payload;
     const text = typeof value === 'string' ? value : ToJson(value);
 
     if (value == undefined || value == null || text.length == 0 || text == '{}')
@@ -722,7 +724,7 @@ const renderKey = (value: any, record: TopicMessage) => {
 class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => string[] }> {
     render() {
         const msg = this.props.msg;
-        const value = msg.value;
+        const value = msg.value.payload;
         const fields = this.props.previewFields();
 
         try {
@@ -732,11 +734,11 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 // null: tombstone
                 text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
             }
-            else if (msg.valueType == 'text') {
+            else if (msg.value.encoding == 'text') {
                 // Raw Text (wtf :P)
                 text = value;
             }
-            else if (msg.valueType == 'binary') {
+            else if (msg.value.encoding == 'binary') {
                 // Binary data is displayed as hex dump
                 text = msg.valueBinHexPreview;
             }
@@ -789,7 +791,7 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
             </Tabs.TabPane>
             <Tabs.TabPane key='key' tab='Key'>
                 <span className='cellDiv' style={{ width: 'auto' }}>
-                    <code style={{}}>{toSafeString(msg.key)}</code>
+                    <code style={{}}>{toSafeString(msg.key.payload)}</code>
                 </span>
             </Tabs.TabPane>
             <Tabs.TabPane key='headers' tab='Headers' disabled={msg.headers.length == 0}>
@@ -801,16 +803,16 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
 
 function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
-        if (!msg || !msg.value) return <code>null</code>
+        if (!msg || !msg.value || !msg.value.payload) return <code>null</code>
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
-        if (msg.valueType == 'binary') {
+        if (msg.value.encoding == 'binary') {
             const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{msg.value}</code>
             }
             else if (mode == 'hex') {
-                const str = msg.value as string;
+                const str = msg.value.payload as string;
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     let n = str.charCodeAt(i).toString(16);
@@ -821,7 +823,7 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>
             }
             else {
-                const str = msg.value as string;
+                const str = msg.value.payload as string;
                 let result = '';
                 const isPrintable = /[\x20-\x7E]/;
                 for (let i = 0; i < str.length; i++) {
@@ -841,7 +843,7 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                         style={{ float: 'right', margin: '1em', zIndex: 10 }} />
                 </Affix> */}
 
-                <KowlJsonView src={msg.value} shouldCollapse={shouldCollapse} />
+                <KowlJsonView src={msg.value.payload} shouldCollapse={shouldCollapse} />
             </>
         )
     }
@@ -853,11 +855,12 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
 const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     const msg = props.msg;
     const data = {
-        "Value": `${titleCase(msg.valueType)} (Schema ID 12345 / ${msg.size} bytes)`,
-        "Key": `${titleCase(msg.keyType)} (msg.keySize)`,
+        "Key": `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
+        "Value": `${titleCase(msg.value.encoding)} (${msg.value.encoding == 'avro' ? `${msg.value.avroSchemaId} / ` : ''}${prettyBytes(msg.size)})`,
         "Headers": msg.headers.length > 0 ? `${msg.headers.length}` : "No headers set",
-        "Compression": "(msg.compression)",
-        "Producer ID": "(msg.producerId)",
+        "Compression": msg.compression,
+        "Transactional": msg.isTransactional ? 'true' : 'false',
+        // "Producer ID": "(msg.producerId)",
     };
 
     return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
