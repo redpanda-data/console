@@ -6,8 +6,11 @@ import (
 
 // Config for Git Service
 type Config struct {
-	// There might come more repositories (e. g. protobuf?) which we want to serve
+	// Repository that contains markdown files that document a Kafka topic.
 	TopicDocumentationRepo RepositoryConfig `yaml:"topicDocumentation"`
+
+	// Repository that contains all .proto files that can be used for deserializing Kafka messages.
+	ProtobufRepo RepositoryConfig `yaml:"protobuf"`
 
 	// Authentication Configs
 	BasicAuth BasicAuthConfig `yaml:"basicAuth"`
@@ -23,10 +26,12 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 // Validate all root and child config structs
 func (c *Config) Validate() error {
 	c.TopicDocumentationRepo.Validate()
+	c.ProtobufRepo.Validate()
 	return nil
 }
 
 // SetDefaults for all root and child config structs
 func (c *Config) SetDefaults() {
 	c.TopicDocumentationRepo.SetDefaults()
+	c.ProtobufRepo.SetDefaults()
 }

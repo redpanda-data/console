@@ -15,7 +15,8 @@ type Config struct {
 	ClusterVersion string   `yaml:"clusterVersion"`
 
 	// Schema Registry
-	Schema schema.Config `yaml:"schemaRegistry"`
+	Schema   schema.Config  `yaml:"schemaRegistry"`
+	Protobuf ProtobufConfig `yaml:"protobuf"`
 
 	TLS  TLSConfig  `yaml:"tls"`
 	SASL SASLConfig `yaml:"sasl"`
@@ -42,6 +43,11 @@ func (c *Config) Validate() error {
 	err = c.Schema.Validate()
 	if err != nil {
 		return err
+	}
+
+	err = c.Protobuf.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate protobuf config: %w", err)
 	}
 
 	return nil
