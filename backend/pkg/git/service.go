@@ -60,6 +60,21 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 	}, nil
 }
 
+// Start all configured git syncs. Initially trigger them once and return an error if there are issues.
+func (c *Service) Start() error {
+	err := c.StartTopicDocumentationSync()
+	if err != nil {
+		return fmt.Errorf("failed setup topic documentation sync: %w", err)
+	}
+
+	err = c.StartProtoSync()
+	if err != nil {
+		return fmt.Errorf("failed to setup protos sync: %w", err)
+	}
+
+	return nil
+}
+
 func buildBasicAuth(cfg BasicAuthConfig) transport.AuthMethod {
 	return &http.BasicAuth{
 		Username: cfg.Username,

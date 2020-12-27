@@ -1,8 +1,6 @@
 package owl
 
 import (
-	"context"
-	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"go.uber.org/zap"
@@ -28,24 +26,8 @@ func NewService(logger *zap.Logger, kafkaSvc *kafka.Service, gitSvc *git.Service
 // Start starts all the (background) tasks which are required for this service to work properly. If any of these
 // tasks can not be setup an error will be returned which will cause the application to exit.
 func (s *Service) Start() error {
-	return s.startTopicDocumentationSync()
-}
-
-func (s *Service) startTopicDocumentationSync() error {
 	if s.gitSvc == nil {
 		return nil
 	}
-
-	if !s.gitSvc.Cfg.TopicDocumentationRepo.Enabled {
-		return nil
-	}
-
-	err := s.gitSvc.CloneDocumentation(context.Background())
-	if err != nil {
-		return fmt.Errorf("failed to clone topic documentation repo: %w", err)
-	}
-
-	go s.gitSvc.SyncDocumentation()
-
-	return nil
+	return s.gitSvc.Start()
 }

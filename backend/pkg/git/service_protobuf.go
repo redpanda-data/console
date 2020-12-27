@@ -14,6 +14,26 @@ import (
 	"time"
 )
 
+func (c *Service) StartProtoSync() error {
+	if c.Cfg.ProtobufRepo.RefreshInterval == 0 {
+		c.logger.Info("refresh interval for protos sync is set to 0 (disabled)")
+		return nil
+	}
+	if !c.Cfg.ProtobufRepo.Enabled {
+		return nil
+	}
+
+	err := c.CloneProtos(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to clone protos repo: %w", err)
+	}
+
+	// Start background sync task
+	go c.SyncProtos()
+
+	return nil
+}
+
 // CloneProtos clones the git repository which contains the proto files.
 func (c *Service) CloneProtos(ctx context.Context) error {
 	fs := memfs.New()

@@ -14,6 +14,26 @@ import (
 	"time"
 )
 
+func (c *Service) StartTopicDocumentationSync() error {
+	if c.Cfg.TopicDocumentationRepo.RefreshInterval == 0 {
+		c.logger.Info("refresh interval for topic documentation sync is set to 0 (disabled)")
+		return nil
+	}
+	if !c.Cfg.TopicDocumentationRepo.Enabled {
+		return nil
+	}
+
+	err := c.CloneDocumentation(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to clone topic documentation repo: %w", err)
+	}
+
+	// Start background sync task
+	go c.SyncDocumentation()
+
+	return nil
+}
+
 // CloneDocumentation clones the git repository which contains the topic documentation
 func (c *Service) CloneDocumentation(ctx context.Context) error {
 	fs := memfs.New()
