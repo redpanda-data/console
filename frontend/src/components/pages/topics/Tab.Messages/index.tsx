@@ -1,6 +1,6 @@
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
-import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
+import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -20,7 +20,7 @@ import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
 import { api } from "../../../../state/backendApi";
-import { TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
+import { Payload, TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
 import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
@@ -30,14 +30,15 @@ import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
-import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../../utils/tsxUtils";
-import { cullText, findElementDeep, ToJson } from "../../../../utils/utils";
+import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
+import { cullText, findElementDeep, titleCase, ToJson } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
 import styles from './styles.module.scss';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
+import { MarkGithubIcon } from '@primer/octicons-react';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -506,7 +507,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         expandRowByClick: false,
                         expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'value'),
                         rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
-                        expandedRowRender: record => RenderExpandedMessage(record),
+                        expandedRowRender: record => renderExpandedMessage(record),
                     }}
 
                     columns={filteredColumns}
@@ -677,7 +678,8 @@ function ${name}() {
     </>} />
 }
 
-const renderKey = (value: any, record: TopicMessage) => {
+const renderKey = (p: Payload, record: TopicMessage) => {
+    const value = p.payload;
     const text = typeof value === 'string' ? value : ToJson(value);
 
     if (value == undefined || value == null || text.length == 0 || text == '{}')
@@ -722,7 +724,7 @@ const renderKey = (value: any, record: TopicMessage) => {
 class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => string[] }> {
     render() {
         const msg = this.props.msg;
-        const value = msg.value;
+        const value = msg.value.payload;
         const fields = this.props.previewFields();
 
         try {
@@ -732,11 +734,11 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 // null: tombstone
                 text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
             }
-            else if (msg.valueType == 'text') {
+            else if (msg.value.encoding == 'text') {
                 // Raw Text (wtf :P)
                 text = value;
             }
-            else if (msg.valueType == 'binary') {
+            else if (msg.value.encoding == 'binary') {
                 // Binary data is displayed as hex dump
                 text = msg.valueBinHexPreview;
             }
@@ -778,25 +780,39 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 }
 
 
-function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
-    return <div>
-        {(msg.headers.length > 0) && <MessageHeaders msg={msg} />}
-        <div>{RenderMessageValue(msg, shouldExpand)}</div>
+function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+    return <div className='expandedMessage'>
+        <MessageMetaData msg={msg} />
+
+        {/* .ant-tabs-nav { width: ??; } */}
+        <Tabs animated={false}>
+            <Tabs.TabPane key='value' tab='Value'>
+                {renderMessageValue(msg, shouldExpand)}
+            </Tabs.TabPane>
+            <Tabs.TabPane key='key' tab='Key'>
+                <span className='cellDiv' style={{ width: 'auto' }}>
+                    <code style={{}}>{toSafeString(msg.key.payload)}</code>
+                </span>
+            </Tabs.TabPane>
+            <Tabs.TabPane key='headers' tab='Headers' disabled={msg.headers.length == 0}>
+                <MessageHeaders msg={msg} />
+            </Tabs.TabPane>
+        </Tabs>
     </div>
 }
 
-function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
-        if (!msg || !msg.value) return <code>null</code>
+        if (!msg || !msg.value || !msg.value.payload) return <code>null</code>
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
-        if (msg.valueType == 'binary') {
+        if (msg.value.encoding == 'binary') {
             const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{msg.value}</code>
             }
             else if (mode == 'hex') {
-                const str = msg.value as string;
+                const str = msg.value.payload as string;
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     let n = str.charCodeAt(i).toString(16);
@@ -807,7 +823,7 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>
             }
             else {
-                const str = msg.value as string;
+                const str = msg.value.payload as string;
                 let result = '';
                 const isPrintable = /[\x20-\x7E]/;
                 for (let i = 0; i < str.length; i++) {
@@ -827,7 +843,7 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                         style={{ float: 'right', margin: '1em', zIndex: 10 }} />
                 </Affix> */}
 
-                <KowlJsonView src={msg.value} shouldCollapse={shouldCollapse} />
+                <KowlJsonView src={msg.value.payload} shouldCollapse={shouldCollapse} />
             </>
         )
     }
@@ -836,22 +852,55 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
     }
 }
 
+const MessageMetaData = observer((props: { msg: TopicMessage }) => {
+    const msg = props.msg;
+    const data = {
+        "Key": `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
+        "Value": `${titleCase(msg.value.encoding)} (${msg.value.encoding == 'avro' ? `${msg.value.avroSchemaId} / ` : ''}${prettyBytes(msg.size)})`,
+        "Headers": msg.headers.length > 0 ? `${msg.headers.length}` : "No headers set",
+        "Compression": msg.compression,
+        "Transactional": msg.isTransactional ? 'true' : 'false',
+        // "Producer ID": "(msg.producerId)",
+    };
+
+    return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
+        {Object.entries(data).map(([k, v]) => <>
+            <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
+                <div style={{ fontWeight: 600 }}>{v}</div>
+                <div style={{ color: 'rgba(0, 0, 0, 0.4)' }}>{k}</div>
+            </div>
+        </>)}
+    </div>
+});
+
 const MessageHeaders = observer((props: { msg: TopicMessage }) => {
-    const headers = props.msg.headers
-    const jsonHeaders = headers.map(h => ({
-        key: ToJson(h.key),
-        value: ToJson(h.value),
-        valueEncoding: ToJson(h.valueEncoding)
-    }));
-    const showHeaders = uiState.topicSettings.showMessageHeaders;
-    const titleText = (showHeaders ? "Hide" : "Show") + " Message Headers";
+
     return <div className='messageHeaders'>
-        <div className='title'>
-            <span className='titleBtn' onClick={() => uiState.topicSettings.showMessageHeaders = !showHeaders}>{titleText}</span>
+        <div>
+            <Table
+                size='small'
+                indentSize={0}
+                dataSource={props.msg.headers}
+                pagination={false}
+                columns={[
+                    { width: 'auto', title: 'Key', dataIndex: 'key', render: v => toSafeString(v) },
+                    {
+                        width: 'auto', title: 'Value', dataIndex: 'value',
+                        render: v => typeof v === 'object'
+                            ? <div className='smallText hoverLink' style={{ paddingBottom: '1px' }}>Object - Expand to show</div>
+                            : toSafeString(v),
+                    },
+                    { width: '80', title: 'Encoding', dataIndex: 'valueEncoding' },
+                ]}
+                expandable={{
+                    rowExpandable: r => typeof r.value === 'object',
+                    expandIconColumnIndex: 1,
+                    expandRowByClick: true,
+                    expandedRowRender: r => <KowlJsonView src={r.value as object} />,
+                }}
+            />
+            <br />
         </div>
-        {showHeaders && QuickTable(jsonHeaders, {
-            tableStyle: { width: 'auto', paddingLeft: '1em' },
-        })}
     </div>
 });
 
