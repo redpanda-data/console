@@ -29,13 +29,16 @@ func createProtoRegistry() {
 // protoFileToDescriptor parses a .proto file and compiles it to a descriptor using the protoc binary. Protoc must
 // be available as command or this will fail.
 // Imported dependencies (such as Protobuf timestamp) are included so that the descriptors are self-contained.
-func (s *Service) protoFileToDescriptor(directory string, filename string) (*descriptorpb.FileDescriptorSet, error) {
+//
+// ProtoPath is the path that contains all .proto files. This directory will be searched for imports.
+// Filename is the .proto file within the protoPath that shall be parsed.
+func (s *Service) protoFileToDescriptor(protoPath string, filename string) (*descriptorpb.FileDescriptorSet, error) {
 	tmpFile := filename + "-tmp.pb"
 	targetFilepath := path.Join(s.cfg.TempDirectoryPath, filename)
 	cmd := exec.Command("./protoc/protoc",
 		"--include_imports",
 		"--descriptor_set_out="+tmpFile,
-		"--proto_path="+directory,
+		"--proto_path="+protoPath,
 		targetFilepath)
 
 	cmd.Stdout = os.Stdout
