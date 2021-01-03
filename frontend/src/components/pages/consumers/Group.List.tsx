@@ -82,9 +82,9 @@ class GroupList extends PageComponent {
                     <Table
                         style={{ margin: '0', padding: '0' }} size={'middle'}
                         onRow={(record) =>
-                            ({
-                                onClick: () => appGlobal.history.push('/groups/' + record.groupId),
-                            })}
+                        ({
+                            onClick: () => appGlobal.history.push('/groups/' + record.groupId),
+                        })}
                         pagination={this.pageConfig}
                         onChange={(pagination) => {
                             if (pagination.pageSize) uiSettings.consumerGroupList.pageSize = pagination.pageSize;
