@@ -2,6 +2,7 @@ package owl
 
 import (
 	"flag"
+	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 )
 
@@ -17,6 +18,9 @@ func (c *ConfigTopicDocumentation) RegisterFlags(f *flag.FlagSet) {
 func (c *ConfigTopicDocumentation) Validate() error {
 	if !c.Enabled {
 		return nil
+	}
+	if c.Enabled && !c.Git.Enabled {
+		return fmt.Errorf("topic documentation is enabled, but git service is diabled. At least one source for topic documentations must be configured")
 	}
 
 	return c.Git.Validate()

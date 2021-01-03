@@ -48,7 +48,7 @@ func (c *Config) Validate() error {
 
 	err = c.Owl.Validate()
 	if err != nil {
-		return fmt.Errorf("failed to validate Git config: %w", err)
+		return fmt.Errorf("failed to validate Owl config: %w", err)
 	}
 
 	return nil

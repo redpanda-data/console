@@ -17,9 +17,13 @@ type Service struct {
 
 // NewService for the Owl package
 func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service) (*Service, error) {
-	gitSvc, err := git.NewService(cfg.TopicDocumentation.Git, logger)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create git service: %w", err)
+	var gitSvc *git.Service
+	if cfg.TopicDocumentation.Enabled && cfg.TopicDocumentation.Git.Enabled {
+		svc, err := git.NewService(cfg.TopicDocumentation.Git, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create git service: %w", err)
+		}
+		gitSvc = svc
 	}
 	return &Service{
 		kafkaSvc: kafkaSvc,

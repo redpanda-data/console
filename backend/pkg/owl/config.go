@@ -1,6 +1,9 @@
 package owl
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+)
 
 type Config struct {
 	TopicDocumentation ConfigTopicDocumentation `yaml:"topicDocumentation"`
@@ -15,5 +18,10 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 }
 
 func (c *Config) Validate() error {
-	return c.TopicDocumentation.Validate()
+	err := c.TopicDocumentation.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate topic documentation config: %w", err)
+	}
+
+	return nil
 }
