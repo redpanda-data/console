@@ -60,25 +60,23 @@ export class TopicDocumentation extends Component<{ topic: TopicDetail }> {
 
 function renderNotConfigured() {
     return (
-        <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
-            <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
-                <Empty description={null}>
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <h2>Not Configured</h2>
+        <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>
+            <Empty description={null}>
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h2>Not Configured</h2>
 
-                        <p>
-                            Topic Documentation is not configured in Kowl.
+                    <p>
+                        Topic Documentation is not configured in Kowl.
                             <br />
                             Provide the connection credentials in the Kowl config, to fetch and display docmentation for the topics.
                         </p>
-                    </div>
+                </div>
 
-                    {/* todo: fix link once we have a better guide */}
-                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
-                        <Button type="primary">Kowl Documentation</Button>
-                    </a>
-                </Empty>
-            </Card>
+                {/* todo: fix link once we have a better guide */}
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
+                    <Button type="primary">Kowl Documentation</Button>
+                </a>
+            </Empty>
         </motion.div>
     );
 }
