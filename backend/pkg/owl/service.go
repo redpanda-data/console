@@ -1,6 +1,7 @@
 package owl
 
 import (
+	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"go.uber.org/zap"
@@ -15,12 +16,16 @@ type Service struct {
 }
 
 // NewService for the Owl package
-func NewService(logger *zap.Logger, kafkaSvc *kafka.Service, gitSvc *git.Service) *Service {
+func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service) (*Service, error) {
+	gitSvc, err := git.NewService(cfg.TopicDocumentation.Git, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create git service: %w", err)
+	}
 	return &Service{
 		kafkaSvc: kafkaSvc,
 		gitSvc:   gitSvc,
 		logger:   logger,
-	}
+	}, nil
 }
 
 // Start starts all the (background) tasks which are required for this service to work properly. If any of these

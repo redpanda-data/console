@@ -51,17 +51,16 @@ func New(cfg *Config) *API {
 		logger.Fatal("failed to create kafka service", zap.Error(err))
 	}
 
-	gitSvc, err := git.NewService(cfg.Git, logger)
+	owlSvc, err := owl.NewService(cfg.Owl, logger, kafkaSvc)
 	if err != nil {
-		logger.Fatal("failed to create git service", zap.Error(err))
+		logger.Fatal("failed to create owl service", zap.Error(err))
 	}
 
 	return &API{
 		Cfg:      cfg,
 		Logger:   logger,
 		KafkaSvc: kafkaSvc,
-		OwlSvc:   owl.NewService(logger, kafkaSvc, gitSvc),
-		GitSvc:   gitSvc,
+		OwlSvc:   owlSvc,
 		Hooks:    newDefaultHooks(),
 		version:  version,
 	}

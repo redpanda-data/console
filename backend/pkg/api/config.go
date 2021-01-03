@@ -3,7 +3,7 @@ package api
 import (
 	"flag"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/git"
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"io/ioutil"
 
 	"github.com/cloudhut/common/logging"
@@ -19,7 +19,7 @@ type Config struct {
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 	FrontendPath     string `yaml:"frontendPath"`  // path to frontend files (index.html), set to './build' by default
 
-	Git    git.Config     `yaml:"git"`
+	Owl    owl.Config     `yaml:"owl"`
 	REST   rest.Config    `yaml:"server"`
 	Kafka  kafka.Config   `yaml:"kafka"`
 	Logger logging.Config `yaml:"logger"`
@@ -31,7 +31,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 
 	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
-	c.Git.RegisterFlags(f)
+	c.Owl.RegisterFlags(f)
 }
 
 // Validate all root and child config structs
@@ -46,7 +46,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Kafka config: %w", err)
 	}
 
-	err = c.Git.Validate()
+	err = c.Owl.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate Git config: %w", err)
 	}
@@ -63,7 +63,7 @@ func (c *Config) SetDefaults() {
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
 	c.Kafka.SetDefaults()
-	c.Git.SetDefaults()
+	c.Owl.SetDefaults()
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.

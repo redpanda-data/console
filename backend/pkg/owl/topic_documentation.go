@@ -1,21 +1,24 @@
 package owl
 
-import "fmt"
-
 // TopicDocumentation holds the Markdown with potential metadata (e. g. editor, last edited at etc).
 type TopicDocumentation struct {
-	Markdown []byte `json:"markdown"`
+	IsEnabled bool   `json:"isEnabled"`
+	Markdown  []byte `json:"markdown"`
 }
 
 // GetTopicDocumentation returns the documentation for the given topic if available.
-func (s *Service) GetTopicDocumentation(topicName string) (*TopicDocumentation, error) {
+func (s *Service) GetTopicDocumentation(topicName string) *TopicDocumentation {
 	if s.gitSvc == nil {
-		return nil, fmt.Errorf("git service is not configured")
+		return &TopicDocumentation{
+			IsEnabled: false,
+			Markdown:  nil,
+		}
 	}
 
-	markdown := s.gitSvc.GetTopicDocumentation(topicName)
+	markdown := s.gitSvc.GetFileByFilename(topicName)
 
 	return &TopicDocumentation{
-		Markdown: markdown,
-	}, nil
+		IsEnabled: true,
+		Markdown:  markdown,
+	}
 }
