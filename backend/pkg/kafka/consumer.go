@@ -39,9 +39,8 @@ type TopicMessage struct {
 // MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
 // a byte array, but keys are supposed to be strings only. Value however can be encoded in any format.
 type MessageHeader struct {
-	Key           string               `json:"key"`
-	Value         *deserializedPayload `json:"value"`
-	ValueEncoding messageEncoding      `json:"valueEncoding"`
+	Key   string               `json:"key"`
+	Value *deserializedPayload `json:"value"`
 }
 
 // PartitionConsumeRequest is a partitionID along with it's calculated start and end offset.
@@ -256,9 +255,8 @@ func (s *Service) DeserializeHeaders(headers []kgo.RecordHeader) []MessageHeader
 	for i, header := range headers {
 		value := s.Deserializer.DeserializePayload(header.Value)
 		res[i] = MessageHeader{
-			Key:           header.Key,
-			Value:         value,
-			ValueEncoding: value.RecognizedEncoding,
+			Key:   header.Key,
+			Value: value,
 		}
 	}
 
