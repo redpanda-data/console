@@ -32,8 +32,7 @@ type TopicMessage struct {
 	Key     *deserializedPayload `json:"key"`
 	Value   *deserializedPayload `json:"value"`
 
-	Size        int  `json:"size"`
-	IsValueNull bool `json:"isValueNull"`
+	IsValueNull bool `json:"isValueNull"` // true = tombstone
 }
 
 // MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
@@ -124,6 +123,9 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 					continue
 				}
 
+				// todo: Since a 'kafka message' is likely transmitted in compressed form,
+				//       and since it has additional metadata (like headers, timestamp, ...)
+				//       this value is not accurate at all.
 				messageSize := len(record.Key) + len(record.Value)
 				progress.OnMessageConsumed(int64(messageSize))
 
@@ -141,7 +143,6 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 					IsTransactional: record.Attrs.IsTransactional(),
 					Key:             key,
 					Value:           value,
-					Size:            len(record.Value),
 					IsValueNull:     record.Value == nil,
 				}
 

@@ -54,18 +54,17 @@ export interface Payload {
 }
 
 export interface TopicMessage {
+    partitionID: number,
     offset: number,
     timestamp: number,
-    partitionID: number,
-
-    headers: {
-        key: string | object,
-        value: Payload,
-    }[]
 
     compression: CompressionType,
     isTransactional: boolean,
 
+    headers: {
+        key: string,
+        value: Payload,
+    }[]
     key: Payload,
     value: Payload,
 

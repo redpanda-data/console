@@ -434,10 +434,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             // {
             //     width: 1, title: 'Headers', dataIndex: 'headers', sorter: (a, b, order) => b.headers.length - a.headers.length, render: (t, r) => r.headers.length,
             // },
-            {
-                width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
-                sorter: (a, b) => b.size - a.size
-            },
+
+            // todo: size was a guess anyway, might be added back later
+            // {
+            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
+            //     sorter: (a, b) => b.size - a.size
+            // },
             {
                 width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                 filters: [],
@@ -890,7 +892,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
                             ? <div className='smallText hoverLink' style={{ paddingBottom: '1px' }}>Object - Expand to show</div>
                             : toSafeString(v),
                     },
-                    { width: '80', title: 'Encoding', dataIndex: 'valueEncoding' },
+                    { width: '80', title: 'Encoding', dataIndex: 'value', render: v => v.value.encoding },
                 ]}
                 expandable={{
                     rowExpandable: r => typeof r.value === 'object',
@@ -1021,7 +1023,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
         { title: 'Key', dataIndex: 'key' },
         { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
-        { title: 'Size', dataIndex: 'size' },
+        // { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
     ];
 
     render() {
