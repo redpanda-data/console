@@ -58,6 +58,7 @@ export const copyIcon = <svg viewBox="0 0 14 16" version="1.1" width="14" height
 const DefaultQuickTableOptions = {
     tableClassName: undefined as string | undefined,
     keyAlign: 'left' as 'left' | 'right' | 'center',
+    valueAlign: 'left' as 'left' | 'right' | 'center',
     gapWidth: '16px' as string | number,
     gapHeight: 0 as string | number,
     keyStyle: undefined as React.CSSProperties | undefined,
@@ -70,29 +71,17 @@ export function QuickTable(data: [any, any][], options?: QuickTableOptions): JSX
 export function QuickTable(data: { key: any, value: any }[], options?: QuickTableOptions): JSX.Element;
 
 export function QuickTable(data: { key: any, value: any }[] | [any, any][], options?: QuickTableOptions): JSX.Element {
-    // Convert data elements from arrays to objects
     let entries: { key: any, value: any }[];
-    if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0]))
+    if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
+        // Convert from  '[any, any][]'  to array of key-value objects
         entries = (data as [any, any][]).map(ar => ({ key: ar[0], value: ar[1] }));
-    else
-        entries = data as { key: any, value: any }[];
-
-    const o: QuickTableOptions = {}; // create new options object (because we don't want to pollute the one the user gave us)
-    if (options == null) options = {};
-
-    {
-        const oa = o as any;
-        for (const k in DefaultQuickTableOptions) {
-            //console.log("checking: " + k)
-            if ((options as any)[k] == undefined) {
-                oa[k] = (DefaultQuickTableOptions as any)[k];
-                //console.log("     using default: " + oa[k])
-            } else {
-                oa[k] = (options as any)[k];
-                //console.log("     using existing value: " + oa[k])
-            }
-        }
     }
+    else {
+        // Cast to correct type directly
+        entries = data as { key: any, value: any }[];
+    }
+
+    const o = Object.assign({} as QuickTableOptions, DefaultQuickTableOptions, options);
 
     const showVerticalGutter = (typeof o.gapHeight === 'number' && o.gapHeight > 0) || typeof o.gapHeight === 'string';
     const classNames = [o.tableClassName, "quickTable"].joinStr(" ");
@@ -104,7 +93,7 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
                     <tr>
                         <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className='keyCell'>{React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}</td>
                         <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
-                        <td style={{ ...o.valueStyle }} className='valueCell'>{React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}</td>
+                        <td style={{ textAlign: o.valueAlign, ...o.valueStyle }} className='valueCell'>{React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}</td>
                     </tr>
 
                     {showVerticalGutter && (i < entries.length - 1) &&
