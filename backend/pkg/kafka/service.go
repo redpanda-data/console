@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
@@ -19,6 +20,7 @@ type Service struct {
 	KafkaClientHooks kgo.Hook
 	KafkaClient      *kgo.Client
 	SchemaService    *schema.Service
+	GitService       *git.Service
 	Deserializer     deserializer
 	MetricsNamespace string
 }
@@ -60,12 +62,23 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		logger.Info("successfully tested schema registry connectivity")
 	}
 
+	// Git Service
+	var gitSvc *git.Service
+	if cfg.Protobuf.Enabled && cfg.Protobuf.Git.Enabled {
+		svc, err := git.NewService(cfg.Protobuf.Git, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create git service: %w", err)
+		}
+		gitSvc = svc
+	}
+
 	return &Service{
 		Config:           cfg,
 		Logger:           logger,
 		KafkaClientHooks: clientHooks,
 		KafkaClient:      kafkaClient,
 		SchemaService:    schemaSvc,
+		GitService:       gitSvc,
 		Deserializer:     deserializer{SchemaService: schemaSvc},
 		MetricsNamespace: metricsNamespace,
 	}, nil

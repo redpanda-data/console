@@ -20,6 +20,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/jarcoal/httpmock v1.0.6
 	github.com/jcmturner/gokrb5/v8 v8.4.2
+	github.com/jhump/protoreflect v1.8.1 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1

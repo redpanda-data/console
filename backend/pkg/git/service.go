@@ -177,11 +177,11 @@ func (c *Service) setFileContents(filesByName map[string][]byte) {
 // GetFileByFilename returns the cached content for a given filename (without extension).
 // The parameter must match the filename in the git repository (case sensitive).
 // If there's no match nil will be returned.
-func (c *Service) GetFileByFilename(topicName string) []byte {
+func (c *Service) GetFileByFilename(fileName string) []byte {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
-	contents, exists := c.filesByName[topicName]
+	contents, exists := c.filesByName[fileName]
 	if !exists {
 		return nil
 	}
