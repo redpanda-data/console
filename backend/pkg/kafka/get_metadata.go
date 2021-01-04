@@ -11,7 +11,7 @@ import (
 func (s *Service) GetMetadata(ctx context.Context, topics []string) (*kmsg.MetadataResponse, error) {
 	metadataRequestTopics := make([]kmsg.MetadataRequestTopic, len(topics))
 	for i, topic := range topics {
-		metadataRequestTopics[i] = kmsg.MetadataRequestTopic{Topic: topic}
+		metadataRequestTopics[i] = kmsg.MetadataRequestTopic{Topic: &topic}
 	}
 
 	// Set metadata request topics to nil so that all topics will be requested
