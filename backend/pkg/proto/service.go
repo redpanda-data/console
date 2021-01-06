@@ -35,6 +35,7 @@ func (s *Service) Start() error {
 	if err != nil {
 		return fmt.Errorf("failed to start git service: %w", err)
 	}
+
 	err = s.createProtoRegistry()
 	if err != nil {
 		return fmt.Errorf("failed to start git service: %w", err)
@@ -61,6 +62,20 @@ func (s *Service) createProtoRegistry() error {
 		registry.AddFile("", descriptor)
 	}
 	s.registry = registry
+
+	// Let's compare the registry items against the mapping and let the user know if there are missing/mismatched proto types
+	for _, mapping := range s.cfg.Mappings {
+		desc, err := s.registry.FindMessageTypeByUrl(mapping.ProtoType)
+		if err != nil {
+			return fmt.Errorf("failed to get proto type from registry: %w", err)
+		}
+		if desc == nil {
+			s.logger.Info("protobuf type from configured topic mapping does not exist",
+				zap.String("topic_name", mapping.TopicName),
+				zap.String("proto_type", mapping.ProtoType))
+		}
+	}
+
 	return nil
 }
 
