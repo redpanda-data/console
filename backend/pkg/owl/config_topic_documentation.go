@@ -12,7 +12,7 @@ type ConfigTopicDocumentation struct {
 }
 
 func (c *ConfigTopicDocumentation) RegisterFlags(f *flag.FlagSet) {
-	c.Git.RegisterFlags(f)
+	c.Git.RegisterFlagsWithPrefix(f, "owl.topic-documentation.")
 }
 
 func (c *ConfigTopicDocumentation) Validate() error {

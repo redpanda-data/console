@@ -18,6 +18,7 @@ type Service struct {
 // NewService for the Owl package
 func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service) (*Service, error) {
 	var gitSvc *git.Service
+	cfg.TopicDocumentation.Git.AllowedFileExtensions = []string{"md"}
 	if cfg.TopicDocumentation.Enabled && cfg.TopicDocumentation.Git.Enabled {
 		svc, err := git.NewService(cfg.TopicDocumentation.Git, logger)
 		if err != nil {

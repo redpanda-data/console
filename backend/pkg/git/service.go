@@ -30,8 +30,18 @@ type Service struct {
 	repo  *git.Repository
 
 	// In memory cache for markdowns. Map key is the filename with stripped ".md" suffix.
-	filesByName map[string][]byte
+	filesByName map[string]File
 	mutex       sync.RWMutex
+}
+
+type File struct {
+	Path     string
+	Filename string
+
+	// TrimmedFilename is the filename without the recognized file extension
+	TrimmedFilename string
+
+	Payload []byte
 }
 
 // NewService creates a new Git service with preconfigured Auth
@@ -60,7 +70,7 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 		auth:   auth,
 		logger: childLogger,
 
-		filesByName: make(map[string][]byte),
+		filesByName: make(map[string]File),
 	}, nil
 }
 
@@ -102,16 +112,16 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 	}
 	c.repo = repo
 
-	// 2. Put markdowns into cache
-	empty := make(map[string][]byte)
-	markdowns, err := c.readFiles(fs, empty, ".", 5)
+	// 2. Put files into cache
+	empty := make(map[string]File)
+	files, err := c.readFiles(fs, empty, ".", 5)
 	if err != nil {
-		return fmt.Errorf("failed to get markdowns: %w", err)
+		return fmt.Errorf("failed to get files: %w", err)
 	}
-	c.setFileContents(markdowns)
+	c.setFileContents(files)
 
 	c.logger.Info("successfully cloned git repository",
-		zap.Int("read_markdown_files", len(markdowns)))
+		zap.Int("read_files", len(files)))
 
 	return nil
 }
@@ -152,7 +162,7 @@ func (c *Service) SyncRepo() {
 			}
 
 			// Update cache with new markdowns
-			empty := make(map[string][]byte)
+			empty := make(map[string]File)
 			files, err := c.readFiles(c.memFs, empty, ".", 5)
 			if err != nil {
 				c.logger.Error("failed to read files after pulling", zap.Error(err))
@@ -167,7 +177,7 @@ func (c *Service) SyncRepo() {
 
 // setFileContents saves file contents into memory, so that they are accessible at any time.
 // filesByName is a map where the key is the filename without extension suffix (e.g. "README" instead of "README.md")
-func (c *Service) setFileContents(filesByName map[string][]byte) {
+func (c *Service) setFileContents(filesByName map[string]File) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -177,16 +187,24 @@ func (c *Service) setFileContents(filesByName map[string][]byte) {
 // GetFileByFilename returns the cached content for a given filename (without extension).
 // The parameter must match the filename in the git repository (case sensitive).
 // If there's no match nil will be returned.
-func (c *Service) GetFileByFilename(fileName string) []byte {
+func (c *Service) GetFileByFilename(fileName string) File {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
 	contents, exists := c.filesByName[fileName]
 	if !exists {
-		return nil
+		return File{}
 	}
 
 	return contents
+}
+
+// GetFilesByFilename returns the cached content in a map where the filename is the key (with trimmed file extension).
+func (c *Service) GetFilesByFilename() map[string]File {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	return c.filesByName
 }
 
 func buildBasicAuth(cfg BasicAuthConfig) transport.AuthMethod {

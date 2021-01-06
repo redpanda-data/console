@@ -28,10 +28,10 @@ type Config struct {
 	SSH       SSHConfig       `yaml:"ssh"`
 }
 
-// RegisterFlags for all (sub)configs
-func (c *Config) RegisterFlags(f *flag.FlagSet) {
-	c.BasicAuth.RegisterFlags(f)
-	c.SSH.RegisterFlags(f)
+// RegisterFlagsWithPrefix for all (sub)configs
+func (c *Config) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
+	c.BasicAuth.RegisterFlagsWithPrefix(f, prefix)
+	c.SSH.RegisterFlagsWithPrefix(f, prefix)
 }
 
 // Validate all root and child config structs
