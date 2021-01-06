@@ -3,7 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/git"
+	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
@@ -20,7 +20,7 @@ type Service struct {
 	KafkaClientHooks kgo.Hook
 	KafkaClient      *kgo.Client
 	SchemaService    *schema.Service
-	GitService       *git.Service
+	ProtoService     *proto.Service
 	Deserializer     deserializer
 	MetricsNamespace string
 }
@@ -62,14 +62,15 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		logger.Info("successfully tested schema registry connectivity")
 	}
 
-	// Git Service
-	var gitSvc *git.Service
-	if cfg.Protobuf.Enabled && cfg.Protobuf.Git.Enabled {
-		svc, err := git.NewService(cfg.Protobuf.Git, logger)
+	// Protoservice
+	var protoSvc *proto.Service
+	if cfg.Protobuf.Enabled {
+		cfg.Protobuf.Git.AllowedFileExtensions = []string{"proto"}
+		svc, err := proto.NewService(cfg.Protobuf, logger)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create git service: %w", err)
+			return nil, fmt.Errorf("failed to create protobuf service: %w", err)
 		}
-		gitSvc = svc
+		protoSvc = svc
 	}
 
 	return &Service{
@@ -78,10 +79,19 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		KafkaClientHooks: clientHooks,
 		KafkaClient:      kafkaClient,
 		SchemaService:    schemaSvc,
-		GitService:       gitSvc,
+		ProtoService:     protoSvc,
 		Deserializer:     deserializer{SchemaService: schemaSvc},
 		MetricsNamespace: metricsNamespace,
 	}, nil
+}
+
+// Start starts all the (background) tasks which are required for this service to work properly. If any of these
+// tasks can not be setup an error will be returned which will cause the application to exit.
+func (s *Service) Start() error {
+	if s.ProtoService == nil {
+		return nil
+	}
+	return s.ProtoService.Start()
 }
 
 func (s *Service) NewKgoClient() (*kgo.Client, error) {

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/Shopify/sarama"
+	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 )
 
@@ -15,8 +16,8 @@ type Config struct {
 	ClusterVersion string   `yaml:"clusterVersion"`
 
 	// Schema Registry
-	Schema   schema.Config  `yaml:"schemaRegistry"`
-	Protobuf ProtobufConfig `yaml:"protobuf"`
+	Schema   schema.Config `yaml:"schemaRegistry"`
+	Protobuf proto.Config  `yaml:"protobuf"`
 
 	TLS  TLSConfig  `yaml:"tls"`
 	SASL SASLConfig `yaml:"sasl"`
@@ -26,6 +27,7 @@ type Config struct {
 func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	c.TLS.RegisterFlags(f)
 	c.SASL.RegisterFlags(f)
+	c.Protobuf.RegisterFlags(f)
 	c.Schema.RegisterFlags(f)
 }
 
@@ -59,4 +61,5 @@ func (c *Config) SetDefaults() {
 	c.ClusterVersion = "1.0.0"
 
 	c.SASL.SetDefaults()
+	c.Protobuf.SetDefaults()
 }

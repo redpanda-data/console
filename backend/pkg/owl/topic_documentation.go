@@ -19,6 +19,6 @@ func (s *Service) GetTopicDocumentation(topicName string) *TopicDocumentation {
 
 	return &TopicDocumentation{
 		IsEnabled: true,
-		Markdown:  markdown,
+		Markdown:  markdown.Payload,
 	}
 }

@@ -1,15 +1,33 @@
 package proto
 
+import (
+	"flag"
+	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/git"
+)
+
 type Config struct {
-	// TempDirectoryPath specifies the path where proto descriptors can be compiled/written to. It serves as tmp directory.
-	TempDirectoryPath string `yaml:"tempDirectoryPath"`
+	Enabled bool       `json:"enabled"`
+	Git     git.Config `json:"git"`
 }
 
-func (c *Config) SetDefaults() {
-	c.TempDirectoryPath = "/tmp"
+// RegisterFlags registers all nested config flags.
+func (c *Config) RegisterFlags(f *flag.FlagSet) {
+	c.Git.RegisterFlagsWithPrefix(f, "kafka.protobuf.")
 }
 
 func (c *Config) Validate() error {
-	// TODO: Check if tmp directory exists and is writable
+	if !c.Enabled {
+		return nil
+	}
+
+	if c.Enabled && !c.Git.Enabled {
+		return fmt.Errorf("protobuf deserializer is enabled, but git is disabled. At least one source for protos must be configured")
+	}
+
 	return nil
+}
+
+func (c *Config) SetDefaults() {
+	c.Git.SetDefaults()
 }

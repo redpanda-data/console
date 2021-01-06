@@ -3,27 +3,26 @@ package proto
 import (
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/git"
+	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
+	"github.com/jhump/protoreflect/dynamic/msgregistry"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"path"
 )
 
 type Service struct {
 	cfg      Config
 	logger   *zap.Logger
-	registry *protoregistry.Files
+	registry *msgregistry.MessageRegistry
 
 	gitSvc *git.Service
 }
 
-func NewService(cfg Config, logger *zap.Logger, gitSvc *git.Service) (*Service, error) {
+func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
+	gitSvc, err := git.NewService(cfg.Git, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new git service: %w", err)
+	}
+
 	return &Service{
 		cfg:    cfg,
 		logger: logger,
@@ -36,11 +35,32 @@ func (s *Service) Start() error {
 	if err != nil {
 		return fmt.Errorf("failed to start git service: %w", err)
 	}
+	err = s.createProtoRegistry()
+	if err != nil {
+		return fmt.Errorf("failed to start git service: %w", err)
+	}
+
+	// TODO: SEtup background task to periodically update registry
 
 	return nil
 }
 
-func createProtoRegistry() *protoregistry.Files {
+func (s *Service) createProtoRegistry() error {
+	files := s.gitSvc.GetFilesByFilename()
+	s.logger.Debug("fetched .proto files from git service cache",
+		zap.Int("fetched_proto_files", len(files)))
+
+	fileDescriptors, err := s.protoFileToDescriptor(files)
+	if err != nil {
+		return fmt.Errorf("failed to compile proto files to descriptors: %w", err)
+	}
+
+	// Create registry and add types from file descriptors
+	registry := msgregistry.NewMessageRegistryWithDefaults()
+	for _, descriptor := range fileDescriptors {
+		registry.AddFile("", descriptor)
+	}
+	s.registry = registry
 	return nil
 }
 
@@ -50,18 +70,25 @@ func createProtoRegistry() *protoregistry.Files {
 //
 // ProtoPath is the path that contains all .proto files. This directory will be searched for imports.
 // Filename is the .proto file within the protoPath that shall be parsed.
-func (s *Service) protoFileToDescriptor(protoPath string, filename string) (*descriptorpb.FileDescriptorSet, error) {
-	var files map[string]string
-	accessor := protoparse.FileContentsFromMap(files)
+func (s *Service) protoFileToDescriptor(files map[string]git.File) ([]*desc.FileDescriptor, error) {
+	filesStr := make(map[string]string, len(files))
+	fileNames := make([]string, 0, len(filesStr))
+	for _, file := range files {
+		filesStr[file.Filename] = string(file.Payload)
+		fileNames = append(fileNames, file.Filename)
+	}
+
 	parser := protoparse.Parser{
-		Accessor:              accessor,
+		Accessor:              protoparse.FileContentsFromMap(filesStr),
 		ValidateUnlinkedFiles: true,
 		IncludeSourceCodeInfo: true,
 	}
-	descriptors, err := parser.ParseFiles()
+	descriptors, err := parser.ParseFiles(fileNames...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse proto files to descriptors: %w", err)
 	}
+
+	return descriptors, nil
 }
 
 // protoFileToDescriptorWithBinary parses a .proto file and compiles it to a descriptor using the protoc binary. Protoc must
@@ -70,6 +97,7 @@ func (s *Service) protoFileToDescriptor(protoPath string, filename string) (*des
 //
 // ProtoPath is the path that contains all .proto files. This directory will be searched for imports.
 // Filename is the .proto file within the protoPath that shall be parsed.
+/*
 func (s *Service) protoFileToDescriptorWithBinary(protoPath string, filename string) (*descriptorpb.FileDescriptorSet, error) {
 	tmpFile := filename + "-tmp.pb"
 	targetFilepath := path.Join(s.cfg.TempDirectoryPath, filename)
@@ -99,3 +127,4 @@ func (s *Service) protoFileToDescriptorWithBinary(protoPath string, filename str
 
 	return &descriptorSet, nil
 }
+*/
