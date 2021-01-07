@@ -27,5 +27,4 @@ func (k KgoZapLogger) Log(level kgo.LogLevel, msg string, keyvals ...interface{}
 	case kgo.LogLevelError:
 		k.logger.Errorw(msg, keyvals...)
 	}
-	return
 }
