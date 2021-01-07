@@ -3,10 +3,11 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"time"
 
 	"go.uber.org/zap"
 )

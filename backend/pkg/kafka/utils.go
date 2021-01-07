@@ -5,10 +5,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
-var (
-	brokerIndex = 0
-)
-
 func (s *Service) PartitionsToPartitionIDs(partitions []kmsg.MetadataResponseTopicPartition) ([]int32, error) {
 	var firstErr error
 
