@@ -5,16 +5,25 @@ import (
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
+	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
 	"go.uber.org/zap"
 )
 
-type Service struct {
-	cfg      Config
-	logger   *zap.Logger
-	registry *msgregistry.MessageRegistry
+type RecordPropertyType int
 
-	gitSvc *git.Service
+const (
+	RecordKey RecordPropertyType = iota
+	RecordValue
+)
+
+type Service struct {
+	cfg    Config
+	logger *zap.Logger
+
+	mappingsByTopic map[string]ConfigTopicMapping
+	gitSvc          *git.Service
+	registry        *msgregistry.MessageRegistry
 }
 
 func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
@@ -23,10 +32,20 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 		return nil, fmt.Errorf("failed to create new git service: %w", err)
 	}
 
+	mappingsByTopic := make(map[string]ConfigTopicMapping)
+	for _, mapping := range cfg.Mappings {
+		mappingsByTopic[mapping.TopicName] = mapping
+	}
+
 	return &Service{
 		cfg:    cfg,
 		logger: logger,
-		gitSvc: gitSvc,
+
+		mappingsByTopic: mappingsByTopic,
+		gitSvc:          gitSvc,
+
+		// registry has to be created afterwards
+		registry: nil,
 	}, nil
 }
 
@@ -44,6 +63,58 @@ func (s *Service) Start() error {
 	// TODO: SEtup background task to periodically update registry
 
 	return nil
+}
+
+func (s *Service) UnmarshalPayload(payload []byte, topicName string, property RecordPropertyType) ([]byte, error) {
+	messageDescriptor, err := s.getMessageDescriptor(topicName, property)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get message descriptor for payload: %w", err)
+	}
+
+	msg := dynamic.NewMessage(messageDescriptor)
+	err = msg.Unmarshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
+	}
+
+	jsonBytes, err := msg.MarshalJSON()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal protobuf message to JSON: %w", err)
+	}
+
+	return jsonBytes, nil
+}
+
+func (s *Service) getMessageDescriptor(topicName string, property RecordPropertyType) (*desc.MessageDescriptor, error) {
+	mapping, exists := s.mappingsByTopic[topicName]
+	if !exists {
+		return nil, fmt.Errorf("no prototype found for the given topic. Check your configured protobuf mappings")
+	}
+
+	protoTypeUrl := ""
+	if property == RecordKey {
+		if mapping.KeyProtoType == "" {
+			return nil, fmt.Errorf("no prototype mapping found for the record key of topic '%v'", topicName)
+		}
+		protoTypeUrl = mapping.KeyProtoType
+	} else {
+		if mapping.ValueProtoType == "" {
+			return nil, fmt.Errorf("no prototype mapping found for the record value of topic '%v'", topicName)
+		}
+		protoTypeUrl = mapping.ValueProtoType
+	}
+
+	messageDescriptor, err := s.registry.FindMessageTypeByUrl(protoTypeUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find the proto type in the proto registry: %w", err)
+	}
+	if messageDescriptor == nil {
+		// If this happens the user should already know that because we check the existence of all mapped types
+		// when we create the proto registry. A log message is printed if a mapping can't be find in the registry.
+		return nil, fmt.Errorf("failed to find the proto type in the proto registry: message descriptor is nil")
+	}
+
+	return messageDescriptor, nil
 }
 
 func (s *Service) createProtoRegistry() error {
@@ -65,14 +136,27 @@ func (s *Service) createProtoRegistry() error {
 
 	// Let's compare the registry items against the mapping and let the user know if there are missing/mismatched proto types
 	for _, mapping := range s.cfg.Mappings {
-		desc, err := s.registry.FindMessageTypeByUrl(mapping.ProtoType)
-		if err != nil {
-			return fmt.Errorf("failed to get proto type from registry: %w", err)
+		if mapping.ValueProtoType != "" {
+			desc, err := s.registry.FindMessageTypeByUrl(mapping.ValueProtoType)
+			if err != nil {
+				return fmt.Errorf("failed to get proto type from registry: %w", err)
+			}
+			if desc == nil {
+				s.logger.Info("protobuf type from configured topic mapping does not exist",
+					zap.String("topic_name", mapping.TopicName),
+					zap.String("value_proto_type", mapping.ValueProtoType))
+			}
 		}
-		if desc == nil {
-			s.logger.Info("protobuf type from configured topic mapping does not exist",
-				zap.String("topic_name", mapping.TopicName),
-				zap.String("proto_type", mapping.ProtoType))
+		if mapping.KeyProtoType != "" {
+			desc, err := s.registry.FindMessageTypeByUrl(mapping.KeyProtoType)
+			if err != nil {
+				return fmt.Errorf("failed to get proto type from registry: %w", err)
+			}
+			if desc == nil {
+				s.logger.Info("protobuf type from configured topic mapping does not exist",
+					zap.String("topic_name", mapping.TopicName),
+					zap.String("key_proto_type", mapping.KeyProtoType))
+			}
 		}
 	}
 

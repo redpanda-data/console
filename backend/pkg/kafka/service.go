@@ -80,7 +80,10 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		KafkaClient:      kafkaClient,
 		SchemaService:    schemaSvc,
 		ProtoService:     protoSvc,
-		Deserializer:     deserializer{SchemaService: schemaSvc},
+		Deserializer: deserializer{
+			SchemaService: schemaSvc,
+			ProtoService:  protoSvc,
+		},
 		MetricsNamespace: metricsNamespace,
 	}, nil
 }

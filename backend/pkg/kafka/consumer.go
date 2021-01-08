@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/interpreter"
+	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/dop251/goja"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
@@ -129,8 +130,8 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 				progress.OnMessageConsumed(int64(messageSize))
 
 				// Run Interpreter filter and check if message passes the filter
-				value := s.Deserializer.DeserializePayload(record.Value)
-				key := s.Deserializer.DeserializePayload(record.Key)
+				value := s.Deserializer.DeserializePayload(record.Value, record.Topic, proto.RecordValue)
+				key := s.Deserializer.DeserializePayload(record.Key, record.Topic, proto.RecordKey)
 				headers := s.DeserializeHeaders(record.Headers)
 
 				topicMessage := &TopicMessage{
@@ -254,7 +255,8 @@ func (s *Service) setupInterpreter(interpreterCode string) (func(args interprete
 func (s *Service) DeserializeHeaders(headers []kgo.RecordHeader) []MessageHeader {
 	res := make([]MessageHeader, len(headers))
 	for i, header := range headers {
-		value := s.Deserializer.DeserializePayload(header.Value)
+		// Dummy parameters - we don't support protobuf deserialization for header values
+		value := s.Deserializer.DeserializePayload(header.Value, "", proto.RecordValue)
 		res[i] = MessageHeader{
 			Key:           header.Key,
 			Value:         value,
