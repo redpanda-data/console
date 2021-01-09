@@ -38,6 +38,7 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 - Kafka Cluster (v1.0.0+) connectivity
 - At least one OAuth app for SSO (Kowl business only)
+- Internet connectivity to validate license (Kowl business only)
 
 ### Installing
 

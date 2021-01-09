@@ -5,6 +5,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"time"
+
 	"github.com/jcmturner/gokrb5/v8/client"
 	krbconfig "github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
@@ -15,9 +19,6 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"go.uber.org/zap"
-	"io/ioutil"
-	"net"
-	"time"
 )
 
 // NewKgoConfig creates a new Config for the Kafka Client as exposed by the franz-go library.
@@ -50,7 +51,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		}
 
 		// SASL SCRAM
-		if cfg.SASL.Mechanism == "SCRAM-SHA-256" || cfg.SASL.Mechanism == "SCRAM-SHA-256" {
+		if cfg.SASL.Mechanism == "SCRAM-SHA-256" || cfg.SASL.Mechanism == "SCRAM-SHA-512" {
 			var mechanism sasl.Mechanism
 			scramAuth := scram.Auth{
 				User: cfg.SASL.Username,
@@ -144,6 +145,9 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 				privateKey = pem.EncodeToMemory(&pem.Block{Type: pemBlock.Type, Bytes: decryptedKey})
 			}
 			tlsCert, err := tls.X509KeyPair(cert, privateKey)
+			if err != nil {
+				return nil, fmt.Errorf("cannot parse pem: %s", err)
+			}
 			certificates = []tls.Certificate{tlsCert}
 		}
 

@@ -3,12 +3,13 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/cloudhut/kowl/backend/pkg/interpreter"
 	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/dop251/goja"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
-	"time"
 )
 
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
@@ -185,8 +186,6 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 			}
 		}
 	}
-
-	return nil
 }
 
 // SetupInterpreter initializes the JavaScript interpreter along with the given JS code. It returns a wrapper function
