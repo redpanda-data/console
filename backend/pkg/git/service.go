@@ -32,6 +32,8 @@ type Service struct {
 	// In memory cache for markdowns. Map key is the filename with stripped ".md" suffix.
 	filesByName map[string]File
 	mutex       sync.RWMutex
+
+	OnFilesUpdatedHook func()
 }
 
 type File struct {
@@ -45,7 +47,7 @@ type File struct {
 }
 
 // NewService creates a new Git service with preconfigured Auth
-func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
+func NewService(cfg Config, logger *zap.Logger, onFilesUpdatedHook func()) (*Service, error) {
 	childLogger := logger.With(zap.String("repository_url", cfg.Repository.URL))
 
 	var auth transport.AuthMethod
@@ -70,7 +72,8 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 		auth:   auth,
 		logger: childLogger,
 
-		filesByName: make(map[string]File),
+		filesByName:        make(map[string]File),
+		OnFilesUpdatedHook: onFilesUpdatedHook,
 	}, nil
 }
 
@@ -120,8 +123,11 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 	}
 	c.setFileContents(files)
 
-	c.logger.Info("successfully cloned git repository",
-		zap.Int("read_files", len(files)))
+	c.logger.Info("successfully cloned git repository", zap.Int("read_files", len(files)))
+
+	if c.OnFilesUpdatedHook != nil {
+		c.OnFilesUpdatedHook()
+	}
 
 	return nil
 }
@@ -171,6 +177,10 @@ func (c *Service) SyncRepo() {
 			c.setFileContents(files)
 			c.logger.Info("successfully pulled git repository",
 				zap.Int("read_files", len(files)))
+
+			if c.OnFilesUpdatedHook != nil {
+				c.OnFilesUpdatedHook()
+			}
 		}
 	}
 }

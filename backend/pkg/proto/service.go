@@ -8,6 +8,7 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
 	"go.uber.org/zap"
+	"sync"
 )
 
 type RecordPropertyType int
@@ -23,11 +24,13 @@ type Service struct {
 
 	mappingsByTopic map[string]ConfigTopicMapping
 	gitSvc          *git.Service
-	registry        *msgregistry.MessageRegistry
+
+	registryMutex sync.RWMutex
+	registry      *msgregistry.MessageRegistry
 }
 
 func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
-	gitSvc, err := git.NewService(cfg.Git, logger)
+	gitSvc, err := git.NewService(cfg.Git, logger, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new git service: %w", err)
 	}
@@ -60,7 +63,8 @@ func (s *Service) Start() error {
 		return fmt.Errorf("failed to start git service: %w", err)
 	}
 
-	// TODO: SEtup background task to periodically update registry
+	// Git service periodically pulls the repo. If there are any file changes the proto registry will be rebuilt.
+	s.gitSvc.OnFilesUpdatedHook = s.tryCreateProtoRegistry
 
 	return nil
 }
@@ -104,6 +108,8 @@ func (s *Service) getMessageDescriptor(topicName string, property RecordProperty
 		protoTypeUrl = mapping.ValueProtoType
 	}
 
+	s.registryMutex.RLock()
+	defer s.registryMutex.RUnlock()
 	messageDescriptor, err := s.registry.FindMessageTypeByUrl(protoTypeUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the proto type in the proto registry: %w", err)
@@ -115,6 +121,13 @@ func (s *Service) getMessageDescriptor(topicName string, property RecordProperty
 	}
 
 	return messageDescriptor, nil
+}
+
+func (s *Service) tryCreateProtoRegistry() {
+	err := s.createProtoRegistry()
+	if err != nil {
+		s.logger.Error("failed to update proto registry", zap.Error(err))
+	}
 }
 
 func (s *Service) createProtoRegistry() error {
@@ -132,6 +145,9 @@ func (s *Service) createProtoRegistry() error {
 	for _, descriptor := range fileDescriptors {
 		registry.AddFile("", descriptor)
 	}
+
+	s.registryMutex.Lock()
+	defer s.registryMutex.Unlock()
 	s.registry = registry
 
 	// Let's compare the registry items against the mapping and let the user know if there are missing/mismatched proto types

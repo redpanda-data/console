@@ -20,7 +20,7 @@ func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service) (*Servi
 	var gitSvc *git.Service
 	cfg.TopicDocumentation.Git.AllowedFileExtensions = []string{"md"}
 	if cfg.TopicDocumentation.Enabled && cfg.TopicDocumentation.Git.Enabled {
-		svc, err := git.NewService(cfg.TopicDocumentation.Git, logger)
+		svc, err := git.NewService(cfg.TopicDocumentation.Git, logger, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create git service: %w", err)
 		}
