@@ -95,6 +95,7 @@ kafka:
 
 # server:
 #   listenPort: 8080
+#   listenAddress:
 #   gracefulShutdownTimeout: 30s
 #   listenPort: 8080
 #   readTimeout: 30s
