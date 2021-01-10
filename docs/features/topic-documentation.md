@@ -23,26 +23,29 @@ Beside the repository url and branch you usually need to configure authenticatio
 Configuration is described below:
 
 ```yaml
-git:
+owl:
   topicDocumentation:
-    enabled: false
-    repoUrl:
-    # If you don't set a branch the configured default branch will be used
-    branch:
-    # How often Kowl shall pull the repository to look for new files. Set 0 to disable periodic pulls
-    refreshInterval: 1m
-  # Basic Auth
-  # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password
-  basicAuth:
-    enabled: false
-    username:
-    password: #  This can be set via the via the --git.basic-auth.password flag as well
-  # SSH Auth
-  # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
-  ssh:
-    enabled: false
-    username:
-    privateKey: # This can be set via the via the --git.ssh.private-key flag as well
-    privateKeyFilepath:
-    passphrase: # This can be set via the via the --git.ssh.passphrase flag as well
+    enabled: true
+    # Git is where the topic documentation can come from, in the future there might be additional
+    git:
+      enabled: true
+      repository:
+        url: https://github.com/cloudhut/topic-docs
+        branch: master
+      # How often Kowl shall pull the repository to look for new files. Set 0 to disable periodic pulls
+      refreshInterval: 1m
+      # Basic Auth
+      # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password
+      basicAuth:
+        enabled: true
+        username: token
+        password: #  This can be set via the via the --owl.topic-documentation.git.basic-auth.password flag as well
+      # SSH Auth
+      # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
+      ssh:
+        enabled: false
+        username:
+        privateKey: # This can be set via the via the --owl.topic-documentation.git.ssh.private-key flag as well
+        privateKeyFilepath:
+        passphrase: # This can be set via the via the --owl.topic-documentation.git.ssh.passphrase flag as well
 ```

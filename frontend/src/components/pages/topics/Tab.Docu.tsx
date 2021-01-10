@@ -6,6 +6,10 @@ import ReactMarkdown from 'react-markdown';
 import { url } from "inspector";
 import { uriTransformer as baseUriTransformer } from 'react-markdown';
 import { DefaultSkeleton } from "../../../utils/tsxUtils";
+import { motion } from "framer-motion";
+import { animProps } from "../../../utils/animationProps";
+import Card from "../../misc/Card";
+import { Button, Empty } from "antd";
 
 
 // Test for link sanitizer
@@ -39,10 +43,40 @@ function sanitizeUrl(uri: string, children?: React.ReactNode, title?: string | u
 export class TopicDocumentation extends Component<{ topic: TopicDetail }> {
     render() {
         let docu = api.topicDocumentation.get(this.props.topic.topicName);
-        if (!docu) return DefaultSkeleton;
+        if (docu == null) return DefaultSkeleton; // not yet loaded
+        if (!docu.isEnabled) return renderNotConfigured();
+
+        let markdown = docu.text ?? '';
+
+        if (markdown === '') {
+            markdown = `> The documentation file is empty.`;
+        }
 
         return <div className='topicDocumentation'>
-            <ReactMarkdown source={docu} escapeHtml={false} transformLinkUri={sanitizeUrl} />
+            <ReactMarkdown source={markdown} escapeHtml={false} transformLinkUri={sanitizeUrl} />
         </div>
     }
+}
+
+function renderNotConfigured() {
+    return (
+        <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>
+            <Empty description={null}>
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <h2>Not Configured</h2>
+
+                    <p>
+                        Topic Documentation is not configured in Kowl.
+                            <br />
+                            Provide the connection credentials in the Kowl config, to fetch and display docmentation for the topics.
+                        </p>
+                </div>
+
+                {/* todo: fix link once we have a better guide */}
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
+                    <Button type="primary">Kowl Documentation</Button>
+                </a>
+            </Empty>
+        </motion.div>
+    );
 }

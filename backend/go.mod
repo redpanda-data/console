@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/sarama v1.27.0
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/cloudhut/common v0.4.1-0.20201127160721-d89029ea7463
 	github.com/dlclark/regexp2 v1.2.0 // indirect
@@ -20,6 +20,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/jarcoal/httpmock v1.0.6
 	github.com/jcmturner/gokrb5/v8 v8.4.2
+	github.com/jhump/protoreflect v1.8.1
 	github.com/linkedin/goavro/v2 v2.9.8
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
@@ -27,8 +28,9 @@ require (
 	github.com/twmb/franz-go v0.6.2-0.20210104053439-f904b9553a34
 	go.uber.org/zap v1.15.0
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
-	golang.org/x/mod v0.2.0 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	golang.org/x/tools v0.0.0-20200214225126-5916a50871fb // indirect
+	golang.org/x/tools v0.0.0-20200717024301-6ddee64345a6 // indirect
+	google.golang.org/protobuf v1.25.1-0.20200805231151-a709e31e5d12
 	gopkg.in/yaml.v2 v2.3.0
+	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
 )

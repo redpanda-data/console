@@ -110,11 +110,19 @@ export interface TopicConfigResponse {
 export interface TopicConfigResponse {
     topicDescription: TopicDescription
 }
+export interface TopicDocumentation {
+    // if false: topic documentation is not configured
+    isEnabled: boolean;
+    // empty: actually empty
+    // null:  no .md docu file found for this topic
+    markdown: string | null; // base64
+
+    // added by frontend:
+    text: string | null; // atob(markdown)
+}
 export interface TopicDocumentationResponse {
     topicName: string;
-    documentation: {
-        markdown: string; // base64
-    }
+    documentation: TopicDocumentation;
 }
 
 

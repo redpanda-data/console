@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"strings"
 	"unicode/utf8"
 
@@ -15,17 +16,19 @@ import (
 // deserializer can deserialize messages from various formats (json, xml, avro, ..) into a Go native form.
 type deserializer struct {
 	SchemaService *schema.Service
+	ProtoService  *proto.Service
 }
 
 type messageEncoding string
 
 const (
-	messageEncodingNone   messageEncoding = "none"
-	messageEncodingAvro   messageEncoding = "avro"
-	messageEncodingJSON   messageEncoding = "json"
-	messageEncodingXML    messageEncoding = "xml"
-	messageEncodingText   messageEncoding = "text"
-	messageEncodingBinary messageEncoding = "binary"
+	messageEncodingNone     messageEncoding = "none"
+	messageEncodingAvro     messageEncoding = "avro"
+	messageEncodingProtobuf messageEncoding = "protobuf"
+	messageEncodingJSON     messageEncoding = "json"
+	messageEncodingXML      messageEncoding = "xml"
+	messageEncodingText     messageEncoding = "text"
+	messageEncodingBinary   messageEncoding = "binary"
 )
 
 // normalizedPayload is a wrapper of the original message with the purpose of having a custom JSON marshal method
@@ -67,7 +70,7 @@ type deserializedPayload struct {
 //  - UTF-8 Text
 //  - Binary content
 // Idea: Add encoding hint where user can suggest the backend to test this encoding first.
-func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
+func (d *deserializer) DeserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
 	if len(payload) == 0 {
 		return &deserializedPayload{Payload: normalizedPayload{
 			Payload:            payload,
@@ -136,7 +139,27 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 		}
 	}
 
-	// 4. Test for UTF-8 validity
+	// 4. Test for Protobuf
+	if d.ProtoService != nil {
+		jsonBytes, err := d.ProtoService.UnmarshalPayload(payload, topicName, recordType)
+		if err == nil {
+			var native interface{}
+			err := json.Unmarshal(jsonBytes, &native)
+			if err == nil {
+				return &deserializedPayload{
+					Payload: normalizedPayload{
+						Payload:            jsonBytes,
+						RecognizedEncoding: messageEncodingProtobuf,
+					},
+					Object:             native,
+					RecognizedEncoding: messageEncodingProtobuf,
+					Size:               len(payload),
+				}
+			}
+		}
+	}
+
+	// 5. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(payload)
 	if isUTF8 {
 		return &deserializedPayload{Payload: normalizedPayload{
