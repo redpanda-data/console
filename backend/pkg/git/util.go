@@ -58,8 +58,14 @@ func (c *Service) readFiles(fs billy.Filesystem, res map[string]File, currentPat
 				zap.String("path", currentPath), zap.Error(err))
 			continue
 		}
-		res[trimmedFilename] = File{
-			Path:            path.Join(currentPath, name),
+		filePath := path.Join(currentPath, name)
+
+		key := trimmedFilename
+		if c.Cfg.IndexByFullFilepath {
+			key = filePath
+		}
+		res[key] = File{
+			Path:            filePath,
 			Filename:        name,
 			TrimmedFilename: trimmedFilename,
 			Payload:         content,

@@ -30,6 +30,8 @@ type Service struct {
 }
 
 func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
+	// Index by full filepath so that we support .proto files with the same filename in different directories
+	cfg.Git.IndexByFullFilepath = true
 	gitSvc, err := git.NewService(cfg.Git, logger, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new git service: %w", err)

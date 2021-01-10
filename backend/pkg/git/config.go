@@ -17,6 +17,9 @@ type Config struct {
 	// Max file size which will be considered. Files exceeding this size will be ignored and logged.
 	MaxFileSize int64 `yaml:"-"`
 
+	// Whether or not to use the filename or the full filepath as key in the map
+	IndexByFullFilepath bool `yaml:"-"`
+
 	// RefreshInterval specifies how often the repository shall be pulled to check for new changes.
 	RefreshInterval time.Duration `yaml:"refreshInterval"`
 
@@ -50,4 +53,5 @@ func (c *Config) Validate() error {
 func (c *Config) SetDefaults() {
 	c.RefreshInterval = time.Minute
 	c.MaxFileSize = 500 * 1000 // 500KB
+	c.IndexByFullFilepath = false
 }
