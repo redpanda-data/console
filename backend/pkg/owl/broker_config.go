@@ -109,7 +109,7 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) (*BrokerC
 	}
 	brokerResponse := res[0]
 
-	bID, err := strconv.Atoi(brokerResponse.ResourceName)
+	bID, err := strconv.ParseInt(brokerResponse.ResourceName, 10, 32)
 	if err != nil {
 		s.logger.Warn("failed to parse broker id as int from broker config response",
 			zap.String("returned_value", brokerResponse.ResourceName))
