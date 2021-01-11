@@ -8,7 +8,7 @@ type BasicAuthConfig struct {
 	Password string `yaml:"password"`
 }
 
-// RegisterFlags for sensitive Basic Auth configs
-func (c *BasicAuthConfig) RegisterFlags(f *flag.FlagSet) {
-	f.StringVar(&c.Password, "git.basic-auth.password", "", "Basic Auth password")
+// RegisterFlagsWithPrefix for sensitive Basic Auth configs
+func (c *BasicAuthConfig) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
+	f.StringVar(&c.Password, prefix+"git.basic-auth.password", "", "Basic Auth password")
 }

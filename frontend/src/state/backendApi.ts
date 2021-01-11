@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -192,7 +192,7 @@ const apiStore = {
 
     topics: null as (TopicDetail[] | null),
     topicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
-    topicDocumentation: new Map<string, string>(),
+    topicDocumentation: new Map<string, TopicDocumentation>(),
     topicPermissions: new Map<string, TopicPermissions>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     topicConsumers: new Map<string, TopicConsumer[]>(),
@@ -368,7 +368,11 @@ const apiStore = {
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
         cachedApiRequest<TopicDocumentationResponse>(`./api/topics/${topicName}/documentation`, force)
-            .then(v => this.topicDocumentation.set(topicName, atob(v.documentation.markdown)), addError);
+            .then(v => {
+                const text = v.documentation.markdown == null ? null : atob(v.documentation.markdown);
+                v.documentation.text = text;
+                this.topicDocumentation.set(topicName, v.documentation);
+            }, addError);
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {

@@ -1,7 +1,6 @@
 package owl
 
 import (
-	"context"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
@@ -17,35 +16,28 @@ type Service struct {
 }
 
 // NewService for the Owl package
-func NewService(logger *zap.Logger, kafkaSvc *kafka.Service, gitSvc *git.Service) *Service {
+func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service) (*Service, error) {
+	var gitSvc *git.Service
+	cfg.TopicDocumentation.Git.AllowedFileExtensions = []string{"md"}
+	if cfg.TopicDocumentation.Enabled && cfg.TopicDocumentation.Git.Enabled {
+		svc, err := git.NewService(cfg.TopicDocumentation.Git, logger, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create git service: %w", err)
+		}
+		gitSvc = svc
+	}
 	return &Service{
 		kafkaSvc: kafkaSvc,
 		gitSvc:   gitSvc,
 		logger:   logger,
-	}
+	}, nil
 }
 
 // Start starts all the (background) tasks which are required for this service to work properly. If any of these
 // tasks can not be setup an error will be returned which will cause the application to exit.
 func (s *Service) Start() error {
-	return s.startTopicDocumentationSync()
-}
-
-func (s *Service) startTopicDocumentationSync() error {
 	if s.gitSvc == nil {
 		return nil
 	}
-
-	if !s.gitSvc.Cfg.TopicDocumentationRepo.Enabled {
-		return nil
-	}
-
-	err := s.gitSvc.CloneDocumentation(context.Background())
-	if err != nil {
-		return fmt.Errorf("failed to clone topic documentation repo: %w", err)
-	}
-
-	go s.gitSvc.SyncDocumentation()
-
-	return nil
+	return s.gitSvc.Start()
 }

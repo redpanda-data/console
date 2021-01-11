@@ -106,6 +106,18 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
             return left - right;
         }
 
+        if ((typeof a[field] === 'undefined' || a[field] === null) && (typeof b[field] !== 'undefined' && b[field] !== null)) {
+            const left = '';
+            const right = String(b[field]);
+            return left.localeCompare(right);
+        }
+
+        if ((typeof a[field] !== 'undefined' && a[field] !== null) && (typeof b[field] === 'undefined' || b[field] === null)) {
+            const left = String(a[field]);
+            const right = '';
+            return left.localeCompare(right);
+        }
+
         throw Error(`Table 'sortField()' can't handle '${field}', it's type is '${typeof a[field]}'`)
     }
 }
