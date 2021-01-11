@@ -25,7 +25,7 @@ import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined } from '@ant-design/icons';
 import { observable } from 'mobx';
 import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
-import { LayoutBypass } from '../utils/tsxUtils';
+import { LayoutBypass, toSafeString } from '../utils/tsxUtils';
 import prettyMilliseconds from 'pretty-ms';
 import { UserPreferencesButton } from './misc/UserPreferences';
 

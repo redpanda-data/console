@@ -67,15 +67,29 @@ const DefaultQuickTableOptions = {
 }
 type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>
 
-export function QuickTable(data: [any, any][], options?: QuickTableOptions): JSX.Element;
+// [ { key: 'a', value: 'b' } ]
 export function QuickTable(data: { key: any, value: any }[], options?: QuickTableOptions): JSX.Element;
+// { 'key1': 'value1', 'key2': 'value2' }
+export function QuickTable(data: { [key: string]: any }, options?: QuickTableOptions): JSX.Element;
+// [ ['a', 'b'] ]
+export function QuickTable(data: [any, any][], options?: QuickTableOptions): JSX.Element;
 
-export function QuickTable(data: { key: any, value: any }[] | [any, any][], options?: QuickTableOptions): JSX.Element {
+export function QuickTable(data: { key: any, value: any }[] | { [key: string]: any } | [any, any][], options?: QuickTableOptions): JSX.Element {
     let entries: { key: any, value: any }[];
-    if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
-        // Convert from  '[any, any][]'  to array of key-value objects
+
+    // plain object?
+    if (typeof data === 'object' && !Array.isArray(data)) {
+        // Convert to array of key value objects
+        entries = [];
+        for (const [k, v] of Object.entries(data))
+            entries.push({ key: k, value: v });
+    }
+    // array of [any, any] ?
+    else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
+        // Convert to array of key-value objects
         entries = (data as [any, any][]).map(ar => ({ key: ar[0], value: ar[1] }));
     }
+    // already correct? array of { key:any, value:any }
     else {
         // Cast to correct type directly
         entries = data as { key: any, value: any }[];

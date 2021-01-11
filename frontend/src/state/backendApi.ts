@@ -10,7 +10,7 @@ import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { ToJson, LazyMap, TimeSince, clone } from "../utils/utils";
 import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
-import { uiState } from "./uiState";
+import { ServerVersionInfo, uiState } from "./uiState";
 import { notification } from "antd";
 import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
 import { objToQuery } from "../utils/queryHelper";
@@ -38,14 +38,17 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
         return null;
     }
 
-    for (const [k, v] of res.headers) {
-        if (k.toLowerCase() == 'app-version')
-            if (v != env.REACT_APP_KOWL_GIT_SHA)
-                uiState.serverVersion = v;
-        if (k.toLowerCase() == 'app-version-business')
-            if (v != env.REACT_APP_KOWL_BUSINESS_GIT_SHA)
-                uiState.serverVersionBusiness = v;
-    }
+    try {
+        for (const [k, v] of res.headers) {
+            if (k.toLowerCase() == 'app-version') {
+                const serverVersion = JSON.parse(v) as ServerVersionInfo;
+                if (typeof serverVersion === 'object')
+                    if (uiState.serverVersion == null || (serverVersion.ts != uiState.serverVersion.ts))
+                        uiState.serverVersion = serverVersion;
+                break;
+            }
+        }
+    } catch { } // Catch malformed json (old versions where info is not sent as json yet)
 
     if (!res.ok)
         throw new Error("(" + res.status + ") " + res.statusText);

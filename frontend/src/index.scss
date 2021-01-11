@@ -897,11 +897,11 @@ svg {
 
         .ant-popover-inner {
             .ant-popover-title {
-                color: hsla(0deg, 0%, 0%, 0.75);
+                color: hsl(0deg, 0%, 35%);
             }
 
             .ant-popover-inner-content {
-                color: hsla(0deg, 0%, 0%, 0.75);
+                color: hsl(0deg, 0%, 45%);
             }
         }
     }
@@ -974,18 +974,27 @@ svg {
 .ant-tooltip {
     font-size: 12px;
     max-width: 400px;
+
+    --ant-tooltip-color: hsl(0deg, 0%, 87%);
 }
 
-.ant-tooltip-inner {
-    min-height: 20px;
-    padding: .5em .75em;
-    color: rgba(255, 255, 255, 85%);
-    border-radius: 4px;
-    background-color: hsla(210, 14%, 20%, 0.9);
-    text-align: center;
-    font-size: 11px;
-    font-family: Verdana, "Segoe UI", Helvetica, sans-serif;
-    line-height: 1.5;
+
+.ant-menu-inline-collapsed-tooltip a {
+    color: var(--ant-tooltip-color);
+}
+
+.ant-tooltip {
+    .ant-tooltip-inner {
+        min-height: 20px;
+        padding: .5em .75em;
+        color: var(--ant-tooltip-color);
+        border-radius: 4px;
+        background-color: hsla(210, 14%, 20%, 0.9);
+        text-align: center;
+        font-size: 11px;
+        font-family: Verdana, "Segoe UI", Helvetica, sans-serif;
+        line-height: 1.5;
+    }
 }
 
 .ant-tooltip-arrow::before {
