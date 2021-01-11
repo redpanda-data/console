@@ -59,7 +59,7 @@ class TopicList extends PageComponent {
     }
 
     isFilterMatch(filter: string, item: TopicDetail): boolean {
-        if (item.topicName.toLowerCase().includes(filter)) return true;
+        if (item.topicName.toLowerCase().includes(filter.toLowerCase())) return true;
         return false;
     }
 
