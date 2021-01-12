@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -189,7 +189,7 @@ const apiStore = {
 
     topics: null as (TopicDetail[] | null),
     topicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
-    topicDocumentation: new Map<string, string>(),
+    topicDocumentation: new Map<string, TopicDocumentation>(),
     topicPermissions: new Map<string, TopicPermissions>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     topicConsumers: new Map<string, TopicConsumer[]>(),
@@ -289,21 +289,22 @@ const apiStore = {
                 case 'message':
                     let m = msg.message as TopicMessage;
 
-                    if (m.key != null && m.key != undefined && m.key != "" && m.keyType == 'binary') {
+                    const keyData = m.key.payload;
+                    if (keyData != null && keyData != undefined && keyData != "" && m.key.encoding == 'binary') {
                         try {
-                            m.key = atob(m.key); // unpack base64 encoded key
+                            m.key.payload = atob(m.key.payload); // unpack base64 encoded key
                         } catch (error) {
                             // Empty
                             // Only unpack if the key is base64 based
                         }
                     }
 
-                    m.valueJson = JSON.stringify(m.value);
+                    m.valueJson = JSON.stringify(m.value.payload);
 
-                    if (m.valueType == 'binary') {
-                        m.value = atob(m.value);
+                    if (m.value.encoding == 'binary') {
+                        m.value.payload = atob(m.value.payload);
 
-                        const str = m.value as string;
+                        const str = m.value.payload as string;
                         let hex = '';
                         for (let i = 0; i < str.length && i < 50; i++) {
                             let n = str.charCodeAt(i).toString(16);
@@ -364,7 +365,11 @@ const apiStore = {
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
         cachedApiRequest<TopicDocumentationResponse>(`./api/topics/${topicName}/documentation`, force)
-            .then(v => this.topicDocumentation.set(topicName, atob(v.documentation.markdown)), addError);
+            .then(v => {
+                const text = v.documentation.markdown == null ? null : atob(v.documentation.markdown);
+                v.documentation.text = text;
+                this.topicDocumentation.set(topicName, v.documentation);
+            }, addError);
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {

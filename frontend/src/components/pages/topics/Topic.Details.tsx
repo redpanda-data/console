@@ -91,27 +91,13 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         super(props);
 
         const topic = () => this.topic;
-        const hasDocu = (t: TopicDetail) => {
-            const docu = api.topicDocumentation.get(t.topicName);
-            if (docu && docu.length > 0) return true;
-            return false;
-        }
-        const noDocuInfo = <div>
-            <div>There is no topic documentation available for this topic.</div>
-            <div>Check out the documentation to see how to add it.</div>
-        </div>
-        const noDocuTitle = (t: TopicDetail) => <Popover content={noDocuInfo}>
-            <span>Documentation</span>
-        </Popover>
 
         this.topicTabs = [
             new TopicTab(topic, 'messages', 'viewMessages', 'Messages', t => <TopicMessageView topic={t} />),
             new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', t => <TopicConsumers topic={t} />),
             new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', t => <TopicPartitions topic={t} />),
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', t => <TopicConfiguration topic={t} />),
-            new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', t => <TopicDocumentation topic={t} />, [
-                t => hasDocu(t) ? null : noDocuTitle(t)
-            ]),
+            new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', t => <TopicDocumentation topic={t} />),
         ];
     }
 

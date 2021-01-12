@@ -77,6 +77,7 @@ export class TopicDetailsSettings {
     @observable previewShowResultCount = false;
     // @observable previewResultLimit: 3; // todo
     @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
+    @observable showMessageMetadata = true;
     @observable showMessageHeaders = false;
 
     @observable previewTimestamps = 'default' as TimestampDisplayFormat;

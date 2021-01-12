@@ -3,79 +3,66 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/Shopify/sarama"
-	"golang.org/x/sync/errgroup"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+type ListConsumerGroupsResponseSharded struct {
+	Groups         []ListConsumerGroupsResponse
+	RequestsSent   int
+	RequestsFailed int
+}
+
+func (l *ListConsumerGroupsResponseSharded) GetGroupIDs() []string {
+	groupIDs := make([]string, 0)
+	for _, groupResp := range l.Groups {
+		if groupResp.Error != nil || groupResp.Groups == nil {
+			continue
+		}
+		for _, group := range groupResp.Groups.Groups {
+			groupIDs = append(groupIDs, group.Group)
+		}
+	}
+	return groupIDs
+}
+
+// LogDirResponse can have an error (if the broker failed to return data) or the actual LogDir response
 type ListConsumerGroupsResponse struct {
-	GroupIDs []string
-	Errors   []error
+	BrokerMetadata kgo.BrokerMetadata
+	Groups         *kmsg.ListGroupsResponse
+	Error          error
 }
 
 // ListConsumerGroups returns an array of Consumer group ids. Failed broker requests will be returned in the response.
 // If all broker requests fail an error will be returned.
-func (s *Service) ListConsumerGroups(ctx context.Context) (*ListConsumerGroupsResponse, error) {
-	// 1. Query all brokers in the cluster in parallel in order to get all Consumer Groups
-	brokers := s.Client.Brokers()
-	type response struct {
-		Err            error
-		GroupsResponse *sarama.ListGroupsResponse
-		BrokerID       int32
+func (s *Service) ListConsumerGroups(ctx context.Context) (*ListConsumerGroupsResponseSharded, error) {
+	req := kmsg.ListGroupsRequest{}
+	shardedResp := s.KafkaClient.RequestSharded(ctx, &req)
+
+	result := &ListConsumerGroupsResponseSharded{
+		Groups:         make([]ListConsumerGroupsResponse, len(shardedResp)),
+		RequestsSent:   0,
+		RequestsFailed: 0,
 	}
-	resCh := make(chan response, len(brokers))
-
-	g, ctx := errgroup.WithContext(ctx)
-	for _, broker := range brokers {
-		// Wrap in a func to avoid race conditions
-		func(b *sarama.Broker) {
-			g.Go(func() error {
-				_ = b.Open(s.Client.Config())
-				r, err := b.ListGroups(&sarama.ListGroupsRequest{})
-				if err != nil {
-					resCh <- response{
-						Err:            err,
-						GroupsResponse: nil,
-						BrokerID:       b.ID(),
-					}
-					return nil
-				}
-				resCh <- response{
-					Err:            nil,
-					GroupsResponse: r,
-					BrokerID:       b.ID(),
-				}
-				return nil
-			})
-		}(broker)
-	}
-
-	// Wait until errgroup is done. We ignore the returned error as we won't ever return an error
-	_ = g.Wait()
-	close(resCh)
-
-	// Fetch all groupIDs from channels until channels are closed or context is Done
-	groupIDs := make([]string, 0)
-	errors := make([]error, 0)
-
-	for res := range resCh {
-		if res.Err != nil {
-			err := fmt.Errorf("broker with id '%v' failed to return a list of Consumer groups: %v", res.BrokerID, res.Err)
-			errors = append(errors, err)
-			continue
+	var lastErr error
+	for _, kresp := range shardedResp {
+		result.RequestsSent++
+		if kresp.Err != nil {
+			result.RequestsFailed++
+			lastErr = kresp.Err
 		}
+		res := kresp.Resp.(*kmsg.ListGroupsResponse)
 
-		for g := range res.GroupsResponse.Groups {
-			groupIDs = append(groupIDs, g)
-		}
+		result.Groups = append(result.Groups, ListConsumerGroupsResponse{
+			BrokerMetadata: kresp.Meta,
+			Groups:         res,
+			Error:          kresp.Err,
+		})
 	}
 
-	if len(errors) == len(brokers) {
-		// All brokers returned an error
-		return nil, fmt.Errorf("all brokers failed to return a list of consumer groups: %w", errors[0])
+	if result.RequestsSent > 0 && result.RequestsSent == result.RequestsFailed {
+		return result, fmt.Errorf("all '%v' requests have failed, last error: %w", len(shardedResp), lastErr)
 	}
 
-	return &ListConsumerGroupsResponse{
-		GroupIDs: groupIDs,
-		Errors:   errors,
-	}, nil
+	return result, nil
 }

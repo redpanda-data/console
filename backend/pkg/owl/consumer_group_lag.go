@@ -3,8 +3,9 @@ package owl
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
-	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
 )
 
@@ -43,15 +44,15 @@ type PartitionLag struct {
 }
 
 // convertOffsets returns a map where the key is the topic name
-func convertOffsets(offsets *sarama.OffsetFetchResponse) map[string]partitionOffsets {
-	res := make(map[string]partitionOffsets, len(offsets.Blocks))
-	for topic, blocks := range offsets.Blocks {
-		pOffsets := make(partitionOffsets, len(blocks))
-		for pID, block := range blocks {
-			pOffsets[pID] = block.Offset
+func convertOffsets(offsets *kmsg.OffsetFetchResponse) map[string]partitionOffsets {
+	res := make(map[string]partitionOffsets, len(offsets.Topics))
+	for _, topic := range offsets.Topics {
+		pOffsets := make(partitionOffsets, len(topic.Partitions))
+		for _, partition := range topic.Partitions {
+			pOffsets[partition.Partition] = partition.Offset
 		}
 
-		res[topic] = pOffsets
+		res[topic.Topic] = pOffsets
 	}
 
 	return res
@@ -73,24 +74,31 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 
 	// 2. Fetch all partition watermarks so that we can calculate the consumer group lags
 	// Fetch all consumed topics and their partitions so that we know whose partitions we want the high water marks for
-	topics := make([]string, 0)
+	topicNames := make([]string, 0)
 	for _, topicOffset := range offsetsByGroup {
 		for topic := range topicOffset {
-			topics = append(topics, topic)
+			topicNames = append(topicNames, topic)
 		}
 	}
 
-	topicPartitions := make(map[string][]int32, len(topics))
-	for _, topic := range topics {
-		partitions, err := s.kafkaSvc.Client.Partitions(topic)
+	metadata, err := s.kafkaSvc.GetMetadata(ctx, topicNames)
+	if err != nil {
+		s.logger.Error("failed to get topic metadata", zap.Strings("topics", topicNames), zap.Error(err))
+		return nil, fmt.Errorf("failed to get topic metadata: %w", err)
+	}
+
+	topicPartitions := make(map[string][]int32, len(topicNames))
+	for _, topic := range metadata.Topics {
+		partitionIDs, err := s.kafkaSvc.PartitionsToPartitionIDs(topic.Partitions)
 		if err != nil {
-			s.logger.Error("failed to fetch partition list for calculating the group lags", zap.String("topic", topic), zap.Error(err))
-			return nil, fmt.Errorf("failed to fetch partition list for calculating the group lags")
+			s.logger.Error("failed to fetch partition list for calculating the group lags", zap.String("topic", topic.Topic), zap.Error(err))
+			return nil, fmt.Errorf("failed to fetch partition list for calculating the group lags: %w", err)
 		}
-		topicPartitions[topic] = partitions
+
+		topicPartitions[topic.Topic] = partitionIDs
 	}
 
-	waterMarks, err := s.kafkaSvc.HighWaterMarks(topicPartitions)
+	highWaterMarks, err := s.kafkaSvc.ListOffsets(ctx, topicPartitions, kafka.TimestampLatest)
 	if err != nil {
 		return nil, err
 	}
@@ -101,11 +109,11 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 		topicLags := make([]*TopicLag, 0)
 		for topic, partitionOffsets := range offsetsByGroup[group] {
 			// In this scope we iterate on a single group's, single topic's offset
-			subLogger := s.logger.With(zap.String("group", group), zap.String("topic", topic))
+			childLogger := s.logger.With(zap.String("group", group), zap.String("topic", topic))
 
-			partitionWaterMarks, ok := waterMarks[topic]
+			highWaterMarks, ok := highWaterMarks[topic]
 			if !ok {
-				subLogger.Error("no partition watermark for the group's topic available")
+				childLogger.Error("no partition watermark for the group's topic available")
 				return nil, fmt.Errorf("no partition watermark for the group's topic available")
 			}
 
@@ -114,11 +122,11 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 			t := TopicLag{
 				Topic:                topic,
 				SummedLag:            0,
-				PartitionCount:       len(partitionWaterMarks),
+				PartitionCount:       len(highWaterMarks),
 				PartitionsWithOffset: 0,
 				PartitionLags:        make([]PartitionLag, 0),
 			}
-			for pID, watermark := range partitionWaterMarks {
+			for pID, watermark := range highWaterMarks {
 				groupOffset, hasGroupOffset := partitionOffsets[pID]
 				if !hasGroupOffset {
 					continue

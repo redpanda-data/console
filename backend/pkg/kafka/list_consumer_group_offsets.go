@@ -2,42 +2,45 @@ package kafka
 
 import (
 	"context"
+	"fmt"
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"sync"
 
-	"github.com/Shopify/sarama"
 	"golang.org/x/sync/errgroup"
 )
 
 // ListConsumerGroupOffsets returns the committed group offsets for a single group
-func (s *Service) ListConsumerGroupOffsets(group string) (*sarama.OffsetFetchResponse, error) {
-	coordinator, err := s.Client.Coordinator(group)
+func (s *Service) ListConsumerGroupOffsets(ctx context.Context, group string) (*kmsg.OffsetFetchResponse, error) {
+	req := kmsg.OffsetFetchRequest{
+		Group:  group,
+		Topics: nil, // Requests all topics for this consumer group
+	}
+	res, err := req.RequestWith(ctx, s.KafkaClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to request group offsets for group '%v': %w", group, err)
 	}
 
-	req := &sarama.OffsetFetchRequest{
-		Version:       2,
-		ConsumerGroup: group,
-	}
-
-	offsets, err := coordinator.FetchOffset(req)
+	err = kerr.ErrorForCode(res.ErrorCode)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to request group offsets for group '%v'. Inner error: %w", group, err)
 	}
+	// TODO: Each partition in res.Topics[*].Partitions[*] can have a request error as well. We should propagate
+	// 	that to the frontend, so that we can still return results along with a warning that results are incomplete
 
-	return offsets, nil
+	return res, nil
 }
 
 // ListConsumerGroupOffsetsBulk returns a map which has the Consumer group name as key
-func (s *Service) ListConsumerGroupOffsetsBulk(ctx context.Context, groups []string) (map[string]*sarama.OffsetFetchResponse, error) {
+func (s *Service) ListConsumerGroupOffsetsBulk(ctx context.Context, groups []string) (map[string]*kmsg.OffsetFetchResponse, error) {
 	eg, _ := errgroup.WithContext(ctx)
 
 	mutex := sync.Mutex{}
-	res := make(map[string]*sarama.OffsetFetchResponse)
+	res := make(map[string]*kmsg.OffsetFetchResponse)
 
 	f := func(group string) func() error {
 		return func() error {
-			offsets, err := s.ListConsumerGroupOffsets(group)
+			offsets, err := s.ListConsumerGroupOffsets(ctx, group)
 			if err != nil {
 				return err
 			}

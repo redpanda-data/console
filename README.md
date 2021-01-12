@@ -25,7 +25,7 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 | **Consumer Group Overview** | :white_check_mark: | :white_check_mark: |
 | **Broker/Cluster Overview** | :white_check_mark: | :white_check_mark: |
 | **Message viewer** | :white_check_mark: | :white_check_mark: |
-| **Login System (Google, GitHub OAuth)** | :x: | :white_check_mark: |
+| **Login System (Google, GitHub, Okta)** | :x: | :white_check_mark: |
 | **RBAC permissions with group syncing** | :x: | :white_check_mark: |
 | **Screenshots** | Preview .gif in README | https://cloudhut.dev/ |
 | **Price** | Always free / Open source | Free during beta\* |
@@ -38,6 +38,7 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 - Kafka Cluster (v1.0.0+) connectivity
 - At least one OAuth app for SSO (Kowl business only)
+- Internet connectivity to validate license (Kowl business only)
 
 ### Installing
 

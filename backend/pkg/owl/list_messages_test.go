@@ -1,15 +1,16 @@
 package owl
 
 import (
+	"testing"
+
 	"github.com/Shopify/sarama"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {
 	// Request less messages than we have partitions
-	marks := map[int32]*kafka.WaterMark{
+	marks := map[int32]kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 10},
 		2: {PartitionID: 2, Low: 10, High: 30},
@@ -35,7 +36,7 @@ func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) 
 
 func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 	// Unbalanced message distribution across 3 partitions
-	marks := map[int32]*kafka.WaterMark{
+	marks := map[int32]kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 11},
 		2: {PartitionID: 2, Low: 10, High: 31},
@@ -49,7 +50,7 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 	}
 
 	// Expected result should be able to return all 100 requested messages as evenly distributed as possible
-	expected := map[int32]*kafka.PartitionConsumeRequest{
+	expected := map[int32]kafka.PartitionConsumeRequest{
 		0: {PartitionID: 0, IsDrained: false, LowWaterMark: marks[0].Low, HighWaterMark: marks[0].High, StartOffset: 0, EndOffset: marks[0].High - 1, MaxMessageCount: 70},
 		1: {PartitionID: 1, IsDrained: true, LowWaterMark: marks[1].Low, HighWaterMark: marks[1].High, StartOffset: 0, EndOffset: marks[1].High - 1, MaxMessageCount: 10},
 		2: {PartitionID: 2, IsDrained: true, LowWaterMark: marks[2].Low, HighWaterMark: marks[2].High, StartOffset: 10, EndOffset: marks[2].High - 1, MaxMessageCount: 20},
@@ -60,7 +61,7 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 }
 
 func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
-	marks := map[int32]*kafka.WaterMark{
+	marks := map[int32]kafka.PartitionMarks{
 		14: {PartitionID: 14, Low: 100, High: 301},
 	}
 	lowMark := marks[14].Low
@@ -128,7 +129,7 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
 	// Request less messages than we have partitions, if filter code is set we handle consume requests different than
 	// usual - as we don't care about the distribution between partitions.
-	marks := map[int32]*kafka.WaterMark{
+	marks := map[int32]kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 300},
 		2: {PartitionID: 2, Low: 0, High: 300},

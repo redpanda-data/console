@@ -3,8 +3,15 @@ package kafka
 import (
 	"flag"
 	"fmt"
-
 	"github.com/Shopify/sarama"
+)
+
+const (
+	SASLMechanismPlain       = "PLAIN"
+	SASLMechanismScramSHA256 = "SCRAM-SHA-256"
+	SASLMechanismScramSHA512 = "SCRAM-SHA-512"
+	SASLMechanismGSSAPI      = "GSSAPI"
+	SASLMechanismOAuthBearer = "OAUTHBEARER"
 )
 
 // SASLConfig for Kafka client
@@ -32,9 +39,9 @@ func (c *SASLConfig) SetDefaults() {
 // Validate SASL config input
 func (c *SASLConfig) Validate() error {
 	switch c.Mechanism {
-	case sarama.SASLTypePlaintext, sarama.SASLTypeSCRAMSHA256, sarama.SASLTypeSCRAMSHA512, sarama.SASLTypeGSSAPI:
+	case SASLMechanismPlain, SASLMechanismScramSHA256, SASLMechanismScramSHA512, SASLMechanismGSSAPI:
 		// Valid and supported
-	case sarama.SASLTypeOAuth:
+	case SASLMechanismOAuthBearer:
 		return fmt.Errorf("sasl mechanism '%v' is valid but not yet supported. Please submit an issue if you need it", c.Mechanism)
 	default:
 		return fmt.Errorf("given sasl mechanism '%v' is invalid", c.Mechanism)

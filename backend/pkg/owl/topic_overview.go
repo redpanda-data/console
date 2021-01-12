@@ -1,9 +1,10 @@
 package owl
 
 import (
+	"context"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"sort"
 
-	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
 )
 
@@ -21,54 +22,56 @@ type TopicOverview struct {
 }
 
 // GetTopicsOverview returns a TopicOverview for all Kafka Topics
-func (s *Service) GetTopicsOverview() ([]*TopicOverview, error) {
-	topics, err := s.kafkaSvc.ListTopics()
+func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, error) {
+	metadata, err := s.kafkaSvc.GetMetadata(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
+	topicNames := make([]string, len(metadata.Topics))
+	for i, topic := range metadata.Topics {
+		err := kerr.ErrorForCode(topic.ErrorCode)
+		if err != nil {
+			s.logger.Error("failed to get topic metadata while listing topics",
+				zap.String("topic_name", topic.Topic),
+				zap.Error(err))
+			return nil, err
+		}
+
+		topicNames[i] = topic.Topic
+	}
 
 	// 3. Get log dir sizes for each topic
-	sizeByTopic, err := s.logDirSizeByTopic()
+	logDirsByTopic, err := s.logDirsByTopic(ctx, topicNames)
 	if err != nil {
 		return nil, err
 	}
 
 	// 3. Create config resources request objects for all topics
-	topicNames := make([]string, len(topics))
-	for i, topic := range topics {
-		if topic.Err != sarama.ErrNoError {
-			s.logger.Error("failed to get topic metadata while listing topics",
-				zap.String("topic_name", topic.Name),
-				zap.Error(topic.Err))
-			return nil, topic.Err
-		}
-
-		topicNames[i] = topic.Name
-	}
-
-	configs, err := s.GetTopicsConfigs(topicNames, []string{"cleanup.policy"})
+	configs, err := s.GetTopicsConfigs(ctx, topicNames, []string{"cleanup.policy"})
 	if err != nil {
 		return nil, err
 	}
 
-	// x. Merge information from all requests and construct the TopicOverview object
+	// 4. Merge information from all requests and construct the TopicOverview object
 	res := make([]*TopicOverview, len(topicNames))
-	for i, topic := range topics {
+	for i, topic := range metadata.Topics {
 		size := int64(-1)
-		if value, ok := sizeByTopic[topic.Name]; ok {
-			size = value
+		// TODO: Propagate partial responses/errors to frontend. Size may be wrong/incomplete due to missing responses
+		if value, ok := logDirsByTopic.TopicLogDirs[topic.Topic]; ok {
+			size = value.TotalSizeBytes
 		}
 
 		policy := "unknown"
-		if val, ok := configs[topic.Name]; ok {
+		if val, ok := configs[topic.Topic]; ok {
 			entry := val.GetConfigEntryByName("cleanup.policy")
 			if entry != nil {
-				policy = entry.Value
+				// This should be safe to dereference as only sensitive values will be nil
+				policy = *(entry.Value)
 			}
 		}
 
 		res[i] = &TopicOverview{
-			TopicName:         topic.Name,
+			TopicName:         topic.Topic,
 			IsInternal:        topic.IsInternal,
 			PartitionCount:    len(topic.Partitions),
 			ReplicationFactor: len(topic.Partitions[0].Replicas),

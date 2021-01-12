@@ -5,51 +5,63 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
-	xj "github.com/basgys/goxml2json"
-	"github.com/cloudhut/kowl/backend/pkg/schema"
+	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"strings"
 	"unicode/utf8"
+
+	xj "github.com/basgys/goxml2json"
+	"github.com/cloudhut/kowl/backend/pkg/schema"
 )
 
 // deserializer can deserialize messages from various formats (json, xml, avro, ..) into a Go native form.
 type deserializer struct {
 	SchemaService *schema.Service
+	ProtoService  *proto.Service
 }
 
 type messageEncoding string
 
 const (
-	messageEncodingNone   messageEncoding = "none"
-	messageEncodingAvro   messageEncoding = "avro"
-	messageEncodingJSON   messageEncoding = "json"
-	messageEncodingXML    messageEncoding = "xml"
-	messageEncodingText   messageEncoding = "text"
-	messageEncodingBinary messageEncoding = "binary"
+	messageEncodingNone     messageEncoding = "none"
+	messageEncodingAvro     messageEncoding = "avro"
+	messageEncodingProtobuf messageEncoding = "protobuf"
+	messageEncodingJSON     messageEncoding = "json"
+	messageEncodingXML      messageEncoding = "xml"
+	messageEncodingText     messageEncoding = "text"
+	messageEncodingBinary   messageEncoding = "binary"
 )
 
-type deserializedPayload struct {
-	// NormalizedPayload is the original payload except for all message encodings which can be converted to a JSON object
-	NormalizedPayload []byte
-
-	// Object is the parsed version of the payload. This will be passed to the JavaScript interpreter
-	Object             interface{}
-	RecognizedEncoding messageEncoding
+// normalizedPayload is a wrapper of the original message with the purpose of having a custom JSON marshal method
+type normalizedPayload struct {
+	// Payload is the original payload except for all message encodings which can be converted to a JSON object
+	Payload            []byte
+	RecognizedEncoding messageEncoding `json:"encoding"`
 }
 
 // MarshalJSON implements the 'Marshaller' interface for deserialized payload.
-// We do this because we want to pass the deserialized payload as JavaScript object (regardless of the type) to the frontend.
-func (d *deserializedPayload) MarshalJSON() ([]byte, error) {
+// We do this because we want to pass the deserialized payload as JavaScript object (regardless of the encoding) to the frontend.
+func (d *normalizedPayload) MarshalJSON() ([]byte, error) {
 	switch d.RecognizedEncoding {
 	case messageEncodingNone:
 		return []byte("{}"), nil
 	case messageEncodingText:
-		return json.Marshal(string(d.NormalizedPayload))
+		return json.Marshal(string(d.Payload))
 	case messageEncodingBinary:
-		b64 := base64.StdEncoding.EncodeToString(d.NormalizedPayload)
+		b64 := base64.StdEncoding.EncodeToString(d.Payload)
 		return json.Marshal(b64)
 	default:
-		return d.NormalizedPayload, nil
+		return d.Payload, nil
 	}
+}
+
+type deserializedPayload struct {
+	Payload normalizedPayload `json:"payload"`
+
+	// Object is the parsed version of the payload. This will be passed to the JavaScript interpreter
+	Object             interface{}     `json:"-"`
+	RecognizedEncoding messageEncoding `json:"encoding"`
+	AvroSchemaID       uint32          `json:"avroSchemaId"`
+	Size               int             `json:"size"` // number of 'raw' bytes
 }
 
 // DeserializePayload tries to deserialize a given byte array.
@@ -58,14 +70,20 @@ func (d *deserializedPayload) MarshalJSON() ([]byte, error) {
 //  - UTF-8 Text
 //  - Binary content
 // Idea: Add encoding hint where user can suggest the backend to test this encoding first.
-func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
+func (d *deserializer) DeserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
 	if len(payload) == 0 {
-		return &deserializedPayload{NormalizedPayload: payload, Object: "", RecognizedEncoding: messageEncodingNone}
+		return &deserializedPayload{Payload: normalizedPayload{
+			Payload:            payload,
+			RecognizedEncoding: messageEncodingNone,
+		}, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(payload)}
 	}
 
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 	if len(trimmed) == 0 {
-		return &deserializedPayload{NormalizedPayload: payload, Object: string(payload), RecognizedEncoding: messageEncodingText}
+		return &deserializedPayload{Payload: normalizedPayload{
+			Payload:            payload,
+			RecognizedEncoding: messageEncodingText,
+		}, Object: string(payload), RecognizedEncoding: messageEncodingText, Size: len(payload)}
 	}
 
 	// 1. Test for valid JSON
@@ -74,7 +92,10 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 		var obj interface{}
 		err := json.Unmarshal(payload, &obj)
 		if err == nil {
-			return &deserializedPayload{NormalizedPayload: trimmed, Object: obj, RecognizedEncoding: messageEncodingJSON}
+			return &deserializedPayload{Payload: normalizedPayload{
+				Payload:            trimmed,
+				RecognizedEncoding: messageEncodingJSON,
+			}, Object: obj, RecognizedEncoding: messageEncodingJSON, Size: len(payload)}
 		}
 	}
 
@@ -86,7 +107,10 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 		if err == nil {
 			var obj interface{}
 			_ = json.Unmarshal(jsonPayload.Bytes(), &obj) // no err possible unless the xml2json package is buggy
-			return &deserializedPayload{NormalizedPayload: jsonPayload.Bytes(), Object: obj, RecognizedEncoding: messageEncodingXML}
+			return &deserializedPayload{Payload: normalizedPayload{
+				Payload:            jsonPayload.Bytes(),
+				RecognizedEncoding: messageEncodingXML,
+			}, Object: obj, RecognizedEncoding: messageEncodingXML, Size: len(payload)}
 		}
 	}
 
@@ -100,18 +124,53 @@ func (d *deserializer) DeserializePayload(payload []byte) *deserializedPayload {
 				native, _, err := codec.NativeFromBinary(payload[5:])
 				if err == nil {
 					normalized, _ := json.Marshal(native)
-					return &deserializedPayload{NormalizedPayload: normalized, Object: native, RecognizedEncoding: messageEncodingAvro}
+					return &deserializedPayload{
+						Payload: normalizedPayload{
+							Payload:            normalized,
+							RecognizedEncoding: messageEncodingAvro,
+						},
+						Object:             native,
+						RecognizedEncoding: messageEncodingAvro,
+						AvroSchemaID:       schemaID,
+						Size:               len(payload),
+					}
 				}
 			}
 		}
 	}
 
-	// 4. Test for UTF-8 validity
+	// 4. Test for Protobuf
+	if d.ProtoService != nil {
+		jsonBytes, err := d.ProtoService.UnmarshalPayload(payload, topicName, recordType)
+		if err == nil {
+			var native interface{}
+			err := json.Unmarshal(jsonBytes, &native)
+			if err == nil {
+				return &deserializedPayload{
+					Payload: normalizedPayload{
+						Payload:            jsonBytes,
+						RecognizedEncoding: messageEncodingProtobuf,
+					},
+					Object:             native,
+					RecognizedEncoding: messageEncodingProtobuf,
+					Size:               len(payload),
+				}
+			}
+		}
+	}
+
+	// 5. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(payload)
 	if isUTF8 {
-		return &deserializedPayload{NormalizedPayload: payload, Object: string(payload), RecognizedEncoding: messageEncodingText}
+		return &deserializedPayload{Payload: normalizedPayload{
+			Payload:            payload,
+			RecognizedEncoding: messageEncodingText,
+		}, Object: string(payload), RecognizedEncoding: messageEncodingText, Size: len(payload)}
 	}
 
 	// Anything else is considered as binary content
-	return &deserializedPayload{NormalizedPayload: payload, Object: payload, RecognizedEncoding: messageEncodingBinary}
+	return &deserializedPayload{Payload: normalizedPayload{
+		Payload:            payload,
+		RecognizedEncoding: messageEncodingBinary,
+	}, Object: payload, RecognizedEncoding: messageEncodingBinary, Size: len(payload)}
 }

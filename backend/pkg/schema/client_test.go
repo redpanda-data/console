@@ -1,15 +1,16 @@
 package schema
 
 import (
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestClient_GetSchemaByID(t *testing.T) {
 	baseURL := "https://schema-registry.company.com"
-	c := newClient(Config{
+	c, _ := newClient(Config{
 		Enabled: true,
 		URLs:    []string{baseURL},
 	})
@@ -34,7 +35,7 @@ func TestClient_GetSchemaByID(t *testing.T) {
 
 func TestClient_GetSubjects(t *testing.T) {
 	baseURL := "https://schema-registry.company.com"
-	c := newClient(Config{
+	c, _ := newClient(Config{
 		Enabled: true,
 		URLs:    []string{baseURL},
 	})
@@ -57,7 +58,7 @@ func TestClient_GetSubjects(t *testing.T) {
 
 func TestClient_GetSubjectVersions(t *testing.T) {
 	baseURL := "https://schema-registry.company.com"
-	c := newClient(Config{
+	c, _ := newClient(Config{
 		Enabled: true,
 		URLs:    []string{baseURL},
 	})
