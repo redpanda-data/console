@@ -9,6 +9,8 @@ import { observer } from "mobx-react";
 import { motion } from "framer-motion";
 import { animProps } from "./animationProps";
 import { SizeType } from "antd/lib/config-provider/SizeContext";
+import { api } from "../state/backendApi";
+import { observable } from "mobx";
 
 
 
@@ -187,6 +189,7 @@ export class OptionGroup<T> extends Component<{
     }
 }
 
+@observer
 export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed?: string, messagesConsumed?: string, progressText: string }> {
 
     static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
@@ -195,9 +198,32 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
 
     hide: MessageType;
 
+    timerHandle: NodeJS.Timeout;
+    lastMessageReceived: number;
+    lastMessageCount: number;
+    @observable showWaitingText: boolean;
+
     constructor(p: any) {
         super(p);
-        message.config({ top: 8 });
+        message.config({ top: 20 });
+
+        // Periodically check if we got any new messages. If not, show a different text after some time
+        this.lastMessageReceived = Date.now();
+        this.lastMessageCount = 0;
+        this.showWaitingText = false;
+        const waitMessageDelay = 3000;
+        this.timerHandle = setInterval(() => {
+            const curCount = api.messages?.length ?? 0;
+            if (curCount != this.lastMessageCount) {
+                this.lastMessageCount = curCount;
+                this.lastMessageReceived = Date.now();
+                this.showWaitingText = false;
+            }
+
+            if ((Date.now() - this.lastMessageReceived) >= waitMessageDelay) {
+                this.showWaitingText = true;
+            }
+        }, 300);
     }
 
     componentDidMount() {
@@ -208,16 +234,17 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
     }
 
     componentWillUnmount() {
+        clearInterval(this.timerHandle);
         this.hide?.call(this);
     }
 
     customRender() {
-        const content = <div style={{ marginBottom: '0.2em' }}>
+        const content = <div style={{ marginBottom: '0.2em' }} className={this.showWaitingText ? 'waitingForMessagesBox waitingForMessagesText' : ''}>
             <div style={StatusIndicator.progressStyle}>
                 <Progress percent={this.props.fillFactor * 100} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
             </div>
             <div style={StatusIndicator.statusBarStyle}>
-                <div>{this.props.statusText}</div>
+                <div>{this.showWaitingText ? "Waiting for messages..." : this.props.statusText}</div>
                 <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
             </div>
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
@@ -235,8 +262,7 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
     }
 
     render() {
-
-
+        this.customRender();
         return null;
     }
 }

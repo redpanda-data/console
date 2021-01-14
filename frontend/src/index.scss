@@ -1455,3 +1455,57 @@ svg {
 
     cursor: default;
 }
+
+.waitingForMessagesText {
+    animation: waitingForMessagesTextPulse 1.5s ease-in-out 0s infinite;
+}
+
+@keyframes waitingForMessagesTextPulse {
+    0% {
+        color: inherit;
+    }
+
+    40% {
+        color: rgb(79, 173, 245);
+    }
+
+    60% {
+        color: rgb(79, 173, 245);
+    }
+
+    100% {
+        color: inherit;
+    }
+}
+
+.ant-message-notice-content {
+    position: relative;
+}
+
+.waitingForMessagesBox::before {
+    content: ' ';
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    left: 0px;
+
+    border-radius: 4px;
+    box-shadow: 0 0 8px 4px #3098e8;
+
+    animation: waitingForMessagesBoxPulseShadow 1.5s ease-in-out 0s infinite;
+}
+
+@keyframes waitingForMessagesBoxPulseShadow {
+    0% {
+        box-shadow: 0 0 4px 1px hsla(206deg, 10%, 85%, 50%);
+    }
+
+    50% {
+        box-shadow: 0 0 8px 2px #3098e8b0;
+    }
+
+    100% {
+        box-shadow: 0 0 4px 1px hsla(206deg, 10%, 85%, 50%);
+    }
+}
