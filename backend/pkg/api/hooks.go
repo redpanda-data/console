@@ -49,6 +49,10 @@ type OwlHooks interface {
 	// ConsumerGroup Hooks
 	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
 	AllowedConsumerGroupActions(ctx context.Context, groupName string) ([]string, *rest.Error)
+
+	// Operations Hooks
+	CanSeeInProgressPartitionReassignments(ctx context.Context) (bool, *rest.Error)
+	CanPatchPartitionReassignments(ctx context.Context) (bool, *rest.Error)
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -100,4 +104,10 @@ func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *re
 func (*defaultHooks) AllowedConsumerGroupActions(_ context.Context, _ string) ([]string, *rest.Error) {
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
+}
+func (*defaultHooks) CanSeeInProgressPartitionReassignments(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanPatchPartitionReassignments(_ context.Context) (bool, *rest.Error) {
+	return true, nil
 }

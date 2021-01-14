@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 // PartitionReassignments
@@ -51,4 +52,48 @@ func (s *Service) ListPartitionReassignments(ctx context.Context) ([]PartitionRe
 	}
 
 	return topicReassignments, nil
+}
+
+// PartitionReassignments
+type AlterPartitionReassignmentsResponse struct {
+	TopicName  string                                         `json:"topicName"`
+	Partitions []AlterPartitionReassignmentsPartitionResponse `json:"partitions"`
+}
+
+// PartitionReassignments
+type AlterPartitionReassignmentsPartitionResponse struct {
+	PartitionID  int32   `json:"partitionId"`
+	ErrorCode    string  `json:"errorCode"`
+	ErrorMessage *string `json:"errorMessage"`
+}
+
+// ListPartitionReassignments returns all partition reassignments that are currently in progress.
+func (s *Service) AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error) {
+	kRes, err := s.kafkaSvc.AlterPartitionAssignments(ctx, topics)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reassign partitions: %w", err)
+	}
+
+	err = kerr.ErrorForCode(kRes.ErrorCode)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reassign partitions. Inner error: %w", err)
+	}
+
+	res := make([]AlterPartitionReassignmentsResponse, len(kRes.Topics))
+	for i, topic := range kRes.Topics {
+		partitions := make([]AlterPartitionReassignmentsPartitionResponse, len(topic.Partitions))
+		for j, partition := range topic.Partitions {
+			partitions[j] = AlterPartitionReassignmentsPartitionResponse{
+				PartitionID:  partition.Partition,
+				ErrorCode:    kerr.ErrorForCode(partition.ErrorCode).Error(),
+				ErrorMessage: partition.ErrorMessage,
+			}
+		}
+		res[i] = AlterPartitionReassignmentsResponse{
+			TopicName:  topic.Topic,
+			Partitions: partitions,
+		}
+	}
+
+	return res, nil
 }

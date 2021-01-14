@@ -8,7 +8,7 @@ require (
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/bxcodec/faker v2.0.1+incompatible
-	github.com/cloudhut/common v0.4.1-0.20201127160721-d89029ea7463
+	github.com/cloudhut/common v0.4.1-0.20201219173920-027980a8c131
 	github.com/dlclark/regexp2 v1.2.0 // indirect
 	github.com/dop251/goja v0.0.0-20200814103526-379ac97e7e26
 	github.com/go-chi/chi v4.1.2+incompatible

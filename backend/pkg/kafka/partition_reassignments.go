@@ -6,7 +6,6 @@ import (
 )
 
 func (s *Service) ListPartitionReassignments(ctx context.Context) (*kmsg.ListPartitionReassignmentsResponse, error) {
-	// TODO: Check if target Kafka cluster supports this request
 	req := kmsg.NewListPartitionReassignmentsRequest()
 	req.Topics = nil // List for all topics
 
@@ -14,7 +13,6 @@ func (s *Service) ListPartitionReassignments(ctx context.Context) (*kmsg.ListPar
 }
 
 func (s *Service) AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) (*kmsg.AlterPartitionAssignmentsResponse, error) {
-	// TODO: Check if target Kafka cluster supports this request
 	req := kmsg.NewAlterPartitionAssignmentsRequest()
 	req.Topics = topics
 
