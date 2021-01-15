@@ -11,7 +11,10 @@ import (
 func (s *Service) GetMetadata(ctx context.Context, topics []string) (*kmsg.MetadataResponse, error) {
 	metadataRequestTopics := make([]kmsg.MetadataRequestTopic, len(topics))
 	for i, topic := range topics {
-		metadataRequestTopics[i] = kmsg.MetadataRequestTopic{Topic: &topic}
+		topicReq := kmsg.NewMetadataRequestTopic()
+		t := topic
+		topicReq.Topic = &t
+		metadataRequestTopics[i] = topicReq
 	}
 
 	// Set metadata request topics to nil so that all topics will be requested
@@ -19,9 +22,8 @@ func (s *Service) GetMetadata(ctx context.Context, topics []string) (*kmsg.Metad
 		metadataRequestTopics = nil
 	}
 
-	req := kmsg.MetadataRequest{
-		Topics: metadataRequestTopics,
-	}
+	req := kmsg.NewMetadataRequest()
+	req.Topics = metadataRequestTopics
 
 	return req.RequestWith(ctx, s.KafkaClient)
 }
