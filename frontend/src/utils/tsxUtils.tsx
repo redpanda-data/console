@@ -189,53 +189,77 @@ export class OptionGroup<T> extends Component<{
     }
 }
 
+interface StatusIndicatorProps {
+    identityKey: string;
+    fillFactor: number;
+    statusText: string;
+    bytesConsumed?: string;
+    messagesConsumed?: string;
+    progressText: string;
+}
+
 @observer
-export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed?: string, messagesConsumed?: string, progressText: string }> {
+export class StatusIndicator extends Component<StatusIndicatorProps> {
 
     static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
     static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
     static readonly progressTextStyle: CSSProperties = { marginLeft: 'auto', paddingLeft: '2em' } as const;
 
-    hide: MessageType;
+    hide: MessageType | undefined;
 
     timerHandle: NodeJS.Timeout;
-    lastMessageReceived: number;
-    lastMessageCount: number;
+    lastUpdateTimestamp: number;
     @observable showWaitingText: boolean;
+
+    // used to fetch 'showWaitingText' (so mobx triggers a re-render).
+    // we could just store the value in a local as well, but that might be opimized out.
+    mobxSink: any | undefined = undefined;
 
     constructor(p: any) {
         super(p);
         message.config({ top: 20 });
 
         // Periodically check if we got any new messages. If not, show a different text after some time
-        this.lastMessageReceived = Date.now();
-        this.lastMessageCount = 0;
+        this.lastUpdateTimestamp = Date.now();
         this.showWaitingText = false;
         const waitMessageDelay = 3000;
         this.timerHandle = setInterval(() => {
-            const curCount = api.messages?.length ?? 0;
-            if (curCount != this.lastMessageCount) {
-                this.lastMessageCount = curCount;
-                this.lastMessageReceived = Date.now();
-                this.showWaitingText = false;
-            }
-
-            if ((Date.now() - this.lastMessageReceived) >= waitMessageDelay) {
+            const age = Date.now() - this.lastUpdateTimestamp;
+            if (age > waitMessageDelay) {
                 this.showWaitingText = true;
             }
         }, 300);
     }
 
     componentDidMount() {
+        this.lastUpdateTimestamp = Date.now();
         this.customRender();
     }
+
+    lastPropsJson = "";
+    lastProps = {};
     componentDidUpdate() {
+
+        const curJson = toJson(this.props);
+        if (curJson == this.lastPropsJson) {
+            // changes to observables
+            this.customRender();
+            return;
+        }
+
+        this.lastPropsJson = curJson;
+
+        this.lastUpdateTimestamp = Date.now();
+        if (this.showWaitingText)
+            this.showWaitingText = false;
+
         this.customRender();
     }
 
     componentWillUnmount() {
         clearInterval(this.timerHandle);
         this.hide?.call(this);
+        this.hide = undefined;
     }
 
     customRender() {
@@ -244,7 +268,7 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
                 <Progress percent={this.props.fillFactor * 100} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
             </div>
             <div style={StatusIndicator.statusBarStyle}>
-                <div>{this.showWaitingText ? "Waiting for messages..." : this.props.statusText}</div>
+                <div>{this.showWaitingText ? "Kafka is waiting for new messages..." : this.props.statusText}</div>
                 <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
             </div>
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
@@ -258,11 +282,13 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
                 </div>
             }
         </div>
+
         this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: null, type: 'loading' });
     }
 
     render() {
-        this.customRender();
+        // workaround to propagate the update (timer -> mobx -> re-render)
+        this.mobxSink = this.showWaitingText;
         return null;
     }
 }

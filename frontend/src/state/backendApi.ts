@@ -5,15 +5,13 @@ import {
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
     ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation
 } from "./restInterfaces";
-import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
+import { observable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { toJson, LazyMap, TimeSince, clone } from "../utils/utils";
 import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";
 import { notification } from "antd";
-import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import { objToQuery } from "../utils/queryHelper";
 import { ObjToKv } from "../utils/tsxUtils";
 
 const REST_TIMEOUT_SEC = 25;
@@ -50,8 +48,15 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
         }
     } catch { } // Catch malformed json (old versions where info is not sent as json yet)
 
-    if (!res.ok)
-        throw new Error("(" + res.status + ") " + res.statusText);
+    if (!res.ok) {
+        const text = await res.text();
+        const errObj = JSON.parse(text) as { statusCode: number, message: string };
+        if (errObj && errObj.statusCode && errObj.message) {
+            throw new Error(`${errObj.message} (${res.status} - ${res.statusText})`);
+        } else {
+            throw new Error(`${text} (${res.status} - ${res.statusText})`);
+        }
+    }
 
     const str = await res.text();
     // console.log('json: ' + str);
@@ -231,7 +236,7 @@ const apiStore = {
         const host = IsDev ? 'localhost:9090' : window.location.host;
         const url = protocol + host + basePathS + '/api/topics/' + searchRequest.topicName + '/messages';
 
-        console.log("connecting to \"" + url + "\"");
+        console.debug("connecting to \"" + url + "\"");
 
         // Abort previous connection
         if (currentWS != null)
@@ -255,9 +260,11 @@ const apiStore = {
         }
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
+            api.stopMessageSearch();
             // double assignment makes sense: when the phase changes to null, some observing components will play a "fade out" animation, using the last (non-null) value
-            console.log(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
+            console.debug(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
         }
+
         const onMessageHandler = (msgEvent: MessageEvent) => {
             if (ws !== currentWS) return;
             const msg = JSON.parse(msgEvent.data)
@@ -282,10 +289,13 @@ const apiStore = {
 
                 case 'error':
                     // error doesn't neccesarily mean the whole request is done
-                    console.log("backend error: " + msg.message);
+                    console.info("ws backend error: " + msg.message);
+                    const notificationKey = `errorNotification-${Date.now()}`;
                     notification['error']({
+                        key: notificationKey,
                         message: "Backend Error",
                         description: msg.message,
+                        duration: 5,
                     })
                     break;
 
@@ -329,17 +339,17 @@ const apiStore = {
     },
 
     stopMessageSearch() {
-        if (!currentWS) {
-            return;
+        if (currentWS) {
+            currentWS.close();
+            currentWS = null;
         }
 
-        currentWS.close();
-        currentWS = null;
-
-        this.messageSearchPhase = "Done";
-        this.messagesBytesConsumed = 0;
-        this.messagesTotalConsumed = 0;
-        this.messageSearchPhase = null;
+        if (this.messageSearchPhase != null) {
+            this.messageSearchPhase = "Done";
+            this.messagesBytesConsumed = 0;
+            this.messagesTotalConsumed = 0;
+            this.messageSearchPhase = null;
+        }
     },
 
     refreshTopics(force?: boolean) {
