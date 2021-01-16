@@ -1,5 +1,5 @@
 import React, { useState, Component, CSSProperties } from "react";
-import { simpleUniqueId, DebugTimerStore, ToJson } from "./utils";
+import { simpleUniqueId, DebugTimerStore, toJson } from "./utils";
 import { Radio, message, Progress, Skeleton } from 'antd';
 import { MessageType } from "antd/lib/message";
 import prettyMilliseconds from 'pretty-ms';
@@ -126,7 +126,7 @@ export function QuickTable(data: { key: any, value: any }[] | { [key: string]: a
 export function toSafeString(x: any): string {
     if (typeof x === 'undefined' || x === null) return "";
     if (typeof x === 'string' || typeof x === 'boolean') return String(x);
-    return ToJson(x);
+    return toJson(x);
 }
 
 export function ObjToKv(obj: any): { key: string, value: any }[] {

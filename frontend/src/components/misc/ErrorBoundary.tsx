@@ -1,7 +1,7 @@
 import React, { CSSProperties } from "react";
 import { observer } from "mobx-react";
 import { observable } from "mobx";
-import { ToJson } from "../../utils/utils";
+import { toJson } from "../../utils/utils";
 import { Button, Layout, message, Space } from "antd";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { envVarDebugAr } from "../../utils/env";
@@ -78,7 +78,7 @@ export class ErrorBoundary extends React.Component {
         else
             this.infoItems.push({
                 name: "Components", value: this.errorInfo
-                    ? "(componentStack not set) errorInfo as Json: \n" + ToJson(this.errorInfo)
+                    ? "(componentStack not set) errorInfo as Json: \n" + toJson(this.errorInfo)
                     : "(errorInfo was not set)"
             });
 

@@ -35,7 +35,7 @@ export class AutoRefresh extends Component {
 
 const seen = new Set();
 // Serialize object to json, handling reference loops gracefully
-export function ToJson(obj: any, space?: string | number | undefined): string {
+export function toJson(obj: any, space?: string | number | undefined): string {
     seen.clear();
     try {
         return JSON.stringify(obj,
@@ -59,7 +59,7 @@ export function ToJson(obj: any, space?: string | number | undefined): string {
 // Clone object using serialization
 export function clone<T>(obj: T): T {
     if (!obj) return obj;
-    return JSON.parse(ToJson(obj));
+    return JSON.parse(toJson(obj));
 }
 
 

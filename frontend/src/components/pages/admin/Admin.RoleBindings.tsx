@@ -13,7 +13,7 @@ import topicConfigInfo from '../../../assets/topicConfigInfo.json'
 import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed, transaction } from "mobx";
-import { ToJson } from "../../../utils/utils";
+import { toJson } from "../../../utils/utils";
 import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";

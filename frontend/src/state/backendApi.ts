@@ -7,7 +7,7 @@ import {
 } from "./restInterfaces";
 import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { ToJson, LazyMap, TimeSince, clone } from "../utils/utils";
+import { toJson, LazyMap, TimeSince, clone } from "../utils/utils";
 import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";
@@ -432,13 +432,13 @@ const apiStore = {
                 // resolve role of each binding
                 for (const binding of info.roleBindings) {
                     binding.resolvedRole = info.roles.first(r => r.name == binding.roleName)!;
-                    if (binding.resolvedRole == null) console.error("could not resolve roleBinding to role: " + ToJson(binding));
+                    if (binding.resolvedRole == null) console.error("could not resolve roleBinding to role: " + toJson(binding));
                 }
 
                 // resolve bindings, and roles of each user
                 for (const user of info.users) {
                     user.bindings = user.bindingIds.map(id => info.roleBindings.first(rb => rb.ephemeralId == id)!);
-                    if (user.bindings.any(b => b == null)) console.error("one or more rolebindings could not be resolved for user: " + ToJson(user));
+                    if (user.bindings.any(b => b == null)) console.error("one or more rolebindings could not be resolved for user: " + toJson(user));
 
                     user.grantedRoles = [];
                     for (const roleName in user.audits)

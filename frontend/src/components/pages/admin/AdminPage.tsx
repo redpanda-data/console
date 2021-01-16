@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
 import { observable } from "mobx";
 import prettyBytes from "pretty-bytes";
-import { prettyBytesOrNA, ToJson } from "../../../utils/utils";
+import { prettyBytesOrNA, toJson } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import { AdminUsers } from "./Admin.Users";
@@ -57,7 +57,7 @@ export default class AdminPage extends PageComponent {
                     </Tabs.TabPane> */}
 
                     <Tabs.TabPane key="debug" tab="Debug">
-                        <code><pre>{ToJson(api.adminInfo, 4)}</pre></code>
+                        <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
                     </Tabs.TabPane>
 
                 </Tabs>

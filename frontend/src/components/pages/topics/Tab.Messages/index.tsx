@@ -31,7 +31,7 @@ import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
 import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { cullText, findElementDeep, titleCase, ToJson } from "../../../../utils/utils";
+import { cullText, findElementDeep, titleCase, toJson } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
@@ -77,7 +77,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         // unpack query parameters (if any)
         const searchParams = uiState.topicSettings.searchParams;
         const query = queryString.parse(window.location.search);
-        console.log("parsing query: " + ToJson(query));
+        console.debug("parsing query: " + toJson(query));
         if (query.p != null) searchParams.partitionID = Number(query.p);
         if (query.s != null) searchParams.maxResults = Number(query.s);
         if (query.o != null) {
@@ -682,7 +682,7 @@ function ${name}() {
 
 const renderKey = (p: Payload, record: TopicMessage) => {
     const value = p.payload;
-    const text = typeof value === 'string' ? value : ToJson(value);
+    const text = typeof value === 'string' ? value : toJson(value);
 
     if (value == undefined || value == null || text.length == 0 || text == '{}')
         return <Tooltip title="Empty Key" mouseEnterDelay={0.1}>
@@ -1258,7 +1258,7 @@ class MessageSearchFilterBar extends Component {
                             className='settingIconFilter'
                             onClick={() => {
                                 this.currentIsNew = false;
-                                this.currentFilterBackup = ToJson(e);
+                                this.currentFilterBackup = toJson(e);
                                 this.currentFilter = e;
                                 this.hasChanges = false;
                             }}
