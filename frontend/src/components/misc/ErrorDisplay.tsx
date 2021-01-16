@@ -11,10 +11,11 @@ export class ErrorDisplay extends React.Component {
     render() {
         if (api.errors.length === 0)
             return this.props.children;
+
         return <>
             <Result style={{ margin: 0, padding: 0 }} status={500} title="Backend API Error" subTitle="Something went wrong while pulling data from the backend server" />
             <div style={{ margin: '2em 2em', display: 'flex', flexDirection: 'column' }}>
-                <Button type="primary" size="large" style={{ width: '12em', alignSelf: 'center' }} onClick={() => api.errors = []}>Retry</Button>
+                <Button type="primary" size="large" style={{ width: '12em', alignSelf: 'center' }} onClick={clearErrors}>Retry</Button>
 
                 <div className="error-list">
                     {api.errors.map((e, i) => <div key={i}>
@@ -24,4 +25,8 @@ export class ErrorDisplay extends React.Component {
             </div>
         </>;
     }
+}
+
+function clearErrors() {
+    api.errors = [];
 }

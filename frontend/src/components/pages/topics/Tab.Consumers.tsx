@@ -19,11 +19,6 @@ import { DefaultSkeleton } from "../../../utils/tsxUtils";
 @observer
 export class TopicConsumers extends Component<{ topic: TopicDetail }> {
 
-    constructor(p: any) {
-        super(p);
-        api.refreshTopicConsumers(this.props.topic.topicName);
-    }
-
     pageConfig = makePaginationConfig(20);
 
     render() {
@@ -35,9 +30,9 @@ export class TopicConsumers extends Component<{ topic: TopicDetail }> {
                 style={{ margin: '0', padding: '0' }} size='middle'
                 showSorterTooltip={false}
                 onRow={(record) =>
-                    ({
-                        onClick: () => appGlobal.history.push('/groups/' + record.groupId),
-                    })}
+                ({
+                    onClick: () => appGlobal.history.push('/groups/' + record.groupId),
+                })}
                 pagination={this.pageConfig}
                 onChange={(pagination) => {
                     if (pagination.pageSize) uiState.topicSettings.consumerPageSize = pagination.pageSize;

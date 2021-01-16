@@ -16,11 +16,6 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
 
     pageConfig = makePaginationConfig(100); // makePaginationConfig(uiSettings.topics.partitionPageSize);
 
-    constructor(p: any) {
-        super(p);
-        api.refreshTopicPartitions(this.props.topic.topicName);
-    }
-
     render() {
         const topic = this.props.topic;
         let partitions = api.topicPartitions.get(topic.topicName);
