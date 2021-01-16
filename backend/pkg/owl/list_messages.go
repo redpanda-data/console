@@ -6,8 +6,6 @@ import (
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"math"
 	"time"
-
-	"github.com/Shopify/sarama"
 )
 
 const (
@@ -104,7 +102,7 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka
 
 	predictableResults := listReq.StartOffset != StartOffsetNewest && listReq.FilterInterpreterCode == ""
 	// Init result map
-	notInitialized := int64(-1)
+	notInitialized := int64(-100)
 	for _, mark := range marks {
 		p := kafka.PartitionConsumeRequest{
 			PartitionID:   mark.PartitionID,
@@ -126,7 +124,7 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka
 		} else if listReq.StartOffset == StartOffsetNewest {
 			// In Live tail mode we consume onwards until max results are reached. Start Offset is always high watermark
 			// and end offset is always MaxInt64.
-			p.StartOffset = sarama.OffsetNewest
+			p.StartOffset = -1
 		} else {
 			p.StartOffset = listReq.StartOffset
 

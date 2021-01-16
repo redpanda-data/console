@@ -3,14 +3,13 @@ module github.com/cloudhut/kowl/backend
 go 1.15
 
 require (
-	github.com/Shopify/sarama v1.27.0
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
-	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/cloudhut/common v0.4.1-0.20201127160721-d89029ea7463
 	github.com/dlclark/regexp2 v1.2.0 // indirect
 	github.com/dop251/goja v0.0.0-20200814103526-379ac97e7e26
+	github.com/frankban/quicktest v1.10.2 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-git/go-billy/v5 v5.0.0
 	github.com/go-git/go-git/v5 v5.1.0
@@ -29,8 +28,8 @@ require (
 	go.uber.org/zap v1.15.0
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	golang.org/x/tools v0.0.0-20200717024301-6ddee64345a6 // indirect
-	google.golang.org/protobuf v1.25.1-0.20200805231151-a709e31e5d12
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/yaml.v2 v2.3.0
-	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )

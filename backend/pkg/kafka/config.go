@@ -3,7 +3,6 @@ package kafka
 import (
 	"flag"
 	"fmt"
-	"github.com/Shopify/sarama"
 	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 )
@@ -37,12 +36,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("you must specify at least one broker to connect to")
 	}
 
-	_, err := sarama.ParseKafkaVersion(c.ClusterVersion)
-	if err != nil {
-		return fmt.Errorf("failed to parse the given clusterVersion for Kafka: %w", err)
-	}
-
-	err = c.Schema.Validate()
+	err := c.Schema.Validate()
 	if err != nil {
 		return err
 	}
