@@ -50,7 +50,7 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 	}
 
 	// Expected result should be able to return all 100 requested messages as evenly distributed as possible
-	expected := map[int32]kafka.PartitionConsumeRequest{
+	expected := map[int32]*kafka.PartitionConsumeRequest{
 		0: {PartitionID: 0, IsDrained: false, LowWaterMark: marks[0].Low, HighWaterMark: marks[0].High, StartOffset: 0, EndOffset: marks[0].High - 1, MaxMessageCount: 70},
 		1: {PartitionID: 1, IsDrained: true, LowWaterMark: marks[1].Low, HighWaterMark: marks[1].High, StartOffset: 0, EndOffset: marks[1].High - 1, MaxMessageCount: 10},
 		2: {PartitionID: 2, IsDrained: true, LowWaterMark: marks[2].Low, HighWaterMark: marks[2].High, StartOffset: 10, EndOffset: marks[2].High - 1, MaxMessageCount: 20},
