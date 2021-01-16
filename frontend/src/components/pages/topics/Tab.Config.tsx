@@ -13,8 +13,6 @@ import {
 } from "antd";
 import { observer } from "mobx-react";
 import { uiSettings } from "../../../state/ui";
-import prettyMilliseconds from "pretty-ms";
-import prettyBytes from "pretty-bytes";
 import topicConfigInfo from "../../../assets/topicConfigInfo.json";
 import Paragraph from "antd/lib/typography/Paragraph";
 import "../../../utils/arrayExtensions";
@@ -22,6 +20,7 @@ import Icon, { HighlightTwoTone } from '@ant-design/icons';
 import { uiState } from "../../../state/uiState";
 import { OptionGroup } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
+import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
 
 const { Text } = Typography;
 
@@ -217,7 +216,7 @@ export function FormatConfigValue(name: string, value: string, formatType: 'frie
 
     // Bytes
     if (name.endsWith(".bytes")) {
-        return prettyBytes(num) + suffix;
+        return prettyBytesOrNA(num) + suffix;
     }
 
     // Ratio

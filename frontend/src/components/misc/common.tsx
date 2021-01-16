@@ -7,10 +7,9 @@ import Draggable from "react-draggable";
 import { observer } from "mobx-react";
 import { Grid, Modal, Tag } from "antd";
 import { uiState } from "../../state/uiState";
-import { hoursToMilliseconds } from "../../utils/utils";
+import { hoursToMilliseconds, prettyMilliseconds } from "../../utils/utils";
 import env, { IsBusiness } from "../../utils/env";
 import { QuickTable } from "../../utils/tsxUtils";
-import prettyMilliseconds from "pretty-ms";
 
 const { useBreakpoint } = Grid;
 

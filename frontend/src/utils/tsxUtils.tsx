@@ -1,8 +1,7 @@
 import React, { useState, Component, CSSProperties } from "react";
-import { simpleUniqueId, DebugTimerStore, toJson } from "./utils";
+import { simpleUniqueId, DebugTimerStore, toJson, prettyMilliseconds } from "./utils";
 import { Radio, message, Progress, Skeleton } from 'antd';
 import { MessageType } from "antd/lib/message";
-import prettyMilliseconds from 'pretty-ms';
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 import { TimestampDisplayFormat } from "../state/ui";
 import { observer } from "mobx-react";

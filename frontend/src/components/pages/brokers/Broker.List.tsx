@@ -10,7 +10,6 @@ import { Broker, BrokerConfigEntry } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
 import { observable, computed } from "mobx";
-import prettyBytes from "pretty-bytes";
 import { prettyBytesOrNA } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";

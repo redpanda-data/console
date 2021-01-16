@@ -3,11 +3,11 @@ import { TopicConfigEntry } from "../../../state/restInterfaces";
 import { Row, Statistic } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
-import prettyBytes from 'pretty-bytes';
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
 import { FavoritePopover, FormatConfigValue } from "./Tab.Config";
 import { uiSettings } from "../../../state/ui";
+import { prettyBytesOrNA } from "../../../utils/utils";
 
 
 // todo: rename QuickInfo
@@ -27,7 +27,7 @@ export const TopicQuickInfoStatistic = observer((p: { topicName: string }) => {
 
     return <Row >
 
-        <Statistic title='Size' value={prettyBytes(topic.logDirSize)} />
+        <Statistic title='Size' value={prettyBytesOrNA(topic.logDirSize)} />
         {messageSum && <Statistic title='Messages' value={messageSum} />}
 
         {uiState.topicSettings.favConfigEntries.filter(tce => !!tce).length > 0

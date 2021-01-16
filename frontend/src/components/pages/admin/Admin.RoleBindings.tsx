@@ -7,8 +7,6 @@ import { api, } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
 import ReactJson, { CollapsedFieldProps } from 'react-json-view'
 import { PageComponent, PageInitHelper } from "../Page";
-import prettyMilliseconds from 'pretty-ms';
-import prettyBytes from 'pretty-bytes';
 import topicConfigInfo from '../../../assets/topicConfigInfo.json'
 import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
 import { motion, AnimatePresence } from "framer-motion";

@@ -7,8 +7,6 @@ import Paragraph from "antd/lib/typography/Paragraph";
 import { AnimatePresence, motion } from "framer-motion";
 import { autorun, computed, IReactionDisposer, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
-import prettyBytes from 'pretty-bytes';
-import prettyMilliseconds from "pretty-ms";
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras";
@@ -31,7 +29,7 @@ import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
 import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { cullText, findElementDeep, titleCase, toJson } from "../../../../utils/utils";
+import { cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase, toJson } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
@@ -1290,7 +1288,7 @@ class MessageSearchFilterBar extends Component {
                 ? (
                     <div className={styles.metaSection}>
                         <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(api.messagesBytesConsumed)}</span>
-                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {prettyMilliseconds(api.messagesElapsedMs || -1)}</span>
+                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {api.messagesElapsedMs ? prettyMilliseconds(api.messagesElapsedMs) : ""}</span>
                     </div>
                 )
                 : (
