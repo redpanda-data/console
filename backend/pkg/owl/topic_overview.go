@@ -41,7 +41,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, erro
 	}
 
 	// 3. Get log dir sizes for each topic
-	logDirsByTopic, err := s.logDirsByTopic(ctx, topicNames)
+	logDirsByTopic, err := s.logDirsByTopic(ctx)
 	if err != nil {
 		return nil, err
 	}

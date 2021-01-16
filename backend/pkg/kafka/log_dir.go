@@ -25,9 +25,8 @@ type LogDirResponse struct {
 //
 // Use nil for topicPartitions to describe all topics and partitions.
 func (s *Service) DescribeLogDirs(ctx context.Context, topicPartitions []kmsg.DescribeLogDirsRequestTopic) (LogDirResponseSharded, error) {
-	req := kmsg.DescribeLogDirsRequest{
-		Topics: topicPartitions,
-	}
+	req := kmsg.NewDescribeLogDirsRequest()
+	req.Topics = topicPartitions
 	shardedResp := s.KafkaClient.RequestSharded(ctx, &req)
 
 	result := LogDirResponseSharded{
