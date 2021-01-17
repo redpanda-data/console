@@ -28,6 +28,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		kgo.SeedBrokers(cfg.Brokers...),
 		kgo.MaxVersions(kversion.V2_6_0()),
 		kgo.ClientID(cfg.ClientID),
+		kgo.Rack(cfg.RackID),
 	}
 
 	// Create Logger

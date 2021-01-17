@@ -13,6 +13,7 @@ type Config struct {
 	Brokers        []string `yaml:"brokers"`
 	ClientID       string   `yaml:"clientId"`
 	ClusterVersion string   `yaml:"clusterVersion"`
+	RackID         string   `yaml:"rackId"`
 
 	// Schema Registry
 	Schema   schema.Config `yaml:"schemaRegistry"`
