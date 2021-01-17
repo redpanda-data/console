@@ -49,7 +49,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, erro
 	// 3. Create config resources request objects for all topics
 	configs, err := s.GetTopicsConfigs(ctx, topicNames, []string{"cleanup.policy"})
 	if err != nil {
-		return nil, err
+		s.logger.Warn("failed to fetch topic configs to return cleanup.policy", zap.Error(err))
 	}
 
 	// 4. Merge information from all requests and construct the TopicOverview object
@@ -61,12 +61,15 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicOverview, erro
 			size = value.TotalSizeBytes
 		}
 
-		policy := "unknown"
-		if val, ok := configs[topic.Topic]; ok {
-			entry := val.GetConfigEntryByName("cleanup.policy")
-			if entry != nil {
-				// This should be safe to dereference as only sensitive values will be nil
-				policy = *(entry.Value)
+		policy := "N/A"
+		if configs != nil {
+			// Configs might be nil if we don't have the required Kafka ACLs to get topic configs.
+			if val, ok := configs[topic.Topic]; ok {
+				entry := val.GetConfigEntryByName("cleanup.policy")
+				if entry != nil {
+					// This should be safe to dereference as only sensitive values will be nil
+					policy = *(entry.Value)
+				}
 			}
 		}
 
