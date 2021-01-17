@@ -10,6 +10,7 @@ import (
 type TopicConfig struct {
 	TopicName     string              `json:"topicName"`
 	ConfigEntries []*TopicConfigEntry `json:"configEntries"`
+	Error         *KafkaError         `json:"error"`
 }
 
 // TopicConfigEntry is a key value pair of a config property with it's value
@@ -53,10 +54,9 @@ func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, con
 	// 3. Iterate through response's config entries and convert them into our desired format
 	converted := make(map[string]*TopicConfig, len(topicNames))
 	for _, res := range response.Resources {
-		err := kerr.ErrorForCode(res.ErrorCode)
-		if err != nil {
-			s.logger.Error("config response resource has an error", zap.String("resource_name", res.ResourceName), zap.Error(err))
-			return nil, err
+		kafkaErr := newKafkaError(kerr.ErrorForCode(res.ErrorCode))
+		if kafkaErr != nil {
+			s.logger.Warn("config resource response has an error", zap.String("resource_name", res.ResourceName), zap.Error(kafkaErr))
 		}
 
 		entries := make([]*TopicConfigEntry, len(res.Configs))
@@ -72,6 +72,7 @@ func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, con
 		converted[res.ResourceName] = &TopicConfig{
 			TopicName:     res.ResourceName,
 			ConfigEntries: entries,
+			Error:         kafkaErr,
 		}
 	}
 
