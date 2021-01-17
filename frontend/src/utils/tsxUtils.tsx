@@ -124,7 +124,7 @@ export function QuickTable(data: { key: any, value: any }[] | { [key: string]: a
 
 export function toSafeString(x: any): string {
     if (typeof x === 'undefined' || x === null) return "";
-    if (typeof x === 'string' || typeof x === 'boolean') return String(x);
+    if (typeof x === 'string' || typeof x === 'boolean' || typeof x === 'number') return String(x);
     return toJson(x);
 }
 

@@ -683,9 +683,7 @@ const renderKey = (p: Payload, record: TopicMessage) => {
     const text = typeof value === 'string' ? value : toJson(value);
 
     if (value == undefined || value == null || text.length == 0 || text == '{}')
-        return <Tooltip title="Empty Key" mouseEnterDelay={0.1}>
-            <span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span>
-        </Tooltip>
+        return renderEmptyIcon("Empty Key");
 
     if (text.length > 45) {
 
@@ -856,7 +854,7 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     const msg = props.msg;
     const data = {
         "Key": `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
-        "Value": `${titleCase(msg.value.encoding)} (${msg.value.encoding == 'avro' ? `${msg.value.avroSchemaId} / ` : ''}${prettyBytes(msg.size)})`,
+        "Value": `${titleCase(msg.value.encoding)} (${msg.value.encoding == 'avro' ? `${msg.value.avroSchemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
         "Headers": msg.headers.length > 0 ? `${msg.headers.length}` : "No headers set",
         "Compression": msg.compression,
         "Transactional": msg.isTransactional ? 'true' : 'false',
@@ -883,20 +881,41 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
                 dataSource={props.msg.headers}
                 pagination={false}
                 columns={[
-                    { width: 'auto', title: 'Key', dataIndex: 'key', render: v => toSafeString(v) },
+                    {
+                        width: 'auto', title: 'Key', dataIndex: 'key',
+                        render: v => v
+                            ? <div className='cellDiv'><span style={{ whiteSpace: 'pre-wrap' }}>{toSafeString(v)}</span></div>
+                            : renderEmptyIcon("Empty Key")
+                    },
                     {
                         width: 'auto', title: 'Value', dataIndex: 'value',
-                        render: v => typeof v === 'object'
-                            ? <div className='smallText hoverLink' style={{ paddingBottom: '1px' }}>Object - Expand to show</div>
-                            : toSafeString(v),
+                        render: value => {
+                            if (value.payload === null) return renderEmptyIcon('"null"');
+                            if (typeof value.payload === 'undefined') return renderEmptyIcon('"undefined"');
+                            if (typeof value.payload === 'number') return <span className='codeBox'>{String(value.payload)}</span>
+                            if (typeof value.payload === 'string') return <div className='cellDiv'><span style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{value.payload}</span></div>
+
+                            if (typeof value.payload === 'object')
+                                return <div className='cellDiv'><span className='codeBox hoverLink' style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '100%', verticalAlign: 'text-bottom' }}>{toSafeString(value.payload)}</span></div>
+
+                            return "unknown data type";
+                            // return <div style={{ whiteSpace: 'pre-wrap' }}>{toSafeString(value.payload)}</div>
+
+                        },
                     },
-                    { width: '80', title: 'Encoding', dataIndex: 'value', render: v => v.value.encoding },
+                    {
+                        width: '80', title: 'Encoding', dataIndex: 'value',
+                        render: v => <div className='cellDiv'>{v.encoding}</div>
+                    },
                 ]}
                 expandable={{
-                    rowExpandable: r => typeof r.value === 'object',
+                    rowExpandable: header => Boolean(header.value?.payload), // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
                     expandIconColumnIndex: 1,
                     expandRowByClick: true,
-                    expandedRowRender: r => <KowlJsonView src={r.value as object} />,
+                    // expandedRowRender: r => <KowlJsonView src={r.value as object} />,
+                    expandedRowRender: header => typeof header.value?.payload === 'object'
+                        ? <KowlJsonView src={header.value.payload as object} />
+                        : <span className='codeBox'>{toSafeString(header.value.payload)}</span>,
                 }}
             />
             <br />
@@ -1397,4 +1416,9 @@ class MessageSearchFilterBar extends Component {
             this.hasChanges = false;
         }
     }
+}
+
+function renderEmptyIcon(tooltipText?: string) {
+    if (!tooltipText) tooltipText = "Empty";
+    return <Tooltip title={tooltipText} mouseEnterDelay={0.1}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>
 }

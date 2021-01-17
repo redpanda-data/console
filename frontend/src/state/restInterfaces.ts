@@ -68,10 +68,7 @@ export interface TopicMessage {
     key: Payload,
     value: Payload,
 
-    size: number, // size in bytes of the kafka message
     isValueNull: boolean, // todo: rename to isTombstone
-    // todo: we also need to add: keyType, keySize
-    // todo: rename size to valueSize
     // todo: Tab.Messages/index.tsx: isFilterMatch(): use 'keyJson' instead
 
     // Added by the frontend (sometimes)
