@@ -131,12 +131,16 @@ export function range(start: number, end: number): number[] {
 @observer
 export class UpdatePopup extends Component {
     render() {
+
         if (!uiState.serverVersion) return null; // server version not known yet
         const serverVersion = uiState.serverVersion;
         if (serverVersion.sha == 'dev' || serverVersion.branch == 'dev') return null; // don't show popup in dev
         if (uiState.updatePromtHiddenUntil !== undefined)
             if (new Date().getTime() < uiState.updatePromtHiddenUntil)
                 return null; // not yet
+
+        return null; // temporarily disabled
+
 
         const curSha = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : '(dev)');
         const curRef = env.REACT_APP_KOWL_GIT_REF;
