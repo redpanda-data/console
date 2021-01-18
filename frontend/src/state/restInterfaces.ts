@@ -192,6 +192,7 @@ export interface Broker {
 export interface ClusterInfo {
     brokers: Broker[];
     controllerId: number;
+    kafkaVersion: string;
 }
 
 export interface ClusterInfoResponse {
