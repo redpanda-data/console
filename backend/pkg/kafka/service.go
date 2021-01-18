@@ -3,6 +3,8 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kversion"
 	"time"
 
 	"github.com/cloudhut/kowl/backend/pkg/proto"
@@ -129,10 +131,23 @@ func testConnection(logger *zap.Logger, client *kgo.Client, timeout time.Duratio
 		return fmt.Errorf("failed to request metadata: %w", err)
 	}
 
+	// Request versions in order to guess Kafka Cluster version
+	versionsReq := kmsg.NewApiVersionsRequest()
+	versionsRes, err := versionsReq.RequestWith(ctx, client)
+	if err != nil {
+		return fmt.Errorf("failed to request api versions: %w", err)
+	}
+	err = kerr.ErrorForCode(versionsRes.ErrorCode)
+	if err != nil {
+		return fmt.Errorf("failed to request api versions. Inner kafka error: %w", err)
+	}
+	versions := kversion.FromApiVersionsResponse(versionsRes)
+
 	logger.Info("successfully connected to kafka cluster",
 		zap.Int("advertised_broker_count", len(res.Brokers)),
 		zap.Int("topic_count", len(res.Topics)),
-		zap.Int32("controller_id", res.ControllerID))
+		zap.Int32("controller_id", res.ControllerID),
+		zap.String("kafka_version", versions.VersionGuess()))
 
 	return nil
 }
