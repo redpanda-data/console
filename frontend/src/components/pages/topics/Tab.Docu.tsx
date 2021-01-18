@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
 import Card from "../../misc/Card";
 import { Button, Empty } from "antd";
+import { clone } from "../../../utils/utils";
 
 
 // Test for link sanitizer
@@ -41,9 +42,10 @@ function sanitizeUrl(uri: string, children?: React.ReactNode, title?: string | u
 
 
 export class TopicDocumentation extends Component<{ topic: TopicDetail }> {
+
     render() {
         let docu = api.topicDocumentation.get(this.props.topic.topicName);
-        if (docu == null) return DefaultSkeleton; // not yet loaded
+        if (docu === undefined) return DefaultSkeleton; // not yet loaded
         if (!docu.isEnabled)
             return errorNotConfigured;
 
@@ -60,24 +62,26 @@ export class TopicDocumentation extends Component<{ topic: TopicDetail }> {
     }
 }
 
-const errorNotConfigured = renderError('Not Configured', <>
+const errorNotConfigured = renderDocuError('Not Configured', <>
     <p>Topic Documentation is not configured in Kowl.</p>
     <p>Provide the connection credentials in the Kowl config, to fetch and display docmentation for the topics.</p>
 </>);
-const errorNotFound = renderError('Not Found', <>
+const errorNotFound = renderDocuError('Not Found', <>
     <p>No documentation file was found for this topic.</p>
     <ul style={{ listStyle: 'none' }}>
         <li>Ensure the Git connection to the documentation repository is configured correctly in the Kowl backend.</li>
         <li>Ensure that a markdown file (named just like the topic) exists in the repository.</li>
     </ul>
 </>);
-const errorEmpty = renderError('Empty', <>
+const errorEmpty = renderDocuError('Empty', <>
     <p>The documentation file is empty.</p>
     <p>In case you just changed the file, keep in mind that Kowl will only<br />
         periodically check the documentation repo for changes (every minute by default).</p>
 </>);
 
-function renderError(title: string, body: JSX.Element) {
+// todo: use common renderError function everywhere
+// todo: use <MotionAlways> for them
+function renderDocuError(title: string, body: JSX.Element) {
     return (
         <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>
             <Empty description={null}>
