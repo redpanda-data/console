@@ -124,7 +124,8 @@ export function QuickTable(data: { key: any, value: any }[] | { [key: string]: a
 
 export function toSafeString(x: any): string {
     if (typeof x === 'undefined' || x === null) return "";
-    if (typeof x === 'string' || typeof x === 'boolean' || typeof x === 'number') return String(x);
+    if (typeof x === 'string') return x;
+    if (typeof x === 'boolean' || typeof x === 'number') return String(x);
     return toJson(x);
 }
 
@@ -338,12 +339,23 @@ export const DefaultSkeleton = (
     </motion.div>
 );
 
-// export class DefaultSkeleton extends Component<{ identityKey?: string }> {
-//     render() {
-//         return (
-//             <motion.div {...animProps} key={this.props.identityKey ?? 'defaultSkeleton'} style={defaultSkeletonStyle}>
-//                 {innerSkeleton}
-//             </motion.div>
-//         )
-//     }
-// }
+// Single line string, no wrapping, will not overflow and display ellipsis instead
+const ellipsisDivStyle: CSSProperties = {
+    display: 'inline-block',
+    width: 0,
+    minWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    verticalAlign: 'text-bottom',
+};
+const ellipsisSpanStyle: CSSProperties = {
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
+    overflow: 'hidden',
+    maxWidth: '100%',
+    verticalAlign: 'text-bottom'
+};
+export const Ellipsis = (p: { children?: React.ReactNode, className?: string }) => {
+    return <span className={p.className} style={ellipsisSpanStyle}>{p.children}</span>
+}

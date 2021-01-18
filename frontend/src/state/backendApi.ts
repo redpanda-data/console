@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription
 } from "./restInterfaces";
 import { observable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -196,9 +196,9 @@ const apiStore = {
     schemaDetails: null as (SchemaDetails | null),
 
     topics: null as (TopicDetail[] | null),
-    topicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
+    topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
     topicDocumentation: new Map<string, TopicDocumentation>(),
-    topicPermissions: new Map<string, TopicPermissions>(),
+    topicPermissions: new Map<string, TopicPermissions | null>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     topicConsumers: new Map<string, TopicConsumer[]>(),
 
@@ -372,8 +372,8 @@ const apiStore = {
     },
 
     refreshTopicConfig(topicName: string, force?: boolean) {
-        cachedApiRequest<TopicConfigResponse>(`./api/topics/${topicName}/configuration`, force)
-            .then(v => this.topicConfig.set(topicName, v?.topicDescription?.configEntries ?? null), addError);
+        cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
+            .then(v => this.topicConfig.set(topicName, v?.topicDescription ?? null), addError); // 403 -> null
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {

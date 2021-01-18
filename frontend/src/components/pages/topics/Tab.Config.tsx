@@ -1,26 +1,29 @@
 import React from "react";
-import { TopicConfigEntry, TopicDetail } from "../../../state/restInterfaces";
+import { KafkaError, TopicConfigEntry, TopicDetail } from "../../../state/restInterfaces";
 import {
     Tooltip,
     Descriptions,
     Popover,
     Checkbox,
-    Select,
-    Input,
+    Empty,
     Typography,
     Row,
-    Space
+    Space,
+    Button,
+    Result
 } from "antd";
 import { observer } from "mobx-react";
 import { uiSettings } from "../../../state/ui";
 import topicConfigInfo from "../../../assets/topicConfigInfo.json";
 import Paragraph from "antd/lib/typography/Paragraph";
 import "../../../utils/arrayExtensions";
-import Icon, { HighlightTwoTone } from '@ant-design/icons';
+import Icon, { CloseCircleOutlined, HighlightTwoTone } from '@ant-design/icons';
 import { uiState } from "../../../state/uiState";
-import { OptionGroup } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, OptionGroup, toSafeString } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
-import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
+import { clone, prettyBytesOrNA, prettyMilliseconds, toJson } from "../../../utils/utils";
+import { LockIcon } from "@primer/octicons-v2-react";
+import { appGlobal } from "../../../state/appGlobal";
 
 const { Text } = Typography;
 
@@ -31,6 +34,39 @@ const { Text } = Typography;
 export const TopicConfiguration = observer(
     (p: { topic: TopicDetail }) => {
         const config = api.topicConfig.get(p.topic.topicName);
+        if (config === undefined) return DefaultSkeleton; // still loading
+        if (config && config.error)
+            return renderKafkaError(p.topic.topicName, config.error);
+
+        if (config === null || config.configEntries.length == 0) {
+            // config===null should never happen, so we catch it together with empty
+            const desc = <>
+                <Text type='secondary' strong style={{ fontSize: '125%' }}>No config entries</Text>
+                <br />
+                <span>Either the selected topic/partition did not contain any messages</span>
+            </>
+            return <Empty description={desc} />
+
+            return <>
+                <Empty description={null}>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <h2><span><LockIcon verticalAlign='middle' size={20} /></span> Permission Denied</h2>
+                        <p>
+                            You are not allowed to view this page.
+                            <br />
+                            Contact the administrator if you think this is an error.
+                        </p>
+                    </div>
+
+                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/authorization/roles.md">
+                        <Button type="primary">Kowl documentation for roles and permissions</Button>
+                    </a>
+                </Empty>
+            </>
+        }
+
+
+        const configEntries = config.configEntries;
 
         return <>
             <ConfigDisplaySettings />
@@ -42,7 +78,7 @@ export const TopicConfiguration = observer(
                 column={1}
                 style={{ display: "inline-block" }}
             >
-                {config && config.filter(e => uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isDefault : true)
+                {configEntries.filter(e => uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isDefault : true)
                     .sort((a, b) => {
                         if (uiSettings.topicList.propsOrder != 'changedFirst') return 0;
                         const v1 = a.isDefault ? 1 : 0;
@@ -59,6 +95,22 @@ export const TopicConfiguration = observer(
     }
 );
 
+function renderKafkaError(topicName: string, error: KafkaError) {
+    return <div style={{ marginBottom: '2em', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column' }}>
+            <Result style={{ margin: 0, padding: 0, marginTop: '1em' }}
+                status='error'
+                title="Kafka Error"
+                subTitle={<>Kowl received the following error while fetching the configuration for topic <Text code>{topicName}</Text> from Kafka:</>}
+            >
+            </Result>
+            <div style={{ margin: '1.5em 0', marginTop: '1em' }}>
+                <div className='codeBox w100' style={{ padding: '0.5em 1em' }}>{toJson(error, 4)}</div>
+            </div>
+            <Button type="primary" size="large" onClick={() => appGlobal.onRefresh()} style={{ width: '12em', margin: '0', alignSelf: 'center' }} >Retry</Button>
+        </div>
+    </div >
+}
 
 
 const ConfigDisplaySettings = observer(() =>

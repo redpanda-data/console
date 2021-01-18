@@ -89,7 +89,11 @@ export interface GetTopicMessagesResponse {
 
 
 
-
+export interface KafkaError {
+    code: number,
+    message: string,
+    description: string
+}
 
 export interface TopicConfigEntry {
     name: string,
@@ -99,9 +103,7 @@ export interface TopicConfigEntry {
 export interface TopicDescription {
     topicName: string
     configEntries: TopicConfigEntry[]
-}
-export interface TopicConfigResponse {
-    topicDescription: TopicDescription
+    error: KafkaError | null
 }
 export interface TopicConfigResponse {
     topicDescription: TopicDescription
