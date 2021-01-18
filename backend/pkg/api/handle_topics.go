@@ -110,7 +110,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 // handleGetTopicConfig returns all set configuration options for a specific topic
 func (api *API) handleGetTopicConfig() http.HandlerFunc {
 	type response struct {
-		TopicDescription *owl.TopicConfigs `json:"topicDescription"`
+		TopicDescription *owl.TopicConfig `json:"topicDescription"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
