@@ -189,18 +189,29 @@ func (s *Service) createProtoRegistry() error {
 // Filename is the .proto file within the protoPath that shall be parsed.
 func (s *Service) protoFileToDescriptor(files map[string]git.File) ([]*desc.FileDescriptor, error) {
 	filesStr := make(map[string]string, len(files))
-	fileNames := make([]string, 0, len(filesStr))
+	filePaths := make([]string, 0, len(filesStr))
 	for _, file := range files {
-		filesStr[file.Filename] = string(file.Payload)
-		fileNames = append(fileNames, file.Filename)
+		filesStr[file.Path] = string(file.Payload)
+		filePaths = append(filePaths, file.Path)
+	}
+
+	errorReporter := func(err protoparse.ErrorWithPos) error {
+		position := err.GetPosition()
+		s.logger.Warn("failed to parse proto file to descriptor",
+			zap.String("file", position.Filename),
+			zap.Int("line", position.Line),
+			zap.Error(err))
+		return nil
 	}
 
 	parser := protoparse.Parser{
 		Accessor:              protoparse.FileContentsFromMap(filesStr),
+		InferImportPaths:      true,
 		ValidateUnlinkedFiles: true,
 		IncludeSourceCodeInfo: true,
+		ErrorReporter:         errorReporter,
 	}
-	descriptors, err := parser.ParseFiles(fileNames...)
+	descriptors, err := parser.ParseFiles(filePaths...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse proto files to descriptors: %w", err)
 	}
