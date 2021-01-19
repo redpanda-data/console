@@ -87,14 +87,8 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 			return
 		}
 
-		partitions, err := api.OwlSvc.ListTopicPartitions(r.Context(), topicName)
-		if err != nil {
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  "Could not list topic partitions for requested topic",
-				IsSilent: false,
-			}
+		partitions, restErr := api.OwlSvc.ListTopicPartitions(r.Context(), topicName)
+		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
@@ -134,14 +128,8 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 			return
 		}
 
-		description, err := api.OwlSvc.GetTopicConfigs(r.Context(), topicName, nil)
-		if err != nil {
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  "Could not list topic config for requested topic",
-				IsSilent: false,
-			}
+		description, restErr := api.OwlSvc.GetTopicConfigs(r.Context(), topicName, nil)
+		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}

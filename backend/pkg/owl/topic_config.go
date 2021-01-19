@@ -2,8 +2,11 @@ package owl
 
 import (
 	"context"
+	"fmt"
+	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"go.uber.org/zap"
+	"net/http"
 )
 
 // TopicConfig is a TopicName along with all it's config entries
@@ -34,10 +37,26 @@ func (t *TopicConfig) GetConfigEntryByName(configName string) *TopicConfigEntry 
 }
 
 // GetTopicConfigs calls GetTopicsConfigs for a single Topic and returns a single response
-func (s *Service) GetTopicConfigs(ctx context.Context, topicName string, configNames []string) (*TopicConfig, error) {
+func (s *Service) GetTopicConfigs(ctx context.Context, topicName string, configNames []string) (*TopicConfig, *rest.Error) {
 	response, err := s.GetTopicsConfigs(ctx, []string{topicName}, configNames)
 	if err != nil {
-		return nil, err
+		return nil, &rest.Error{
+			Err:      err,
+			Status:   http.StatusInternalServerError,
+			Message:  fmt.Sprintf("Failed to get topic's config: %v", err.Error()),
+			IsSilent: false,
+		}
+	}
+
+	if val, exists := response[topicName]; exists {
+		if val.Error != nil && val.Error.Code == kerr.UnknownTopicOrPartition.Code {
+			return nil, &rest.Error{
+				Err:      fmt.Errorf("the requested topic does not exist"),
+				Status:   http.StatusNotFound,
+				Message:  fmt.Sprintf("Could not fetch topic config because the requested topic '%v' does not exist.", topicName),
+				IsSilent: false,
+			}
+		}
 	}
 
 	return response[topicName], nil
