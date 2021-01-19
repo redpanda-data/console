@@ -1,5 +1,10 @@
 import SchemaList from "../components/pages/schemas/Schema.List";
 
+export interface ApiError {
+    statusCode: number;
+    message: string;
+}
+
 
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];

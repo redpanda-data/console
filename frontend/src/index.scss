@@ -292,6 +292,11 @@ span>.icon-container~span {
     transition-duration: 0s, 0s !important;
 }
 
+/* never break table headers */
+.ant-table-thead>tr>th {
+    white-space: nowrap;
+}
+
 /* */
 /* */
 /* Don't clip animated page headers */
@@ -344,6 +349,10 @@ span>.icon-container~span {
 }
 
 .error-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7em;
+
     padding: 2em;
     margin: 1em 0;
     background: hsla(205, 15%, 90%, 1);
@@ -430,6 +439,10 @@ span>.icon-container~span {
 
 .whiteSpaceDefault {
     white-space: normal;
+}
+
+.nowrap {
+    white-space: nowrap;
 }
 
 .consumerGroupCompleteID {
@@ -805,11 +818,11 @@ th.msgTableActionColumn .ant-table-filter-trigger-container {
     /* border-bottom: solid 1px rgba(0, 0, 0, 0.1); */
 }
 
-.ant-table.ant-table-middle .ant-table-thead>tr>th.ant-table-cell.ant-table-row-expand-icon-cell {
+.ant-table-thead>tr>th.ant-table-cell.ant-table-row-expand-icon-cell {
     padding: 0px;
 }
 
-.ant-table.ant-table-middle .ant-table-tbody>tr>td.ant-table-cell.ant-table-row-expand-icon-cell {
+.ant-table-tbody>tr>td.ant-table-cell.ant-table-row-expand-icon-cell {
     padding: 0px;
 }
 

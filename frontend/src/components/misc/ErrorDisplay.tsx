@@ -4,6 +4,7 @@ import { Result } from 'antd';
 import { Button } from 'antd';
 import { api } from '../../state/backendApi';
 import { CloseCircleOutlined } from '@ant-design/icons'
+import { toJson } from '../../utils/utils';
 
 
 @observer
@@ -19,12 +20,19 @@ export class ErrorDisplay extends React.Component {
 
                 <div className="error-list">
                     {api.errors.map((e, i) => <div key={i}>
-                        <CloseCircleOutlined style={{ color: 'red' }} /> {e.toString()}
+                        <CloseCircleOutlined style={{ color: 'red' }} /> {formatError(e)}
                     </div>)}
                 </div>
             </div>
         </>;
     }
+}
+
+function formatError(err: any): string {
+    if (err instanceof Error && err.message) {
+        return err.message;
+    }
+    return String(err);
 }
 
 function clearErrors() {

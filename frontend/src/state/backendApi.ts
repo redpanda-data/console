@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError
 } from "./restInterfaces";
 import { observable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -50,12 +50,17 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
 
     if (!res.ok) {
         const text = await res.text();
-        const errObj = JSON.parse(text) as { statusCode: number, message: string };
-        if (errObj && errObj.statusCode && errObj.message) {
+        try {
+            const errObj = JSON.parse(text) as ApiError;
+            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+                // if the shape matches, reformat it a bit
             throw new Error(`${errObj.message} (${res.status} - ${res.statusText})`);
-        } else {
-            throw new Error(`${text} (${res.status} - ${res.statusText})`);
         }
+    }
+        catch { } // response is not json
+
+        // use generic error text
+        throw new Error(`${text} (${res.status} - ${res.statusText})`);
     }
 
     const str = await res.text();
@@ -75,7 +80,7 @@ async function handle401(res: Response) {
         const obj = JSON.parse(text);
         console.log("unauthorized message: " + text);
 
-        const err = obj as { statusCode: number, message: string }
+        const err = obj as ApiError;
         uiState.loginError = String(err.message);
     } catch (err) {
         uiState.loginError = String(err);
@@ -387,13 +392,13 @@ const apiStore = {
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
         if (!IsBusiness) return; // permissions endpoint only exists in kowl-business
-        cachedApiRequest<TopicPermissions>(`./api/permissions/topics/${topicName}`, force)
-            .then(x => this.topicPermissions.set(topicName, x ?? null), addError);
+        cachedApiRequest<TopicPermissions | null>(`./api/permissions/topics/${topicName}`, force)
+            .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
     refreshTopicPartitions(topicName: string, force?: boolean) {
-        cachedApiRequest<GetPartitionsResponse>(`./api/topics/${topicName}/partitions`, force)
-            .then(v => this.topicPartitions.set(topicName, v?.partitions ?? null), addError);
+        cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
+            .then(x => this.topicPartitions.set(topicName, x === null ? null : (x?.partitions ?? null)), addError);
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
