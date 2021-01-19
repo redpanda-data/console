@@ -1,6 +1,6 @@
 import React, { } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table, Select, Input, Button } from "antd";
+import { Empty, Table, Select, Input, Button, Alert } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
@@ -51,13 +51,18 @@ class AclList extends PageComponent {
 
     render() {
         if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
-        if (!api.ACLs) return DefaultSkeleton;
+        if (api.ACLs === undefined) return DefaultSkeleton;
+
+        const acls = api.ACLs ?? [];
+        const warning = api.ACLs === null
+            ? <Alert type="warning" message="You do not have the necessary permissions to view ACLs" showIcon style={{ marginBottom: '1em' }} />
+            : null;
 
         // issue: we can't easily filter by 'resourceType' (because it is a string, and we have to use an enum for requests...)
         // so we have to cheat by building our own list of what types are available
-        this.availableResourceTypes = api.ACLs.map(res => res.resourceType).distinct().map(str => ({ value: str, label: capitalize(str.toLowerCase()) }));
+        this.availableResourceTypes = acls.map(res => res.resourceType).distinct().map(str => ({ value: str, label: capitalize(str.toLowerCase()) }));
         this.availableResourceTypes.unshift({ label: 'Any', value: '' });
-        const resources = api.ACLs
+        const resources = acls
             .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
             .map(res => res.acls.map(rule => ({ ...res, ...rule })))
             .flat()
@@ -84,6 +89,8 @@ class AclList extends PageComponent {
 
                 <Card>
                     <this.SearchControls />
+
+                    {warning}
 
                     <Table
                         style={{ margin: '0', padding: '0' }} size={'middle'}
