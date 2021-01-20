@@ -59,7 +59,7 @@ func (s *Service) logDirsByTopic(ctx context.Context) (LogDirsByTopic, error) {
 					topicLogDir = LogDirTopicSharded{
 						TopicName:      topic.Topic,
 						TotalSizeBytes: 0,
-						BrokerIDs:      make(map[int32]interface{}, 0),
+						BrokerIDs:      make(map[int32]interface{}),
 					}
 				}
 				for _, partition := range topic.Partitions {
