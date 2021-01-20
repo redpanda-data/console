@@ -24,7 +24,6 @@ func (api *API) routes() *chi.Mux {
 		chimiddleware.RealIP,
 		// requirePrefix(api.Cfg.REST.BasePath), // only for debugging
 		handleBasePath,
-		chimiddleware.StripSlashes, // Doesn't really help for the Frontend because the SPA is in charge of it
 	)
 
 	baseRouter.Group(func(router chi.Router) {
