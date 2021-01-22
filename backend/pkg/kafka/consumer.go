@@ -35,6 +35,11 @@ type TopicMessage struct {
 	Value   *deserializedPayload `json:"value"`
 
 	IsValueNull bool `json:"isValueNull"` // true = tombstone
+
+	// Below properties are used for the internal communication via Go channels
+	IsMessageOk  bool   `json:"-"`
+	ErrorMessage string `json:"-"`
+	MessageSize  int64  `json:""`
 }
 
 // MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
@@ -80,12 +85,22 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	}
 	defer client.Close()
 
-	// 2. Setup JavaScript interpreter
-	isMessageOK, err := s.setupInterpreter(consumeRequest.FilterInterpreterCode)
-	if err != nil {
-		s.Logger.Error("failed to setup interpreter", zap.Error(err))
-		progress.OnError(fmt.Sprintf("failed to setup interpreter: %v", err.Error()))
-		return err
+	// 2. Create consumer workers
+	jobs := make(chan *kgo.Record, 100)
+	resultsCh := make(chan *TopicMessage, 100)
+	defer close(jobs)
+	workerCtx, cancel := context.WithCancel(ctx)
+
+	for i := 0; i < 4; i++ {
+		// Setup JavaScript interpreter
+		isMessageOK, err := s.setupInterpreter(consumeRequest.FilterInterpreterCode)
+		if err != nil {
+			s.Logger.Error("failed to setup interpreter", zap.Error(err))
+			progress.OnError(fmt.Sprintf("failed to setup interpreter: %v", err.Error()))
+			return err
+		}
+
+		go s.startMessageWorker(workerCtx, isMessageOK, jobs, resultsCh)
 	}
 
 	// 3. Assign partitions with right start offsets
@@ -99,25 +114,60 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 		kgo.ConsumePartitions(partitionOffsets),
 	)
 
-	// 4. Consume messages and check if filter code accepts the given records
+	// 4. Start go routine that consumes messages from Kafka and produces these records on the jobs channel so that these
+	// can be decoded by our workers.
+	go s.consumeKafkaMessages(workerCtx, client, consumeRequest, jobs)
+
+	// 5. Receive decoded messages until our request is satisfied. Once that's the case we will cancel the context
+	// that propagate to all the launched go routines.
 	messageCount := 0
 	remainingPartitionRequests := len(consumeRequest.Partitions)
+	for msg := range resultsCh {
+		// todo: Since a 'kafka message' is likely transmitted in compressed batches this is not really accurate
+		progress.OnMessageConsumed(msg.MessageSize)
+
+		if msg.IsMessageOk {
+			messageCount++
+			progress.OnMessage(msg)
+		}
+
+		partitionReq := consumeRequest.Partitions[msg.PartitionID]
+		if msg.Offset >= partitionReq.EndOffset {
+			remainingPartitionRequests--
+		}
+
+		// Do we need more messages to satisfy the user request? Return if request is satisfied
+		isRequestSatisfied := messageCount == consumeRequest.MaxMessageCount || remainingPartitionRequests == 0
+		if isRequestSatisfied {
+			// This will stop all the launched go routines for this consume request
+			cancel()
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, consumeReq TopicConsumeRequest, jobs chan<- *kgo.Record) {
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("interruppted message consuming because context is cancelled")
+			return
 		default:
 			fetches := client.PollFetches(ctx)
 			errors := fetches.Errors()
 			if len(errors) > 0 {
-				return fmt.Errorf("'%v' errors while fetching records: %w", len(errors), errors[0].Err)
+				s.Logger.Error("errors while fetching records",
+					zap.String("topic_name", errors[0].Topic),
+					zap.Error(errors[0].Err))
+				continue
 			}
 			iter := fetches.RecordIter()
 
 			// Iterate on all messages from this poll
 			for !iter.Done() {
 				record := iter.Next()
-				partitionReq := consumeRequest.Partitions[record.Partition]
+				partitionReq := consumeReq.Partitions[record.Partition]
 
 				if record.Offset > partitionReq.EndOffset {
 					// reached end offset within this partition, we strive to fulfil the consume request so that we achieve
@@ -125,74 +175,23 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 					continue
 				}
 
-				// todo: Since a 'kafka message' is likely transmitted in compressed form,
-				//       and since it has additional metadata (like headers, timestamp, ...)
-				//       this value is not accurate at all.
-				messageSize := len(record.Key) + len(record.Value)
-				progress.OnMessageConsumed(int64(messageSize))
-
-				// Run Interpreter filter and check if message passes the filter
-				value := s.Deserializer.DeserializePayload(record.Value, record.Topic, proto.RecordValue)
-				key := s.Deserializer.DeserializePayload(record.Key, record.Topic, proto.RecordKey)
-				headers := s.DeserializeHeaders(record.Headers)
-
-				topicMessage := &TopicMessage{
-					PartitionID:     record.Partition,
-					Offset:          record.Offset,
-					Timestamp:       record.Timestamp.Unix(),
-					Headers:         headers,
-					Compression:     compressionTypeDisplayname(record.Attrs.CompressionType()),
-					IsTransactional: record.Attrs.IsTransactional(),
-					Key:             key,
-					Value:           value,
-					IsValueNull:     record.Value == nil,
-				}
-
-				headersByKey := make(map[string]interface{}, len(headers))
-				for _, header := range headers {
-					headersByKey[header.Key] = header.Value.Object
-				}
-
-				// Check if message passes filter code
-				args := interpreterArguments{
-					PartitionID:  record.Partition,
-					Offset:       record.Offset,
-					Timestamp:    record.Timestamp,
-					Key:          key.Object,
-					Value:        value.Object,
-					HeadersByKey: headersByKey,
-				}
-
-				isOK, err := isMessageOK(args)
-				if err != nil {
-					// TODO: This might be changed to debug level, because operators probably do not care about user failures?
-					s.Logger.Info("failed to check if message is ok", zap.Error(err))
-					progress.OnError(fmt.Sprintf("failed to check if message is ok (partition: '%v', offset: '%v'). Error: %v", record.Partition, record.Offset, err))
-					return nil
-				}
-				if isOK {
-					messageCount++
-					progress.OnMessage(topicMessage)
-				}
-
-				if record.Offset >= partitionReq.EndOffset {
-					remainingPartitionRequests--
-				}
-
-				// Do we need more messages to satisfy the user request? Return if request is satisfied
-				isRequestSatisfied := messageCount == consumeRequest.MaxMessageCount || remainingPartitionRequests == 0
-				if isRequestSatisfied {
-					return nil
+				// Avoid a deadlock in case the jobs channel is full
+				select {
+				case <-ctx.Done():
+					return
+				case jobs <- record:
 				}
 			}
 		}
 	}
 }
 
+type isMessageOkFunc = func(args interpreterArguments) (bool, error)
+
 // SetupInterpreter initializes the JavaScript interpreter along with the given JS code. It returns a wrapper function
 // which accepts all Kafka message properties (offset, key, value, ...) and returns true (message shall be returned) or false
 // (message shall be filtered).
-func (s *Service) setupInterpreter(interpreterCode string) (func(args interpreterArguments) (bool, error), error) {
+func (s *Service) setupInterpreter(interpreterCode string) (isMessageOkFunc, error) {
 	// In case there's no code for the interpreter let's return a dummy function which always allows all messages
 	if interpreterCode == "" {
 		return func(args interpreterArguments) (bool, error) { return true, nil }, nil
