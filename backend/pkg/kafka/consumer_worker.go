@@ -6,9 +6,12 @@ import (
 	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
+	"sync"
 )
 
-func (s *Service) startMessageWorker(ctx context.Context, isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage) {
+func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage) {
+	defer wg.Done()
+
 	for record := range jobs {
 		// Run Interpreter filter and check if message passes the filter
 		value := s.Deserializer.DeserializePayload(record.Value, record.Topic, proto.RecordValue)

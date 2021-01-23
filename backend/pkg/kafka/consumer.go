@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/cloudhut/kowl/backend/pkg/interpreter"
@@ -83,15 +84,15 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	if err != nil {
 		return fmt.Errorf("failed to create new kafka client: %w", err)
 	}
-	defer client.Close()
 
 	// 2. Create consumer workers
 	jobs := make(chan *kgo.Record, 100)
 	resultsCh := make(chan *TopicMessage, 100)
-	defer close(jobs)
 	workerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	for i := 0; i < 4; i++ {
+	wg := sync.WaitGroup{}
+	for i := 0; i < 20; i++ {
 		// Setup JavaScript interpreter
 		isMessageOK, err := s.setupInterpreter(consumeRequest.FilterInterpreterCode)
 		if err != nil {
@@ -100,25 +101,20 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 			return err
 		}
 
-		go s.startMessageWorker(workerCtx, isMessageOK, jobs, resultsCh)
+		wg.Add(1)
+		go s.startMessageWorker(workerCtx, &wg, isMessageOK, jobs, resultsCh)
 	}
+	// Close the results channel once all workers have finished processing jobs and therefore no senders are left anymore
+	go func() {
+		wg.Wait()
+		close(resultsCh)
+	}()
 
-	// 3. Assign partitions with right start offsets
-	partitionOffsets := make(map[string]map[int32]kgo.Offset)
-	partitionOffsets[consumeRequest.TopicName] = make(map[int32]kgo.Offset)
-	for _, req := range consumeRequest.Partitions {
-		offset := kgo.NewOffset().At(req.StartOffset)
-		partitionOffsets[consumeRequest.TopicName][req.PartitionID] = offset
-	}
-	client.AssignPartitions(
-		kgo.ConsumePartitions(partitionOffsets),
-	)
-
-	// 4. Start go routine that consumes messages from Kafka and produces these records on the jobs channel so that these
+	// 3. Start go routine that consumes messages from Kafka and produces these records on the jobs channel so that these
 	// can be decoded by our workers.
 	go s.consumeKafkaMessages(workerCtx, client, consumeRequest, jobs)
 
-	// 5. Receive decoded messages until our request is satisfied. Once that's the case we will cancel the context
+	// 4. Receive decoded messages until our request is satisfied. Once that's the case we will cancel the context
 	// that propagate to all the launched go routines.
 	messageCount := 0
 	remainingPartitionRequests := len(consumeRequest.Partitions)
@@ -139,8 +135,6 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 		// Do we need more messages to satisfy the user request? Return if request is satisfied
 		isRequestSatisfied := messageCount == consumeRequest.MaxMessageCount || remainingPartitionRequests == 0
 		if isRequestSatisfied {
-			// This will stop all the launched go routines for this consume request
-			cancel()
 			return nil
 		}
 	}
@@ -149,18 +143,34 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 }
 
 func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, consumeReq TopicConsumeRequest, jobs chan<- *kgo.Record) {
+	defer close(jobs)
+	defer client.Close()
+
+	// Assign partitions with right start offsets
+	partitionOffsets := make(map[string]map[int32]kgo.Offset)
+	partitionOffsets[consumeReq.TopicName] = make(map[int32]kgo.Offset)
+	for _, req := range consumeReq.Partitions {
+		offset := kgo.NewOffset().At(req.StartOffset)
+		partitionOffsets[consumeReq.TopicName][req.PartitionID] = offset
+	}
+	client.AssignPartitions(
+		kgo.ConsumePartitions(partitionOffsets),
+	)
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
+			fetchStart := time.Now()
 			fetches := client.PollFetches(ctx)
+			s.Logger.Info("fetched new batch", zap.Duration("duration", time.Since(fetchStart)))
 			errors := fetches.Errors()
-			if len(errors) > 0 {
+			for _, err := range errors {
 				s.Logger.Error("errors while fetching records",
-					zap.String("topic_name", errors[0].Topic),
-					zap.Error(errors[0].Err))
-				continue
+					zap.String("topic_name", err.Topic),
+					zap.Int32("partition", err.Partition),
+					zap.Error(err.Err))
 			}
 			iter := fetches.RecordIter()
 
