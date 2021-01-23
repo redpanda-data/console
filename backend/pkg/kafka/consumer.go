@@ -92,7 +92,8 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	defer cancel()
 
 	wg := sync.WaitGroup{}
-	for i := 0; i < 20; i++ {
+	workerCount := 4
+	for i := 0; i < workerCount; i++ {
 		// Setup JavaScript interpreter
 		isMessageOK, err := s.setupInterpreter(consumeRequest.FilterInterpreterCode)
 		if err != nil {
