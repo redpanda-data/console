@@ -59,7 +59,7 @@ class TopicList extends PageComponent {
     }
 
     isFilterMatch(filter: string, item: TopicDetail): boolean {
-        if (item.topicName.toLowerCase().includes(filter)) return true;
+        if (item.topicName.toLowerCase().includes(filter.toLowerCase())) return true;
         return false;
     }
 
@@ -78,7 +78,11 @@ class TopicList extends PageComponent {
                 { key: 'Replicated:', value: partitionCountOnlyReplicated },
                 { key: 'All:', value: partitionCountReal + partitionCountOnlyReplicated },
             ],
-            { keyAlign: 'right', keyStyle: { fontWeight: 'bold' } }
+            {
+                keyAlign: 'right', keyStyle: { fontWeight: 500 },
+                gapWidth: 4,
+                valueAlign: 'right'
+            }
         );
 
         return (

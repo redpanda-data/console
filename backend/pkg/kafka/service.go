@@ -3,10 +3,14 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kversion"
+	"time"
+
+	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -19,6 +23,7 @@ type Service struct {
 	KafkaClientHooks kgo.Hook
 	KafkaClient      *kgo.Client
 	SchemaService    *schema.Service
+	ProtoService     *proto.Service
 	Deserializer     deserializer
 	MetricsNamespace string
 }
@@ -60,15 +65,39 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		logger.Info("successfully tested schema registry connectivity")
 	}
 
+	// Protoservice
+	var protoSvc *proto.Service
+	if cfg.Protobuf.Enabled {
+		cfg.Protobuf.Git.AllowedFileExtensions = []string{"proto"}
+		svc, err := proto.NewService(cfg.Protobuf, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create protobuf service: %w", err)
+		}
+		protoSvc = svc
+	}
+
 	return &Service{
 		Config:           cfg,
 		Logger:           logger,
 		KafkaClientHooks: clientHooks,
 		KafkaClient:      kafkaClient,
 		SchemaService:    schemaSvc,
-		Deserializer:     deserializer{SchemaService: schemaSvc},
+		ProtoService:     protoSvc,
+		Deserializer: deserializer{
+			SchemaService: schemaSvc,
+			ProtoService:  protoSvc,
+		},
 		MetricsNamespace: metricsNamespace,
 	}, nil
+}
+
+// Start starts all the (background) tasks which are required for this service to work properly. If any of these
+// tasks can not be setup an error will be returned which will cause the application to exit.
+func (s *Service) Start() error {
+	if s.ProtoService == nil {
+		return nil
+	}
+	return s.ProtoService.Start()
 }
 
 func (s *Service) NewKgoClient() (*kgo.Client, error) {
@@ -102,10 +131,23 @@ func testConnection(logger *zap.Logger, client *kgo.Client, timeout time.Duratio
 		return fmt.Errorf("failed to request metadata: %w", err)
 	}
 
+	// Request versions in order to guess Kafka Cluster version
+	versionsReq := kmsg.NewApiVersionsRequest()
+	versionsRes, err := versionsReq.RequestWith(ctx, client)
+	if err != nil {
+		return fmt.Errorf("failed to request api versions: %w", err)
+	}
+	err = kerr.ErrorForCode(versionsRes.ErrorCode)
+	if err != nil {
+		return fmt.Errorf("failed to request api versions. Inner kafka error: %w", err)
+	}
+	versions := kversion.FromApiVersionsResponse(versionsRes)
+
 	logger.Info("successfully connected to kafka cluster",
 		zap.Int("advertised_broker_count", len(res.Brokers)),
 		zap.Int("topic_count", len(res.Topics)),
-		zap.Int32("controller_id", res.ControllerID))
+		zap.Int32("controller_id", res.ControllerID),
+		zap.String("kafka_version", versions.VersionGuess()))
 
 	return nil
 }

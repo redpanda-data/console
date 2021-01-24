@@ -1,14 +1,12 @@
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
-import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tag, Tooltip, Typography } from "antd";
+import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { AnimatePresence, motion } from "framer-motion";
 import { autorun, computed, IReactionDisposer, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
-import prettyBytes from 'pretty-bytes';
-import prettyMilliseconds from "pretty-ms";
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras";
@@ -20,7 +18,7 @@ import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
 import { api } from "../../../../state/backendApi";
-import { TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
+import { Payload, TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
 import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
@@ -30,14 +28,15 @@ import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
-import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay } from "../../../../utils/tsxUtils";
-import { cullText, findElementDeep, ToJson } from "../../../../utils/utils";
+import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
+import { cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase, toJson } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
 import styles from './styles.module.scss';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
+import { MarkGithubIcon } from '@primer/octicons-react';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -76,7 +75,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         // unpack query parameters (if any)
         const searchParams = uiState.topicSettings.searchParams;
         const query = queryString.parse(window.location.search);
-        console.log("parsing query: " + ToJson(query));
+        console.debug("parsing query: " + toJson(query));
         if (query.p != null) searchParams.partitionID = Number(query.p);
         if (query.s != null) searchParams.maxResults = Number(query.s);
         if (query.o != null) {
@@ -433,10 +432,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             // {
             //     width: 1, title: 'Headers', dataIndex: 'headers', sorter: (a, b, order) => b.headers.length - a.headers.length, render: (t, r) => r.headers.length,
             // },
-            {
-                width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
-                sorter: (a, b) => b.size - a.size
-            },
+
+            // todo: size was a guess anyway, might be added back later
+            // {
+            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
+            //     sorter: (a, b) => b.size - a.size
+            // },
             {
                 width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                 filters: [],
@@ -506,7 +507,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         expandRowByClick: false,
                         expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'value'),
                         rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
-                        expandedRowRender: record => RenderExpandedMessage(record),
+                        expandedRowRender: record => renderExpandedMessage(record),
                     }}
 
                     columns={filteredColumns}
@@ -677,13 +678,12 @@ function ${name}() {
     </>} />
 }
 
-const renderKey = (value: any, record: TopicMessage) => {
-    const text = typeof value === 'string' ? value : ToJson(value);
+const renderKey = (p: Payload, record: TopicMessage) => {
+    const value = p.payload;
+    const text = typeof value === 'string' ? value : toJson(value);
 
     if (value == undefined || value == null || text.length == 0 || text == '{}')
-        return <Tooltip title="Empty Key" mouseEnterDelay={0.1}>
-            <span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span>
-        </Tooltip>
+        return renderEmptyIcon("Empty Key");
 
     if (text.length > 45) {
 
@@ -722,7 +722,7 @@ const renderKey = (value: any, record: TopicMessage) => {
 class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => string[] }> {
     render() {
         const msg = this.props.msg;
-        const value = msg.value;
+        const value = msg.value.payload;
         const fields = this.props.previewFields();
 
         try {
@@ -732,11 +732,11 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 // null: tombstone
                 text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
             }
-            else if (msg.valueType == 'text') {
+            else if (msg.value.encoding == 'text') {
                 // Raw Text (wtf :P)
                 text = value;
             }
-            else if (msg.valueType == 'binary') {
+            else if (msg.value.encoding == 'binary') {
                 // Binary data is displayed as hex dump
                 text = msg.valueBinHexPreview;
             }
@@ -778,25 +778,39 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 }
 
 
-function RenderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
-    return <div>
-        {(msg.headers.length > 0) && <MessageHeaders msg={msg} />}
-        <div>{RenderMessageValue(msg, shouldExpand)}</div>
+function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+    return <div className='expandedMessage'>
+        <MessageMetaData msg={msg} />
+
+        {/* .ant-tabs-nav { width: ??; } */}
+        <Tabs animated={false}>
+            <Tabs.TabPane key='value' tab='Value'>
+                {renderMessageValue(msg, shouldExpand)}
+            </Tabs.TabPane>
+            <Tabs.TabPane key='key' tab='Key'>
+                <span className='cellDiv' style={{ width: 'auto' }}>
+                    <code style={{}}>{toSafeString(msg.key.payload)}</code>
+                </span>
+            </Tabs.TabPane>
+            <Tabs.TabPane key='headers' tab='Headers' disabled={msg.headers.length == 0}>
+                <MessageHeaders msg={msg} />
+            </Tabs.TabPane>
+        </Tabs>
     </div>
 }
 
-function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
-        if (!msg || !msg.value) return <code>null</code>
+        if (!msg || !msg.value || !msg.value.payload) return <code>null</code>
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
-        if (msg.valueType == 'binary') {
+        if (msg.value.encoding == 'binary') {
             const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{msg.value}</code>
             }
             else if (mode == 'hex') {
-                const str = msg.value as string;
+                const str = msg.value.payload as string;
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     let n = str.charCodeAt(i).toString(16);
@@ -807,7 +821,7 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>
             }
             else {
-                const str = msg.value as string;
+                const str = msg.value.payload as string;
                 let result = '';
                 const isPrintable = /[\x20-\x7E]/;
                 for (let i = 0; i < str.length; i++) {
@@ -827,7 +841,7 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                         style={{ float: 'right', margin: '1em', zIndex: 10 }} />
                 </Affix> */}
 
-                <KowlJsonView src={msg.value} shouldCollapse={shouldCollapse} />
+                <KowlJsonView src={msg.value.payload} shouldCollapse={shouldCollapse} />
             </>
         )
     }
@@ -836,22 +850,76 @@ function RenderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
     }
 }
 
+const MessageMetaData = observer((props: { msg: TopicMessage }) => {
+    const msg = props.msg;
+    const data = {
+        "Key": `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
+        "Value": `${titleCase(msg.value.encoding)} (${msg.value.encoding == 'avro' ? `${msg.value.avroSchemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
+        "Headers": msg.headers.length > 0 ? `${msg.headers.length}` : "No headers set",
+        "Compression": msg.compression,
+        "Transactional": msg.isTransactional ? 'true' : 'false',
+        // "Producer ID": "(msg.producerId)",
+    };
+
+    return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
+        {Object.entries(data).map(([k, v]) => <>
+            <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
+                <div style={{ fontWeight: 600 }}>{v}</div>
+                <div style={{ color: 'rgba(0, 0, 0, 0.4)' }}>{k}</div>
+            </div>
+        </>)}
+    </div>
+});
+
 const MessageHeaders = observer((props: { msg: TopicMessage }) => {
-    const headers = props.msg.headers
-    const jsonHeaders = headers.map(h => ({
-        key: ToJson(h.key),
-        value: ToJson(h.value),
-        valueEncoding: ToJson(h.valueEncoding)
-    }));
-    const showHeaders = uiState.topicSettings.showMessageHeaders;
-    const titleText = (showHeaders ? "Hide" : "Show") + " Message Headers";
+
     return <div className='messageHeaders'>
-        <div className='title'>
-            <span className='titleBtn' onClick={() => uiState.topicSettings.showMessageHeaders = !showHeaders}>{titleText}</span>
+        <div>
+            <Table
+                size='small'
+                indentSize={0}
+                dataSource={props.msg.headers}
+                pagination={false}
+                columns={[
+                    {
+                        width: 'auto', title: 'Key', dataIndex: 'key',
+                        render: v => v
+                            ? <div className='cellDiv'><span style={{ whiteSpace: 'pre-wrap' }}>{toSafeString(v)}</span></div>
+                            : renderEmptyIcon("Empty Key")
+                    },
+                    {
+                        width: 'auto', title: 'Value', dataIndex: 'value',
+                        render: value => {
+                            if (value.payload === null) return renderEmptyIcon('"null"');
+                            if (typeof value.payload === 'undefined') return renderEmptyIcon('"undefined"');
+                            if (typeof value.payload === 'number') return <span className='codeBox'>{String(value.payload)}</span>
+                            if (typeof value.payload === 'string') return <div className='cellDiv'><span style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{value.payload}</span></div>
+
+                            if (typeof value.payload === 'object')
+                                return <div className='cellDiv'><span className='codeBox hoverLink' style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '100%', verticalAlign: 'text-bottom' }}>{toSafeString(value.payload)}</span></div>
+
+                            return "unknown data type";
+                            // return <div style={{ whiteSpace: 'pre-wrap' }}>{toSafeString(value.payload)}</div>
+
+                        },
+                    },
+                    {
+                        width: '80', title: 'Encoding', dataIndex: 'value',
+                        render: v => <div className='cellDiv'>{v.encoding}</div>
+                    },
+                ]}
+                expandable={{
+                    rowExpandable: header => Boolean(header.value?.payload), // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
+                    expandIconColumnIndex: 1,
+                    expandRowByClick: true,
+                    // expandedRowRender: r => <KowlJsonView src={r.value as object} />,
+                    expandedRowRender: header => typeof header.value?.payload === 'object'
+                        ? <KowlJsonView src={header.value.payload as object} />
+                        : <span className='codeBox'>{toSafeString(header.value.payload)}</span>,
+                }}
+            />
+            <br />
         </div>
-        {showHeaders && QuickTable(jsonHeaders, {
-            tableStyle: { width: 'auto', paddingLeft: '1em' },
-        })}
     </div>
 });
 
@@ -972,7 +1040,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
         { title: 'Key', dataIndex: 'key' },
         { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
-        { title: 'Size', dataIndex: 'size' },
+        // { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
     ];
 
     render() {
@@ -1207,7 +1275,7 @@ class MessageSearchFilterBar extends Component {
                             className='settingIconFilter'
                             onClick={() => {
                                 this.currentIsNew = false;
-                                this.currentFilterBackup = ToJson(e);
+                                this.currentFilterBackup = toJson(e);
                                 this.currentFilter = e;
                                 this.hasChanges = false;
                             }}
@@ -1239,7 +1307,7 @@ class MessageSearchFilterBar extends Component {
                 ? (
                     <div className={styles.metaSection}>
                         <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(api.messagesBytesConsumed)}</span>
-                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {prettyMilliseconds(api.messagesElapsedMs || -1)}</span>
+                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {api.messagesElapsedMs ? prettyMilliseconds(api.messagesElapsedMs) : ""}</span>
                     </div>
                 )
                 : (
@@ -1348,4 +1416,9 @@ class MessageSearchFilterBar extends Component {
             this.hasChanges = false;
         }
     }
+}
+
+function renderEmptyIcon(tooltipText?: string) {
+    if (!tooltipText) tooltipText = "Empty";
+    return <Tooltip title={tooltipText} mouseEnterDelay={0.1}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>
 }

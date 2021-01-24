@@ -20,17 +20,16 @@
 }
 
 .metaSection {
-    margin-left: auto;
-    width: 200px;
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    margin-left: auto;
+    width: 200px;
+
     font-size: 12px;
     font-weight: 500;
     padding: 0 5px;
-    align-items: center;
-}
 
-.metaSection {
     .bytesIcon {
         color: #1890ff;
     }

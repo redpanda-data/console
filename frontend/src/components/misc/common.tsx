@@ -7,7 +7,7 @@ import Draggable from "react-draggable";
 import { observer } from "mobx-react";
 import { Grid, Modal, Tag } from "antd";
 import { uiState } from "../../state/uiState";
-import { hoursToMilliseconds } from "../../utils/utils";
+import { hoursToMilliseconds, prettyMilliseconds } from "../../utils/utils";
 import env, { IsBusiness } from "../../utils/env";
 import { QuickTable } from "../../utils/tsxUtils";
 
@@ -105,6 +105,18 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
             return left - right;
         }
 
+        if ((typeof a[field] === 'undefined' || a[field] === null) && (typeof b[field] !== 'undefined' && b[field] !== null)) {
+            const left = '';
+            const right = String(b[field]);
+            return left.localeCompare(right);
+        }
+
+        if ((typeof a[field] !== 'undefined' && a[field] !== null) && (typeof b[field] === 'undefined' || b[field] === null)) {
+            const left = String(a[field]);
+            const right = '';
+            return left.localeCompare(right);
+        }
+
         throw Error(`Table 'sortField()' can't handle '${field}', it's type is '${typeof a[field]}'`)
     }
 }
@@ -119,30 +131,61 @@ export function range(start: number, end: number): number[] {
 @observer
 export class UpdatePopup extends Component {
     render() {
+
         if (!uiState.serverVersion) return null; // server version not known yet
-        if (uiState.serverVersion == 'dev') return null; // don't show popup in dev
+        const serverVersion = uiState.serverVersion;
+        if (serverVersion.sha == 'dev' || serverVersion.branch == 'dev') return null; // don't show popup in dev
         if (uiState.updatePromtHiddenUntil !== undefined)
             if (new Date().getTime() < uiState.updatePromtHiddenUntil)
                 return null; // not yet
 
-        const curVersion = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : 'null (dev)');
-        const curVersionBusiness = (!!env.REACT_APP_KOWL_BUSINESS_GIT_SHA ? env.REACT_APP_KOWL_BUSINESS_GIT_SHA : null);
-        const isFree = !uiState.serverVersionBusiness;
+        return null; // temporarily disabled
 
-        const tableData = [
-            {
-                key: "Current Version:",
-                value: isFree
-                    ? <span className='codeBox'>{curVersion}</span>
-                    : <><span className='codeBox'>{curVersion}</span>&nbsp;<span className='codeBox'>{curVersionBusiness}</span></>
-            },
-            {
-                key: "Server Version:",
-                value: isFree
-                    ? <span className='codeBox'>{uiState.serverVersion}</span>
-                    : <><span className='codeBox'>{uiState.serverVersion}</span>&nbsp;<span className='codeBox'>{uiState.serverVersionBusiness}</span></>
-            }
-        ];
+
+        const curSha = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : '(dev)');
+        const curRef = env.REACT_APP_KOWL_GIT_REF;
+        const curShaBusiness = env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
+        const curRefBusiness = env.REACT_APP_KOWL_BUSINESS_GIT_REF;
+        const curTimestamp = env.REACT_APP_KOWL_TIMESTAMP;
+        const isFree = !serverVersion.shaBusiness;
+
+        const tableCurrent = {} as { [key: string]: any };
+        const curTimestampDisplay = formatTimestamp(curTimestamp);
+        if (curTimestampDisplay) tableCurrent['Built'] = curTimestampDisplay;
+        tableCurrent['Git SHA'] = <span className='codeBox'>{curSha}</span>;
+        if (curRef) tableCurrent['Release'] = <span className='codeBox'>{curRef}</span>;
+        if (!isFree) {
+            tableCurrent['Git SHA (Business)'] = <span className='codeBox'>{curShaBusiness}</span>;
+            tableCurrent['Release (Business)'] = <span className='codeBox'>{curRefBusiness}</span>;
+        }
+
+        const tableServer = {} as { [key: string]: any };
+        const serverTimestampDisplay = formatTimestamp(serverVersion.ts);
+        if (serverTimestampDisplay) tableServer['Built'] = serverTimestampDisplay;
+        tableServer['Git SHA'] = <span className='codeBox'>{!!serverVersion.sha ? serverVersion.sha : 'none (dev)'}</span>;
+        if (serverVersion.branch) tableServer['Release'] = <span className='codeBox'>{serverVersion.branch}</span>;
+        if (!isFree) {
+            tableServer['Git SHA (Business)'] = <span className='codeBox'>{serverVersion.shaBusiness}</span>;
+            tableServer['Release (Business)'] = <span className='codeBox'>{serverVersion.branchBusiness}</span>;
+        }
+
+        const versionTableStyle: CSSProperties = {
+            background: 'hsl(0deg, 0%, 97%)',
+            border: 'solid 1px hsla(0deg, 0%, 50%, 4%)',
+            padding: '.8em 1em',
+            borderRadius: '4px',
+            fontFamily: 'Open Sans',
+        };
+        const versionHeaderStyle: CSSProperties = {
+            fontSize: '90%',
+            fontWeight: 600,
+            color: 'hsl(0deg, 0%, 40%)',
+            marginBottom: '0.5em',
+        };
+        const keyCellStyle: CSSProperties = {
+            fontSize: '84%',
+            color: 'hsl(0deg, 0%, 40%)',
+        };
 
         return <Modal title='New version available'
             visible={true}
@@ -150,16 +193,46 @@ export class UpdatePopup extends Component {
             mask={true} closable={false} maskClosable={false} centered={true} keyboard={false}
             onCancel={() => uiState.updatePromtHiddenUntil = new Date().getTime() + hoursToMilliseconds(4)}
             onOk={() => window.location.reload()}
+            style={{ minWidth: '700px' }}
         >
             <p>
                 The Kowl backend server is running a different version than the frontend.<br />
                 It is reccommended to reload the page to update the frontend.
             </p>
-            <p>
-                {QuickTable(tableData, { keyAlign: 'right' })}
-            </p>
-            <p>Do you want to reload the page now?</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5em', margin: '1.5em 0' }}>
+                <div style={versionTableStyle}>
+                    <div style={versionHeaderStyle}>Current Version</div>
+                    <div>{QuickTable(tableCurrent, { keyAlign: 'right', gapWidth: '6px', keyStyle: keyCellStyle, tableStyle: { margin: '0 1.5em' } })}</div>
+                </div>
+
+                <div style={versionTableStyle}>
+                    <div style={versionHeaderStyle}>Server Version</div>
+                    <div>{QuickTable(tableServer, { keyAlign: 'right', gapWidth: '6px', keyStyle: keyCellStyle, tableStyle: { margin: '0 1.5em' } })}</div>
+                </div>
+            </div>
+
+            <div>
+                <p>Do you want to reload the page now?</p>
+            </div>
         </Modal>
     }
 }
 
+function formatTimestamp(unixTimestampSeconds: number | string | null | undefined) {
+    if (!unixTimestampSeconds) return null;
+
+    const timestampMs = Number(unixTimestampSeconds) * 1000;
+    if (isNaN(timestampMs)) return null;
+
+    console.log('timestamp: ' + Number(unixTimestampSeconds));
+
+    try {
+        const date = new Date(timestampMs);
+        return <><span className='codeBox'>{date.toUTCString()}</span> <span style={{ fontSize: '85%' }}>({prettyMilliseconds(Date.now() - date.getTime(), { compact: true })} ago)</span></>
+    }
+    catch (ex) {
+        console.error('failed to parse/format the timestamp: ' + String(unixTimestampSeconds));
+        return null;
+    }
+}

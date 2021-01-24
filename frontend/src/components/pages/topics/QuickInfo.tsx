@@ -1,48 +1,51 @@
 import React from "react";
-import { TopicConfigEntry } from "../../../state/restInterfaces";
-import { Row, Statistic } from "antd";
+import { TopicConfigEntry, TopicDetail } from "../../../state/restInterfaces";
+import { message, Row, Statistic } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
-import prettyBytes from 'pretty-bytes';
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
 import { FavoritePopover, FormatConfigValue } from "./Tab.Config";
 import { uiSettings } from "../../../state/ui";
+import { prettyBytesOrNA } from "../../../utils/utils";
+
+const statsSeparator = <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
 
 
 // todo: rename QuickInfo
-export const TopicQuickInfoStatistic = observer((p: { topicName: string }) => {
+export const TopicQuickInfoStatistic = observer((p: { topic: TopicDetail }) => {
+    const topic = p.topic;
+    const statsAr = [] as JSX.Element[];
 
-    const topic = api.topics?.first(t => t.topicName == p.topicName);
-    if (topic === undefined) return null; // not ready yet
+    // Size
+    const size = <Statistic key='size' title='Size' value={topic ? prettyBytesOrNA(topic.logDirSize) : "..."} />
+    statsAr.push(size);
 
-    let topicConfig = filterTopicConfig(api.topicConfig.get(p.topicName));
-    if (!topicConfig) return null;
-
-    const partitions = api.topicPartitions.get(p.topicName);
+    // Messages
+    const partitions = api.topicPartitions.get(topic.topicName);
     let messageSum: null | string;
-    if (partitions === undefined) messageSum = '...'; // waiting...
-    else if (partitions === null) messageSum = null; // hide
+    if (partitions === undefined) messageSum = '...'; // no response yet
+    else if (partitions === null) messageSum = "N/A"; // explicit null -> not allowed
     else messageSum = partitions.sum(p => (p.waterMarkHigh - p.waterMarkLow)).toString();
+    statsAr.push(<Statistic key='msgs' title='Messages' value={messageSum} />);
 
-    return <Row >
+    // Config Entries / Seperator
+    const configEntries = filterTopicConfig(api.topicConfig.get(topic.topicName)?.configEntries);
+    if (configEntries) {
+        const configStats = uiState.topicSettings.favConfigEntries
+            .map(favName => configEntries!.find(e => e.name === favName))
+            .filter(e => e != null)
+            .map(configEntry =>
+                FavoritePopover(configEntry!, <Statistic key={(configEntry!.name)} title={(configEntry!.name)} value={FormatConfigValue(configEntry!.name, configEntry!.value, uiSettings.topicList.valueDisplay)} />)
+            );
 
-        <Statistic title='Size' value={prettyBytes(topic.logDirSize)} />
-        {messageSum && <Statistic title='Messages' value={messageSum} />}
+        if (configStats.length > 0)
+            statsAr.push(statsSeparator);
 
-        {uiState.topicSettings.favConfigEntries.filter(tce => !!tce).length > 0
-            ? <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
-            : null}
+        statsAr.push(...configStats);
+    }
 
-        {
-            topicConfig && uiState.topicSettings.favConfigEntries
-                .map(fav => topicConfig!.find(tce => tce.name === fav))
-                .filter(tce => tce)
-                .map(configEntry =>
-                    FavoritePopover(configEntry!, <Statistic title={(configEntry!.name)} value={FormatConfigValue(configEntry!.name, configEntry!.value, uiSettings.topicList.valueDisplay)} />)
-                )
-        }
-    </Row>
+    return <Row>{statsAr}</Row>
 })
 
 function filterTopicConfig(config: TopicConfigEntry[] | null | undefined): TopicConfigEntry[] | null | undefined {

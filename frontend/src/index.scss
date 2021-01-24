@@ -292,6 +292,11 @@ span>.icon-container~span {
     transition-duration: 0s, 0s !important;
 }
 
+/* never break table headers */
+.ant-table-thead>tr>th {
+    white-space: nowrap;
+}
+
 /* */
 /* */
 /* Don't clip animated page headers */
@@ -344,6 +349,10 @@ span>.icon-container~span {
 }
 
 .error-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7em;
+
     padding: 2em;
     margin: 1em 0;
     background: hsla(205, 15%, 90%, 1);
@@ -351,13 +360,20 @@ span>.icon-container~span {
 }
 
 .codeBox {
+    display: inline-block;
     margin: 0;
-    padding: 0.2em 0.4em 0.1em;
+    padding: 0em 0.4em 0em;
+    white-space: pre-wrap;
     font-size: 85%;
+    font-family: monospace;
+
     background: rgb(241, 241, 241);
     border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 3px;
-    font-family: monospace;
+}
+
+.w100 {
+    width: 100%;
 }
 
 .version {
@@ -423,6 +439,10 @@ span>.icon-container~span {
 
 .whiteSpaceDefault {
     white-space: normal;
+}
+
+.nowrap {
+    white-space: nowrap;
 }
 
 .consumerGroupCompleteID {
@@ -686,6 +706,19 @@ tr.tombstone .ant-table-row-expand-icon {
     text-align: center;
 }
 
+.expandedMessage {
+    .ant-tabs-nav {
+        .ant-tabs-tab {
+            flex: none;
+            padding: 0.6em 3.5em;
+        }
+
+        .ant-tabs-tab-active {
+            background: none;
+        }
+    }
+}
+
 .overflowYOverlay {
     overflow-y: overlay;
 }
@@ -785,11 +818,11 @@ th.msgTableActionColumn .ant-table-filter-trigger-container {
     /* border-bottom: solid 1px rgba(0, 0, 0, 0.1); */
 }
 
-.ant-table.ant-table-middle .ant-table-thead>tr>th.ant-table-cell.ant-table-row-expand-icon-cell {
+.ant-table-thead>tr>th.ant-table-cell.ant-table-row-expand-icon-cell {
     padding: 0px;
 }
 
-.ant-table.ant-table-middle .ant-table-tbody>tr>td.ant-table-cell.ant-table-row-expand-icon-cell {
+.ant-table-tbody>tr>td.ant-table-cell.ant-table-row-expand-icon-cell {
     padding: 0px;
 }
 
@@ -874,9 +907,21 @@ svg {
     margin: auto;
 }
 
-.ant-popover-content {
-    /* popover is too hard to see on white background */
-    box-shadow: 0px 0px 4px 1px rgba(0, 0, 0, 0.07);
+.ant-popover {
+    .ant-popover-content {
+        /* popover is too hard to see on white background */
+        box-shadow: 0px 0px 4px 1px rgba(0, 0, 0, 0.07);
+
+        .ant-popover-inner {
+            .ant-popover-title {
+                color: hsl(0deg, 0%, 35%);
+            }
+
+            .ant-popover-inner-content {
+                color: hsl(0deg, 0%, 45%);
+            }
+        }
+    }
 }
 
 .ant-progress-status-active .ant-progress-bg::before {
@@ -946,18 +991,27 @@ svg {
 .ant-tooltip {
     font-size: 12px;
     max-width: 400px;
+
+    --ant-tooltip-color: hsl(0deg, 0%, 87%);
 }
 
-.ant-tooltip-inner {
-    min-height: 20px;
-    padding: .5em .75em;
-    color: rgba(255, 255, 255, 85%);
-    border-radius: 4px;
-    background-color: hsla(210, 14%, 20%, 0.9);
-    text-align: center;
-    font-size: 11px;
-    font-family: Verdana, "Segoe UI", Helvetica, sans-serif;
-    line-height: 1.5;
+
+.ant-menu-inline-collapsed-tooltip a {
+    color: var(--ant-tooltip-color);
+}
+
+.ant-tooltip {
+    .ant-tooltip-inner {
+        min-height: 20px;
+        padding: .5em .75em;
+        color: var(--ant-tooltip-color);
+        border-radius: 4px;
+        background-color: hsla(210, 14%, 20%, 0.9);
+        text-align: center;
+        font-size: 11px;
+        font-family: Verdana, "Segoe UI", Helvetica, sans-serif;
+        line-height: 1.5;
+    }
 }
 
 .ant-tooltip-arrow::before {
@@ -1301,67 +1355,12 @@ svg {
 }
 
 .messageHeaders {
-    margin-bottom: 1.5em;
-    margin-top: .5em;
-    padding-bottom: .5em;
     border-bottom: 1px solid #ddd;
 
-    .title {
-        padding-bottom: 6px;
-        font-family: "Open Sans", sans-serif;
-        font-size: 11px;
-        font-weight: 600;
-        // padding-left: 2px;
-        color: hsla(0, 0%, 50%, 1);
-
-        .titleBtn {
-            border: 1px solid transparent;
-            padding: 3px 6px;
-            border-radius: 3px;
-
-            cursor: pointer;
-            user-select: none;
-
-            transition: background-color 80ms ease-out, border-color 80ms ease-out, color 80ms ease-out;
-
-            &:hover {
-                color: hsl(205, 100%, 50%);
-                background-color: hsla(0, 0%, 100%, 0.85);
-                border-color: hsla(205, 100%, 50%, 1);
-            }
-        }
-    }
-
-    .quickTable {
-        margin-bottom: .5rem;
-        margin-top: .5rem;
-    }
-
-    .keyCell {
-        padding: 6px 0;
-        padding-right: 16px;
-    }
-
-    tr:not(:last-child) {
-        td {
-            border-bottom: 1px solid #ddd;
-        }
-    }
-
-    tr {
-        td:first-child {
-            border-right: 1px solid #eee;
-        }
-    }
-
-    tr {
-        td:first-child {
-            padding-left: 16px;
-        }
-
-        td:last-child {
-            padding-right: 16px;
-        }
+    thead th.ant-table-cell {
+        background: hsla(0deg, 0%, 0%, 0.04);
+        padding-top: .5em !important;
+        padding-bottom: .5em !important;
     }
 }
 
@@ -1431,7 +1430,6 @@ svg {
     }
 
     pre {
-        // margin-left: 12px;
         padding: 12px;
         font-family: monospace;
         font-size: 14px;
@@ -1473,4 +1471,58 @@ svg {
     align-items: center;
 
     cursor: default;
+}
+
+.waitingForMessagesText {
+    animation: waitingForMessagesTextPulse 1.5s ease-in-out 0s infinite;
+}
+
+@keyframes waitingForMessagesTextPulse {
+    0% {
+        color: inherit;
+    }
+
+    40% {
+        color: rgb(79, 173, 245);
+    }
+
+    60% {
+        color: rgb(79, 173, 245);
+    }
+
+    100% {
+        color: inherit;
+    }
+}
+
+.ant-message-notice-content {
+    position: relative;
+}
+
+.waitingForMessagesBox::before {
+    content: ' ';
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
+    left: 0px;
+
+    border-radius: 4px;
+    box-shadow: 0 0 8px 4px #3098e8;
+
+    animation: waitingForMessagesBoxPulseShadow 1.5s ease-in-out 0s infinite;
+}
+
+@keyframes waitingForMessagesBoxPulseShadow {
+    0% {
+        box-shadow: 0 0 4px 1px hsla(206deg, 10%, 85%, 50%);
+    }
+
+    50% {
+        box-shadow: 0 0 8px 2px #3098e8b0;
+    }
+
+    100% {
+        box-shadow: 0 0 4px 1px hsla(206deg, 10%, 85%, 50%);
+    }
 }

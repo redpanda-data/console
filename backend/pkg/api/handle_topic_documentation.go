@@ -19,17 +19,7 @@ func (api *API) handleGetTopicDocumentation() http.HandlerFunc {
 		topicName := chi.URLParam(r, "topicName")
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
-		doc, err := api.OwlSvc.GetTopicDocumentation(topicName)
-		if err != nil {
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  "Could not list topic documentation for requested topic",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, logger, restErr)
-			return
-		}
+		doc := api.OwlSvc.GetTopicDocumentation(topicName)
 
 		rest.SendResponse(w, r, logger, http.StatusOK, &response{
 			TopicName:     topicName,

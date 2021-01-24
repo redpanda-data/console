@@ -3,7 +3,7 @@ import { observer } from "mobx-react";
 import React from "react";
 import { Layout, Spin } from "antd";
 import { api, rest } from "../../state/backendApi";
-import { UserData } from "../../state/restInterfaces";
+import { ApiError, UserData } from "../../state/restInterfaces";
 import { appGlobal } from "../../state/appGlobal";
 import fetchWithTimeout from "../../utils/fetchWithTimeout";
 import { uiState } from "../../state/uiState";
@@ -41,7 +41,7 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
                 api.userData = obj as UserData;
             } else {
                 // try to read as error object
-                const err = obj as { statusCode: number, message: string }
+                const err = obj as ApiError;
                 throw err.message;
             }
         } catch (err) {

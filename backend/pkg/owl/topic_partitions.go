@@ -3,7 +3,9 @@ package owl
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"net/http"
 )
 
 // TopicPartition consists of some (not all) information about a partition of a topic.
@@ -28,10 +30,10 @@ type TopicPartition struct {
 }
 
 // ListTopicPartitions returns the partition in the topic along with their watermarks
-func (s *Service) ListTopicPartitions(ctx context.Context, topicName string) ([]TopicPartition, error) {
-	metadata, err := s.kafkaSvc.GetSingleMetadata(ctx, topicName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get topic metadata for topic '%v': %w", topicName, err)
+func (s *Service) ListTopicPartitions(ctx context.Context, topicName string) ([]TopicPartition, *rest.Error) {
+	metadata, restErr := s.kafkaSvc.GetSingleMetadata(ctx, topicName)
+	if restErr != nil {
+		return nil, restErr
 	}
 
 	partitionsByID := make(map[int32]kmsg.MetadataResponseTopicPartition)
@@ -44,7 +46,12 @@ func (s *Service) ListTopicPartitions(ctx context.Context, topicName string) ([]
 	// Get watermarks
 	waterMarks, err := s.kafkaSvc.GetPartitionMarks(ctx, topicName, partitionIDs)
 	if err != nil {
-		return nil, err
+		return nil, &rest.Error{
+			Err:          err,
+			Status:       http.StatusInternalServerError,
+			Message:      fmt.Sprintf("Failed to list topic partitions because partition watermarks couldn't be fetched: %v", err.Error()),
+			InternalLogs: nil,
+		}
 	}
 
 	// Create result array

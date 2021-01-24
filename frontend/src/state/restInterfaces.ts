@@ -1,5 +1,10 @@
 import SchemaList from "../components/pages/schemas/Schema.List";
 
+export interface ApiError {
+    statusCode: number;
+    message: string;
+}
+
 
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];
@@ -44,29 +49,31 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'json' | 'xml' | 'avro' | 'text' | 'binary';
+export type MessageDataType = 'none' | 'json' | 'xml' | 'avro' | 'text' | 'binary';
+export type CompressionType = 'uncompressed' | 'gzip' | 'snappy' | 'lz4' | 'zstd' | 'unknown';
+export interface Payload {
+    payload: any, // json obj
+    encoding: MessageDataType, // actual format of the message (before the backend converted it to json)
+    avroSchemaId: number,
+    size: number,
+}
 
 export interface TopicMessage {
+    partitionID: number,
     offset: number,
     timestamp: number,
-    partitionID: number,
 
-    keyType: MessageDataType,
-    key: any, // base64 encoded key of the message
+    compression: CompressionType,
+    isTransactional: boolean,
 
     headers: {
-        key: string | object,
-        value: string | object,
-        valueEncoding: MessageDataType // for now: always text
+        key: string,
+        value: Payload,
     }[]
+    key: Payload,
+    value: Payload,
 
-    valueType: MessageDataType, // actual format of the message (before the backend converted it to json)
-    value: any, // json representation of the message value (xml, avro, etc will get converted)
-
-    size: number, // size in bytes of the kafka message
     isValueNull: boolean, // todo: rename to isTombstone
-    // todo: we also need to add: keyType, keySize
-    // todo: rename size to valueSize
     // todo: Tab.Messages/index.tsx: isFilterMatch(): use 'keyJson' instead
 
     // Added by the frontend (sometimes)
@@ -87,7 +94,11 @@ export interface GetTopicMessagesResponse {
 
 
 
-
+export interface KafkaError {
+    code: number,
+    message: string,
+    description: string
+}
 
 export interface TopicConfigEntry {
     name: string,
@@ -97,18 +108,24 @@ export interface TopicConfigEntry {
 export interface TopicDescription {
     topicName: string
     configEntries: TopicConfigEntry[]
+    error: KafkaError | null
 }
 export interface TopicConfigResponse {
     topicDescription: TopicDescription
 }
-export interface TopicConfigResponse {
-    topicDescription: TopicDescription
+export interface TopicDocumentation {
+    // if false: topic documentation is not configured
+    isEnabled: boolean;
+    // empty: actually empty
+    // null:  no .md docu file found for this topic
+    markdown: string | null; // base64
+
+    // added by frontend:
+    text: string | null; // atob(markdown)
 }
 export interface TopicDocumentationResponse {
     topicName: string;
-    documentation: {
-        markdown: string; // base64
-    }
+    documentation: TopicDocumentation;
 }
 
 
@@ -182,6 +199,7 @@ export interface Broker {
 export interface ClusterInfo {
     brokers: Broker[];
     controllerId: number;
+    kafkaVersion: string;
 }
 
 export interface ClusterInfoResponse {

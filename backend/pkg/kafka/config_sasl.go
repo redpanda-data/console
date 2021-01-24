@@ -3,7 +3,6 @@ package kafka
 import (
 	"flag"
 	"fmt"
-	"github.com/Shopify/sarama"
 )
 
 const (
@@ -33,7 +32,7 @@ func (c *SASLConfig) RegisterFlags(f *flag.FlagSet) {
 // SetDefaults for SASL Config
 func (c *SASLConfig) SetDefaults() {
 	c.UseHandshake = true
-	c.Mechanism = sarama.SASLTypePlaintext
+	c.Mechanism = SASLMechanismPlain
 }
 
 // Validate SASL config input

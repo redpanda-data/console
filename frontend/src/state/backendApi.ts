@@ -3,17 +3,15 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, GetConsumerGroupResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, GetConsumerGroupResponse, TopicDocumentation, TopicDescription, ApiError
 } from "./restInterfaces";
-import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
+import { observable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { ToJson, LazyMap, TimeSince, clone } from "../utils/utils";
+import { toJson, LazyMap, TimeSince, clone } from "../utils/utils";
 import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
-import { uiState } from "./uiState";
+import { ServerVersionInfo, uiState } from "./uiState";
 import { notification } from "antd";
-import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import { objToQuery } from "../utils/queryHelper";
 import { ObjToKv } from "../utils/tsxUtils";
 
 const REST_TIMEOUT_SEC = 25;
@@ -38,17 +36,32 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
         return null;
     }
 
-    for (const [k, v] of res.headers) {
-        if (k.toLowerCase() == 'app-version')
-            if (v != env.REACT_APP_KOWL_GIT_SHA)
-                uiState.serverVersion = v;
-        if (k.toLowerCase() == 'app-version-business')
-            if (v != env.REACT_APP_KOWL_BUSINESS_GIT_SHA)
-                uiState.serverVersionBusiness = v;
-    }
+    try {
+        for (const [k, v] of res.headers) {
+            if (k.toLowerCase() == 'app-version') {
+                const serverVersion = JSON.parse(v) as ServerVersionInfo;
+                if (typeof serverVersion === 'object')
+                    if (uiState.serverVersion == null || (serverVersion.ts != uiState.serverVersion.ts))
+                        uiState.serverVersion = serverVersion;
+                break;
+            }
+        }
+    } catch { } // Catch malformed json (old versions where info is not sent as json yet)
 
-    if (!res.ok)
-        throw new Error("(" + res.status + ") " + res.statusText);
+    if (!res.ok) {
+        const text = await res.text();
+        try {
+            const errObj = JSON.parse(text) as ApiError;
+            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+                // if the shape matches, reformat it a bit
+            throw new Error(`${errObj.message} (${res.status} - ${res.statusText})`);
+        }
+    }
+        catch { } // response is not json
+
+        // use generic error text
+        throw new Error(`${text} (${res.status} - ${res.statusText})`);
+    }
 
     const str = await res.text();
     // console.log('json: ' + str);
@@ -67,7 +80,7 @@ async function handle401(res: Response) {
         const obj = JSON.parse(text);
         console.log("unauthorized message: " + text);
 
-        const err = obj as { statusCode: number, message: string }
+        const err = obj as ApiError;
         uiState.loginError = String(err.message);
     } catch (err) {
         uiState.loginError = String(err);
@@ -188,13 +201,13 @@ const apiStore = {
     schemaDetails: null as (SchemaDetails | null),
 
     topics: null as (TopicDetail[] | null),
-    topicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
-    topicDocumentation: new Map<string, string>(),
-    topicPermissions: new Map<string, TopicPermissions>(),
+    topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
+    topicDocumentation: new Map<string, TopicDocumentation>(),
+    topicPermissions: new Map<string, TopicPermissions | null>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     topicConsumers: new Map<string, TopicConsumer[]>(),
 
-    ACLs: undefined as AclResource[] | undefined,
+    ACLs: undefined as AclResource[] | undefined | null,
 
     consumerGroups: new Map<string, GroupDescription>(),
 
@@ -228,7 +241,7 @@ const apiStore = {
         const host = IsDev ? 'localhost:9090' : window.location.host;
         const url = protocol + host + basePathS + '/api/topics/' + searchRequest.topicName + '/messages';
 
-        console.log("connecting to \"" + url + "\"");
+        console.debug("connecting to \"" + url + "\"");
 
         // Abort previous connection
         if (currentWS != null)
@@ -252,9 +265,11 @@ const apiStore = {
         }
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
+            api.stopMessageSearch();
             // double assignment makes sense: when the phase changes to null, some observing components will play a "fade out" animation, using the last (non-null) value
-            console.log(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
+            console.debug(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
         }
+
         const onMessageHandler = (msgEvent: MessageEvent) => {
             if (ws !== currentWS) return;
             const msg = JSON.parse(msgEvent.data)
@@ -279,31 +294,35 @@ const apiStore = {
 
                 case 'error':
                     // error doesn't neccesarily mean the whole request is done
-                    console.log("backend error: " + msg.message);
+                    console.info("ws backend error: " + msg.message);
+                    const notificationKey = `errorNotification-${Date.now()}`;
                     notification['error']({
+                        key: notificationKey,
                         message: "Backend Error",
                         description: msg.message,
+                        duration: 5,
                     })
                     break;
 
                 case 'message':
                     let m = msg.message as TopicMessage;
 
-                    if (m.key != null && m.key != undefined && m.key != "" && m.keyType == 'binary') {
+                    const keyData = m.key.payload;
+                    if (keyData != null && keyData != undefined && keyData != "" && m.key.encoding == 'binary') {
                         try {
-                            m.key = atob(m.key); // unpack base64 encoded key
+                            m.key.payload = atob(m.key.payload); // unpack base64 encoded key
                         } catch (error) {
                             // Empty
                             // Only unpack if the key is base64 based
                         }
                     }
 
-                    m.valueJson = JSON.stringify(m.value);
+                    m.valueJson = JSON.stringify(m.value.payload);
 
-                    if (m.valueType == 'binary') {
-                        m.value = atob(m.value);
+                    if (m.value.encoding == 'binary') {
+                        m.value.payload = atob(m.value.payload);
 
-                        const str = m.value as string;
+                        const str = m.value.payload as string;
                         let hex = '';
                         for (let i = 0; i < str.length && i < 50; i++) {
                             let n = str.charCodeAt(i).toString(16);
@@ -325,17 +344,17 @@ const apiStore = {
     },
 
     stopMessageSearch() {
-        if (!currentWS) {
-            return;
+        if (currentWS) {
+            currentWS.close();
+            currentWS = null;
         }
 
-        currentWS.close();
-        currentWS = null;
-
-        this.messageSearchPhase = "Done";
-        this.messagesBytesConsumed = 0;
-        this.messagesTotalConsumed = 0;
-        this.messageSearchPhase = null;
+        if (this.messageSearchPhase != null) {
+            this.messageSearchPhase = "Done";
+            this.messagesBytesConsumed = 0;
+            this.messagesTotalConsumed = 0;
+            this.messageSearchPhase = null;
+        }
     },
 
     refreshTopics(force?: boolean) {
@@ -358,24 +377,28 @@ const apiStore = {
     },
 
     refreshTopicConfig(topicName: string, force?: boolean) {
-        cachedApiRequest<TopicConfigResponse>(`./api/topics/${topicName}/configuration`, force)
-            .then(v => this.topicConfig.set(topicName, v?.topicDescription?.configEntries ?? null), addError);
+        cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
+            .then(v => this.topicConfig.set(topicName, v?.topicDescription ?? null), addError); // 403 -> null
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
         cachedApiRequest<TopicDocumentationResponse>(`./api/topics/${topicName}/documentation`, force)
-            .then(v => this.topicDocumentation.set(topicName, atob(v.documentation.markdown)), addError);
+            .then(v => {
+                const text = v.documentation.markdown == null ? null : atob(v.documentation.markdown);
+                v.documentation.text = text;
+                this.topicDocumentation.set(topicName, v.documentation);
+            }, addError);
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
         if (!IsBusiness) return; // permissions endpoint only exists in kowl-business
-        cachedApiRequest<TopicPermissions>(`./api/permissions/topics/${topicName}`, force)
-            .then(x => this.topicPermissions.set(topicName, x ?? null), addError);
+        cachedApiRequest<TopicPermissions | null>(`./api/permissions/topics/${topicName}`, force)
+            .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
     refreshTopicPartitions(topicName: string, force?: boolean) {
-        cachedApiRequest<GetPartitionsResponse>(`./api/topics/${topicName}/partitions`, force)
-            .then(v => this.topicPartitions.set(topicName, v?.partitions ?? null), addError);
+        cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
+            .then(x => this.topicPartitions.set(topicName, x === null ? null : (x?.partitions ?? null)), addError);
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
@@ -385,8 +408,8 @@ const apiStore = {
 
     refreshAcls(request: AclRequest, force?: boolean) {
         const query = aclRequestToQuery(request);
-        cachedApiRequest<AclResponse>(`./api/acls?${query}`, force)
-            .then(v => this.ACLs = v.aclResources, addError);
+        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+            .then(v => this.ACLs = v?.aclResources ?? null, addError);
     },
 
     refreshCluster(force?: boolean) {
@@ -434,13 +457,13 @@ const apiStore = {
                 // resolve role of each binding
                 for (const binding of info.roleBindings) {
                     binding.resolvedRole = info.roles.first(r => r.name == binding.roleName)!;
-                    if (binding.resolvedRole == null) console.error("could not resolve roleBinding to role: " + ToJson(binding));
+                    if (binding.resolvedRole == null) console.error("could not resolve roleBinding to role: " + toJson(binding));
                 }
 
                 // resolve bindings, and roles of each user
                 for (const user of info.users) {
                     user.bindings = user.bindingIds.map(id => info.roleBindings.first(rb => rb.ephemeralId == id)!);
-                    if (user.bindings.any(b => b == null)) console.error("one or more rolebindings could not be resolved for user: " + ToJson(user));
+                    if (user.bindings.any(b => b == null)) console.error("one or more rolebindings could not be resolved for user: " + toJson(user));
 
                     user.grantedRoles = [];
                     for (const roleName in user.audits)

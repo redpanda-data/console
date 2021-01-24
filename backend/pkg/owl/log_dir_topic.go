@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/twmb/franz-go/pkg/kerr"
-	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 type LogDirsByTopic struct {
@@ -23,9 +22,8 @@ type LogDirTopicSharded struct {
 
 // LogDirSizeByTopic returns a map where the Topicname is the key and the summed bytes of all log dirs of
 // the respective topic is the value.
-func (s *Service) logDirsByTopic(ctx context.Context, topicNames []string) (LogDirsByTopic, error) {
-	topicPartitions := make([]kmsg.DescribeLogDirsRequestTopic, 0, len(topicNames))
-	responses, err := s.kafkaSvc.DescribeLogDirs(ctx, topicPartitions)
+func (s *Service) logDirsByTopic(ctx context.Context) (LogDirsByTopic, error) {
+	responses, err := s.kafkaSvc.DescribeLogDirs(ctx, nil)
 	if err != nil {
 		return LogDirsByTopic{}, fmt.Errorf("failed to describe log dirs: %w", err)
 	}
@@ -61,7 +59,7 @@ func (s *Service) logDirsByTopic(ctx context.Context, topicNames []string) (LogD
 					topicLogDir = LogDirTopicSharded{
 						TopicName:      topic.Topic,
 						TotalSizeBytes: 0,
-						BrokerIDs:      make(map[int32]interface{}, 0),
+						BrokerIDs:      make(map[int32]interface{}),
 					}
 				}
 				for _, partition := range topic.Partitions {

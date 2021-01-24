@@ -24,7 +24,6 @@ func (api *API) routes() *chi.Mux {
 		chimiddleware.RealIP,
 		// requirePrefix(api.Cfg.REST.BasePath), // only for debugging
 		handleBasePath,
-		chimiddleware.StripSlashes, // Doesn't really help for the Frontend because the SPA is in charge of it
 	)
 
 	baseRouter.Group(func(router chi.Router) {
@@ -47,11 +46,9 @@ func (api *API) routes() *chi.Mux {
 
 		// Private routes - these should only be accessible from within Kubernetes or a protected ingress
 		router.Group(func(r chi.Router) {
-			r.Route("/admin", func(r chi.Router) {
-				r.Handle("/metrics", promhttp.Handler())
-				r.Handle("/health", api.handleLivenessProbe())
-				r.Handle("/startup", api.handleStartupProbe())
-			})
+			r.Handle("/admin/metrics", promhttp.Handler())
+			r.Handle("/admin/health", api.handleLivenessProbe())
+			r.Handle("/admin/startup", api.handleStartupProbe())
 
 			// Path must be prefixed with /debug otherwise it will be overridden, see: https://golang.org/pkg/net/http/pprof/
 			r.Mount("/debug", chimiddleware.Profiler())

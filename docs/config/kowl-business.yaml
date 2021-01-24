@@ -7,6 +7,7 @@ kafka:
     - broker-1.mycompany.com:19092
     - broker-2.mycompany.com:19092
   # clientId: kowl
+  # rackId: # In multi zone Kafka clusters you can reduce traffic costs by consuming messages from replica brokers in the same zone
   # sasl:
   #   enabled: false
   #   useHandshake: true
@@ -36,27 +37,66 @@ kafka:
   #   bearerToken:
   #   tls:
   #     caFilepath: # Path to a custom CA file. If not specified the system's / trusted root ca is used.
+  # protobuf:
+  #   enabled: false
+  #   mappings: []
+  #     # Map the proto type names for each of your topics. These proto types will be used for deserialization
+  #     # - topicName: xy
+  #     #   valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
+  #     #   keyProtoType: package.Type
+#     # Git is where the .proto files come from, in the future there might be additional options
+#     git:
+#       enabled: false
+#       repository:
+#         url:
+#         branch: (defaults to primary/default branch)
+#       # How often Kowl shall pull the repository to look for new files. Set 0 to disable periodic pulls
+#       refreshInterval: 1m
+#       # Basic Auth
+#       # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password
+#       basicAuth:
+#         enabled: true
+#         username: token
+#         password: #  This can be set via the via the --owl.topic-documentation.git.basic-auth.password flag as well
+#       # SSH Auth
+#       # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
+#       ssh:
+#         enabled: false
+#         username:
+#         privateKey: # This can be set via the via the --owl.topic-documentation.git.ssh.private-key flag as well
+#         privateKeyFilepath:
+#         passphrase: # This can be set via the via the --owl.topic-documentation.git.ssh.passphrase flag as well
 
-# Git config to use for embedded topic documentation, see /docs/features/topic-documentation.md for more details
-# git:
+# owl:
+#   # Config to use for embedded topic documentation, see /docs/features/topic-documentation.md for more details
 #   topicDocumentation:
 #     enabled: false
-#     repoUrl:
-#     branch:
-#     refreshInterval: 1m
-#   basicAuth:
-#     enabled: false
-#     username:
-#     password: #  This can be set via the via the --git.basic-auth.password flag as well
-#   ssh:
-#     enabled: false
-#     username:
-#     privateKey: # This can be set via the via the --git.ssh.private-key flag as well
-#     privateKeyFilepath:
-#     passphrase: # This can be set via the via the --git.ssh.passphrase flag as well
+#     # Git is where the topic documentation can come from, in the future there might be additional options
+#     git:
+#       enabled: false
+#       repository:
+#         url:
+#         branch: (defaults to primary/default branch)
+#       # How often Kowl shall pull the repository to look for new files. Set 0 to disable periodic pulls
+#       refreshInterval: 1m
+#       # Basic Auth
+#       # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password
+#       basicAuth:
+#         enabled: true
+#         username: token
+#         password: #  This can be set via the via the --owl.topic-documentation.git.basic-auth.password flag as well
+#       # SSH Auth
+#       # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
+#       ssh:
+#         enabled: false
+#         username:
+#         privateKey: # This can be set via the via the --owl.topic-documentation.git.ssh.private-key flag as well
+#         privateKeyFilepath:
+#         passphrase: # This can be set via the via the --owl.topic-documentation.git.ssh.passphrase flag as well
 
 # server:
 #   listenPort: 8080
+#   listenAddress:
 #   gracefulShutdownTimeout: 30s
 #   listenPort: 8080
 #   readTimeout: 30s

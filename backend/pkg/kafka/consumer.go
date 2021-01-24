@@ -3,11 +3,13 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/cloudhut/kowl/backend/pkg/interpreter"
+	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/dop251/goja"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
-	"time"
 )
 
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
@@ -25,22 +27,21 @@ type TopicMessage struct {
 	Offset      int64 `json:"offset"`
 	Timestamp   int64 `json:"timestamp"`
 
-	Headers   []MessageHeader      `json:"headers"`
-	Key       *deserializedPayload `json:"key"`
-	KeyType   string               `json:"keyType"`
-	Value     *deserializedPayload `json:"value"`
-	ValueType string               `json:"valueType"`
+	Compression     string `json:"compression"`
+	IsTransactional bool   `json:"isTransactional"`
 
-	Size        int  `json:"size"`
-	IsValueNull bool `json:"isValueNull"`
+	Headers []MessageHeader      `json:"headers"`
+	Key     *deserializedPayload `json:"key"`
+	Value   *deserializedPayload `json:"value"`
+
+	IsValueNull bool `json:"isValueNull"` // true = tombstone
 }
 
 // MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
 // a byte array, but keys are supposed to be strings only. Value however can be encoded in any format.
 type MessageHeader struct {
-	Key           string               `json:"key"`
-	Value         *deserializedPayload `json:"value"`
-	ValueEncoding messageEncoding      `json:"valueEncoding"`
+	Key   string               `json:"key"`
+	Value *deserializedPayload `json:"value"`
 }
 
 // PartitionConsumeRequest is a partitionID along with it's calculated start and end offset.
@@ -124,25 +125,27 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 					continue
 				}
 
+				// todo: Since a 'kafka message' is likely transmitted in compressed form,
+				//       and since it has additional metadata (like headers, timestamp, ...)
+				//       this value is not accurate at all.
 				messageSize := len(record.Key) + len(record.Value)
 				progress.OnMessageConsumed(int64(messageSize))
 
 				// Run Interpreter filter and check if message passes the filter
-				value := s.Deserializer.DeserializePayload(record.Value)
-				key := s.Deserializer.DeserializePayload(record.Key)
+				value := s.Deserializer.DeserializePayload(record.Value, record.Topic, proto.RecordValue)
+				key := s.Deserializer.DeserializePayload(record.Key, record.Topic, proto.RecordKey)
 				headers := s.DeserializeHeaders(record.Headers)
 
 				topicMessage := &TopicMessage{
-					PartitionID: record.Partition,
-					Offset:      record.Offset,
-					Timestamp:   record.Timestamp.Unix(),
-					Headers:     headers,
-					Key:         key,
-					KeyType:     string(key.RecognizedEncoding),
-					Value:       value,
-					ValueType:   string(value.RecognizedEncoding),
-					Size:        len(record.Value),
-					IsValueNull: record.Value == nil,
+					PartitionID:     record.Partition,
+					Offset:          record.Offset,
+					Timestamp:       record.Timestamp.Unix(),
+					Headers:         headers,
+					Compression:     compressionTypeDisplayname(record.Attrs.CompressionType()),
+					IsTransactional: record.Attrs.IsTransactional(),
+					Key:             key,
+					Value:           value,
+					IsValueNull:     record.Value == nil,
 				}
 
 				headersByKey := make(map[string]interface{}, len(headers))
@@ -184,8 +187,6 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 			}
 		}
 	}
-
-	return nil
 }
 
 // SetupInterpreter initializes the JavaScript interpreter along with the given JS code. It returns a wrapper function
@@ -253,13 +254,30 @@ func (s *Service) setupInterpreter(interpreterCode string) (func(args interprete
 func (s *Service) DeserializeHeaders(headers []kgo.RecordHeader) []MessageHeader {
 	res := make([]MessageHeader, len(headers))
 	for i, header := range headers {
-		value := s.Deserializer.DeserializePayload(header.Value)
+		// Dummy parameters - we don't support protobuf deserialization for header values
+		value := s.Deserializer.DeserializePayload(header.Value, "", proto.RecordValue)
 		res[i] = MessageHeader{
-			Key:           header.Key,
-			Value:         value,
-			ValueEncoding: value.RecognizedEncoding,
+			Key:   header.Key,
+			Value: value,
 		}
 	}
 
 	return res
+}
+
+func compressionTypeDisplayname(compressionType uint8) string {
+	switch compressionType {
+	case 0:
+		return "uncompressed"
+	case 1:
+		return "gzip"
+	case 2:
+		return "snappy"
+	case 3:
+		return "lz4"
+	case 4:
+		return "zstd"
+	default:
+		return "unknown"
+	}
 }

@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
 )
@@ -122,22 +124,43 @@ func ensurePrefixFormat(path string) string {
 	return path
 }
 
-// Creates a middlware that adds version info headers to each response:
-// - app-build-time (unix timestamp)
-// - app-version (git sha)
-// - app-version-business (git sha)
-// The frontend uses those to detect if the backend server has been updated
+// Creates a middlware that adds 'app-version' as a header to each response:
+// - app-build-time     (unix timestamp)
+// - app-sha            (git sha)
+// - app-branch         (git branch)
+// - app-sha-business   (git sha)
+// - app-branch-busines (git branch)
+// The frontend uses this object to detect if the backend server has been updated
+// todo: can be optimized later; only buildTime is really needed, after that the frontend could check another endpoint (something like /api/version)
 func createSetVersionInfoHeader(version versionInfo) func(next http.Handler) http.Handler {
-	timestampStr := fmt.Sprintf("%v", version.timestamp.Unix())
+	buildTimestamp := version.timestamp
+	if buildTimestamp.IsZero() {
+		buildTimestamp = time.Now()
+	}
+
+	versionInfo := struct {
+		BuildTime      string `json:"ts,omitempty"`
+		Branch         string `json:"branch,omitempty"`
+		Sha            string `json:"sha,omitempty"`
+		BranchBusiness string `json:"branchBusiness,omitempty"`
+		ShaBusiness    string `json:"shaBusiness,omitempty"`
+	}{
+		BuildTime:      fmt.Sprintf("%v", buildTimestamp.Unix()),
+		Branch:         version.gitRef,
+		Sha:            version.gitSha,
+		BranchBusiness: version.gitRefBusiness,
+		ShaBusiness:    version.gitShaBusiness,
+	}
+	versionInfoJSONBytes, err := json.Marshal(versionInfo)
+	versionInfoJSON := string(versionInfoJSONBytes)
+
+	if err != nil {
+		panic(fmt.Errorf("Could not construct versionInfo object from: %v", versionInfo))
+	}
 
 	m := func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("app-build-time", timestampStr)
-			w.Header().Add("app-version", version.gitSha)
-			if version.gitShaBusiness != "" {
-				w.Header().Add("app-version-business", version.gitShaBusiness)
-			}
-
+			w.Header().Add("app-version", versionInfoJSON)
 			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)
