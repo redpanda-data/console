@@ -42,7 +42,10 @@ func (s *Service) DescribeLogDirs(ctx context.Context, topicPartitions []kmsg.De
 			lastErr = kresp.Err
 		}
 
-		res := kresp.Resp.(*kmsg.DescribeLogDirsResponse)
+		res, ok := kresp.Resp.(*kmsg.DescribeLogDirsResponse)
+		if !ok {
+			res = &kmsg.DescribeLogDirsResponse{}
+		}
 		result.LogDirResponses = append(result.LogDirResponses, LogDirResponse{
 			BrokerMetadata: kresp.Meta,
 			LogDirs:        *res,
