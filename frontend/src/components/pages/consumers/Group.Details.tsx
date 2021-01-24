@@ -196,9 +196,15 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                         { width: 100, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId'), defaultSortOrder: 'ascend' },
                         {
                             width: 'auto', title: 'Assigned Member', dataIndex: 'id', sorter: sortField('id'),
-                            render: (t, r) => (renderMergedID(r.id, r.clientId)) ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /> no assigned member</span>
+                            render: (t, r) => (r.assignedMember ?
+                                renderMergedID(r.id, r.clientId) :
+                                <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /> No assigned member</span>)
                         },
-                        { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
+                        { 
+                            width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host'),
+                            render: (t, r) => (r.host ??
+                                <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /></span>)
+                        },
                         { width: 120, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset') },
                         { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
                     ]}
@@ -291,8 +297,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
 
 
 const renderMergedID = (id?: string, clientId?: string) => {
-
-    if (id && clientId && id.startsWith(clientId)) { // should always be true...
+    if (clientId && id?.startsWith(clientId)) { // should always be true...
         const suffix = id.substring(clientId.length);
 
         return <span className='consumerGroupCompleteID'>
@@ -300,8 +305,12 @@ const renderMergedID = (id?: string, clientId?: string) => {
             <span className='consumerGroupSuffix'>{suffix}</span>
         </span>
     }
-
-    return <span className='consumerGroupCompleteID'>{clientId ?? id ?? ''}</span>
+    // A client might be connected but it hasn't any assignments yet because it just joined the group
+    else if (clientId) {
+        return <span className='consumerGroupCompleteID'>{clientId ?? id ?? ''}</span>
+    }
+    
+    return null
 };
 
 
