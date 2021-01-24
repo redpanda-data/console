@@ -35,6 +35,8 @@ github.com/cloudhut/common v0.4.1-0.20201219173751-df279ba25cf1 h1:nJ7P7iucuAsJ/
 github.com/cloudhut/common v0.4.1-0.20201219173751-df279ba25cf1/go.mod h1:OXuk14XE3v7rsc1BxUhT/F31nqIUYjhg7VzWMi7TlqM=
 github.com/cloudhut/common v0.4.1-0.20201219173920-027980a8c131 h1:oXpcE6weq3Go7WzQ+Ff1xF5TCpAnTjHqx4FDP7wAHic=
 github.com/cloudhut/common v0.4.1-0.20201219173920-027980a8c131/go.mod h1:OXuk14XE3v7rsc1BxUhT/F31nqIUYjhg7VzWMi7TlqM=
+github.com/cloudhut/common v0.5.0 h1:FHGDB24vBrMW6hOt0JDz0X6qfns2EVXVefpP4nN0wyg=
+github.com/cloudhut/common v0.5.0/go.mod h1:OXuk14XE3v7rsc1BxUhT/F31nqIUYjhg7VzWMi7TlqM=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

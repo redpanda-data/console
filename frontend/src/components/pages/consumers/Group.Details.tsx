@@ -145,6 +145,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                 return {
                     topicName: topicLag.topic,
                     partitionId: partLag.partitionId,
+                    offset: partLag.offset,
                     lag: partLag.lag,
 
                     assignedMember: assignedMember?.member,
@@ -198,6 +199,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                             render: (t, r) => (renderMergedID(r.id, r.clientId)) ?? <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /> no assigned member</span>
                         },
                         { width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
+                        { width: 'auto', title: 'Offset', dataIndex: 'offset', sorter: sortField('offset') },
                         { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
                     ]}
                 />
