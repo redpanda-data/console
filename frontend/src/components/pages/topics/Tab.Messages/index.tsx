@@ -28,7 +28,7 @@ import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
-import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
+import { Ellipsis, Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
 import { cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase, toJson } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
@@ -862,12 +862,12 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     };
 
     return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
-        {Object.entries(data).map(([k, v]) => <>
+        {Object.entries(data).map(([k, v]) => <React.Fragment key={k}>
             <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
                 <div style={{ fontWeight: 600 }}>{v}</div>
                 <div style={{ color: 'rgba(0, 0, 0, 0.4)' }}>{k}</div>
             </div>
-        </>)}
+        </React.Fragment>)}
     </div>
 });
 
@@ -876,47 +876,48 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
     return <div className='messageHeaders'>
         <div>
             <Table
-                size='small'
+                size='small' style={{ margin: '0', padding: '0' }}
                 indentSize={0}
                 dataSource={props.msg.headers}
                 pagination={false}
                 columns={[
                     {
-                        width: 'auto', title: 'Key', dataIndex: 'key',
-                        render: v => v
-                            ? <div className='cellDiv'><span style={{ whiteSpace: 'pre-wrap' }}>{toSafeString(v)}</span></div>
-                            : renderEmptyIcon("Empty Key")
+                        width: 200, title: 'Key', dataIndex: 'key',
+                        render: headerKey => <span className='cellDiv' style={{ width: 'auto' }}>
+                            {headerKey
+                                ? <Ellipsis>{toSafeString(headerKey)}</Ellipsis>
+                                : renderEmptyIcon("Empty Key")}
+                        </span>
                     },
                     {
                         width: 'auto', title: 'Value', dataIndex: 'value',
-                        render: value => {
-                            if (value.payload === null) return renderEmptyIcon('"null"');
-                            if (typeof value.payload === 'undefined') return renderEmptyIcon('"undefined"');
-                            if (typeof value.payload === 'number') return <span className='codeBox'>{String(value.payload)}</span>
-                            if (typeof value.payload === 'string') return <div className='cellDiv'><span style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{value.payload}</span></div>
+                        render: headerValue => {
+                            if (typeof headerValue.payload === 'undefined') return renderEmptyIcon('"undefined"');
+                            if (headerValue.payload === null) return renderEmptyIcon('"null"');
+                            if (typeof headerValue.payload === 'number') return <span>{String(headerValue.payload)}</span>
 
-                            if (typeof value.payload === 'object')
-                                return <div className='cellDiv'><span className='codeBox hoverLink' style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '100%', verticalAlign: 'text-bottom' }}>{toSafeString(value.payload)}</span></div>
+                            if (typeof headerValue.payload === 'string')
+                                return <span className='cellDiv'>{headerValue.payload}</span>
 
-                            return "unknown data type";
-                            // return <div style={{ whiteSpace: 'pre-wrap' }}>{toSafeString(value.payload)}</div>
-
+                            // object
+                            return <span className='cellDiv'>{toSafeString(headerValue.payload)}</span>
                         },
                     },
                     {
-                        width: '80', title: 'Encoding', dataIndex: 'value',
-                        render: v => <div className='cellDiv'>{v.encoding}</div>
+                        width: 120, title: 'Encoding', dataIndex: 'value',
+                        render: payload => <span className='nowrap'>{payload.encoding}</span>
                     },
                 ]}
                 expandable={{
-                    rowExpandable: header => Boolean(header.value?.payload), // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
+                    rowExpandable: header => (typeof header.value?.payload === 'object' && header.value?.payload != null) || typeof header.value?.payload === 'string', // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
                     expandIconColumnIndex: 1,
                     expandRowByClick: true,
-                    // expandedRowRender: r => <KowlJsonView src={r.value as object} />,
-                    expandedRowRender: header => typeof header.value?.payload === 'object'
-                        ? <KowlJsonView src={header.value.payload as object} />
-                        : <span className='codeBox'>{toSafeString(header.value.payload)}</span>,
+                    expandedRowRender: header => typeof header.value?.payload !== 'object'
+                        ? <div className='codeBox' style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
+                        : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />,
                 }}
+
+                rowKey={(r, i) => String(i)}
             />
             <br />
         </div>
