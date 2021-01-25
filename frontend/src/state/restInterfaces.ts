@@ -30,6 +30,10 @@ export class GetTopicsResponse {
 
 export interface Partition {
     id: number;
+    leader: number; // id of the "leader" broker for this partition
+    inSyncReplicas: number[]; // ??
+    offlineReplicas: number[]; // ??
+    replicas: number[]; // ??
     waterMarkLow: number;
     waterMarkHigh: number;
 }

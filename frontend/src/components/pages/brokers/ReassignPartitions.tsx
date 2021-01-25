@@ -6,11 +6,10 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { Broker, BrokerConfigEntry, TopicDetail } from "../../../state/restInterfaces";
+import { Broker, BrokerConfigEntry, Partition, TopicDetail } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
-import { observable, computed } from "mobx";
-import prettyBytes from "pretty-bytes";
+import { observable, computed, autorun, IReactionDisposer } from "mobx";
 import { prettyBytesOrNA } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
@@ -44,17 +43,23 @@ class ReassignPartitions extends PageComponent {
 
     pageConfig = makePaginationConfig(100, true);
 
-    @observable filteredBrokers: Broker[];
+    @observable partitionSelection: {
+        [topicName: string]: number[] // topicName -> array of partitionIds
+    } = {};
+
+    autorunHandle: IReactionDisposer | undefined = undefined;
 
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
         p.addBreadcrumb('Reassign Partitions', '/reassign-partitions');
 
-        this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
 
-        this.isMatch = this.isMatch.bind(this);
-        this.setResult = this.setResult.bind(this);
+        this.setSelection = this.setSelection.bind(this);
+        this.isSelected = this.isSelected.bind(this);
+        this.getSelectedPartitions = this.getSelectedPartitions.bind(this);
+
+        this.refreshData(true);
     }
 
     refreshData(force: boolean) {
@@ -62,32 +67,32 @@ class ReassignPartitions extends PageComponent {
         if (api.topics)
             for (const topic of api.topics)
                 api.refreshTopicPartitions(topic.topicName, force);
+
+        this.autorunHandle = autorun(() => {
+            if (api.topics != null)
+                for (const topic of api.topics)
+                    api.refreshTopicPartitions(topic.topicName, false);
+        });
+    }
+    componentWillUnmount() {
+        if (this.autorunHandle) {
+            this.autorunHandle();
+            this.autorunHandle = undefined;
+        }
     }
 
     render() {
         if (!api.topics) return DefaultSkeleton;
+
+
         if (api.topicPartitions.size == 0) return <Empty />
 
         const topicPartitions: (TopicDetail & {
-            partitions: {
-                id: number,
-                brokerIds: number[],
-                size: number,
-            }[] | undefined,
-            brokersSum: number,
-            sizeSum: number,
+            partitions: Partition[] | null | undefined,
         })[] = api.topics.map(topic => {
             return {
                 ...topic,
-                partitions: api.topicPartitions.get(topic.topicName)?.map(p => {
-                    return {
-                        id: p.id,
-                        brokerIds: [-1, -2, -3],
-                        size: -12345,
-                    }
-                }),
-                brokersSum: -1234567,
-                sizeSum: -1234567,
+                partitions: api.topicPartitions.get(topic.topicName)
             }
         });
 
@@ -95,8 +100,11 @@ class ReassignPartitions extends PageComponent {
             { width: 'auto', title: 'Topic', dataIndex: 'topicName' },
             { width: 'auto', title: 'Partitions', dataIndex: 'partitionCount' },
             { width: 'auto', title: 'Replication Factor', dataIndex: 'replicationFactor' },
-            { width: 'auto', title: 'Brokers', dataIndex: 'brokersSum', render: () => '??' },
-            { width: 'auto', title: 'Size', dataIndex: 'logDirSize', render: v => prettyBytes(v) },
+            {
+                width: 'auto', title: 'Brokers', dataIndex: 'partitions',
+                render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A'
+            },
+            { width: 'auto', title: 'Size', dataIndex: 'logDirSize', render: v => prettyBytesOrNA(v) },
         ]
 
         return <>
@@ -112,7 +120,7 @@ class ReassignPartitions extends PageComponent {
 
                 <Card>
                     <Table
-                        style={{ margin: '0', padding: '0' }} size={'middle'}
+                        style={{ margin: '0', }} size={'middle'}
                         pagination={this.pageConfig}
                         dataSource={topicPartitions}
                         rowKey={r => r.topicName}
@@ -123,17 +131,16 @@ class ReassignPartitions extends PageComponent {
                         columns={columns}
                         expandable={{
                             expandIconColumnIndex: 1,
-                            childrenColumnName: 'partitions',
-                            // expandedRowRender: topic => <Table
-                            //     // size='small'
-                            //     dataSource={topic.partitions}
-                            //     columns={[
-                            //         { dataIndex: 'id', title: 'ID' },
-                            //         { dataIndex: 'brokerIds', title: 'Broker IDs' },
-                            //         { dataIndex: 'size', title: 'Size' },
-                            //     ]}
-                            // />,
-                            expandedRowClassName: r => 'noPadding',
+                            expandedRowRender: topic => topic.partitions
+                                ? <PartitionTable
+                                    topic={topic}
+                                    topicPartitions={topic.partitions}
+                                    isSelected={this.isSelected}
+                                    setSelection={this.setSelection}
+                                    getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
+                                />
+                                : <>Error loading partitions</>,
+                            // expandedRowClassName: r => 'noPadding',
                         }}
                     />
                 </Card>
@@ -141,15 +148,67 @@ class ReassignPartitions extends PageComponent {
         </>
     }
 
-    isMatch(filter: string, item: Broker) {
-        if (item.address.includes(filter)) return true;
-        if (item.rack.includes(filter)) return true;
+    setSelection(topic: string, partition: number, isSelected: boolean) {
+        const partitions = this.partitionSelection[topic] ?? [];
 
-        return false;
+        if (isSelected) {
+            partitions.pushDistinct(partition);
+        } else {
+            partitions.remove(partition);
+        }
+
+        this.partitionSelection[topic] = partitions;
     }
 
-    setResult(filteredData: Broker[]) {
-        this.filteredBrokers = filteredData;
+    getSelectedPartitions(topic: string) {
+        const partitions = this.partitionSelection[topic];
+        if (!partitions) return [];
+        return partitions;
+    }
+
+    isSelected(topic: string, partition: number) {
+        const partitions = this.partitionSelection[topic];
+        if (!partitions) return false;
+        return partitions.includes(partition);
+    }
+
+}
+
+@observer
+class PartitionTable extends Component<{
+    topic: TopicDetail,
+    topicPartitions: Partition[],
+    setSelection: (topic: string, partition: number, isSelected: boolean) => void,
+    isSelected: (topic: string, partition: number) => boolean,
+    getSelectedPartitions: () => number[]
+}> {
+    partitionsPageConfig = makePaginationConfig(100, true);
+
+    render() {
+        return <div style={{ paddingTop: '4px', paddingBottom: '8px' }}>
+            <Table size='small'
+                dataSource={this.props.topicPartitions}
+                pagination={this.partitionsPageConfig}
+                scroll={{ y: '300px' }}
+                rowKey={r => r.id}
+                rowSelection={{
+                    type: 'checkbox',
+                    columnWidth: '43px',
+                    columnTitle: <></>, // don't show "select all" checkbox
+                    // onChange: (selected) => console.log('onChange selected=', selected),
+                    selectedRowKeys: this.props.getSelectedPartitions().slice(),
+                    onSelect: (record, selected: boolean, selectedRows) => {
+                        this.props.setSelection(this.props.topic.topicName, record.id, selected);
+                        console.log("SetSelection, now selected: ", this.props.getSelectedPartitions());
+                    },
+                }}
+                columns={[
+                    { width: 100, title: 'ID', dataIndex: 'id', sortOrder: 'ascend', sorter: (a, b) => a.id - b.id },
+                    { width: 160, title: 'Leading Broker', dataIndex: 'leader' },
+                    { width: undefined, title: 'Brokers', render: (v, record,) => record.replicas.slice().sort((a, b) => a - b).join(", ") },
+                ]}
+            />
+        </div>
     }
 }
 
