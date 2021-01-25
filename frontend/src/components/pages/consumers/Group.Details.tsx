@@ -12,7 +12,7 @@ import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { TablePaginationConfig } from "antd/lib/table";
-import { OptionGroup, QuickTable, DefaultSkeleton } from "../../../utils/tsxUtils";
+import { OptionGroup, QuickTable, DefaultSkeleton, ZeroSizeWrapper, RadioOptionGroup } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
 import { SkipIcon } from "@primer/octicons-v2-react";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
@@ -179,7 +179,8 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                 }>
 
                 <Table
-                    size='small' showSorterTooltip={false}
+                    size='middle'
+                    showSorterTooltip={false}
                     pagination={this.pageConfig}
                     onChange={(pagination) => {
                         if (pagination.pageSize) uiSettings.consumerGroupDetails.pageSize = pagination.pageSize;
@@ -197,15 +198,34 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                                 renderMergedID(r.id, r.clientId) :
                                 <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /> No assigned member</span>)
                         },
-                        { 
+                        {
                             width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host'),
                             render: (t, r) => (r.host ??
                                 <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /></span>)
                         },
                         { width: 120, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset') },
                         { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
+                        {
+                            width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
+                            // filters: [],
+                            // filterDropdownVisible: false,
+                            // onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
+                            // filterIcon: (_) => {
+                            //     return <Tooltip title='Column Settings' mouseEnterDelay={0.1}>
+                            //         <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
+                            //     </Tooltip>
+                            // },
+                            render: (text, record) => (
+                                <Button className='iconButton'
+                                    style={{ verticalAlign: 'middle' }}
+                                    type='link' icon={<PencilIcon verticalAlign='middle' size={20} />}
+                                    size='middle'
+                                />
+                            ),
+                        },
                     ]}
                 />
+
             </Collapse.Panel>
         });
 
@@ -291,7 +311,49 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
     }
 }
 
+type EditOffsetMode = 'start' | 'end' | 'time' | 'copy';
+class EditGroupOffsets extends Component {
 
+    options = [
+        { value: 'start', title: 'Start Offset', text: 'The first option' },
+        { value: 'end', title: 'End Offset', text: 'The second option. This text is longer, pretty long actually, hopefully long enough that there will be some line-wrapping going on...' },
+        { value: 'time', title: 'Specific Time', text: 'The third option' },
+        { value: 'copy', title: 'Copy from other', text: 'The third option' },
+    ] as { value: EditOffsetMode, title: string, text: string }[];
+
+    selectedMode = 'start' as EditOffsetMode;
+
+    render() {
+        return <>
+            <div id='test' style={{
+                position: 'absolute',
+                width: '100%', height: '100%',
+                zIndex: 1,
+            }}>
+                <div style={{
+                    borderRadius: '6px',
+                    // position: 'absolute',
+                    background: 'white',
+                    margin: 'auto',
+                    width: '400px',
+                    height: '500px',
+                    marginTop: '40px',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    border: '1px hsl(0deg 0% 91%) solid',
+                }}>
+                    <div style={{ margin: '2rem' }}>
+                        <RadioOptionGroup
+                            options={this.options}
+                            onChange={x => { this.selectedMode = x; }}
+                            value={this.selectedMode}
+                        />
+                    </div>
+                </div>
+            </div>
+        </>
+    }
+}
 
 const renderMergedID = (id?: string, clientId?: string) => {
     if (clientId && id?.startsWith(clientId)) { // should always be true...
@@ -306,7 +368,7 @@ const renderMergedID = (id?: string, clientId?: string) => {
     else if (clientId) {
         return <span className='consumerGroupCompleteID'>{clientId ?? id ?? ''}</span>
     }
-    
+
     return null
 };
 

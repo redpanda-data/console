@@ -189,6 +189,36 @@ export class OptionGroup<T> extends Component<{
     }
 }
 
+
+export class RadioOptionGroup<T> extends Component<{
+    options: {
+        key?: any,
+        value: T,
+        title: string,
+        text: string,
+    }[],
+    value: T, onChange: (value: T) => void,
+    children?: never
+}> {
+
+    render() {
+        const p = this.props;
+
+        const radioGroup = (
+            <Radio.Group className='radioOptionGroup' value={p.value} onChange={e => p.onChange(e.target.value)}>
+                {p.options.map(kv =>
+                    <Radio key={kv.key ?? kv.value} value={kv.value}>
+                        <div style={{ fontWeight: 500, fontSize: '1.1em', display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
+                        <div style={{ marginLeft: '27px', color: '#BBB', whiteSpace: 'normal' }}>{kv.text}</div>
+                    </Radio>
+                )}
+            </Radio.Group>
+        );
+
+        return radioGroup;
+    }
+}
+
 interface StatusIndicatorProps {
     identityKey: string;
     fillFactor: number;
