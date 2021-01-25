@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Tag, Collapse,Space, Tooltip, Popover } from "antd";
+import { Table, Row, Statistic, Tag, Collapse,Space, Tooltip, Popover, Button } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../../state/backendApi";
@@ -14,7 +14,7 @@ import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, Ques
 import { TablePaginationConfig } from "antd/lib/table";
 import { OptionGroup, QuickTable, DefaultSkeleton, ZeroSizeWrapper, RadioOptionGroup } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
-import { SkipIcon } from "@primer/octicons-v2-react";
+import { PencilIcon, SkipIcon } from "@primer/octicons-v2-react";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
 
 
