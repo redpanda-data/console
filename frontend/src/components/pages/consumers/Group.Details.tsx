@@ -1,23 +1,20 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip, Popover } from "antd";
+import { Table, Row, Statistic, Tag, Collapse,Space, Tooltip, Popover } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../../state/backendApi";
 import { PageComponent, PageInitHelper } from "../Page";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { MotionDiv } from "../../../utils/animationProps";
-import { GroupDescription, GroupMemberDescription, GroupMemberAssignment, TopicLag } from "../../../state/restInterfaces";
-import { groupConsecutive } from "../../../utils/utils";
-import { observable, autorun } from "mobx";
+import { GroupDescription } from "../../../state/restInterfaces";
+import { observable } from "mobx";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
-import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
-import { Radio } from 'antd';
+import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { TablePaginationConfig } from "antd/lib/table";
 import { OptionGroup, QuickTable, DefaultSkeleton } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
 import { SkipIcon } from "@primer/octicons-v2-react";
-import { uiState } from "../../../state/uiState";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
 
 
