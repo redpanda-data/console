@@ -7,8 +7,6 @@ import Paragraph from "antd/lib/typography/Paragraph";
 import { AnimatePresence, motion } from "framer-motion";
 import { autorun, computed, IReactionDisposer, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
-import prettyBytes from 'pretty-bytes';
-import prettyMilliseconds from "pretty-ms";
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras";
@@ -30,8 +28,8 @@ import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
-import { Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { cullText, findElementDeep, titleCase, ToJson } from "../../../../utils/utils";
+import { Ellipsis, Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
+import { cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase, toJson } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
@@ -77,7 +75,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         // unpack query parameters (if any)
         const searchParams = uiState.topicSettings.searchParams;
         const query = queryString.parse(window.location.search);
-        console.log("parsing query: " + ToJson(query));
+        console.debug("parsing query: " + toJson(query));
         if (query.p != null) searchParams.partitionID = Number(query.p);
         if (query.s != null) searchParams.maxResults = Number(query.s);
         if (query.o != null) {
@@ -434,10 +432,12 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             // {
             //     width: 1, title: 'Headers', dataIndex: 'headers', sorter: (a, b, order) => b.headers.length - a.headers.length, render: (t, r) => r.headers.length,
             // },
-            {
-                width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
-                sorter: (a, b) => b.size - a.size
-            },
+
+            // todo: size was a guess anyway, might be added back later
+            // {
+            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
+            //     sorter: (a, b) => b.size - a.size
+            // },
             {
                 width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                 filters: [],
@@ -680,12 +680,10 @@ function ${name}() {
 
 const renderKey = (p: Payload, record: TopicMessage) => {
     const value = p.payload;
-    const text = typeof value === 'string' ? value : ToJson(value);
+    const text = typeof value === 'string' ? value : toJson(value);
 
     if (value == undefined || value == null || text.length == 0 || text == '{}')
-        return <Tooltip title="Empty Key" mouseEnterDelay={0.1}>
-            <span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span>
-        </Tooltip>
+        return renderEmptyIcon("Empty Key");
 
     if (text.length > 45) {
 
@@ -856,7 +854,7 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     const msg = props.msg;
     const data = {
         "Key": `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
-        "Value": `${titleCase(msg.value.encoding)} (${msg.value.encoding == 'avro' ? `${msg.value.avroSchemaId} / ` : ''}${prettyBytes(msg.size)})`,
+        "Value": `${titleCase(msg.value.encoding)} (${msg.value.encoding == 'avro' ? `${msg.value.avroSchemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
         "Headers": msg.headers.length > 0 ? `${msg.headers.length}` : "No headers set",
         "Compression": msg.compression,
         "Transactional": msg.isTransactional ? 'true' : 'false',
@@ -864,12 +862,12 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     };
 
     return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
-        {Object.entries(data).map(([k, v]) => <>
+        {Object.entries(data).map(([k, v]) => <React.Fragment key={k}>
             <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
                 <div style={{ fontWeight: 600 }}>{v}</div>
                 <div style={{ color: 'rgba(0, 0, 0, 0.4)' }}>{k}</div>
             </div>
-        </>)}
+        </React.Fragment>)}
     </div>
 });
 
@@ -878,26 +876,48 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
     return <div className='messageHeaders'>
         <div>
             <Table
-                size='small'
+                size='small' style={{ margin: '0', padding: '0' }}
                 indentSize={0}
                 dataSource={props.msg.headers}
                 pagination={false}
                 columns={[
-                    { width: 'auto', title: 'Key', dataIndex: 'key', render: v => toSafeString(v) },
+                    {
+                        width: 200, title: 'Key', dataIndex: 'key',
+                        render: headerKey => <span className='cellDiv' style={{ width: 'auto' }}>
+                            {headerKey
+                                ? <Ellipsis>{toSafeString(headerKey)}</Ellipsis>
+                                : renderEmptyIcon("Empty Key")}
+                        </span>
+                    },
                     {
                         width: 'auto', title: 'Value', dataIndex: 'value',
-                        render: v => typeof v === 'object'
-                            ? <div className='smallText hoverLink' style={{ paddingBottom: '1px' }}>Object - Expand to show</div>
-                            : toSafeString(v),
+                        render: headerValue => {
+                            if (typeof headerValue.payload === 'undefined') return renderEmptyIcon('"undefined"');
+                            if (headerValue.payload === null) return renderEmptyIcon('"null"');
+                            if (typeof headerValue.payload === 'number') return <span>{String(headerValue.payload)}</span>
+
+                            if (typeof headerValue.payload === 'string')
+                                return <span className='cellDiv'>{headerValue.payload}</span>
+
+                            // object
+                            return <span className='cellDiv'>{toSafeString(headerValue.payload)}</span>
+                        },
                     },
-                    { width: '80', title: 'Encoding', dataIndex: 'valueEncoding' },
+                    {
+                        width: 120, title: 'Encoding', dataIndex: 'value',
+                        render: payload => <span className='nowrap'>{payload.encoding}</span>
+                    },
                 ]}
                 expandable={{
-                    rowExpandable: r => typeof r.value === 'object',
+                    rowExpandable: header => (typeof header.value?.payload === 'object' && header.value?.payload != null) || typeof header.value?.payload === 'string', // names of 'value' and 'payload' should be swapped; but has to be fixed in backend
                     expandIconColumnIndex: 1,
                     expandRowByClick: true,
-                    expandedRowRender: r => <KowlJsonView src={r.value as object} />,
+                    expandedRowRender: header => typeof header.value?.payload !== 'object'
+                        ? <div className='codeBox' style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
+                        : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />,
                 }}
+
+                rowKey={(r, i) => String(i)}
             />
             <br />
         </div>
@@ -1021,7 +1041,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
         { title: 'Key', dataIndex: 'key' },
         { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
-        { title: 'Size', dataIndex: 'size' },
+        // { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
     ];
 
     render() {
@@ -1256,7 +1276,7 @@ class MessageSearchFilterBar extends Component {
                             className='settingIconFilter'
                             onClick={() => {
                                 this.currentIsNew = false;
-                                this.currentFilterBackup = ToJson(e);
+                                this.currentFilterBackup = toJson(e);
                                 this.currentFilter = e;
                                 this.hasChanges = false;
                             }}
@@ -1288,7 +1308,7 @@ class MessageSearchFilterBar extends Component {
                 ? (
                     <div className={styles.metaSection}>
                         <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(api.messagesBytesConsumed)}</span>
-                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {prettyMilliseconds(api.messagesElapsedMs || -1)}</span>
+                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {api.messagesElapsedMs ? prettyMilliseconds(api.messagesElapsedMs) : ""}</span>
                     </div>
                 )
                 : (
@@ -1397,4 +1417,9 @@ class MessageSearchFilterBar extends Component {
             this.hasChanges = false;
         }
     }
+}
+
+function renderEmptyIcon(tooltipText?: string) {
+    if (!tooltipText) tooltipText = "Empty";
+    return <Tooltip title={tooltipText} mouseEnterDelay={0.1}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>
 }

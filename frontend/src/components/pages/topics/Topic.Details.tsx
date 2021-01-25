@@ -116,16 +116,21 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     refreshData(force: boolean) {
         api.refreshTopics(force);
 
-        if (uiSettings.topicDetailsActiveTabKey == 'consumers') // don't refresh unless needed, it's expensive
-            api.refreshTopicConsumers(this.props.topicName, force);
-
-        api.refreshTopicPartitions(this.props.topicName, force);
-
-        api.refreshTopicConfig(this.props.topicName, force);
-
         api.refreshTopicPermissions(this.props.topicName, force);
 
-        api.refreshTopicDocumentation(this.props.topicName);
+        // consumers are lazy loaded because they're (relatively) expensive
+        if (uiSettings.topicDetailsActiveTabKey == 'consumers')
+            api.refreshTopicConsumers(this.props.topicName, force);
+
+        // partitions are always required to display message count in the statistics bar
+        api.refreshTopicPartitions(this.props.topicName, force);
+
+        // configuration is always required for the statistics bar
+        api.refreshTopicConfig(this.props.topicName, force);
+
+        // documentation can be lazy loaded
+        if (uiSettings.topicDetailsActiveTabKey == 'documentation')
+            api.refreshTopicDocumentation(this.props.topicName, force);
     }
 
 
@@ -136,7 +141,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         return topic;
     }
     @computed get topicConfig(): undefined | TopicConfigEntry[] | null {
-        return api.topicConfig.get(this.props.topicName);
+        const config = api.topicConfig.get(this.props.topicName);
+        if (config === undefined) return undefined;
+        if (config === null || config.error != null) return null;
+        return config.configEntries;
     }
 
     get selectedTabId(): TopicTabId {
@@ -175,18 +183,19 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
     render() {
         const topic = this.topic;
-        const topicConfig = this.topicConfig;
-        if (topic === undefined || topicConfig === undefined) return DefaultSkeleton;
-        if (topic === null) return this.topicNotFound();
+        if (topic === undefined) return DefaultSkeleton;
+        if (topic == null) return this.topicNotFound();
 
-        setTimeout(() => topicConfig && this.addBaseFavs(topicConfig), 10);
+        const topicConfig = this.topicConfig;
+
+        setImmediate(() => topicConfig && this.addBaseFavs(topicConfig));
 
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 {uiSettings.topicDetailsShowStatisticsBar &&
                     <Card className='statisticsBar'>
                         <HideStatisticsBarButton onClick={() => uiSettings.topicDetailsShowStatisticsBar = false} />
-                        <TopicQuickInfoStatistic topicName={topic.topicName} />
+                        <TopicQuickInfoStatistic topic={topic} />
                     </Card>
                 }
 
@@ -242,6 +251,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         const loc = appGlobal.history.location;
         loc.hash = String(activeKey);
         appGlobal.history.replace(loc);
+
+        this.refreshData(false);
     }
 
     topicNotFound() {

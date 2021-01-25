@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"github.com/Shopify/sarama"
 	"github.com/gorilla/schema"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"net/http"
@@ -13,7 +12,7 @@ import (
 
 type getAclsOverviewRequest struct {
 	// The resource type.
-	ResourceType int `schema:"resourceType"`
+	ResourceType int8 `schema:"resourceType"`
 
 	// The resource name, or null to match any resource name.
 	ResourceName *string `schema:"resourceName"`
@@ -35,26 +34,26 @@ type getAclsOverviewRequest struct {
 }
 
 func (g *getAclsOverviewRequest) OK() error {
-	if g.ResourceType < 1 || g.ResourceType > int(sarama.AclResourceTransactionalID) {
+	if kmsg.ACLResourceType(g.ResourceType).String() == kmsg.ACLResourceTypeUnknown.String() {
 		return fmt.Errorf("resourceType filter is out of bounds")
 	}
 
-	if g.ResourcePatternTypeFilter < 1 || g.ResourcePatternTypeFilter > int(sarama.AclPatternPrefixed) {
+	if kmsg.ACLResourcePatternType(g.ResourcePatternTypeFilter).String() == kmsg.ACLResourcePatternTypeUnknown.String() {
 		return fmt.Errorf("resourcePatternTypeFilter is out of bounds")
 	}
 
-	if g.Operation < 1 || g.Operation > int(sarama.AclOperationIdempotentWrite) {
+	if kmsg.ACLOperation(g.Operation).String() == kmsg.ACLOperationUnknown.String() {
 		return fmt.Errorf("operation filter is out of bounds")
 	}
 
-	if g.PermissionType < 1 || g.PermissionType > int(sarama.AclPermissionAllow) {
+	if kmsg.ACLPermissionType(g.PermissionType).String() == kmsg.ACLPermissionTypeUnknown.String() {
 		return fmt.Errorf("permission type filter is out of bounds")
 	}
 
 	return nil
 }
 
-// ToSaramaFilter returns a sarama compatible request struct
+// ToKafkaRequest returns a request struct that complies with the expected request object for the Kafka library
 func (g *getAclsOverviewRequest) ToKafkaRequest() kmsg.DescribeACLsRequest {
 	return kmsg.DescribeACLsRequest{
 		ResourceType:        kmsg.ACLResourceType(g.ResourceType),

@@ -1,6 +1,7 @@
 import React, { memo, ReactNode, PureComponent, FunctionComponent, ReactElement, Component, Fragment, ReactNodeArray } from "react";
 import { observable } from "mobx";
-import prettyBytes from "pretty-bytes";
+import prettyBytesOriginal from "pretty-bytes";
+import prettyMillisecondsOriginal from 'pretty-ms';
 import qs, { ParsedQuery } from 'query-string';
 import url from "url";
 
@@ -35,7 +36,7 @@ export class AutoRefresh extends Component {
 
 const seen = new Set();
 // Serialize object to json, handling reference loops gracefully
-export function ToJson(obj: any, space?: string | number | undefined): string {
+export function toJson(obj: any, space?: string | number | undefined): string {
     seen.clear();
     try {
         return JSON.stringify(obj,
@@ -59,7 +60,7 @@ export function ToJson(obj: any, space?: string | number | undefined): string {
 // Clone object using serialization
 export function clone<T>(obj: T): T {
     if (!obj) return obj;
-    return JSON.parse(ToJson(obj));
+    return JSON.parse(toJson(obj));
 }
 
 
@@ -403,8 +404,61 @@ export function groupConsecutive(ar: number[]): number[][] {
 }
 
 export const prettyBytesOrNA = function (n: number) {
-    if (n == -1) return "N/A";
+    if (!isFinite(n) || n < 0) return "N/A";
     return prettyBytes(n);
+}
+export const prettyBytes = function (n: number) {
+    if (typeof n === 'undefined' || n === null)
+        return "N/A"; // null, undefined -> N/A
+
+    if (typeof n !== 'number') {
+        if (typeof n === 'string') {
+            // string
+            if (n === "")
+                return "N/A"; // empty -> N/A
+
+            n = parseFloat(String(n));
+
+            if (!isFinite(n))
+                return String(n); // "NaN" or "Infinity"
+
+            // number parsed, fall through
+        }
+        else {
+            // something else: object, function, ...
+            return "NaN";
+        }
+    }
+
+    // n is a finite number
+    return prettyBytesOriginal(n);
+}
+
+export const prettyMilliseconds = function (n: number, options?: prettyMillisecondsOriginal.Options) {
+    if (typeof n === 'undefined' || n === null)
+        return "N/A"; // null, undefined -> N/A
+
+    if (typeof n !== 'number') {
+        if (typeof n === 'string') {
+            // string
+            if (n === "")
+                return "N/A"; // empty -> N/A
+
+            n = parseFloat(String(n));
+
+            if (!isFinite(n))
+                return String(n); // "NaN" or "Infinity"
+
+            // number parsed, fall through
+        }
+        else {
+            // something else: object, function, ...
+            return "NaN";
+        }
+    }
+
+    // n is a finite number
+    return prettyMillisecondsOriginal(n, options);
 }
 
 

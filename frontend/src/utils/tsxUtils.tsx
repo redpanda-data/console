@@ -1,14 +1,15 @@
 import React, { useState, Component, CSSProperties } from "react";
-import { simpleUniqueId, DebugTimerStore, ToJson } from "./utils";
+import { simpleUniqueId, DebugTimerStore, toJson, prettyMilliseconds } from "./utils";
 import { Radio, message, Progress, Skeleton } from 'antd';
 import { MessageType } from "antd/lib/message";
-import prettyMilliseconds from 'pretty-ms';
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 import { TimestampDisplayFormat } from "../state/ui";
 import { observer } from "mobx-react";
 import { motion } from "framer-motion";
 import { animProps } from "./animationProps";
 import { SizeType } from "antd/lib/config-provider/SizeContext";
+import { api } from "../state/backendApi";
+import { observable } from "mobx";
 
 
 
@@ -58,6 +59,7 @@ export const copyIcon = <svg viewBox="0 0 14 16" version="1.1" width="14" height
 const DefaultQuickTableOptions = {
     tableClassName: undefined as string | undefined,
     keyAlign: 'left' as 'left' | 'right' | 'center',
+    valueAlign: 'left' as 'left' | 'right' | 'center',
     gapWidth: '16px' as string | number,
     gapHeight: 0 as string | number,
     keyStyle: undefined as React.CSSProperties | undefined,
@@ -66,33 +68,35 @@ const DefaultQuickTableOptions = {
 }
 type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>
 
-export function QuickTable(data: [any, any][], options?: QuickTableOptions): JSX.Element;
+// [ { key: 'a', value: 'b' } ]
 export function QuickTable(data: { key: any, value: any }[], options?: QuickTableOptions): JSX.Element;
+// { 'key1': 'value1', 'key2': 'value2' }
+export function QuickTable(data: { [key: string]: any }, options?: QuickTableOptions): JSX.Element;
+// [ ['a', 'b'] ]
+export function QuickTable(data: [any, any][], options?: QuickTableOptions): JSX.Element;
 
-export function QuickTable(data: { key: any, value: any }[] | [any, any][], options?: QuickTableOptions): JSX.Element {
-    // Convert data elements from arrays to objects
+export function QuickTable(data: { key: any, value: any }[] | { [key: string]: any } | [any, any][], options?: QuickTableOptions): JSX.Element {
     let entries: { key: any, value: any }[];
-    if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0]))
-        entries = (data as [any, any][]).map(ar => ({ key: ar[0], value: ar[1] }));
-    else
-        entries = data as { key: any, value: any }[];
 
-    const o: QuickTableOptions = {}; // create new options object (because we don't want to pollute the one the user gave us)
-    if (options == null) options = {};
-
-    {
-        const oa = o as any;
-        for (const k in DefaultQuickTableOptions) {
-            //console.log("checking: " + k)
-            if ((options as any)[k] == undefined) {
-                oa[k] = (DefaultQuickTableOptions as any)[k];
-                //console.log("     using default: " + oa[k])
-            } else {
-                oa[k] = (options as any)[k];
-                //console.log("     using existing value: " + oa[k])
-            }
-        }
+    // plain object?
+    if (typeof data === 'object' && !Array.isArray(data)) {
+        // Convert to array of key value objects
+        entries = [];
+        for (const [k, v] of Object.entries(data))
+            entries.push({ key: k, value: v });
     }
+    // array of [any, any] ?
+    else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
+        // Convert to array of key-value objects
+        entries = (data as [any, any][]).map(ar => ({ key: ar[0], value: ar[1] }));
+    }
+    // already correct? array of { key:any, value:any }
+    else {
+        // Cast to correct type directly
+        entries = data as { key: any, value: any }[];
+    }
+
+    const o = Object.assign({} as QuickTableOptions, DefaultQuickTableOptions, options);
 
     const showVerticalGutter = (typeof o.gapHeight === 'number' && o.gapHeight > 0) || typeof o.gapHeight === 'string';
     const classNames = [o.tableClassName, "quickTable"].joinStr(" ");
@@ -104,7 +108,7 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
                     <tr>
                         <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className='keyCell'>{React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}</td>
                         <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
-                        <td style={{ ...o.valueStyle }} className='valueCell'>{React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}</td>
+                        <td style={{ textAlign: o.valueAlign, ...o.valueStyle }} className='valueCell'>{React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}</td>
                     </tr>
 
                     {showVerticalGutter && (i < entries.length - 1) &&
@@ -120,8 +124,9 @@ export function QuickTable(data: { key: any, value: any }[] | [any, any][], opti
 
 export function toSafeString(x: any): string {
     if (typeof x === 'undefined' || x === null) return "";
-    if (typeof x === 'string' || typeof x === 'boolean') return String(x);
-    return ToJson(x);
+    if (typeof x === 'string') return x;
+    if (typeof x === 'boolean' || typeof x === 'number') return String(x);
+    return toJson(x);
 }
 
 export function ObjToKv(obj: any): { key: string, value: any }[] {
@@ -212,41 +217,87 @@ export class RadioOptionGroup<T> extends Component<{
     }
 }
 
-class RadioOption extends Component<{}> {
 
+interface StatusIndicatorProps {
+    identityKey: string;
+    fillFactor: number;
+    statusText: string;
+    bytesConsumed?: string;
+    messagesConsumed?: string;
+    progressText: string;
 }
 
-export class StatusIndicator extends Component<{ identityKey: string, fillFactor: number, statusText: string, bytesConsumed?: string, messagesConsumed?: string, progressText: string }> {
+@observer
+export class StatusIndicator extends Component<StatusIndicatorProps> {
 
     static readonly progressStyle: CSSProperties = { minWidth: '300px', lineHeight: 0 } as const;
     static readonly statusBarStyle: CSSProperties = { display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' } as const;
     static readonly progressTextStyle: CSSProperties = { marginLeft: 'auto', paddingLeft: '2em' } as const;
 
-    hide: MessageType;
+    hide: MessageType | undefined;
+
+    timerHandle: NodeJS.Timeout;
+    lastUpdateTimestamp: number;
+    @observable showWaitingText: boolean;
+
+    // used to fetch 'showWaitingText' (so mobx triggers a re-render).
+    // we could just store the value in a local as well, but that might be opimized out.
+    mobxSink: any | undefined = undefined;
 
     constructor(p: any) {
         super(p);
-        message.config({ top: 8 });
+        message.config({ top: 20 });
+
+        // Periodically check if we got any new messages. If not, show a different text after some time
+        this.lastUpdateTimestamp = Date.now();
+        this.showWaitingText = false;
+        const waitMessageDelay = 3000;
+        this.timerHandle = setInterval(() => {
+            const age = Date.now() - this.lastUpdateTimestamp;
+            if (age > waitMessageDelay) {
+                this.showWaitingText = true;
+            }
+        }, 300);
     }
 
     componentDidMount() {
+        this.lastUpdateTimestamp = Date.now();
         this.customRender();
     }
+
+    lastPropsJson = "";
+    lastProps = {};
     componentDidUpdate() {
+
+        const curJson = toJson(this.props);
+        if (curJson == this.lastPropsJson) {
+            // changes to observables
+            this.customRender();
+            return;
+        }
+
+        this.lastPropsJson = curJson;
+
+        this.lastUpdateTimestamp = Date.now();
+        if (this.showWaitingText)
+            this.showWaitingText = false;
+
         this.customRender();
     }
 
     componentWillUnmount() {
+        clearInterval(this.timerHandle);
         this.hide?.call(this);
+        this.hide = undefined;
     }
 
     customRender() {
-        const content = <div style={{ marginBottom: '0.2em' }}>
+        const content = <div style={{ marginBottom: '0.2em' }} className={this.showWaitingText ? 'waitingForMessagesBox waitingForMessagesText' : ''}>
             <div style={StatusIndicator.progressStyle}>
                 <Progress percent={this.props.fillFactor * 100} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
             </div>
             <div style={StatusIndicator.statusBarStyle}>
-                <div>{this.props.statusText}</div>
+                <div>{this.showWaitingText ? "Kafka is waiting for new messages..." : this.props.statusText}</div>
                 <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
             </div>
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
@@ -260,12 +311,13 @@ export class StatusIndicator extends Component<{ identityKey: string, fillFactor
                 </div>
             }
         </div>
+
         this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: null, type: 'loading' });
     }
 
     render() {
-
-
+        // workaround to propagate the update (timer -> mobx -> re-render)
+        this.mobxSink = this.showWaitingText;
         return null;
     }
 }
@@ -316,12 +368,23 @@ export const DefaultSkeleton = (
     </motion.div>
 );
 
-// export class DefaultSkeleton extends Component<{ identityKey?: string }> {
-//     render() {
-//         return (
-//             <motion.div {...animProps} key={this.props.identityKey ?? 'defaultSkeleton'} style={defaultSkeletonStyle}>
-//                 {innerSkeleton}
-//             </motion.div>
-//         )
-//     }
-// }
+// Single line string, no wrapping, will not overflow and display ellipsis instead
+const ellipsisDivStyle: CSSProperties = {
+    display: 'inline-block',
+    width: 0,
+    minWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    verticalAlign: 'text-bottom',
+};
+const ellipsisSpanStyle: CSSProperties = {
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
+    overflow: 'hidden',
+    maxWidth: '100%',
+    verticalAlign: 'text-bottom'
+};
+export const Ellipsis = (p: { children?: React.ReactNode, className?: string }) => {
+    return <span className={p.className} style={ellipsisSpanStyle}>{p.children}</span>
+}

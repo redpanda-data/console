@@ -3,17 +3,15 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError
 } from "./restInterfaces";
-import { observable, autorun, computed, action, transaction, decorate, extendObservable } from "mobx";
+import { observable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { ToJson, LazyMap, TimeSince, clone } from "../utils/utils";
+import { toJson, LazyMap, TimeSince, clone } from "../utils/utils";
 import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
-import { uiState } from "./uiState";
+import { ServerVersionInfo, uiState } from "./uiState";
 import { notification } from "antd";
-import queryString, { ParseOptions, StringifyOptions, ParsedQuery } from 'query-string';
-import { objToQuery } from "../utils/queryHelper";
 import { ObjToKv } from "../utils/tsxUtils";
 
 const REST_TIMEOUT_SEC = 25;
@@ -38,17 +36,32 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
         return null;
     }
 
-    for (const [k, v] of res.headers) {
-        if (k.toLowerCase() == 'app-version')
-            if (v != env.REACT_APP_KOWL_GIT_SHA)
-                uiState.serverVersion = v;
-        if (k.toLowerCase() == 'app-version-business')
-            if (v != env.REACT_APP_KOWL_BUSINESS_GIT_SHA)
-                uiState.serverVersionBusiness = v;
-    }
+    try {
+        for (const [k, v] of res.headers) {
+            if (k.toLowerCase() == 'app-version') {
+                const serverVersion = JSON.parse(v) as ServerVersionInfo;
+                if (typeof serverVersion === 'object')
+                    if (uiState.serverVersion == null || (serverVersion.ts != uiState.serverVersion.ts))
+                        uiState.serverVersion = serverVersion;
+                break;
+            }
+        }
+    } catch { } // Catch malformed json (old versions where info is not sent as json yet)
 
-    if (!res.ok)
-        throw new Error("(" + res.status + ") " + res.statusText);
+    if (!res.ok) {
+        const text = await res.text();
+        try {
+            const errObj = JSON.parse(text) as ApiError;
+            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+                // if the shape matches, reformat it a bit
+                throw new Error(`${errObj.message} (${res.status} - ${res.statusText})`);
+            }
+        }
+        catch { } // response is not json
+
+        // use generic error text
+        throw new Error(`${text} (${res.status} - ${res.statusText})`);
+    }
 
     const str = await res.text();
     // console.log('json: ' + str);
@@ -67,7 +80,7 @@ async function handle401(res: Response) {
         const obj = JSON.parse(text);
         console.log("unauthorized message: " + text);
 
-        const err = obj as { statusCode: number, message: string }
+        const err = obj as ApiError;
         uiState.loginError = String(err.message);
     } catch (err) {
         uiState.loginError = String(err);
@@ -188,13 +201,13 @@ const apiStore = {
     schemaDetails: null as (SchemaDetails | null),
 
     topics: null as (TopicDetail[] | null),
-    topicConfig: new Map<string, TopicConfigEntry[] | null>(), // null = not allowed to view config of this topic
+    topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
     topicDocumentation: new Map<string, TopicDocumentation>(),
-    topicPermissions: new Map<string, TopicPermissions>(),
+    topicPermissions: new Map<string, TopicPermissions | null>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     topicConsumers: new Map<string, TopicConsumer[]>(),
 
-    ACLs: undefined as AclResource[] | undefined,
+    ACLs: undefined as AclResource[] | undefined | null,
 
     consumerGroups: null as (GroupDescription[] | null),
 
@@ -228,7 +241,7 @@ const apiStore = {
         const host = IsDev ? 'localhost:9090' : window.location.host;
         const url = protocol + host + basePathS + '/api/topics/' + searchRequest.topicName + '/messages';
 
-        console.log("connecting to \"" + url + "\"");
+        console.debug("connecting to \"" + url + "\"");
 
         // Abort previous connection
         if (currentWS != null)
@@ -252,9 +265,11 @@ const apiStore = {
         }
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
+            api.stopMessageSearch();
             // double assignment makes sense: when the phase changes to null, some observing components will play a "fade out" animation, using the last (non-null) value
-            console.log(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
+            console.debug(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
         }
+
         const onMessageHandler = (msgEvent: MessageEvent) => {
             if (ws !== currentWS) return;
             const msg = JSON.parse(msgEvent.data)
@@ -279,10 +294,13 @@ const apiStore = {
 
                 case 'error':
                     // error doesn't neccesarily mean the whole request is done
-                    console.log("backend error: " + msg.message);
+                    console.info("ws backend error: " + msg.message);
+                    const notificationKey = `errorNotification-${Date.now()}`;
                     notification['error']({
+                        key: notificationKey,
                         message: "Backend Error",
                         description: msg.message,
+                        duration: 5,
                     })
                     break;
 
@@ -298,6 +316,8 @@ const apiStore = {
                             // Only unpack if the key is base64 based
                         }
                     }
+
+                    // debugModifyHeaders(m);
 
                     m.valueJson = JSON.stringify(m.value.payload);
 
@@ -326,17 +346,17 @@ const apiStore = {
     },
 
     stopMessageSearch() {
-        if (!currentWS) {
-            return;
+        if (currentWS) {
+            currentWS.close();
+            currentWS = null;
         }
 
-        currentWS.close();
-        currentWS = null;
-
-        this.messageSearchPhase = "Done";
-        this.messagesBytesConsumed = 0;
-        this.messagesTotalConsumed = 0;
-        this.messageSearchPhase = null;
+        if (this.messageSearchPhase != null) {
+            this.messageSearchPhase = "Done";
+            this.messagesBytesConsumed = 0;
+            this.messagesTotalConsumed = 0;
+            this.messageSearchPhase = null;
+        }
     },
 
     refreshTopics(force?: boolean) {
@@ -359,8 +379,8 @@ const apiStore = {
     },
 
     refreshTopicConfig(topicName: string, force?: boolean) {
-        cachedApiRequest<TopicConfigResponse>(`./api/topics/${topicName}/configuration`, force)
-            .then(v => this.topicConfig.set(topicName, v?.topicDescription?.configEntries ?? null), addError);
+        cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
+            .then(v => this.topicConfig.set(topicName, v?.topicDescription ?? null), addError); // 403 -> null
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
@@ -374,13 +394,13 @@ const apiStore = {
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
         if (!IsBusiness) return; // permissions endpoint only exists in kowl-business
-        cachedApiRequest<TopicPermissions>(`./api/permissions/topics/${topicName}`, force)
-            .then(x => this.topicPermissions.set(topicName, x ?? null), addError);
+        cachedApiRequest<TopicPermissions | null>(`./api/permissions/topics/${topicName}`, force)
+            .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
     refreshTopicPartitions(topicName: string, force?: boolean) {
-        cachedApiRequest<GetPartitionsResponse>(`./api/topics/${topicName}/partitions`, force)
-            .then(v => this.topicPartitions.set(topicName, v?.partitions ?? null), addError);
+        cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
+            .then(x => this.topicPartitions.set(topicName, x === null ? null : (x?.partitions ?? null)), addError);
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
@@ -390,8 +410,8 @@ const apiStore = {
 
     refreshAcls(request: AclRequest, force?: boolean) {
         const query = aclRequestToQuery(request);
-        cachedApiRequest<AclResponse>(`./api/acls?${query}`, force)
-            .then(v => this.ACLs = v.aclResources, addError);
+        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+            .then(v => this.ACLs = v?.aclResources ?? null, addError);
     },
 
     refreshCluster(force?: boolean) {
@@ -429,13 +449,13 @@ const apiStore = {
                 // resolve role of each binding
                 for (const binding of info.roleBindings) {
                     binding.resolvedRole = info.roles.first(r => r.name == binding.roleName)!;
-                    if (binding.resolvedRole == null) console.error("could not resolve roleBinding to role: " + ToJson(binding));
+                    if (binding.resolvedRole == null) console.error("could not resolve roleBinding to role: " + toJson(binding));
                 }
 
                 // resolve bindings, and roles of each user
                 for (const user of info.users) {
                     user.bindings = user.bindingIds.map(id => info.roleBindings.first(rb => rb.ephemeralId == id)!);
-                    if (user.bindings.any(b => b == null)) console.error("one or more rolebindings could not be resolved for user: " + ToJson(user));
+                    if (user.bindings.any(b => b == null)) console.error("one or more rolebindings could not be resolved for user: " + toJson(user));
 
                     user.grantedRoles = [];
                     for (const roleName in user.audits)
@@ -496,3 +516,66 @@ autorun(r => {
     touch(api)
 }, { delay: 50, name: 'api observer' });
 */
+
+
+function debugModifyHeaders(m: TopicMessage) {
+    m.headers.splice(0);
+    m.headers.push({ key: 'DEBUG TEST LONG NAME HERE', value: { encoding: 'text', payload: { a: 1, b: 2, c: { x: 'asdas', y: '4545' } }, size: 92385469213587923958, avroSchemaId: 0 } })
+    m.headers.push({
+        key: 'long object', value: {
+            encoding: 'text', payload: {
+                a: {
+                    b: {
+                        c: {
+                            d: {
+                                text: `
+                        // DeserializePayload tries to deserialize a given byte array.
+                        // The payload's byte array may represent
+                        //  - an encoded message such as JSON, Avro or XML
+                        //  - UTF-8 Text
+                        //  - Binary content
+                        // Idea: Add encoding hint where user can suggest the backend to test this encoding first.
+                        func (d *deserializer) DeserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
+                            if len(payload) == 0 {
+                                return &deserializedPayload{Payload: normalizedPayload{
+                                    Payload:            payload,
+                                    RecognizedEncoding: messageEncodingNone,
+                                }, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(payload)}
+                            }
+                        `
+                            }
+                        }
+                    }
+                }
+            }, size: -1, avroSchemaId: 0
+        }
+    });
+    m.headers.push({
+        key: 'long text', value: {
+            encoding: 'text', payload: `
+                    // DeserializePayload tries to deserialize a given byte array.
+                    // The payload's byte array may represent
+                    //  - an encoded message such as JSON, Avro or XML
+                    //  - UTF-8 Text
+                    //  - Binary content
+                    // Idea: Add encoding hint where user can suggest the backend to test this encoding first.
+                    func (d *deserializer) DeserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
+                        if len(payload) == 0 {
+                            return &deserializedPayload{Payload: normalizedPayload{
+                                Payload:            payload,
+                                RecognizedEncoding: messageEncodingNone,
+                            }, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(payload)}
+                        }
+                    `, size: Infinity, avroSchemaId: 0
+        }
+    });
+    m.headers.push({ key: '>null', value: { encoding: 'text', payload: null, size: Infinity, avroSchemaId: 0 } });
+    m.headers.push({ key: '>undefined', value: { encoding: 'text', payload: undefined, size: Infinity, avroSchemaId: 0 } });
+    m.headers.push({ key: '>NaN', value: { encoding: 'text', payload: NaN, size: Infinity, avroSchemaId: 0 } });
+    m.headers.push({ key: '>0', value: { encoding: 'text', payload: 0, size: Infinity, avroSchemaId: 0 } });
+    m.headers.push({ key: '>missing', value: { encoding: 'text', size: Infinity, avroSchemaId: 0 } as any });
+    m.headers.push({ key: '>{}', value: { encoding: 'text', payload: {}, size: 0, avroSchemaId: 0 } });
+    m.headers.push({ key: '>5', value: { encoding: 'text', payload: 5, size: NaN, avroSchemaId: 0 } });
+    m.headers.push({ key: '>object', value: { encoding: 'text', payload: { a: {} }, size: -1, avroSchemaId: 0 } });
+
+}

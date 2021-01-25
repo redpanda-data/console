@@ -73,7 +73,7 @@ class SchemaList extends PageComponent<{}> {
     }
 
     isFilterMatch(filterString: string, subject: SchemaSubject) {
-        return subject.name.includes(filterString);
+        return subject.name.toLowerCase().includes(filterString.toLowerCase());
     }
 
     render() {

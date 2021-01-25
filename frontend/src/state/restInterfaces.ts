@@ -1,5 +1,10 @@
 import SchemaList from "../components/pages/schemas/Schema.List";
 
+export interface ApiError {
+    statusCode: number;
+    message: string;
+}
+
 
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];
@@ -56,25 +61,21 @@ export interface Payload {
 }
 
 export interface TopicMessage {
+    partitionID: number,
     offset: number,
     timestamp: number,
-    partitionID: number,
-
-    headers: {
-        key: string | object,
-        value: Payload,
-    }[]
 
     compression: CompressionType,
     isTransactional: boolean,
 
+    headers: {
+        key: string,
+        value: Payload,
+    }[]
     key: Payload,
     value: Payload,
 
-    size: number, // size in bytes of the kafka message
     isValueNull: boolean, // todo: rename to isTombstone
-    // todo: we also need to add: keyType, keySize
-    // todo: rename size to valueSize
     // todo: Tab.Messages/index.tsx: isFilterMatch(): use 'keyJson' instead
 
     // Added by the frontend (sometimes)
@@ -95,7 +96,11 @@ export interface GetTopicMessagesResponse {
 
 
 
-
+export interface KafkaError {
+    code: number,
+    message: string,
+    description: string
+}
 
 export interface TopicConfigEntry {
     name: string,
@@ -105,9 +110,7 @@ export interface TopicConfigEntry {
 export interface TopicDescription {
     topicName: string
     configEntries: TopicConfigEntry[]
-}
-export interface TopicConfigResponse {
-    topicDescription: TopicDescription
+    error: KafkaError | null
 }
 export interface TopicConfigResponse {
     topicDescription: TopicDescription
@@ -196,6 +199,7 @@ export interface Broker {
 export interface ClusterInfo {
     brokers: Broker[];
     controllerId: number;
+    kafkaVersion: string;
 }
 
 export interface ClusterInfoResponse {

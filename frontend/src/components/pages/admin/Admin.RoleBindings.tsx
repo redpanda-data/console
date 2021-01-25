@@ -7,13 +7,11 @@ import { api, } from "../../../state/backendApi";
 import { uiSettings, PreviewTag } from "../../../state/ui";
 import ReactJson, { CollapsedFieldProps } from 'react-json-view'
 import { PageComponent, PageInitHelper } from "../Page";
-import prettyMilliseconds from 'pretty-ms';
-import prettyBytes from 'pretty-bytes';
 import topicConfigInfo from '../../../assets/topicConfigInfo.json'
 import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
 import { motion, AnimatePresence } from "framer-motion";
 import { observable, computed, transaction } from "mobx";
-import { ToJson } from "../../../utils/utils";
+import { toJson } from "../../../utils/utils";
 import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { ColumnProps } from "antd/lib/table";

@@ -2,7 +2,10 @@ package owl
 
 import (
 	"context"
+	"fmt"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/kversion"
 	"sort"
 
 	"golang.org/x/sync/errgroup"
@@ -12,6 +15,7 @@ import (
 type ClusterInfo struct {
 	ControllerID int32     `json:"controllerId"`
 	Brokers      []*Broker `json:"brokers"`
+	KafkaVersion string    `json:"kafkaVersion"`
 }
 
 // Broker described by some basic broker properties
@@ -28,6 +32,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	var logDirsByBroker map[int32]LogDirsByBroker
 	var metadata *kmsg.MetadataResponse
+	var kafkaVersion string
 
 	eg.Go(func() error {
 		var err error
@@ -41,6 +46,15 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	eg.Go(func() error {
 		var err error
 		metadata, err = s.kafkaSvc.GetMetadata(ctx, nil)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		var err error
+		kafkaVersion, err = s.GetKafkaVersion(ctx)
 		if err != nil {
 			return err
 		}
@@ -71,5 +85,22 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	return &ClusterInfo{
 		ControllerID: metadata.ControllerID,
 		Brokers:      brokers,
+		KafkaVersion: kafkaVersion,
 	}, nil
+}
+
+func (s *Service) GetKafkaVersion(ctx context.Context) (string, error) {
+	apiVersions, err := s.kafkaSvc.GetAPIVersions(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to request api versions: %w", err)
+	}
+
+	err = kerr.ErrorForCode(apiVersions.ErrorCode)
+	if err != nil {
+		return "", fmt.Errorf("failed to request api versions. Inner Kafka error: %w", err)
+	}
+
+	versions := kversion.FromApiVersionsResponse(apiVersions)
+
+	return versions.VersionGuess(), nil
 }

@@ -41,9 +41,9 @@ func (c *Service) readFiles(fs billy.Filesystem, res map[string]File, currentPat
 
 	for _, info := range fileInfos {
 		name := info.Name()
+		filePath := path.Join(currentPath, name)
 		if info.IsDir() {
-			childPath := path.Join(currentPath, name)
-			return c.readFiles(fs, res, childPath, maxDepth-1)
+			c.readFiles(fs, res, filePath, maxDepth-1)
 		}
 
 		isValid, trimmedFilename := c.isValidFileExtension(name)
@@ -51,14 +51,13 @@ func (c *Service) readFiles(fs billy.Filesystem, res map[string]File, currentPat
 			continue
 		}
 
-		content, err := readFile(name, fs, c.Cfg.MaxFileSize)
+		content, err := readFile(filePath, fs, c.Cfg.MaxFileSize)
 		if err != nil {
 			c.logger.Error("failed to read file from git. file will be skipped",
 				zap.String("file_name", name),
 				zap.String("path", currentPath), zap.Error(err))
 			continue
 		}
-		filePath := path.Join(currentPath, name)
 
 		key := trimmedFilename
 		if c.Cfg.IndexByFullFilepath {

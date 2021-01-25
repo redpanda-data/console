@@ -105,7 +105,7 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 	}
 	for result := range ch {
 		if result.Error != nil {
-			res.RequestErrors = append(res.RequestErrors)
+			res.RequestErrors = append(res.RequestErrors, *result.Error)
 			continue
 		}
 		if result.Mode != nil {

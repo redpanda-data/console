@@ -3,9 +3,11 @@
 ## unreleased / pending in master
 
 - [CHANGE] We removed the Kafka library and replaced it with [franz-go](https://github.com/twmb/franz-go). This allows us to add a lot more features in the future.
+- [CHANGE] Configuration for the topic documentation feature has changed
 - [FEATURE] Support setting the listen adress of the webserver (config entry: `server.http.listen-address`, or flag: `listenAddress`). [#150](https://github.com/cloudhut/kowl/issues/150) 
 - **[FEATURE] Add Protobuf support**
-- [CHANGE] Configuration for the topic documentation feature has changed
+- [FEATURE] Add rackId config option to consume from brokers that reside in the same rack if possible (rack aware consuming)
+- [ENHANCEMENT] Show Kafka version in Brokers page
 - [BUGFIX] Deserialize messages with Avro with a higher priority than UTF-8 messages, so that Avro serialized messages will always be recognized correctly
 
 

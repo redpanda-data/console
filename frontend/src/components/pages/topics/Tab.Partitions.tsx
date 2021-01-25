@@ -16,15 +16,11 @@ export class TopicPartitions extends Component<{ topic: TopicDetail }> {
 
     pageConfig = makePaginationConfig(100); // makePaginationConfig(uiSettings.topics.partitionPageSize);
 
-    constructor(p: any) {
-        super(p);
-        api.refreshTopicPartitions(this.props.topic.topicName);
-    }
-
     render() {
         const topic = this.props.topic;
         let partitions = api.topicPartitions.get(topic.topicName);
-        if (!partitions) return DefaultSkeleton;
+        if (partitions === undefined) return DefaultSkeleton;
+        if (partitions === null) partitions = []; // todo: show the error (if one was reported);
 
         let warning: JSX.Element = <></>
         if (topic.cleanupPolicy.toLowerCase() == 'compact')

@@ -39,6 +39,11 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 	// Attach hooks
 	opts = append(opts, kgo.WithHooks(hooks))
 
+	// Add Rack Awareness if configured
+	if cfg.RackID != "" {
+		opts = append(opts, kgo.Rack(cfg.RackID))
+	}
+
 	// Configure SASL
 	if cfg.SASL.Enabled {
 		// SASL Plain

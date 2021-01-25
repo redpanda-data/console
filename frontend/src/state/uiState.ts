@@ -69,14 +69,20 @@ class UIState {
     @observable loginError: string | null = null;
     @observable isUsingDebugUserLogin: boolean = false;
 
-    // Every API response contains the 'app-version' header (which is set here after the request).
+    // Every response from the backend contains, amongst others, the 'app-sha' header (was previously named 'app-version' which was confusing).
     // If the version doesn't match the current frontend version a promt is shown (like 'new version available, want to reload to update?').
     // If the user declines, updatePromtHiddenUntil is set to prevent the promt from showing up for some time.
-    @observable serverVersion: string | undefined = undefined;
-    @observable serverVersionBusiness: string | undefined = undefined;
+    @observable.shallow serverVersion: ServerVersionInfo | undefined = undefined;
     @observable updatePromtHiddenUntil: number | undefined = undefined;
 }
 
+export interface ServerVersionInfo {
+    ts?: string; // build timestamp, unix seconds
+    sha?: string;
+    branch?: string;
+    shaBusiness?: string;
+    branchBusiness?: string;
+}
 
 const uiState = new UIState();
 export { uiState };

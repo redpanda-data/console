@@ -18,7 +18,7 @@ import { uiState } from "../state/uiState";
 import { SettingsPage } from "./pages/Settings";
 import AdminPage from "./pages/admin/AdminPage";
 import { api } from "../state/backendApi";
-import { DebugTimerStore, ToJson } from "../utils/utils";
+import { DebugTimerStore, toJson } from "../utils/utils";
 import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, PartitionOutlined, UnorderedListOutlined, FileProtectOutlined, QuestionCircleFilled } from '@ant-design/icons';
 import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";

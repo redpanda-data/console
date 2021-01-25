@@ -1,32 +1,16 @@
 import { Component, ReactNode } from "react";
 import React from "react";
-import { TopicDetail, TopicConfigEntry, TopicMessage, Partition, UserDetails, Role, RoleBinding, Permission } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider } from "antd";
+import { Role, RoleBinding, Permission } from "../../../state/restInterfaces";
+import { Table, Select, Input, Typography } from "antd";
 import { observer } from "mobx-react";
 import { api, } from "../../../state/backendApi";
-import { uiSettings, PreviewTag } from "../../../state/ui";
-import ReactJson, { CollapsedFieldProps } from 'react-json-view'
-import { PageComponent, PageInitHelper } from "../Page";
-import prettyMilliseconds from 'pretty-ms';
-import prettyBytes from 'pretty-bytes';
-import topicConfigInfo from '../../../assets/topicConfigInfo.json'
-import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
-import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction } from "mobx";
-import { findElementDeep, cullText, getAllKeys } from "../../../utils/utils";
-import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
-import Paragraph from "antd/lib/typography/Paragraph";
-import { ColumnProps } from "antd/lib/table";
+import { sortField } from "../../misc/common";
+import { MotionAlways } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
-import Card from "../../misc/Card";
-import Icon from '@ant-design/icons';
 import { QuickTable, DefaultSkeleton } from "../../../utils/tsxUtils";
 import { RoleBindingComponent } from "./Admin.RoleBindings";
 
 
-const { Text } = Typography;
-const { Option } = Select;
-const InputGroup = Input.Group;
 
 
 

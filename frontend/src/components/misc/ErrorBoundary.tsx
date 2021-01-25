@@ -1,7 +1,7 @@
 import React, { CSSProperties } from "react";
 import { observer } from "mobx-react";
 import { observable } from "mobx";
-import { ToJson } from "../../utils/utils";
+import { toJson } from "../../utils/utils";
 import { Button, Layout, message, Space } from "antd";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { envVarDebugAr } from "../../utils/env";
@@ -20,7 +20,7 @@ const { Content, Footer, Sider, Header } = Layout;
 //    - secondary   rgb(135, 142, 145)
 
 const valueStyle: CSSProperties = {
-    whiteSpace: 'pre-line',
+    whiteSpace: 'pre-wrap',
     lineBreak: 'anywhere',
 
     fontSize: '12px',
@@ -78,17 +78,17 @@ export class ErrorBoundary extends React.Component {
         else
             this.infoItems.push({
                 name: "Components", value: this.errorInfo
-                    ? "(componentStack not set) errorInfo as Json: \n" + ToJson(this.errorInfo)
+                    ? "(componentStack not set) errorInfo as Json: \n" + toJson(this.errorInfo)
                     : "(errorInfo was not set)"
             });
 
 
         // EnvVars
         try {
-            const len = envVarDebugAr.max(e => e.name.length);
+            const padLength = envVarDebugAr.max(e => e.name.length);
             this.infoItems.push({
                 name: "Environment",
-                value: envVarDebugAr.map(e => e.name.padEnd(len) + ': ' + e.value).join("\n")
+                value: envVarDebugAr.map(e => e.name.padEnd(padLength) + ': ' + e.value).join("\n")
             })
         } catch (ex) {
             this.infoItems.push({ name: "Environment", value: "(error retreiving env list)" });
@@ -96,16 +96,16 @@ export class ErrorBoundary extends React.Component {
 
         // Location
         try {
-            const loc = ObjToKv({
+            const locationItems = ObjToKv({
                 "Protocol": window?.location?.protocol ?? '<null>',
                 "Path": window?.location?.pathname ?? '<null>',
                 "Search": window?.location?.search ?? '<null>',
                 "Hash": window?.location?.hash ?? '<null>',
-            })
-            const pad = loc.max(e => e.key.length);
+            });
+            const padLength = locationItems.max(e => e.key.length);
             this.infoItems.push({
                 name: "Location",
-                value: ObjToKv(loc).map(e => e.key.padEnd(pad) + ': ' + e.value).join("\n")
+                value: locationItems.map(e => e.key.padEnd(padLength) + ': ' + e.value).join("\n")
             })
         } catch (ex) {
             this.infoItems.push({ name: "Location", value: "(error printing location, please include the url in your bug report)" });

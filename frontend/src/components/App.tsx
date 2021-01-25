@@ -4,7 +4,7 @@ import { Layout, Menu, PageHeader, Button, Tooltip, Popover, Dropdown } from 'an
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
 import { RenderTrap, DebugDisplay, UpdatePopup } from './misc/common';
-import { DebugTimerStore, ToJson } from '../utils/utils';
+import { DebugTimerStore, prettyMilliseconds, toJson } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
@@ -25,8 +25,7 @@ import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined } from '@ant-design/icons';
 import { observable } from 'mobx';
 import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
-import { LayoutBypass, RadioOptionGroup } from '../utils/tsxUtils';
-import prettyMilliseconds from 'pretty-ms';
+import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
 
 const { Content, Footer, Sider } = Layout;

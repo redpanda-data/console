@@ -1,4 +1,4 @@
-import { ToJson } from "./utils";
+import { toJson } from "./utils";
 import './extensions';
 
 // const assertions and mapped types are awesome!
@@ -73,6 +73,6 @@ for (const k in env) addProp(k, (env as any)[k]);
 addProp("appName", AppName);
 
 // - print
-console.log(ToJson(envVarDebugObj));
+console.log(toJson(envVarDebugObj));
 
 export { envVarDebugObj, envVarDebugAr };
