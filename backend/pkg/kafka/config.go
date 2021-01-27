@@ -47,6 +47,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate protobuf config: %w", err)
 	}
 
+	err = c.SASL.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate sasl config: %w", err)
+	}
+
 	return nil
 }
 
