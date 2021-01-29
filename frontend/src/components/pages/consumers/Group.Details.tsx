@@ -34,18 +34,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         if (group) p.addBreadcrumb(group, '/' + group);
 
         this.refreshData(false);
-
-        // autorun(() => {
-        //     if (api.ConsumerGroups)
-        //         for (let g of api.ConsumerGroups)
-        //             console.log(g.groupId + ': ' + g.lag.topicLags.sum(l => l.partitionLags.sum(x => x.lag)));
-        // });
-
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
     refreshData(force: boolean) {
-        console.log('GroupDetails.Refresh()');
         api.refreshConsumerGroups(force);
     };
 
