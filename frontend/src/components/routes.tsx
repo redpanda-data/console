@@ -208,7 +208,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <HddOutlined />),
-    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <QuestionCircleFilled />),
+    // MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <QuestionCircleFilled />),
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', <ProfileOutlined />),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics', <ProfileOutlined />),
