@@ -163,9 +163,7 @@ func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, 
 		case <-ctx.Done():
 			return
 		default:
-			fetchStart := time.Now()
 			fetches := client.PollFetches(ctx)
-			s.Logger.Info("fetched new batch", zap.Duration("duration", time.Since(fetchStart)))
 			errors := fetches.Errors()
 			for _, err := range errors {
 				s.Logger.Error("errors while fetching records",
