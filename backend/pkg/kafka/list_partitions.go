@@ -10,7 +10,7 @@ import (
 func (s *Service) ListPartitionIDs(ctx context.Context, topicName string) ([]int32, error) {
 	metadata, err := s.GetSingleMetadata(ctx, topicName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get topic metadata: %w", err)
+		return nil, fmt.Errorf("failed to get topic metadata: %w", err.Err)
 	}
 
 	partitions := metadata.Partitions
