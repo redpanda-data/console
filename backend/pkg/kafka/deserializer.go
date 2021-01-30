@@ -4,16 +4,14 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"strings"
 	"unicode/utf8"
 
 	xj "github.com/basgys/goxml2json"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
-	jsoniter "github.com/json-iterator/go"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 // deserializer can deserialize messages from various formats (json, xml, avro, ..) into a Go native form.
 type deserializer struct {
