@@ -47,7 +47,7 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 		}
 
 		response := GetConsumerGroupsResponse{
-			ConsumerGroups: describedGroups,
+			ConsumerGroups: visibleGroups,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
