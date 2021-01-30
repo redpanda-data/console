@@ -1,6 +1,6 @@
 import React from "react";
 import { observer } from "mobx-react";
-import { Tabs } from "antd";
+import { Alert, Tabs } from "antd";
 import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { motion } from "framer-motion";
@@ -30,29 +30,38 @@ export default class AdminPage extends PageComponent {
     }
 
     render() {
-        if (!api.adminInfo) return DefaultSkeleton;
+        if (api.adminInfo === undefined) return DefaultSkeleton;
+        const hasAdminPermissions = api.adminInfo !== null;
 
         return <motion.div {...animProps} style={{ margin: '0 1rem' }}>
             <Card>
-                <Tabs style={{ overflow: 'visible' }} animated={false} >
+                {hasAdminPermissions ?
+                    <Tabs style={{ overflow: 'visible' }} animated={false} >
 
-                    <Tabs.TabPane key="users" tab="Users">
-                        <AdminUsers />
-                    </Tabs.TabPane>
+                        <Tabs.TabPane key="users" tab="Users">
+                            <AdminUsers />
+                        </Tabs.TabPane>
 
-                    <Tabs.TabPane key="roles" tab="Roles">
-                        <AdminRoles />
-                    </Tabs.TabPane>
+                        <Tabs.TabPane key="roles" tab="Roles">
+                            <AdminRoles />
+                        </Tabs.TabPane>
 
-                    {/* <Tabs.TabPane key="bindings" tab="Bindings">
+                        {/* <Tabs.TabPane key="bindings" tab="Bindings">
                         <AdminRoleBindings />
                     </Tabs.TabPane> */}
 
-                    <Tabs.TabPane key="debug" tab="Debug">
-                        <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
-                    </Tabs.TabPane>
+                        <Tabs.TabPane key="debug" tab="Debug">
+                            <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
+                        </Tabs.TabPane>
 
-                </Tabs>
+                    </Tabs>
+                    : <div>
+                        <Alert type="error" showIcon
+                            message="Permission denied"
+                            description="You do not have the neccesary permissions to view this page."
+                        />
+                    </div>
+                }
             </Card>
         </motion.div>
 

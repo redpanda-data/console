@@ -194,7 +194,7 @@ const apiStore = {
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
     clusterConfig: null as (ClusterConfig | null),
-    adminInfo: null as (AdminInfo | null),
+    adminInfo: undefined as (AdminInfo | undefined | null),
 
     schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
     schemaOverviewIsConfigured: undefined as boolean | undefined,
@@ -435,8 +435,13 @@ const apiStore = {
     },
 
     refreshAdminInfo(force?: boolean) {
-        cachedApiRequest<AdminInfo>(`./api/admin`, force)
+        cachedApiRequest<AdminInfo | null>(`./api/admin`, force)
             .then(info => {
+                if (info == null) {
+                    this.adminInfo = null;
+                    return;
+                }
+
                 // normalize responses (missing arrays, or arrays with an empty string)
                 // todo: not needed anymore, responses are always correct now
                 for (const role of info.roles)
