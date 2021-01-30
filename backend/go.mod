@@ -8,7 +8,6 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/bxcodec/faker v2.0.1+incompatible
 	github.com/cloudhut/common v0.4.1-0.20201219173920-027980a8c131
-	github.com/cloudhut/common v0.4.1-0.20201127160721-d89029ea7463
 	github.com/dlclark/regexp2 v1.2.0 // indirect
 	github.com/dop251/goja v0.0.0-20200814103526-379ac97e7e26
 	github.com/frankban/quicktest v1.10.2 // indirect
@@ -22,6 +21,7 @@ require (
 	github.com/jarcoal/httpmock v1.0.6
 	github.com/jcmturner/gokrb5/v8 v8.4.2
 	github.com/jhump/protoreflect v1.8.1
+	github.com/json-iterator/go v1.1.10
 	github.com/linkedin/goavro/v2 v2.9.8
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
