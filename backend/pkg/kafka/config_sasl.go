@@ -16,7 +16,6 @@ const (
 // SASLConfig for Kafka client
 type SASLConfig struct {
 	Enabled      bool             `yaml:"enabled"`
-	UseHandshake bool             `yaml:"useHandshake"`
 	Username     string           `yaml:"username"`
 	Password     string           `yaml:"password"`
 	Mechanism    string           `yaml:"mechanism"`
@@ -31,7 +30,6 @@ func (c *SASLConfig) RegisterFlags(f *flag.FlagSet) {
 
 // SetDefaults for SASL Config
 func (c *SASLConfig) SetDefaults() {
-	c.UseHandshake = true
 	c.Mechanism = SASLMechanismPlain
 }
 
