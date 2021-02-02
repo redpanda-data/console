@@ -3,7 +3,6 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 	"sync"
@@ -14,13 +13,16 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 
 	for record := range jobs {
 		// Run Interpreter filter and check if message passes the filter
-		value := s.Deserializer.DeserializePayload(record.Value, record.Topic, proto.RecordValue)
-		key := s.Deserializer.DeserializePayload(record.Key, record.Topic, proto.RecordKey)
-		headers := s.DeserializeHeaders(record.Headers)
+		deserializedRec := s.Deserializer.DeserializeRecord(record)
 
-		headersByKey := make(map[string]interface{}, len(headers))
-		for _, header := range headers {
-			headersByKey[header.Key] = header.Value.Object
+		headersByKey := make(map[string]interface{}, len(deserializedRec.Headers))
+		headers := make([]MessageHeader, 0)
+		for key, header := range deserializedRec.Headers {
+			headersByKey[key] = header.Object
+			headers = append(headers, MessageHeader{
+				Key:   key,
+				Value: header,
+			})
 		}
 
 		// Check if message passes filter code
@@ -28,8 +30,8 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 			PartitionID:  record.Partition,
 			Offset:       record.Offset,
 			Timestamp:    record.Timestamp,
-			Key:          key.Object,
-			Value:        value.Object,
+			Key:          deserializedRec.Key.Object,
+			Value:        deserializedRec.Value.Object,
 			HeadersByKey: headersByKey,
 		}
 
@@ -47,8 +49,8 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 			Headers:         headers,
 			Compression:     compressionTypeDisplayname(record.Attrs.CompressionType()),
 			IsTransactional: record.Attrs.IsTransactional(),
-			Key:             key,
-			Value:           value,
+			Key:             deserializedRec.Key,
+			Value:           deserializedRec.Value,
 			IsValueNull:     record.Value == nil,
 			IsMessageOk:     isOK,
 			ErrorMessage:    errMessage,
