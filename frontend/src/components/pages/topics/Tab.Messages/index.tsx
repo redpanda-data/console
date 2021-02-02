@@ -864,8 +864,8 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
         {Object.entries(data).map(([k, v]) => <React.Fragment key={k}>
             <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
-                <div style={{ fontWeight: 600 }}>{v}</div>
-                <div style={{ color: 'rgba(0, 0, 0, 0.4)' }}>{k}</div>
+                <div style={{ fontWeight: 600 }}>{k}</div>
+                <div style={{ color: 'rgba(0, 0, 0, 0.6)', }}>{v}</div>
             </div>
         </React.Fragment>)}
     </div>
