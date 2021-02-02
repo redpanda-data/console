@@ -25,6 +25,7 @@ import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.De
 import AclList from "./pages/acls/Acl.List";
 import { observable } from "mobx";
 import ReassignPartitions from "./pages/brokers/ReassignPartitions";
+import { IsDev } from "../utils/env";
 
 
 //
@@ -208,7 +209,9 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <HddOutlined />),
-    // MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <QuestionCircleFilled />),
+    IsDev
+        ? MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <QuestionCircleFilled />)
+        : null as any as IRouteEntry,
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', <ProfileOutlined />),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics', <ProfileOutlined />),
@@ -227,4 +230,4 @@ export const APP_ROUTES: IRouteEntry[] = [
 
     //MakeRoute<{}>('/users', UrlTestPage, 'Users', 'user'),
     //MakeRoute<{}>('/license', UrlTestPage, 'License', 'copyright'),
-];
+].filter(x => x != null);
