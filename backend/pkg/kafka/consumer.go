@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/cloudhut/kowl/backend/pkg/interpreter"
-	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/dop251/goja"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
@@ -257,20 +256,6 @@ func (s *Service) setupInterpreter(interpreterCode string) (isMessageOkFunc, err
 	}
 
 	return isMessageOk, nil
-}
-
-func (s *Service) DeserializeHeaders(headers []kgo.RecordHeader) []MessageHeader {
-	res := make([]MessageHeader, len(headers))
-	for i, header := range headers {
-		// Dummy parameters - we don't support protobuf deserialization for header values
-		value := s.Deserializer.DeserializePayload(header.Value, "", proto.RecordValue)
-		res[i] = MessageHeader{
-			Key:   header.Key,
-			Value: value,
-		}
-	}
-
-	return res
 }
 
 func compressionTypeDisplayname(compressionType uint8) string {
