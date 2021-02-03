@@ -785,12 +785,10 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
         {/* .ant-tabs-nav { width: ??; } */}
         <Tabs animated={false}>
             <Tabs.TabPane key='value' tab='Value'>
-                {renderMessageValue(msg, shouldExpand)}
+                {renderPayload(msg.value, shouldExpand)}
             </Tabs.TabPane>
             <Tabs.TabPane key='key' tab='Key'>
-                <span className='cellDiv' style={{ width: 'auto' }}>
-                    <code style={{}}>{toSafeString(msg.key.payload)}</code>
-                </span>
+                {renderPayload(msg.key, shouldExpand)}
             </Tabs.TabPane>
             <Tabs.TabPane key='headers' tab='Headers' disabled={msg.headers.length == 0}>
                 <MessageHeaders msg={msg} />
@@ -799,18 +797,18 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
     </div>
 }
 
-function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function renderPayload(value: Payload, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
-        if (!msg || !msg.value || !msg.value.payload) return <code>null</code>
+        if (!value || !value.payload) return <code>null</code>
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
-        if (msg.value.encoding == 'binary') {
+        if (value.encoding == 'binary') {
             const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
-                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{msg.value}</code>
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{value}</code>
             }
             else if (mode == 'hex') {
-                const str = msg.value.payload as string;
+                const str = value.payload as string;
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     let n = str.charCodeAt(i).toString(16);
@@ -821,7 +819,7 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>
             }
             else {
-                const str = msg.value.payload as string;
+                const str = value.payload as string;
                 let result = '';
                 const isPrintable = /[\x20-\x7E]/;
                 for (let i = 0; i < str.length; i++) {
@@ -834,6 +832,10 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
             }
         }
 
+        if (value.encoding == 'text') {
+            return <div className='codeBox'>{String(value.payload)}</div>
+        }
+
         return (
             <>
                 {/* <Affix offsetTop={30}>
@@ -841,7 +843,7 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                         style={{ float: 'right', margin: '1em', zIndex: 10 }} />
                 </Affix> */}
 
-                <KowlJsonView src={msg.value.payload} shouldCollapse={shouldCollapse} />
+                <KowlJsonView src={value.payload} shouldCollapse={shouldCollapse} />
             </>
         )
     }
