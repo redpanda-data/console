@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/proto"
+	"github.com/twmb/franz-go/pkg/kbin"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"strings"
@@ -208,14 +209,13 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 
 // deserializeConsumerOffset deserializes the binary messages in the __consumer_offsets topic
 func (d *deserializer) deserializeConsumerOffset(record *kgo.Record) (*deserializedRecord, error) {
+	if len(record.Key) < 2 {
+		return nil, fmt.Errorf("offset commit key is supposed to be at least 2 bytes long")
+	}
+
 	// 1. Figure out what kind of message we've got. On this topic we'll find OffsetCommits as well as GroupMetadata
 	// messages.
-	var messageVer int16
-	keyBuffer := bytes.NewBuffer(record.Key)
-	err := binary.Read(keyBuffer, binary.BigEndian, &messageVer)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode message/key version: %w", err)
-	}
+	messageVer := (&kbin.Reader{Src: record.Key}).Int16()
 
 	var deserializedKey *deserializedPayload
 	var deserializedVal *deserializedPayload
