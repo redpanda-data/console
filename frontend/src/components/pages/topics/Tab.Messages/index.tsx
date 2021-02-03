@@ -422,22 +422,13 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
             { width: 2, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
             {
+                dataIndex: 'value',
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
-                dataIndex: 'value',
                 render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activeTags} />,
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
-            // {
-            //     width: 1, title: 'Headers', dataIndex: 'headers', sorter: (a, b, order) => b.headers.length - a.headers.length, render: (t, r) => r.headers.length,
-            // },
-
-            // todo: size was a guess anyway, might be added back later
-            // {
-            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
-            //     sorter: (a, b) => b.size - a.size
-            // },
             {
                 width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                 filters: [],
@@ -466,6 +457,11 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     // <Divider type="vertical" />
                 ),
             },
+            // todo: size was a guess anyway, might be added back later
+            // {
+            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
+            //     sorter: (a, b) => b.size - a.size
+            // },
         ];
 
         // If the previewColumnFields is empty then use the default columns, otherwise filter it based on it
@@ -707,7 +703,7 @@ const renderKey = (p: Payload, record: TopicMessage) => {
             onOk() { },
         });
 
-        return <span className='hoverLink cellDiv' style={{ minWidth: '120px' }} onClick={() => modal()}>
+        return <span className='cellDiv' style={{ minWidth: '120px' }}>
             <code style={{ fontSize: '95%' }}>{text.slice(0, 44)}&hellip;</code>
         </span>
     }
