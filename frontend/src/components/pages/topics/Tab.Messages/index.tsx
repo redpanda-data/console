@@ -398,16 +398,13 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         const copyDropdown = (record: TopicMessage) => (
             <Menu>
-                <Menu.Item key="0" onClick={() => this.copyMessage(record, 'key')}>
+                <Menu.Item key="0" onClick={() => this.copyMessage(record, 'jsonKey')}>
                     Copy Key
                 </Menu.Item>
-
-                <Menu.Item key="1" onClick={() => this.copyMessage(record, 'rawValue')}>
-                    Copy Value (Raw)
-                </Menu.Item>
                 <Menu.Item key="2" onClick={() => this.copyMessage(record, 'jsonValue')}>
-                    Copy Value (JSON Format)
+                    Copy Value
                 </Menu.Item>
+
                 <Menu.Item key="4" onClick={() => this.copyMessage(record, 'timestamp')}>
                     Copy Epoch Timestamp
                 </Menu.Item>
@@ -527,22 +524,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         return ta.localeCompare(tb);
     }
 
-    copyMessage(record: TopicMessage, field: "key" | "rawValue" | "jsonValue" | "timestamp") {
+    // we can only write text to the clipboard, so rawKey/rawValue have been removed for now
+    copyMessage(record: TopicMessage, field: "jsonKey" | "jsonValue" | "timestamp") {
 
         switch (field) {
-            case "key":
-                typeof record.key === "string" ?
-                    navigator.clipboard.writeText(record.key as string) :
-                    navigator.clipboard.writeText(JSON.stringify(record.key));
+            case "jsonKey":
+                typeof record.key.payload === 'string'
+                    ? navigator.clipboard.writeText(record.key.payload as string)
+                    : navigator.clipboard.writeText(JSON.stringify(record.key.payload, null, 4));
                 message.success('Key copied to clipboard', 5);
                 break;
-            case "rawValue":
-                navigator.clipboard.writeText(record.valueJson);
-                message.success('Raw Value copied to clipboard', 5);
-                break;
             case "jsonValue":
-                navigator.clipboard.writeText(JSON.stringify(record.value, null, 4));
-                message.success('Message Value (JSON) copied to clipboard', 5);
+                typeof record.value.payload === 'string'
+                    ? navigator.clipboard.writeText(record.value.payload as string)
+                    : navigator.clipboard.writeText(JSON.stringify(record.value.payload, null, 4));
+                message.success('Value copied to clipboard', 5);
                 break;
             case "timestamp":
                 navigator.clipboard.writeText(record.timestamp.toString());
