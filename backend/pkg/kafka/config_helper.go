@@ -48,7 +48,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 	// Configure SASL
 	if cfg.SASL.Enabled {
 		// SASL Plain
-		if cfg.SASL.Mechanism == "PLAIN" {
+		if cfg.SASL.Mechanism == SASLMechanismPlain {
 			mechanism := plain.Auth{
 				User: cfg.SASL.Username,
 				Pass: cfg.SASL.Password,
@@ -57,23 +57,26 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		}
 
 		// SASL SCRAM
-		if cfg.SASL.Mechanism == "SCRAM-SHA-256" || cfg.SASL.Mechanism == "SCRAM-SHA-512" {
+		if cfg.SASL.Mechanism == SASLMechanismScramSHA256 || cfg.SASL.Mechanism == SASLMechanismScramSHA512 {
 			var mechanism sasl.Mechanism
 			scramAuth := scram.Auth{
 				User: cfg.SASL.Username,
 				Pass: cfg.SASL.Password,
 			}
-			if cfg.SASL.Mechanism == "SCRAM-SHA-256" {
+			if cfg.SASL.Mechanism == SASLMechanismScramSHA256 {
+				logger.Debug("configuring SCRAM-SHA-256 mechanism")
 				mechanism = scramAuth.AsSha256Mechanism()
 			}
-			if cfg.SASL.Mechanism == "SCRAM-SHA-512" {
+			if cfg.SASL.Mechanism == SASLMechanismScramSHA512 {
+				logger.Debug("configuring SCRAM-SHA-512 mechanism")
 				mechanism = scramAuth.AsSha512Mechanism()
 			}
 			opts = append(opts, kgo.SASL(mechanism))
 		}
 
 		// Kerberos
-		if cfg.SASL.Mechanism == "GSSAPI" {
+		if cfg.SASL.Mechanism == SASLMechanismGSSAPI {
+			logger.Debug("configuring GSSAPI mechanism")
 			kerbCfg, err := krbconfig.Load(cfg.SASL.GSSAPIConfig.KerberosConfigPath)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create kerberos config from specified config filepath: %w", err)
