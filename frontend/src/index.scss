@@ -1579,3 +1579,20 @@ svg {
         box-shadow: 0 0 4px 1px hsla(206deg, 10%, 85%, 50%);
     }
 }
+
+.reassignPartitions {
+    .ant-steps-item-custom .ant-steps-item-icon>.ant-steps-icon {
+        font-size: 20px;
+    }
+}
+
+.nestedTable .ant-table-container tr {
+
+    &>th {
+        padding: 8px 2px !important;
+    }
+
+    &>td {
+        padding: 2px !important;
+    }
+}

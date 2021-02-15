@@ -1,44 +1,43 @@
 import React, { ReactNode, Component } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Steps, Button } from "antd";
+import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, Tag } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { Broker, BrokerConfigEntry, Partition, TopicAction, TopicDetail } from "../../../state/restInterfaces";
-import { motion } from "framer-motion";
-import { animProps } from "../../../utils/animationProps";
-import { observable, computed, autorun, IReactionDisposer } from "mobx";
+import { AnimatePresence, motion } from "framer-motion";
+import { animProps, MotionAlways } from "../../../utils/animationProps";
+import { observable, computed, autorun, IReactionDisposer, transaction } from "mobx";
 import { prettyBytesOrNA, toJson } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CheckCircleOutlined, CheckSquareOutlined, CrownOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, OptionGroup } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
+import { isObject } from "mobx/lib/internal";
 const { Step } = Steps;
 
 interface PartitionSelection { // Which partitions are selected?
     [topicName: string]: number[] // topicName -> array of partitionIds
 }
-interface PartitionTargets { // Where should the partitions be moved to?
-    [topicName: string]: { partitionId: number, targetBrokerId?: number };
-}
 
 const steps = [
-    { step: 0, title: 'Select Partitions', icon: <UnorderedListOutlined /> },
-    { step: 1, title: 'Assign to Brokers', icon: <HddOutlined /> },
-    { step: 2, title: 'Review and Confirm', icon: <CheckCircleOutlined /> },
-];
+    { step: 0, title: 'Select Partitions', icon: <UnorderedListOutlined />, nextButton: 'Select Target Brokers' },
+    { step: 1, title: 'Assign to Brokers', icon: <HddOutlined />, backButton: 'Select Partitions', nextButton: 'Review Plan' },
+    { step: 2, title: 'Review and Confirm', icon: <CheckCircleOutlined />, backButton: 'Select Target Brokers', nextButton: 'Start Reassignment' },
+] as { step: number, title: string, icon: React.ReactElement, backButton?: string, nextButton?: string }[];
 
 
 @observer
 class ReassignPartitions extends PageComponent {
-    pageConfig = makePaginationConfig(100, true);
+    pageConfig = makePaginationConfig(15, true);
     autorunHandle: IReactionDisposer | undefined = undefined;
 
-    @observable partitionSelection: PartitionSelection = {};
-    @observable currentStep = 0;
+    @observable currentStep = 0; // current page of the wizard
+    @observable partitionSelection: PartitionSelection = {}; // topics/partitions selected by user
+    @observable selectedBrokers: number[] = [];
 
 
     initPage(p: PageInitHelper): void {
@@ -47,6 +46,15 @@ class ReassignPartitions extends PageComponent {
 
         appGlobal.onRefresh = () => this.refreshData(true);
         this.refreshData(true);
+
+        this.autorunHandle = autorun(() => {
+            if (api.topics != null)
+                for (const topic of api.topics)
+                    api.refreshTopicPartitions(topic.topicName, false);
+        });
+
+        const oriOnNextPage = this.onNextPage.bind(this);
+        this.onNextPage = () => transaction(oriOnNextPage);
     }
 
     refreshData(force: boolean) {
@@ -55,12 +63,9 @@ class ReassignPartitions extends PageComponent {
             for (const topic of api.topics)
                 api.refreshTopicPartitions(topic.topicName, force);
 
-        this.autorunHandle = autorun(() => {
-            if (api.topics != null)
-                for (const topic of api.topics)
-                    api.refreshTopicPartitions(topic.topicName, false);
-        });
+        api.refreshCluster(force);
     }
+
     componentWillUnmount() {
         if (this.autorunHandle) {
             this.autorunHandle();
@@ -73,7 +78,7 @@ class ReassignPartitions extends PageComponent {
         if (api.topicPartitions.size == 0) return <Empty />
 
         return <>
-            <motion.div {...animProps} style={{ margin: '2px', marginBottom: '16px' }}>
+            <motion.div className="reassignPartitions" {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
                     <Row> {/* type="flex" */}
                         <Statistic title='Total Partitions' value={123} />
@@ -85,47 +90,119 @@ class ReassignPartitions extends PageComponent {
 
                 <Card>
                     {/* Steps */}
-                    <div style={{ margin: '0 1em 1em 1em' }}>
+                    <div style={{ margin: '.75em 1em 1em 1em' }}>
                         <Steps current={this.currentStep}>
-                            {steps.map(item => <Step key={item.title} {...item} />)}
+                            {steps.map(item => <Step key={item.title} title={item.title} icon={item.icon} />)}
                         </Steps>
                     </div>
 
                     {/* Content */}
-                    {(() => {
+                    <motion.div {...animProps} key={"step" + this.currentStep}> {(() => {
                         switch (this.currentStep) {
                             case 0: return <StepSelectPartitions partitionSelection={this.partitionSelection} />;
-                            case 1: return "assign to brokers";
+                            case 1: return <StepAssignPartitions brokers={this.selectedBrokers} />;
                             case 2: return "review";
                         }
-                    })()}
+                    })()} </motion.div>
 
                     {/* Navigation */}
-                    <div style={{ marginTop: '1em' }}>
-                        <Button onClick={() => this.currentStep--}
-                            style={{ width: '12em' }}>
-                            <span><ChevronLeftIcon /></span>
-                            <span>Back</span>
-                        </Button>
-                        <Button onClick={() => this.currentStep++} type='primary'
-                            style={{ width: '12em' }}
-                        >
-                            <span>Next Step</span>
-                            <span><ChevronRightIcon /></span>
-                        </Button>
-                    </div>
+                    <div style={{ margin: '2.5em 0 1.5em', display: 'flex', height: '2.5em' }}>
+                        {/* Back */}
+                        {steps[this.currentStep].backButton &&
+                            <Button
+                                onClick={() => this.currentStep--}
+                                disabled={this.currentStep <= 0}
+                                style={{ minWidth: '12em', height: 'auto' }}
+                            >
+                                <span><ChevronLeftIcon /></span>
+                                <span>{steps[this.currentStep].backButton}</span>
+                            </Button>
+                        }
 
-                    {/* Debug */}
-                    <div>
-                        <h2>Current Selection</h2>
-                        <div className='codeBox'>{toJson(this.partitionSelection, 4)}</div>
+                        {/* Next */}
+                        {steps[this.currentStep].nextButton &&
+                            <Button
+                                type='primary'
+                                style={{ minWidth: '12em', height: 'auto', marginLeft: 'auto' }}
+                                onClick={this.onNextPage}
+                            >
+                                <span>{steps[this.currentStep].nextButton}</span>
+                                <span><ChevronRightIcon /></span>
+                            </Button>
+                        }
                     </div>
-
                 </Card>
+
+                {/* Debug */}
+                <div style={{ margin: '2em 0 1em 0' }}>
+                    <h2>Partitions</h2>
+                    <div className='codeBox'>{toJson(this.partitionSelection)}</div>
+                    <h2>Brokers</h2>
+                    <div className='codeBox'>{toJson(this.selectedBrokers)}</div>
+                </div>
             </motion.div>
         </>
     }
+
+    // will be wrapped in a 'transaction' since we're modifying multiple observables
+    onNextPage() {
+        if (this.currentStep == 0) {
+            // Select -> Assign
+            // prepare data for the next step
+            /*
+            this.partitionAssignments = ObjToKv(this.partitionSelection)
+                .map(kv => {
+                    const topicName = kv.key;
+                    const partitionIds = kv.value as number[];
+
+                    if (partitionIds.length == 0) return null; // skip topics when no partitions are selected
+
+                    const partitions = api.topicPartitions.get(topicName)!;
+                    const selection = partitions
+                        .filter(p => partitionIds.includes(p.id))
+                        .map(p => ({
+                            ...p,
+                            targetBroker: undefined as number | undefined
+                        }));
+
+                    return {
+                        topic: api.topics!.first(t => t.topicName == topicName)!,
+                        allPartitions: partitions,
+                        selectedPartitions: selection,
+                        topicName: topicName,
+                        partitionCount: partitions.length,
+                        selectedPartitionCount: selection.length,
+                    } as PartitionAssignemnt;
+                })
+                .filterNull();
+
+            if (this.partitionAssignments.length == 0) {
+                message.warn('You need to select at least one partition to continue.', 4);
+                return;
+            }
+            */
+        }
+
+        if (this.currentStep == 1) {
+            // Assign -> Review
+        }
+
+        if (this.currentStep == 2) {
+            // Review -> Start
+            message.loading('Starting reassignment...', 5);
+            return;
+        }
+
+
+        this.currentStep++;
+    }
+
+    onPreviousPage() {
+        this.currentStep--;
+    }
 }
+
+
 
 type TopicWithPartitions = TopicDetail & { partitions: Partition[] };
 
@@ -135,6 +212,7 @@ class StepSelectPartitions extends Component<{ partitionSelection: PartitionSele
     autorunHandle: IReactionDisposer | undefined = undefined;
 
     topicPartitions: TopicWithPartitions[] = [];
+    filterQuery: string = "";
 
     constructor(props: any) {
         super(props);
@@ -163,17 +241,25 @@ class StepSelectPartitions extends Component<{ partitionSelection: PartitionSele
         });
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
-            { width: 'auto', title: 'Topic', dataIndex: 'topicName' },
-            { width: 'auto', title: 'Partitions', dataIndex: 'partitionCount' },
-            { width: 'auto', title: 'Replication Factor', dataIndex: 'replicationFactor' },
+            {
+                width: 'auto', title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'), defaultSortOrder: 'ascend',
+                // filtered: true, filteredValue: ['owlshop'], onFilter: (value, record) => record.topicName.toLowerCase().includes(String(value).toLowerCase()),
+            },
+            { width: 'auto', title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
+            { width: 'auto', title: 'Replication Factor', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor') },
             {
                 width: 'auto', title: 'Brokers', dataIndex: 'partitions',
                 render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A'
             },
-            { width: 'auto', title: 'Size', dataIndex: 'logDirSize', render: v => prettyBytesOrNA(v) },
+            { width: 'auto', title: 'Size', dataIndex: 'logDirSize', render: v => prettyBytesOrNA(v), sorter: sortField('logDirSize') },
         ]
 
         return <>
+            <div style={{ margin: '2em 1em' }}>
+                <h2>Select Partitions</h2>
+                <p>Choose which partitions you want to reassign to different brokers. Selecting a topic will select all its partitions.</p>
+            </div>
+
             <Table
                 style={{ margin: '0', }} size={'middle'}
                 pagination={this.pageConfig}
@@ -293,7 +379,7 @@ class PartitionTable extends Component<{
 
     render() {
         return <div style={{ paddingTop: '4px', paddingBottom: '8px' }}>
-            <Table size='small'
+            <Table size='small' className='nestedTable'
                 dataSource={this.props.topicPartitions}
                 pagination={this.partitionsPageConfig}
                 scroll={{ y: '300px' }}
@@ -318,5 +404,170 @@ class PartitionTable extends Component<{
         </div>
     }
 }
+
+
+
+@observer
+class StepAssignPartitions extends Component<{ brokers: number[] }> {
+    pageConfig = makePaginationConfig(15, true);
+
+    brokers: Broker[];
+
+    constructor(props: any) {
+        super(props);
+        this.brokers = api.clusterInfo!.brokers;
+    }
+
+    render() {
+        if (!this.brokers || this.brokers.length == 0) {
+            console.log('brokers', { brokers: this.brokers, apiClusterInfo: api.clusterInfo })
+            return <div>Error: no brokers available</div>
+        }
+
+        const columns: ColumnProps<Broker>[] = [
+            { width: undefined, title: 'Broker Address', dataIndex: 'address' },
+            { width: '130px', title: 'Broker ID', dataIndex: 'brokerId' },
+            { width: undefined, title: 'Rack', dataIndex: 'rack' },
+            { width: '150px', title: 'Used Space', dataIndex: 'logDirSize', render: (value) => prettyBytesOrNA(value) },
+        ]
+
+        return <>
+            <div style={{ margin: '2em 1em' }}>
+                <h2>Target Brokers</h2>
+                <p>Choose at least one target broker to move the selected partitions to. This does not necessarily guarantee that all seelcted partitions will be moved to these brokers, but Kowl will consider them as desired targets and distribute partitions across the available racks of the selected target brokers.</p>
+            </div>
+
+            <Table
+                style={{ margin: '0', }} size={'middle'}
+                dataSource={this.brokers}
+                columns={columns}
+                pagination={this.pageConfig}
+                rowKey={r => r.brokerId}
+                rowClassName={() => 'pureDisplayRow'}
+                rowSelection={{
+                    type: 'checkbox',
+                    onChange: (keys, values) => {
+                        this.props.brokers.splice(0);
+                        for (const broker of values)
+                            this.props.brokers.push(broker.brokerId);
+                    }
+                }}
+            />
+        </>
+    }
+
+
+}
+
+type PartitionAssignemnt = {
+    topicName: string;
+    partitionCount: number;
+    selectedPartitionCount: number;
+    topic: TopicDetail;
+    allPartitions: Partition[];
+    selectedPartitions: (Partition & {
+        // after the 'assign' step, all partitions must have a number set
+        targetBroker: number | undefined,
+        // true when the user has selected 'Auto' for this partition
+        automatic: boolean
+    })[];
+};
+
+@observer
+class StepAssignPartitionsOld extends Component<{ assignments: PartitionAssignemnt[] }> {
+    pageConfig = makePaginationConfig(15, true);
+
+    brokers: { label: React.ReactElement, value: number, broker: Broker | null }[];
+
+    componentDidMount() {
+        this.brokers = api.clusterInfo!.brokers.map(b => ({
+            label: <span style={{ marginRight: '20px' }}>
+                <Tag color='default' style={{ marginRight: '8px', padding: '0 8px', pointerEvents: 'none' }}>{b.brokerId}</Tag>
+                <code style={{ fontSize: 'small' }}>{b.address}</code>
+                <span style={{ color: '#888', fontSize: 'smaller', marginLeft: '8px' }}>#{b.rack}</span>
+            </span>,
+            value: b.brokerId,
+            broker: b,
+        }));
+        this.brokers.unshift({
+            label: <span>
+                <Tag color='default' style={{ marginRight: '8px', padding: '0 8px', pointerEvents: 'none' }}>*</Tag>
+                <code style={{ fontSize: 'small' }}>Automatic</code>
+            </span>,
+            value: -1,
+            broker: null,
+        })
+
+    }
+
+    // Dropdown for a row (can be either a topicRow, or a partitionRow)
+    brokerSelect(topicName: string, partitionId?: number) {
+        return <Select
+            style={{ width: '100%' }} placeholder="Select a broker"
+            showSearch={true}
+            mode="multiple"
+            onChange={(value, option) => {
+                console.log('on change broker: ', value, option);
+                if (Array.isArray(value)) {
+                    if ((value as any[]).includes(-1)) {
+                        // automatic was selected,
+                    }
+                }
+            }}
+            onSelect={(value, option) => {
+
+            }}
+            filterOption={(input, option) => {
+                const query = input.toLowerCase();
+                const broker = (option as any)['broker'] as Broker | undefined;
+                if (!broker) return true; // 'Automatic' entry
+
+                if (broker.address)
+                    if (broker.address.toLowerCase().includes(query)) return true;
+
+                if (broker.rack)
+                    if (('#' + String(broker.rack)).toLowerCase().includes(query)) return true;
+
+                if (broker.brokerId == Number(query)) return true;
+
+                return false;
+            }}
+            options={this.brokers}
+        />
+    }
+
+    render() {
+        if (!api.topics) return DefaultSkeleton;
+        if (api.topicPartitions.size == 0) return <Empty />
+
+        const columns: ColumnProps<PartitionAssignemnt>[] = [
+            { width: undefined, title: 'Topic', dataIndex: 'topicName' },
+            { width: '500px', title: 'Target Brokers', render: (_, record) => this.brokerSelect(record.topicName) },
+            { width: '120px', title: 'Selected Partitions', render: (_, record) => `${record.selectedPartitionCount} / ${record.partitionCount}` },
+        ]
+
+        return <>
+            <Table
+                style={{ margin: '0', }} size={'middle'}
+                dataSource={this.props.assignments}
+                pagination={this.pageConfig}
+                rowKey={r => r.topic.topicName}
+                rowClassName={() => 'pureDisplayRow'}
+
+                columns={columns}
+            // expandable={{
+            //     expandIconColumnIndex: 1,
+            //     expandedRowRender: topic => topic.partitions
+            //         ? 'todo'
+            //         : <>Error loading partitions</>,
+            //     // expandedRowClassName: r => 'noPadding',
+            // }}
+            />
+        </>
+    }
+
+
+}
+
 
 export default ReassignPartitions;

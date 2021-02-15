@@ -25,6 +25,8 @@ declare global {
         joinStr(this: (string | null | undefined)[], separator: string): string;
 
         toMap<TItem, TKey, TValue>(this: TItem[], computeKey: (item: TItem) => TKey, computeValue: (item: TItem) => TValue): Map<TKey, TValue>;
+
+        filterNull<T>(this: (T | null | undefined)[]): T[];
     }
 }
 
@@ -107,6 +109,17 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
     map.forEach((items, key) => {
         ar.push({ key, items });
     })
+
+    return ar;
+};
+
+Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)[]): T[] {
+    const ar: T[] = [];
+
+    this.forEach(item => {
+        if (item !== null && item !== undefined)
+            ar.push(item);
+    });
 
     return ar;
 };
