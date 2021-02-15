@@ -10,7 +10,6 @@ kafka:
   # rackId: # In multi zone Kafka clusters you can reduce traffic costs by consuming messages from replica brokers in the same zone
   # sasl:
   #   enabled: false
-  #   useHandshake: true
   #   username:
   #   password: # This can be set via the --kafka.sasl.password flag as well
   #   mechanism: PLAIN # PLAIN, SCRAM-SHA-256, SCRAM-SHA-512 and GSSAPI are supported
