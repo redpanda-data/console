@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse
 } from "./restInterfaces";
 import { observable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -210,6 +210,8 @@ const apiStore = {
     ACLs: undefined as AclResource[] | undefined | null,
 
     consumerGroups: null as (GroupDescription[] | null),
+
+    partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -484,7 +486,43 @@ const apiStore = {
         getSchemaDetails(subjectName, version, force)
             .then(({ schemaDetails }) => (this.schemaDetails = schemaDetails))
             .catch(addError)
-    }
+    },
+
+    refreshPartitionReassignments(force?: boolean) {
+        cachedApiRequest<PartitionReassignmentsResponse | null>('./operations/reassign-partitions', force)
+            .then(v => {
+                if (v === null)
+                    this.partitionReassignments = null;
+                else
+                    this.partitionReassignments = v.topics;
+            }, addError);
+    },
+
+    async startPartitionReassignment(request: PartitionReassignmentRequest): Promise<AlterPartitionReassignmentsResponse> {
+        const response = await fetch('./api/operations/reassign-partitions', {
+            method: 'PATCH',
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as AlterPartitionReassignmentsResponse);
+        return data;
+    },
 }
 
 export function aclRequestToQuery(request: AclRequest): string {

@@ -478,3 +478,42 @@ export interface SchemaField {
     doc?: string | null | undefined;
     default?: string | object | null | undefined;
 }
+
+
+// Partition Reassignments - Get
+export interface PartitionReassignmentsResponse {
+    topics: PartitionReassignments[];
+}
+export interface PartitionReassignments {
+    topicName: string;
+    partitions: PartitionReassignmentsPartition[];
+}
+export interface PartitionReassignmentsPartition {
+    partitionId: number;
+    addingReplicas: number[];
+    removingReplicas: number[];
+    replicas: number[];
+}
+
+// PartitionReassignments - Patch
+export interface PartitionReassignmentRequest {
+    topics: {
+        topicName: string; // name of topic to change
+        partitions: { // partitions to reassign
+            partitionId: number;
+            replicas: number[] | null; // either the brokerIds to place the partition on, or null to cancel a pending reassignment
+        }[];
+    }[];
+}
+
+export interface AlterPartitionReassignmentsResponse {
+    reassignPartitionsResponses: {
+        topicName: string;
+        partitions: AlterPartitionReassignmentsPartitionResponse[];
+    }[];
+}
+export interface AlterPartitionReassignmentsPartitionResponse {
+    partitionId: number;
+    errorCode: string;
+    errorMessage: string | null;
+}
