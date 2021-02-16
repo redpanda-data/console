@@ -122,7 +122,7 @@ class ReassignPartitions extends PageComponent {
                     <motion.div {...animProps} key={"step" + this.currentStep}> {(() => {
                         switch (this.currentStep) {
                             case 0: return <StepSelectPartitions partitionSelection={this.partitionSelection} />;
-                            case 1: return <StepAssignPartitions brokers={this.selectedBrokers} />;
+                            case 1: return <StepAssignToBrokers brokers={this.selectedBrokers} />;
                             case 2: return "review";
                         }
                     })()} </motion.div>
@@ -430,7 +430,7 @@ class PartitionTable extends Component<{
 
 
 @observer
-class StepAssignPartitions extends Component<{ brokers: number[] }> {
+class StepAssignToBrokers extends Component<{ brokers: number[] }> {
     pageConfig = makePaginationConfig(15, true);
 
     brokers: Broker[];
@@ -460,18 +460,21 @@ class StepAssignPartitions extends Component<{ brokers: number[] }> {
             </div>
 
             <Table
-                style={{ margin: '0', }} size={'middle'}
+                style={{ margin: '0', }} size='middle'
                 dataSource={this.brokers}
                 columns={columns}
                 pagination={this.pageConfig}
-                rowKey={r => r.brokerId}
+                rowKey='brokerId'
                 rowClassName={() => 'pureDisplayRow'}
                 rowSelection={{
                     type: 'checkbox',
+                    selectedRowKeys: this.props.brokers.slice(),
                     onChange: (keys, values) => {
-                        this.props.brokers.splice(0);
-                        for (const broker of values)
-                            this.props.brokers.push(broker.brokerId);
+                        transaction(() => {
+                            this.props.brokers.splice(0);
+                            for (const broker of values)
+                                this.props.brokers.push(broker.brokerId);
+                        })
                     }
                 }}
             />
@@ -481,115 +484,8 @@ class StepAssignPartitions extends Component<{ brokers: number[] }> {
 
 }
 
-type PartitionAssignemnt = {
-    topicName: string;
-    partitionCount: number;
-    selectedPartitionCount: number;
-    topic: TopicDetail;
-    allPartitions: Partition[];
-    selectedPartitions: (Partition & {
-        // after the 'assign' step, all partitions must have a number set
-        targetBroker: number | undefined,
-        // true when the user has selected 'Auto' for this partition
-        automatic: boolean
-    })[];
-};
-
-@observer
-class StepAssignPartitionsOld extends Component<{ assignments: PartitionAssignemnt[] }> {
-    pageConfig = makePaginationConfig(15, true);
-
-    brokers: { label: React.ReactElement, value: number, broker: Broker | null }[];
-
-    componentDidMount() {
-        this.brokers = api.clusterInfo!.brokers.map(b => ({
-            label: <span style={{ marginRight: '20px' }}>
-                <Tag color='default' style={{ marginRight: '8px', padding: '0 8px', pointerEvents: 'none' }}>{b.brokerId}</Tag>
-                <code style={{ fontSize: 'small' }}>{b.address}</code>
-                <span style={{ color: '#888', fontSize: 'smaller', marginLeft: '8px' }}>#{b.rack}</span>
-            </span>,
-            value: b.brokerId,
-            broker: b,
-        }));
-        this.brokers.unshift({
-            label: <span>
-                <Tag color='default' style={{ marginRight: '8px', padding: '0 8px', pointerEvents: 'none' }}>*</Tag>
-                <code style={{ fontSize: 'small' }}>Automatic</code>
-            </span>,
-            value: -1,
-            broker: null,
-        })
-
-    }
-
-    // Dropdown for a row (can be either a topicRow, or a partitionRow)
-    brokerSelect(topicName: string, partitionId?: number) {
-        return <Select
-            style={{ width: '100%' }} placeholder="Select a broker"
-            showSearch={true}
-            mode="multiple"
-            onChange={(value, option) => {
-                console.log('on change broker: ', value, option);
-                if (Array.isArray(value)) {
-                    if ((value as any[]).includes(-1)) {
-                        // automatic was selected,
-                    }
-                }
-            }}
-            onSelect={(value, option) => {
-
-            }}
-            filterOption={(input, option) => {
-                const query = input.toLowerCase();
-                const broker = (option as any)['broker'] as Broker | undefined;
-                if (!broker) return true; // 'Automatic' entry
-
-                if (broker.address)
-                    if (broker.address.toLowerCase().includes(query)) return true;
-
-                if (broker.rack)
-                    if (('#' + String(broker.rack)).toLowerCase().includes(query)) return true;
-
-                if (broker.brokerId == Number(query)) return true;
-
-                return false;
-            }}
-            options={this.brokers}
-        />
-    }
-
-    render() {
-        if (!api.topics) return DefaultSkeleton;
-        if (api.topicPartitions.size == 0) return <Empty />
-
-        const columns: ColumnProps<PartitionAssignemnt>[] = [
-            { width: undefined, title: 'Topic', dataIndex: 'topicName' },
-            { width: '500px', title: 'Target Brokers', render: (_, record) => this.brokerSelect(record.topicName) },
-            { width: '120px', title: 'Selected Partitions', render: (_, record) => `${record.selectedPartitionCount} / ${record.partitionCount}` },
-        ]
-
-        return <>
-            <Table
-                style={{ margin: '0', }} size={'middle'}
-                dataSource={this.props.assignments}
-                pagination={this.pageConfig}
-                rowKey={r => r.topic.topicName}
-                rowClassName={() => 'pureDisplayRow'}
-
-                columns={columns}
-            // expandable={{
-            //     expandIconColumnIndex: 1,
-            //     expandedRowRender: topic => topic.partitions
-            //         ? 'todo'
-            //         : <>Error loading partitions</>,
-            //     // expandedRowClassName: r => 'noPadding',
-            // }}
-            />
-        </>
-    }
 
 
-}
 
 
 export default ReassignPartitions;
