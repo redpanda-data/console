@@ -9,14 +9,13 @@ import { makePaginationConfig, sortField } from "../../misc/common";
 import { Broker, BrokerConfigEntry, Partition, TopicAction, TopicDetail } from "../../../state/restInterfaces";
 import { AnimatePresence, motion } from "framer-motion";
 import { animProps, MotionAlways } from "../../../utils/animationProps";
-import { observable, computed, autorun, IReactionDisposer, transaction } from "mobx";
+import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
 import { prettyBytesOrNA, toJson } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CheckCircleOutlined, CheckSquareOutlined, CrownOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { DefaultSkeleton, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
-import { isObject } from "mobx/lib/internal";
 const { Step } = Steps;
 
 interface PartitionSelection { // Which partitions are selected?
@@ -52,6 +51,29 @@ class ReassignPartitions extends PageComponent {
                 for (const topic of api.topics)
                     api.refreshTopicPartitions(topic.topicName, false);
         });
+
+        // Debug
+        autorun(() => {
+            if (api.topics != null)
+                transaction(() => {
+                    untracked(() => {
+                        // clear
+                        for (const t in this.partitionSelection)
+                            delete this.partitionSelection[t];
+
+                        // select random partitions
+                        const percent = 10 / 100;
+                        for (const t of api.topics!)
+                            for (let p = 0; p < t.partitionCount; p++) {
+                                if (Math.random() < percent) {
+                                    const partitions = this.partitionSelection[t.topicName] ?? [];
+                                    partitions.push(p);
+                                    this.partitionSelection[t.topicName] = partitions;
+                                }
+                            }
+                    });
+                });
+        }, { delay: 1000 });
 
         const oriOnNextPage = this.onNextPage.bind(this);
         this.onNextPage = () => transaction(oriOnNextPage);
