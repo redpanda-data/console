@@ -48,6 +48,10 @@ We offer pre built docker images for Kowl (Business), a Helm chart and a Terrafo
 
 If you want to run Kowl locally take a look at the docker compose sample: [/docs/local](./docs/local).
 
+## Chat with us
+
+We use Discord to communicate. If you are looking for more interactive discussions or support, you are invited to join our Discord server: https://discord.gg/KQj7P6v
+
 ## Sponsors
 
 <a href="https://www.rewe-digital.com/" target="_blank"><img src="./docs/assets/sponsors/rewe-digital-logo.png" width="150" /></a>
