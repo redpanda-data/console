@@ -26,6 +26,7 @@ require (
 	github.com/jhump/protoreflect v1.8.2
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/linkedin/goavro/v2 v2.10.0
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/stretchr/testify v1.7.0
