@@ -16,7 +16,7 @@ require (
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-git/go-billy/v5 v5.0.0
 	github.com/go-git/go-git/v5 v5.2.0
-	github.com/go-resty/resty/v2 v2.5.0
+	github.com/go-resty/resty/v2 v2.4.0
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
