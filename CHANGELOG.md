@@ -9,6 +9,7 @@
 - [FEATURE] Add rackId config option to consume from brokers that reside in the same rack if possible (rack aware consuming)
 - [ENHANCEMENT] Show Kafka version in Brokers page
 - [ENHANCEMENT] Add support for decoding messages in the `__consumer_offsets` topic
+- [ENHANCEMENT] Support schema registry with thousands of subjects by reducing the number of information in the schema registry overview page
 - [BUGFIX] Deserialize messages with Avro with a higher priority than UTF-8 messages, so that Avro serialized messages will always be recognized correctly
 
 
