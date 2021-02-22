@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 	"golang.org/x/sync/errgroup"
-	"strconv"
-	"sync"
 	"time"
 )
 
@@ -14,7 +12,7 @@ import (
 type SchemaOverview struct {
 	Mode          string                       `json:"mode"`
 	Compatibility string                       `json:"compatibilityLevel"`
-	Subjects      []SchemaSubject              `json:"subjects"`
+	Subjects      []string                     `json:"subjects"`
 	RequestErrors []SchemaOverviewRequestError `json:"requestErrors"`
 }
 
@@ -44,7 +42,7 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 	type chResponse struct {
 		Mode     *schema.ModeResponse
 		Config   *schema.ConfigResponse
-		Subjects []SchemaSubject
+		Subjects []string
 		Error    *SchemaOverviewRequestError
 	}
 	ch := make(chan chResponse, 3)
@@ -89,9 +87,7 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 			return fmt.Errorf("failed to get subjects: %w", err)
 		}
 
-		subjects := s.getSchemaSubjects(res.Subjects)
-
-		ch <- chResponse{Subjects: subjects}
+		ch <- chResponse{Subjects: res.Subjects}
 		return nil
 	})
 
@@ -105,7 +101,7 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 	res := &SchemaOverview{
 		Mode:          "",
 		Compatibility: "",
-		Subjects:      make([]SchemaSubject, 0),
+		Subjects:      make([]string, 0),
 		RequestErrors: make([]SchemaOverviewRequestError, 0),
 	}
 	for result := range ch {
@@ -125,64 +121,4 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 	}
 
 	return res, nil
-}
-
-// getSchemaSubjects fetches the latest version and the compatibility level for each subject from the schema registry.
-// Requests are issued concurrently.
-func (s *Service) getSchemaSubjects(subjects []string) []SchemaSubject {
-	response := make([]SchemaSubject, len(subjects))
-	for i, subject := range subjects {
-		res := SchemaSubject{
-			Name:          subject,
-			Compatibility: "",
-			VersionsCount: -1,
-			LatestVersion: "",
-			RequestError:  "",
-		}
-		mutex := sync.Mutex{}
-
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		go func(subject string) {
-			defer wg.Done()
-
-			cfgRes, err := s.kafkaSvc.SchemaService.GetSubjectConfig(subject)
-			mutex.Lock()
-			defer mutex.Unlock()
-
-			if err != nil {
-				res.RequestError = fmt.Sprintf("failed to request config: %s", err.Error())
-			}
-			res.Compatibility = cfgRes.Compatibility
-		}(subject)
-
-		wg.Add(1)
-		go func(subject string) {
-			defer wg.Done()
-			subRes, err := s.kafkaSvc.SchemaService.GetSubjectVersions(subject)
-			mutex.Lock()
-			defer mutex.Unlock()
-
-			if err != nil {
-				res.RequestError = fmt.Sprintf("failed to request subject versions: %s", err.Error())
-				return
-			}
-
-			if len(subRes.Versions) == 0 {
-				res.RequestError = "returned subject versions array was empty"
-				return
-			}
-
-			versionsCount := len(subRes.Versions)
-			res.VersionsCount = versionsCount
-
-			latestVersion := subRes.Versions[len(subRes.Versions)-1]
-			res.LatestVersion = strconv.Itoa(latestVersion)
-		}(subject)
-		wg.Wait()
-
-		response[i] = res
-	}
-
-	return response
 }
