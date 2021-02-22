@@ -7,6 +7,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // SchemaOverview contains high level information about the registered subjects in the schema registry.
@@ -47,7 +48,11 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 		Error    *SchemaOverviewRequestError
 	}
 	ch := make(chan chResponse, 3)
-	g, _ := errgroup.WithContext(ctx)
+
+	// TODO: Remove once global timeouts as middleware are active
+	errGroupCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+	g, _ := errgroup.WithContext(errGroupCtx)
 
 	g.Go(func() error {
 		mode, err := s.kafkaSvc.SchemaService.GetMode()
@@ -55,8 +60,8 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 			ch <- chResponse{
 				Mode: mode,
 				Error: &SchemaOverviewRequestError{
-					RequestDescription: "schema registry config",
-					ErrorMessage:       fmt.Sprintf("failed to get schema registry config: %s", err.Error()),
+					RequestDescription: "schema registry mode",
+					ErrorMessage:       fmt.Sprintf("failed to get schema registry mode: %s", err.Error()),
 				},
 			}
 		}
@@ -69,8 +74,8 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 		if err != nil {
 			ch <- chResponse{
 				Error: &SchemaOverviewRequestError{
-					RequestDescription: "schema registry mode",
-					ErrorMessage:       fmt.Sprintf("failed to get schema registry mode: %s", err.Error()),
+					RequestDescription: "schema registry config",
+					ErrorMessage:       fmt.Sprintf("failed to get schema registry config: %s", err.Error()),
 				},
 			}
 		}

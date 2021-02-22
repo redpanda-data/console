@@ -62,8 +62,9 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 // handleGetPartitions returns an overview of all partitions and their watermarks in the given topic
 func (api *API) handleGetPartitions() http.HandlerFunc {
 	type response struct {
-		TopicName  string               `json:"topicName"`
-		Partitions []owl.TopicPartition `json:"partitions"`
+		TopicName             string                                 `json:"topicName"`
+		Partitions            []owl.TopicPartition                   `json:"partitions"`
+		PartitionLogDirErrors []owl.TopicPartitionLogDirRequestError `json:"partitionLogDirErrors"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -94,8 +95,9 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 		}
 
 		res := response{
-			TopicName:  topicName,
-			Partitions: partitions,
+			TopicName:             topicName,
+			Partitions:            partitions.Partitions,
+			PartitionLogDirErrors: partitions.PartitionLogDirErrors,
 		}
 		rest.SendResponse(w, r, logger, http.StatusOK, res)
 	}
