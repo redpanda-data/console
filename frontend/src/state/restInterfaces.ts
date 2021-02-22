@@ -435,21 +435,13 @@ export interface SchemaOverviewResponse {
 export interface SchemaOverview {
     mode: string;
     compatibilityLevel: string;
-    subjects: SchemaSubject[];
+    subjects: string[];
     requestErrors: SchemaOverviewRequestError[];
 }
 
 export interface SchemaOverviewRequestError {
     requestDescription: string;
     errorMessage: string;
-}
-
-export interface SchemaSubject { // @martin wtf is schemaSubject? why is this name so confusing?
-    name: string;
-    compatibilityLevel: string;
-    versionsCount: number;
-    latestVersion: string;
-    requestError: string;
 }
 
 export interface SchemaDetailsResponse {
@@ -460,6 +452,7 @@ export interface SchemaDetails {
     string: string;
     schemaId: number;
     version: number;
+    compatibility: string;
     schema: Schema;
     registeredVersions: number[];
 }

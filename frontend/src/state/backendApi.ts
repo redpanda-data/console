@@ -178,7 +178,8 @@ async function getSchemaOverview(force?: boolean) {
     return cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>
 }
 
-async function getSchemaDetails(subjectName: string, version: number, force?: boolean) {
+async function getSchemaDetails(subjectName: string, version?: number | 'latest', force?: boolean) {
+    if (version == null) version = 'latest';
     return cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
 }
 
@@ -482,7 +483,7 @@ const apiStore = {
             .catch(addError)
     },
 
-    refreshSchemaDetails(subjectName: string, version: number, force?: boolean) {
+    refreshSchemaDetails(subjectName: string, version: number | 'latest', force?: boolean) {
         getSchemaDetails(subjectName, version, force)
             .then(({ schemaDetails }) => (this.schemaDetails = schemaDetails))
             .catch(addError)
