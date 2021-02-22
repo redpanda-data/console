@@ -38,7 +38,8 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
     }
 
     refreshData(force?: boolean) {
-        api.refreshSchemaDetails(this.props.subjectName, this.props.query.version, force);
+        let version: number | 'latest' = this.props.query.version ?? 'latest';
+        api.refreshSchemaDetails(this.props.subjectName, version, force);
     }
 
     componentDidUpdate({ query: { version } }: SchemaDetailsProps) {
@@ -57,6 +58,8 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
 
         const versions = api.schemaDetails?.registeredVersions ?? [];
 
+        const defaultVersion = this.props.query.version ?? (versions.length > 0 ? versions[versions.length - 1] : 'latest');
+
         return (
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 <Card>
@@ -69,11 +72,11 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                     <div style={{ display: 'flex', alignItems: 'flex-start', columnGap: '1.5em', marginBottom: '1em' }}>
                         <Label text="Version">
                             <Select style={{ minWidth: '200px' }}
-                                defaultValue={this.props.query.version}
+                                defaultValue={defaultVersion}
                                 onChange={(version) => appGlobal.history.push(`/schema-registry/${this.props.subjectName}?version=${version}`)}
                                 disabled={versions.length == 0}
                             >
-                                {versions.map(v => <Select.Option value={v} key={v}>Version {v}</Select.Option>)}
+                                {versions.map(v => <Select.Option value={v} key={v}>Version {v} {v == versions[versions.length - 1] ? '(latest)' : null}</Select.Option>)}
                             </Select>
                         </Label>
 

@@ -10,6 +10,7 @@ type SchemaDetails struct {
 	Subject            string      `json:"string"`
 	SchemaID           int         `json:"schemaId"`
 	Version            int         `json:"version"`
+	Compatibility      string      `json:"compatibility"`
 	Schema             interface{} `json:"schema"`
 	RegisteredVersions []int       `json:"registeredVersions"`
 }
@@ -29,6 +30,11 @@ func (s *Service) GetSchemaDetails(_ context.Context, subject string, version st
 		return nil, fmt.Errorf("failed to get versioned schema for given subject: %w", err)
 	}
 
+	cfgRes, err := s.kafkaSvc.SchemaService.GetSubjectConfig(subject)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get compatibility for given subject: %w", err)
+	}
+
 	var parsedSchema interface{}
 	err = json.Unmarshal([]byte(versionedSchema.Schema), &parsedSchema)
 	if err != nil {
@@ -39,6 +45,7 @@ func (s *Service) GetSchemaDetails(_ context.Context, subject string, version st
 		Subject:            subject,
 		SchemaID:           versionedSchema.SchemaID,
 		Version:            versionedSchema.Version,
+		Compatibility:      cfgRes.Compatibility,
 		RegisteredVersions: versions.Versions,
 		Schema:             parsedSchema,
 	}, nil
