@@ -31,9 +31,9 @@ export class GetTopicsResponse {
 export interface Partition {
     id: number;
     leader: number; // id of the "leader" broker for this partition
-    inSyncReplicas: number[]; // ??
-    offlineReplicas: number[]; // ??
-    replicas: number[]; // ??
+    inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
+    offlineReplicas: number[];
+    replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
     waterMarkLow: number;
     waterMarkHigh: number;
 }
@@ -501,7 +501,15 @@ export interface PartitionReassignmentRequest {
         topicName: string; // name of topic to change
         partitions: { // partitions to reassign
             partitionId: number;
-            replicas: number[] | null; // either the brokerIds to place the partition on, or null to cancel a pending reassignment
+            replicas: number[] | null;
+            // entries are brokerIds
+            // must always have as many entries as 'replicationFactor'!
+            //     because replicationFactor is not "how many copies of the primary there are",
+            //     but instead "how many 'instances' of the data there are".
+            //     in other words: a partition without any safety-copies has replication factor 1.
+            //     a replicationFactor of 0 is invalid!
+            // the first entry in the array is the brokerId that will host the leader replica
+            // can also be null to cancel a pending reassignment
         }[];
     }[];
 }

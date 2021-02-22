@@ -251,7 +251,7 @@ span>.icon-container~span {
     padding: var(--headerVertical) var(--padCells);
 }
 
-.ant-table.ant-table-middle .ant-table-thead>tr>th:first-child {
+.ant-table.ant-table-middle .ant-table-thead>tr>th:first-child:not(.ant-table-row-expand-icon-cell) {
     /* Header: first (normal + sorter)*/
     padding-left: var(--padOutside);
 }
@@ -274,7 +274,7 @@ span>.icon-container~span {
     padding: var(--padRowHeight) var(--padCells);
 }
 
-.ant-table.ant-table-middle .ant-table-tbody>tr>td:first-child {
+.ant-table.ant-table-middle .ant-table-tbody>tr>td:first-child:not(.ant-table-row-expand-icon-cell) {
     /* Cell: first */
     padding-left: var(--padOutside);
 }
@@ -1581,18 +1581,65 @@ svg {
 }
 
 .reassignPartitions {
-    .ant-steps-item-custom .ant-steps-item-icon>.ant-steps-icon {
-        font-size: 20px;
+    .ant-steps-item-custom {
+        user-select: none;
+
+        .ant-steps-item-icon>.ant-steps-icon {
+            font-size: 20px;
+        }
     }
 }
 
 .nestedTable .ant-table-container tr {
+
+    &:nth-child(2n+1) {
+        background: hsl(0deg, 0%, 98%) !important;
+    }
 
     &>th {
         padding: 8px 2px !important;
     }
 
     &>td {
-        padding: 2px !important;
+        padding: 3px 2px !important;
     }
+}
+
+// Hide scrollbar when it's not needed
+.ant-table-body {
+    overflow-y: auto !important;
+}
+
+
+.brokerTagList .ant-tag {
+    margin-right: -1px;
+    font-size: 13px;
+
+    user-select: none;
+
+    &:hover {
+        opacity: 1;
+    }
+
+    // No border radius for adjacent tags
+    &:first-child {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    &:last-child {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    // Inside
+    &:not(:first-child):not(:last-child) {
+        border-radius: 0;
+    }
+}
+
+table tr th.ant-table-selection-column,
+table tr td.ant-table-selection-column {
+    width: 1px;
+    min-width: 0;
 }
