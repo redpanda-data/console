@@ -62,6 +62,7 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 					ErrorMessage:       fmt.Sprintf("failed to get schema registry mode: %s", err.Error()),
 				},
 			}
+			return nil
 		}
 		ch <- chResponse{Mode: mode}
 		return nil
@@ -76,6 +77,7 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 					ErrorMessage:       fmt.Sprintf("failed to get schema registry config: %s", err.Error()),
 				},
 			}
+			return nil
 		}
 		ch <- chResponse{Config: config}
 		return nil
