@@ -71,6 +71,11 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 
 	// Get partition consume request by calculating start and end offsets for each partition
 	consumeRequests := calculateConsumeRequests(&listReq, marks)
+	if len(consumeRequests) == 0 {
+		// No partitions/messages to consume, we can quit early.
+		progress.OnComplete(time.Since(start).Milliseconds(), false)
+		return nil
+	}
 	topicConsumeRequest := kafka.TopicConsumeRequest{
 		TopicName:             listReq.TopicName,
 		MaxMessageCount:       listReq.MessageCount,
