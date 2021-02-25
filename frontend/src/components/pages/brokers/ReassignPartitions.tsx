@@ -6,7 +6,7 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { Broker, BrokerConfigEntry, Partition, TopicAction, TopicDetail } from "../../../state/restInterfaces";
+import { Broker, BrokerConfigEntry, Partition, PartitionReassignmentRequest, TopicAction, TopicDetail } from "../../../state/restInterfaces";
 import { AnimatePresence, motion } from "framer-motion";
 import { animProps, MotionAlways } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
@@ -18,6 +18,7 @@ import { DefaultSkeleton, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
 import { stringify } from "query-string";
 import { ElementOf } from "antd/lib/_util/type";
+import { computeReassignments, TopicAssignments, TopicPartitions } from "./reassignLogic";
 const { Step } = Steps;
 
 interface PartitionSelection { // Which partitions are selected?
@@ -77,12 +78,13 @@ class ReassignPartitions extends PageComponent {
     @observable currentStep = 2; // current page of the wizard
 
     @observable partitionSelection: PartitionSelection = {
-        "bons": [0, 1, 2, 3, 4, 5, 6, 7],
-        "owlshop-frontend-events": [3, 4, 5, 6, 7],
+        // "bons": [0, 1, 2, 3, 4, 5, 6, 7],
+        "owlshop-frontend-events": [0, 1],
     }; // topics/partitions selected by user
-    @observable selectedBrokers: number[] = [0, 2]; // brokers selected by user
-    @observable assignments: PartitionAssignments = {}; // computed partition to broker assignments
+    @observable selectedBrokers: number[] = [0]; // brokers selected by user
 
+    @observable assignments: PartitionAssignments = {}; // (temporary, for debugging) computed partition to broker assignments
+    @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request that will be sent
 
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
@@ -212,12 +214,14 @@ class ReassignPartitions extends PageComponent {
                 </Card>
 
                 {/* Debug */}
-                {/* <div style={{ margin: '2em 0 1em 0' }}>
-                    <h2>Partitions</h2>
+                <div style={{ margin: '2em 0 1em 0' }}>
+                    <h2>Partition Selection</h2>
                     <div className='codeBox'>{toJson(this.partitionSelection)}</div>
-                    <h2>Brokers</h2>
+                    <h2>Broker Selection</h2>
                     <div className='codeBox'>{toJson(this.selectedBrokers)}</div>
-                </div> */}
+                    <h2>New Assignments</h2>
+                    <div className='codeBox'>{toJson(this.reassignmentRequest, 4)}</div>
+                </div>
             </motion.div>
         </>
     }
@@ -268,11 +272,45 @@ class ReassignPartitions extends PageComponent {
         if (this.currentStep == 2) {
             // Review -> Start
             message.loading('Starting reassignment...', 5);
+            const topicPartitions: TopicPartitions[] = this.selectedTopicPartitions;
+            const targetBrokers = this.selectedBrokers.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)!);
+            if (targetBrokers.any(b => b == null)) throw new Error('one or more broker ids could not be mapped to broker entries');
+
+            const topicAssignments = computeReassignments(topicPartitions, api.clusterInfo!.brokers, targetBrokers);
+
+            const topics = [];
+            for (const t in topicAssignments) {
+                const topicAssignment = topicAssignments[t];
+                const partitions: { partitionId: number, replicas: number[] | null }[] = [];
+                for (const partitionId in topicAssignment)
+                    partitions.push({
+                        partitionId: Number(partitionId),
+                        replicas: topicAssignment[partitionId].brokers.map(b => b.brokerId)
+                    });
+
+                topics.push({ topicName: t, partitions: partitions });
+            }
+            this.reassignmentRequest = { topics: topics };
+
             return;
         }
 
 
         this.currentStep++;
+    }
+
+    @computed get selectedTopicPartitions(): TopicPartitions[] {
+        const ar: TopicPartitions[] = [];
+        for (const [topicName, partitions] of api.topicPartitions) {
+            if (partitions == null) continue;
+            if (this.partitionSelection[topicName] == null) continue;
+            const topic = api.topics?.first(t => t.topicName == topicName);
+            if (topic == null) continue;
+
+            const relevantPartitions = partitions.filter(p => this.partitionSelection[topicName].includes(p.id));
+            ar.push({ topic: topic, partitions: relevantPartitions }); // , allPartitions: partitions
+        }
+        return ar;
     }
 
     onPreviousPage() {
@@ -561,62 +599,6 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
             return;
         }
 
-        // Questions:
-        // - primaries and replicas must not be assigned to same broker
-        //   but how can i control what broker a replica is assigned to at all??
-        //      -> erster eintrag ausm array ist der leader
-        //      -> aber komplett egal wo primary landet, kafka rebalanced die leader alle 5min sowieso selber
-        // - how to distribute across racks?
-        //   just take different racks, all the time, and when we find a broker in the same rack again,
-        //   try using a different broker within the same rack (if there is one)?
-        //
-        // - rewrite: "target brokers" info text, it means: "not all brokers will neccesarily be used", not "kowl might use brokers that were not selected"
-
-        // - 1. optimize: racks first!
-        // - 2. optimize: anzahl der partitions auf dem broker (need to get all topics, all their partitions to even know what broker has how many partitions)
-        // - 3. optimize: used disk space
-
-        // -  . optimize: network traffic optimization as well? how?
-        //                that means optmizing to "inter rack" (bc that traffic is mostly free)
-        //   - "unassign" all replicas, subtracing used disk space from that broker
-        //   - assign from a fresh start: assign (preferably) to the original broker, or to a broker in the same rack, or
-
-        /* Example for traffic cost
-            topicA: replicationFactor=3
-
-            # BD PRD
-            rackA: 0, 1
-            rackB:  2, 3
-
-            # Cluster expanded with more brokers:
-            rackA: 4
-            rackB: 5
-            rackC: 6
-
-            replicas should end up evenly distributed across all racks
-            BUT:
-                0 -> 4
-                2 -> 5
-                1 -> 6 (unavoidable, )
-
-
-
-            Example 2:
-            bd prd
-            Topic A: replicationFactor=2 (currently on brokers 0,2)
-            rackA: 0, 1
-            rackB: 2, 3
-
-            move to new brokers
-            rackA: 4   (10k partitions)
-            rackB: 5   (0 partitions)
-            rackC: 6   (0 partitions)
-            - 2 to 5
-
-
-            Unit Tests:
-            - convert the examples above, because every replica is assigned to one broker
-        */
 
 
         console.log('recomputing assignments...');
@@ -686,7 +668,7 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
             },
             {
                 width: '50%', title: 'Brokers Before',
-                render: (v, r) => <BrokerList brokerIds={r.allPartitions.flatMap(p => p.replicas)} />
+                render: (v, r) => <BrokerList brokerIds={r.selectedPartitions.flatMap(p => p.replicas)} />
             },
             {
                 width: '50%', title: 'Brokers After',
@@ -728,7 +710,7 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
         </>
     }
 
-    @computed get selectedPartitions(): { topicName: string; topic: TopicDetail, selectedPartitions: Partition[], allPartitions: Partition[] }[] {
+    @computed get selectedPartitions(): { topicName: string; topic: TopicDetail, allPartitions: Partition[], selectedPartitions: Partition[] }[] {
         const ar = [];
         for (const [topicName, partitions] of api.topicPartitions) {
             if (partitions == null) continue;
@@ -785,8 +767,6 @@ class ReviewPartitionTable extends Component<{ topic: TopicDetail, topicPartitio
 
 
 class BrokerList extends Component<{ brokerIds: number[], leaderId?: number, addedIds?: number[], removedIds?: number[], tooltip?: JSX.Element }> {
-
-
     render() {
         const { leaderId, addedIds, removedIds } = this.props;
         const ids = this.props.brokerIds.distinct().sort((a, b) => a - b);

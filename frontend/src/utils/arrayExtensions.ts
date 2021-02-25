@@ -9,7 +9,9 @@ declare global {
         first<T>(this: T[], selector: (x: T) => boolean): T | undefined;
         last<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
 
+        count<T>(this: T[], selector: (x: T) => boolean): number;
         sum<T>(this: T[], selector: (x: T) => number): number;
+        min<T>(this: T[], selector: (x: T) => number): number;
         max<T>(this: T[], selector: (x: T) => number): number;
 
         any<T>(this: T[], selector: (x: T) => boolean): boolean;
@@ -64,8 +66,16 @@ Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean)
     return undefined;
 };
 
+Array.prototype.count = function count<T>(this: T[], selector: (x: T) => boolean) {
+    return this.reduce((pre, cur) => selector(cur) ? pre + 1 : pre, 0);
+};
+
 Array.prototype.sum = function sum<T>(this: T[], selector: (x: T) => number) {
     return this.reduce((pre, cur) => pre + selector(cur), 0);
+};
+
+Array.prototype.min = function min<T>(this: T[], selector: (x: T) => number) {
+    return this.reduce((pre, cur) => Math.min(pre, selector(cur)), 0);
 };
 
 Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {

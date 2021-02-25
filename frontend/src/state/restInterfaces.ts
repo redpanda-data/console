@@ -32,7 +32,13 @@ export interface Partition {
     id: number;
     leader: number; // id of the "leader" broker for this partition
     inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
-    offlineReplicas: number[];
+    offlineReplicas: number[] | null;
+    partitionLogDirs: {
+        error: string, // empty when no error
+        brokerId: number,
+        partitionId: number, // redundant?
+        size: number, // size (in bytes) of log dir on that broker
+    }[];
     replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
     waterMarkLow: number;
     waterMarkHigh: number;
@@ -495,14 +501,12 @@ export interface PartitionReassignmentRequest {
         partitions: { // partitions to reassign
             partitionId: number;
             replicas: number[] | null;
-            // entries are brokerIds
-            // must always have as many entries as 'replicationFactor'!
-            //     because replicationFactor is not "how many copies of the primary there are",
-            //     but instead "how many 'instances' of the data there are".
-            //     in other words: a partition without any safety-copies has replication factor 1.
-            //     a replicationFactor of 0 is invalid!
-            // the first entry in the array is the brokerId that will host the leader replica
-            // can also be null to cancel a pending reassignment
+            // Entries are brokerIds.
+            // Since the replicationFactor of a partition tells us the total number
+            // of 'instances' of a partition (leader + follower replicas) the length of the array is always 'replicationFactor'.
+            // The first entry in the array is the brokerId that will host the leader replica
+            // can also be null to cancel a pending reassignment.
+            // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
         }[];
     }[];
 }
