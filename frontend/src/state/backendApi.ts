@@ -502,6 +502,9 @@ const apiStore = {
     async startPartitionReassignment(request: PartitionReassignmentRequest): Promise<AlterPartitionReassignmentsResponse> {
         const response = await fetch('./api/operations/reassign-partitions', {
             method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
             body: toJson(request),
         });
 

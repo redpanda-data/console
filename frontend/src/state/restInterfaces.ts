@@ -496,20 +496,21 @@ export interface PartitionReassignmentsPartition {
 
 // PartitionReassignments - Patch
 export interface PartitionReassignmentRequest {
-    topics: {
-        topicName: string; // name of topic to change
-        partitions: { // partitions to reassign
-            partitionId: number;
-            replicas: number[] | null;
-            // Entries are brokerIds.
-            // Since the replicationFactor of a partition tells us the total number
-            // of 'instances' of a partition (leader + follower replicas) the length of the array is always 'replicationFactor'.
-            // The first entry in the array is the brokerId that will host the leader replica
-            // can also be null to cancel a pending reassignment.
-            // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
-        }[];
-    }[];
+    topics: TopicAssignment[];
 }
+export type TopicAssignment = {
+    topicName: string; // name of topic to change
+    partitions: { // partitions to reassign
+        partitionId: number;
+        replicas: number[] | null;
+        // Entries are brokerIds.
+        // Since the replicationFactor of a partition tells us the total number
+        // of 'instances' of a partition (leader + follower replicas) the length of the array is always 'replicationFactor'.
+        // The first entry in the array is the brokerId that will host the leader replica
+        // can also be null to cancel a pending reassignment.
+        // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
+    }[];
+};
 
 export interface AlterPartitionReassignmentsResponse {
     reassignPartitionsResponses: {

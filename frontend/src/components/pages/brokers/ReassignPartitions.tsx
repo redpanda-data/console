@@ -6,9 +6,9 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { Broker, BrokerConfigEntry, Partition, PartitionReassignmentRequest, TopicAction, TopicDetail } from "../../../state/restInterfaces";
-import { AnimatePresence, motion } from "framer-motion";
-import { animProps, MotionAlways } from "../../../utils/animationProps";
+import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, TopicDetail } from "../../../state/restInterfaces";
+import { motion } from "framer-motion";
+import { animProps, } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
 import { prettyBytesOrNA, toJson } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
@@ -18,15 +18,11 @@ import { DefaultSkeleton, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
 import { stringify } from "query-string";
 import { ElementOf } from "antd/lib/_util/type";
-import { computeReassignments, TopicAssignments, TopicPartitions } from "./reassignLogic";
+import { computeReassignments, PartitionAssignments, TopicPartitions } from "./reassignLogic";
 const { Step } = Steps;
 
 interface PartitionSelection { // Which partitions are selected?
     [topicName: string]: number[] // topicName -> array of partitionIds
-}
-
-interface PartitionAssignments { // Where does each partitions go?
-    [topicName: string]: { partition: Partition, broker: Broker }[]
 }
 
 interface WizardStep {
@@ -34,7 +30,7 @@ interface WizardStep {
     title: string;
     icon: React.ReactElement;
     backButton?: string;
-    nextButton: { text: string; isEnabled: (c: ReassignPartitions) => boolean };
+    nextButton: { text: string; isEnabled: (c: ReassignPartitions) => boolean | string };
 }
 const steps: WizardStep[] = [
     {
@@ -51,7 +47,13 @@ const steps: WizardStep[] = [
         backButton: 'Select Partitions',
         nextButton: {
             text: 'Review Plan',
-            isEnabled: c => c.selectedBrokers.length > 0
+            isEnabled: c => {
+                const partitions = Object.keys(c.partitionSelection).map(t => ({ topic: api.topics!.first(x => x.topicName == t)!, partitions: api.topicPartitions.get(t)! }));
+                const maxRf = partitions.max(p => p.topic.replicationFactor);
+                if (c.selectedBrokers.length >= maxRf)
+                    return true;
+                return `Select at least ${maxRf} brokers`;
+            }
         }
     },
     {
@@ -75,15 +77,16 @@ class ReassignPartitions extends PageComponent {
     pageConfig = makePaginationConfig(15, true);
     autorunHandle: IReactionDisposer | undefined = undefined;
 
-    @observable currentStep = 2; // current page of the wizard
+    @observable currentStep = 1; // current page of the wizard
 
     @observable partitionSelection: PartitionSelection = {
         // "bons": [0, 1, 2, 3, 4, 5, 6, 7],
-        "owlshop-frontend-events": [0, 1],
-    }; // topics/partitions selected by user
-    @observable selectedBrokers: number[] = [0]; // brokers selected by user
+        // "re-test1-addresses": [0, 1],
+        // "owlshop-orders": [0],
+        "re-test1-addresses": [0], "re-test1-customers": [1], "re-test1-frontend-events": [2]
 
-    @observable assignments: PartitionAssignments = {}; // (temporary, for debugging) computed partition to broker assignments
+    }; // topics/partitions selected by user
+    @observable selectedBrokers: number[] = [0, 1, 2]; // brokers selected by user
     @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request that will be sent
 
     initPage(p: PageInitHelper): void {
@@ -153,6 +156,9 @@ class ReassignPartitions extends PageComponent {
         const partitionCountOnlyReplicated = api.topics.sum(t => t.partitionCount * (t.replicationFactor - 1));
 
         const step = steps[this.currentStep];
+        const nextButtonCheck = step.nextButton.isEnabled(this);
+        const nextButtonEnabled = nextButtonCheck === true;
+        const nextButtonHelp = typeof nextButtonCheck === 'string' ? nextButtonCheck as string : null;
 
         return <>
             <motion.div className="reassignPartitions" {...animProps} style={{ margin: '0 1rem', paddingBottom: '12em' }}>
@@ -180,12 +186,12 @@ class ReassignPartitions extends PageComponent {
                         switch (this.currentStep) {
                             case 0: return <StepSelectPartitions partitionSelection={this.partitionSelection} />;
                             case 1: return <StepSelectBrokers brokers={this.selectedBrokers} />;
-                            case 2: return <StepReview partitionSelection={this.partitionSelection} brokers={this.selectedBrokers} assignments={this.assignments} />;
+                            case 2: return <StepReview partitionSelection={this.partitionSelection} brokers={this.selectedBrokers} assignments={this.reassignmentRequest!} />;
                         }
                     })()} </motion.div>
 
                     {/* Navigation */}
-                    <div style={{ margin: '2.5em 0 1.5em', display: 'flex', height: '2.5em' }}>
+                    <div style={{ margin: '2.5em 0 1.5em', display: 'flex', alignItems: 'center', height: '2.5em' }}>
                         {/* Back */}
                         {step.backButton &&
                             <Button
@@ -199,17 +205,18 @@ class ReassignPartitions extends PageComponent {
                         }
 
                         {/* Next */}
-                        {
+                        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2em' }}>
+                            <div>{nextButtonHelp}</div>
                             <Button
                                 type='primary'
                                 style={{ minWidth: '12em', height: 'auto', marginLeft: 'auto' }}
-                                disabled={!step.nextButton.isEnabled(this)}
+                                disabled={!nextButtonEnabled}
                                 onClick={this.onNextPage}
                             >
                                 <span>{step.nextButton.text}</span>
                                 <span><ChevronRightIcon /></span>
                             </Button>
-                        }
+                        </div>
                     </div>
                 </Card>
 
@@ -267,14 +274,10 @@ class ReassignPartitions extends PageComponent {
 
         if (this.currentStep == 1) {
             // Assign -> Review
-        }
-
-        if (this.currentStep == 2) {
-            // Review -> Start
-            message.loading('Starting reassignment...', 5);
             const topicPartitions: TopicPartitions[] = this.selectedTopicPartitions;
             const targetBrokers = this.selectedBrokers.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)!);
-            if (targetBrokers.any(b => b == null)) throw new Error('one or more broker ids could not be mapped to broker entries');
+            if (targetBrokers.any(b => b == null))
+                throw new Error('one or more broker ids could not be mapped to broker entries');
 
             const topicAssignments = computeReassignments(topicPartitions, api.clusterInfo!.brokers, targetBrokers);
 
@@ -291,6 +294,19 @@ class ReassignPartitions extends PageComponent {
                 topics.push({ topicName: t, partitions: partitions });
             }
             this.reassignmentRequest = { topics: topics };
+        }
+
+        if (this.currentStep == 2) {
+            // Review -> Start
+            if (this.reassignmentRequest == null) {
+                message.error('reassignment request was null', 3);
+                return;
+            }
+
+            const msgKey = 'startingMessage';
+            const hideMessage = message.loading({ content: 'Starting reassignment...', key: msgKey }, 1);
+
+            api.startPartitionReassignment(this.reassignmentRequest).then(r => { }, err => { });
 
             return;
         }
@@ -499,7 +515,7 @@ class SelectPartitionTable extends Component<{
     partitionsPageConfig = makePaginationConfig(100, true);
 
     render() {
-        const brokerTooltip = <div style={{ maxWidth: '380px', fontSize: 'smaller' }}>These are the brokerIDs this partition and its replicas are assigned to.<br />The broker highlighted in blue is currently hosting/handling the leading partition, while the brokers shown in grey are hosting the partitions replicas.</div>
+        const brokerTooltip = <div style={{ maxWidth: '380px', fontSize: 'smaller' }}>These are the brokerIDs this partitions replicas are assigned to.<br />The broker highlighted in blue is currently hosting/handling the leading partition, while the brokers shown in grey are hosting the partitions replicas.</div>
 
         return <div style={{ paddingTop: '4px', paddingBottom: '8px', width: 0, minWidth: '100%' }}>
             <Table size='small' className='nestedTable'
@@ -557,7 +573,7 @@ class StepSelectBrokers extends Component<{ brokers: number[] }> {
         return <>
             <div style={{ margin: '2em 1em' }}>
                 <h2>Target Brokers</h2>
-                <p>Choose at least one target broker to move the selected partitions to. This does not necessarily guarantee that all seelcted partitions will be moved to these brokers, but Kowl will consider them as desired targets and distribute partitions across the available racks of the selected target brokers.</p>
+                <p>Choose the target brokers to move the selected partitions to. Some brokers might not get any current assignments  Some brokers might  some partitions will be moved to these brokers, but Kowl will consider them as desired targets and distribute partitions across the available racks of the selected target brokers.</p>
             </div>
 
             <Table
@@ -588,67 +604,8 @@ class StepSelectBrokers extends Component<{ brokers: number[] }> {
 
 
 @observer
-class StepReview extends Component<{ partitionSelection: PartitionSelection, brokers: number[], assignments: PartitionAssignments }> {
+class StepReview extends Component<{ partitionSelection: PartitionSelection, brokers: number[], assignments: PartitionReassignmentRequest }> {
     pageConfig = makePaginationConfig(15, true);
-
-    constructor(props: any) {
-        super(props);
-
-        if (api.clusterInfo == null) {
-            console.log('cannot recompute assignments, clusterInfo is not available');
-            return;
-        }
-
-
-
-        console.log('recomputing assignments...');
-        const { partitionSelection, assignments, brokers: selectedBrokers } = this.props;
-
-        // Clear current assignments
-        for (const k in assignments)
-            if (typeof assignments[k] === 'object' && Array.isArray(assignments[k])) {
-                console.log('deleting assignment key', { key: k, value: assignments[k] });
-                delete assignments[k];
-            }
-            else {
-                console.log('skipping assignment key', { key: k, value: assignments[k] })
-            }
-
-        // Go through each topic, get "relevant" brokers (those that were selected),
-        // distribute partitions across those brokers (trying to use the available racks as evenly as possible?)
-        for (const topicName in partitionSelection) {
-            const partitionIds = partitionSelection[topicName];
-            const brokers = api.clusterInfo.brokers.filter(b => selectedBrokers.includes(b.brokerId));
-            if (brokers.length == 0) {
-                console.log('no brokers available (after filtering all unselected brokers), skipping assignemnts for this topic', { topic: topicName, allBrokers: api.clusterInfo.brokers, selectedBrokers: selectedBrokers });
-                continue;
-            }
-
-            const topicPartitions = api.topicPartitions.get(topicName);
-            if (topicPartitions == null) {
-                console.log('topic partitions are missing, skipping partitions assignemnts for this topic', { topic: topicName });
-                continue;
-            }
-
-            for (const partitionId of partitionIds) {
-                const partition = topicPartitions.first(p => p.id == partitionId);
-                if (partition == null) {
-                    console.log('partition not found, skipping assignment', { topic: topicName, partitionId: partitionId, topicPartitions: topicPartitions });
-                    continue;
-                }
-
-                // todo: this should be a function that returns the "best" broker from 'brokers'
-                //       it should try filtering more and more (by rack, logDirSize, estimated traffic, ...).
-                //       when a filter
-                // const broker = ;
-
-                // assignments[topicName].push({ partition: partition, broker: broker });
-            }
-
-        }
-
-        console.log('recomputing assignments done', { topics: Object.keys(assignments).length });
-    }
 
     render() {
         if (!api.topics) return DefaultSkeleton;
@@ -663,16 +620,16 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
                 // filtered: true, filteredValue: ['owlshop'], onFilter: (value, record) => record.topicName.toLowerCase().includes(String(value).toLowerCase()),
             },
             {
-                width: 100, title: 'Partitions', dataIndex: 'selectedPartitions',
-                render: (v) => v.length
-            },
-            {
                 width: '50%', title: 'Brokers Before',
                 render: (v, r) => <BrokerList brokerIds={r.selectedPartitions.flatMap(p => p.replicas)} />
             },
             {
                 width: '50%', title: 'Brokers After',
-                render: (v, r) => <BrokerList brokerIds={this.props.assignments[r.topicName]?.map(a => a.broker.brokerId) ?? []} />
+                render: (v, r) => <BrokerList brokerIds={this.props.assignments.topics.first(t => t.topicName == r.topicName)!.partitions.flatMap(p => p.replicas!) ?? []} />
+            },
+            {
+                width: 100, title: 'Partitions', dataIndex: 'selectedPartitions',
+                render: (v) => v.length
             },
             {
                 width: 120, title: 'Estimated Traffic', dataIndex: 'logDirSize',
@@ -701,7 +658,7 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
                         ? <ReviewPartitionTable
                             topic={topic.topic}
                             topicPartitions={topic.selectedPartitions}
-                            assignments={this.props.assignments}
+                            assignments={this.props.assignments.topics.first(t => t.topicName == topic.topicName)!}
                         />
                         : <>Error loading partitions</>,
                     // expandedRowClassName: r => 'noPadding',
@@ -730,10 +687,10 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
 }
 
 @observer
-class ReviewPartitionTable extends Component<{ topic: TopicDetail, topicPartitions: Partition[], assignments: PartitionAssignments }> {
+class ReviewPartitionTable extends Component<{ topic: TopicDetail, topicPartitions: Partition[], assignments: TopicAssignment }> {
     partitionsPageConfig = makePaginationConfig(100, true);
     brokerTooltip = <div style={{ maxWidth: '380px', fontSize: 'smaller' }}>
-        These are the brokers this partition and its replicas are assigned to.<br />
+        These are the brokers this partitions replicas are assigned to.<br />
         The broker highlighted in blue is currently hosting/handling the leading partition, while the brokers shown in grey are hosting the partitions replicas.
         </div>;
 
@@ -754,9 +711,9 @@ class ReviewPartitionTable extends Component<{ topic: TopicDetail, topicPartitio
                     {
                         width: undefined, title: 'Brokers After',
                         render: (v, record) => {
-                            const brokersForPartition = this.props.assignments[this.props.topic.topicName];
-                            if (brokersForPartition == null) return '??';
-                            return <BrokerList brokerIds={[]} />
+                            const partitionAssignments = this.props.assignments.partitions.first(p => p.partitionId == record.id);
+                            if (partitionAssignments == null || partitionAssignments.replicas == null) return '??';
+                            return <BrokerList brokerIds={partitionAssignments.replicas} />
                         }
                     },
                 ]}
