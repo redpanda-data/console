@@ -43,6 +43,17 @@ type BrokerReplicaCount = { // track how many replicas were assigned to a broker
 
 
 export function computeReassignments(selectedTopicPartitions: TopicPartitions[], allBrokers: Broker[], targetBrokers: Broker[]): TopicAssignments {
+    // Error check inputs
+    // No partitions or brokers
+    if (selectedTopicPartitions.sum(x => x.partitions.length) == 0)
+        throw new Error("No partitions selected.");
+    // We need at least as many brokers as the highest replication factor
+    const maxRf = selectedTopicPartitions
+        .groupInto(t => t.topic.replicationFactor) // group topics by replication factor
+        .sort((a, b) => b.key - a.key)[0]; // sort descending, then take first group
+    if (maxRf.key > targetBrokers.length)
+        throw new Error(`You selected ${targetBrokers.length} target brokers, but the following topics have a replicationFactor of ${maxRf.key}, so at least ${maxRf.key} target brokers are required: ${toJson(maxRf.items.map(t => t.topic.topicName))}`);
+
     // Track information like used disk space per broker, so we extend each broker with some metadata
     const allExBrokers = allBrokers.map(b => new ExBroker(b));
     const targetExBrokers = allExBrokers.filter(exb => targetBrokers.find(b => exb.brokerId == b.brokerId) != undefined);
@@ -89,7 +100,7 @@ function computeTopicAssignments(
     const replicationFactor = topic.replicationFactor;
     if (replicationFactor <= 0) return; // normally it shouldn't be possible; every topic must have at least 1 replica for each of its partitions
 
-    // todo: two phase approach? first assign only one replica for the partition, then assign the remaining replicas
+    // todo: first create a list of potential assignments, and then only apply the best one, repeat
 
     // Track how many replicas (of this topic, ignoring from which partitions exactly) were assigned to each broker
     const brokerReplicaCount: BrokerReplicaCount[] = targetBrokers.map(b => ({ broker: b, assignedReplicas: 0 }));
@@ -241,6 +252,8 @@ class ExBroker implements Broker {
         let deltaSize = 0;
         let deltaReplicas = 0;
         for (const p of partitions) {
+            if (!p.replicas.includes(this.brokerId)) continue; // broker is not hosting any replica of this partition
+
             const logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId && x.partitionId == p.id);
             if (logDirEntry === undefined) throw new Error('cannot find matching partitionLogDir entry: ' + toJson({ partition: p, exBroker: this }, 4));
             deltaSize += logDirEntry.size;
