@@ -34,7 +34,7 @@ func (l *ListMessagesRequest) OK() error {
 		return fmt.Errorf("topic name is required")
 	}
 
-	if l.StartOffset < -3 {
+	if l.StartOffset < -4 {
 		return fmt.Errorf("start offset is smaller than -3")
 	}
 
