@@ -35,7 +35,7 @@ func (l *ListMessagesRequest) OK() error {
 	}
 
 	if l.StartOffset < -4 {
-		return fmt.Errorf("start offset is smaller than -3")
+		return fmt.Errorf("start offset is smaller than -4")
 	}
 
 	if l.PartitionID < -1 {
