@@ -403,7 +403,17 @@ const apiStore = {
 
     refreshTopicPartitions(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
-            .then(x => this.topicPartitions.set(topicName, x === null ? null : (x?.partitions ?? null)), addError);
+            .then(response => {
+                if (response != null) {
+                    for (const p of response.partitions) {
+                        const replicaSize = p.partitionLogDirs.max(e => e.size);
+                        p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+                    }
+                    this.topicPartitions.set(topicName, response.partitions);
+                } else {
+                    this.topicPartitions.set(topicName, null);
+                }
+            }, addError);
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {

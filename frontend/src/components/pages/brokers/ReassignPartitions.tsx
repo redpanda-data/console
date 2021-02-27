@@ -14,7 +14,7 @@ import { prettyBytesOrNA, toJson } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, ObjToKv, OptionGroup, TextInfoIcon } from "../../../utils/tsxUtils";
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
 import { stringify } from "query-string";
 import { ElementOf } from "antd/lib/_util/type";
@@ -536,7 +536,7 @@ class SelectPartitionTable extends Component<{
                     { width: 100, title: 'Partition', dataIndex: 'id', sortOrder: 'ascend', sorter: (a, b) => a.id - b.id },
                     {
                         width: undefined, title: 'Brokers', render: (v, record,) =>
-                            <BrokerList brokerIds={record.replicas} leaderId={record.leader} tooltip={brokerTooltip} />
+                            <BrokerList brokerIds={record.replicas} leaderId={record.leader} />
                     },
                 ]}
             />
@@ -628,12 +628,40 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
                 render: (v, r) => <BrokerList brokerIds={this.props.assignments.topics.first(t => t.topicName == r.topicName)!.partitions.flatMap(p => p.replicas!) ?? []} />
             },
             {
-                width: 100, title: 'Partitions', dataIndex: 'selectedPartitions',
-                render: (v) => v.length
+                width: 100, title: (p) => <TextInfoIcon text="Moves" info="The number of replicas that will be moved to a different broker." maxWidth='200px' />,
+                render: (v, r) => {
+                    // How many replicas are actually moved?
+                    // 1. assume all replicas are moved
+                    let moves = r.selectedPartitions.sum(p => p.replicas.length);
+
+                    // 2. go through each partition, subtract replicas that stay on their broker
+                    for (const p of r.selectedPartitions) {
+                        const newAssignments = this.props.assignments.topics.first(t => t.topicName == r.topicName);
+                        const newBrokers = newAssignments?.partitions.first(p => p.partitionId == p.partitionId);
+                        if (newBrokers?.replicas)
+                            moves -= p.replicas.intersection(newBrokers.replicas).length;
+                    }
+                    return moves;
+                },
             },
             {
                 width: 120, title: 'Estimated Traffic', dataIndex: 'logDirSize',
-                render: v => '?'
+                render: (v, r) => {
+                    // 1. assume all replicas are moved
+                    let size = r.selectedPartitions.sum(p => p.replicaSize * p.replicas.length);
+                    if (size == 0) return 0;
+
+                    // 2. go through each partition, subtract replicas that stay on their broker
+                    for (const p of r.selectedPartitions) {
+                        const newAssignments = this.props.assignments.topics.first(t => t.topicName == r.topicName);
+                        const newBrokers = newAssignments?.partitions.first(p => p.partitionId == p.partitionId);
+                        if (newBrokers?.replicas) {
+                            const unmovedReplicas = p.replicas.intersection(newBrokers.replicas).length;
+                            size -= p.replicaSize * unmovedReplicas;
+                        }
+                    }
+                    return prettyBytesOrNA(size);
+                }
             },
         ]
 
@@ -654,6 +682,7 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
                 columns={columns}
                 expandable={{
                     expandIconColumnIndex: 0,
+                    expandRowByClick: true,
                     expandedRowRender: topic => topic.selectedPartitions
                         ? <ReviewPartitionTable
                             topic={topic.topic}
@@ -680,10 +709,6 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
         }
         return ar;
     }
-
-    // @computed get finalAssignments(): PartitionAssignments {
-    //     return this.props.assignments;
-    // }
 }
 
 @observer
@@ -703,7 +728,7 @@ class ReviewPartitionTable extends Component<{ topic: TopicDetail, topicPartitio
                 scroll={{ y: '300px' }}
                 rowKey={r => r.id}
                 columns={[
-                    { width: 100, title: 'Partition', dataIndex: 'id', sorter: (a, b) => a.id - b.id, defaultSortOrder: 'ascend', },
+                    { width: 120, title: 'Partition', dataIndex: 'id' },
                     {
                         width: undefined, title: 'Brokers Before',
                         render: (v, record) => <BrokerList brokerIds={record.replicas} leaderId={record.leader} />
@@ -730,8 +755,8 @@ class BrokerList extends Component<{ brokerIds: number[], leaderId?: number, add
 
         const tags = ids.map(id => {
             let color = undefined;
-            if (id === leaderId) color = "hsl(209deg, 50%, 60%)";
-            else if (addedIds?.includes(id)) color = "green";
+            // if (id === leaderId) color = "hsl(209deg, 50%, 60%)";
+            if (addedIds?.includes(id)) color = "green";
             else if (removedIds?.includes(id)) color = "red";
 
             return <Tag key={id} color={color} >{id.toString()}</Tag>

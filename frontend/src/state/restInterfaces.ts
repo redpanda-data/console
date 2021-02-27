@@ -42,6 +42,9 @@ export interface Partition {
     replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
     waterMarkLow: number;
     waterMarkHigh: number;
+
+    // added by frontend:
+    replicaSize: number;
 }
 
 export interface GetPartitionsResponse {
