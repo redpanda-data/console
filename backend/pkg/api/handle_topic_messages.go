@@ -22,9 +22,9 @@ type GetTopicMessagesResponse struct {
 // used in Kowl business to implement the hooks.
 type ListMessagesRequest struct {
 	TopicName             string `json:"topicName"`
-	StartOffset           int64  `json:"startOffset"` // -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp
-	StartTimestamp        int64  // Start offset by unix timestamp in ms
-	PartitionID           int32  `json:"partitionId"` // -1 for all partition ids
+	StartOffset           int64  `json:"startOffset"`    // -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp
+	StartTimestamp        int64  `json:"startTimestamp"` // Start offset by unix timestamp in ms (only considered if start offset is set to -4)
+	PartitionID           int32  `json:"partitionId"`    // -1 for all partition ids
 	MaxResults            int    `json:"maxResults"`
 	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
 }
