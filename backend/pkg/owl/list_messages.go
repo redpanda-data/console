@@ -159,6 +159,11 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 					zap.String("topic", listReq.TopicName),
 					zap.Int32("partition_id", mark.PartitionID))
 			}
+			if offset < 0 {
+				// If there's no newer message than the given offset is -1 here, let's replace this with the newest
+				// consumable offset which equals to high water mark - 1.
+				offset = marks[mark.PartitionID].High - 1
+			}
 			p.StartOffset = offset
 		} else {
 			// Either custom offset or resolved offset by timestamp is given
