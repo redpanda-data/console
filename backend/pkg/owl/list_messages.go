@@ -159,7 +159,7 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 					zap.String("topic", listReq.TopicName),
 					zap.Int32("partition_id", mark.PartitionID))
 			}
-			listReq.StartOffset = offset
+			p.StartOffset = offset
 		} else {
 			// Either custom offset or resolved offset by timestamp is given
 			p.StartOffset = listReq.StartOffset
