@@ -270,7 +270,9 @@ func (s *Service) requestOffsetsByTimestamp(ctx context.Context, topicName strin
 		partitionReq.Timestamp = timestamp
 		partitionReqs[i] = partitionReq
 	}
+
 	topicReq.Partitions = partitionReqs
+	req.Topics = []kmsg.ListOffsetsRequestTopic{topicReq}
 
 	kres, err := req.RequestWith(ctx, s.kafkaSvc.KafkaClient)
 	if err != nil {
