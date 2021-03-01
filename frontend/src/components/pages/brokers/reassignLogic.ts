@@ -40,7 +40,7 @@ type BrokerReplicaCount = { // track how many replicas were assigned to a broker
     assignedReplicas: number;
 };
 
-type ApiData = { brokers: Broker[], topics: Topic[], topicPartitions: Map<string, Partition[]> };
+export type ApiData = { brokers: Broker[], topics: Topic[], topicPartitions: Map<string, Partition[]> };
 
 
 export function computeReassignments(

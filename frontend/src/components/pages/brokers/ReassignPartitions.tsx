@@ -19,7 +19,7 @@ import { DefaultSkeleton, ObjToKv, OptionGroup, TextInfoIcon } from "../../../ut
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
 import { stringify } from "query-string";
 import { ElementOf } from "antd/lib/_util/type";
-import { computeReassignments, PartitionAssignments, TopicPartitions } from "./reassignLogic";
+import { ApiData, computeReassignments, PartitionAssignments, TopicPartitions } from "./reassignLogic";
 const { Step } = Steps;
 
 interface PartitionSelection { // Which partitions are selected?
@@ -89,6 +89,10 @@ class ReassignPartitions extends PageComponent {
     }; // topics/partitions selected by user
     @observable selectedBrokers: number[] = [0, 1, 2]; // brokers selected by user
     @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request that will be sent
+
+    @observable _debug_apiData: ApiData | null = null;
+    @observable _debug_topicPartitions: TopicPartitions[] | null = null;
+    @observable _debug_brokers: Broker[] | null = null;
 
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
@@ -225,11 +229,13 @@ class ReassignPartitions extends PageComponent {
                 {/* Debug */}
                 <div style={{ margin: '2em 0 1em 0' }}>
                     <h2>Partition Selection</h2>
-                    <div className='codeBox'>{toJson(this.partitionSelection)}</div>
+                    <div className='codeBox'>{toJson(this.partitionSelection, 4)}</div>
                     <h2>Broker Selection</h2>
                     <div className='codeBox'>{toJson(this.selectedBrokers)}</div>
-                    <h2>New Assignments</h2>
+                    <h2>Computed Assignments</h2>
                     <div className='codeBox'>{toJson(this.reassignmentRequest, 4)}</div>
+                    <h2>Api Data</h2>
+                    <div className='codeBox'>{toJson(this._debug_apiData, 4)}</div>
                 </div>
             </motion.div>
         </>
@@ -281,16 +287,22 @@ class ReassignPartitions extends PageComponent {
             if (targetBrokers.any(b => b == null))
                 throw new Error('one or more broker ids could not be mapped to broker entries');
 
+            // error checking will happen inside computeReassignments
+            const apiData = {
+                brokers: api.clusterInfo!.brokers,
+                topics: api.topics as Topic[],
+                topicPartitions: api.topicPartitions as Map<string, Partition[]>
+            };
+
             const topicAssignments = computeReassignments(
-                // error checking will happen inside the function
-                {
-                    brokers: api.clusterInfo!.brokers,
-                    topics: api.topics as Topic[],
-                    topicPartitions: api.topicPartitions as Map<string, Partition[]>
-                },
+                apiData,
                 topicPartitions,
                 targetBrokers
             );
+
+            this._debug_apiData = apiData;
+            this._debug_topicPartitions = topicPartitions;
+            this._debug_brokers = targetBrokers;
 
             const topics = [];
             for (const t in topicAssignments) {
