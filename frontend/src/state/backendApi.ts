@@ -322,7 +322,7 @@ const apiStore = {
                         }
                     }
 
-                    // debugModifyHeaders(m);
+                    m.keyJson = JSON.stringify(m.key.payload);
 
                     m.valueJson = JSON.stringify(m.value.payload);
 

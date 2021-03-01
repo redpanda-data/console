@@ -340,7 +340,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     isFilterMatch(str: string, m: TopicMessage) {
         str = str.toLowerCase();
         if (m.offset.toString().toLowerCase().includes(str)) return true;
-        if (m.key && String(m.key).toLowerCase().includes(str)) return true;
+        if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
         if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
         return false;
     }

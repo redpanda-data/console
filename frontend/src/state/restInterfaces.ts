@@ -89,11 +89,11 @@ export interface TopicMessage {
     value: Payload,
 
     isValueNull: boolean, // todo: rename to isTombstone
-    // todo: Tab.Messages/index.tsx: isFilterMatch(): use 'keyJson' instead
 
-    // Added by the frontend (sometimes)
+    // Added by the frontend
     valueJson: string,
     valueBinHexPreview: string,
+    keyJson: string,
 }
 
 export interface ListMessageResponse {
