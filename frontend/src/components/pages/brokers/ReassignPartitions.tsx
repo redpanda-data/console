@@ -151,7 +151,8 @@ class ReassignPartitions extends PageComponent {
 
     render() {
         if (!api.topics) return DefaultSkeleton;
-        if (api.topicPartitions.size == 0) return <Empty />
+        if (!api.clusterInfo) return DefaultSkeleton;
+        if (api.topicPartitions.size < api.topics.length) return DefaultSkeleton;
 
         const partitionCountLeaders = api.topics.sum(t => t.partitionCount);
         const partitionCountOnlyReplicated = api.topics.sum(t => t.partitionCount * (t.replicationFactor - 1));
