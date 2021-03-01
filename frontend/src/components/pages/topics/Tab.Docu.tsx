@@ -11,6 +11,7 @@ import { animProps } from "../../../utils/animationProps";
 import Card from "../../misc/Card";
 import { Button, Empty } from "antd";
 import { clone } from "../../../utils/utils";
+import { observer } from "mobx-react";
 
 
 // Test for link sanitizer
@@ -40,7 +41,7 @@ function sanitizeUrl(uri: string, children?: React.ReactNode, title?: string | u
     return ""; // didn't match any allowed protocol, remove the link
 }
 
-
+@observer
 export class TopicDocumentation extends Component<{ topic: TopicDetail }> {
 
     render() {

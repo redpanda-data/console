@@ -73,7 +73,7 @@ func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, con
 	// 3. Iterate through response's config entries and convert them into our desired format
 	converted := make(map[string]*TopicConfig, len(topicNames))
 	for _, res := range response.Resources {
-		kafkaErr := newKafkaError(kerr.ErrorForCode(res.ErrorCode))
+		kafkaErr := newKafkaError(res.ErrorCode)
 		if kafkaErr != nil {
 			s.logger.Warn("config resource response has an error", zap.String("resource_name", res.ResourceName), zap.Error(kafkaErr))
 		}

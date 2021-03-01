@@ -9,7 +9,7 @@ import { FavoritePopover, FormatConfigValue } from "./Tab.Config";
 import { uiSettings } from "../../../state/ui";
 import { prettyBytesOrNA } from "../../../utils/utils";
 
-const statsSeparator = <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
+const StatsSeparator = () => <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
 
 
 // todo: rename QuickInfo
@@ -40,7 +40,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: TopicDetail }) => {
             );
 
         if (configStats.length > 0)
-            statsAr.push(statsSeparator);
+            statsAr.push(<StatsSeparator key={'separator'} />);
 
         statsAr.push(...configStats);
     }

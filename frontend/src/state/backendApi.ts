@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse
 } from "./restInterfaces";
 import { observable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -178,7 +178,8 @@ async function getSchemaOverview(force?: boolean) {
     return cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>
 }
 
-async function getSchemaDetails(subjectName: string, version: number, force?: boolean) {
+async function getSchemaDetails(subjectName: string, version?: number | 'latest', force?: boolean) {
+    if (version == null) version = 'latest';
     return cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
 }
 
@@ -194,7 +195,7 @@ const apiStore = {
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
     clusterConfig: null as (ClusterConfig | null),
-    adminInfo: null as (AdminInfo | null),
+    adminInfo: undefined as (AdminInfo | undefined | null),
 
     schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
     schemaOverviewIsConfigured: undefined as boolean | undefined,
@@ -210,6 +211,8 @@ const apiStore = {
     ACLs: undefined as AclResource[] | undefined | null,
 
     consumerGroups: null as (GroupDescription[] | null),
+
+    partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -400,7 +403,17 @@ const apiStore = {
 
     refreshTopicPartitions(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
-            .then(x => this.topicPartitions.set(topicName, x === null ? null : (x?.partitions ?? null)), addError);
+            .then(response => {
+                if (response != null) {
+                    for (const p of response.partitions) {
+                        const replicaSize = p.partitionLogDirs.max(e => e.size);
+                        p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+                    }
+                    this.topicPartitions.set(topicName, response.partitions);
+                } else {
+                    this.topicPartitions.set(topicName, null);
+                }
+            }, addError);
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
@@ -435,8 +448,13 @@ const apiStore = {
     },
 
     refreshAdminInfo(force?: boolean) {
-        cachedApiRequest<AdminInfo>(`./api/admin`, force)
+        cachedApiRequest<AdminInfo | null>(`./api/admin`, force)
             .then(info => {
+                if (info == null) {
+                    this.adminInfo = null;
+                    return;
+                }
+
                 // normalize responses (missing arrays, or arrays with an empty string)
                 // todo: not needed anymore, responses are always correct now
                 for (const role of info.roles)
@@ -475,11 +493,50 @@ const apiStore = {
             .catch(addError)
     },
 
-    refreshSchemaDetails(subjectName: string, version: number, force?: boolean) {
+    refreshSchemaDetails(subjectName: string, version: number | 'latest', force?: boolean) {
         getSchemaDetails(subjectName, version, force)
             .then(({ schemaDetails }) => (this.schemaDetails = schemaDetails))
             .catch(addError)
-    }
+    },
+
+    refreshPartitionReassignments(force?: boolean) {
+        cachedApiRequest<PartitionReassignmentsResponse | null>('./operations/reassign-partitions', force)
+            .then(v => {
+                if (v === null)
+                    this.partitionReassignments = null;
+                else
+                    this.partitionReassignments = v.topics;
+            }, addError);
+    },
+
+    async startPartitionReassignment(request: PartitionReassignmentRequest): Promise<AlterPartitionReassignmentsResponse> {
+        const response = await fetch('./api/operations/reassign-partitions', {
+            method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as AlterPartitionReassignmentsResponse);
+        return data;
+    },
 }
 
 export function aclRequestToQuery(request: AclRequest): string {

@@ -31,11 +31,20 @@ export class GetTopicsResponse {
 export interface Partition {
     id: number;
     leader: number; // id of the "leader" broker for this partition
-    inSyncReplicas: number[]; // ??
-    offlineReplicas: number[]; // ??
-    replicas: number[]; // ??
+    inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
+    offlineReplicas: number[] | null;
+    partitionLogDirs: {
+        error: string, // empty when no error
+        brokerId: number,
+        partitionId: number, // redundant?
+        size: number, // size (in bytes) of log dir on that broker
+    }[];
+    replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
     waterMarkLow: number;
     waterMarkHigh: number;
+
+    // added by frontend:
+    replicaSize: number;
 }
 
 export interface GetPartitionsResponse {
@@ -435,21 +444,13 @@ export interface SchemaOverviewResponse {
 export interface SchemaOverview {
     mode: string;
     compatibilityLevel: string;
-    subjects: SchemaSubject[];
+    subjects: string[];
     requestErrors: SchemaOverviewRequestError[];
 }
 
 export interface SchemaOverviewRequestError {
     requestDescription: string;
     errorMessage: string;
-}
-
-export interface SchemaSubject { // @martin wtf is schemaSubject? why is this name so confusing?
-    name: string;
-    compatibilityLevel: string;
-    versionsCount: number;
-    latestVersion: string;
-    requestError: string;
 }
 
 export interface SchemaDetailsResponse {
@@ -460,6 +461,7 @@ export interface SchemaDetails {
     string: string;
     schemaId: number;
     version: number;
+    compatibility: string;
     schema: Schema;
     registeredVersions: number[];
 }
@@ -477,4 +479,50 @@ export interface SchemaField {
     type: string | object | null | undefined;
     doc?: string | null | undefined;
     default?: string | object | null | undefined;
+}
+
+
+// Partition Reassignments - Get
+export interface PartitionReassignmentsResponse {
+    topics: PartitionReassignments[];
+}
+export interface PartitionReassignments {
+    topicName: string;
+    partitions: PartitionReassignmentsPartition[];
+}
+export interface PartitionReassignmentsPartition {
+    partitionId: number;
+    addingReplicas: number[];
+    removingReplicas: number[];
+    replicas: number[];
+}
+
+// PartitionReassignments - Patch
+export interface PartitionReassignmentRequest {
+    topics: TopicAssignment[];
+}
+export type TopicAssignment = {
+    topicName: string; // name of topic to change
+    partitions: { // partitions to reassign
+        partitionId: number;
+        replicas: number[] | null;
+        // Entries are brokerIds.
+        // Since the replicationFactor of a partition tells us the total number
+        // of 'instances' of a partition (leader + follower replicas) the length of the array is always 'replicationFactor'.
+        // The first entry in the array is the brokerId that will host the leader replica
+        // can also be null to cancel a pending reassignment.
+        // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
+    }[];
+};
+
+export interface AlterPartitionReassignmentsResponse {
+    reassignPartitionsResponses: {
+        topicName: string;
+        partitions: AlterPartitionReassignmentsPartitionResponse[];
+    }[];
+}
+export interface AlterPartitionReassignmentsPartitionResponse {
+    partitionId: number;
+    errorCode: string;
+    errorMessage: string | null;
 }

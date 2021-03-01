@@ -9,7 +9,9 @@ declare global {
         first<T>(this: T[], selector: (x: T) => boolean): T | undefined;
         last<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
 
+        count<T>(this: T[], selector: (x: T) => boolean): number;
         sum<T>(this: T[], selector: (x: T) => number): number;
+        min<T>(this: T[], selector: (x: T) => number): number;
         max<T>(this: T[], selector: (x: T) => number): number;
 
         any<T>(this: T[], selector: (x: T) => boolean): boolean;
@@ -20,11 +22,14 @@ declare global {
 
         distinct<T>(this: T[], keySelector?: ((x: T) => any)): T[];
         pushDistinct<T>(this: T[], ...elements: T[]): void;
+        intersection<T>(this: T[], other: T[]): T[];
 
         genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[];
         joinStr(this: (string | null | undefined)[], separator: string): string;
 
         toMap<TItem, TKey, TValue>(this: TItem[], computeKey: (item: TItem) => TKey, computeValue: (item: TItem) => TValue): Map<TKey, TValue>;
+
+        filterNull<T>(this: (T | null | undefined)[]): T[];
     }
 }
 
@@ -62,8 +67,16 @@ Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean)
     return undefined;
 };
 
+Array.prototype.count = function count<T>(this: T[], selector: (x: T) => boolean) {
+    return this.reduce((pre, cur) => selector(cur) ? pre + 1 : pre, 0);
+};
+
 Array.prototype.sum = function sum<T>(this: T[], selector: (x: T) => number) {
     return this.reduce((pre, cur) => pre + selector(cur), 0);
+};
+
+Array.prototype.min = function min<T>(this: T[], selector: (x: T) => number) {
+    return this.reduce((pre, cur) => Math.min(pre, selector(cur)), 0);
 };
 
 Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {
@@ -111,6 +124,17 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
     return ar;
 };
 
+Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)[]): T[] {
+    const ar: T[] = [];
+
+    this.forEach(item => {
+        if (item !== null && item !== undefined)
+            ar.push(item);
+    });
+
+    return ar;
+};
+
 
 Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => any): T[] {
     const selector = keySelector ? keySelector : (x: T) => x;
@@ -133,6 +157,15 @@ Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: 
     for (let e of elements)
         if (!this.includes(e))
             this.push(e);
+};
+
+Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): T[] {
+    const set = new Set<T>(this);
+    const results: T[] = [];
+    for (const e of other)
+        if (set.has(e))
+            results.push(e);
+    return results;
 };
 
 Array.prototype.genericJoin = function genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[] {

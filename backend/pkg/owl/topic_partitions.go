@@ -4,9 +4,20 @@ import (
 	"context"
 	"fmt"
 	"github.com/cloudhut/common/rest"
+	"github.com/pkg/errors"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"net/http"
+	"sync"
+	"time"
 )
+
+type TopicPartitionOverview struct {
+	Partitions []TopicPartition `json:"partitions"`
+
+	// PartitionLogDirErrors are errors of partition log dir requests where brokers failed to respond
+	PartitionLogDirErrors []TopicPartitionLogDirRequestError `json:"partitionLogDirErrors"`
+}
 
 // TopicPartition consists of some (not all) information about a partition of a topic.
 // Only data relevant to the 'partition table' in the frontend is included.
@@ -27,10 +38,25 @@ type TopicPartition struct {
 
 	// Leader is the broker leader for this partition. This will be -1 on leader / listener error.
 	Leader int32 `json:"leader"`
+
+	// PartitionLogDirs return the size per partition and broker
+	PartitionLogDirs []TopicPartitionLogDirs `json:"partitionLogDirs"`
+}
+
+type TopicPartitionLogDirs struct {
+	Error       string `json:"error"`
+	BrokerID    int32  `json:"brokerId"`
+	PartitionID int32  `json:"partitionId"`
+	Size        int64  `json:"size"`
+}
+
+type TopicPartitionLogDirRequestError struct {
+	Error    string `json:"error"`
+	BrokerID int32  `json:"brokerId"`
 }
 
 // ListTopicPartitions returns the partition in the topic along with their watermarks
-func (s *Service) ListTopicPartitions(ctx context.Context, topicName string) ([]TopicPartition, *rest.Error) {
+func (s *Service) ListTopicPartitions(ctx context.Context, topicName string) (*TopicPartitionOverview, *rest.Error) {
 	metadata, restErr := s.kafkaSvc.GetSingleMetadata(ctx, topicName)
 	if restErr != nil {
 		return nil, restErr
@@ -43,6 +69,18 @@ func (s *Service) ListTopicPartitions(ctx context.Context, topicName string) ([]
 		partitionsByID[partition.Partition] = partition
 	}
 
+	// Try to get partition sizes
+	logDirCtx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+	var partitionLogDirs map[int32][]TopicPartitionLogDirs
+	var partitionLogDirErrors []TopicPartitionLogDirRequestError
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		partitionLogDirs, partitionLogDirErrors = s.describePartitionLogDirs(logDirCtx, topicName, partitionIDs)
+	}()
+
 	// Get watermarks
 	waterMarks, err := s.kafkaSvc.GetPartitionMarks(ctx, topicName, partitionIDs)
 	if err != nil {
@@ -54,20 +92,75 @@ func (s *Service) ListTopicPartitions(ctx context.Context, topicName string) ([]
 		}
 	}
 
+	// Wait for result/end of describe log dir routine
+	wg.Wait()
+
 	// Create result array
 	topicPartitions := make([]TopicPartition, len(metadata.Partitions))
 	for i, p := range metadata.Partitions {
+		partitionLogDirsFormatted := make([]TopicPartitionLogDirs, 0)
+		if partitionLogDirs != nil && partitionLogDirs[p.Partition] != nil {
+			partitionLogDirsFormatted = partitionLogDirs[p.Partition]
+		}
+
 		w := waterMarks[p.Partition]
 		topicPartitions[i] = TopicPartition{
-			ID:              p.Partition,
-			WaterMarkLow:    w.Low,
-			WaterMarkHigh:   w.High,
-			Replicas:        p.Replicas,
-			OfflineReplicas: p.OfflineReplicas,
-			InSyncReplicas:  p.ISR,
-			Leader:          p.Leader,
+			ID:               p.Partition,
+			WaterMarkLow:     w.Low,
+			WaterMarkHigh:    w.High,
+			Replicas:         p.Replicas,
+			OfflineReplicas:  p.OfflineReplicas,
+			InSyncReplicas:   p.ISR,
+			Leader:           p.Leader,
+			PartitionLogDirs: partitionLogDirsFormatted,
 		}
 	}
 
-	return topicPartitions, nil
+	return &TopicPartitionOverview{
+		Partitions:            topicPartitions,
+		PartitionLogDirErrors: partitionLogDirErrors,
+	}, nil
+}
+
+func (s *Service) describePartitionLogDirs(ctx context.Context, topicName string, partitionIDs []int32) (map[int32][]TopicPartitionLogDirs, []TopicPartitionLogDirRequestError) {
+	topicLogDirReq := kmsg.NewDescribeLogDirsRequestTopic()
+	topicLogDirReq.Partitions = partitionIDs
+	topicLogDirReq.Topic = topicName
+
+	partitionLogDirs := make(map[int32][]TopicPartitionLogDirs, 0)
+	partitionLogDirErrors := make([]TopicPartitionLogDirRequestError, 0)
+	responseSharded, _ := s.kafkaSvc.DescribeLogDirs(ctx, []kmsg.DescribeLogDirsRequestTopic{topicLogDirReq})
+	for _, resShard := range responseSharded.LogDirResponses {
+		if resShard.Error != nil {
+			d := TopicPartitionLogDirRequestError{
+				BrokerID: resShard.BrokerMetadata.NodeID,
+				Error:    resShard.Error.Error(),
+			}
+			partitionLogDirErrors = append(partitionLogDirErrors, d)
+			continue
+		}
+
+		for _, dir := range resShard.LogDirs.Dirs {
+			err := kerr.ErrorForCode(dir.ErrorCode)
+			if err != nil {
+				d := TopicPartitionLogDirRequestError{
+					BrokerID: resShard.BrokerMetadata.NodeID,
+					Error:    errors.Wrap(err, "failed to describe dir, inner kafka error").Error(),
+				}
+				partitionLogDirErrors = append(partitionLogDirErrors, d)
+				continue
+			}
+			for _, topic := range dir.Topics {
+				for _, partition := range topic.Partitions {
+					d := TopicPartitionLogDirs{
+						BrokerID:    resShard.BrokerMetadata.NodeID,
+						PartitionID: partition.Partition,
+						Size:        partition.Size,
+					}
+					partitionLogDirs[partition.Partition] = append(partitionLogDirs[partition.Partition], d)
+				}
+			}
+		}
+	}
+	return partitionLogDirs, partitionLogDirErrors
 }

@@ -120,7 +120,7 @@ const uiSettings = observable({
 
     consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
-        quickSearch: '',
+        quickSearch: ''
     },
 
     consumerGroupDetails: {

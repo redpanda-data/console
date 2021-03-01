@@ -398,16 +398,13 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         const copyDropdown = (record: TopicMessage) => (
             <Menu>
-                <Menu.Item key="0" onClick={() => this.copyMessage(record, 'key')}>
+                <Menu.Item key="0" onClick={() => this.copyMessage(record, 'jsonKey')}>
                     Copy Key
                 </Menu.Item>
-
-                <Menu.Item key="1" onClick={() => this.copyMessage(record, 'rawValue')}>
-                    Copy Value (Raw)
-                </Menu.Item>
                 <Menu.Item key="2" onClick={() => this.copyMessage(record, 'jsonValue')}>
-                    Copy Value (JSON Format)
+                    Copy Value
                 </Menu.Item>
+
                 <Menu.Item key="4" onClick={() => this.copyMessage(record, 'timestamp')}>
                     Copy Epoch Timestamp
                 </Menu.Item>
@@ -422,22 +419,13 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
             { width: 2, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
             {
+                dataIndex: 'value',
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
-                dataIndex: 'value',
                 render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activeTags} />,
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
-            // {
-            //     width: 1, title: 'Headers', dataIndex: 'headers', sorter: (a, b, order) => b.headers.length - a.headers.length, render: (t, r) => r.headers.length,
-            // },
-
-            // todo: size was a guess anyway, might be added back later
-            // {
-            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
-            //     sorter: (a, b) => b.size - a.size
-            // },
             {
                 width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                 filters: [],
@@ -466,6 +454,11 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     // <Divider type="vertical" />
                 ),
             },
+            // todo: size was a guess anyway, might be added back later
+            // {
+            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
+            //     sorter: (a, b) => b.size - a.size
+            // },
         ];
 
         // If the previewColumnFields is empty then use the default columns, otherwise filter it based on it
@@ -531,22 +524,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         return ta.localeCompare(tb);
     }
 
-    copyMessage(record: TopicMessage, field: "key" | "rawValue" | "jsonValue" | "timestamp") {
+    // we can only write text to the clipboard, so rawKey/rawValue have been removed for now
+    copyMessage(record: TopicMessage, field: "jsonKey" | "jsonValue" | "timestamp") {
 
         switch (field) {
-            case "key":
-                typeof record.key === "string" ?
-                    navigator.clipboard.writeText(record.key as string) :
-                    navigator.clipboard.writeText(JSON.stringify(record.key));
+            case "jsonKey":
+                typeof record.key.payload === 'string'
+                    ? navigator.clipboard.writeText(record.key.payload as string)
+                    : navigator.clipboard.writeText(JSON.stringify(record.key.payload, null, 4));
                 message.success('Key copied to clipboard', 5);
                 break;
-            case "rawValue":
-                navigator.clipboard.writeText(record.valueJson);
-                message.success('Raw Value copied to clipboard', 5);
-                break;
             case "jsonValue":
-                navigator.clipboard.writeText(JSON.stringify(record.value, null, 4));
-                message.success('Message Value (JSON) copied to clipboard', 5);
+                typeof record.value.payload === 'string'
+                    ? navigator.clipboard.writeText(record.value.payload as string)
+                    : navigator.clipboard.writeText(JSON.stringify(record.value.payload, null, 4));
+                message.success('Value copied to clipboard', 5);
                 break;
             case "timestamp":
                 navigator.clipboard.writeText(record.timestamp.toString());
@@ -707,7 +699,7 @@ const renderKey = (p: Payload, record: TopicMessage) => {
             onOk() { },
         });
 
-        return <span className='hoverLink cellDiv' style={{ minWidth: '120px' }} onClick={() => modal()}>
+        return <span className='cellDiv' style={{ minWidth: '120px' }}>
             <code style={{ fontSize: '95%' }}>{text.slice(0, 44)}&hellip;</code>
         </span>
     }
@@ -785,12 +777,10 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
         {/* .ant-tabs-nav { width: ??; } */}
         <Tabs animated={false}>
             <Tabs.TabPane key='value' tab='Value'>
-                {renderMessageValue(msg, shouldExpand)}
+                {renderPayload(msg.value, shouldExpand)}
             </Tabs.TabPane>
             <Tabs.TabPane key='key' tab='Key'>
-                <span className='cellDiv' style={{ width: 'auto' }}>
-                    <code style={{}}>{toSafeString(msg.key.payload)}</code>
-                </span>
+                {renderPayload(msg.key, shouldExpand)}
             </Tabs.TabPane>
             <Tabs.TabPane key='headers' tab='Headers' disabled={msg.headers.length == 0}>
                 <MessageHeaders msg={msg} />
@@ -799,18 +789,18 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
     </div>
 }
 
-function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function renderPayload(value: Payload, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
-        if (!msg || !msg.value || !msg.value.payload) return <code>null</code>
+        if (!value || !value.payload) return <code>null</code>
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
-        if (msg.value.encoding == 'binary') {
+        if (value.encoding == 'binary') {
             const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
-                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{msg.value}</code>
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{value}</code>
             }
             else if (mode == 'hex') {
-                const str = msg.value.payload as string;
+                const str = value.payload as string;
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     let n = str.charCodeAt(i).toString(16);
@@ -821,7 +811,7 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>
             }
             else {
-                const str = msg.value.payload as string;
+                const str = value.payload as string;
                 let result = '';
                 const isPrintable = /[\x20-\x7E]/;
                 for (let i = 0; i < str.length; i++) {
@@ -834,6 +824,10 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
             }
         }
 
+        if (value.encoding == 'text') {
+            return <div className='codeBox'>{String(value.payload)}</div>
+        }
+
         return (
             <>
                 {/* <Affix offsetTop={30}>
@@ -841,7 +835,7 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                         style={{ float: 'right', margin: '1em', zIndex: 10 }} />
                 </Affix> */}
 
-                <KowlJsonView src={msg.value.payload} shouldCollapse={shouldCollapse} />
+                <KowlJsonView src={value.payload} shouldCollapse={shouldCollapse} />
             </>
         )
     }
@@ -864,8 +858,8 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
         {Object.entries(data).map(([k, v]) => <React.Fragment key={k}>
             <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
-                <div style={{ fontWeight: 600 }}>{v}</div>
-                <div style={{ color: 'rgba(0, 0, 0, 0.4)' }}>{k}</div>
+                <div style={{ fontWeight: 600 }}>{k}</div>
+                <div style={{ color: 'rgba(0, 0, 0, 0.6)', }}>{v}</div>
             </div>
         </React.Fragment>)}
     </div>

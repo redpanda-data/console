@@ -25,6 +25,8 @@ import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.De
 import AclList from "./pages/acls/Acl.List";
 import { observable } from "mobx";
 import ReassignPartitions from "./pages/brokers/ReassignPartitions";
+import { IsDev } from "../utils/env";
+import { CommentDiscussionIcon, DatabaseIcon, FileCodeIcon, GitCompareIcon, RepoIcon, ShieldLockIcon, ToolsIcon } from "@primer/octicons-v2-react";
 
 
 //
@@ -207,24 +209,26 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 //
 export const APP_ROUTES: IRouteEntry[] = [
 
-    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <HddOutlined />),
-    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <QuestionCircleFilled />),
+    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span role='img' className='anticon'><DatabaseIcon /></span>),
+    IsDev
+        ? MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span role='img' className='anticon'><GitCompareIcon /></span>)
+        : null as any as IRouteEntry,
 
-    MakeRoute<{}>('/topics', TopicList, 'Topics', <ProfileOutlined />),
-    MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics', <ProfileOutlined />),
+    MakeRoute<{}>('/topics', TopicList, 'Topics', <span role='img' className='anticon'><RepoIcon /></span>),
+    MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
-    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <FunnelPlotOutlined />),
-    MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', <FunnelPlotOutlined />),
+    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span role='img' className='anticon'><CommentDiscussionIcon /></span>),
+    MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-    MakeRoute<{}>('/acls', AclList, 'ACLs', <FileProtectOutlined />, true, () => ({ visible: true, enabled: api.userData?.canListAcls ?? true })),
+    MakeRoute<{}>('/acls', AclList, 'ACLs', <span role='img' className='anticon'><ShieldLockIcon /></span>, true, () => ({ visible: true, enabled: api.userData?.canListAcls ?? true })),
 
-    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <PartitionOutlined />),
+    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span role='img' className='anticon'><FileCodeIcon /></span>),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', <span role='img' className='anticon'><ToolsIcon /></span>, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
 
     //MakeRoute<{}>('/users', UrlTestPage, 'Users', 'user'),
     //MakeRoute<{}>('/license', UrlTestPage, 'License', 'copyright'),
-];
+].filter(x => x != null);

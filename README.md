@@ -1,4 +1,4 @@
-# Kowl
+# Kowl - Apache Kafka Web UI
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/cloudhut/kowl/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cloudhut/kowl)](https://goreportcard.com/report/github.com/cloudhut/kowl)
@@ -47,6 +47,10 @@ We offer pre built docker images for Kowl (Business), a Helm chart and a Terrafo
 ### Docker Compose (running locally)
 
 If you want to run Kowl locally take a look at the docker compose sample: [/docs/local](./docs/local).
+
+## Chat with us
+
+We use Discord to communicate. If you are looking for more interactive discussions or support, you are invited to join our Discord server: https://discord.gg/KQj7P6v
 
 ## Sponsors
 

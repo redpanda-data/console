@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip, Popover } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip, Popover, Empty } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../../state/backendApi";
@@ -34,18 +34,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         if (group) p.addBreadcrumb(group, '/' + group);
 
         this.refreshData(false);
-
-        // autorun(() => {
-        //     if (api.ConsumerGroups)
-        //         for (let g of api.ConsumerGroups)
-        //             console.log(g.groupId + ': ' + g.lag.topicLags.sum(l => l.partitionLags.sum(x => x.lag)));
-        // });
-
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
     refreshData(force: boolean) {
-        console.log('GroupDetails.Refresh()');
         api.refreshConsumerGroups(force);
     };
 
@@ -156,7 +148,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             })
         );
 
-        const lagGroupsByTopic = lagsFlat.groupInto(e => e.topicName);
+        const lagGroupsByTopic = lagsFlat.groupInto(e => e.topicName).sort((a, b) => a.key.localeCompare(b.key));
 
         const topicEntries = lagGroupsByTopic.map(g => {
             const totalLagAll = g.items.sum(c => c.lag ?? 0);
@@ -164,6 +156,9 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
 
             if (p.onlyShowPartitionsWithLag)
                 g.items.removeAll(e => e.lag === 0);
+
+            if (g.items.length == 0)
+                return null;
 
             return <Collapse.Panel key={g.key}
                 header={
@@ -209,6 +204,16 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             ? lagGroupsByTopic[0].key // only one -> expand
             : undefined; // more than one -> collapse
 
+        const nullEntries = topicEntries.filter(e => e == null).length;
+        if (topicEntries.length == 0 || topicEntries.length == nullEntries)
+            return <Empty style={{
+                background: 'radial-gradient(hsl(0deg 0% 100%) 40%, hsl(0deg 0% 97%) 90%)',
+                borderRadius: '5px',
+                padding: '1.5em'
+            }}>
+                <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span>
+            </Empty>
+
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{topicEntries}</Collapse>;
     }
 }
@@ -229,59 +234,75 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
         const topicLags = this.props.group.lag.topicLags;
         const p = this.props;
 
-        const memberEntries = p.group.members.map((m, i) => {
-            const assignments = m.assignments;
+        const memberEntries = p.group.members
+            // sorting actually not necessary
+            // .sort((a, b) => a.id.localeCompare(b.id))
+            .map((m, i) => {
+                const assignments = m.assignments;
 
-            const assignmentsFlat = assignments
-                .map(a => a.partitionIds.map(id => {
-                    const topicLag = topicLags.find(t => t.topic == a.topicName);
-                    const partLag = topicLag?.partitionLags.find(p => p.partitionId == id)?.lag;
-                    return {
-                        topicName: a.topicName,
-                        partitionId: id,
-                        partitionLag: partLag ?? 0,
-                    }
-                })).flat();
+                const assignmentsFlat = assignments
+                    .map(a => a.partitionIds.map(id => {
+                        const topicLag = topicLags.find(t => t.topic == a.topicName);
+                        const partLag = topicLag?.partitionLags.find(p => p.partitionId == id)?.lag;
+                        return {
+                            topicName: a.topicName,
+                            partitionId: id,
+                            partitionLag: partLag ?? 0,
+                        }
+                    })).flat();
 
-            const totalLag = assignmentsFlat.sum(t => t.partitionLag ?? 0);
-            const totalPartitions = assignmentsFlat.length;
+                const totalLag = assignmentsFlat.sum(t => t.partitionLag ?? 0);
+                const totalPartitions = assignmentsFlat.length;
 
-            if (p.onlyShowPartitionsWithLag)
-                assignmentsFlat.removeAll(e => e.partitionLag === 0);
+                if (p.onlyShowPartitionsWithLag)
+                    assignmentsFlat.removeAll(e => e.partitionLag === 0);
 
-            return <Collapse.Panel key={m.id}
-                header={
-                    <div>
-                        <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{renderMergedID(m.id, m.clientId)}</span>
-                        <Tooltip placement='top' title='Host of the member' mouseEnterDelay={0}>
-                            <Tag style={{ marginLeft: '1em' }} color='blue'>host: {m.clientHost}</Tag>
-                        </Tooltip>
-                        <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
-                            <Tag color='blue'>partitions: {totalPartitions}</Tag>
-                        </Tooltip>
-                        <Tooltip placement='top' title='Summed lag over all assigned partitions of all topics' mouseEnterDelay={0}>
-                            <Tag color='blue'>lag: {totalLag}</Tag>
-                        </Tooltip>
-                    </div>
-                }>
+                if (assignmentsFlat.length == 0)
+                    return null;
 
-                <Table
-                    size='small'
-                    pagination={this.pageConfig}
-                    dataSource={assignmentsFlat}
-                    rowKey={r => r.topicName + r.partitionId}
-                    columns={[
-                        { width: 'auto', title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName') },
-                        { width: 150, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId') },
-                        { width: 150, title: 'Lag', dataIndex: 'partitionLag', sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
-                    ]}
-                />
-            </Collapse.Panel>
-        });
+                return <Collapse.Panel key={m.id} forceRender={false}
+                    header={
+                        <div>
+                            <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{renderMergedID(m.id, m.clientId)}</span>
+                            <Tooltip placement='top' title='Host of the member' mouseEnterDelay={0}>
+                                <Tag style={{ marginLeft: '1em' }} color='blue'>host: {m.clientHost}</Tag>
+                            </Tooltip>
+                            <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
+                                <Tag color='blue'>partitions: {totalPartitions}</Tag>
+                            </Tooltip>
+                            <Tooltip placement='top' title='Summed lag over all assigned partitions of all topics' mouseEnterDelay={0}>
+                                <Tag color='blue'>lag: {totalLag}</Tag>
+                            </Tooltip>
+                        </div>
+                    }>
+
+                    <Table
+                        size='small'
+                        pagination={this.pageConfig}
+                        dataSource={assignmentsFlat}
+                        rowKey={r => r.topicName + r.partitionId}
+                        columns={[
+                            { width: 'auto', title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName') },
+                            { width: 150, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId') },
+                            { width: 150, title: 'Lag', dataIndex: 'partitionLag', sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
+                        ]}
+                    />
+                </Collapse.Panel>
+            });
 
         const defaultExpand = p.group.members.length == 1
             ? p.group.members[0].id // if only one entry, expand it
             : undefined; // more than one -> collapse
+
+        const nullEntries = memberEntries.filter(e => e == null).length;
+        if (memberEntries.length == 0 || memberEntries.length == nullEntries)
+            return <Empty style={{
+                background: 'radial-gradient(hsl(0deg 0% 100%) 40%, hsl(0deg 0% 97%) 90%)',
+                borderRadius: '5px',
+                padding: '1.5em'
+            }}>
+                <span>All {memberEntries.length} members have been filtered (no lag on any partition).</span>
+            </Empty>
 
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{memberEntries}</Collapse>;
     }
