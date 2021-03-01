@@ -1,5 +1,5 @@
 import React from "react";
-import { KafkaError, TopicConfigEntry, TopicDetail } from "../../../state/restInterfaces";
+import { KafkaError, TopicConfigEntry, Topic } from "../../../state/restInterfaces";
 import {
     Tooltip,
     Descriptions,
@@ -33,7 +33,7 @@ const { Text } = Typography;
 
 // Full topic configuration
 export const TopicConfiguration = observer(
-    (p: { topic: TopicDetail }) => {
+    (p: { topic: Topic }) => {
         const config = api.topicConfig.get(p.topic.topicName);
         if (config === undefined) return DefaultSkeleton; // still loading
         if (config && config.error)

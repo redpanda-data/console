@@ -1,7 +1,7 @@
 /*eslint block-scoped-var: "error"*/
 
 import {
-    GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
+    GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
     ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse
 } from "./restInterfaces";
@@ -203,7 +203,7 @@ const apiStore = {
     schemaOverviewIsConfigured: undefined as boolean | undefined,
     schemaDetails: null as (SchemaDetails | null),
 
-    topics: null as (TopicDetail[] | null),
+    topics: null as (Topic[] | null),
     topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
     topicDocumentation: new Map<string, TopicDocumentation>(),
     topicPermissions: new Map<string, TopicPermissions | null>(),
@@ -407,12 +407,21 @@ const apiStore = {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
             .then(response => {
                 if (response != null) {
+                    // Add some local/cached properties to make working with the data easier
                     for (const p of response.partitions) {
-                        const replicaSize = p.partitionLogDirs.max(e => e.size);
+                        // replicaSize
+                        const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                        const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
                         p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+
+                        // topicName
+                        p.topicName = topicName;
                     }
+
+                    // Set partitions
                     this.topicPartitions.set(topicName, response.partitions);
                 } else {
+                    // Set null to indicate that we're not allowed to see the partitions
                     this.topicPartitions.set(topicName, null);
                 }
             }, addError);

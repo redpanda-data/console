@@ -6,7 +6,7 @@ import { observer } from 'mobx-react';
 import React, { RefObject } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { TopicActions, TopicDetail } from '../../../state/restInterfaces';
+import { TopicActions, Topic } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
@@ -21,7 +21,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 class TopicList extends PageComponent {
     pageConfig = makePaginationConfig(uiSettings.topicList.pageSize);
     quickSearchReaction: IReactionDisposer;
-    @observable filteredTopics: TopicDetail[];
+    @observable filteredTopics: Topic[];
 
     initPage(p: PageInitHelper): void {
         p.title = 'Topics';
@@ -58,7 +58,7 @@ class TopicList extends PageComponent {
         return api.topics.filter((t) => (uiSettings.topicList.hideInternalTopics && t.isInternal ? false : true));
     }
 
-    isFilterMatch(filter: string, item: TopicDetail): boolean {
+    isFilterMatch(filter: string, item: Topic): boolean {
         if (item.topicName.toLowerCase().includes(filter.toLowerCase())) return true;
         return false;
     }
@@ -101,7 +101,7 @@ class TopicList extends PageComponent {
                 <Card>
                     <Row justify="space-between" align="middle">
                         <Col span="auto">
-                            <SearchBar<TopicDetail>
+                            <SearchBar<Topic>
                                 dataSource={this.getTopics}
                                 isFilterMatch={this.isFilterMatch}
                                 filterText={uiSettings.topicList.quickSearch}
@@ -162,7 +162,7 @@ const iconClosedEye = (
     </span>
 );
 
-const renderName = (topic: TopicDetail) => {
+const renderName = (topic: Topic) => {
     const actions = topic.allowedActions;
 
     if (!actions || actions[0] == 'all') return topic.topicName; // happens in non-business version

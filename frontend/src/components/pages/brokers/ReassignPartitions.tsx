@@ -6,7 +6,7 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, TopicDetail } from "../../../state/restInterfaces";
+import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
@@ -281,7 +281,16 @@ class ReassignPartitions extends PageComponent {
             if (targetBrokers.any(b => b == null))
                 throw new Error('one or more broker ids could not be mapped to broker entries');
 
-            const topicAssignments = computeReassignments(topicPartitions, api.clusterInfo!.brokers, targetBrokers);
+            const topicAssignments = computeReassignments(
+                // error checking will happen inside the function
+                {
+                    brokers: api.clusterInfo!.brokers,
+                    topics: api.topics as Topic[],
+                    topicPartitions: api.topicPartitions as Map<string, Partition[]>
+                },
+                topicPartitions,
+                targetBrokers
+            );
 
             const topics = [];
             for (const t in topicAssignments) {
@@ -338,7 +347,7 @@ class ReassignPartitions extends PageComponent {
 
 
 
-type TopicWithPartitions = TopicDetail & { partitions: Partition[] };
+type TopicWithPartitions = Topic & { partitions: Partition[] };
 
 @observer
 class StepSelectPartitions extends Component<{ partitionSelection: PartitionSelection }> {
@@ -508,7 +517,7 @@ class IndeterminateCheckbox extends Component<{ originalCheckbox: React.ReactNod
 
 @observer
 class SelectPartitionTable extends Component<{
-    topic: TopicDetail,
+    topic: Topic,
     topicPartitions: Partition[],
     setSelection: (topic: string, partition: number, isSelected: boolean) => void,
     isSelected: (topic: string, partition: number) => boolean,
@@ -698,7 +707,7 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
         </>
     }
 
-    @computed get selectedPartitions(): { topicName: string; topic: TopicDetail, allPartitions: Partition[], selectedPartitions: Partition[] }[] {
+    @computed get selectedPartitions(): { topicName: string; topic: Topic, allPartitions: Partition[], selectedPartitions: Partition[] }[] {
         const ar = [];
         for (const [topicName, partitions] of api.topicPartitions) {
             if (partitions == null) continue;
@@ -714,7 +723,7 @@ class StepReview extends Component<{ partitionSelection: PartitionSelection, bro
 }
 
 @observer
-class ReviewPartitionTable extends Component<{ topic: TopicDetail, topicPartitions: Partition[], assignments: TopicAssignment }> {
+class ReviewPartitionTable extends Component<{ topic: Topic, topicPartitions: Partition[], assignments: TopicAssignment }> {
     partitionsPageConfig = makePaginationConfig(100, true);
     brokerTooltip = <div style={{ maxWidth: '380px', fontSize: 'smaller' }}>
         These are the brokers this partitions replicas are assigned to.<br />

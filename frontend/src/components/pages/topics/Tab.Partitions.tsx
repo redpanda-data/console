@@ -1,6 +1,6 @@
 import { Component, ReactNode } from "react";
 import React from "react";
-import { TopicDetail, } from "../../../state/restInterfaces";
+import { Topic, } from "../../../state/restInterfaces";
 import { Table, Alert, } from "antd";
 import { observer } from "mobx-react";
 import { api, } from "../../../state/backendApi";
@@ -12,7 +12,7 @@ import { numberToThousandsString, DefaultSkeleton } from "../../../utils/tsxUtil
 
 
 @observer
-export class TopicPartitions extends Component<{ topic: TopicDetail }> {
+export class TopicPartitions extends Component<{ topic: Topic }> {
 
     pageConfig = makePaginationConfig(100); // makePaginationConfig(uiSettings.topics.partitionPageSize);
 

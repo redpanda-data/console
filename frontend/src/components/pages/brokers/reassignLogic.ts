@@ -1,5 +1,4 @@
-import { Broker, Partition, TopicDetail } from "../../../state/restInterfaces";
-import { api } from "../../../state/backendApi";
+import { Broker, Partition, Topic } from "../../../state/restInterfaces";
 import { toJson } from "../../../utils/jsonUtils";
 
 // Requirements:
@@ -21,7 +20,7 @@ import { toJson } from "../../../utils/jsonUtils";
 
 // Input for a reassignment computation. A selection of partitions that should be reassigned.
 export type TopicPartitions = {
-    topic: TopicDetail // topic the partitions belong to
+    topic: Topic // topic the partitions belong to
     partitions: Partition[], // selected partitions
 }
 
@@ -41,21 +40,19 @@ type BrokerReplicaCount = { // track how many replicas were assigned to a broker
     assignedReplicas: number;
 };
 
+type ApiData = { brokers: Broker[], topics: Topic[], topicPartitions: Map<string, Partition[]> };
 
-export function computeReassignments(selectedTopicPartitions: TopicPartitions[], allBrokers: Broker[], targetBrokers: Broker[]): TopicAssignments {
-    // Error check inputs
-    // No partitions or brokers
-    if (selectedTopicPartitions.sum(x => x.partitions.length) == 0)
-        throw new Error("No partitions selected.");
-    // We need at least as many brokers as the highest replication factor
-    const maxRf = selectedTopicPartitions
-        .groupInto(t => t.topic.replicationFactor) // group topics by replication factor
-        .sort((a, b) => b.key - a.key)[0]; // sort descending, then take first group
-    if (maxRf.key > targetBrokers.length)
-        throw new Error(`You selected ${targetBrokers.length} target brokers, but the following topics have a replicationFactor of ${maxRf.key}, so at least ${maxRf.key} target brokers are required: ${toJson(maxRf.items.map(t => t.topic.topicName))}`);
+
+export function computeReassignments(
+    apiData: ApiData,
+    selectedTopicPartitions: TopicPartitions[],
+    targetBrokers: Broker[]
+): TopicAssignments {
+
+    checkArguments(apiData, selectedTopicPartitions, targetBrokers);
 
     // Track information like used disk space per broker, so we extend each broker with some metadata
-    const allExBrokers = allBrokers.map(b => new ExBroker(b));
+    const allExBrokers = apiData.brokers.map(b => new ExBroker(b, apiData));
     const targetExBrokers = allExBrokers.filter(exb => targetBrokers.find(b => exb.brokerId == b.brokerId) != undefined);
 
     const resultAssignments: TopicAssignments = {};
@@ -215,19 +212,19 @@ class ExBroker implements Broker {
     assignedReplicas: number = 0;
     assignedSize: number = 0;
 
-    constructor(sourceBroker: Broker) {
+    constructor(sourceBroker: Broker, apiData: ApiData) {
         Object.assign(this, sourceBroker);
-        this.recomputeActual();
+        this.recomputeActual(apiData);
     }
 
-    recomputeActual() {
+    recomputeActual(apiData: ApiData) {
         this.actualReplicas = 0;
         this.actualSize = 0;
 
-        if (api.topicPartitions == null)
+        if (apiData.topicPartitions == null)
             throw new Error(`cannot recompute actual usage of broker '${this.brokerId}' because 'api.topicPartitions == null' (no permissions?)`);
 
-        for (const [topic, partitions] of api.topicPartitions) {
+        for (const [topic, partitions] of apiData.topicPartitions) {
             if (partitions == null) throw new Error(`cannot recompute actual usage of broker '${this.brokerId}' for topic '${topic}', because 'partitions == null' (no permissions?)`);
 
             for (const p of partitions) {
@@ -268,5 +265,43 @@ class ExBroker implements Broker {
             // this.trackedReplicas -= deltaReplicas;
             // this.trackedSize -= deltaSize;
         }
+    }
+}
+
+
+function checkArguments(
+    apiData: ApiData,
+    selectedTopicPartitions: TopicPartitions[],
+    targetBrokers: Broker[]) {
+    // Check for missing or invalid api data
+    throwIfNullOrEmpty("apiData.brokers", apiData.brokers);
+    throwIfNullOrEmpty("apiData.topics", apiData.topics);
+    throwIfNullOrEmpty("apiData.topicPartitions", apiData.topicPartitions);
+    const topicsMissingPartitionData = apiData.topics.filter(t => apiData.topicPartitions.get(t.topicName) == null);
+    if (topicsMissingPartitionData.length > 0)
+        throw new Error("apiData is missing topicPartitions for these topics: " + topicsMissingPartitionData.map(t => t.topicName).join(', '))
+
+    // Require at least one selected partition
+    if (selectedTopicPartitions.sum(x => x.partitions.length) == 0)
+        throw new Error("No partitions selected");
+
+    // Require at least as many brokers as the highest replication factor of any selected partition
+    const maxRf = selectedTopicPartitions
+        .groupInto(t => t.topic.replicationFactor) // group topics by replication factor
+        .sort((a, b) => b.key - a.key)[0]; // sort descending, then take first group
+    if (maxRf.key > targetBrokers.length)
+        throw new Error(`You selected ${targetBrokers.length} target brokers, but the following topics have a replicationFactor of ${maxRf.key}, so at least ${maxRf.key} target brokers are required: ${toJson(maxRf.items.map(t => t.topic.topicName))}`);
+}
+
+function throwIfNullOrEmpty(name: string, obj: any[] | Map<any, any>) {
+    if (obj == null)
+        throw new Error(name + " is null");
+
+    if (Array.isArray(obj)) {
+        if (obj.length == 0)
+            throw new Error(name + " is empty");
+    } else {
+        if (obj.size == 0)
+            throw new Error(name + " is empty");
     }
 }

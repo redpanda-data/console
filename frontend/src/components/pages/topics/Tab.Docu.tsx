@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { TopicDetail } from "../../../state/restInterfaces";
+import { Topic } from "../../../state/restInterfaces";
 import "../../../utils/arrayExtensions";
 import { api } from "../../../state/backendApi";
 import ReactMarkdown from 'react-markdown';
@@ -42,7 +42,7 @@ function sanitizeUrl(uri: string, children?: React.ReactNode, title?: string | u
 }
 
 @observer
-export class TopicDocumentation extends Component<{ topic: TopicDetail }> {
+export class TopicDocumentation extends Component<{ topic: Topic }> {
 
     render() {
         let docu = api.topicDocumentation.get(this.props.topic.topicName);

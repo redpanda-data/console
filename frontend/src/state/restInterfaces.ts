@@ -9,7 +9,7 @@ export interface ApiError {
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];
 
-export class TopicDetail {
+export class Topic {
     topicName: string;
     isInternal: boolean;
     partitionCount: number;
@@ -17,13 +17,10 @@ export class TopicDetail {
     cleanupPolicy: string;
     logDirSize: number; // how much space this topic takes up (files in its log dir)
     allowedActions: TopicAction[] | undefined;
-
-    // Added by frontend
-    // messageCount: number;
 }
 
 export class GetTopicsResponse {
-    topics: TopicDetail[];
+    topics: Topic[];
 }
 
 
@@ -44,7 +41,8 @@ export interface Partition {
     waterMarkHigh: number;
 
     // added by frontend:
-    replicaSize: number;
+    replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
+    topicName: string; // used for finding the actual topic this partition belongs to (in case we pass around a partition reference on its own)
 }
 
 export interface GetPartitionsResponse {

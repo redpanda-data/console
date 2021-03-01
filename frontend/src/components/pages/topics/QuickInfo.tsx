@@ -1,5 +1,5 @@
 import React from "react";
-import { TopicConfigEntry, TopicDetail } from "../../../state/restInterfaces";
+import { TopicConfigEntry, Topic } from "../../../state/restInterfaces";
 import { message, Row, Statistic } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
@@ -13,7 +13,7 @@ const StatsSeparator = () => <div style={{ width: '1px', background: '#8883', ma
 
 
 // todo: rename QuickInfo
-export const TopicQuickInfoStatistic = observer((p: { topic: TopicDetail }) => {
+export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
     const topic = p.topic;
     const statsAr = [] as JSX.Element[];
 
