@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
 import Card from "../../misc/Card";
 import { Button, Empty } from "antd";
-import { clone } from "../../../utils/utils";
+import { clone } from "../../../utils/jsonUtils";
 import { observer } from "mobx-react";
 
 

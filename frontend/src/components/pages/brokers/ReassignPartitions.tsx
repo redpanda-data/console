@@ -10,7 +10,8 @@ import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
-import { prettyBytesOrNA, toJson } from "../../../utils/utils";
+import { prettyBytesOrNA } from "../../../utils/utils";
+import { toJson } from "../../../utils/jsonUtils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';

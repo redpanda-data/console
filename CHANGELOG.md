@@ -7,6 +7,7 @@
 - [FEATURE] Support setting the listen adress of the webserver (config entry: `server.http.listen-address`, or flag: `listenAddress`). [#150](https://github.com/cloudhut/kowl/issues/150) 
 - **[FEATURE] Add Protobuf support**
 - [FEATURE] Add rackId config option to consume from brokers that reside in the same rack if possible (rack aware consuming)
+- [FEATURE] You can now select a date/time as the "start offset" when searching for messages.
 - [ENHANCEMENT] Show Kafka version in Brokers page
 - [ENHANCEMENT] Add support for decoding messages in the `__consumer_offsets` topic
 - [ENHANCEMENT] Support schema registry with thousands of subjects by reducing the number of information in the schema registry overview page

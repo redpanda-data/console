@@ -7,7 +7,9 @@ import {
 } from "./restInterfaces";
 import { observable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { toJson, LazyMap, TimeSince, clone } from "../utils/utils";
+import { TimeSince } from "../utils/utils";
+import { LazyMap } from "../utils/LazyMap";
+import { toJson, clone } from "../utils/jsonUtils";
 import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";

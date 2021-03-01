@@ -1,5 +1,6 @@
 import React, { useState, Component, CSSProperties } from "react";
-import { simpleUniqueId, DebugTimerStore, toJson, prettyMilliseconds } from "./utils";
+import { toJson } from "./jsonUtils";
+import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from "./utils";
 import { Radio, message, Progress, Skeleton, Popover } from 'antd';
 import { MessageType } from "antd/lib/message";
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
@@ -41,12 +42,14 @@ export class TimestampDisplay extends Component<{ unixEpochSecond: number, forma
         if (format == 'relative') DebugTimerStore.Instance.useSeconds();
 
         switch (format) {
-            case 'onlyDate': return new Date(ts * 1000).toDateString();
+            case 'unixTimestamp': return new Date(ts * 1000).toUTCString();
+            case 'onlyDate': return new Date(ts * 1000).toLocaleDateString();
             case 'onlyTime': return new Date(ts * 1000).toLocaleTimeString();
             case 'unixSeconds': return ts.toString();
             case 'relative': return prettyMilliseconds(Date.now() - ts * 1000, { compact: true }) + ' ago';
         }
 
+        // format 'default' -> locale datetime
         return new Date(ts * 1000).toLocaleString();
     }
 }

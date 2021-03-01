@@ -1,7 +1,7 @@
 import React, { CSSProperties } from "react";
 import { observer } from "mobx-react";
 import { observable } from "mobx";
-import { toJson } from "../../utils/utils";
+import { toJson } from "../../utils/jsonUtils";
 import { Button, Layout, message, Space, Skeleton } from "antd";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { envVarDebugAr } from "../../utils/env";

@@ -22,8 +22,9 @@ type GetTopicMessagesResponse struct {
 // used in Kowl business to implement the hooks.
 type ListMessagesRequest struct {
 	TopicName             string `json:"topicName"`
-	StartOffset           int64  `json:"startOffset"` // -1 for recent (newest - results), -2 for oldest offset, -3 for newest
-	PartitionID           int32  `json:"partitionId"` // -1 for all partition ids
+	StartOffset           int64  `json:"startOffset"`    // -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp
+	StartTimestamp        int64  `json:"startTimestamp"` // Start offset by unix timestamp in ms (only considered if start offset is set to -4)
+	PartitionID           int32  `json:"partitionId"`    // -1 for all partition ids
 	MaxResults            int    `json:"maxResults"`
 	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
 }
@@ -33,8 +34,8 @@ func (l *ListMessagesRequest) OK() error {
 		return fmt.Errorf("topic name is required")
 	}
 
-	if l.StartOffset < -3 {
-		return fmt.Errorf("start offset is smaller than -3")
+	if l.StartOffset < -4 {
+		return fmt.Errorf("start offset is smaller than -4")
 	}
 
 	if l.PartitionID < -1 {
@@ -136,13 +137,14 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			TopicName:             req.TopicName,
 			PartitionID:           req.PartitionID,
 			StartOffset:           req.StartOffset,
+			StartTimestamp:        req.StartTimestamp,
 			MessageCount:          req.MaxResults,
 			FilterInterpreterCode: interpreterCode,
 		}
 		api.Hooks.Owl.PrintListMessagesAuditLog(r, &listReq)
 
 		// Use 30min duration if we want to search a whole topic or forward messages as they arrive
-		duration := 18 * time.Second
+		duration := 45 * time.Second
 		if listReq.FilterInterpreterCode != "" || listReq.StartOffset == owl.StartOffsetNewest {
 			duration = 30 * time.Minute
 		}
