@@ -31,11 +31,20 @@ export class GetTopicsResponse {
 export interface Partition {
     id: number;
     leader: number; // id of the "leader" broker for this partition
-    inSyncReplicas: number[]; // ??
-    offlineReplicas: number[]; // ??
-    replicas: number[]; // ??
+    inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
+    offlineReplicas: number[] | null;
+    partitionLogDirs: {
+        error: string, // empty when no error
+        brokerId: number,
+        partitionId: number, // redundant?
+        size: number, // size (in bytes) of log dir on that broker
+    }[];
+    replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
     waterMarkLow: number;
     waterMarkHigh: number;
+
+    // added by frontend:
+    replicaSize: number;
 }
 
 export interface GetPartitionsResponse {
@@ -490,14 +499,21 @@ export interface PartitionReassignmentsPartition {
 
 // PartitionReassignments - Patch
 export interface PartitionReassignmentRequest {
-    topics: {
-        topicName: string; // name of topic to change
-        partitions: { // partitions to reassign
-            partitionId: number;
-            replicas: number[] | null; // either the brokerIds to place the partition on, or null to cancel a pending reassignment
-        }[];
-    }[];
+    topics: TopicAssignment[];
 }
+export type TopicAssignment = {
+    topicName: string; // name of topic to change
+    partitions: { // partitions to reassign
+        partitionId: number;
+        replicas: number[] | null;
+        // Entries are brokerIds.
+        // Since the replicationFactor of a partition tells us the total number
+        // of 'instances' of a partition (leader + follower replicas) the length of the array is always 'replicationFactor'.
+        // The first entry in the array is the brokerId that will host the leader replica
+        // can also be null to cancel a pending reassignment.
+        // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
+    }[];
+};
 
 export interface AlterPartitionReassignmentsResponse {
     reassignPartitionsResponses: {

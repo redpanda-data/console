@@ -3,6 +3,7 @@ package owl
 import (
 	"context"
 	"fmt"
+
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
@@ -83,9 +84,16 @@ func (s *Service) AlterPartitionAssignments(ctx context.Context, topics []kmsg.A
 	for i, topic := range kRes.Topics {
 		partitions := make([]AlterPartitionReassignmentsPartitionResponse, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
+
+			kErr := kerr.ErrorForCode(partition.ErrorCode)
+			var errorStr string
+			if kErr != nil {
+				errorStr = kErr.Error()
+			}
+
 			partitions[j] = AlterPartitionReassignmentsPartitionResponse{
 				PartitionID:  partition.Partition,
-				ErrorCode:    kerr.ErrorForCode(partition.ErrorCode).Error(),
+				ErrorCode:    errorStr,
 				ErrorMessage: partition.ErrorMessage,
 			}
 		}

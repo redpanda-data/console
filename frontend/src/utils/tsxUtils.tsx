@@ -1,7 +1,7 @@
 import React, { useState, Component, CSSProperties } from "react";
-import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from "./utils";
 import { toJson } from "./jsonUtils";
-import { Radio, message, Progress, Skeleton } from 'antd';
+import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from "./utils";
+import { Radio, message, Progress, Skeleton, Popover } from 'antd';
 import { MessageType } from "antd/lib/message";
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 import { TimestampDisplayFormat } from "../state/ui";
@@ -11,6 +11,7 @@ import { animProps } from "./animationProps";
 import { SizeType } from "antd/lib/config-provider/SizeContext";
 import { api } from "../state/backendApi";
 import { observable } from "mobx";
+import { InfoIcon } from "@primer/octicons-v2-react";
 
 
 
@@ -162,6 +163,17 @@ export const Label = (p: { text: string, textSuffix?: React.ReactNode, className
             </div>
         </div>
     </>
+}
+
+export const TextInfoIcon = (p: { text: string, info: React.ReactNode, maxWidth?: string }) => {
+    const content = p.maxWidth == null ? p.info : <div style={{ maxWidth: p.maxWidth }}>{p.info}</div>
+
+    return <span style={{ display: 'flex', alignItems: 'center' }}>
+        {p.text}
+        <Popover content={content} trigger="hover" mouseLeaveDelay={0}>
+            <span style={{ color: 'hsl(209deg, 100%, 55%)', padding: '3px 3px 2px 4px', display: 'inline-flex' }} ><InfoIcon /></span>
+        </Popover>
+    </span>
 }
 
 export class OptionGroup<T> extends Component<{
