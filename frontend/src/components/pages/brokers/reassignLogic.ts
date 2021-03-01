@@ -1,6 +1,6 @@
 import { Broker, Partition, TopicDetail } from "../../../state/restInterfaces";
 import { api } from "../../../state/backendApi";
-import { toJson } from "../../../utils/utils";
+import { toJson } from "../../../utils/jsonUtils";
 
 // Requirements:
 // 1. Each replica must be on a different broker (unless replicationFactor < brokerCount makes it impossible).
