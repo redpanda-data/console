@@ -117,17 +117,19 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	// 4. Receive decoded messages until our request is satisfied. Once that's the case we will cancel the context
 	// that propagate to all the launched go routines.
 	messageCount := 0
+	messageCountByPartition := make(map[int32]int64)
 	remainingPartitionRequests := len(consumeRequest.Partitions)
 	for msg := range resultsCh {
 		// todo: Since a 'kafka message' is likely transmitted in compressed batches this is not really accurate
 		progress.OnMessageConsumed(msg.MessageSize)
 
-		if msg.IsMessageOk {
+		partitionReq := consumeRequest.Partitions[msg.PartitionID]
+		if msg.IsMessageOk && messageCountByPartition[msg.PartitionID] < partitionReq.MaxMessageCount {
 			messageCount++
+			messageCountByPartition[msg.PartitionID]++
 			progress.OnMessage(msg)
 		}
 
-		partitionReq := consumeRequest.Partitions[msg.PartitionID]
 		if msg.Offset >= partitionReq.EndOffset {
 			remainingPartitionRequests--
 		}
