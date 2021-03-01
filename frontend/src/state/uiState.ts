@@ -1,6 +1,6 @@
 import { observable, computed } from "mobx";
 import { PageDefinition } from "../components/routes";
-import { clone } from "../utils/utils";
+import { clone } from "../utils/jsonUtils";
 import { api } from "./backendApi";
 import { AclRequest, AclRequestDefault } from "./restInterfaces";
 import { uiSettings, TopicDetailsSettings as TopicSettings } from "./ui";

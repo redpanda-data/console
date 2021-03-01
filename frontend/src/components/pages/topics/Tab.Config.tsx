@@ -21,7 +21,8 @@ import Icon, { CloseCircleOutlined, HighlightTwoTone } from '@ant-design/icons';
 import { uiState } from "../../../state/uiState";
 import { DefaultSkeleton, OptionGroup, toSafeString } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
-import { clone, prettyBytesOrNA, prettyMilliseconds, toJson } from "../../../utils/utils";
+import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
+import { clone, toJson } from "../../../utils/jsonUtils";
 import { LockIcon } from "@primer/octicons-v2-react";
 import { appGlobal } from "../../../state/appGlobal";
 

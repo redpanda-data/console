@@ -29,7 +29,8 @@ import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
 import { Ellipsis, Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase, toJson } from "../../../../utils/utils";
+import { bindObjectToUrl, cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
+import { toJson } from "../../../../utils/jsonUtils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
@@ -86,7 +87,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
 
         // Auto search when parameters change
-
         this.autoSearchReaction = autorun(() => this.searchFunc('auto'), { delay: 100, name: 'auto search when parameters change' });
 
         // Quick search -> url
@@ -314,7 +314,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         // need to do this first, so we trigger mobx
         const params = uiState.topicSettings.searchParams;
-        const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset;
+        const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset + params.startTimestamp;
 
         if (this.currentSearchRun)
             return console.log(`searchFunc: function already in progress (trigger:${source})`);
@@ -605,6 +605,9 @@ function ${name}() {
             filterInterpreterCode: btoa(sanitizeString(filterCode)),
         };
 
+        // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
+        //     console.error("startTimestamp is not valid", { request: request, searchParams: searchParams });
+
         transaction(async () => {
             try {
                 this.fetchError = null;
@@ -712,6 +715,18 @@ const renderKey = (p: Payload, record: TopicMessage) => {
 
 @observer
 class StartOffsetDateTimePicker extends Component {
+
+    constructor(p: any) {
+        super(p);
+        const searchParams = uiState.topicSettings.searchParams;
+        // console.log('time picker 1', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
+        if (!searchParams.startTimestampWasSetByUser) {
+            // so far, the user did not change the startTimestamp, so we set it to 'now'
+            searchParams.startTimestamp = new Date().getTime();
+        }
+        // console.log('time picker 2', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
+    }
+
     render() {
         const searchParams = uiState.topicSettings.searchParams;
         // new Date().getTimezoneOffset()
@@ -730,15 +745,14 @@ class StartOffsetDateTimePicker extends Component {
         return <DatePicker showTime={true} allowClear={false}
             renderExtraFooter={() => <DateTimePickerExtraFooter />}
             format={format}
-
-            defaultValue={moment.utc(new Date().getTime())}
             value={current}
             onChange={e => {
-                //console.log('onChange', { value: e?.format() ?? 'null', isLocal: e?.isLocal(), unix: e?.valueOf() });
+                console.log('onChange', { value: e?.format() ?? 'null', isLocal: e?.isLocal(), unix: e?.valueOf() });
                 searchParams.startTimestamp = e?.valueOf() ?? -1;
+                searchParams.startTimestampWasSetByUser = true;
             }}
             onOk={e => {
-                // console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
+                console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
                 searchParams.startTimestamp = e.valueOf();
             }}
         />

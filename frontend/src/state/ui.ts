@@ -1,5 +1,6 @@
 import { observable, autorun } from "mobx";
-import { touch, assignDeep, randomId, simpleUniqueId, uniqueId4, clone } from "../utils/utils";
+import { assignDeep, randomId, simpleUniqueId, uniqueId4 } from "../utils/utils";
+import { touch, clone } from "../utils/jsonUtils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
 import { AclRequest, AclRequestDefault } from "./restInterfaces";
@@ -71,6 +72,7 @@ export class TopicDetailsSettings {
         offsetOrigin: -1 as TopicOffsetOrigin, // start, end, custom
         startOffset: -1, // used when offsetOrigin is custom
         startTimestamp: -1, // used when offsetOrigin is timestamp
+        startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
         partitionID: -1,
         maxResults: 50,
 
