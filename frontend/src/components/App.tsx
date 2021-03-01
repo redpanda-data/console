@@ -4,7 +4,8 @@ import { Layout, Menu, PageHeader, Button, Tooltip, Popover, Dropdown } from 'an
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
 import { RenderTrap, DebugDisplay, UpdatePopup } from './misc/common';
-import { DebugTimerStore, prettyMilliseconds, toJson } from '../utils/utils';
+import { DebugTimerStore, prettyMilliseconds } from '../utils/utils';
+import { toJson } from "../utils/jsonUtils";
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';

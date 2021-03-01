@@ -1,4 +1,4 @@
-import { toJson } from "./utils";
+import { toJson } from "./jsonUtils";
 import './extensions';
 
 // const assertions and mapped types are awesome!

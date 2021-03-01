@@ -1,9 +1,10 @@
 import React, { memo, ReactNode, PureComponent, FunctionComponent, ReactElement, Component, Fragment, ReactNodeArray } from "react";
-import { observable } from "mobx";
+import { autorun, IReactionDisposer, observable } from "mobx";
 import prettyBytesOriginal from "pretty-bytes";
 import prettyMillisecondsOriginal from 'pretty-ms';
-import qs, { ParsedQuery } from 'query-string';
 import url from "url";
+import queryString from 'query-string';
+import { editQuery } from "./queryHelper";
 
 
 
@@ -33,46 +34,6 @@ export class AutoRefresh extends Component {
         return (this.props.children);
     }
 }
-
-const seen = new Set();
-// Serialize object to json, handling reference loops gracefully
-export function toJson(obj: any, space?: string | number | undefined): string {
-    seen.clear();
-    try {
-        return JSON.stringify(obj,
-            (key: string, value: any) => {
-                if (typeof value === "object" && value !== null) {
-                    if (seen.has(value)) {
-                        return;
-                    }
-                    seen.add(value);
-                }
-                return value;
-            },
-            space
-        );
-    }
-    finally {
-        seen.clear();
-    }
-}
-
-// Clone object using serialization
-export function clone<T>(obj: T): T {
-    if (!obj) return obj;
-    return JSON.parse(toJson(obj));
-}
-
-
-// Accesses all members of an object by serializing it
-export function touch(obj: any): void {
-    JSON.stringify(obj, (k, v) => {
-        if (typeof v === 'object')
-            return v;
-        return '';
-    })
-}
-
 
 export class TimeSince {
     timestamp: number = Date.now();
@@ -216,35 +177,6 @@ export class DebugTimerStore {
     mobxTrigger: any;
 }
 
-
-export class LazyMap<K, V> extends Map<K, V> {
-    constructor(private defaultCreate: (key: K) => V) {
-        super();
-    }
-
-    /**
-     * @description Returns the value corrosponding to key
-     * @param key Key of the value
-     * @param create An optional `create` method to use instead of `defaultCreate` to create missing values
-     */
-    get(key: K, create?: (key: K) => V): V {
-        let v = super.get(key);
-        if (v !== undefined) {
-            return v;
-        }
-
-        v = this.handleMiss(key, create);
-        this.set(key, v);
-        return v;
-    }
-
-    private handleMiss(key: K, create?: ((key: K) => V)): V {
-        if (create) {
-            return create(key);
-        }
-        return this.defaultCreate(key);
-    }
-}
 
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
 export const alwaysChanging = () => refreshCounter = (refreshCounter + 1) % 1000;
@@ -487,4 +419,71 @@ export function uniqueId4(): string {
 export function titleCase(str: string): string {
     if (!str) return str;
     return str[0].toUpperCase() + str.slice(1);
+}
+
+
+// Bind an observable object to the url query
+// - reads the current query parameters and sets them on the observable
+// - whenever a prop in the observable changes, it updates the url
+// You might want to use different names for the query parameters:
+// observable = { propA: 5 }
+// queryNames = { 'propA': 'x' }
+// query => ?x=5
+
+// export function bindObjectToUrl<
+//     T extends { [key: string]: (number | string | number[] | string[]) },
+// >(observable: T, queryNames: { [K in keyof T]?: string }): IReactionDisposer {
+export function bindObjectToUrl<
+    TObservable extends { [K in keyof TQueryNames]: (number | string | number[] | string[] | null | undefined) },
+    TQueryNames extends { [K in keyof TObservable]: string },
+    >(
+        observable: { [K in keyof TQueryNames]: any },
+        queryNames: TQueryNames,
+        shouldInclude?: (propName: keyof TObservable, obj: TObservable) => boolean
+    ): IReactionDisposer {
+
+    const query = queryString.parse(window.location.search);
+
+    // query -> observable
+    for (const propName of Object.keys(queryNames) as [keyof TObservable]) {
+        const queryName = queryNames[propName];
+
+        let value = query[queryName as string];
+        if (value == null) continue;
+
+        if (Array.isArray(value)) {
+            const allNum = value.all(v => Number.isFinite(Number(v)));
+            const ar = allNum ? value.map(v => Number(v)) : value;
+            observable[propName] = ar as any;
+        } else {
+            const v = Number.isFinite(Number(value)) ? Number(value) : value;
+            observable[propName] = v as any;
+        }
+    }
+
+    const disposer = autorun(() => {
+        editQuery(query => {
+            for (const propName of Object.keys(queryNames) as [keyof TObservable]) {
+
+                const queryName = queryNames[propName];
+                const newValue = observable[propName];
+
+                if (shouldInclude && !shouldInclude(propName, observable)) {
+                    query[queryName] = null;
+                    continue;
+                }
+
+                if (newValue == null)
+                    query[queryName] = null;
+                else if (typeof newValue === 'boolean')
+                    query[queryName] = String(Number(newValue));
+                else
+                    query[queryName] = String(newValue);
+
+                // console.log('updated', { propName: propName, queryName: queryName, newValue: newValue });
+            }
+        })
+    });
+
+    return disposer;
 }

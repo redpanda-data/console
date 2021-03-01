@@ -4,7 +4,7 @@ import { Result } from 'antd';
 import { Button } from 'antd';
 import { api } from '../../state/backendApi';
 import { CloseCircleOutlined } from '@ant-design/icons'
-import { toJson } from '../../utils/utils';
+import { toJson } from "../../utils/jsonUtils";
 
 
 @observer
