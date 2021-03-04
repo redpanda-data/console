@@ -1,3 +1,8 @@
+---
+title: Hosting
+path: /docs/features/hosting
+---
+
 # Hosting
 
 Want to host Kowl under a sub-path (instead of `/`)? Then this is the document you're looking for.

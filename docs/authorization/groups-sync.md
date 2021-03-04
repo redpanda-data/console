@@ -1,3 +1,8 @@
+---
+title: Groups Sync
+path: /docs/authorization/groups-sync
+---
+
 # Groups Sync
 
 <p align="center">

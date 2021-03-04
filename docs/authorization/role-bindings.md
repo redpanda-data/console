@@ -1,3 +1,8 @@
+---
+title: Role Bindings
+path: /docs/authorization/role-bindings
+---
+
 # Role Bindings
 
 <p align="center">

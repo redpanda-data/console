@@ -1,6 +1,6 @@
 ---
 title: Installation & Deployment
-path: /docs/installation
+path: /docs/installation-deployment
 ---
 
 # Installation & Deployment
