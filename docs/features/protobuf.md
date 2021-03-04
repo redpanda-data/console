@@ -1,6 +1,6 @@
 ---
 title: Protobuf Deserialization
-path: /docs/features/protobuf-deserialization
+path: /docs/features/protobuf
 ---
 
 # Protobuf Deserialization
