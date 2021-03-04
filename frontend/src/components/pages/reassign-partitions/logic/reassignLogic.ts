@@ -81,6 +81,7 @@ export function computeReassignments(
 
     // Optimize Leaders:
     // Every broker should have roughly the same number of partitions it leads.
+    let leaderSwitchCount = 0;
     for (const t of selectedTopicPartitions) {
         for (const p of t.partitions) {
             // map plain brokers to extended brokers (those with attached tracking data)
@@ -112,9 +113,12 @@ export function computeReassignments(
                 // adjust final assignments
                 // mapping our extendedBrokers back to the "simple" brokers
                 resultAssignments[t.topic.topicName][p.id].brokers = newBrokers.map(exBroker => apiData.brokers.first(b => b.brokerId == exBroker.brokerId)!);
+
+                leaderSwitchCount++;
             }
         }
     }
+    console.debug(`optimize leaders: ${leaderSwitchCount} leaders switched`);
 
     return resultAssignments;
 }
