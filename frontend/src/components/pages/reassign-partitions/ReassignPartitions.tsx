@@ -1,6 +1,6 @@
 import React, { ReactNode, Component } from "react";
 import { observer } from "mobx-react";
-import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select } from "antd";
+import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification } from "antd";
 import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
@@ -237,15 +237,26 @@ class ReassignPartitions extends PageComponent {
                 </Card>
 
                 {/* Debug */}
-                <div style={{ margin: '2em 0 1em 0' }}>
-                    <h2>Partition Selection</h2>
-                    <div className='codeBox'>{toJson(this.partitionSelection, 4)}</div>
-                    <h2>Broker Selection</h2>
-                    <div className='codeBox'>{toJson(this.selectedBrokers)}</div>
-                    <h2>Computed Assignments</h2>
-                    <div className='codeBox'>{toJson(this.reassignmentRequest, 4)}</div>
-                    <h2>Api Data</h2>
-                    <div className='codeBox'>{toJson(this._debug_apiData, 4)}</div>
+                <div style={{ margin: '2em 0 1em 0', display: 'flex', flexWrap: 'wrap', gap: '3em' }}>
+                    <div>
+                        <h2>Partition Selection</h2>
+                        <div className='codeBox'>{toJson(this.partitionSelection, 4)}</div>
+                    </div>
+
+                    <div>
+                        <h2>Broker Selection</h2>
+                        <div className='codeBox'>{toJson(this.selectedBrokers)}</div>
+                    </div>
+
+                    <div>
+                        <h2>Api Data</h2>
+                        <div className='codeBox'>{toJson(this._debug_apiData, 4)}</div>
+                    </div>
+
+                    <div>
+                        <h2>Computed Assignments</h2>
+                        <div className='codeBox'>{toJson(this.reassignmentRequest, 4)}</div>
+                    </div>
                 </div>
             </motion.div>
         </>
@@ -331,15 +342,30 @@ class ReassignPartitions extends PageComponent {
 
         if (this.currentStep == 2) {
             // Review -> Start
-            if (this.reassignmentRequest == null) {
+            const request = this.reassignmentRequest;
+            if (request == null) {
                 message.error('reassignment request was null', 3);
                 return;
             }
 
-            const msgKey = 'startingMessage';
-            const hideMessage = message.loading({ content: 'Starting reassignment...', key: msgKey }, 1);
-
-            api.startPartitionReassignment(this.reassignmentRequest).then(r => { }, err => { });
+            setImmediate(async () => {
+                const msgKey = 'startingMessage';
+                const hideMessage = message.loading({ content: 'Starting reassignment...', key: msgKey }, 1);
+                try {
+                    await api.startPartitionReassignment(request);
+                    message.success({
+                        content: "Reassignment started successfully",
+                        key: msgKey,
+                        duration: 3,
+                    })
+                } catch (err) {
+                    hideMessage();
+                    notification.error({
+                        message: "Error starting partition reassignment:\n" + String(err),
+                        duration: 0, // don't close automatically
+                    });
+                }
+            })
 
             return;
         }
