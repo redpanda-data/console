@@ -1,3 +1,8 @@
+---
+title: Authentication
+path: /docs/authentication
+---
+
 # Authentication
 
 <p align="center">
