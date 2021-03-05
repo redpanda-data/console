@@ -124,12 +124,15 @@ const uiSettings = observable({
     },
 
     topicList: {
-        valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
-        propsOrder: 'changedFirst' as 'changedFirst' | 'default',
-        propsFilter: 'all' as 'all' | 'onlyChanged',
         hideInternalTopics: true,
-        pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
         quickSearch: '',
+        pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
+
+        // Topic Configuration
+        valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
+        propsFilter: 'all' as 'all' | 'onlyChanged',
+        propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
+        configColumns: 2 as 1 | 2,
     },
 
     consumerGroupList: {
