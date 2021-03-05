@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table } from "antd";
+import { Empty, Input, Table } from "antd";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { Partition, Topic } from "../../../state/restInterfaces";
 import { BrokerList } from "./components/BrokerList";
@@ -10,7 +10,7 @@ import { prettyBytesOrNA } from "../../../utils/utils";
 import { ColumnProps } from "antd/lib/table/Column";
 import { DefaultSkeleton } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
-import { IReactionDisposer } from "mobx";
+import { IReactionDisposer, observable } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
 import Highlighter from 'react-highlight-words';
 
@@ -18,11 +18,11 @@ type TopicWithPartitions = Topic & { partitions: Partition[] };
 
 @observer
 export class StepSelectPartitions extends Component<{ partitionSelection: PartitionSelection }> {
-    pageConfig = makePaginationConfig(100, true);
+    pageConfig = makePaginationConfig(20, true);
     autorunHandle: IReactionDisposer | undefined = undefined;
 
-    topicPartitions: TopicWithPartitions[] = [];
-    filterQuery: string = "";
+    @observable filterQuery: string = "";
+
 
     constructor(props: any) {
         super(props);
@@ -43,17 +43,18 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         if (!api.topics) return DefaultSkeleton;
         if (api.topicPartitions.size == 0) return <Empty />
 
-        this.topicPartitions = api.topics.map(topic => {
-            return {
-                ...topic,
-                partitions: api.topicPartitions.get(topic.topicName)!
-            }
-        });
+        const filterActive = this.filterQuery.length > 1;
+        const searchWords = this.filterQuery.split(' ');
+        const searchRegexes = searchWords.map(w => new RegExp(w, 'i'));
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
             {
-                title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'), defaultSortOrder: 'ascend',
-                // filtered: true, filteredValue: ['owlshop'], onFilter: (value, record) => record.topicName.toLowerCase().includes(String(value).toLowerCase()),
+                title: 'Topic', render: (v, record) => filterActive
+                    ? <Highlighter searchWords={searchWords} textToHighlight={record.topicName} />
+                    : record.topicName,
+                sorter: sortField('topicName'), defaultSortOrder: 'ascend',
+                filtered: filterActive, filteredValue: [this.filterQuery],
+                onFilter: (value, record) => searchRegexes.any(r => r.test(record.topicName)),
             },
             { title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
             { title: 'Replicas', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor') },
@@ -65,13 +66,23 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         ]
 
         return <>
+            {/* Title */}
             <div style={{ margin: '2em 1em' }}>
                 <h2>Select Partitions</h2>
                 <p>Choose which partitions you want to reassign to different brokers. Selecting a topic will select all its partitions.</p>
             </div>
 
+            {/* InfoBar */}
             <SelectionInfoBar partitionSelection={this.props.partitionSelection} />
 
+            {/* Search Bar */}
+            <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', gap: '12px' }}>
+                <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px' }}
+                    onChange={x => this.filterQuery = x.target.value} value={this.filterQuery}
+                />
+            </div>
+
+            {/* Topic / Partitions */}
             <Table
                 style={{ margin: '0', }} size={'middle'}
                 pagination={this.pageConfig}
@@ -166,6 +177,16 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         return { checked: false, indeterminate: true };
     }
 
+
+    get topicPartitions(): TopicWithPartitions[] {
+        if (api.topics == null) return [];
+        return api.topics.map(topic => {
+            return {
+                ...topic,
+                partitions: api.topicPartitions.get(topic.topicName)!
+            }
+        });
+    }
 }
 
 @observer

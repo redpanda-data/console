@@ -204,7 +204,7 @@ class ReassignPartitions extends PageComponent {
                     <motion.div {...animProps} key={"step" + this.currentStep}> {(() => {
                         switch (this.currentStep) {
                             case 0: return <StepSelectPartitions partitionSelection={this.partitionSelection} />;
-                            case 1: return <StepSelectBrokers brokers={this.selectedBrokerIds} />;
+                            case 1: return <StepSelectBrokers partitionSelection={this.partitionSelection} selectedBrokerIds={this.selectedBrokerIds} />;
                             case 2: return <StepReview partitionSelection={this.partitionSelection} topicsWithMoves={this.topicsWithMoves} assignments={this.reassignmentRequest!} />;
                         }
                     })()} </motion.div>
@@ -251,10 +251,10 @@ class ReassignPartitions extends PageComponent {
                         <div className='codeBox'>{toJson(this.selectedBrokerIds)}</div>
                     </div>
 
-                    <div>
+                    {/* <div>
                         <h2>Api Data</h2>
                         <div className='codeBox'>{toJson(this._debug_apiData, 4)}</div>
-                    </div>
+                    </div> */}
 
                     <div>
                         <h2>Computed Assignments</h2>

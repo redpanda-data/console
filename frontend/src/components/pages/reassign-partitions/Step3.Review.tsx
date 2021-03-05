@@ -39,7 +39,7 @@ export class StepReview extends Component<{ partitionSelection: PartitionSelecti
             },
             {
                 width: '50%', title: 'Brokers After',
-                render: (v, r) => <BrokerList brokerIds={this.props.topicsWithMoves.first(t => t.topicName == r.topicName)!.selectedPartitions.flatMap(p => p.replicas!) ?? []} />
+                render: (v, r) => <BrokerList brokerIds={this.brokersAfter} />
             },
             {
                 width: 100, title: (p) => <TextInfoIcon text="Moves" info="The number of replicas that will be moved to a different broker." maxWidth='180px' />,
@@ -79,6 +79,16 @@ export class StepReview extends Component<{ partitionSelection: PartitionSelecti
                         : <>Error loading partitions</>,
                 }} />
         </>;
+    }
+
+    @computed get brokersAfter(): number[] {
+        const set = new Set<number>();
+        for (const t of this.props.assignments.topics)
+            for (const p of t.partitions)
+                if (p.replicas)
+                    for (const id of p.replicas)
+                        set.add(id);
+        return [...set.values()];
     }
 }
 

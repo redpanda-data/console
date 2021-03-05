@@ -7,12 +7,12 @@ import { makePaginationConfig } from "../../misc/common";
 import { Broker } from "../../../state/restInterfaces";
 import { transaction } from "mobx";
 import { prettyBytesOrNA } from "../../../utils/utils";
-
-
+import { SelectionInfoBar } from "./components/StatisticsBars";
+import { PartitionSelection } from "./ReassignPartitions";
 
 
 @observer
-export class StepSelectBrokers extends Component<{ brokers: number[]; }> {
+export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], partitionSelection: PartitionSelection }> {
     pageConfig = makePaginationConfig(15, true);
 
     brokers: Broker[];
@@ -41,6 +41,8 @@ export class StepSelectBrokers extends Component<{ brokers: number[]; }> {
                 <p>Choose the target brokers to move the selected partitions to. Some brokers might not get any current assignments  Some brokers might  some partitions will be moved to these brokers, but Kowl will consider them as desired targets and distribute partitions across the available racks of the selected target brokers.</p>
             </div>
 
+            <SelectionInfoBar partitionSelection={this.props.partitionSelection} />
+
             <Table
                 style={{ margin: '0', }} size='middle'
                 dataSource={this.brokers}
@@ -50,12 +52,12 @@ export class StepSelectBrokers extends Component<{ brokers: number[]; }> {
                 rowClassName={() => 'pureDisplayRow'}
                 rowSelection={{
                     type: 'checkbox',
-                    selectedRowKeys: this.props.brokers.slice(),
+                    selectedRowKeys: this.props.selectedBrokerIds.slice(),
                     onChange: (keys, values) => {
                         transaction(() => {
-                            this.props.brokers.splice(0);
+                            this.props.selectedBrokerIds.splice(0);
                             for (const broker of values)
-                                this.props.brokers.push(broker.brokerId);
+                                this.props.selectedBrokerIds.push(broker.brokerId);
                         });
                     }
                 }} />

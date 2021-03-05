@@ -229,6 +229,10 @@ const collator = new Intl.Collator(undefined, {
     usage: 'search',
     sensitivity: 'base',
 });
+export function compareIgnoreCase(a: string, b: string) {
+    return collator.compare(a, b);
+}
+
 type FoundProperty = { propertyName: string, path: string[], value: any }
 type PropertySearchOptions = { caseSensitive: boolean, returnFirstResult: boolean; }
 type PropertySearchResult = 'continue' | 'abort';
@@ -254,7 +258,7 @@ function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchR
         // property match?
         const isMatch = ctx.options.caseSensitive
             ? key === ctx.targetPropertyName
-            : collator.compare(ctx.targetPropertyName, key) === 0;
+            : compareIgnoreCase(ctx.targetPropertyName, key) === 0;
 
         if (isMatch) {
             const clonedPath = Object.assign([], ctx.currentPath);
