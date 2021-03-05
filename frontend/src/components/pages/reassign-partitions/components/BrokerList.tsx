@@ -1,5 +1,13 @@
 import React, { Component } from "react";
-import { Tag, Popover } from "antd";
+import { Tag, Popover, Tooltip } from "antd";
+import { LazyMap } from "../../../../utils/LazyMap";
+
+// const tooltipMap = new LazyMap<number, JSX.Element>(id =>
+//     <Tooltip>
+
+//     </Tooltip>
+//     );
+
 
 export class BrokerList extends Component<{ brokerIds: number[]; leaderId?: number; addedIds?: number[]; removedIds?: number[]; tooltip?: JSX.Element; }> {
     render() {
