@@ -20,8 +20,9 @@ import { StepSelectBrokers } from "./Step2.Brokers";
 import { BrokerList } from "./components/BrokerList";
 import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
 import { SelectPartitionTable, StepSelectPartitions } from "./Step1.Partitions";
-import { StepReview } from "./Step3.Review";
+import { PartitionWithMoves, StepReview, TopicWithMoves } from "./Step3.Review";
 import { ApiData, computeReassignments, TopicPartitions } from "./logic/reassignLogic";
+import { computeMovedReplicas, partitionSelectionToTopicPartitions } from "./logic/utils";
 const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
@@ -54,7 +55,7 @@ const steps: WizardStep[] = [
                 const partitions = Object.keys(c.partitionSelection).map(t => ({ topic: api.topics!.first(x => x.topicName == t)!, partitions: api.topicPartitions.get(t)! }));
                 if (partitions.any(p => p.partitions == null || p.topic == null)) return false;
                 const maxRf = partitions.max(p => p.topic.replicationFactor);
-                if (c.selectedBrokers.length >= maxRf)
+                if (c.selectedBrokerIds.length >= maxRf)
                     return true;
                 return `Select at least ${maxRf} brokers`;
             }
@@ -83,21 +84,23 @@ class ReassignPartitions extends PageComponent {
 
     @observable currentStep = 1; // current page of the wizard
 
+    // topics/partitions selected by user
     @observable partitionSelection: PartitionSelection = {
         // "bons": [0, 1, 2, 3, 4, 5, 6, 7],
         // "re-test1-addresses": [0, 1],
         // "owlshop-orders": [0],
-        "re-test1-customers": [
-            0,
-            5,
-            4,
-            1,
-            2,
-            3
-        ]
-
-    }; // topics/partitions selected by user
-    @observable selectedBrokers: number[] = [0, 1, 2]; // brokers selected by user
+        // "re-test1-customers": [
+        //     0,
+        //     5,
+        //     4,
+        //     1,
+        //     2,
+        //     3
+        // ]
+    };
+    // brokers selected by user
+    @observable selectedBrokerIds: number[] = [0, 1, 2];
+    // computed reassignments
     @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request that will be sent
 
     @observable _debug_apiData: ApiData | null = null;
@@ -201,8 +204,8 @@ class ReassignPartitions extends PageComponent {
                     <motion.div {...animProps} key={"step" + this.currentStep}> {(() => {
                         switch (this.currentStep) {
                             case 0: return <StepSelectPartitions partitionSelection={this.partitionSelection} />;
-                            case 1: return <StepSelectBrokers brokers={this.selectedBrokers} />;
-                            case 2: return <StepReview partitionSelection={this.partitionSelection} brokers={this.selectedBrokers} assignments={this.reassignmentRequest!} />;
+                            case 1: return <StepSelectBrokers brokers={this.selectedBrokerIds} />;
+                            case 2: return <StepReview partitionSelection={this.partitionSelection} topicsWithMoves={this.topicsWithMoves} assignments={this.reassignmentRequest!} />;
                         }
                     })()} </motion.div>
 
@@ -245,7 +248,7 @@ class ReassignPartitions extends PageComponent {
 
                     <div>
                         <h2>Broker Selection</h2>
-                        <div className='codeBox'>{toJson(this.selectedBrokers)}</div>
+                        <div className='codeBox'>{toJson(this.selectedBrokerIds)}</div>
                     </div>
 
                     <div>
@@ -304,7 +307,7 @@ class ReassignPartitions extends PageComponent {
         if (this.currentStep == 1) {
             // Assign -> Review
             const topicPartitions: TopicPartitions[] = this.selectedTopicPartitions;
-            const targetBrokers = this.selectedBrokers.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)!);
+            const targetBrokers = this.selectedBrokerIds.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)!);
             if (targetBrokers.any(b => b == null))
                 throw new Error('one or more broker ids could not be mapped to broker entries');
 
@@ -374,23 +377,28 @@ class ReassignPartitions extends PageComponent {
         this.currentStep++;
     }
 
-    @computed get selectedTopicPartitions(): TopicPartitions[] {
-        const ar: TopicPartitions[] = [];
-        for (const [topicName, partitions] of api.topicPartitions) {
-            if (partitions == null) continue;
-            if (this.partitionSelection[topicName] == null) continue;
-            const topic = api.topics?.first(t => t.topicName == topicName);
-            if (topic == null) continue;
-
-            const relevantPartitions = partitions.filter(p => this.partitionSelection[topicName].includes(p.id));
-            ar.push({ topic: topic, partitions: relevantPartitions }); // , allPartitions: partitions
-        }
-        return ar;
-    }
-
     onPreviousPage() {
         this.currentStep--;
     }
+
+    @computed get selectedTopicPartitions(): TopicPartitions[] {
+        return partitionSelectionToTopicPartitions(
+            this.partitionSelection,
+            api.topicPartitions,
+            api.topics!
+        );
+    }
+    @computed get topicsWithMoves(): TopicWithMoves[] {
+        if (this.reassignmentRequest == null) return [];
+        if (api.topics == null) return [];
+        return computeMovedReplicas(
+            this.partitionSelection,
+            this.reassignmentRequest,
+            api.topics,
+            api.topicPartitions,
+        );
+    }
+
 }
 export default ReassignPartitions;
 

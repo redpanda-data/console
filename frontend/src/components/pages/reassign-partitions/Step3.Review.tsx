@@ -13,10 +13,13 @@ import { ReviewInfoBar, SelectionInfoBar } from "./components/StatisticsBars";
 import { BrokerList } from "./components/BrokerList";
 import { PartitionSelection, } from "./ReassignPartitions";
 import { clone } from "../../../utils/jsonUtils";
+import { computeMovedReplicas } from "./logic/utils";
 
+export type PartitionWithMoves = Partition & { movedReplicas: number };
+export type TopicWithMoves = { topicName: string; topic: Topic; allPartitions: Partition[]; selectedPartitions: PartitionWithMoves[]; };
 
 @observer
-export class StepReview extends Component<{ partitionSelection: PartitionSelection; brokers: number[]; assignments: PartitionReassignmentRequest; }> {
+export class StepReview extends Component<{ partitionSelection: PartitionSelection, topicsWithMoves: TopicWithMoves[], assignments: PartitionReassignmentRequest; }> {
     pageConfig = makePaginationConfig(15, true);
 
     render() {
@@ -25,11 +28,8 @@ export class StepReview extends Component<{ partitionSelection: PartitionSelecti
         if (api.topicPartitions.size == 0)
             return <Empty />;
 
-        const selectedPartitions = this.selectedPartitions;
-        if (selectedPartitions == null)
-            return <>selectedPartitions == null</>;
 
-        const columns: ColumnProps<ElementOf<typeof selectedPartitions>>[] = [
+        const columns: ColumnProps<TopicWithMoves>[] = [
             {
                 width: undefined, title: 'Topic', dataIndex: 'topicName', defaultSortOrder: 'ascend',
             },
@@ -39,10 +39,10 @@ export class StepReview extends Component<{ partitionSelection: PartitionSelecti
             },
             {
                 width: '50%', title: 'Brokers After',
-                render: (v, r) => <BrokerList brokerIds={this.props.assignments.topics.first(t => t.topicName == r.topicName)!.partitions.flatMap(p => p.replicas!) ?? []} />
+                render: (v, r) => <BrokerList brokerIds={this.props.topicsWithMoves.first(t => t.topicName == r.topicName)!.selectedPartitions.flatMap(p => p.replicas!) ?? []} />
             },
             {
-                width: 100, title: (p) => <TextInfoIcon text="Moves" info="The number of replicas that will be moved to a different broker." maxWidth='200px' />,
+                width: 100, title: (p) => <TextInfoIcon text="Moves" info="The number of replicas that will be moved to a different broker." maxWidth='180px' />,
                 render: (v, r) => r.selectedPartitions.sum(p => p.movedReplicas),
             },
             {
@@ -59,12 +59,12 @@ export class StepReview extends Component<{ partitionSelection: PartitionSelecti
 
             <SelectionInfoBar partitionSelection={this.props.partitionSelection} />
 
-            <ReviewInfoBar partitionSelection={this.props.partitionSelection} partitionsWithMoveInfo={selectedPartitions.flatMap(t => t.selectedPartitions)} />
+            <ReviewInfoBar topicsWithMoves={this.props.topicsWithMoves} />
 
             <Table
                 style={{ margin: '0', }} size={'middle'}
                 pagination={this.pageConfig}
-                dataSource={selectedPartitions}
+                dataSource={this.props.topicsWithMoves}
                 rowKey={r => r.topicName}
                 rowClassName={() => 'pureDisplayRow'}
                 columns={columns}
@@ -79,47 +79,6 @@ export class StepReview extends Component<{ partitionSelection: PartitionSelecti
                         : <>Error loading partitions</>,
                 }} />
         </>;
-    }
-
-    @computed get selectedPartitions(): { topicName: string; topic: Topic; allPartitions: Partition[]; selectedPartitions: (Partition & { movedReplicas: number })[]; }[] {
-        const ar = [];
-        // For each topic that has partitions selected:
-        // - get the partition infos (both selected partitions as well as all partitions)
-        // - compute and cache the movement
-        for (const [topicName, partitions] of api.topicPartitions) {
-            if (partitions == null)
-                continue;
-            if (this.props.partitionSelection[topicName] == null)
-                continue;
-            const topic = api.topics?.first(t => t.topicName == topicName);
-            if (topic == null)
-                continue;
-
-            const selectedPartitions = partitions.filter(p => this.props.partitionSelection[topicName].includes(p.id));
-            const partitionsWithTrafficInfo: (Partition & { movedReplicas: number })[] = [];
-
-            // Count how many replicas will be actually moved
-            for (const partition of selectedPartitions) {
-                // First assume all replicas are moved, then subtract replicas that exist on both old and new brokers
-                const oldBrokers = partition.replicas;
-                const newAssignments = this.props.assignments.topics.first(t => t.topicName == topicName);
-                const newBrokers = newAssignments?.partitions.first(e => e.partitionId == partition.id)?.replicas;
-                let moves = 0;
-                if (newBrokers) {
-                    const intersection = oldBrokers.intersection(newBrokers);
-                    moves = oldBrokers.length - intersection.length;
-                }
-                partitionsWithTrafficInfo.push({ ...partition, movedReplicas: moves });
-            }
-
-            ar.push({
-                topicName: topicName,
-                topic: topic,
-                allPartitions: partitions,
-                selectedPartitions: partitionsWithTrafficInfo,
-            });
-        }
-        return ar;
     }
 }
 

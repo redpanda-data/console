@@ -12,7 +12,7 @@ import { DefaultSkeleton } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
 import { IReactionDisposer } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
-
+import Highlighter from 'react-highlight-words';
 
 type TopicWithPartitions = Topic & { partitions: Partition[] };
 
@@ -52,16 +52,16 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
             {
-                width: 'auto', title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'), defaultSortOrder: 'ascend',
+                title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'), defaultSortOrder: 'ascend',
                 // filtered: true, filteredValue: ['owlshop'], onFilter: (value, record) => record.topicName.toLowerCase().includes(String(value).toLowerCase()),
             },
-            { width: 'auto', title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
-            { width: 'auto', title: 'Replication Factor', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor') },
+            { title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
+            { title: 'Replicas', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor') },
             {
-                width: 'auto', title: 'Brokers', dataIndex: 'partitions',
+                title: 'Brokers', dataIndex: 'partitions',
                 render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A'
             },
-            { width: 'auto', title: 'Size', dataIndex: 'logDirSize', render: v => prettyBytesOrNA(v), sorter: sortField('logDirSize') },
+            { title: 'Size', dataIndex: 'logDirSize', render: v => prettyBytesOrNA(v), sorter: sortField('logDirSize') },
         ]
 
         return <>

@@ -5,10 +5,11 @@ import { Broker, Partition } from "../../../../state/restInterfaces";
 import { computed } from "mobx";
 import { PartitionSelection } from "../ReassignPartitions";
 import { prettyBytesOrNA } from "../../../../utils/utils";
+import { TopicWithMoves } from "../Step3.Review";
 
 
 @observer
-export class SelectionInfoBar extends Component<{ partitionSelection: PartitionSelection; }> {
+export class SelectionInfoBar extends Component<{ partitionSelection: PartitionSelection }> {
 
     render() {
         if (api.topicPartitions == null)
@@ -47,12 +48,12 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
                 continue;
             if (this.props.partitionSelection[topic] == null)
                 continue;
-
             const relevantPartitions = partitions.filter(p => this.props.partitionSelection[topic].includes(p.id));
             ar.push({ topic: topic, partitions: relevantPartitions });
         }
         return ar;
     }
+
 
     @computed get involvedBrokers(): Broker[] | null {
         if (api.clusterInfo == null)
@@ -74,15 +75,12 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
 }
 
 @observer
-export class ReviewInfoBar extends Component<{
-    partitionSelection: PartitionSelection;
-    partitionsWithMoveInfo: (Partition & { movedReplicas: number; })[]
-}> {
+export class ReviewInfoBar extends Component<{ topicsWithMoves: TopicWithMoves[] }> {
 
     render() {
         const data = [
-            { title: 'Replicas Moved', value: this.props.partitionsWithMoveInfo.sum(p => p.movedReplicas) },
-            { title: 'Traffic', value: prettyBytesOrNA(this.props.partitionsWithMoveInfo.sum(p => p.replicaSize * p.movedReplicas)) },
+            { title: 'Replicas Moved', value: this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas)) },
+            { title: 'Traffic', value: prettyBytesOrNA(this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas * p.replicaSize))) },
         ];
 
         return <div style={{ margin: '2em 1em 2em 1em' }}>

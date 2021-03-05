@@ -1,7 +1,7 @@
 import React, { useState, Component, CSSProperties } from "react";
 import { toJson } from "./jsonUtils";
 import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from "./utils";
-import { Radio, message, Progress, Skeleton, Popover } from 'antd';
+import { Radio, message, Progress, Skeleton, Popover, Tooltip } from 'antd';
 import { MessageType } from "antd/lib/message";
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 import { TimestampDisplayFormat } from "../state/ui";
@@ -166,13 +166,13 @@ export const Label = (p: { text: string, textSuffix?: React.ReactNode, className
 }
 
 export const TextInfoIcon = (p: { text: string, info: React.ReactNode, maxWidth?: string }) => {
-    const content = p.maxWidth == null ? p.info : <div style={{ maxWidth: p.maxWidth }}>{p.info}</div>
+    const overlay = p.maxWidth == null ? p.info : <div style={{ maxWidth: p.maxWidth }}>{p.info}</div>
 
     return <span style={{ display: 'flex', alignItems: 'center' }}>
         {p.text}
-        <Popover content={content} trigger="hover" mouseLeaveDelay={0}>
+        <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0}>
             <span style={{ color: 'hsl(209deg, 100%, 55%)', padding: '3px 3px 2px 4px', display: 'inline-flex' }} ><InfoIcon /></span>
-        </Popover>
+        </Tooltip>
     </span>
 }
 
