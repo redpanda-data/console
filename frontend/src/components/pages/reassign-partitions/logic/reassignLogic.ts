@@ -1,3 +1,4 @@
+import { untracked } from "mobx";
 import { Topic, Partition, Broker } from "../../../../state/restInterfaces";
 import { toJson } from "../../../../utils/jsonUtils";
 
@@ -43,7 +44,7 @@ type BrokerReplicaCount = { // track how many replicas were assigned to a broker
 export type ApiData = { brokers: Broker[], topics: Topic[], topicPartitions: Map<string, Partition[]> };
 
 
-export function computeReassignments(
+function computeReassignments(
     apiData: ApiData,
     selectedTopicPartitions: TopicPartitions[],
     targetBrokers: Broker[]
@@ -122,6 +123,14 @@ export function computeReassignments(
 
     return resultAssignments;
 }
+
+const untrackedCompute = function (apiData: ApiData,
+    selectedTopicPartitions: TopicPartitions[],
+    targetBrokers: Broker[]
+): TopicAssignments {
+    return untracked(() => computeReassignments(apiData, selectedTopicPartitions, targetBrokers));
+}
+export { untrackedCompute as computeReassignments };
 
 // Compute, for the partitions of a single topic, to which brokers their replicas should be assigned to.
 function computeTopicAssignments(
