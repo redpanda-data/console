@@ -6,6 +6,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 	"sync"
+	"time"
 )
 
 func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage) {
@@ -45,7 +46,7 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 		topicMessage := &TopicMessage{
 			PartitionID:     record.Partition,
 			Offset:          record.Offset,
-			Timestamp:       record.Timestamp.Unix(),
+			Timestamp:       record.Timestamp.UnixNano() / int64(time.Millisecond),
 			Headers:         headers,
 			Compression:     compressionTypeDisplayname(record.Attrs.CompressionType()),
 			IsTransactional: record.Attrs.IsTransactional(),
