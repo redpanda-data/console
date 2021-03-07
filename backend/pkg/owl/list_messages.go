@@ -108,7 +108,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 // calculateConsumeRequests is supposed to calculate the start and end offsets for each partition consumer, so that
 // we'll end up with ${messageCount} messages in total. To do so we'll take the known low and high watermarks into
 // account. Gaps between low and high watermarks (caused by compactions) will be neglected for now.
-func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMessageRequest, marks map[int32]kafka.PartitionMarks) (map[int32]*kafka.PartitionConsumeRequest, error) {
+func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMessageRequest, marks map[int32]*kafka.PartitionMarks) (map[int32]*kafka.PartitionConsumeRequest, error) {
 	requests := make(map[int32]*kafka.PartitionConsumeRequest, len(marks))
 
 	predictableResults := listReq.StartOffset != StartOffsetNewest && listReq.FilterInterpreterCode == ""

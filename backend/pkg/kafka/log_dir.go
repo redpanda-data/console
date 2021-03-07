@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"context"
-	"fmt"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
@@ -24,38 +23,23 @@ type LogDirResponse struct {
 // included in Kafka 1.1.0+ releases.
 //
 // Use nil for topicPartitions to describe all topics and partitions.
-func (s *Service) DescribeLogDirs(ctx context.Context, topicPartitions []kmsg.DescribeLogDirsRequestTopic) (LogDirResponseSharded, error) {
+func (s *Service) DescribeLogDirs(ctx context.Context, topicPartitions []kmsg.DescribeLogDirsRequestTopic) []LogDirResponse {
 	req := kmsg.NewDescribeLogDirsRequest()
 	req.Topics = topicPartitions
 	shardedResp := s.KafkaClient.RequestSharded(ctx, &req)
 
-	result := LogDirResponseSharded{
-		LogDirResponses: make([]LogDirResponse, 0, len(shardedResp)),
-		RequestsSent:    0,
-		RequestsFailed:  0,
-	}
-	var lastErr error
-	for _, kresp := range shardedResp {
-		result.RequestsSent++
-		if kresp.Err != nil {
-			result.RequestsFailed++
-			lastErr = kresp.Err
-		}
-
+	result := make([]LogDirResponse, len(shardedResp))
+	for i, kresp := range shardedResp {
 		res, ok := kresp.Resp.(*kmsg.DescribeLogDirsResponse)
 		if !ok {
 			res = &kmsg.DescribeLogDirsResponse{}
 		}
-		result.LogDirResponses = append(result.LogDirResponses, LogDirResponse{
+		result[i] = LogDirResponse{
 			BrokerMetadata: kresp.Meta,
 			LogDirs:        *res,
 			Error:          kresp.Err,
-		})
+		}
 	}
 
-	if result.RequestsSent > 0 && result.RequestsSent == result.RequestsFailed {
-		return result, fmt.Errorf("all '%v' requests have failed, last error: %w", len(shardedResp), lastErr)
-	}
-
-	return result, nil
+	return result
 }

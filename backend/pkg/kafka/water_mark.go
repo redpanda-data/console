@@ -17,24 +17,20 @@ const (
 // PartitionMarks is a partitionID along with it's highest and lowest message index
 type PartitionMarks struct {
 	PartitionID int32
-	Low         int64
-	High        int64
+	// Error indicates whether there was an issue fetching the watermarks for this partition.
+	Error string
+
+	Low  int64
+	High int64
 }
 
-// TopicPartitionOffset is a map of Topicnames -> PartitionIDs -> Offset
-type TopicPartitionOffsets = map[string]map[int32]int64
-
 // GetPartitionMarks returns a map of: partitionID -> PartitionMarks
-func (s *Service) GetPartitionMarks(ctx context.Context, topic string, partitionIDs []int32) (map[int32]PartitionMarks, error) {
-	// 1. Create topic partitions map that can be passed to the ListOffsets request
-	topicPartitions := make(map[string][]int32)
-	topicPartitions[topic] = partitionIDs
-
-	// 2. Send low & high watermark request in parallel
+func (s *Service) GetPartitionMarksBulk(ctx context.Context, topicPartitions map[string][]int32) (map[string]map[int32]*PartitionMarks, error) {
+	// Send low & high watermark request in parallel
 	g, ctx := errgroup.WithContext(ctx)
 
-	var lowWaterMarks TopicPartitionOffsets
-	var highWaterMarks TopicPartitionOffsets
+	var lowWaterMarks *kmsg.ListOffsetsResponse
+	var highWaterMarks *kmsg.ListOffsetsResponse
 	g.Go(func() error {
 		oldestOffsets, err := s.ListOffsets(ctx, topicPartitions, TimestampEarliest)
 		if err != nil {
@@ -54,24 +50,69 @@ func (s *Service) GetPartitionMarks(ctx context.Context, topic string, partition
 
 	err := g.Wait()
 	if err != nil {
-		s.Logger.Error("failed to request partition marks", zap.String("topic", topic), zap.Error(err))
+		s.Logger.Error("failed to request partition marks in bulk", zap.Error(err))
 		return nil, fmt.Errorf("failed to request PartitionMarks: %w", err)
 	}
 
-	result := make(map[int32]PartitionMarks, len(partitionIDs))
-	for _, id := range partitionIDs {
-		result[id] = PartitionMarks{
-			PartitionID: id,
-			Low:         lowWaterMarks[topic][id],
-			High:        highWaterMarks[topic][id],
+	result := make(map[string]map[int32]*PartitionMarks)
+	// Pre initialize result map. Each requested partition should also have a response
+	for topic, partitionIDs := range topicPartitions {
+		result[topic] = make(map[int32]*PartitionMarks)
+		for _, partitionID := range partitionIDs {
+			result[topic][partitionID] = &PartitionMarks{
+				PartitionID: partitionID,
+				Error:       "",
+				Low:         -1, // -1 indicates that this offset has not yet been loaded
+				High:        -1, // -1 indicates that this offset has not yet been loaded
+			}
+		}
+	}
+
+	// Iterate on all low watermarks and put the partial information into the result map
+	for _, topic := range lowWaterMarks.Topics {
+		for _, partition := range topic.Partitions {
+			err := kerr.TypedErrorForCode(partition.ErrorCode)
+			if err != nil {
+				result[topic.Topic][partition.Partition].Error = err.Error()
+				continue
+			}
+			result[topic.Topic][partition.Partition].Low = partition.Offset
+		}
+	}
+
+	// Enrich the partial information with the high water mark offsets. This loop is slightly different because
+	// we check for existing errors and skip that.
+	for _, topic := range highWaterMarks.Topics {
+		for _, partition := range topic.Partitions {
+			err := kerr.TypedErrorForCode(partition.ErrorCode)
+			if err != nil {
+				result[topic.Topic][partition.Partition].Error = err.Error()
+				continue
+			}
+			result[topic.Topic][partition.Partition].High = partition.Offset
 		}
 	}
 
 	return result, nil
 }
 
+// GetPartitionMarks returns a map of: partitionID -> PartitionMarks
+func (s *Service) GetPartitionMarks(ctx context.Context, topic string, partitionIDs []int32) (map[int32]*PartitionMarks, error) {
+	// 1. Create topic partitions map that can be passed to the ListOffsets request
+	topicPartitions := make(map[string][]int32)
+	topicPartitions[topic] = partitionIDs
+
+	// 2. Request partition marks
+	partitionMarksByTopic, err := s.GetPartitionMarksBulk(ctx, topicPartitions)
+	if err != nil {
+		return nil, err
+	}
+
+	return partitionMarksByTopic[topic], nil
+}
+
 // ListOffsets returns a nested map of: topic -> partitionID -> high water mark offset of all available partitions
-func (s *Service) ListOffsets(ctx context.Context, topicPartitions map[string][]int32, timestamp int64) (TopicPartitionOffsets, error) {
+func (s *Service) ListOffsets(ctx context.Context, topicPartitions map[string][]int32, timestamp int64) (*kmsg.ListOffsetsResponse, error) {
 	topicRequests := make([]kmsg.ListOffsetsRequestTopic, 0, len(topicPartitions))
 
 	for topic, partitionIDs := range topicPartitions {
@@ -86,10 +127,9 @@ func (s *Service) ListOffsets(ctx context.Context, topicPartitions map[string][]
 		}
 
 		// Push topic request into array
-		topicReq := kmsg.ListOffsetsRequestTopic{
-			Topic:      topic,
-			Partitions: partitionRequests,
-		}
+		topicReq := kmsg.NewListOffsetsRequestTopic()
+		topicReq.Topic = topic
+		topicReq.Partitions = partitionRequests
 		topicRequests = append(topicRequests, topicReq)
 	}
 
@@ -98,27 +138,9 @@ func (s *Service) ListOffsets(ctx context.Context, topicPartitions map[string][]
 	}
 	res, err := req.RequestWith(ctx, s.KafkaClient)
 	if err != nil {
-		s.Logger.Error("failed to request high watermarks", zap.Error(err))
-		return nil, fmt.Errorf("failed to request high watermarks: %w", err)
+		s.Logger.Error("failed to request topic offsets", zap.Error(err))
+		return nil, fmt.Errorf("failed to request topic offsets: %w", err)
 	}
 
-	watermarkByTopicByPartitionID := make(map[string]map[int32]int64)
-	for _, topic := range res.Topics {
-		if _, ok := watermarkByTopicByPartitionID[topic.Topic]; !ok {
-			watermarkByTopicByPartitionID[topic.Topic] = make(map[int32]int64)
-		}
-		for _, partition := range topic.Partitions {
-			err := kerr.ErrorForCode(partition.ErrorCode)
-			if err != nil {
-				s.Logger.Error("failed to request high water mark",
-					zap.String("topic", topic.Topic),
-					zap.Int32("partition", partition.Partition),
-					zap.Error(err))
-				return nil, fmt.Errorf("failed to request high watermark for topic: '%v', partition '%v'", topic.Topic, partition.Partition)
-			}
-			watermarkByTopicByPartitionID[topic.Topic][partition.Partition] = partition.Offset
-		}
-	}
-
-	return watermarkByTopicByPartitionID, nil
+	return res, nil
 }

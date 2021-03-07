@@ -9,6 +9,28 @@ import (
 	"net/http"
 )
 
+func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
+	type response struct {
+		Topics []owl.TopicDetails `json:"topics"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO: Add proper Kowl Business hook
+
+		topicDetails, restErr := api.OwlSvc.GetTopicDetails(r.Context(), nil)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		res := response{
+			Topics: topicDetails,
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+
+}
+
 func (api *API) handleGetPartitionReassignments() http.HandlerFunc {
 	type response struct {
 		Topics []owl.PartitionReassignments `json:"topics"`

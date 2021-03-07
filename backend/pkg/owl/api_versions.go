@@ -14,7 +14,7 @@ type APIVersion struct {
 	MinVersion int16  `json:"minVersion"`
 }
 
-// ListTopicPartitions returns the partition in the topic along with their watermarks
+// GetTopicDetails returns the partition in the topic along with their watermarks
 func (s *Service) GetAPIVersions(ctx context.Context) ([]APIVersion, error) {
 	versionsRes, err := s.kafkaSvc.GetAPIVersions(ctx)
 	if err != nil {
