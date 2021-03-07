@@ -8,7 +8,8 @@ import { sortField, makePaginationConfig } from "../../misc/common";
 import { MotionAlways } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
-import { numberToThousandsString, DefaultSkeleton } from "../../../utils/tsxUtils";
+import { numberToThousandsString, DefaultSkeleton, TextInfoIcon } from "../../../utils/tsxUtils";
+import { BrokerList } from "../reassign-partitions/components/BrokerList";
 
 
 @observer
@@ -38,14 +39,17 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
             dataSource={partitions}
             rowKey={x => x.id.toString()}
             columns={[
-                { width: 1, title: 'Partition ID', dataIndex: 'id', sorter: sortField('id'), defaultSortOrder: 'ascend' },
-                { width: 1, title: 'Low Water Mark', dataIndex: 'waterMarkLow', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkLow') },
-                { width: 1, title: 'High Water Mark', dataIndex: 'waterMarkHigh', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkHigh') },
+                { title: 'Partition ID', dataIndex: 'id', sorter: sortField('id'), defaultSortOrder: 'ascend' },
                 {
-                    width: 1, title: 'Message Count', key: 'msgCount', render: (t, r) => numberToThousandsString(r.waterMarkHigh - r.waterMarkLow),
+                    title: <TextInfoIcon text="Low" info="Low Water Mark" tooltipOverText />,
+                    dataIndex: 'waterMarkLow', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkLow')
+                },
+                { title: 'High Water Mark', dataIndex: 'waterMarkHigh', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkHigh') },
+                {
+                    title: 'Message', key: 'msgCount', render: (t, r) => numberToThousandsString(r.waterMarkHigh - r.waterMarkLow),
                     sorter: (p1, p2) => (p1.waterMarkHigh - p1.waterMarkLow) - (p2.waterMarkHigh - p2.waterMarkLow)
                 },
-                // todo: lag (sum of lag over all consumer groups)
+                { title: 'Brokers', render: (v, r) => <BrokerList brokerIds={r.replicas} /> }
             ]} />
 
         return <MotionAlways>

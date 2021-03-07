@@ -3,9 +3,9 @@
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker
 } from "./restInterfaces";
-import { observable } from "mobx";
+import { computed, observable } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
@@ -196,6 +196,7 @@ const apiStore = {
     // Data
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
+
     clusterConfig: null as (ClusterConfig | null),
     adminInfo: undefined as (AdminInfo | undefined | null),
 
@@ -229,7 +230,6 @@ const apiStore = {
 
     // Fetch errors
     errors: [] as any[],
-
 
     messageSearchPhase: null as string | null,
     messagesFor: '', // for what topic?
@@ -549,6 +549,17 @@ const apiStore = {
         return data;
     },
 }
+
+export const brokerMap = computed(() => {
+    const brokers = api.clusterInfo?.brokers;
+    if (brokers == null) return null;
+
+    const map = new Map<number, Broker>();
+    for (const b of brokers)
+        map.set(b.brokerId, b);
+
+    return map;
+});
 
 export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);

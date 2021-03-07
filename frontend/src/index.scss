@@ -1641,30 +1641,54 @@ svg {
 }
 
 
-.brokerTagList .ant-tag {
-    margin-right: -1px;
-    font-size: 13px;
+.brokerTagList {
+    display: inline-flex;
+    gap: 1px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: hsl(0deg, 0%, 85%);
 
-    user-select: none;
-
-    &:hover {
-        opacity: 1;
-    }
-
-    // No border radius for adjacent tags
-    &:first-child {
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-    }
-
-    &:last-child {
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
-    }
-
-    // Inside
-    &:not(:first-child):not(:last-child) {
+    .ant-tag {
+        position: relative;
+        border: none;
+        // font-size: 13px;
+        user-select: none;
+        // padding: 1px 9px;
+        margin: 0;
+        padding: 1px 12px;
         border-radius: 0;
+        background: hsl(207deg, 10%, 95%);
+        color: hsl(0deg, 0%, 45%);
+
+
+        &:hover {
+            opacity: 1;
+        }
+
+        &.offline {
+            background: hsl(0deg, 80%, 76%);
+            color: hsl(0deg, 80%, 25%);
+        }
+
+        // &.offline::before {
+        //     content: ' ';
+        //     position: absolute;
+        //     top: 0;
+        //     left: 0;
+        //     right: 0;
+        //     bottom: 0;
+        //     border-bottom: 2px solid dodgerblue;
+        // }
+
+        // &.leader::before {
+        //     content: ' ';
+        //     position: absolute;
+        //     top: 0;
+        //     left: 0;
+        //     right: 0;
+        //     bottom: 0;
+        //     border-bottom: 2px solid dodgerblue;
+        // }
     }
 }
 

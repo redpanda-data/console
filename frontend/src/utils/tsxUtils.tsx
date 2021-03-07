@@ -165,13 +165,30 @@ export const Label = (p: { text: string, textSuffix?: React.ReactNode, className
     </>
 }
 
-export const TextInfoIcon = (p: { text: string, info: React.ReactNode, maxWidth?: string }) => {
+export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor?: string, tooltipOverText?: boolean, iconSize?: string, maxWidth?: string }) => {
     const overlay = p.maxWidth == null ? p.info : <div style={{ maxWidth: p.maxWidth }}>{p.info}</div>
 
-    return <span style={{ display: 'flex', alignItems: 'center' }}>
+    const size = p.iconSize ?? '14px';
+
+    const gray = 'hsl(0deg, 0%, 50%)';
+    const blue = 'hsl(209deg, 100%, 55%)';
+    const color = p.iconColor ?? gray;
+
+    const icon = <span style={{ color: color, padding: '0px 2px 0px 4px', display: 'inline-flex', boxSizing: 'content-box', width: size }} ><InfoIcon /></span>
+
+
+    if (p.tooltipOverText == null || p.tooltipOverText === true)
+        return <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0}>
+            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                {p.text}
+                {icon}
+            </span>
+        </Tooltip>
+
+    return <span style={{ display: 'inline-flex', alignItems: 'center' }}>
         {p.text}
         <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0}>
-            <span style={{ color: 'hsl(209deg, 100%, 55%)', padding: '3px 3px 2px 4px', display: 'inline-flex' }} ><InfoIcon /></span>
+            {icon}
         </Tooltip>
     </span>
 }

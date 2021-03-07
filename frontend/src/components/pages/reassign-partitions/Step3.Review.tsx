@@ -110,7 +110,7 @@ class ReviewPartitionTable extends Component<{ topic: Topic, topicPartitions: Pa
                 scroll={{ y: '300px' }}
                 rowKey={r => r.id}
                 columns={[
-                    { width: 120, title: 'Partition', dataIndex: 'id', sortOrder: 'ascend' },
+                    { width: 120, title: 'Partition', dataIndex: 'id', sortOrder: 'ascend', sorter: (a, b) => a.id - b.id },
                     {
                         width: undefined, title: 'Brokers Before',
                         render: (v, record) => <BrokerList brokerIds={record.replicas} leaderId={record.leader} />
