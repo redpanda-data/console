@@ -18,7 +18,9 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
     const statsAr = [] as JSX.Element[];
 
     // Size
-    const size = <Statistic key='size' title='Size' value={topic ? prettyBytesOrNA(topic.logDirSize) : "..."} />
+    const size = <Statistic key='size' title='Size' value={topic
+        ? prettyBytesOrNA(topic.logDirSummary.totalSizeBytes)
+        : "..."} />
     statsAr.push(size);
 
     // Messages

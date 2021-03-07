@@ -9,17 +9,26 @@ export interface ApiError {
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];
 
-export class Topic {
+export interface Topic {
     topicName: string;
     isInternal: boolean;
     partitionCount: number;
     replicationFactor: number;
     cleanupPolicy: string;
-    logDirSize: number; // how much space this topic takes up (files in its log dir)
+    logDirSummary: TopicLogDirSummary;
     allowedActions: TopicAction[] | undefined;
 }
 
-export class GetTopicsResponse {
+export interface TopicLogDirSummary {
+    totalSizeBytes: number; // how much space this topic takes up (files in its log dir)
+    replicaErrors: {
+        brokerId: number;
+        error: string | null;
+    }[] | null;
+    hint: string | null;
+}
+
+export interface GetTopicsResponse {
     topics: Topic[];
 }
 
@@ -27,18 +36,22 @@ export class GetTopicsResponse {
 
 export interface Partition {
     id: number;
-    leader: number; // id of the "leader" broker for this partition
-    inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
+    partitionError: string | null;
+    replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
     offlineReplicas: number[] | null;
+    inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
+    leader: number; // id of the "leader" broker for this partition
+
+    waterMarksError: string | null;
+    waterMarkLow: number;
+    waterMarkHigh: number;
+
     partitionLogDirs: {
         error: string, // empty when no error
         brokerId: number,
         partitionId: number, // redundant?
         size: number, // size (in bytes) of log dir on that broker
     }[];
-    replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
-    waterMarkLow: number;
-    waterMarkHigh: number;
 
     // added by frontend:
     replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
@@ -47,6 +60,7 @@ export interface Partition {
 
 export interface GetPartitionsResponse {
     topicName: string;
+    error: string | null; // only set if metadata request has failed for the whole topic
     partitions: Partition[];
 }
 

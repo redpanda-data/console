@@ -3,17 +3,18 @@ package owl
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/cloudhut/common/rest"
 	"github.com/pkg/errors"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
-	"net/http"
-	"time"
 )
 
 type TopicDetails struct {
-	TopicName string `json:"string"`
+	TopicName string `json:"topicName,string"`
 
 	// Error should only be set if the metadata request for the whole topic has failed
 	Error string `json:"error,omitempty"`
@@ -27,11 +28,11 @@ type TopicDetails struct {
 // Only data relevant to the 'partition table' in the frontend is included.
 type TopicPartitionDetails struct {
 	// Metadata about the topic and partitions as fetched via the Kafka metadata request.
-	Metadata TopicPartitionMetadata `json:"metadata"`
+	*TopicPartitionMetadata
 
 	// Marks returns the low and high water mark for each partition. It's a separate entity as this is a set of
 	// separate requests towards Kafka. These request can also fail.
-	Marks TopicPartitionMarks `json:"marks"`
+	*TopicPartitionMarks
 
 	// PartitionLogDirs return the size per partition for each replica. If a partition replica fails to respond the
 	// log dirs an entry for it should still exist along with a descriptive error.
@@ -42,7 +43,7 @@ type TopicPartitionMetadata struct {
 	ID int32 `json:"id"`
 
 	// Error should only be set if the metadata request for this partition has failed
-	Error string `json:"error,omitempty"`
+	PartitionError string `json:"partitionError,omitempty"`
 
 	// Replicas returns all broker IDs containing replicas of this partition.
 	Replicas []int32 `json:"replicas"`
@@ -58,24 +59,24 @@ type TopicPartitionMetadata struct {
 	Leader int32 `json:"leader"`
 }
 
+type TopicPartitionMarks struct {
+	PartitionID int32 `json:-`
+
+	// Error indicates whether there was an issue fetching the watermarks for this partition.
+	WaterMarksError string `json:"waterMarksError,omitempty"`
+
+	// Low water mark for this partition
+	Low int64 `json:"waterMarkLow"`
+
+	// High water mark for this partition
+	High int64 `json:"waterMarkHigh"`
+}
+
 type TopicPartitionLogDirs struct {
 	BrokerID    int32  `json:"brokerId"`
 	Error       string `json:"error,omitempty"`
 	PartitionID int32  `json:"partitionId"`
 	Size        int64  `json:"size"`
-}
-
-type TopicPartitionMarks struct {
-	PartitionID int32 `json:"partitionId"`
-
-	// Error indicates whether there was an issue fetching the watermarks for this partition.
-	Error string `json:"error,omitempty"`
-
-	// Low water mark for this partition
-	Low int64 `json:"low"`
-
-	// High water mark for this partition
-	High int64 `json:"high"`
 }
 
 type TopicPartitionLogDirRequestError struct {
@@ -104,7 +105,7 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 		}
 
 		for _, partition := range topic.Partitions {
-			partitionID := partition.Metadata.ID
+			partitionID := partition.ID
 			topicWatermarkReqs[topic.TopicName] = append(topicWatermarkReqs[topic.TopicName], partitionID)
 		}
 	}
@@ -139,27 +140,27 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 		topicMarks := waterMarks[topic.TopicName]
 		partitionsDetails := make([]TopicPartitionDetails, len(topic.Partitions))
 		for i, partition := range topic.Partitions {
-			partitionMarks := topicMarks[partition.Metadata.ID]
+			partitionMarks := topicMarks[partition.ID]
 
 			// Get log dirs for the current partitions. We can rest assured that the map is fully initialized and we
 			// won't run into nil panics. The describe log dirs function that constructs this nested map is supposed
 			// to create one map item for each requested topic + partition.
-			logDirs := logDirsByTopicPartition[topic.TopicName][partition.Metadata.ID]
+			logDirs := logDirsByTopicPartition[topic.TopicName][partition.ID]
 
 			d := TopicPartitionDetails{
-				Metadata: TopicPartitionMetadata{
-					ID:              partition.Metadata.ID,
-					Error:           partition.Metadata.Error,
-					Replicas:        partition.Metadata.Replicas,
-					OfflineReplicas: partition.Metadata.OfflineReplicas,
-					InSyncReplicas:  partition.Metadata.InSyncReplicas,
-					Leader:          partition.Metadata.Leader,
+				TopicPartitionMetadata: &TopicPartitionMetadata{
+					ID:              partition.ID,
+					PartitionError:  partition.PartitionError,
+					Replicas:        partition.Replicas,
+					OfflineReplicas: partition.OfflineReplicas,
+					InSyncReplicas:  partition.InSyncReplicas,
+					Leader:          partition.Leader,
 				},
-				Marks: TopicPartitionMarks{
-					PartitionID: partitionMarks.PartitionID,
-					Error:       partitionMarks.Error,
-					Low:         partitionMarks.Low,
-					High:        partitionMarks.High,
+				TopicPartitionMarks: &TopicPartitionMarks{
+					PartitionID:     partitionMarks.PartitionID,
+					WaterMarksError: partitionMarks.Error,
+					Low:             partitionMarks.Low,
+					High:            partitionMarks.High,
 				},
 				PartitionLogDirs: logDirs,
 			}
@@ -211,9 +212,11 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []st
 					zap.Error(err))
 
 				// Propagate the failed response and do not even try any further requests for that partition.
-				metadata.Error = fmt.Sprintf("Failed to get metadata for partition: %v", err.Error())
+				metadata.PartitionError = fmt.Sprintf("Failed to get metadata for partition: %v", err.Error())
 				partitionInfo[i] = TopicPartitionDetails{
-					Metadata: metadata,
+					&metadata,
+					&TopicPartitionMarks{},
+					nil,
 				}
 				continue
 			}
@@ -223,7 +226,9 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []st
 			metadata.Leader = partition.Leader
 			metadata.OfflineReplicas = partition.OfflineReplicas
 			partitionInfo[i] = TopicPartitionDetails{
-				Metadata: metadata,
+				&metadata,
+				&TopicPartitionMarks{},
+				[]TopicPartitionLogDirs{},
 			}
 		}
 		topicOverview.Partitions = partitionInfo
@@ -249,9 +254,9 @@ func (s *Service) describePartitionLogDirs(ctx context.Context, topicMetadata ma
 		req.Topic = topic.TopicName
 		req.Partitions = make([]int32, 0)
 		for _, partition := range topic.Partitions {
-			partitionID := partition.Metadata.ID
+			partitionID := partition.ID
 			req.Partitions = append(req.Partitions, partitionID)
-			replicaIDsByTopicPartition[topic.TopicName][partitionID] = partition.Metadata.Replicas
+			replicaIDsByTopicPartition[topic.TopicName][partitionID] = partition.Replicas
 		}
 		topicLogDirReqs = append(topicLogDirReqs, req)
 	}

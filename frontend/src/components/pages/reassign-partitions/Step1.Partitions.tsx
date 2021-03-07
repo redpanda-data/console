@@ -62,7 +62,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 title: 'Brokers', dataIndex: 'partitions',
                 render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A'
             },
-            { title: 'Size', dataIndex: 'logDirSize', render: v => prettyBytesOrNA(v), sorter: sortField('logDirSize') },
+            { title: 'Size', render: (v, r) => prettyBytesOrNA(r.logDirSummary.totalSizeBytes), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes },
         ]
 
         return <>

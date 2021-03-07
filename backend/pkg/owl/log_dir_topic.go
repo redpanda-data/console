@@ -3,6 +3,7 @@ package owl
 import (
 	"context"
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
@@ -11,11 +12,11 @@ import (
 type TopicLogDirSummary struct {
 	TotalSizeBytes int64 `json:"totalSizeBytes"`
 
-	ReplicaErrors []TopicLogDirSummaryReplicaError `json:"replicaErrors"`
+	ReplicaErrors []TopicLogDirSummaryReplicaError `json:"replicaErrors,omitempty"`
 
 	// Hint is a descriptive message why the logDirSize could not be fetched or that it might be just an
 	// estimate because one or more replicas did not respond to describe log dir request.
-	Hint string `json:"hint"`
+	Hint string `json:"hint,omitempty"`
 }
 
 type TopicLogDirSummaryReplicaError struct {

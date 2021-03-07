@@ -3,6 +3,7 @@ package owl
 import (
 	"context"
 	"fmt"
+
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
@@ -41,7 +42,7 @@ type TopicLag struct {
 // PartitionLag describes the kafka lag for a partition for a single consumer group
 type PartitionLag struct {
 	// Error will be set when the high water mark could not be fetched
-	Error       string `json:"error"`
+	Error       string `json:"error,omitempty"`
 	PartitionID int32  `json:"partitionId"`
 	Lag         int64  `json:"lag"`
 }
