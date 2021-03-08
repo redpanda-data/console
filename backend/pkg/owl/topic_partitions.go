@@ -14,7 +14,7 @@ import (
 )
 
 type TopicDetails struct {
-	TopicName string `json:"topicName,string"`
+	TopicName string `json:"topicName"`
 
 	// Error should only be set if the metadata request for the whole topic has failed
 	Error string `json:"error,omitempty"`
