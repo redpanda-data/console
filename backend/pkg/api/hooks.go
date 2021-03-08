@@ -53,6 +53,7 @@ type OwlHooks interface {
 	// Operations Hooks
 	CanSeeInProgressPartitionReassignments(ctx context.Context) (bool, *rest.Error)
 	CanPatchPartitionReassignments(ctx context.Context) (bool, *rest.Error)
+	CanPatchConfigs(ctx context.Context) (bool, *rest.Error)
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -109,5 +110,8 @@ func (*defaultHooks) CanSeeInProgressPartitionReassignments(_ context.Context) (
 	return true, nil
 }
 func (*defaultHooks) CanPatchPartitionReassignments(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanPatchConfigs(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
