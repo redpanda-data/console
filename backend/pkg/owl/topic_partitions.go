@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/cloudhut/common/rest"
@@ -60,7 +61,7 @@ type TopicPartitionMetadata struct {
 }
 
 type TopicPartitionMarks struct {
-	PartitionID int32 `json:-`
+	PartitionID int32 `json:"-"`
 
 	// Error indicates whether there was an issue fetching the watermarks for this partition.
 	WaterMarksError string `json:"waterMarksError,omitempty"`
@@ -94,7 +95,13 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 	}
 
 	// 2. Describe partition log dirs
-	logDirsByTopicPartition := s.describePartitionLogDirs(ctx, topicMetadata)
+	var logDirsByTopicPartition map[string]map[int32][]TopicPartitionLogDirs
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s.describePartitionLogDirs(ctx, topicMetadata)
+	}()
 
 	// 3. Get partition low & high watermarks
 	topicWatermarkReqs := make(map[string][]int32)
@@ -120,7 +127,8 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 		}
 	}
 
-	// TODO: Request watermarks and log dirs in parallel. Wait for result/end of describe log dir routine
+	// Wait for the log dir response if necessary
+	wg.Wait()
 
 	// 4. Create result array
 	topicsDetails := make([]TopicDetails, 0, len(topicMetadata))
