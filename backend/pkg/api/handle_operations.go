@@ -15,16 +15,29 @@ func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Add proper Kowl Business hook
-
 		topicDetails, restErr := api.OwlSvc.GetTopicDetails(r.Context(), nil)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
+		// Kowl business hook - only include topics the user is allowed to see
+		visibleTopics := make([]owl.TopicDetails, 0, len(topicDetails))
+		for _, topic := range topicDetails {
+			// Check if logged in user is allowed to see this topic, if not - don't add it to the list of returned topics
+			canSee, restErr := api.Hooks.Owl.CanSeeTopic(r.Context(), topic.TopicName)
+			if restErr != nil {
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
+
+			if canSee {
+				visibleTopics = append(visibleTopics, topic)
+			}
+		}
+
 		res := response{
-			Topics: topicDetails,
+			Topics: visibleTopics,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
@@ -105,16 +118,15 @@ func (api *API) handlePatchPartitionAssignments() http.HandlerFunc {
 				}
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
-			} else {
-				restErr := &rest.Error{
-					Err:      err,
-					Status:   http.StatusInternalServerError,
-					Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
 			}
+
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusInternalServerError,
+				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
@@ -272,16 +284,15 @@ func (api *API) handlePatchConfigs() http.HandlerFunc {
 				}
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
-			} else {
-				restErr := &rest.Error{
-					Err:      err,
-					Status:   http.StatusInternalServerError,
-					Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
 			}
+
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusInternalServerError,
+				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
