@@ -174,12 +174,11 @@ export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor
     const blue = 'hsl(209deg, 100%, 55%)';
     const color = p.iconColor ?? gray;
 
-    const icon = <span style={{ color: color, padding: '0px 2px 0px 4px', display: 'inline-flex', boxSizing: 'content-box', width: size }} ><InfoIcon /></span>
-
+    const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size }} ><InfoIcon /></span>
 
     if (p.tooltipOverText == null || p.tooltipOverText === true)
         return <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0}>
-            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 {p.text}
                 {icon}
             </span>

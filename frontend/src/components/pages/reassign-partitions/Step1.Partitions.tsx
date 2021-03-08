@@ -8,9 +8,9 @@ import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
 import { SelectionInfoBar } from "./components/StatisticsBars";
 import { prettyBytesOrNA } from "../../../utils/utils";
 import { ColumnProps } from "antd/lib/table/Column";
-import { DefaultSkeleton } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, TextInfoIcon } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
-import { IReactionDisposer, observable } from "mobx";
+import { computed, IReactionDisposer, observable, transaction } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
 import Highlighter from 'react-highlight-words';
 
@@ -91,30 +91,33 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 rowClassName={() => 'pureDisplayRow'}
                 rowSelection={{
                     type: 'checkbox',
-                    columnTitle: <></>, // don't show "select all" checkbox
-                    renderCell: (value: boolean, record, index: number, originNode: React.ReactNode) => {
-                        return <IndeterminateCheckbox originalCheckbox={originNode} getCheckState={() => this.getTopicCheckState(record.topicName)} />
-
-                    },
+                    columnTitle: <div style={{ display: 'flex' }} >
+                        <TextInfoIcon text="" info={<>
+                            Select multiple topics at once by holding down the shift key.<br />
+                            Example: Select row 1, then hold down shift while selecting row 5 to select all rows from 1 to 5.
+                            </>} maxWidth='360px' iconSize='16px' />
+                    </div>,
+                    renderCell: (value: boolean, record, index: number, originNode: React.ReactNode) =>
+                        <IndeterminateCheckbox
+                            originalCheckbox={originNode}
+                            getCheckState={() => this.getTopicCheckState(record.topicName)}
+                        />,
                     onSelect: (record, selected: boolean, selectedRows) => {
+                        if (!record.partitions) return;
+
                         // Select all partitions in this topic
-                        if (record.partitions)
+                        transaction(() => {
                             for (const p of record.partitions)
                                 this.setSelection(record.topicName, p.id, selected);
+                        });
                     },
-                    getCheckboxProps: record => {
-                        if (record.partitions) {
-                            const selectedPartitions = this.props.partitionSelection[record.topicName];
-                            let hasPartialSelection = false;
-                            if (selectedPartitions && selectedPartitions.length != 0 && selectedPartitions.length < record.partitionCount)
-                                hasPartialSelection = true;
-
-                            return { indeterminate: hasPartialSelection };
-                        }
-                        return {};
+                    onSelectMultiple: (selected, selectedRows, changeRows) => {
+                        transaction(() => {
+                            for (const r of changeRows)
+                                for (const p of r.partitions)
+                                    this.setSelection(r.topicName, p.id, selected);
+                        });
                     },
-                    // todo: in setSelected() call, keep track of what the 'topic checkbox state' should be (selected, indeterminate)
-                    // selectedRowKeys:
                 }}
                 columns={columns}
                 expandable={{
@@ -128,7 +131,6 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                             getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
                         />
                         : <>Error loading partitions</>,
-                    // expandedRowClassName: r => 'noPadding',
                 }}
             />
         </>
@@ -177,8 +179,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         return { checked: false, indeterminate: true };
     }
 
-
-    get topicPartitions(): TopicWithPartitions[] {
+    @computed get topicPartitions(): TopicWithPartitions[] {
         if (api.topics == null) return [];
         return api.topics.map(topic => {
             return {
