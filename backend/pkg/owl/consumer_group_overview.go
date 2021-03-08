@@ -84,7 +84,6 @@ func (s *Service) convertKgoGroupDescriptions(descriptions []kmsg.DescribeGroups
 			Members:       members,
 			CoordinatorID: 0,
 			Lags:          lags[d.Group],
-			// TODO: AllowedActions: d.AuthorizedOperations,
 		}
 	}
 
