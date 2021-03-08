@@ -44,9 +44,12 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
                     title: <TextInfoIcon text="Low" info="Low Water Mark" tooltipOverText />,
                     dataIndex: 'waterMarkLow', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkLow')
                 },
-                { title: 'High Water Mark', dataIndex: 'waterMarkHigh', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkHigh') },
                 {
-                    title: 'Message', key: 'msgCount', render: (t, r) => numberToThousandsString(r.waterMarkHigh - r.waterMarkLow),
+                    title: <TextInfoIcon text="High" info="High Water Mark" tooltipOverText />,
+                    dataIndex: 'waterMarkHigh', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkHigh')
+                },
+                {
+                    title: 'Messages', key: 'msgCount', render: (t, r) => numberToThousandsString(r.waterMarkHigh - r.waterMarkLow),
                     sorter: (p1, p2) => (p1.waterMarkHigh - p1.waterMarkLow) - (p2.waterMarkHigh - p2.waterMarkLow)
                 },
                 { title: 'Brokers', render: (v, r) => <BrokerList brokerIds={r.replicas} /> }
