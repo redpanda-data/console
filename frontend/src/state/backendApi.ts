@@ -3,9 +3,9 @@
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse
 } from "./restInterfaces";
-import { computed, observable } from "mobx";
+import { computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
@@ -403,10 +403,38 @@ const apiStore = {
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
+    refreshAllTopicPartitions(force?: boolean) {
+        cachedApiRequest<GetAllPartitionsResponse | null>(`./api/operations/topic-details`, force)
+            .then(response => {
+                if (!response?.topics) return;
+                transaction(() => {
+                    for (const t of response.topics) {
+                        if (t.error != null) {
+                            console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
+                            continue;
+                        }
+                        // Add some local/cached properties to make working with the data easier
+                        for (const p of t.partitions) {
+                            // replicaSize
+                            const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
+                            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+
+                            // topicName
+                            p.topicName = t.topicName;
+                        }
+
+                        // Set partitions
+                        this.topicPartitions.set(t.topicName, t.partitions);
+                    }
+                });
+            }, addError);
+    },
+
     refreshTopicPartitions(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
             .then(response => {
-                if (response != null) {
+                if (response?.partitions) {
                     // Add some local/cached properties to make working with the data easier
                     for (const p of response.partitions) {
                         // replicaSize

@@ -64,6 +64,15 @@ export interface GetPartitionsResponse {
     partitions: Partition[];
 }
 
+export interface GetAllPartitionsResponse {
+    topics: {
+        topicName: string;
+        error: string | null;
+        partitions: Partition[];
+    }[];
+}
+
+
 
 export interface TopicConsumer {
     groupId: string

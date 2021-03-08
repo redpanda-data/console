@@ -116,8 +116,7 @@ class ReassignPartitions extends PageComponent {
 
         this.autorunHandle = autorun(() => {
             if (api.topics != null)
-                for (const topic of api.topics)
-                    api.refreshTopicPartitions(topic.topicName, false);
+                api.refreshAllTopicPartitions(false);
         });
 
         // Debug
@@ -151,12 +150,9 @@ class ReassignPartitions extends PageComponent {
     }
 
     refreshData(force: boolean) {
-        api.refreshTopics(force);
-        if (api.topics)
-            for (const topic of api.topics)
-                api.refreshTopicPartitions(topic.topicName, force);
-
         api.refreshCluster(force);
+        api.refreshTopics(force);
+        api.refreshAllTopicPartitions(force);
     }
 
     componentWillUnmount() {
@@ -240,7 +236,7 @@ class ReassignPartitions extends PageComponent {
                 </Card>
 
                 {/* Debug */}
-                <div style={{ margin: '2em 0 1em 0', display: 'flex', flexWrap: 'wrap', gap: '3em' }}>
+                {/* <div style={{ margin: '2em 0 1em 0', display: 'flex', flexWrap: 'wrap', gap: '3em' }}>
                     <div>
                         <h2>Partition Selection</h2>
                         <div className='codeBox'>{toJson(this.partitionSelection, 4)}</div>
@@ -251,16 +247,18 @@ class ReassignPartitions extends PageComponent {
                         <div className='codeBox'>{toJson(this.selectedBrokerIds)}</div>
                     </div>
 
-                    {/* <div>
-                        <h2>Api Data</h2>
-                        <div className='codeBox'>{toJson(this._debug_apiData, 4)}</div>
-                    </div> */}
+                    {
+                    // <div>
+                    //    <h2>Api Data</h2>
+                    //    <div className='codeBox'>{toJson(this._debug_apiData, 4)}</div>
+                    //</div>
+                    }
 
                     <div>
                         <h2>Computed Assignments</h2>
                         <div className='codeBox'>{toJson(this.reassignmentRequest, 4)}</div>
                     </div>
-                </div>
+                </div> */}
             </motion.div>
         </>
     }
