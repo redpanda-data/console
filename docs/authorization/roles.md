@@ -34,11 +34,10 @@ Specifies the resource kind on which the permissions shall be applied. To date t
 
 | Resource Name | Description |
 |---|---|
-| application | Kowl specific permissions |
+| application | Kowl related permissions |
 | topics | Kafka topics |
-| acls | Kafka ACLs |
 | consumerGroups | Kafka consumer groups |
-| cluster | Kafka cluster wide actions |
+| cluster | Kafka cluster scoped permissions |
 
 #### Includes
 
@@ -72,7 +71,7 @@ This is an overview of all actions by resource:
 
 ##### Resource: Application
 
-`viewConfig` : Allows you to show Roles and resolved role bindings in an admin panel
+`canManageKowl` : Allows you to show Kowl Business roles and resolved role bindings in an admin panel
 
 ##### Resource: Topics
 
@@ -88,9 +87,11 @@ This is an overview of all actions by resource:
 
 `viewConsumers` : View all consumers which consume that topic
 
-##### Resource: ACLs
+##### Resource: Cluster
 
 `viewAcl` : List all ACL rules defined in the cluster
+
+`reassignPartitions` : Reassign partitions between brokers
 
 ##### Resource: Consumer Groups
 
@@ -102,12 +103,18 @@ We regularly add new features and therefore we also add new actions. Every time 
 
 | Resource Name | Primitive Action | Actions |
 |---|---|---|
-| `application` | `view` | [`viewConfig`]
+| `application` | `view` | [`canManageKowl`]
+| `application` | `edit` | [`view`]
+| `application` | `admin` | [`edit`]
 | `topics` | `view` | [`seeTopic`, `viewPartitions`, `viewConfig`, `viewMessages`, `useSearchFilter`, `viewConsumers`]
-| `acls` | `view` | [`viewAcl`]
+| `topics` | `edit` | [`view`]
+| `topics` | `admin` | [`edit`]
+| `cluster` | `view` | [`viewAcl`]
+| `cluster` | `edit` | [`view`, `reassignPartitions`]
+| `cluster` | `admin` | [`edit`]
 | `consumerGroups` | `view` | [`seeConsumerGroup`]
-| `application`, `topics`, `consumerGroups` | `edit` | [`view`]
-| `application`, `topics`, `consumerGroups` | `admin` | [`edit`]
+| `consumerGroups` | `edit` | [`view`]
+| `consumerGroups` | `admin` | [`edit`]
 
 > :triangular_flag_on_post: As of now there are no editing (e.g. edit consumer group offsets) or administrating features (e.g. delete a Kafka topic). The respective primitive actions (editor, admin) do already exist for each resource though.
 
