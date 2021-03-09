@@ -50,6 +50,23 @@ func (api *API) handleGetPartitionReassignments() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Check if logged in user (Kowl business) is allowed to list reassignments
+		isAllowed, restErr := api.Hooks.Owl.CanPatchPartitionReassignments(r.Context())
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !isAllowed {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      fmt.Errorf("requester has no permissions to patch partition assignments"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to reassign partitions",
+				IsSilent: false,
+			})
+			return
+		}
+
+		// 2. Fetch in progress reassignments (supported by Kafka 2.4.0+)
 		topics, err := api.OwlSvc.ListPartitionReassignments(r.Context())
 		if err != nil {
 			restErr := &rest.Error{
