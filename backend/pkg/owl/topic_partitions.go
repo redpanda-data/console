@@ -100,7 +100,7 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		s.describePartitionLogDirs(ctx, topicMetadata)
+		logDirsByTopicPartition = s.describePartitionLogDirs(ctx, topicMetadata)
 	}()
 
 	// 3. Get partition low & high watermarks
