@@ -1,3 +1,9 @@
+---
+title: Okta OIDC Provider Setup
+path: /docs/provider-setup/okta
+---
+
+
 # Okta OIDC Provider Setup
 
 This section guides you through the required steps to setup an OIDC application at Okta.

@@ -1,3 +1,8 @@
+---
+title: Roles
+path: /docs/authorization/roles
+---
+
 # Roles
 
 <p align="center">

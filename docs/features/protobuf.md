@@ -1,3 +1,8 @@
+---
+title: Protobuf Deserialization
+path: /docs/features/protobuf
+---
+
 # Protobuf Deserialization
 
 If you have one or more topics with Protobuf serialized messages you can configure Kowl to deserialize

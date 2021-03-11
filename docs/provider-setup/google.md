@@ -1,3 +1,9 @@
+---
+title: Google OAuth / OIDC Provider Setup
+path: /docs/provider-setup/google
+---
+
+
 # Google OAuth / OIDC Provider Setup
 
 This section guides you through the required steps to setup an OAuth application at Google.

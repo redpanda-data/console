@@ -1,3 +1,8 @@
+---
+title: Installation & Deployment
+path: /docs/installation
+---
+
 # Installation & Deployment
 
 This page describes how to install Kowl (Business) on your platform.
