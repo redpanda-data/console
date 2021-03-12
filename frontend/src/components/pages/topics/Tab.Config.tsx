@@ -271,28 +271,33 @@ export function FormatConfigValue(name: string, value: string, formatType: 'frie
 
     const num = Number(value);
 
-    // Special case 1
+    if (value == null || value == "" || value == "0" || Number.isNaN(num))
+        return value;
+
+    // Special cases
     if (name == "flush.messages" && num > Math.pow(2, 60))
         return "Never" + suffix; // messages between each fsync
 
-    // Special case 2
-    if (name == "retention.bytes" && num < 0)
-        return "Infinite" + suffix; // max bytes to keep before discarding old log segments
-
-    // Special case 3
-    if (value == "0") return value; // Don't modify zero at all
-
+    if (name.endsWith(".bytes.per.second")) {
+        if (num >= Number.MAX_SAFE_INTEGER) return "Infinite" + suffix;
+        return prettyBytesOrNA(num) + "/s" + suffix;
+    }
 
     // Time
-    if (name.endsWith(".ms")) {
-        // More than 100 years -> Infinite
-        if (num > 3155695200000 || num == -1) return "Infinite" + suffix;
+    const endsWithSeconds = name.endsWith('.seconds');
+    if (name.endsWith(".ms") || endsWithSeconds) {
+        if (num > Number.MAX_SAFE_INTEGER || num == -1) return "Infinite" + suffix;
         // Convert into a readable format
-        return prettyMilliseconds(num, { verbose: true }) + suffix;
+        const ms = endsWithSeconds ? num * 1000 : num;
+        return prettyMilliseconds(ms, { verbose: true }) + suffix;
     }
 
     // Bytes
-    if (name.endsWith(".bytes")) {
+    if (name.endsWith(".bytes")
+        || name.endsWith(".buffer.size")
+        || name.endsWith(".replication.throttled.rate")
+        || name.endsWith(".reassignment.throttled.rate")) {
+        if (num < 0 || num >= Number.MAX_VALUE) return "Infinite" + suffix;
         return prettyBytesOrNA(num) + suffix;
     }
 
