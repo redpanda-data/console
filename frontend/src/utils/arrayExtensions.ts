@@ -23,6 +23,7 @@ declare global {
         distinct<T>(this: T[], keySelector?: ((x: T) => any)): T[];
         pushDistinct<T>(this: T[], ...elements: T[]): void;
         intersection<T>(this: T[], other: T[]): T[];
+        except<T>(this: T[], other: T[]): T[];
 
         genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[];
         joinStr(this: (string | null | undefined)[], separator: string): string;
@@ -166,6 +167,16 @@ Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): 
         if (set.has(e))
             results.push(e);
     return results;
+};
+
+Array.prototype.except = function except<T>(this: T[], other: T[]): T[] {
+    const ar = [];
+    const otherSet = new Set<T>(other);
+    for (const e of this) {
+        if (otherSet.has(e)) continue;
+        ar.push(e);
+    }
+    return ar;
 };
 
 Array.prototype.genericJoin = function genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[] {
