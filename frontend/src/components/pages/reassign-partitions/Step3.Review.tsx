@@ -1,12 +1,12 @@
 import React, { Component } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table } from "antd";
+import { Button, Checkbox, Empty, Input, InputNumber, Select, Table } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { api } from "../../../state/backendApi";
 import { makePaginationConfig } from "../../misc/common";
 import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from "../../../state/restInterfaces";
-import { computed } from "mobx";
-import { prettyBytesOrNA } from "../../../utils/utils";
+import { computed, observable } from "mobx";
+import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
 import { DefaultSkeleton, TextInfoIcon } from "../../../utils/tsxUtils";
 import { ElementOf } from "antd/lib/_util/type";
 import { ReviewInfoBar, SelectionInfoBar } from "./components/StatisticsBars";
@@ -14,13 +14,20 @@ import { BrokerList } from "./components/BrokerList";
 import { PartitionSelection, } from "./ReassignPartitions";
 import { clone } from "../../../utils/jsonUtils";
 import { computeMovedReplicas } from "./logic/utils";
+import { uiSettings } from "../../../state/ui";
 
 export type PartitionWithMoves = Partition & { movedReplicas: number };
 export type TopicWithMoves = { topicName: string; topic: Topic; allPartitions: Partition[]; selectedPartitions: PartitionWithMoves[]; };
 
 @observer
-export class StepReview extends Component<{ partitionSelection: PartitionSelection, topicsWithMoves: TopicWithMoves[], assignments: PartitionReassignmentRequest; }> {
+export class StepReview extends Component<{
+    partitionSelection: PartitionSelection,
+    topicsWithMoves: TopicWithMoves[],
+    assignments: PartitionReassignmentRequest,
+    setMaxReplicaTraffic: (maxBytesPerSecond: number) => void,
+}> {
     pageConfig = makePaginationConfig(15, true);
+
 
     render() {
         if (!api.topics)
@@ -78,7 +85,60 @@ export class StepReview extends Component<{ partitionSelection: PartitionSelecti
                             assignments={this.props.assignments.topics.first(t => t.topicName == topic.topicName)!} />
                         : <>Error loading partitions</>,
                 }} />
+
+            {this.reassignmentOptions()}
         </>;
+    }
+
+    reassignmentOptions() {
+        const settings = uiSettings.reassignment;
+        const setLimits = settings.limitReplicationTraffic;
+
+        const showTimeEstimate = setLimits && settings.maxReplicationTraffic > 0;
+        const estimatedTime = showTimeEstimate
+            ? (this.totalMovedData / settings.maxReplicationTraffic) * 1000
+            : 0;
+
+        this.props.setMaxReplicaTraffic(setLimits ? settings.maxReplicationTraffic : -1);
+
+        return <div>
+            <div style={{ display: 'flex', gap: '1em', marginTop: '2em', alignItems: 'center' }}>
+                <Checkbox children={"Limit replication traffic"}
+                    // style={{ marginLeft: 'auto' }}
+                    value={setLimits} onChange={e => {
+                        settings.limitReplicationTraffic = e.target.checked;
+                        this.props.setMaxReplicaTraffic(setLimits ? settings.maxReplicationTraffic : -1);
+                    }}
+                />
+                <Input size='middle' style={{ maxWidth: '220px' }} disabled={!setLimits}
+                    value={settings.maxReplicationTraffic / Math.pow(1000, settings.maxReplicationSizePower)}
+                    onChange={v => {
+                        const val = Number(v.target.value);
+                        if (!Number.isFinite(val) || val < 0) return;
+                        settings.maxReplicationTraffic = val * Math.pow(1000, settings.maxReplicationSizePower);
+                        this.props.setMaxReplicaTraffic(setLimits ? settings.maxReplicationTraffic : -1);
+                    }}
+                    addonAfter={
+                        <Select style={{ width: '75px' }} options={[
+                            { label: 'B/s', value: 0 }, // value = power
+                            { label: 'kB/s', value: 1 },
+                            { label: 'MB/s', value: 2 },
+                            { label: 'GB/s', value: 3 },
+                        ]}
+                            value={uiSettings.reassignment.maxReplicationSizePower}
+                            onChange={e => uiSettings.reassignment.maxReplicationSizePower = e}
+                        />
+                    }
+                />
+                {showTimeEstimate && <span>
+                    {prettyMilliseconds(estimatedTime)}
+                </span>}
+
+                {/* <Button danger>Reset throttle config</Button> */}
+
+            </div>
+            {/* todo: warning that the user will have to reset/remove this config manually after the reassignment is done */}
+        </div>
     }
 
     @computed get brokersAfter(): number[] {
@@ -89,6 +149,10 @@ export class StepReview extends Component<{ partitionSelection: PartitionSelecti
                     for (const id of p.replicas)
                         set.add(id);
         return [...set.values()];
+    }
+
+    @computed get totalMovedData(): number {
+        return this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas * p.replicaSize));
     }
 }
 

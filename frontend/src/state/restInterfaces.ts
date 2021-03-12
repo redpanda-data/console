@@ -547,3 +547,89 @@ export interface AlterPartitionReassignmentsPartitionResponse {
     errorCode: string;
     errorMessage: string | null;
 }
+
+
+// Change broker config
+// PATCH api/operations/configs
+export enum ConfigResourceType {
+    Unknown = 0,
+    Topic = 2,
+    Broker = 4,
+    BrokerLogger = 8,
+}
+
+// export enum ConfigSource {
+//     Unknown = 0,
+//     DynamicTopicConfig = 1,
+//     DynamicBrokerConfig = 2,
+//     DynamicDefaultBrokerConfig = 3,
+//     StaticBrokerConfig = 4,
+//     DefaultConfig = 5,
+//     DynamicBrokerLoggerConfig = 6,
+// }
+
+export enum AlterConfigOperation {
+    Set = 0,
+    Delete = 1,
+    Append = 2,
+    Subtract = 3,
+}
+
+export interface IncrementalAlterConfigsRequestResourceConfig {
+    // name of key to modify (e.g segment.bytes)
+    name: string;
+
+    // set(0) value must not be null
+    // delete(1) delete a config key
+    // append(2) append value to list of values, the config entry must be a list
+    // subtract(3) remove an entry from a list of values
+    op: AlterConfigOperation;
+
+    // value to set the key to
+    value: string | null;
+}
+
+// Example
+// To throttle replication rate for reassignments (bytes per second):
+// - On the leader
+//      --add-config 'leader.replication.throttled.rate=10000'
+//      --entity-type broker
+//      --entity-name brokerId
+//
+// - On the follower
+//      --add-config 'follower.replication.throttled.rate=10000'
+//      --entity-type broker
+//      --entity-name brokerId
+
+
+export interface PatchConfigsRequest {
+    resources: {
+        // ResourceType is an enum that represents TOPIC, BROKER or BROKER_LOGGER
+        resourceType: ConfigResourceType;
+
+        // ResourceName is the name of config to alter.
+        //
+        // If the requested type is a topic, this corresponds to a topic name.
+        //
+        // If the requested type if a broker, this should either be empty or be
+        // the ID of the broker this request is issued to. If it is empty, this
+        // updates all broker configs. If a specific ID, this updates just the
+        // broker. Using a specific ID also ensures that brokers reload config
+        // or secret files even if the file path has not changed. Lastly, password
+        // config options can only be defined on a per broker basis.
+        //
+        // If the type is broker logger, this must be a broker ID.
+        resourceName: string
+
+        // key/value config pairs to set on the resource.
+        configs: IncrementalAlterConfigsRequestResourceConfig[];
+    }[];
+}
+
+export interface PatchConfigsResponse {
+    patchedConfigs: {
+        error: string | null;
+        resourceName: string;
+        resourceType: ConfigResourceType;
+    }[];
+}

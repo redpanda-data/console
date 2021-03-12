@@ -129,7 +129,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             api.refreshTopicConsumers(this.props.topicName, force);
 
         // partitions are always required to display message count in the statistics bar
-        api.refreshTopicPartitions(this.props.topicName, force);
+        api.refreshPartitionsForTopic(this.props.topicName, force);
 
         // configuration is always required for the statistics bar
         api.refreshTopicConfig(this.props.topicName, force);

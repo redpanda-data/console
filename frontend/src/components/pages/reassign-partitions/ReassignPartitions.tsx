@@ -5,7 +5,7 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic } from "../../../state/restInterfaces";
+import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
@@ -89,14 +89,7 @@ class ReassignPartitions extends PageComponent {
         // "bons": [0, 1, 2, 3, 4, 5, 6, 7],
         // "re-test1-addresses": [0, 1],
         // "owlshop-orders": [0],
-        // "re-test1-customers": [
-        //     0,
-        //     5,
-        //     4,
-        //     1,
-        //     2,
-        //     3
-        // ]
+        "re-test1-frontend-events": [0, 1, 2, 3, 4, 5] // 117MB
     };
     // brokers selected by user
     @observable selectedBrokerIds: number[] = [0, 1, 2];
@@ -107,6 +100,9 @@ class ReassignPartitions extends PageComponent {
     @observable _debug_topicPartitions: TopicPartitions[] | null = null;
     @observable _debug_brokers: Broker[] | null = null;
 
+    maxReplicaTraffic: number = 1000 * 1000 * 10;
+
+
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
         p.addBreadcrumb('Reassign Partitions', '/reassign-partitions');
@@ -116,7 +112,7 @@ class ReassignPartitions extends PageComponent {
 
         this.autorunHandle = autorun(() => {
             if (api.topics != null)
-                api.refreshAllTopicPartitions(false);
+                api.refreshPartitionsForAllTopics(false);
         });
 
         // Debug
@@ -151,8 +147,10 @@ class ReassignPartitions extends PageComponent {
 
     refreshData(force: boolean) {
         api.refreshCluster(force);
+        api.refreshClusterConfig(force);
         api.refreshTopics(force);
-        api.refreshAllTopicPartitions(force);
+        api.refreshPartitionsForAllTopics(force);
+        api.refreshPartitionReassignments(force);
     }
 
     componentWillUnmount() {
@@ -163,9 +161,11 @@ class ReassignPartitions extends PageComponent {
     }
 
     render() {
-        if (!api.topics) return DefaultSkeleton;
         if (!api.clusterInfo) return DefaultSkeleton;
+        if (api.clusterConfig === undefined) return DefaultSkeleton;
+        if (!api.topics) return DefaultSkeleton;
         if (api.topicPartitions.size < api.topics.length) return DefaultSkeleton;
+        if (api.partitionReassignments === undefined) return DefaultSkeleton;
 
         const partitionCountLeaders = api.topics.sum(t => t.partitionCount);
         const partitionCountOnlyReplicated = api.topics.sum(t => t.partitionCount * (t.replicationFactor - 1));
@@ -199,9 +199,16 @@ class ReassignPartitions extends PageComponent {
                     {/* Content */}
                     <motion.div {...animProps} key={"step" + this.currentStep}> {(() => {
                         switch (this.currentStep) {
-                            case 0: return <StepSelectPartitions partitionSelection={this.partitionSelection} />;
-                            case 1: return <StepSelectBrokers partitionSelection={this.partitionSelection} selectedBrokerIds={this.selectedBrokerIds} />;
-                            case 2: return <StepReview partitionSelection={this.partitionSelection} topicsWithMoves={this.topicsWithMoves} assignments={this.reassignmentRequest!} />;
+                            case 0: return <StepSelectPartitions
+                                partitionSelection={this.partitionSelection} />;
+                            case 1: return <StepSelectBrokers
+                                partitionSelection={this.partitionSelection}
+                                selectedBrokerIds={this.selectedBrokerIds} />;
+                            case 2: return <StepReview
+                                partitionSelection={this.partitionSelection}
+                                topicsWithMoves={this.topicsWithMoves}
+                                assignments={this.reassignmentRequest!}
+                                setMaxReplicaTraffic={(limit) => this.maxReplicaTraffic = limit} />;
                         }
                     })()} </motion.div>
 
@@ -350,13 +357,63 @@ class ReassignPartitions extends PageComponent {
             }
 
             setImmediate(async () => {
-                const msgKey = 'startingMessage';
-                const hideMessage = message.loading({ content: 'Starting reassignment...', key: msgKey }, 1);
+                const configKey = 'msgConfig';
+                const raKey = 'msgReassignment';
+
+                if (this.maxReplicaTraffic > 0) {
+                    const hideMessage = message.loading({ content: 'Setting broker configuration...', key: configKey }, 0);
+                    try {
+                        const changeConfigResponse = await api.changeConfig({
+                            resources: [
+                                {
+                                    // Set throttle value
+                                    resourceType: ConfigResourceType.Broker,
+                                    resourceName: "", // String(brokerId) // omit = all brokers
+                                    configs: [
+                                        { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(this.maxReplicaTraffic) },
+                                        { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(this.maxReplicaTraffic) },
+                                    ]
+                                },
+                                {
+                                    // Set which topics to throttle
+                                    resourceType: ConfigResourceType.Topic,
+                                    resourceName: "re-test1-frontend-events",
+                                    configs: [
+                                        // [partitionId]-[replicaId],[partitionId]-[replica-id]...
+                                        { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" },
+                                        { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" },
+                                        // { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Append, value: "*" },
+                                        // { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Append, value: "*" },
+                                    ]
+                                },
+                            ]
+                        });
+
+                        if (changeConfigResponse.patchedConfigs.any(r => r.error != null))
+                            throw new Error("Errors while setting config: " + toJson(changeConfigResponse.patchedConfigs.filter(r => r.error != null)));
+
+                        message.success({
+                            content: "Bandwidth limit set successfully",
+                            key: configKey,
+                            duration: 3,
+                        })
+                    } catch (err) {
+                        hideMessage();
+                        notification.error({
+                            message: "Error setting broker configuration:\n" + String(err),
+                            duration: 0, // don't close automatically
+                        });
+                        return;
+                    }
+                }
+
+
+                const hideMessage = message.loading({ content: 'Starting reassignment...', key: raKey }, 0);
                 try {
                     await api.startPartitionReassignment(request);
                     message.success({
                         content: "Reassignment started successfully",
-                        key: msgKey,
+                        key: raKey,
                         duration: 3,
                     })
                 } catch (err) {

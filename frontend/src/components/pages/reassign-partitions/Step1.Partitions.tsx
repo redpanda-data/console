@@ -13,6 +13,7 @@ import { api } from "../../../state/backendApi";
 import { computed, IReactionDisposer, observable, transaction } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
 import Highlighter from 'react-highlight-words';
+import { uiSettings } from "../../../state/ui";
 
 type TopicWithPartitions = Topic & { partitions: Partition[] };
 
@@ -20,9 +21,6 @@ type TopicWithPartitions = Topic & { partitions: Partition[] };
 export class StepSelectPartitions extends Component<{ partitionSelection: PartitionSelection }> {
     pageConfig = makePaginationConfig(20, true);
     autorunHandle: IReactionDisposer | undefined = undefined;
-
-    @observable filterQuery: string = "";
-
 
     constructor(props: any) {
         super(props);
@@ -43,8 +41,8 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         if (!api.topics) return DefaultSkeleton;
         if (api.topicPartitions.size == 0) return <Empty />
 
-        const filterActive = this.filterQuery.length > 1;
-        const searchWords = this.filterQuery.split(' ');
+        const filterActive = uiSettings.reassignment.quickSearch?.length > 1;
+        const searchWords = uiSettings.reassignment.quickSearch?.split(' ') ?? [];
         const searchRegexes = searchWords.map(w => new RegExp(w, 'i'));
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
@@ -53,7 +51,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                     ? <Highlighter searchWords={searchWords} textToHighlight={record.topicName} />
                     : record.topicName,
                 sorter: sortField('topicName'), defaultSortOrder: 'ascend',
-                filtered: filterActive, filteredValue: [this.filterQuery],
+                filtered: filterActive, filteredValue: [uiSettings.reassignment.quickSearch],
                 onFilter: (value, record) => searchRegexes.any(r => r.test(record.topicName)),
             },
             { title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
@@ -78,7 +76,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             {/* Search Bar */}
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', gap: '12px' }}>
                 <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px' }}
-                    onChange={x => this.filterQuery = x.target.value} value={this.filterQuery}
+                    onChange={x => uiSettings.reassignment.quickSearch = x.target.value} value={uiSettings.reassignment.quickSearch}
                 />
             </div>
 

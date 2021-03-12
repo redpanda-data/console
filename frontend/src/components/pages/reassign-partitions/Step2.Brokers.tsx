@@ -38,7 +38,7 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
         return <>
             <div style={{ margin: '2em 1em' }}>
                 <h2>Target Brokers</h2>
-                <p>Choose the target brokers to move the selected partitions to. Some brokers might not get any current assignments  Some brokers might  some partitions will be moved to these brokers, but Kowl will consider them as desired targets and distribute partitions across the available racks of the selected target brokers.</p>
+                <p>Choose the target brokers to move the selected partitions to. Kowl will consider them as desired targets and distribute partitions across the available racks of the selected target brokers.</p>
             </div>
 
             <SelectionInfoBar partitionSelection={this.props.partitionSelection} />

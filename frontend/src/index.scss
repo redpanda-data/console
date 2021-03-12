@@ -1707,3 +1707,21 @@ mark {
     padding: 1px;
     background-color: hsl(54deg, 100%, 50%);
 }
+
+.ant-input-suffix {
+    span.ant-input-clear-icon {
+        position: relative;
+
+        &::before {
+            content: ' ';
+            display: block;
+            position: absolute;
+            top: -66%;
+            right: -66%;
+            bottom: -66%;
+            left: -66%;
+
+            // background: #f004;
+        }
+    }
+}

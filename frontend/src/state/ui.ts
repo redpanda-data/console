@@ -123,6 +123,13 @@ const uiSettings = observable({
         propsOrder: 'alphabetical' as 'changedFirst' | 'default' | 'alphabetical',
     },
 
+    reassignment: { // partition reassignment
+        quickSearch: '',
+        limitReplicationTraffic: false,
+        maxReplicationTraffic: 0, // bytes per second
+        maxReplicationSizePower: 1, // 1000^X   (0 = bytes, 1 = kb, 2 = mb, 3 = gb)
+    },
+
     topicList: {
         hideInternalTopics: true,
         quickSearch: '',

@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse
 } from "./restInterfaces";
 import { computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -54,7 +54,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
         const text = await res.text();
         try {
             const errObj = JSON.parse(text) as ApiError;
-            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
                 // if the shape matches, reformat it a bit
                 throw new Error(`${errObj.message} (${res.status} - ${res.statusText})`);
             }
@@ -197,7 +197,7 @@ const apiStore = {
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
 
-    clusterConfig: null as (ClusterConfig | null),
+    clusterConfig: null as (ClusterConfig | null | undefined),
     adminInfo: undefined as (AdminInfo | undefined | null),
 
     schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
@@ -403,7 +403,7 @@ const apiStore = {
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
-    refreshAllTopicPartitions(force?: boolean) {
+    refreshPartitionsForAllTopics(force?: boolean) {
         cachedApiRequest<GetAllPartitionsResponse | null>(`./api/operations/topic-details`, force)
             .then(response => {
                 if (!response?.topics) return;
@@ -431,7 +431,7 @@ const apiStore = {
             }, addError);
     },
 
-    refreshTopicPartitions(topicName: string, force?: boolean) {
+    refreshPartitionsForTopic(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
             .then(response => {
                 if (response?.partitions) {
@@ -539,7 +539,7 @@ const apiStore = {
     },
 
     refreshPartitionReassignments(force?: boolean) {
-        cachedApiRequest<PartitionReassignmentsResponse | null>('./operations/reassign-partitions', force)
+        cachedApiRequest<PartitionReassignmentsResponse | null>('./api/operations/reassign-partitions', force)
             .then(v => {
                 if (v === null)
                     this.partitionReassignments = null;
@@ -561,7 +561,7 @@ const apiStore = {
             const text = await response.text();
             try {
                 const errObj = JSON.parse(text) as ApiError;
-                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
                     // if the shape matches, reformat it a bit
                     throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
                 }
@@ -576,6 +576,35 @@ const apiStore = {
         const data = (JSON.parse(str) as AlterPartitionReassignmentsResponse);
         return data;
     },
+
+    async changeConfig(request: PatchConfigsRequest) {
+        const response = await fetch('./api/operations/configs', {
+            method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as PatchConfigsResponse);
+        return data;
+    }
 }
 
 export const brokerMap = computed(() => {
