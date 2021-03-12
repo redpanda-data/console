@@ -586,7 +586,7 @@ export interface IncrementalAlterConfigsRequestResourceConfig {
     op: AlterConfigOperation;
 
     // value to set the key to
-    value: string | null;
+    value?: string;
 }
 
 // Example
@@ -601,29 +601,29 @@ export interface IncrementalAlterConfigsRequestResourceConfig {
 //      --entity-type broker
 //      --entity-name brokerId
 
+export interface ResourceConfig {
+    // ResourceType is an enum that represents TOPIC, BROKER or BROKER_LOGGER
+    resourceType: ConfigResourceType;
 
+    // ResourceName is the name of config to alter.
+    //
+    // If the requested type is a topic, this corresponds to a topic name.
+    //
+    // If the requested type if a broker, this should either be empty or be
+    // the ID of the broker this request is issued to. If it is empty, this
+    // updates all broker configs. If a specific ID, this updates just the
+    // broker. Using a specific ID also ensures that brokers reload config
+    // or secret files even if the file path has not changed. Lastly, password
+    // config options can only be defined on a per broker basis.
+    //
+    // If the type is broker logger, this must be a broker ID.
+    resourceName: string
+
+    // key/value config pairs to set on the resource.
+    configs: IncrementalAlterConfigsRequestResourceConfig[];
+}
 export interface PatchConfigsRequest {
-    resources: {
-        // ResourceType is an enum that represents TOPIC, BROKER or BROKER_LOGGER
-        resourceType: ConfigResourceType;
-
-        // ResourceName is the name of config to alter.
-        //
-        // If the requested type is a topic, this corresponds to a topic name.
-        //
-        // If the requested type if a broker, this should either be empty or be
-        // the ID of the broker this request is issued to. If it is empty, this
-        // updates all broker configs. If a specific ID, this updates just the
-        // broker. Using a specific ID also ensures that brokers reload config
-        // or secret files even if the file path has not changed. Lastly, password
-        // config options can only be defined on a per broker basis.
-        //
-        // If the type is broker logger, this must be a broker ID.
-        resourceName: string
-
-        // key/value config pairs to set on the resource.
-        configs: IncrementalAlterConfigsRequestResourceConfig[];
-    }[];
+    resources: ResourceConfig[];
 }
 
 export interface PatchConfigsResponse {
