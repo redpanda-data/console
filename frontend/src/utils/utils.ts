@@ -5,6 +5,8 @@ import prettyMillisecondsOriginal from 'pretty-ms';
 import url from "url";
 import queryString from 'query-string';
 import { editQuery } from "./queryHelper";
+import { message } from "antd";
+import { MessageType } from "antd/lib/message";
 
 
 
@@ -490,4 +492,49 @@ export function bindObjectToUrl<
     });
 
     return disposer;
+}
+
+
+type NoticeType = 'info' | 'success' | 'error' | 'warning' | 'loading';
+export class Message {
+    private key: string;
+    private hideFunc: MessageType;
+
+    constructor(private text: string, private type: NoticeType = 'loading', private duration: number | null = 0) {
+        this.key = randomId();
+    }
+
+    private update() {
+        this.hideFunc = message.open({
+            content: this.text,
+            key: this.key,
+            type: this.type,
+            duration: this.duration,
+        });
+    }
+
+    hide() {
+        this.hideFunc();
+    }
+
+    setLoading(text?: string) {
+        if (text) this.text = text;
+        this.type = 'loading';
+        this.duration = 0;
+        this.update();
+    }
+
+    setSuccess(text?: string) {
+        if (text) this.text = text;
+        this.type = 'success';
+        this.duration = 3;
+        this.update();
+    }
+
+    setError(text?: string) {
+        if (text) this.text = text;
+        this.type = 'error';
+        this.duration = 3;
+        this.update();
+    }
 }
