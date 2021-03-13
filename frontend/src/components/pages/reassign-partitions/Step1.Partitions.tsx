@@ -2,20 +2,20 @@ import React, { Component } from "react";
 import { observer } from "mobx-react";
 import { Empty, Input, Table } from "antd";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { Partition, Topic } from "../../../state/restInterfaces";
+import { Partition, PartitionReassignmentsPartition, Topic } from "../../../state/restInterfaces";
 import { BrokerList } from "./components/BrokerList";
 import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
 import { SelectionInfoBar } from "./components/StatisticsBars";
 import { prettyBytesOrNA } from "../../../utils/utils";
 import { ColumnProps } from "antd/lib/table/Column";
-import { DefaultSkeleton, TextInfoIcon } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, OptionGroup, TextInfoIcon } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
 import { computed, IReactionDisposer, observable, transaction } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
 import Highlighter from 'react-highlight-words';
 import { uiSettings } from "../../../state/ui";
 
-type TopicWithPartitions = Topic & { partitions: Partition[] };
+type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
 
 @observer
 export class StepSelectPartitions extends Component<{ partitionSelection: PartitionSelection }> {
@@ -55,7 +55,19 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 onFilter: (value, record) => searchRegexes.any(r => r.test(record.topicName)),
             },
             { title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
-            { title: 'Replicas', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor') },
+            {
+                title: 'Replicas', render: (t, r) => r.replicationFactor,
+                filtered: uiSettings.reassignment.statusFilter != 'all',
+                filteredValue: [uiSettings.reassignment.statusFilter ?? 'all'],
+                onFilter: (val, record) => {
+                    switch (val) {
+                        case 'inprogress': return record.activeReassignments.length > 0;
+                        case 'notinprogress': return record.activeReassignments.length == 0;
+                    }
+                    return true;
+                },
+                sorter: sortField('replicationFactor')
+            },
             {
                 title: 'Brokers', dataIndex: 'partitions',
                 render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A'
@@ -70,13 +82,26 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 <p>Choose which partitions you want to reassign to different brokers. Selecting a topic will select all its partitions.</p>
             </div>
 
-            {/* InfoBar */}
+            {/* Current Selection */}
             <SelectionInfoBar partitionSelection={this.props.partitionSelection} />
 
-            {/* Search Bar */}
-            <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', gap: '12px' }}>
+            {/* Quicksearch, Filter */}
+            <div style={{ margin: '0 1px', marginTop: '2em', marginBottom: '1em', display: 'flex', gap: '2.5em', alignItems: 'flex-end' }}>
+                {/* Status filter */}
+                <OptionGroup label='Status'
+                    options={{
+                        "Show All": 'all',
+                        "In Progress": 'inprogress',
+                        "Not In Progress": 'notinprogress',
+                    }}
+                    value={uiSettings.reassignment.statusFilter}
+                    onChange={s => uiSettings.reassignment.statusFilter = s}
+                />
+
+                {/* Quicksearch */}
                 <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px' }}
-                    onChange={x => uiSettings.reassignment.quickSearch = x.target.value} value={uiSettings.reassignment.quickSearch}
+                    value={uiSettings.reassignment.quickSearch}
+                    onChange={x => uiSettings.reassignment.quickSearch = x.target.value}
                 />
             </div>
 
@@ -86,7 +111,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 pagination={this.pageConfig}
                 dataSource={this.topicPartitions}
                 rowKey={r => r.topicName}
-                rowClassName={() => 'pureDisplayRow'}
+                rowClassName={(e) => this.inProgress.has(e.topicName) ? 'pureDisplayRow inprogress' : 'pureDisplayRow'}
                 rowSelection={{
                     type: 'checkbox',
                     columnTitle: <div style={{ display: 'flex' }} >
@@ -182,9 +207,15 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         return api.topics.map(topic => {
             return {
                 ...topic,
-                partitions: api.topicPartitions.get(topic.topicName)!
+                partitions: api.topicPartitions.get(topic.topicName)!,
+                activeReassignments: this.inProgress.get(topic.topicName) ?? [],
             }
         });
+    }
+
+    @computed get inProgress() {
+        const current = api.partitionReassignments ?? [];
+        return current.toMap(x => x.topicName, x => x.partitions);
     }
 }
 

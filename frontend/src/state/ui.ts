@@ -124,7 +124,11 @@ const uiSettings = observable({
     },
 
     reassignment: { // partition reassignment
+        // Select
         quickSearch: '',
+        statusFilter: 'all' as 'all' | 'inprogress' | 'notinprogress',
+
+        // Review
         limitReplicationTraffic: false,
         maxReplicationTraffic: 0, // bytes per second
         maxReplicationSizePower: 1, // 1000^X   (0 = bytes, 1 = kb, 2 = mb, 3 = gb)

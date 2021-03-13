@@ -1725,3 +1725,21 @@ mark {
         }
     }
 }
+
+// Partition reassignment: selection
+tr.inprogress {
+    opacity: 0.5;
+    background: hsla(52deg, 100%, 50%, 0.65);
+
+    // position: relative;
+    // &::after {
+    //     content: ' ';
+    //     display: block;
+    //     position: absolute;
+    //     top: 0px;
+    //     right: 0px;
+    //     bottom: 0px;
+    //     left: 0px;
+    //     // background: #f004;
+    // }
+}

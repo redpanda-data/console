@@ -11,7 +11,7 @@ import { DefaultSkeleton, TextInfoIcon } from "../../../utils/tsxUtils";
 import { ElementOf } from "antd/lib/_util/type";
 import { ReviewInfoBar, SelectionInfoBar } from "./components/StatisticsBars";
 import { BrokerList } from "./components/BrokerList";
-import { PartitionSelection, } from "./ReassignPartitions";
+import ReassignPartitions, { PartitionSelection, } from "./ReassignPartitions";
 import { clone } from "../../../utils/jsonUtils";
 import { computeMovedReplicas } from "./logic/utils";
 import { uiSettings } from "../../../state/ui";
@@ -24,10 +24,10 @@ export class StepReview extends Component<{
     partitionSelection: PartitionSelection,
     topicsWithMoves: TopicWithMoves[],
     assignments: PartitionReassignmentRequest,
-    setMaxReplicaTraffic: (maxBytesPerSecond: number) => void,
+    reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
     pageConfig = makePaginationConfig(15, true);
-
+    @observable isResetting = false;
 
     render() {
         if (!api.topics)
@@ -86,11 +86,11 @@ export class StepReview extends Component<{
                         : <>Error loading partitions</>,
                 }} />
 
-            {this.reassignmentOptions()}
+            {this.renderReassignmentOptions()}
         </>;
     }
 
-    reassignmentOptions() {
+    renderReassignmentOptions() {
         const settings = uiSettings.reassignment;
         const setLimits = settings.limitReplicationTraffic;
 
@@ -99,7 +99,6 @@ export class StepReview extends Component<{
             ? (this.totalMovedData / settings.maxReplicationTraffic) * 1000
             : 0;
 
-        this.props.setMaxReplicaTraffic(setLimits ? settings.maxReplicationTraffic : -1);
 
         return <div>
             <div style={{ display: 'flex', gap: '1em', marginTop: '2em', alignItems: 'center' }}>
@@ -107,7 +106,6 @@ export class StepReview extends Component<{
                     // style={{ marginLeft: 'auto' }}
                     value={setLimits} onChange={e => {
                         settings.limitReplicationTraffic = e.target.checked;
-                        this.props.setMaxReplicaTraffic(setLimits ? settings.maxReplicationTraffic : -1);
                     }}
                 />
                 <Input size='middle' style={{ maxWidth: '220px' }} disabled={!setLimits}
@@ -116,7 +114,6 @@ export class StepReview extends Component<{
                         const val = Number(v.target.value);
                         if (!Number.isFinite(val) || val < 0) return;
                         settings.maxReplicationTraffic = val * Math.pow(1000, settings.maxReplicationSizePower);
-                        this.props.setMaxReplicaTraffic(setLimits ? settings.maxReplicationTraffic : -1);
                     }}
                     addonAfter={
                         <Select style={{ width: '75px' }} options={[
@@ -134,7 +131,14 @@ export class StepReview extends Component<{
                     {prettyMilliseconds(estimatedTime)}
                 </span>}
 
-                {/* <Button danger>Reset throttle config</Button> */}
+                <Button danger loading={this.isResetting} onClick={async () => {
+                    this.isResetting = true;
+                    try {
+                        const rq = this.props.reassignPartitions.reassignmentRequest;
+                        if (rq)
+                            await this.props.reassignPartitions.resetTrafficLimit(rq);
+                    } finally { this.isResetting = false; }
+                }}>Reset throttle configuration entries</Button>
 
             </div>
             {/* todo: warning that the user will have to reset/remove this config manually after the reassignment is done */}
