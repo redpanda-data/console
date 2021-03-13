@@ -3,7 +3,9 @@ package owl
 import (
 	"context"
 	"fmt"
+
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"go.uber.org/zap"
@@ -39,8 +41,10 @@ type TopicLag struct {
 
 // PartitionLag describes the kafka lag for a partition for a single consumer group
 type PartitionLag struct {
-	PartitionID int32 `json:"partitionId"`
-	Lag         int64 `json:"lag"`
+	// Error will be set when the high water mark could not be fetched
+	Error       string `json:"error,omitempty"`
+	PartitionID int32  `json:"partitionId"`
+	Lag         int64  `json:"lag"`
 }
 
 // convertOffsets returns a map where the key is the topic name
@@ -98,9 +102,34 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 		topicPartitions[topic.Topic] = partitionIDs
 	}
 
-	highWaterMarks, err := s.kafkaSvc.ListOffsets(ctx, topicPartitions, kafka.TimestampLatest)
+	highMarkRes, err := s.kafkaSvc.ListOffsets(ctx, topicPartitions, kafka.TimestampLatest)
 	if err != nil {
 		return nil, err
+	}
+
+	// 3. Format high water marks
+	type highMark struct {
+		PartitionID int32
+		Error       string
+		Offset      int64
+	}
+	highWaterMarks := make(map[string]map[int32]highMark)
+	for _, topic := range highMarkRes.Topics {
+		highWaterMarks[topic.Topic] = make(map[int32]highMark)
+		for _, partition := range topic.Partitions {
+			err := kerr.ErrorForCode(partition.ErrorCode)
+			if err != nil {
+				highWaterMarks[topic.Topic][partition.Partition] = highMark{
+					PartitionID: partition.Partition,
+					Error:       err.Error(),
+					Offset:      -1,
+				}
+			}
+			highWaterMarks[topic.Topic][partition.Partition] = highMark{
+				PartitionID: partition.Partition,
+				Offset:      partition.Offset,
+			}
+		}
 	}
 
 	// 4. Now that we've got all partition high water marks as well as the consumer group offsets we can calculate the lags
@@ -127,13 +156,21 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 				PartitionLags:        make([]PartitionLag, 0),
 			}
 			for pID, watermark := range highWaterMarks {
+				if watermark.Error != "" {
+					t.PartitionLags = append(t.PartitionLags, PartitionLag{
+						Error:       watermark.Error,
+						PartitionID: pID,
+						Lag:         -1})
+					continue
+				}
+
 				groupOffset, hasGroupOffset := partitionOffsets[pID]
 				if !hasGroupOffset {
 					continue
 				}
 				t.PartitionsWithOffset++
 
-				lag := watermark - groupOffset
+				lag := watermark.Offset - groupOffset
 				if lag < 0 {
 					// If Watermark has been updated after we got the group offset lag could be negative, which ofc doesn't make sense
 					lag = 0

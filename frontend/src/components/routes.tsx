@@ -1,12 +1,11 @@
 
 import { Menu, Tooltip } from "antd";
 import { Link, Switch } from "react-router-dom";
-import React, { Component } from "react";
+import React from "react";
 import { Section } from "./misc/common";
 import { Route, Redirect } from "react-router";
 import { queryToObj } from "../utils/queryHelper";
 import { PageComponentType, PageProps } from "./pages/Page";
-import { uiSettings } from "../state/ui";
 import TopicList from "./pages/topics/Topic.List";
 import TopicDetails from "./pages/topics/Topic.Details";
 import { observer } from "mobx-react";
@@ -15,19 +14,14 @@ import GroupDetails from "./pages/consumers/Group.Details";
 import BrokerList from "./pages/brokers/Broker.List";
 import { AnimatePresence } from "framer-motion";
 import { uiState } from "../state/uiState";
-import { SettingsPage } from "./pages/Settings";
 import AdminPage from "./pages/admin/AdminPage";
 import { api } from "../state/backendApi";
-import { DebugTimerStore } from "../utils/utils";
-import { toJson } from "../utils/jsonUtils";
-import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, PartitionOutlined, UnorderedListOutlined, FileProtectOutlined, QuestionCircleFilled } from '@ant-design/icons';
 import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
-import { observable } from "mobx";
-import ReassignPartitions from "./pages/brokers/ReassignPartitions";
 import { IsDev } from "../utils/env";
 import { CommentDiscussionIcon, DatabaseIcon, FileCodeIcon, GitCompareIcon, RepoIcon, ShieldLockIcon, ToolsIcon } from "@primer/octicons-v2-react";
+import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
 
 
 //
@@ -54,11 +48,8 @@ export interface SeparatorEntry { isSeparator: boolean; }
 export function isPageDefinition(x: IRouteEntry): x is PageDefinition<any> { return (x as PageDefinition<any>).path !== undefined; }
 export function isSeparator(x: IRouteEntry): x is SeparatorEntry { return (x as SeparatorEntry).isSeparator !== undefined; }
 
-const MenuGroupTitle = observer((p: { title: string }) =>
-    <div className={uiSettings.sideBarOpen ? '' : 'menu-divider-group-title'}>{p.title}</div>
-);
 
-export const RouteMenu = observer((p: {}) =>
+export const RouteMenu = observer(() =>
     <Menu mode="inline"
         theme='dark'
         selectedKeys={uiState.selectedMenuKeys}

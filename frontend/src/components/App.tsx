@@ -158,7 +158,7 @@ const AppSide = observer(() => (
 ))
 
 
-
+let lastRequestCount = 0;
 const DataRefreshButton = observer(() => {
 
     const spinnerSize = '16px';
@@ -169,6 +169,14 @@ const DataRefreshButton = observer(() => {
         </div>
         // TODO: small table that shows what cached data we have and how old it is
     }
+
+    // Track how many requests we've sent in total
+    if (api.activeRequests.length == 0) lastRequestCount = 0;
+    else lastRequestCount = Math.max(lastRequestCount, api.activeRequests.length);
+
+    const countStr = lastRequestCount > 1
+        ? `${lastRequestCount - api.activeRequests.length} / ${lastRequestCount}`
+        : "";
 
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div style={{
@@ -196,7 +204,7 @@ const DataRefreshButton = observer(() => {
                 :
                 <>
                     <span className='spinner' style={{ marginLeft: '8px', width: spinnerSize, height: spinnerSize }} />
-                    <span className='pulsating' style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data...</span>
+                    <span className='pulsating' style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data... {countStr}</span>
                 </>
         }
     </div>

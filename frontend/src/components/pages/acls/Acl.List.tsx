@@ -9,7 +9,7 @@ import { makePaginationConfig, sortField } from "../../misc/common";
 import { AclRequestDefault, AclResource, AclRule, Broker } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
-import { observable } from "mobx";
+import { computed, observable } from "mobx";
 import { containsIgnoreCase } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
@@ -31,7 +31,6 @@ class AclList extends PageComponent {
 
     @observable filteredBrokers: Broker[];
 
-    availableResourceTypes: { value: string, label: string }[] = [];
     @observable resourceTypeFilter: string = "";
 
     @observable filterText = "";
@@ -53,20 +52,11 @@ class AclList extends PageComponent {
         if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
         if (api.ACLs === undefined) return DefaultSkeleton;
 
-        const acls = api.ACLs ?? [];
         const warning = api.ACLs === null
             ? <Alert type="warning" message="You do not have the necessary permissions to view ACLs" showIcon style={{ marginBottom: '1em' }} />
             : null;
 
-        // issue: we can't easily filter by 'resourceType' (because it is a string, and we have to use an enum for requests...)
-        // so we have to cheat by building our own list of what types are available
-        this.availableResourceTypes = acls.map(res => res.resourceType).distinct().map(str => ({ value: str, label: capitalize(str.toLowerCase()) }));
-        this.availableResourceTypes.unshift({ label: 'Any', value: '' });
-        const resources = acls
-            .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
-            .map(res => res.acls.map(rule => ({ ...res, ...rule })))
-            .flat()
-            .filter(this.isFilterMatch); // quick search
+        const resources = this.flatResourceList.filter(this.isFilterMatch); // quick search
 
         const columns: ColumnProps<AclRuleFlat>[] = [
             { width: '120px', title: 'Resource', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
@@ -109,6 +99,25 @@ class AclList extends PageComponent {
                 </Card>
             </motion.div>
         </>
+    }
+
+    @computed get availableResourceTypes(): { value: string, label: string }[] {
+        const acls = api.ACLs;
+        if (acls == null) return [];
+        // issue: we can't easily filter by 'resourceType' (because it is a string, and we have to use an enum for requests...)
+        // so we have to cheat by building our own list of what types are available
+        const ar = acls.map(res => res.resourceType).distinct().map(str => ({ value: str, label: capitalize(str.toLowerCase()) }));
+        ar.unshift({ label: 'Any', value: '' });
+        return ar;
+    }
+
+    @computed get flatResourceList() {
+        const acls = api.ACLs;
+        if (acls == null) return [];
+        return acls
+            .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
+            .map(res => res.acls.map(rule => ({ ...res, ...rule })))
+            .flat();
     }
 
     isFilterMatch = (item: AclRuleFlat) => {

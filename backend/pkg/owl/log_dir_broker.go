@@ -2,7 +2,6 @@ package owl
 
 import (
 	"context"
-	"fmt"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -43,13 +42,10 @@ type LogDirPartition struct {
 // the respective broker is the value.
 func (s *Service) logDirsByBroker(ctx context.Context) (map[int32]LogDirsByBroker, error) {
 	// 1. Describe log dirs for all topics, so that we can sum the size per broker
-	response, err := s.kafkaSvc.DescribeLogDirs(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to describe log dirs: %w", err)
-	}
+	responses := s.kafkaSvc.DescribeLogDirs(ctx, nil)
 
 	result := make(map[int32]LogDirsByBroker)
-	for _, response := range response.LogDirResponses {
+	for _, response := range responses {
 		brokerLogDirs := LogDirsByBroker{
 			BrokerMeta:     response.BrokerMetadata,
 			Error:          response.Error,

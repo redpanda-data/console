@@ -15,7 +15,7 @@ import (
 
 func (api *API) handleGetTopics() http.HandlerFunc {
 	type response struct {
-		Topics []*owl.TopicOverview `json:"topics"`
+		Topics []*owl.TopicSummary `json:"topics"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +31,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 			return
 		}
 
-		visibleTopics := make([]*owl.TopicOverview, 0, len(topics))
+		visibleTopics := make([]*owl.TopicSummary, 0, len(topics))
 		for _, topic := range topics {
 			// Check if logged in user is allowed to see this topic. If not remove the topic from the list.
 			canSee, restErr := api.Hooks.Owl.CanSeeTopic(r.Context(), topic.TopicName)
@@ -62,9 +62,8 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 // handleGetPartitions returns an overview of all partitions and their watermarks in the given topic
 func (api *API) handleGetPartitions() http.HandlerFunc {
 	type response struct {
-		TopicName             string                                 `json:"topicName"`
-		Partitions            []owl.TopicPartition                   `json:"partitions"`
-		PartitionLogDirErrors []owl.TopicPartitionLogDirRequestError `json:"partitionLogDirErrors"`
+		TopicName  string                      `json:"topicName"`
+		Partitions []owl.TopicPartitionDetails `json:"partitions"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -88,16 +87,26 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 			return
 		}
 
-		partitions, restErr := api.OwlSvc.ListTopicPartitions(r.Context(), topicName)
+		topicDetails, restErr := api.OwlSvc.GetTopicDetails(r.Context(), []string{topicName})
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
 
+		if len(topicDetails) != 1 {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("expected exactly one topic detail in response, but got '%d'", len(topicDetails)),
+				Status:   http.StatusInternalServerError,
+				Message:  "Internal server error in Kowl, please file a issue in GitHub if you face this issue. The backend logs will contain more information.",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, logger, restErr)
+			return
+		}
+
 		res := response{
-			TopicName:             topicName,
-			Partitions:            partitions.Partitions,
-			PartitionLogDirErrors: partitions.PartitionLogDirErrors,
+			TopicName:  topicName,
+			Partitions: topicDetails[0].Partitions,
 		}
 		rest.SendResponse(w, r, logger, http.StatusOK, res)
 	}

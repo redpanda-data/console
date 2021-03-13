@@ -9,48 +9,69 @@ export interface ApiError {
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];
 
-export class TopicDetail {
+export interface Topic {
     topicName: string;
     isInternal: boolean;
     partitionCount: number;
     replicationFactor: number;
     cleanupPolicy: string;
-    logDirSize: number; // how much space this topic takes up (files in its log dir)
+    logDirSummary: TopicLogDirSummary;
     allowedActions: TopicAction[] | undefined;
-
-    // Added by frontend
-    // messageCount: number;
 }
 
-export class GetTopicsResponse {
-    topics: TopicDetail[];
+export interface TopicLogDirSummary {
+    totalSizeBytes: number; // how much space this topic takes up (files in its log dir)
+    replicaErrors: {
+        brokerId: number;
+        error: string | null;
+    }[] | null;
+    hint: string | null;
+}
+
+export interface GetTopicsResponse {
+    topics: Topic[];
 }
 
 
 
 export interface Partition {
     id: number;
-    leader: number; // id of the "leader" broker for this partition
-    inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
+    partitionError: string | null;
+    replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
     offlineReplicas: number[] | null;
+    inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
+    leader: number; // id of the "leader" broker for this partition
+
+    waterMarksError: string | null;
+    waterMarkLow: number;
+    waterMarkHigh: number;
+
     partitionLogDirs: {
         error: string, // empty when no error
         brokerId: number,
         partitionId: number, // redundant?
         size: number, // size (in bytes) of log dir on that broker
     }[];
-    replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
-    waterMarkLow: number;
-    waterMarkHigh: number;
 
     // added by frontend:
-    replicaSize: number;
+    replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
+    topicName: string; // used for finding the actual topic this partition belongs to (in case we pass around a partition reference on its own)
 }
 
 export interface GetPartitionsResponse {
     topicName: string;
+    error: string | null; // only set if metadata request has failed for the whole topic
     partitions: Partition[];
 }
+
+export interface GetAllPartitionsResponse {
+    topics: {
+        topicName: string;
+        error: string | null;
+        partitions: Partition[];
+    }[];
+}
+
 
 
 export interface TopicConsumer {
@@ -525,4 +546,90 @@ export interface AlterPartitionReassignmentsPartitionResponse {
     partitionId: number;
     errorCode: string;
     errorMessage: string | null;
+}
+
+
+// Change broker config
+// PATCH api/operations/configs
+export enum ConfigResourceType {
+    Unknown = 0,
+    Topic = 2,
+    Broker = 4,
+    BrokerLogger = 8,
+}
+
+// export enum ConfigSource {
+//     Unknown = 0,
+//     DynamicTopicConfig = 1,
+//     DynamicBrokerConfig = 2,
+//     DynamicDefaultBrokerConfig = 3,
+//     StaticBrokerConfig = 4,
+//     DefaultConfig = 5,
+//     DynamicBrokerLoggerConfig = 6,
+// }
+
+export enum AlterConfigOperation {
+    Set = 0,
+    Delete = 1,
+    Append = 2,
+    Subtract = 3,
+}
+
+export interface IncrementalAlterConfigsRequestResourceConfig {
+    // name of key to modify (e.g segment.bytes)
+    name: string;
+
+    // set(0) value must not be null
+    // delete(1) delete a config key
+    // append(2) append value to list of values, the config entry must be a list
+    // subtract(3) remove an entry from a list of values
+    op: AlterConfigOperation;
+
+    // value to set the key to
+    value?: string;
+}
+
+// Example
+// To throttle replication rate for reassignments (bytes per second):
+// - On the leader
+//      --add-config 'leader.replication.throttled.rate=10000'
+//      --entity-type broker
+//      --entity-name brokerId
+//
+// - On the follower
+//      --add-config 'follower.replication.throttled.rate=10000'
+//      --entity-type broker
+//      --entity-name brokerId
+
+export interface ResourceConfig {
+    // ResourceType is an enum that represents TOPIC, BROKER or BROKER_LOGGER
+    resourceType: ConfigResourceType;
+
+    // ResourceName is the name of config to alter.
+    //
+    // If the requested type is a topic, this corresponds to a topic name.
+    //
+    // If the requested type if a broker, this should either be empty or be
+    // the ID of the broker this request is issued to. If it is empty, this
+    // updates all broker configs. If a specific ID, this updates just the
+    // broker. Using a specific ID also ensures that brokers reload config
+    // or secret files even if the file path has not changed. Lastly, password
+    // config options can only be defined on a per broker basis.
+    //
+    // If the type is broker logger, this must be a broker ID.
+    resourceName: string
+
+    // key/value config pairs to set on the resource.
+    configs: IncrementalAlterConfigsRequestResourceConfig[];
+}
+export interface PatchConfigsRequest {
+    resources: ResourceConfig[];
+}
+
+export interface PatchConfigsResponse {
+    patchedConfigs: {
+        error: string | null;
+        resourceName: string;
+        resourceType: ConfigResourceType;
+    }[];
 }

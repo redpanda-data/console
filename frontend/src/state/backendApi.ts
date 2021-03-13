@@ -1,11 +1,11 @@
 /*eslint block-scoped-var: "error"*/
 
 import {
-    GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
+    GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse
 } from "./restInterfaces";
-import { observable } from "mobx";
+import { computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
@@ -54,7 +54,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
         const text = await res.text();
         try {
             const errObj = JSON.parse(text) as ApiError;
-            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
                 // if the shape matches, reformat it a bit
                 throw new Error(`${errObj.message} (${res.status} - ${res.statusText})`);
             }
@@ -196,14 +196,15 @@ const apiStore = {
     // Data
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
-    clusterConfig: null as (ClusterConfig | null),
+
+    clusterConfig: null as (ClusterConfig | null | undefined),
     adminInfo: undefined as (AdminInfo | undefined | null),
 
     schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
     schemaOverviewIsConfigured: undefined as boolean | undefined,
     schemaDetails: null as (SchemaDetails | null),
 
-    topics: null as (TopicDetail[] | null),
+    topics: null as (Topic[] | null),
     topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
     topicDocumentation: new Map<string, TopicDocumentation>(),
     topicPermissions: new Map<string, TopicPermissions | null>(),
@@ -229,7 +230,6 @@ const apiStore = {
 
     // Fetch errors
     errors: [] as any[],
-
 
     messageSearchPhase: null as string | null,
     messagesFor: '', // for what topic?
@@ -403,16 +403,53 @@ const apiStore = {
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
-    refreshTopicPartitions(topicName: string, force?: boolean) {
+    refreshPartitionsForAllTopics(force?: boolean) {
+        cachedApiRequest<GetAllPartitionsResponse | null>(`./api/operations/topic-details`, force)
+            .then(response => {
+                if (!response?.topics) return;
+                transaction(() => {
+                    for (const t of response.topics) {
+                        if (t.error != null) {
+                            console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
+                            continue;
+                        }
+                        // Add some local/cached properties to make working with the data easier
+                        for (const p of t.partitions) {
+                            // replicaSize
+                            const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
+                            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+
+                            // topicName
+                            p.topicName = t.topicName;
+                        }
+
+                        // Set partitions
+                        this.topicPartitions.set(t.topicName, t.partitions);
+                    }
+                });
+            }, addError);
+    },
+
+    refreshPartitionsForTopic(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
             .then(response => {
-                if (response != null) {
+                if (response?.partitions) {
+                    // Add some local/cached properties to make working with the data easier
                     for (const p of response.partitions) {
-                        const replicaSize = p.partitionLogDirs.max(e => e.size);
+                        // replicaSize
+                        const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                        const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
                         p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+
+                        // topicName
+                        p.topicName = topicName;
                     }
+
+                    // Set partitions
                     this.topicPartitions.set(topicName, response.partitions);
                 } else {
+                    // Set null to indicate that we're not allowed to see the partitions
                     this.topicPartitions.set(topicName, null);
                 }
             }, addError);
@@ -502,7 +539,7 @@ const apiStore = {
     },
 
     refreshPartitionReassignments(force?: boolean) {
-        cachedApiRequest<PartitionReassignmentsResponse | null>('./operations/reassign-partitions', force)
+        cachedApiRequest<PartitionReassignmentsResponse | null>('./api/operations/reassign-partitions', force)
             .then(v => {
                 if (v === null)
                     this.partitionReassignments = null;
@@ -524,7 +561,7 @@ const apiStore = {
             const text = await response.text();
             try {
                 const errObj = JSON.parse(text) as ApiError;
-                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
                     // if the shape matches, reformat it a bit
                     throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
                 }
@@ -539,7 +576,47 @@ const apiStore = {
         const data = (JSON.parse(str) as AlterPartitionReassignmentsResponse);
         return data;
     },
+
+    async changeConfig(request: PatchConfigsRequest) {
+        const response = await fetch('./api/operations/configs', {
+            method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as PatchConfigsResponse);
+        return data;
+    }
 }
+
+export const brokerMap = computed(() => {
+    const brokers = api.clusterInfo?.brokers;
+    if (brokers == null) return null;
+
+    const map = new Map<number, Broker>();
+    for (const b of brokers)
+        map.set(b.brokerId, b);
+
+    return map;
+});
 
 export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);

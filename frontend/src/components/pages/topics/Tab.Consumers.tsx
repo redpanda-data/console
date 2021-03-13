@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { TopicDetail } from "../../../state/restInterfaces";
+import { Topic } from "../../../state/restInterfaces";
 import {
     Table,
     Skeleton,
@@ -18,7 +18,7 @@ import { uiState } from "../../../state/uiState";
 import { DefaultSkeleton } from "../../../utils/tsxUtils";
 
 @observer
-export class TopicConsumers extends Component<{ topic: TopicDetail }> {
+export class TopicConsumers extends Component<{ topic: Topic }> {
 
     pageConfig = makePaginationConfig(20);
 

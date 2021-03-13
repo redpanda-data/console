@@ -1,6 +1,6 @@
-import { Broker, Partition, TopicDetail } from "../../../state/restInterfaces";
-import { api } from "../../../state/backendApi";
-import { toJson } from "../../../utils/jsonUtils";
+import { untracked } from "mobx";
+import { Topic, Partition, Broker } from "../../../../state/restInterfaces";
+import { toJson } from "../../../../utils/jsonUtils";
 
 // Requirements:
 // 1. Each replica must be on a different broker (unless replicationFactor < brokerCount makes it impossible).
@@ -21,7 +21,7 @@ import { toJson } from "../../../utils/jsonUtils";
 
 // Input for a reassignment computation. A selection of partitions that should be reassigned.
 export type TopicPartitions = {
-    topic: TopicDetail // topic the partitions belong to
+    topic: Topic // topic the partitions belong to
     partitions: Partition[], // selected partitions
 }
 
@@ -41,22 +41,28 @@ type BrokerReplicaCount = { // track how many replicas were assigned to a broker
     assignedReplicas: number;
 };
 
+export type ApiData = { brokers: Broker[], topics: Topic[], topicPartitions: Map<string, Partition[]> };
 
-export function computeReassignments(selectedTopicPartitions: TopicPartitions[], allBrokers: Broker[], targetBrokers: Broker[]): TopicAssignments {
-    // Error check inputs
-    // No partitions or brokers
-    if (selectedTopicPartitions.sum(x => x.partitions.length) == 0)
-        throw new Error("No partitions selected.");
-    // We need at least as many brokers as the highest replication factor
-    const maxRf = selectedTopicPartitions
-        .groupInto(t => t.topic.replicationFactor) // group topics by replication factor
-        .sort((a, b) => b.key - a.key)[0]; // sort descending, then take first group
-    if (maxRf.key > targetBrokers.length)
-        throw new Error(`You selected ${targetBrokers.length} target brokers, but the following topics have a replicationFactor of ${maxRf.key}, so at least ${maxRf.key} target brokers are required: ${toJson(maxRf.items.map(t => t.topic.topicName))}`);
+
+function computeReassignments(
+    apiData: ApiData,
+    selectedTopicPartitions: TopicPartitions[],
+    targetBrokers: Broker[]
+): TopicAssignments {
+
+    checkArguments(apiData, selectedTopicPartitions, targetBrokers);
 
     // Track information like used disk space per broker, so we extend each broker with some metadata
-    const allExBrokers = allBrokers.map(b => new ExBroker(b));
+    const allExBrokers = apiData.brokers.map(b => new ExBroker(b));
     const targetExBrokers = allExBrokers.filter(exb => targetBrokers.find(b => exb.brokerId == b.brokerId) != undefined);
+
+    // Recompute broker stats:
+    // For the sake of calculation, it is easier to start with a fresh slate.
+    // So we first 'virtually' remove these assignments by going through each replica
+    // and subtracting its size(disk space) from broker it is on.
+    for (const broker of allExBrokers)
+        broker.recompute(apiData, selectedTopicPartitions);
+
 
     const resultAssignments: TopicAssignments = {};
     for (const t of selectedTopicPartitions) {
@@ -65,15 +71,7 @@ export function computeReassignments(selectedTopicPartitions: TopicPartitions[],
             resultAssignments[t.topic.topicName][partition.id] = { partition: partition, brokers: [] };
     }
 
-    // 1. Reset
-    // For the sake of calculation, it is easier to start with a fresh slate.
-    // So we first 'virtually' remove these assignments by going through each replica
-    // and subtracting its size(disk space) from broker it is on.
-    for (const broker of targetExBrokers)
-        for (const t of selectedTopicPartitions)
-            broker.adjustTracking(t.partitions, 'remove');
-
-    // 2. Distribute
+    // Distribute:
     // Go through each topic, assign the replicas of its partitions to the brokers
     for (const topicPartitions of selectedTopicPartitions) {
         if (topicPartitions.topic.replicationFactor <= 0) continue; // must be an error?
@@ -82,8 +80,57 @@ export function computeReassignments(selectedTopicPartitions: TopicPartitions[],
         computeTopicAssignments(topicPartitions, targetExBrokers, allExBrokers, resultAssignments[topicPartitions.topic.topicName]);
     }
 
+    // Optimize Leaders:
+    // Every broker should have roughly the same number of partitions it leads.
+    let leaderSwitchCount = 0;
+    for (const t of selectedTopicPartitions) {
+        for (const p of t.partitions) {
+            // map plain brokers to extended brokers (those with attached tracking data)
+            const newBrokers = resultAssignments[t.topic.topicName][p.id].brokers.map(b => allExBrokers.first(e => e.brokerId == b.brokerId)!);
+            const newLeader = allExBrokers.first(b => b.brokerId == newBrokers[0].brokerId)!;
+
+            // from all the brokers that will soon be the ones hosting this partitions replicas,
+            // is there one that would be better suited to be the leader?
+            // Sort them by ascending leader count (number of partitions they lead)
+            // We must make a copy of the newBrokers aray because we don't want to modify it (yet)
+            const sortedBrokers = newBrokers.slice(0);
+            sortedBrokers.sort((a, b) => (a.initialLeader + a.assignedLeader) - (b.initialLeader + b.assignedLeader));
+
+            const bestLeader = sortedBrokers[0];
+
+            if (bestLeader != newLeader) {
+                // We found a better leader, swap the two and adjust their tracking info
+                const indexBest = newBrokers.indexOf(bestLeader);
+                if (indexBest < 0) throw new Error('cannot find new/best leader in exBroker array');
+
+                // Swap the two brokers
+                newBrokers[0] = bestLeader;
+                newBrokers[indexBest] = newLeader;
+
+                // adjust tracking info
+                newLeader.assignedLeader--;
+                bestLeader.assignedLeader++;
+
+                // adjust final assignments
+                // mapping our extendedBrokers back to the "simple" brokers
+                resultAssignments[t.topic.topicName][p.id].brokers = newBrokers.map(exBroker => apiData.brokers.first(b => b.brokerId == exBroker.brokerId)!);
+
+                leaderSwitchCount++;
+            }
+        }
+    }
+    console.debug(`optimize leaders: ${leaderSwitchCount} leaders switched`);
+
     return resultAssignments;
 }
+
+const untrackedCompute = function (apiData: ApiData,
+    selectedTopicPartitions: TopicPartitions[],
+    targetBrokers: Broker[]
+): TopicAssignments {
+    return untracked(() => computeReassignments(apiData, selectedTopicPartitions, targetBrokers));
+}
+export { untrackedCompute as computeReassignments };
 
 // Compute, for the partitions of a single topic, to which brokers their replicas should be assigned to.
 function computeTopicAssignments(
@@ -141,14 +188,13 @@ function computeReplicaAssignments(partition: Partition, replicas: number, broke
         // Multiple brokers, sort by additional metrics
         if (potential.length > 1) {
             potential.sort((a, b) => {
-                // 1. try same broker as before
+                // 1. Same broker as before is better than a different one
                 const aIsSame = sourceBrokers.includes(a.broker);
                 const bIsSame = sourceBrokers.includes(b.broker);
                 if (aIsSame && !bIsSame) return -1;
                 if (bIsSame && !aIsSame) return 1;
 
-                // 2. Neither of the two brokers previously hosted this partition
-                //    But maybe one of them is in the same rack as one of the source brokers?
+                // 2. A broker from the same rack is better than one from a different rack
                 const aIsSameRack = sourceRacks.includes(a.broker.rack);
                 const bIsSameRack = sourceRacks.includes(b.broker.rack);
                 if (aIsSameRack && !bIsSameRack) return -1;
@@ -161,7 +207,7 @@ function computeReplicaAssignments(partition: Partition, replicas: number, broke
                 if (replicasOnA < replicasOnB) return -1;
                 if (replicasOnB < replicasOnA) return 1;
 
-                // 4. Both brokers actually have the same number of assigned replicas!
+                // 5. Both brokers actually have the same number of assigned replicas!
                 //    But maybe one of them uses less disk space than the other?
                 const diskOnA = a.broker.initialSize + a.broker.assignedSize;
                 const diskOnB = a.broker.initialSize + b.broker.assignedSize;
@@ -181,11 +227,9 @@ function computeReplicaAssignments(partition: Partition, replicas: number, broke
         // increase total number of assigned replicas
         bestBroker.assignedReplicas++;
         // The new assignment will take up disk space, which must be tracked as well.
-        // However, one of the brokers could be reporting disk usage that is smaller than it really is,
-        // because it was just recently assigned this replica and is still in the process of receiving data from the other brokers.
-        // That's why we're using the largest reported size as our estimation for how much space the assignment will end up using.
-        const replicaSize = partition.partitionLogDirs.max(e => e.size);
-        bestBroker.assignedSize += replicaSize;
+        bestBroker.assignedSize += partition.replicaSize;
+        // if the broker is the first one, it is the leader
+        bestBroker.assignedLeader++;
     }
 
     return resultBrokers;
@@ -204,36 +248,45 @@ class ExBroker implements Broker {
     // Values as they actually are currently in the cluster
     actualReplicas: number = 0; // number of all replicas (no matter from which topic) assigned to this broker
     actualSize: number = 0; // total size used by all the replicas assigned to this broker
+    actualLeader: number = 0; // for how many partitions is this broker the leader?
 
     // 'actual' values minus everything that is to be reassigned
     // in other words: the state of the broker without counting anything we're about to reassign
     initialReplicas: number = 0;
     initialSize: number = 0;
+    initialLeader: number = 0;
 
     // values of the current assignments
-    // counting only whenever we assign something to this broker
+    // counting only whenever we assign something to this broker.
     assignedReplicas: number = 0;
     assignedSize: number = 0;
+    assignedLeader: number = 0;
 
     constructor(sourceBroker: Broker) {
         Object.assign(this, sourceBroker);
-        this.recomputeActual();
     }
 
-    recomputeActual() {
+    recompute(apiData: ApiData, selectedTopicPartitions: TopicPartitions[]) {
+        this.recomputeActual(apiData);
+        this.recomputeInitial(apiData, selectedTopicPartitions);
+    }
+
+    private recomputeActual(apiData: ApiData) {
         this.actualReplicas = 0;
         this.actualSize = 0;
+        this.actualLeader = 0;
 
-        if (api.topicPartitions == null)
+        if (apiData.topicPartitions == null)
             throw new Error(`cannot recompute actual usage of broker '${this.brokerId}' because 'api.topicPartitions == null' (no permissions?)`);
 
-        for (const [topic, partitions] of api.topicPartitions) {
+        for (const [topic, partitions] of apiData.topicPartitions) {
             if (partitions == null) throw new Error(`cannot recompute actual usage of broker '${this.brokerId}' for topic '${topic}', because 'partitions == null' (no permissions?)`);
 
             for (const p of partitions) {
                 // replicas
                 const replicasAssignedToThisBroker = p.replicas.count(x => x == this.brokerId);
                 this.actualReplicas += replicasAssignedToThisBroker;
+                this.actualLeader += p.leader == this.brokerId ? 1 : 0;
 
                 // size: using 'first()' because each broker has exactly one entry (or maybe zero if broker is offline)
                 const logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId);
@@ -248,25 +301,71 @@ class ExBroker implements Broker {
         }
     }
 
-    adjustTracking(partitions: Partition[], mode: 'add' | 'remove') {
-        let deltaSize = 0;
-        let deltaReplicas = 0;
-        for (const p of partitions) {
-            if (!p.replicas.includes(this.brokerId)) continue; // broker is not hosting any replica of this partition
+    private recomputeInitial(apiData: ApiData, selectedTopicPartitions: TopicPartitions[]) {
+        // Subtract the stats of the selected partitions
+        let selectedReplicas = 0;
+        let selectedSize = 0;
+        let selectedLeader = 0;
 
-            const logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId && x.partitionId == p.id);
-            if (logDirEntry === undefined) throw new Error('cannot find matching partitionLogDir entry: ' + toJson({ partition: p, exBroker: this }, 4));
-            deltaSize += logDirEntry.size;
+        for (const topic of selectedTopicPartitions)
+            for (const p of topic.partitions) {
+                selectedReplicas += p.replicas.count(x => x == this.brokerId);
+                selectedLeader += p.leader == this.brokerId ? 1 : 0;
 
-            deltaReplicas += p.replicas.count(id => id == this.brokerId);
-        }
+                // using 'first()' because each broker has exactly one entry (or maybe zero if broker is offline)
+                let logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId);
+                if (logDirEntry) {
+                    // direct match
+                    selectedSize += logDirEntry.size;
+                } else {
+                    // broker offline, assume maximum using the size reported by another broker
+                    const fallbackSize = p.partitionLogDirs.filter(x => x.error == "").max(x => x.size);
+                    selectedSize += fallbackSize;
+                }
+            }
 
-        if (mode == 'add') {
-            // this.trackedReplicas += deltaReplicas;
-            // this.trackedSize += deltaSize;
-        } else {
-            // this.trackedReplicas -= deltaReplicas;
-            // this.trackedSize -= deltaSize;
-        }
+        // Since at the start we'll pretend the selected partitions are not assigned to any broker
+        // we'll get our "initial" from actual minus selecte.
+        this.initialReplicas = this.actualReplicas - selectedReplicas;
+        this.initialSize = this.actualSize - selectedSize;
+        this.initialLeader = this.actualLeader - selectedLeader;
+    }
+}
+
+
+function checkArguments(
+    apiData: ApiData,
+    selectedTopicPartitions: TopicPartitions[],
+    targetBrokers: Broker[]) {
+    // Check for missing or invalid api data
+    throwIfNullOrEmpty("apiData.brokers", apiData.brokers);
+    throwIfNullOrEmpty("apiData.topics", apiData.topics);
+    throwIfNullOrEmpty("apiData.topicPartitions", apiData.topicPartitions);
+    const topicsMissingPartitionData = apiData.topics.filter(t => apiData.topicPartitions.get(t.topicName) == null);
+    if (topicsMissingPartitionData.length > 0)
+        throw new Error("apiData is missing topicPartitions for these topics: " + topicsMissingPartitionData.map(t => t.topicName).join(', '))
+
+    // Require at least one selected partition
+    if (selectedTopicPartitions.sum(x => x.partitions.length) == 0)
+        throw new Error("No partitions selected");
+
+    // Require at least as many brokers as the highest replication factor of any selected partition
+    const maxRf = selectedTopicPartitions
+        .groupInto(t => t.topic.replicationFactor) // group topics by replication factor
+        .sort((a, b) => b.key - a.key)[0]; // sort descending, then take first group
+    if (maxRf.key > targetBrokers.length)
+        throw new Error(`You selected ${targetBrokers.length} target brokers, but the following topics have a replicationFactor of ${maxRf.key}, so at least ${maxRf.key} target brokers are required: ${toJson(maxRf.items.map(t => t.topic.topicName))}`);
+}
+
+function throwIfNullOrEmpty(name: string, obj: any[] | Map<any, any>) {
+    if (obj == null)
+        throw new Error(name + " is null");
+
+    if (Array.isArray(obj)) {
+        if (obj.length == 0)
+            throw new Error(name + " is empty");
+    } else {
+        if (obj.size == 0)
+            throw new Error(name + " is empty");
     }
 }

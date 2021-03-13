@@ -123,13 +123,27 @@ const uiSettings = observable({
         propsOrder: 'alphabetical' as 'changedFirst' | 'default' | 'alphabetical',
     },
 
-    topicList: {
-        valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
-        propsOrder: 'changedFirst' as 'changedFirst' | 'default',
-        propsFilter: 'all' as 'all' | 'onlyChanged',
-        hideInternalTopics: true,
-        pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
+    reassignment: { // partition reassignment
+        // Select
         quickSearch: '',
+        statusFilter: 'all' as 'all' | 'inprogress' | 'notinprogress',
+
+        // Review
+        limitReplicationTraffic: false,
+        maxReplicationTraffic: 0, // bytes per second
+        maxReplicationSizePower: 1, // 1000^X   (0 = bytes, 1 = kb, 2 = mb, 3 = gb)
+    },
+
+    topicList: {
+        hideInternalTopics: true,
+        quickSearch: '',
+        pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
+
+        // Topic Configuration
+        valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
+        propsFilter: 'all' as 'all' | 'onlyChanged',
+        propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
+        configColumns: 2 as 1 | 2,
     },
 
     consumerGroupList: {

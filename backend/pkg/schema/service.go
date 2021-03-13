@@ -50,7 +50,6 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (*goavro.Codec, error) {
 		schemaRes, err := s.registryClient.GetSchemaByID(schemaID)
 		if err != nil {
 			// If schema registry returns an error we want to retry it next time, so let's forget the key
-			// TODO: Check whether this could end up in a DoS if we stream search a topic with binary messages
 			s.requestGroup.Forget(key)
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}

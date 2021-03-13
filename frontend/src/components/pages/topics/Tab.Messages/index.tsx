@@ -18,7 +18,7 @@ import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
 import { api } from "../../../../state/backendApi";
-import { Payload, TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
+import { Payload, Topic, TopicMessage } from "../../../../state/restInterfaces";
 import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
@@ -51,7 +51,7 @@ const InputGroup = Input.Group;
 */
 
 @observer
-export class TopicMessageView extends Component<{ topic: TopicDetail }> {
+export class TopicMessageView extends Component<{ topic: Topic }> {
 
     @observable previewDisplay: string[] = [];
     @observable allCurrentKeys: string[] = [];
@@ -68,7 +68,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     currentSearchRun: string | null = null;
 
-    constructor(props: { topic: TopicDetail }) {
+    constructor(props: { topic: Topic }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
     }
