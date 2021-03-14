@@ -429,33 +429,25 @@ class ReassignPartitions extends PageComponent {
     async setTrafficLimit(request: PartitionReassignmentRequest, useReplicasWildcard: boolean, useBrokerWildcard: boolean): Promise<boolean> {
         const maxBytesPerSecond = uiSettings.reassignment.maxReplicationTraffic;
 
-        const configRequests: PatchConfigsRequest[] = [];
+        const configRequest: PatchConfigsRequest = { resources: [] };
 
         if (useBrokerWildcard) {
-            configRequests.push({
-                resources: [
-                    {
-                        resourceType: ConfigResourceType.Broker,
-                        resourceName: "", // String(brokerId) // omit = all brokers
-                        configs: [
-                            { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                            { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                        ]
-                    },
+            configRequest.resources.push({
+                resourceType: ConfigResourceType.Broker,
+                resourceName: "", // String(brokerId) // omit = all brokers
+                configs: [
+                    { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                    { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
                 ]
             });
         } else {
             for (const b of api.clusterInfo!.brokers) {
-                configRequests.push({
-                    resources: [
-                        {
-                            resourceType: ConfigResourceType.Broker,
-                            resourceName: String(b.brokerId),
-                            configs: [
-                                { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                                { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                            ]
-                        },
+                configRequest.resources.push({
+                    resourceType: ConfigResourceType.Broker,
+                    resourceName: String(b.brokerId),
+                    configs: [
+                        { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                        { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
                     ]
                 });
             }
@@ -504,43 +496,33 @@ class ReassignPartitions extends PageComponent {
             }
 
             // individual request for each topic
-            configRequests.push({
-                resources: [res]
-            });
+            configRequest.resources.push(res);
         }
 
-        return await this.modifyConfig(configRequests);
+        return await this.modifyConfig([configRequest]);
     }
 
     async resetTrafficLimit(request: PartitionReassignmentRequest, useBrokerWildcard: boolean): Promise<boolean> {
 
-        const configRequests: PatchConfigsRequest[] = [];
+        const configRequest: PatchConfigsRequest = { resources: [] };
 
         if (useBrokerWildcard) {
-            configRequests.push({
-                resources: [
-                    {
-                        resourceType: ConfigResourceType.Broker,
-                        resourceName: null as any as string, // String(brokerId) // omit = all brokers
-                        configs: [
-                            { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                            { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                        ]
-                    },
+            configRequest.resources.push({
+                resourceType: ConfigResourceType.Broker,
+                resourceName: null as any as string, // String(brokerId) // omit = all brokers
+                configs: [
+                    { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                    { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
                 ]
             });
         } else {
             for (const b of api.clusterInfo!.brokers) {
-                configRequests.push({
-                    resources: [
-                        {
-                            resourceType: ConfigResourceType.Broker,
-                            resourceName: String(b.brokerId),
-                            configs: [
-                                { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                                { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                            ]
-                        },
+                configRequest.resources.push({
+                    resourceType: ConfigResourceType.Broker,
+                    resourceName: String(b.brokerId),
+                    configs: [
+                        { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                        { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
                     ]
                 });
             }
@@ -548,21 +530,17 @@ class ReassignPartitions extends PageComponent {
 
         // reset throttled replicas for those topics
         for (const t of request.topics) {
-            configRequests.push({
-                resources: [
-                    {
-                        resourceType: ConfigResourceType.Topic,
-                        resourceName: t.topicName,
-                        configs: [
-                            { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
-                            { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete }
-                        ],
-                    }
-                ]
+            configRequest.resources.push({
+                resourceType: ConfigResourceType.Topic,
+                resourceName: t.topicName,
+                configs: [
+                    { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
+                    { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete }
+                ],
             });
         }
 
-        return await this.modifyConfig(configRequests);
+        return await this.modifyConfig([configRequest]);
     }
 
     async modifyConfig(requests: PatchConfigsRequest[]): Promise<boolean> {
