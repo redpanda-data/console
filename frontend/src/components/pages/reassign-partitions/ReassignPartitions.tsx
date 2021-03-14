@@ -91,7 +91,7 @@ class ReassignPartitions extends PageComponent {
         // "bons": [0, 1, 2, 3, 4, 5, 6, 7],
         // "re-test1-addresses": [0, 1],
         // "owlshop-orders": [0],
-        "re-test1-frontend-events": [0, 1, 2, 3, 4, 5] // 117MB
+        "weeco-frontend-events": [0, 1, 2, 3, 4, 5] // 3.56gb
     };
     // brokers selected by user
     @observable selectedBrokerIds: number[] = [0, 1, 2];
@@ -397,9 +397,10 @@ class ReassignPartitions extends PageComponent {
     }
     onPreviousPage() { this.currentStep--; }
 
+
     async startReassignment(request: PartitionReassignmentRequest) {
         if (uiSettings.reassignment.limitReplicationTraffic && uiSettings.reassignment.maxReplicationTraffic > 0) {
-            const success = await this.setTrafficLimit(request);
+            const success = await this.setTrafficLimit(request, false, false);
             if (!success) return;
         }
 
@@ -425,36 +426,40 @@ class ReassignPartitions extends PageComponent {
         }
     }
 
-    async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
+    async setTrafficLimit(request: PartitionReassignmentRequest, useReplicasWildcard: boolean, useBrokerWildcard: boolean): Promise<boolean> {
         const maxBytesPerSecond = uiSettings.reassignment.maxReplicationTraffic;
 
-        const configRequest: PatchConfigsRequest = {
-            resources: [
-                {
-                    // Set throttle value
-                    resourceType: ConfigResourceType.Broker,
-                    resourceName: "", // String(brokerId) // omit = all brokers
-                    configs: [
-                        { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+        const configRequests: PatchConfigsRequest[] = [];
 
-                        // This is also a 'per broker' setting!
-                        // leader.replication.throttled.replicas
-                        // valid values ['none', '*']
-
-                        { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-
-                        // Those are 'update mode: readonly'
-                        // 10.5 MB
-                        // { name: 'replica.fetch.response.max.bytes', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                        // 1s
-                        // { name: 'replication.quota.window.size.seconds', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                        // 11
-                        // { name: 'replication.quota.window.num', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-
+        if (useBrokerWildcard) {
+            configRequests.push({
+                resources: [
+                    {
+                        resourceType: ConfigResourceType.Broker,
+                        resourceName: "", // String(brokerId) // omit = all brokers
+                        configs: [
+                            { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                            { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                        ]
+                    },
+                ]
+            });
+        } else {
+            for (const b of api.clusterInfo!.brokers) {
+                configRequests.push({
+                    resources: [
+                        {
+                            resourceType: ConfigResourceType.Broker,
+                            resourceName: String(b.brokerId),
+                            configs: [
+                                { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                                { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                            ]
+                        },
                     ]
-                },
-            ]
-        };
+                });
+            }
+        }
 
         for (const t of request.topics) {
             const topicName = t.topicName;
@@ -488,78 +493,91 @@ class ReassignPartitions extends PageComponent {
                     followerThrottle.push({ partitionId: partitionId, brokerId: targetBroker });
             }
 
+            if (useReplicasWildcard) {
+                res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
+                res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
+            } else {
+                const leaderReplicas = leaderThrottle.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
+                res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: leaderReplicas });
+                const followerReplicas = followerThrottle.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
+                res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: followerReplicas });
+            }
 
-            // res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
-            // res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
-
-
-            // res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
-            // res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
-
-            configRequest.resources.push(res);
-        }
-
-        const msg = new Message('Setting traffic limit');
-        try {
-            const changeConfigResponse = await api.changeConfig(configRequest);
-
-            if (changeConfigResponse.patchedConfigs.any(r => r.error != null))
-                throw new Error("Errors while setting config: " + toJson(changeConfigResponse.patchedConfigs.filter(r => r.error != null)));
-
-            msg.setSuccess();
-        } catch (err) {
-            notification.error({
-                message: "Error setting broker configuration:\n" + String(err),
-                duration: 0, // don't close automatically
+            // individual request for each topic
+            configRequests.push({
+                resources: [res]
             });
-            msg.hide();
-            return false;
         }
 
-        return true;
+        return await this.modifyConfig(configRequests);
     }
 
-    async resetTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
+    async resetTrafficLimit(request: PartitionReassignmentRequest, useBrokerWildcard: boolean): Promise<boolean> {
 
-        const configRequest: PatchConfigsRequest = {
-            resources: [
-                {
-                    // Set throttle value
-                    resourceType: ConfigResourceType.Broker,
-                    resourceName: "", // String(brokerId) // omit = all brokers
-                    configs: [
-                        { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                        { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+        const configRequests: PatchConfigsRequest[] = [];
 
-                        // replica.fetch.response.max.bytes
-                        // replication.quota.window.size.seconds
-                        // replication.quota.window.num
+        if (useBrokerWildcard) {
+            configRequests.push({
+                resources: [
+                    {
+                        resourceType: ConfigResourceType.Broker,
+                        resourceName: null as any as string, // String(brokerId) // omit = all brokers
+                        configs: [
+                            { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                            { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                        ]
+                    },
+                ]
+            });
+        } else {
+            for (const b of api.clusterInfo!.brokers) {
+                configRequests.push({
+                    resources: [
+                        {
+                            resourceType: ConfigResourceType.Broker,
+                            resourceName: String(b.brokerId),
+                            configs: [
+                                { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                                { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                            ]
+                        },
                     ]
-                },
-            ]
-        };
+                });
+            }
+        }
 
         // reset throttled replicas for those topics
         for (const t of request.topics) {
-            configRequest.resources.push({
-                resourceType: ConfigResourceType.Topic,
-                resourceName: t.topicName,
-                configs: [
-                    { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
-                    { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete }
-                ],
+            configRequests.push({
+                resources: [
+                    {
+                        resourceType: ConfigResourceType.Topic,
+                        resourceName: t.topicName,
+                        configs: [
+                            { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
+                            { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete }
+                        ],
+                    }
+                ]
             });
         }
 
+        return await this.modifyConfig(configRequests);
+    }
 
-        const msg = new Message("Removing traffic limit");
+    async modifyConfig(requests: PatchConfigsRequest[]): Promise<boolean> {
+
+        const msg = new Message("Modifying config...");
         try {
-            const changeConfigResponse = await api.changeConfig(configRequest);
+            for (let i = 0; i < requests.length; i++) {
+                msg.setLoading(`Modifying config... (${i + 1} / ${requests.length})`);
 
-            if (changeConfigResponse.patchedConfigs.any(r => r.error != null))
-                throw new Error("Errors while setting config: " + toJson(changeConfigResponse.patchedConfigs.filter(r => r.error != null)));
+                const changeConfigResponse = await api.changeConfig(requests[i]);
 
-            msg.setSuccess();
+                if (changeConfigResponse.patchedConfigs.any(r => r.error != null))
+                    throw new Error("Errors while setting config: " + toJson(changeConfigResponse.patchedConfigs.filter(r => r.error != null)));
+            }
+            msg.setSuccess("Modifying config - done");
         } catch (err) {
             notification.error({
                 message: "Error setting broker configuration:\n" + String(err),
@@ -571,6 +589,7 @@ class ReassignPartitions extends PageComponent {
 
         return true;
     }
+
 
     @computed get selectedTopicPartitions(): TopicPartitions[] {
         return partitionSelectionToTopicPartitions(

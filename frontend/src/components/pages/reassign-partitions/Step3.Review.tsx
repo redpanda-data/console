@@ -27,7 +27,7 @@ export class StepReview extends Component<{
     reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
     pageConfig = makePaginationConfig(15, true);
-    @observable isResetting = false;
+    @observable isSettingConfig = false;
 
     render() {
         if (!api.topics)
@@ -131,14 +131,23 @@ export class StepReview extends Component<{
                     {prettyMilliseconds(estimatedTime)}
                 </span>}
 
-                <Button danger loading={this.isResetting} onClick={async () => {
-                    this.isResetting = true;
+                <Button danger loading={this.isSettingConfig} onClick={async () => {
+                    this.isSettingConfig = true;
                     try {
                         const rq = this.props.reassignPartitions.reassignmentRequest;
                         if (rq)
-                            await this.props.reassignPartitions.resetTrafficLimit(rq);
-                    } finally { this.isResetting = false; }
-                }}>Reset throttle configuration entries</Button>
+                            await this.props.reassignPartitions.setTrafficLimit(rq, false, false);
+                    } finally { this.isSettingConfig = false; }
+                }}>Set throttle config</Button>
+
+                <Button danger loading={this.isSettingConfig} onClick={async () => {
+                    this.isSettingConfig = true;
+                    try {
+                        const rq = this.props.reassignPartitions.reassignmentRequest;
+                        if (rq)
+                            await this.props.reassignPartitions.resetTrafficLimit(rq, false);
+                    } finally { this.isSettingConfig = false; }
+                }}>Reset throttle config</Button>
 
             </div>
             {/* todo: warning that the user will have to reset/remove this config manually after the reassignment is done */}
