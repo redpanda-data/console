@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"strconv"
 	"sync"
@@ -134,10 +135,11 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) (*BrokerC
 	// Prepare config entries
 	configEntries := make([]*BrokerConfigEntry, len(brokerResponse.Configs))
 	for i, entry := range brokerResponse.Configs {
+		isDefault := entry.IsDefault || entry.Source == kmsg.ConfigSourceDefaultConfig
 		e := &BrokerConfigEntry{
 			Name:      entry.Name,
 			Value:     entry.Value,
-			IsDefault: entry.IsDefault,
+			IsDefault: isDefault,
 		}
 		configEntries[i] = e
 	}
