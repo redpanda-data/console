@@ -25,7 +25,9 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.2
 	github.com/jhump/protoreflect v1.8.2
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
+	github.com/knadh/koanf v0.15.0 // indirect
 	github.com/linkedin/goavro/v2 v2.10.0
+	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/procfs v0.6.0 // indirect

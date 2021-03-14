@@ -8,27 +8,27 @@ import (
 
 // Config for Git Service
 type Config struct {
-	Enabled bool `yaml:"enabled"`
+	Enabled bool `koanf:"enabled"`
 
 	// AllowedFileExtensions specifies file extensions that shall be picked up. If at least one is specified all other
 	// file extensions will be ignored.
-	AllowedFileExtensions []string `yaml:"-"`
+	AllowedFileExtensions []string `koanf:"-"`
 
 	// Max file size which will be considered. Files exceeding this size will be ignored and logged.
-	MaxFileSize int64 `yaml:"-"`
+	MaxFileSize int64 `koanf:"-"`
 
 	// Whether or not to use the filename or the full filepath as key in the map
-	IndexByFullFilepath bool `yaml:"-"`
+	IndexByFullFilepath bool `koanf:"-"`
 
 	// RefreshInterval specifies how often the repository shall be pulled to check for new changes.
-	RefreshInterval time.Duration `yaml:"refreshInterval"`
+	RefreshInterval time.Duration `koanf:"refreshInterval"`
 
 	// Repository that contains markdown files that document a Kafka topic.
-	Repository RepositoryConfig `yaml:"repository"`
+	Repository RepositoryConfig `koanf:"repository"`
 
 	// Authentication Configs
-	BasicAuth BasicAuthConfig `yaml:"basicAuth"`
-	SSH       SSHConfig       `yaml:"ssh"`
+	BasicAuth BasicAuthConfig `koanf:"basicAuth"`
+	SSH       SSHConfig       `koanf:"ssh"`
 }
 
 // RegisterFlagsWithPrefix for all (sub)configs

@@ -5,8 +5,8 @@ import (
 )
 
 type RepositoryConfig struct {
-	URL    string `yaml:"url"`
-	Branch string `yaml:"branch"`
+	URL    string `koanf:"url"`
+	Branch string `koanf:"branch"`
 }
 
 // Validate given input for config properties

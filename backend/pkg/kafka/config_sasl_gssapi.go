@@ -6,13 +6,13 @@ import (
 
 // SASLGSSAPIConfig represents the Kafka Kerberos config
 type SASLGSSAPIConfig struct {
-	AuthType           string `yaml:"authType"`
-	KeyTabPath         string `yaml:"keyTabPath"`
-	KerberosConfigPath string `yaml:"kerberosConfigPath"`
-	ServiceName        string `yaml:"serviceName"`
-	Username           string `yaml:"username"`
-	Password           string `yaml:"password"`
-	Realm              string `yaml:"realm"`
+	AuthType           string `koanf:"authType"`
+	KeyTabPath         string `koanf:"keyTabPath"`
+	KerberosConfigPath string `koanf:"kerberosConfigPath"`
+	ServiceName        string `koanf:"serviceName"`
+	Username           string `koanf:"username"`
+	Password           string `koanf:"password"`
+	Realm              string `koanf:"realm"`
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag

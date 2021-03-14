@@ -15,11 +15,11 @@ const (
 
 // SASLConfig for Kafka client
 type SASLConfig struct {
-	Enabled      bool             `yaml:"enabled"`
-	Username     string           `yaml:"username"`
-	Password     string           `yaml:"password"`
-	Mechanism    string           `yaml:"mechanism"`
-	GSSAPIConfig SASLGSSAPIConfig `yaml:"gssapi"`
+	Enabled      bool             `koanf:"enabled"`
+	Username     string           `koanf:"username"`
+	Password     string           `koanf:"password"`
+	Mechanism    string           `koanf:"mechanism"`
+	GSSAPIConfig SASLGSSAPIConfig `koanf:"gssapi"`
 }
 
 // RegisterFlags for all sensitive Kafka SASL configs.

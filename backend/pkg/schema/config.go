@@ -7,16 +7,16 @@ import (
 
 // Config for using a (Confluent) Schema Registry
 type Config struct {
-	Enabled bool     `yaml:"enabled"`
-	URLs    []string `yaml:"urls"`
+	Enabled bool     `koanf:"enabled"`
+	URLs    []string `koanf:"urls"`
 
 	// Credentials
-	Username    string `yaml:"username"`
-	Password    string `yaml:"password"`
-	BearerToken string `yaml:"bearerToken"`
+	Username    string `koanf:"username"`
+	Password    string `koanf:"password"`
+	BearerToken string `koanf:"bearerToken"`
 
 	// TLS / Custom CA
-	TLS TLSConfig `yaml:"tls"`
+	TLS TLSConfig `koanf:"tls"`
 }
 
 // RegisterFlags registers all nested config flags.

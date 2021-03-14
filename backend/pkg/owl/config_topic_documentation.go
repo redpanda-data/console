@@ -7,8 +7,8 @@ import (
 )
 
 type ConfigTopicDocumentation struct {
-	Enabled bool       `yaml:"enabled"`
-	Git     git.Config `yaml:"git"`
+	Enabled bool       `koanf:"enabled"`
+	Git     git.Config `koanf:"git"`
 }
 
 func (c *ConfigTopicDocumentation) RegisterFlags(f *flag.FlagSet) {

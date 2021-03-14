@@ -3,11 +3,11 @@ package git
 import "flag"
 
 type SSHConfig struct {
-	Enabled            bool   `yaml:"enabled"`
-	Username           string `yaml:"username"`
-	PrivateKey         string `yaml:"privateKey"` // user can either pass the key directly or let Kowl load it from disk
-	PrivateKeyFilePath string `yaml:"privateKeyFilepath"`
-	Passphrase         string `yaml:"passphrase"`
+	Enabled            bool   `koanf:"enabled"`
+	Username           string `koanf:"username"`
+	PrivateKey         string `koanf:"privateKey"` // user can either pass the key directly or let Kowl load it from disk
+	PrivateKeyFilePath string `koanf:"privateKeyFilepath"`
+	Passphrase         string `koanf:"passphrase"`
 }
 
 // RegisterFlagsWithPrefix for sensitive SSH configs
