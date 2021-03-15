@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	TopicDocumentation ConfigTopicDocumentation `koanf:"topicDocumentation"`
+	TopicDocumentation ConfigTopicDocumentation `yaml:"topicDocumentation"`
 }
 
 func (c *Config) SetDefaults() {

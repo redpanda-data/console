@@ -4,12 +4,12 @@ import "flag"
 
 // TLSConfig to connect to Kafka via TLS
 type TLSConfig struct {
-	Enabled               bool   `koanf:"enabled"`
-	CaFilepath            string `koanf:"caFilepath"`
-	CertFilepath          string `koanf:"certFilepath"`
-	KeyFilepath           string `koanf:"keyFilepath"`
-	Passphrase            string `koanf:"passphrase"`
-	InsecureSkipTLSVerify bool   `koanf:"insecureSkipTlsVerify"`
+	Enabled               bool   `yaml:"enabled"`
+	CaFilepath            string `yaml:"caFilepath"`
+	CertFilepath          string `yaml:"certFilepath"`
+	KeyFilepath           string `yaml:"keyFilepath"`
+	Passphrase            string `yaml:"passphrase"`
+	InsecureSkipTLSVerify bool   `yaml:"insecureSkipTlsVerify"`
 }
 
 // RegisterFlags for all sensitive Kafka TLS configs

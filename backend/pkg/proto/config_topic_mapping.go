@@ -1,11 +1,11 @@
 package proto
 
 type ConfigTopicMapping struct {
-	TopicName string `koanf:"topicName"`
+	TopicName string `yaml:"topicName"`
 
 	// KeyProtoType is the proto's fully qualified name that shall be used for a Kafka record's key
-	KeyProtoType string `koanf:"keyProtoType"`
+	KeyProtoType string `yaml:"keyProtoType"`
 
 	// ValueProtoType is the proto's fully qualified name that shall be used for a Kafka record's value
-	ValueProtoType string `koanf:"valueProtoType"`
+	ValueProtoType string `yaml:"valueProtoType"`
 }

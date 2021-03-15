@@ -22,18 +22,20 @@ import (
 // Config holds all (subdependency)Configs needed to run the API
 type Config struct {
 	ConfigFilepath   string
-	MetricsNamespace string `koanf:"metricsNamespace"`
-	ServeFrontend    bool   `koanf:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
-	FrontendPath     string `koanf:"frontendPath"`  // path to frontend files (index.html), set to './build' by default
+	MetricsNamespace string `yaml:"metricsNamespace"`
+	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
+	FrontendPath     string `yaml:"frontendPath"`  // path to frontend files (index.html), set to './build' by default
 
-	Owl    owl.Config     `koanf:"owl"`
-	REST   rest.Config    `koanf:"server"`
-	Kafka  kafka.Config   `koanf:"kafka"`
-	Logger logging.Config `koanf:"logger"`
+	Owl    owl.Config     `yaml:"owl"`
+	REST   rest.Config    `yaml:"server"`
+	Kafka  kafka.Config   `yaml:"kafka"`
+	Logger logging.Config `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs
 func (c *Config) RegisterFlags(f *flag.FlagSet) {
+	f.StringVar(&c.ConfigFilepath, "config.filepath", "", "Path to the config file")
+
 	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
 	c.Owl.RegisterFlags(f)
@@ -77,11 +79,12 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 	var cfg Config
 	cfg.SetDefaults()
 
-	var configFilepath string
-	flag.StringVar(&configFilepath, "config.filepath", "", "Path to the config file")
+	// Flags have to be parsed first because the yaml config filepath is supposed to be passed via flags
+	flagext.RegisterFlags(&cfg)
 	flag.Parse()
 
 	// 1. Check if a config filepath is set via flags. If there is one we'll try to load the file using a YAML Parser
+	var configFilepath string
 	if cfg.ConfigFilepath != "" {
 		configFilepath = cfg.ConfigFilepath
 	} else {
@@ -89,7 +92,7 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 		configFilepath = os.Getenv(envKey)
 	}
 	if configFilepath == "" {
-		logger.Info("a config filepath is not set, proceeding with options set from env variables and flags")
+		logger.Info("config filepath is not set, proceeding with options set from env variables and flags")
 	} else {
 		err := k.Load(file.Provider(configFilepath), yaml.Parser())
 		if err != nil {
@@ -102,7 +105,7 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 	// config with `ErrorUnused` set to true, but unmarshal environment variables with `ErrorUnused` set to false (default).
 	// Rationale: Orchestrators like Kubernetes inject unrelated environment variables, which we still want to allow.
 	err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
-		Tag:       "",
+		Tag:       "yaml",
 		FlatPaths: false,
 		DecoderConfig: &mapstructure.DecoderConfig{
 			DecodeHook: mapstructure.ComposeDecodeHookFunc(
@@ -111,10 +114,11 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 			Result:           &cfg,
 			WeaklyTypedInput: true,
 			ErrorUnused:      true,
+			TagName:          "yaml",
 		},
 	})
 	if err != nil {
-		return Config{}, err
+		return Config{}, fmt.Errorf("failed to unmarshal YAML config into config struct: %w", err)
 	}
 
 	err = k.Load(env.ProviderWithValue("", ".", func(s string, v string) (string, interface{}) {
@@ -130,11 +134,10 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 		return key, v
 	}), nil)
 	if err != nil {
-		return Config{}, err
+		return Config{}, fmt.Errorf("failed to unmarshal environment variables into config struct: %w", err)
 	}
 
 	// 3. Register and parse flags
-	flagext.RegisterFlags(&cfg)
 	flag.Parse()
 
 	err = k.Unmarshal("", &cfg)

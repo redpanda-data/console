@@ -10,17 +10,17 @@ import (
 // Config required for opening a connection to Kafka
 type Config struct {
 	// General
-	Brokers        []string `koanf:"brokers"`
-	ClientID       string   `koanf:"clientId"`
-	ClusterVersion string   `koanf:"clusterVersion"`
-	RackID         string   `koanf:"rackId"`
+	Brokers        []string `yaml:"brokers"`
+	ClientID       string   `yaml:"clientId"`
+	ClusterVersion string   `yaml:"clusterVersion"`
+	RackID         string   `yaml:"rackId"`
 
 	// Schema Registry
-	Schema   schema.Config `koanf:"schemaRegistry"`
-	Protobuf proto.Config  `koanf:"protobuf"`
+	Schema   schema.Config `yaml:"schemaRegistry"`
+	Protobuf proto.Config  `yaml:"protobuf"`
 
-	TLS  TLSConfig  `koanf:"tls"`
-	SASL SASLConfig `koanf:"sasl"`
+	TLS  TLSConfig  `yaml:"tls"`
+	SASL SASLConfig `yaml:"sasl"`
 }
 
 // RegisterFlags registers all nested config flags.
