@@ -11,7 +11,7 @@ func main() {
 
 	cfg, err := api.LoadConfig(startupLogger)
 	if err != nil {
-		startupLogger.Fatal("failed to load yaml config", zap.Error(err))
+		startupLogger.Fatal("failed to load config", zap.Error(err))
 	}
 	err = cfg.Validate()
 	if err != nil {
