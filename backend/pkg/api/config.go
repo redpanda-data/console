@@ -137,9 +137,6 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 		return Config{}, fmt.Errorf("failed to unmarshal environment variables into config struct: %w", err)
 	}
 
-	// 3. Register and parse flags
-	flag.Parse()
-
 	err = k.Unmarshal("", &cfg)
 	if err != nil {
 		return Config{}, err
