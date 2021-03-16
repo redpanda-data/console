@@ -9,11 +9,13 @@ import { transaction } from "mobx";
 import { prettyBytesOrNA } from "../../../utils/utils";
 import { SelectionInfoBar } from "./components/StatisticsBars";
 import { PartitionSelection } from "./ReassignPartitions";
+import { uiSettings } from "../../../state/ui";
 
 
 @observer
 export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], partitionSelection: PartitionSelection }> {
-    pageConfig = makePaginationConfig(15, true);
+    pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeBrokers ?? 10);
+
 
     brokers: Broker[];
 
@@ -45,9 +47,14 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
 
             <Table
                 style={{ margin: '0', }} size='middle'
+                pagination={this.pageConfig}
+                onChange={(p) => {
+                    if (p.pageSize) uiSettings.reassignment.pageSizeBrokers = p.pageSize;
+                    this.pageConfig.current = p.current;
+                    this.pageConfig.pageSize = p.pageSize;
+                }}
                 dataSource={this.brokers}
                 columns={columns}
-                pagination={this.pageConfig}
                 rowKey='brokerId'
                 rowClassName={() => 'pureDisplayRow'}
                 rowSelection={{

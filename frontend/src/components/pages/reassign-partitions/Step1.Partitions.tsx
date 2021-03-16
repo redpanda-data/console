@@ -19,7 +19,7 @@ type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignment
 
 @observer
 export class StepSelectPartitions extends Component<{ partitionSelection: PartitionSelection }> {
-    pageConfig = makePaginationConfig(20, true);
+    pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeSelect ?? 10);
     autorunHandle: IReactionDisposer | undefined = undefined;
 
     constructor(props: any) {
@@ -118,6 +118,12 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             <Table
                 style={{ margin: '0', }} size={'middle'}
                 pagination={this.pageConfig}
+                onChange={(p) => {
+                    if (p.pageSize) uiSettings.reassignment.pageSizeSelect = p.pageSize;
+                    this.pageConfig.current = p.current;
+                    this.pageConfig.pageSize = p.pageSize;
+                }}
+
                 dataSource={this.topicPartitions}
                 rowKey={r => r.topicName}
                 rowClassName={(e) => this.inProgress.has(e.topicName) ? 'pureDisplayRow inprogress' : 'pureDisplayRow'}

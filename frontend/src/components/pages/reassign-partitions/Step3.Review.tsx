@@ -26,7 +26,7 @@ export class StepReview extends Component<{
     assignments: PartitionReassignmentRequest,
     reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
-    pageConfig = makePaginationConfig(15, true);
+    pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeReview ?? 10);
 
     get requestInProgress() { return this.props.reassignPartitions.requestInProgress; }
     set requestInProgress(v) { this.props.reassignPartitions.requestInProgress = v; }
@@ -73,6 +73,11 @@ export class StepReview extends Component<{
             <Table
                 style={{ margin: '0', }} size={'middle'}
                 pagination={this.pageConfig}
+                onChange={(p) => {
+                    if (p.pageSize) uiSettings.reassignment.pageSizeReview = p.pageSize;
+                    this.pageConfig.current = p.current;
+                    this.pageConfig.pageSize = p.pageSize;
+                }}
                 dataSource={this.props.topicsWithMoves}
                 rowKey={r => r.topicName}
                 rowClassName={() => 'pureDisplayRow'}
