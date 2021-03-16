@@ -502,6 +502,7 @@ export class Message {
 
     constructor(private text: string, private type: NoticeType = 'loading', private duration: number | null = 0) {
         this.key = randomId();
+        this.update();
     }
 
     private update() {
