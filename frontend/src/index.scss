@@ -112,21 +112,17 @@ span>.icon-container~span {
     opacity: 1;
 }
 
-.spinner {
-    width: 100%;
-    height: 100%;
-    border-radius: 100%;
-    display: inline-block;
-    /* margin    : auto;
-	position        : absolute;
-	left            : 0;
-	right           : 0;
-	top             : 0;
-	bottom          : 0;
-	margin          : auto; */
+.spinnerText {
+    user-select: none;
+    margin-left: 10px;
 }
 
 .spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 100%;
+
     border: 2px solid transparent;
     border-bottom-color: hsl(205, 100%, 50%);
     border-top-color: hsl(205, 100%, 50%);
@@ -134,39 +130,41 @@ span>.icon-container~span {
         rotateIn 1.2s cubic-bezier(0.25, 0.80, 0.9, 0.9) 0s 1,
         rotate 0.7s linear 1.2s infinite,
         spinnerFadeIn 0.5s ease 0s 1;
+
+
+    @keyframes rotateIn {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(1800deg);
+        }
+    }
+
+    @keyframes rotate {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes spinnerFadeIn {
+        from {
+            opacity: 0;
+            scale: 120%;
+        }
+
+        to {
+            opacity: 1;
+            scale: 100%;
+        }
+    }
 }
 
-@keyframes rotateIn {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(1800deg);
-    }
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes spinnerFadeIn {
-    from {
-        opacity: 0;
-        scale: 120%;
-    }
-
-    to {
-        opacity: 1;
-        scale: 100%;
-    }
-}
 
 .pulsating {
     animation: pulse 0.5s linear 0s infinite;
@@ -304,9 +302,16 @@ span>.icon-container~span {
     overflow: visible;
 }
 
-.ant-table-tbody>tr:hover:not(.ant-table-row-selected),
-.pureDisplayRow>td {
-    background-color: initial !important;
+.ant-table-tbody>tr.ant-table-row:hover>td {
+    background-color: unset;
+}
+
+td.ant-table-column-sort {
+    background-color: unset;
+}
+
+.ant-table-tbody>tr.ant-table-row-selected>td {
+    background-color: unset;
 }
 
 .ant-pagination-total-text {
@@ -1728,8 +1733,8 @@ mark {
 
 // Partition reassignment: selection
 tr.inprogress {
-    opacity: 0.5;
-    background: hsla(52deg, 100%, 50%, 0.65);
+    color: hsl(0deg, 0%, 70%);
+    background: hsla(200deg, 100%, 50%, 0.06);
 
     // position: relative;
     // &::after {
@@ -1742,4 +1747,30 @@ tr.inprogress {
     //     left: 0px;
     //     // background: #f004;
     // }
+}
+
+
+.partitionReassignmentSpinner {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border-radius: 100%;
+
+    vertical-align: text-bottom;
+    margin-bottom: 1px;
+
+    border: 2px solid hsl(0, 0%, 85%);
+    border-bottom-color: hsl(205, 100%, 50%);
+    border-top-color: hsl(205, 100%, 50%);
+    animation: rotate 1.5s linear 0s infinite;
+
+    @keyframes rotate {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
 }

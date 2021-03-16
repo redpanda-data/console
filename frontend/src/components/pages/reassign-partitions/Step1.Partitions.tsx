@@ -47,16 +47,25 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
             {
-                title: 'Topic', render: (v, record) => filterActive
-                    ? <Highlighter searchWords={searchWords} textToHighlight={record.topicName} />
-                    : record.topicName,
+                title: 'Topic', render: (v, record) => {
+                    const txt = filterActive
+                        ? <Highlighter searchWords={searchWords} textToHighlight={record.topicName} />
+                        : record.topicName;
+
+                    if (record.activeReassignments.length > 0)
+                        return <><span className='partitionReassignmentSpinner' />{txt}</>
+                    return txt;
+                },
                 sorter: sortField('topicName'), defaultSortOrder: 'ascend',
                 filtered: filterActive, filteredValue: [uiSettings.reassignment.quickSearch],
                 onFilter: (value, record) => searchRegexes.any(r => r.test(record.topicName)),
             },
             { title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
             {
-                title: 'Replicas', render: (t, r) => r.replicationFactor,
+                title: 'Replicas', render: (t, r) => {
+                    if (r.activeReassignments.length == 0) return r.replicationFactor;
+                    return <TextInfoIcon text={String(r.replicationFactor)} info="While reassignment is active, replicas on both source and target brokers are counted" maxWidth="180px" />
+                },
                 filtered: uiSettings.reassignment.statusFilter != 'all',
                 filteredValue: [uiSettings.reassignment.statusFilter ?? 'all'],
                 onFilter: (val, record) => {
@@ -112,6 +121,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 dataSource={this.topicPartitions}
                 rowKey={r => r.topicName}
                 rowClassName={(e) => this.inProgress.has(e.topicName) ? 'pureDisplayRow inprogress' : 'pureDisplayRow'}
+
                 rowSelection={{
                     type: 'checkbox',
                     columnTitle: <div style={{ display: 'flex' }} >
@@ -120,11 +130,12 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                             Example: Select row 1, then hold down shift while selecting row 5 to select all rows from 1 to 5.
                             </>} maxWidth='360px' iconSize='16px' />
                     </div>,
-                    renderCell: (value: boolean, record, index: number, originNode: React.ReactNode) =>
-                        <IndeterminateCheckbox
+                    renderCell: (value: boolean, record, index, originNode: React.ReactNode) => {
+                        return <IndeterminateCheckbox
                             originalCheckbox={originNode}
                             getCheckState={() => this.getTopicCheckState(record.topicName)}
-                        />,
+                        />
+                    },
                     onSelect: (record, selected: boolean, selectedRows) => {
                         if (!record.partitions) return;
 
