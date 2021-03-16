@@ -84,14 +84,14 @@ class ReassignPartitions extends PageComponent {
     pageConfig = makePaginationConfig(15, true);
     autorunHandle: IReactionDisposer | undefined = undefined;
 
-    @observable currentStep = 1; // current page of the wizard
+    @observable currentStep = 0; // current page of the wizard
 
     // topics/partitions selected by user
     @observable partitionSelection: PartitionSelection = {
         // "bons": [0, 1, 2, 3, 4, 5, 6, 7],
         // "re-test1-addresses": [0, 1],
         // "owlshop-orders": [0],
-        "weeco-frontend-events": [0, 1, 2, 3, 4, 5] // 3.56gb
+        // "weeco-frontend-events": [0, 1, 2, 3, 4, 5] // 3.56gb
     };
     // brokers selected by user
     @observable selectedBrokerIds: number[] = [0, 1, 2];
@@ -104,6 +104,9 @@ class ReassignPartitions extends PageComponent {
 
     refreshCurrentReassignmentsTimer: NodeJS.Timeout | null;
 
+    @observable requestInProgress = false;
+
+    autoRefreshInterval = 999999999; //IsDev ? 1500 : 4000;
 
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
@@ -156,7 +159,6 @@ class ReassignPartitions extends PageComponent {
     }
 
     componentDidMount() {
-        const interval = IsDev ? 1500 : 4000;
         this.refreshCurrentReassignmentsTimer = setInterval(() => {
             if (api.activeRequests.length > 0) return;
             try {
@@ -168,7 +170,7 @@ class ReassignPartitions extends PageComponent {
                     this.refreshCurrentReassignmentsTimer = null;
                 }
             }
-        }, interval);
+        }, this.autoRefreshInterval);
     }
 
     componentWillUnmount() {
@@ -241,7 +243,7 @@ class ReassignPartitions extends PageComponent {
                         {step.backButton &&
                             <Button
                                 onClick={this.onPreviousPage}
-                                disabled={this.currentStep <= 0}
+                                disabled={this.currentStep <= 0 || this.requestInProgress}
                                 style={{ minWidth: '12em', height: 'auto' }}
                             >
                                 <span><ChevronLeftIcon /></span>
@@ -255,7 +257,7 @@ class ReassignPartitions extends PageComponent {
                             <Button
                                 type='primary'
                                 style={{ minWidth: '12em', height: 'auto', marginLeft: 'auto' }}
-                                disabled={!nextButtonEnabled}
+                                disabled={!nextButtonEnabled || this.requestInProgress}
                                 onClick={this.onNextPage}
                             >
                                 <span>{step.nextButton.text}</span>

@@ -27,7 +27,9 @@ export class StepReview extends Component<{
     reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
     pageConfig = makePaginationConfig(15, true);
-    @observable isSettingConfig = false;
+
+    get requestInProgress() { return this.props.reassignPartitions.requestInProgress; }
+    set requestInProgress(v) { this.props.reassignPartitions.requestInProgress = v; }
 
     render() {
         if (!api.topics)
@@ -102,13 +104,13 @@ export class StepReview extends Component<{
 
         return <div>
             <div style={{ display: 'flex', gap: '1em', marginTop: '2em', alignItems: 'center' }}>
-                <Checkbox children={"Limit replication traffic"}
+                <Checkbox children={"Limit replication traffic"} disabled={this.requestInProgress}
                     // style={{ marginLeft: 'auto' }}
                     value={setLimits} onChange={e => {
                         settings.limitReplicationTraffic = e.target.checked;
                     }}
                 />
-                <Input size='middle' style={{ maxWidth: '220px' }} disabled={!setLimits}
+                <Input size='middle' style={{ maxWidth: '220px' }} disabled={!setLimits || this.requestInProgress}
                     value={settings.maxReplicationTraffic / Math.pow(1000, settings.maxReplicationSizePower)}
                     onChange={v => {
                         const val = Number(v.target.value);
@@ -131,23 +133,27 @@ export class StepReview extends Component<{
                     {prettyMilliseconds(estimatedTime)}
                 </span>}
 
-                <Button danger loading={this.isSettingConfig} onClick={async () => {
-                    this.isSettingConfig = true;
-                    try {
-                        const rq = this.props.reassignPartitions.reassignmentRequest;
-                        if (rq)
-                            await this.props.reassignPartitions.setTrafficLimit(rq, false, false);
-                    } finally { this.isSettingConfig = false; }
-                }}>Set throttle config</Button>
+                <Button danger loading={this.requestInProgress}
+                    disabled={this.requestInProgress}
+                    onClick={async () => {
+                        this.requestInProgress = true;
+                        try {
+                            const rq = this.props.reassignPartitions.reassignmentRequest;
+                            if (rq)
+                                await this.props.reassignPartitions.setTrafficLimit(rq, false, false);
+                        } finally { this.requestInProgress = false; }
+                    }}>Set throttle config</Button>
 
-                <Button danger loading={this.isSettingConfig} onClick={async () => {
-                    this.isSettingConfig = true;
-                    try {
-                        const rq = this.props.reassignPartitions.reassignmentRequest;
-                        if (rq)
-                            await this.props.reassignPartitions.resetTrafficLimit(rq, false);
-                    } finally { this.isSettingConfig = false; }
-                }}>Reset throttle config</Button>
+                <Button danger loading={this.requestInProgress}
+                    disabled={this.requestInProgress}
+                    onClick={async () => {
+                        this.requestInProgress = true;
+                        try {
+                            const rq = this.props.reassignPartitions.reassignmentRequest;
+                            if (rq)
+                                await this.props.reassignPartitions.resetTrafficLimit(rq, false);
+                        } finally { this.requestInProgress = false; }
+                    }}>Reset throttle config</Button>
 
             </div>
             {/* todo: warning that the user will have to reset/remove this config manually after the reassignment is done */}
