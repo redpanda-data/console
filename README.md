@@ -44,9 +44,35 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 We offer pre built docker images for Kowl (Business), a Helm chart and a Terraform module to make the installation as comfortable as possible for you. Please take a look at our dedicated [Installation documentation](./docs/installation.md).
 
-### Docker Compose (running locally)
+### Quick Start
 
-If you want to run Kowl locally take a look at the docker compose sample: [/docs/local](./docs/local).
+Do you just want to test Kowl against one of your Kafka clusters without spending too much time on the test setup? Here are some docker commands that allow you to run it locally against an existing Kafka cluster:
+
+#### Kafka is running locally
+
+Since Kowl runs in it's own container (which has it's own network scope), we have to use `host.docker.internal` as bootstrap server. That DNS resolves to the host system's ip address. However since Kafka brokers send a list of all brokers' DNS when a client has connected, you have to make sure your advertised listener is connected accordingly, e.g.: `PLAINTEXT://host.docker.internal:9092`
+
+```shell
+docker run -p 8080:8080 -e KAFKA_BROKERS=host.docker.internal:9092 quay.io/cloudhut/kowl:master
+```
+
+Docker supports the `--network=host` option only on Linux. So Linux users use `localhost:9092` as advertised listener and use the host network namespace instead. Kowl will then be ran as it would be executed on the host machine.
+
+```shell
+docker run --network=host -p 8080:8080 -e KAFKA_BROKERS=localhost:9092 quay.io/cloudhut/kowl:master
+```
+
+#### Kafka is running remotely
+
+Protected via SASL_SSL and trusted certificates (e.g. Confluent Cloud):
+
+```shell
+docker run -p 8080:8080 -e KAFKA_BROKERS=pkc-4r000.europe-west1.gcp.confluent.cloud:9092 -e KAFKA_TLS_ENABLED=true -e KAFKA_SASL_ENABLED=true -e KAFKA_SASL_USERNAME=xxx -e KAFKA_SASL_PASSWORD=xxx quay.io/cloudhut/kowl:master
+```
+
+#### I don't have a running Kafka cluster to test against
+
+We maintain a docker-compose file that launches zookeeper, kafka and kowl: [/docs/local](./docs/local).
 
 ## Chat with us
 
