@@ -228,8 +228,8 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 				// Consume "backwards" by lowering the start offset
 				req.StartOffset--
 			} else {
-				// We add +1 to end offset because if you set highWatermark as start offset this message can still be consumed
-				maxDelta := req.EndOffset - req.StartOffset
+				// We add +1 because the start offset itself is a consumable message
+				maxDelta := req.EndOffset - req.StartOffset + 1
 				isDrained := maxDelta == req.MaxMessageCount
 				if isDrained {
 					req.IsDrained = true
