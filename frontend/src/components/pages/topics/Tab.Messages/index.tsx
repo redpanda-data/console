@@ -473,10 +473,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                     // Add the action tab at the end
                     .concat(columns[columns.length - 1]) as (ColumnProps<TopicMessage>)[];
 
-        // remove headers column if no message has headers
-        // const hasHeaders = this.messageSource.data.any(m => m.headers.length > 0);
-        // if (!hasHeaders) filteredColumns.removeAll(c => c.dataIndex == 'headers');
-
+        const showTombstones = this.props.topic.cleanupPolicy.includes('compact');
 
         return <>
             <ConfigProvider renderEmpty={this.empty}>
@@ -494,7 +491,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                     dataSource={this.messageSource.data}
 
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
-                    rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
+                    rowClassName={(r: TopicMessage) => (r.isValueNull && showTombstones) ? 'tombstone' : ''}
 
                     expandable={{
                         expandRowByClick: false,
