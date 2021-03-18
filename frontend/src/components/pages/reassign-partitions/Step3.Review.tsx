@@ -1,13 +1,13 @@
 import React, { Component } from "react";
 import { observer } from "mobx-react";
-import { Button, Checkbox, Empty, Input, InputNumber, Select, Table } from "antd";
+import { Button, Checkbox, Empty, Input, InputNumber, Select, Slider, Table } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { api } from "../../../state/backendApi";
 import { makePaginationConfig } from "../../misc/common";
 import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from "../../../state/restInterfaces";
 import { computed, observable } from "mobx";
 import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
-import { DefaultSkeleton, TextInfoIcon } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, Label, TextInfoIcon } from "../../../utils/tsxUtils";
 import { ElementOf } from "antd/lib/_util/type";
 import { ReviewInfoBar, SelectionInfoBar } from "./components/StatisticsBars";
 import { BrokerList } from "./components/BrokerList";
@@ -68,8 +68,6 @@ export class StepReview extends Component<{
 
             <SelectionInfoBar partitionSelection={this.props.partitionSelection} />
 
-            <ReviewInfoBar topicsWithMoves={this.props.topicsWithMoves} />
-
             <Table
                 style={{ margin: '0', }} size={'middle'}
                 pagination={this.pageConfig}
@@ -93,10 +91,11 @@ export class StepReview extends Component<{
                         : <>Error loading partitions</>,
                 }} />
 
+            <ReviewInfoBar topicsWithMoves={this.props.topicsWithMoves} />
+
             {this.renderReassignmentOptions()}
         </>;
     }
-
     renderReassignmentOptions() {
         const settings = uiSettings.reassignment;
         const setLimits = settings.limitReplicationTraffic;
@@ -109,12 +108,43 @@ export class StepReview extends Component<{
 
         return <div>
             <div style={{ display: 'flex', gap: '1em', marginTop: '2em', alignItems: 'center' }}>
-                <Checkbox children={"Limit replication traffic"} disabled={this.requestInProgress}
-                    // style={{ marginLeft: 'auto' }}
-                    value={setLimits} onChange={e => {
-                        settings.limitReplicationTraffic = e.target.checked;
-                    }}
-                />
+                <Label text="Maximum replication traffic">
+                    <>
+                        <Slider min={2} max={12} style={{ width: '300px', margin: '0 10px' }}
+                            marks={{
+                                2: "Off",
+                                3: "1kB",
+                                6: "1MB",
+                                9: "1GB",
+                                12: "1TB",
+                            }}
+                            step={0.01}
+                            included={true}
+                            tipFormatter={f => settings.maxReplicationTraffic < 1000
+                                ? 'No limit'
+                                : prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'}
+
+                            value={Math.log10(settings.maxReplicationTraffic)}
+                            onChange={sv => {
+                                const n = Number(sv.valueOf());
+                                const newLimit = Math.pow(10, n);
+                                if (newLimit >= 1000) {
+                                    settings.maxReplicationTraffic = newLimit;
+                                }
+                                else {
+                                    if (newLimit < 500)
+                                        settings.maxReplicationTraffic = 0;
+                                    else settings.maxReplicationTraffic = 1000;
+                                }
+
+
+                            }}
+                        />
+                    </>
+
+                </Label>
+
+
                 <Input size='middle' style={{ maxWidth: '220px' }} disabled={!setLimits || this.requestInProgress}
                     value={settings.maxReplicationTraffic / Math.pow(1000, settings.maxReplicationSizePower)}
                     onChange={v => {
