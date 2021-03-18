@@ -155,7 +155,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 			if err == nil {
 				native, _, err := codec.NativeFromBinary(payload[5:])
 				if err == nil {
-					normalized, _ := json.Marshal(native)
+					normalized, _ := codec.TextualFromNative(nil, native)
 					return &deserializedPayload{
 						Payload: normalizedPayload{
 							Payload:            normalized,
