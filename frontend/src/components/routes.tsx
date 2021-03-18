@@ -202,9 +202,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span role='img' className='anticon'><DatabaseIcon /></span>),
-    IsDev
-        ? MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span role='img' className='anticon'><GitCompareIcon /></span>)
-        : null as any as IRouteEntry,
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span role='img' className='anticon'><GitCompareIcon /></span>),
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', <span role='img' className='anticon'><RepoIcon /></span>),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
