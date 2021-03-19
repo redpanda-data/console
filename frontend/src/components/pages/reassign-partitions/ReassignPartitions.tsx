@@ -31,54 +31,6 @@ export interface PartitionSelection { // Which partitions are selected?
     [topicName: string]: number[] // topicName -> array of partitionIds
 }
 
-interface WizardStep {
-    step: number;
-    title: string;
-    icon: React.ReactElement;
-    backButton?: string;
-    nextButton: { text: string; isEnabled: (c: ReassignPartitions) => boolean | string };
-}
-const steps: WizardStep[] = [
-    {
-        step: 0, title: 'Select Partitions',
-        icon: <UnorderedListOutlined />,
-        nextButton: {
-            text: 'Select Target Brokers',
-            isEnabled: c => Object.keys(c.partitionSelection).length > 0
-        }
-    },
-    {
-        step: 1, title: 'Assign to Brokers',
-        icon: <HddOutlined />,
-        backButton: 'Select Partitions',
-        nextButton: {
-            text: 'Review Plan',
-            isEnabled: c => {
-                const partitions = Object.keys(c.partitionSelection).map(t => ({ topic: api.topics!.first(x => x.topicName == t)!, partitions: api.topicPartitions.get(t)! }));
-                if (partitions.any(p => p.partitions == null || p.topic == null)) return false;
-                const maxRf = partitions.max(p => p.topic.replicationFactor);
-                if (c.selectedBrokerIds.length >= maxRf)
-                    return true;
-                return `Select at least ${maxRf} brokers`;
-            }
-        }
-    },
-    {
-        step: 2, title: 'Review and Confirm',
-        icon: <CheckCircleOutlined />,
-        backButton: 'Select Target Brokers',
-        nextButton: {
-            text: 'Start Reassignment',
-            isEnabled: c => true,
-        }
-    },
-];
-
-
-// todo:
-// - remove "skipping assignment key" in StepReview
-// - remove default partition and broker selections
-
 @observer
 class ReassignPartitions extends PageComponent {
     pageConfig = makePaginationConfig(15, true);
@@ -88,13 +40,10 @@ class ReassignPartitions extends PageComponent {
 
     // topics/partitions selected by user
     @observable partitionSelection: PartitionSelection = {
-        // "bons": [0, 1, 2, 3, 4, 5, 6, 7],
-        // "re-test1-addresses": [0, 1],
-        // "owlshop-orders": [0],
         // "weeco-frontend-events": [0, 1, 2, 3, 4, 5] // 3.56gb
     };
     // brokers selected by user
-    @observable selectedBrokerIds: number[] = [0, 1, 2];
+    @observable selectedBrokerIds: number[] = [];
     // computed reassignments
     @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request that will be sent
 
@@ -299,39 +248,6 @@ class ReassignPartitions extends PageComponent {
     onNextPage() {
         if (this.currentStep == 0) {
             // Select -> Assign
-            // prepare data for the next step
-            /*
-            this.partitionAssignments = ObjToKv(this.partitionSelection)
-                .map(kv => {
-                    const topicName = kv.key;
-                    const partitionIds = kv.value as number[];
-
-                    if (partitionIds.length == 0) return null; // skip topics when no partitions are selected
-
-                    const partitions = api.topicPartitions.get(topicName)!;
-                    const selection = partitions
-                        .filter(p => partitionIds.includes(p.id))
-                        .map(p => ({
-                            ...p,
-                            targetBroker: undefined as number | undefined
-                        }));
-
-                    return {
-                        topic: api.topics!.first(t => t.topicName == topicName)!,
-                        allPartitions: partitions,
-                        selectedPartitions: selection,
-                        topicName: topicName,
-                        partitionCount: partitions.length,
-                        selectedPartitionCount: selection.length,
-                    } as PartitionAssignemnt;
-                })
-                .filterNull();
-
-            if (this.partitionAssignments.length == 0) {
-                message.warn('You need to select at least one partition to continue.', 4);
-                return;
-            }
-            */
         }
 
         if (this.currentStep == 1) {
@@ -383,11 +299,25 @@ class ReassignPartitions extends PageComponent {
 
             setImmediate(async () => {
                 try {
-                    await this.startReassignment(request);
+                    this.requestInProgress = true;
+                    // todo: Don't use returns and execeptions for control flow
+                    const success = await this.startReassignment(request);
+                    if (success) {
+                        // Reset settings, go back to first page
+                        transaction(() => {
+                            this.partitionSelection = {};
+                            this.selectedBrokerIds = [];
+                            this.reassignmentRequest = null;
+                            this.currentStep = 0;
+                        });
+                    }
                 }
                 catch (err) {
                     message.error('Error starting partition reassignment.\nSee console for more information.', 3);
                     console.log("error starting partition reassignment", { error: err });
+                }
+                finally {
+                    this.requestInProgress = false;
                 }
             });
 
@@ -400,10 +330,10 @@ class ReassignPartitions extends PageComponent {
     onPreviousPage() { this.currentStep--; }
 
 
-    async startReassignment(request: PartitionReassignmentRequest) {
+    async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
         if (uiSettings.reassignment.limitReplicationTraffic && uiSettings.reassignment.maxReplicationTraffic > 0) {
             const success = await this.setTrafficLimit(request, false, false);
-            if (!success) return;
+            if (!success) return false;
         }
 
         const msg = new Message('Starting reassignment');
@@ -420,16 +350,19 @@ class ReassignPartitions extends PageComponent {
                 console.error("error starting partition reassignment.", errors);
                 throw new Error();
             }
-
             msg.setSuccess();
+
         } catch (err) {
-            notification.error({ message: "Error starting partition reassignment.\nSee console for details.", duration: 0 });
             msg.hide();
+            notification.error({ message: "Error starting partition reassignment.\nSee console for details.", duration: 0 });
+            return false;
         }
+
+        return true;
     }
 
     async setTrafficLimit(request: PartitionReassignmentRequest, useReplicasWildcard: boolean, useBrokerWildcard: boolean): Promise<boolean> {
-        const maxBytesPerSecond = uiSettings.reassignment.maxReplicationTraffic;
+        const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic);
 
         const configRequest: PatchConfigsRequest = { resources: [] };
 
@@ -593,6 +526,49 @@ class ReassignPartitions extends PageComponent {
 export default ReassignPartitions;
 
 
+
+interface WizardStep {
+    step: number;
+    title: string;
+    icon: React.ReactElement;
+    backButton?: string;
+    nextButton: { text: string; isEnabled: (c: ReassignPartitions) => boolean | string };
+}
+const steps: WizardStep[] = [
+    {
+        step: 0, title: 'Select Partitions',
+        icon: <UnorderedListOutlined />,
+        nextButton: {
+            text: 'Select Target Brokers',
+            isEnabled: c => Object.keys(c.partitionSelection).length > 0
+        }
+    },
+    {
+        step: 1, title: 'Assign to Brokers',
+        icon: <HddOutlined />,
+        backButton: 'Select Partitions',
+        nextButton: {
+            text: 'Review Plan',
+            isEnabled: c => {
+                const partitions = Object.keys(c.partitionSelection).map(t => ({ topic: api.topics!.first(x => x.topicName == t)!, partitions: api.topicPartitions.get(t)! }));
+                if (partitions.any(p => p.partitions == null || p.topic == null)) return false;
+                const maxRf = partitions.max(p => p.topic.replicationFactor);
+                if (c.selectedBrokerIds.length >= maxRf)
+                    return true;
+                return `Select at least ${maxRf} brokers`;
+            }
+        }
+    },
+    {
+        step: 2, title: 'Review and Confirm',
+        icon: <CheckCircleOutlined />,
+        backButton: 'Select Target Brokers',
+        nextButton: {
+            text: 'Start Reassignment',
+            isEnabled: c => true,
+        }
+    },
+];
 
 
 
