@@ -837,12 +837,12 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
         <MessageMetaData msg={msg} />
 
         {/* .ant-tabs-nav { width: ??; } */}
-        <Tabs animated={false}>
-            <Tabs.TabPane key='value' tab='Value'>
-                {renderPayload(msg.value, shouldExpand)}
-            </Tabs.TabPane>
+        <Tabs animated={false} defaultActiveKey='value'>
             <Tabs.TabPane key='key' tab='Key'>
                 {renderPayload(msg.key, shouldExpand)}
+            </Tabs.TabPane>
+            <Tabs.TabPane key='value' tab='Value'>
+                {renderPayload(msg.value, shouldExpand)}
             </Tabs.TabPane>
             <Tabs.TabPane key='headers' tab='Headers' disabled={msg.headers.length == 0}>
                 <MessageHeaders msg={msg} />
