@@ -9,7 +9,7 @@ import { TopicWithMoves } from "../Step3.Review";
 
 
 @observer
-export class SelectionInfoBar extends Component<{ partitionSelection: PartitionSelection }> {
+export class SelectionInfoBar extends Component<{ partitionSelection: PartitionSelection, margin?: string }> {
 
     render() {
         if (api.topicPartitions == null)
@@ -30,7 +30,7 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
             { title: 'Size', value: prettyBytesOrNA(allSelectedPartitions.sum(p => p.replicas.length * p.replicaSize)) },
         ];
 
-        return <div style={{ margin: '2em 1em 1em 1em' }}>
+        return <div style={{ margin: this.props.margin }}>
             <h3>Current Selection</h3>
             <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '3em', fontFamily: 'Open Sans', color: 'hsl(0deg, 0%, 30%)', fontSize: '1.1em' }}>
                 {data.map(item => <div key={item.title}>

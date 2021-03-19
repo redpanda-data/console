@@ -145,8 +145,8 @@ export class StepReview extends Component<{
                 </Label>
 
 
-                <Input size='middle' style={{ maxWidth: '220px' }} disabled={!setLimits || this.requestInProgress}
-                    value={settings.maxReplicationTraffic / Math.pow(1000, settings.maxReplicationSizePower)}
+                <Input size='middle' style={{ maxWidth: '180px' }} disabled={!setLimits || this.requestInProgress}
+                    value={(settings.maxReplicationTraffic / Math.pow(1000, settings.maxReplicationSizePower)).toFixed(2)}
                     onChange={v => {
                         const val = Number(v.target.value);
                         if (!Number.isFinite(val) || val < 0) return;

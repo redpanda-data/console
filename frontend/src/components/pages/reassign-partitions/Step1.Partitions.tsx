@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { observer } from "mobx-react";
-import { Empty, Input, Table } from "antd";
+import { ConfigProvider, Empty, Input, Table, Tooltip } from "antd";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { Partition, PartitionReassignmentsPartition, Topic } from "../../../state/restInterfaces";
 import { BrokerList } from "./components/BrokerList";
@@ -14,6 +14,7 @@ import { computed, IReactionDisposer, observable, transaction } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
 import Highlighter from 'react-highlight-words';
 import { uiSettings } from "../../../state/ui";
+import { FilterDropdownProps } from "antd/lib/table/interface";
 
 type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
 
@@ -41,39 +42,83 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         if (!api.topics) return DefaultSkeleton;
         if (api.topicPartitions.size == 0) return <Empty />
 
+        // (e) => this.inProgress.has(e.topicName) ? 'pureDisplayRow inprogress' :
+
+        const columnsActiveReassignments: ColumnProps<TopicWithPartitions>[] = [
+            {
+                title: 'Topic',
+                render: (v, t) => <><span className='partitionReassignmentSpinner' style={{ marginRight: '4px' }} />{t.topicName}</>,
+                sorter: sortField('topicName'), defaultSortOrder: 'ascend',
+                onFilter: (value, record) => searchRegexes.any(r => r.test(record.topicName)),
+            },
+            {
+                title: 'Progress', // ProgressBar, Percent, ETA
+                render: (v, t) => {
+                    const expectedTraffic = new Map<number, number>(); // partition ID -> total expected traffic for this partition
+                    const sumSizeOnNewBrokers = new Map<number, number>(); // partition ID -> size (sum) of the partition on the new brokers
+
+                    for (const r of t.activeReassignments) {
+                        const partition = t.partitions.first(p => p.id == r.partitionId);
+                        const logDirs = partition?.partitionLogDirs.filter(d => !d.error);
+                        if (!logDirs) continue;
+
+                        // Actual size of partition, multiplied by how many brokers it needs to be transfered to
+                        const actualPartitionSize = logDirs.max(d => d.size);
+                        const totalTraffic = actualPartitionSize * r.addingReplicas.length;
+                        expectedTraffic.set(r.partitionId, totalTraffic);
+
+                        // Current progress
+                        let sizeCurrent = 0;
+                        for (const newBrokerId of r.addingReplicas) {
+                            const logDirOnNewBroker = logDirs.first(d => d.brokerId == newBrokerId);
+                            if (!logDirOnNewBroker) continue;
+                            sizeCurrent += logDirOnNewBroker.size;
+                        }
+                        sumSizeOnNewBrokers.set(r.partitionId, sizeCurrent);
+                    }
+
+                    const currentSizeSum = [...sumSizeOnNewBrokers.values()].sum(x => x);
+                    const totalExepectedTraffic = [...expectedTraffic.values()].sum(x => x);
+                    return <>
+                        <span>
+                            {prettyBytesOrNA(currentSizeSum)} / {prettyBytesOrNA(totalExepectedTraffic)}
+                        </span>
+                        <span style={{ marginLeft: '2em' }}>
+                            {((currentSizeSum / totalExepectedTraffic) * 100).toFixed(2)} %
+                        </span>
+                    </>
+                }
+            },
+            {
+                title: 'Brokers', // red(old), gray(same), blue(new)
+                render: (v, t) => <BrokerList brokerIds={t.activeReassignments.flatMap(r => r.replicas)} />
+            },
+            {
+                title: 'Moved Size', width: '100px',
+                render: (v, t) => prettyBytesOrNA(t.activeReassignments.sum(p => p.addingReplicas.length) * t.logDirSummary.totalSizeBytes)
+            },
+        ]
+
+
         const filterActive = uiSettings.reassignment.quickSearch?.length > 1;
         const searchWords = uiSettings.reassignment.quickSearch?.split(' ') ?? [];
         const searchRegexes = searchWords.map(w => new RegExp(w, 'i'));
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
             {
-                title: 'Topic', render: (v, record) => {
-                    const txt = filterActive
-                        ? <Highlighter searchWords={searchWords} textToHighlight={record.topicName} />
-                        : record.topicName;
-
-                    if (record.activeReassignments.length > 0)
-                        return <><span className='partitionReassignmentSpinner' />{txt}</>
-                    return txt;
-                },
+                title: 'Topic',
+                render: (v, record) => filterActive
+                    ? <Highlighter searchWords={searchWords} textToHighlight={record.topicName} />
+                    : record.topicName,
                 sorter: sortField('topicName'), defaultSortOrder: 'ascend',
                 filtered: filterActive, filteredValue: [uiSettings.reassignment.quickSearch],
                 onFilter: (value, record) => searchRegexes.any(r => r.test(record.topicName)),
             },
             { title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
             {
-                title: 'Replicas', render: (t, r) => {
+                title: <TextInfoIcon text='Replicas' info="The replication factor of the topic" tooltipOverText={true} />, render: (t, r) => {
                     if (r.activeReassignments.length == 0) return r.replicationFactor;
                     return <TextInfoIcon text={String(r.replicationFactor)} info="While reassignment is active, replicas on both source and target brokers are counted" maxWidth="180px" />
-                },
-                filtered: uiSettings.reassignment.statusFilter != 'all',
-                filteredValue: [uiSettings.reassignment.statusFilter ?? 'all'],
-                onFilter: (val, record) => {
-                    switch (val) {
-                        case 'inprogress': return record.activeReassignments.length > 0;
-                        case 'notinprogress': return record.activeReassignments.length == 0;
-                    }
-                    return true;
                 },
                 sorter: sortField('replicationFactor')
             },
@@ -84,6 +129,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             { title: 'Size', render: (v, r) => prettyBytesOrNA(r.logDirSummary.totalSizeBytes), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes },
         ]
 
+
         return <>
             {/* Title */}
             <div style={{ margin: '2em 1em' }}>
@@ -91,88 +137,109 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 <p>Choose which partitions you want to reassign to different brokers. Selecting a topic will select all its partitions.</p>
             </div>
 
-            {/* Current Selection */}
-            <SelectionInfoBar partitionSelection={this.props.partitionSelection} />
+            {/* Active Reassignments */}
+            <div style={{ margin: '2em 1em' }}>
+                <h3>Active Reassignments</h3>
+                <ConfigProvider renderEmpty={() => <div style={{ color: '#00000059', margin: '.4em 0' }}>No reassignments currently in progress</div>}>
+                    <Table
+                        style={{ margin: '0', }} size={'middle'}
 
-            {/* Quicksearch, Filter */}
-            <div style={{ margin: '0 1px', marginTop: '2em', marginBottom: '1em', display: 'flex', gap: '2.5em', alignItems: 'flex-end' }}>
-                {/* Status filter */}
-                <OptionGroup label='Status'
-                    options={{
-                        "Show All": 'all',
-                        "In Progress": 'inprogress',
-                        "Not In Progress": 'notinprogress',
-                    }}
-                    value={uiSettings.reassignment.statusFilter}
-                    onChange={s => uiSettings.reassignment.statusFilter = s}
-                />
+                        dataSource={this.topicPartitionsInProgress}
+                        columns={columnsActiveReassignments}
 
-                {/* Quicksearch */}
-                <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px' }}
-                    value={uiSettings.reassignment.quickSearch}
-                    onChange={x => uiSettings.reassignment.quickSearch = x.target.value}
-                />
+                        rowKey={r => r.topicName}
+                        rowClassName={'pureDisplayRow inprogress'}
+
+                        pagination={this.pageConfig}
+                        onChange={(p) => {
+                            if (p.pageSize) uiSettings.reassignment.pageSizeSelect = p.pageSize;
+                            this.pageConfig.current = p.current;
+                            this.pageConfig.pageSize = p.pageSize;
+                        }}
+
+                    // expandable={{
+                    //     expandIconColumnIndex: 1,
+                    //     expandedRowRender: topic => <></>,
+                    // }}
+                    />
+                </ConfigProvider>
             </div>
 
-            {/* Topic / Partitions */}
-            <Table
-                style={{ margin: '0', }} size={'middle'}
-                pagination={this.pageConfig}
-                onChange={(p) => {
-                    if (p.pageSize) uiSettings.reassignment.pageSizeSelect = p.pageSize;
-                    this.pageConfig.current = p.current;
-                    this.pageConfig.pageSize = p.pageSize;
-                }}
+            <div style={{ margin: '1em 1em 2em 1em' }}>
+                <h3>Select partitions to reassign</h3>
 
-                dataSource={this.topicPartitions}
-                rowKey={r => r.topicName}
-                rowClassName={(e) => this.inProgress.has(e.topicName) ? 'pureDisplayRow inprogress' : 'pureDisplayRow'}
+                {/* Quicksearch */}
+                <div style={{ margin: '0 1px', marginBottom: '1em', display: 'flex', gap: '2.5em', alignItems: 'flex-end' }}>
+                    <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px' }}
+                        value={uiSettings.reassignment.quickSearch}
+                        onChange={x => uiSettings.reassignment.quickSearch = x.target.value}
+                    />
+                </div>
 
-                rowSelection={{
-                    type: 'checkbox',
-                    columnTitle: <div style={{ display: 'flex' }} >
-                        <TextInfoIcon text="" info={<>
-                            Select multiple topics at once by holding down the shift key.<br />
+                {/* Topic / Partitions */}
+                <Table
+                    style={{ margin: '0', }} size={'middle'}
+                    pagination={this.pageConfig}
+                    onChange={(p) => {
+                        if (p.pageSize) uiSettings.reassignment.pageSizeSelect = p.pageSize;
+                        this.pageConfig.current = p.current;
+                        this.pageConfig.pageSize = p.pageSize;
+                    }}
+                    showSorterTooltip={false}
+
+                    dataSource={this.topicPartitions}
+                    rowKey={r => r.topicName}
+                    rowClassName={'pureDisplayRow'}
+
+                    rowSelection={{
+                        type: 'checkbox',
+                        columnTitle: <div style={{ display: 'flex' }} >
+                            <TextInfoIcon text="" info={<>
+                                Select multiple topics at once by holding down the shift key.<br />
                             Example: Select row 1, then hold down shift while selecting row 5 to select all rows from 1 to 5.
                             </>} maxWidth='360px' iconSize='16px' />
-                    </div>,
-                    renderCell: (value: boolean, record, index, originNode: React.ReactNode) => {
-                        return <IndeterminateCheckbox
-                            originalCheckbox={originNode}
-                            getCheckState={() => this.getTopicCheckState(record.topicName)}
-                        />
-                    },
-                    onSelect: (record, selected: boolean, selectedRows) => {
-                        if (!record.partitions) return;
+                        </div>,
+                        renderCell: (value: boolean, record, index, originNode: React.ReactNode) => {
+                            return <IndeterminateCheckbox
+                                originalCheckbox={originNode}
+                                getCheckState={() => this.getTopicCheckState(record.topicName)}
+                            />
+                        },
+                        onSelect: (record, selected: boolean, selectedRows) => {
+                            if (!record.partitions) return;
 
-                        // Select all partitions in this topic
-                        transaction(() => {
-                            for (const p of record.partitions)
-                                this.setSelection(record.topicName, p.id, selected);
-                        });
-                    },
-                    onSelectMultiple: (selected, selectedRows, changeRows) => {
-                        transaction(() => {
-                            for (const r of changeRows)
-                                for (const p of r.partitions)
-                                    this.setSelection(r.topicName, p.id, selected);
-                        });
-                    },
-                }}
-                columns={columns}
-                expandable={{
-                    expandIconColumnIndex: 1,
-                    expandedRowRender: topic => topic.partitions
-                        ? <SelectPartitionTable
-                            topic={topic}
-                            topicPartitions={topic.partitions}
-                            isSelected={this.isSelected}
-                            setSelection={this.setSelection}
-                            getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
-                        />
-                        : <>Error loading partitions</>,
-                }}
-            />
+                            // Select all partitions in this topic
+                            transaction(() => {
+                                for (const p of record.partitions)
+                                    this.setSelection(record.topicName, p.id, selected);
+                            });
+                        },
+                        onSelectMultiple: (selected, selectedRows, changeRows) => {
+                            transaction(() => {
+                                for (const r of changeRows)
+                                    for (const p of r.partitions)
+                                        this.setSelection(r.topicName, p.id, selected);
+                            });
+                        },
+                    }}
+                    columns={columns}
+                    expandable={{
+                        expandIconColumnIndex: 1,
+                        expandedRowRender: topic => topic.partitions
+                            ? <SelectPartitionTable
+                                topic={topic}
+                                topicPartitions={topic.partitions}
+                                isSelected={this.isSelected}
+                                setSelection={this.setSelection}
+                                getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
+                            />
+                            : <>Error loading partitions</>,
+                    }}
+                />
+
+                {/* Current Selection */}
+                <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="2em 0em .5em 0em" />
+            </div>
         </>
     }
 
@@ -227,7 +294,18 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 partitions: api.topicPartitions.get(topic.topicName)!,
                 activeReassignments: this.inProgress.get(topic.topicName) ?? [],
             }
-        });
+        }).filter(t => t.activeReassignments.length == 0);
+    }
+
+    @computed get topicPartitionsInProgress(): TopicWithPartitions[] {
+        if (api.topics == null) return [];
+        return api.topics.map(topic => {
+            return {
+                ...topic,
+                partitions: api.topicPartitions.get(topic.topicName)!,
+                activeReassignments: this.inProgress.get(topic.topicName) ?? [],
+            }
+        }).filter(t => t.activeReassignments.length > 0);
     }
 
     @computed get inProgress() {

@@ -127,7 +127,6 @@ const uiSettings = observable({
         // Select
         quickSearch: '',
         pageSizeSelect: 10,
-        statusFilter: 'all' as 'all' | 'inprogress' | 'notinprogress',
 
         // Brokers
         pageSizeBrokers: 10,
