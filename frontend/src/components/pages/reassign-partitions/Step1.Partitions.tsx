@@ -116,9 +116,9 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             },
             { title: 'Partitions', dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
             {
-                title: <TextInfoIcon text='Replicas' info="The replication factor of the topic" tooltipOverText={true} />, render: (t, r) => {
+                title: 'Replication Factor', render: (t, r) => {
                     if (r.activeReassignments.length == 0) return r.replicationFactor;
-                    return <TextInfoIcon text={String(r.replicationFactor)} info="While reassignment is active, replicas on both source and target brokers are counted" maxWidth="180px" />
+                    return <TextInfoIcon text={String(r.replicationFactor)} info="While reassignment is active, replication factor is temporarily doubled." maxWidth="180px" />
                 },
                 sorter: sortField('replicationFactor')
             },
