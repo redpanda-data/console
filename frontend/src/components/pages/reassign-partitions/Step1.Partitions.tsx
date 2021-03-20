@@ -91,14 +91,17 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             },
             {
                 title: 'Brokers', // red(old), gray(same), blue(new)
-                render: (v, t) => <BrokerList brokerIds={t.activeReassignments.flatMap(r => r.replicas)} />
+                render: (v, t) => <BrokerList
+                    brokerIds={t.activeReassignments.flatMap(r => [...r.replicas, ...r.addingReplicas, ...r.removingReplicas].distinct())}
+                    addedIds={t.activeReassignments.flatMap(r => r.addingReplicas).distinct()}
+                    removedIds={t.activeReassignments.flatMap(r => r.removingReplicas).distinct()}
+                />
             },
             {
                 title: 'Moved Size', width: '100px',
                 render: (v, t) => prettyBytesOrNA(t.activeReassignments.sum(p => p.addingReplicas.length) * t.logDirSummary.totalSizeBytes)
             },
-        ]
-
+        ];
 
         const filterActive = uiSettings.reassignment.quickSearch?.length > 1;
         const searchWords = uiSettings.reassignment.quickSearch?.split(' ') ?? [];
@@ -127,7 +130,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A'
             },
             { title: 'Size', render: (v, r) => prettyBytesOrNA(r.logDirSummary.totalSizeBytes), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes },
-        ]
+        ];
 
 
         return <>
