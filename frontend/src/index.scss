@@ -1650,10 +1650,9 @@ svg {
     display: inline-flex;
     gap: 1px;
     border-radius: 4px;
-    overflow: hidden;
     background: hsl(0deg, 0%, 85%);
 
-    .ant-tag {
+    .broker-tag {
         position: relative;
         border: none;
         // font-size: 13px;
@@ -1675,25 +1674,81 @@ svg {
             color: hsl(0deg, 80%, 25%);
         }
 
-        // &.offline::before {
-        //     content: ' ';
-        //     position: absolute;
-        //     top: 0;
-        //     left: 0;
-        //     right: 0;
-        //     bottom: 0;
-        //     border-bottom: 2px solid dodgerblue;
-        // }
+        &.added {
+            // background: hsl(111deg, 82%, 69%);
+            color: hsl(111deg, 100%, 34%);
 
-        // &.leader::before {
-        //     content: ' ';
-        //     position: absolute;
-        //     top: 0;
-        //     left: 0;
-        //     right: 0;
-        //     bottom: 0;
-        //     border-bottom: 2px solid dodgerblue;
-        // }
+            &::after {
+                content: ' ';
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+
+                border-radius: 3px;
+
+                border: 0px solid hsl(105deg, 100%, 40%);
+                border-bottom-width: 2px;
+            }
+
+            // &::before {
+            //     content: '+';
+            //     position: absolute;
+            //     top: -3px;
+            //     left: 1px;
+
+            //     width: 14px;
+            //     height: 14px;
+            //     background: hsl(9deg, 0%, 66%);
+            //     border-radius: 100%;
+
+            //     display: flex;
+            //     place-content: center;
+            //     place-items: center;
+
+            //     color: white;
+            //     font-family: 'Open Sans';
+            //     font-size: 15px;
+            //     font-weight: bold;
+
+            //     padding-bottom: 2px;
+            // }
+
+        }
+
+
+
+        &.removed {
+            color: hsl(15deg, 75%, 60%);
+            // box-shadow: inset #ff7054 0px 0px 2px 1px;
+
+            &::after {
+                content: ' ';
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+
+                border-radius: 3px;
+
+                border: 0px solid hsl(16deg, 100%, 50%);
+                border-bottom-width: 2px;
+            }
+        }
+
+
+        &:first-child {
+            border-top-left-radius: 3px;
+            border-bottom-left-radius: 3px;
+        }
+
+        &:last-child {
+            border-top-right-radius: 3px;
+            border-bottom-right-radius: 3px;
+        }
+
     }
 }
 
