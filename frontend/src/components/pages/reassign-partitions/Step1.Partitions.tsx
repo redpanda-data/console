@@ -134,12 +134,6 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
 
         return <>
-            {/* Title */}
-            <div style={{ margin: '2em 1em' }}>
-                <h2>Select Partitions</h2>
-                <p>Choose which partitions you want to reassign to different brokers. Selecting a topic will select all its partitions.</p>
-            </div>
-
             {/* Active Reassignments */}
             <div style={{ margin: '2em 1em' }}>
                 <h3>Active Reassignments</h3>
@@ -169,7 +163,13 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             </div>
 
             <div style={{ margin: '1em 1em 2em 1em' }}>
-                <h3>Select partitions to reassign</h3>
+                
+                {/* Title */}
+                <h2>Select Partitions</h2>
+                <p>Choose which partitions you want to reassign to different brokers. Selecting a topic will select all its partitions.</p>
+
+                {/* Current Selection */}
+                <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="2em 0em .5em 0em" />
 
                 {/* Quicksearch */}
                 <div style={{ margin: '0 1px', marginBottom: '1em', display: 'flex', gap: '2.5em', alignItems: 'flex-end' }}>
@@ -198,8 +198,8 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                         type: 'checkbox',
                         columnTitle: <div style={{ display: 'flex' }} >
                             <TextInfoIcon text="" info={<>
-                                Select multiple topics at once by holding down the shift key.<br />
-                            Example: Select row 1, then hold down shift while selecting row 5 to select all rows from 1 to 5.
+                                If you want to select multiple items that are adjacent, you can<br />
+                                use the SHIFT key. Shift-Click selects the first item, last item and all items in between.
                             </>} maxWidth='360px' iconSize='16px' />
                         </div>,
                         renderCell: (value: boolean, record, index, originNode: React.ReactNode) => {
@@ -239,9 +239,6 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                             : <>Error loading partitions</>,
                     }}
                 />
-
-                {/* Current Selection */}
-                <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="2em 0em .5em 0em" />
             </div>
         </>
     }

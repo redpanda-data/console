@@ -74,6 +74,7 @@ func (api *API) routes() *chi.Mux {
 				r.Patch("/operations/reassign-partitions", api.handlePatchPartitionAssignments())
 				r.Patch("/operations/configs", api.handlePatchConfigs())
 				r.Get("/consumer-groups", api.handleGetConsumerGroups())
+				r.Get("/kowl/endpoints", api.handleGetEndpoints())
 				r.Get("/schemas", api.handleGetSchemaOverview())
 				r.Get("/schemas/subjects/{subject}/versions/{version}", api.handleGetSchemaDetails())
 			})
