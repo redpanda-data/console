@@ -165,6 +165,9 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 <h2>Select Partitions</h2>
                 <p>Choose which partitions you want to reassign to different brokers. Selecting a topic will select all its partitions.</p>
 
+                {/* Current Selection */}
+                <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="2em 0em .5em 0em" />
+
                 {/* Quicksearch */}
                 <div style={{ margin: '0 1px', marginBottom: '1em', display: 'flex', gap: '2.5em', alignItems: 'flex-end' }}>
                     <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px' }}
@@ -233,9 +236,6 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                             : <>Error loading partitions</>,
                     }}
                 />
-
-                {/* Current Selection */}
-                <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="2em 0em .5em 0em" />
             </div>
         </>
     }
