@@ -31,7 +31,7 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
         ];
 
         return <div style={{ margin: this.props.margin }}>
-            <h3>Current Selection</h3>
+            <h5>Current Selection</h5>
             <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '3em', fontFamily: 'Open Sans', color: 'hsl(0deg, 0%, 30%)', fontSize: '1.1em' }}>
                 {data.map(item => <div key={item.title}>
                     <div style={{ fontSize: '.8em', opacity: 0.6, paddingBottom: '.5em' }}>{item.title}</div>
