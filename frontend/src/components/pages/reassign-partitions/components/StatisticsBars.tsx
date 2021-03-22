@@ -17,13 +17,13 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
 
         const allSelectedPartitions = this.selectedPartitions.flatMap(p => p.partitions);
         const partitionCountLeaders = allSelectedPartitions.length; // every partition has a leader
-        const partitionCountOnlyReplicated = allSelectedPartitions.sum(t => t.replicas.length);
+        const totalPartitionsCount = allSelectedPartitions.sum(t => t.replicas.length);
 
         const brokers = this.involvedBrokers;
 
         const data = [
             { title: 'Leader Partitions', value: partitionCountLeaders },
-            { title: 'Replica Partitions', value: partitionCountOnlyReplicated },
+            { title: 'Total Partitions', value: totalPartitionsCount },
             { title: 'Involved Topics', value: this.selectedPartitions.length },
             { title: 'Involved Brokers', value: brokers?.length ?? '...' },
             { title: 'Involved Racks', value: brokers?.map(b => b.rack).distinct().length ?? '...' },
