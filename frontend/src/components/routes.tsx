@@ -202,7 +202,6 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span role='img' className='anticon'><DatabaseIcon /></span>),
-    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span role='img' className='anticon'><GitCompareIcon /></span>),
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', <span role='img' className='anticon'><RepoIcon /></span>),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
@@ -215,6 +214,8 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span role='img' className='anticon'><FileCodeIcon /></span>),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span role='img' className='anticon'><GitCompareIcon /></span>),
+    
     MakeRoute<{}>('/admin', AdminPage, 'Admin', <span role='img' className='anticon'><ToolsIcon /></span>, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
