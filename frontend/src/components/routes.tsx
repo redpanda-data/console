@@ -20,8 +20,9 @@ import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
 import { IsDev } from "../utils/env";
-import { CommentDiscussionIcon, DatabaseIcon, FileCodeIcon, GitCompareIcon, RepoIcon, ShieldLockIcon, ToolsIcon } from "@primer/octicons-v2-react";
+import { CommentDiscussionIcon, DatabaseIcon, FileCodeIcon, GitCompareIcon, LawIcon, PackageDependenciesIcon, RepoIcon, ShieldLockIcon, ToolsIcon } from "@primer/octicons-v2-react";
 import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
+import { PackageDependentsIcon } from "@primer/octicons-react";
 
 
 //
@@ -214,7 +215,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span role='img' className='anticon'><FileCodeIcon /></span>),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
-    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span role='img' className='anticon'><GitCompareIcon /></span>),
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span role='img' className='anticon'><PackageDependentsIcon /></span>),
     
     MakeRoute<{}>('/admin', AdminPage, 'Admin', <span role='img' className='anticon'><ToolsIcon /></span>, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
 
