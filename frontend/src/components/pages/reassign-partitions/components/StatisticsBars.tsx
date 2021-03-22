@@ -79,7 +79,7 @@ export class ReviewInfoBar extends Component<{ topicsWithMoves: TopicWithMoves[]
 
     render() {
         const data = [
-            { title: 'Replicas Moved', value: this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas)) },
+            { title: 'Replicas to move', value: this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas)) },
             { title: 'Traffic', value: prettyBytesOrNA(this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas * p.replicaSize))) },
         ];
 

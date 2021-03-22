@@ -51,7 +51,7 @@ export class StepReview extends Component<{
                 render: (v, r) => <BrokerList brokerIds={this.brokersAfter} />
             },
             {
-                width: 100, title: (p) => <TextInfoIcon text="Moves" info="The number of replicas that will be moved to a different broker." maxWidth='180px' />,
+                width: 100, title: (p) => <TextInfoIcon text="Reassignments" info="The number of replicas that will be moved to a different broker." maxWidth='180px' />,
                 render: (v, r) => r.selectedPartitions.sum(p => p.movedReplicas),
             },
             {
