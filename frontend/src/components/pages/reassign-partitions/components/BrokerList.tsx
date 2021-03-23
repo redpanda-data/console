@@ -23,8 +23,6 @@ export class BrokerList extends Component<BrokerListProps> {
         let offlineIds: number[] = [];
         let addedIds: number[] = [], removedIds: number[] = [];
 
-        console.log('broker list', this.props);
-
         if ('partition' in this.props) {
             const { partition } = this.props;
             leaderId = partition.leader;
