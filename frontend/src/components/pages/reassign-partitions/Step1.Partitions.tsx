@@ -163,7 +163,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             </div>
 
             <div style={{ margin: '1em 1em 2em 1em' }}>
-                
+
                 {/* Title */}
                 <h2>Select Partitions</h2>
                 <p>Choose which partitions you want to reassign to different brokers. Selecting a topic will select all its partitions.</p>
@@ -325,8 +325,6 @@ export class SelectPartitionTable extends Component<{
     partitionsPageConfig = makePaginationConfig(100, true);
 
     render() {
-        const brokerTooltip = <div style={{ maxWidth: '380px', fontSize: 'smaller' }}>These are the brokerIDs this partitions replicas are assigned to.<br />The broker highlighted in blue is currently hosting/handling the leading partition, while the brokers shown in grey are hosting the partitions replicas.</div>;
-
         return <div style={{ paddingTop: '4px', paddingBottom: '8px', width: 0, minWidth: '100%' }}>
             <Table size='small' className='nestedTable'
                 dataSource={this.props.topicPartitions}
@@ -346,6 +344,10 @@ export class SelectPartitionTable extends Component<{
                     { width: 100, title: 'Partition', dataIndex: 'id', sortOrder: 'ascend', sorter: (a, b) => a.id - b.id },
                     {
                         width: undefined, title: 'Brokers', render: (v, record) => <BrokerList brokerIds={record.replicas} leaderId={record.leader} />
+                    },
+                    {
+                        width: 100, title: 'Size', render: (v, p) => prettyBytesOrNA(p.replicaSize),
+                        sortOrder: 'ascend', sorter: (a, b) => a.replicaSize - b.replicaSize
                     },
                 ]} />
         </div>;
