@@ -19,7 +19,7 @@ import Paragraph from "antd/lib/typography/Paragraph";
 import "../../../utils/arrayExtensions";
 import Icon, { CloseCircleOutlined, HighlightTwoTone } from '@ant-design/icons';
 import { uiState } from "../../../state/uiState";
-import { DefaultSkeleton, OptionGroup, toSafeString } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, findPopupContainer, OptionGroup, toSafeString } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
 import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
 import { clone, toJson } from "../../../utils/jsonUtils";
@@ -244,7 +244,7 @@ export function DataValue(name: string, value: string, isDefault: boolean, forma
     if (isDefault) return <code>{value}</code>
 
     return (
-        <Tooltip title="Value is different from the default">
+        <Tooltip title="Value is different from the default" getPopupContainer={findPopupContainer}>
             <div>
                 {markerIcon}
                 <code>{value}</code>

@@ -691,6 +691,7 @@ tr.tombstone {
 }
 
 .kowlCard {
+    position: relative;
     margin: 0;
     margin-bottom: .75rem;
     padding: 1rem 1.5rem;
@@ -1000,7 +1001,8 @@ svg {
 
 .ant-tooltip {
     font-size: 12px;
-    max-width: 400px;
+    max-width: unset;
+    white-space: normal;
 
     --ant-tooltip-color: hsl(0deg, 0%, 87%);
 }

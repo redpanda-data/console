@@ -12,6 +12,7 @@ import { SizeType } from "antd/lib/config-provider/SizeContext";
 import { api } from "../state/backendApi";
 import { observable } from "mobx";
 import { InfoIcon } from "@primer/octicons-v2-react";
+import { TooltipPlacement } from "antd/lib/tooltip";
 
 
 
@@ -165,7 +166,22 @@ export const Label = (p: { text: string, textSuffix?: React.ReactNode, className
     </>
 }
 
-export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor?: string, tooltipOverText?: boolean, iconSize?: string, maxWidth?: string }) => {
+export function findPopupContainer(current: HTMLElement): HTMLElement {
+    let container = current;
+    while (true) {
+        const p = container.parentElement;
+        if (!p) return container;
+
+        if (p.className.includes('kowlCard')) return p;
+        if (p.clientWidth >= 300 && p.clientHeight >= 300) return p;
+
+        container = p;
+    }
+
+    return current;
+}
+
+export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor?: string, tooltipOverText?: boolean, iconSize?: string, maxWidth?: string, placement?: TooltipPlacement }) => {
     const overlay = p.maxWidth == null ? p.info : <div style={{ maxWidth: p.maxWidth }}>{p.info}</div>
 
     const size = p.iconSize ?? '14px';
@@ -177,7 +193,7 @@ export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor
     const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size }} ><InfoIcon /></span>
 
     if (p.tooltipOverText == null || p.tooltipOverText === true)
-        return <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0}>
+        return <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 {p.text}
                 {icon}
@@ -186,7 +202,7 @@ export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor
 
     return <span style={{ display: 'inline-flex', alignItems: 'center' }}>
         {p.text}
-        <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0}>
+        <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
             {icon}
         </Tooltip>
     </span>

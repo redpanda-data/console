@@ -14,7 +14,7 @@ import Card from "../../misc/Card";
 import Icon, { FireOutlined, WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { Radio } from 'antd';
 import { TablePaginationConfig } from "antd/lib/table";
-import { OptionGroup, QuickTable, DefaultSkeleton } from "../../../utils/tsxUtils";
+import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
 import { SkipIcon } from "@primer/octicons-v2-react";
 import { uiState } from "../../../state/uiState";
@@ -25,6 +25,7 @@ import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
 class GroupDetails extends PageComponent<{ groupId: string }> {
     @observable viewMode: 'topic' | 'member' = 'topic';
     @observable onlyShowPartitionsWithLag: boolean = false;
+    pageRef = React.createRef();
 
     initPage(p: PageInitHelper): void {
         const group = this.props.groupId;
@@ -164,13 +165,15 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                 header={
                     <div>
                         <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{g.key}</span>
-                        <Tooltip placement='top' title='Summed lag of all partitions of the topic' mouseEnterDelay={0}>
+                        <Tooltip placement='top' title='Summed lag of all partitions of the topic' mouseEnterDelay={0}
+                            getPopupContainer={findPopupContainer} >
                             <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLagAll}</Tag>
                         </Tooltip>
                         {/* <Tooltip placement='top' title='Number of partitions assigned / Number of partitions in the topic' mouseEnterDelay={0}>
                                 <Tag color='blue'>partitions: {partitionCount}/{topicPartitionInfo?.length}</Tag>
                             </Tooltip> */}
-                        <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
+                        <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}
+                            getPopupContainer={findPopupContainer}>
                             <Tag color='blue'>assigned partitions: {partitionsAssigned}</Tag>
                         </Tooltip>
                     </div>
@@ -264,13 +267,13 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                     header={
                         <div>
                             <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{renderMergedID(m.id, m.clientId)}</span>
-                            <Tooltip placement='top' title='Host of the member' mouseEnterDelay={0}>
+                            <Tooltip placement='top' title='Host of the member' mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
                                 <Tag style={{ marginLeft: '1em' }} color='blue'>host: {m.clientHost}</Tag>
                             </Tooltip>
-                            <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}>
+                            <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
                                 <Tag color='blue'>partitions: {totalPartitions}</Tag>
                             </Tooltip>
-                            <Tooltip placement='top' title='Summed lag over all assigned partitions of all topics' mouseEnterDelay={0}>
+                            <Tooltip placement='top' title='Summed lag over all assigned partitions of all topics' mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
                                 <Tag color='blue'>lag: {totalLag}</Tag>
                             </Tooltip>
                         </div>

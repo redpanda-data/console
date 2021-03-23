@@ -216,7 +216,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span role='img' className='anticon'><PackageDependentsIcon /></span>),
-    
+
     MakeRoute<{}>('/admin', AdminPage, 'Admin', <span role='img' className='anticon'><ToolsIcon /></span>, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...

@@ -28,7 +28,7 @@ import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
-import { Ellipsis, Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
+import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
 import { bindObjectToUrl, cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
 import { toJson } from "../../../../utils/jsonUtils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
@@ -215,7 +215,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                         <AnimatePresence>
                             {api.messageSearchPhase == null &&
                                 <MotionSpan identityKey='btnRefresh' overrideAnimProps={animProps_span_messagesStatus}>
-                                    <Tooltip title='Repeat current search'>
+                                    <Tooltip title='Repeat current search' getPopupContainer={findPopupContainer}>
                                         <Button type='primary' onClick={() => this.searchFunc('manual')}>
                                             <SyncIcon size={16} />
                                         </Button>
@@ -224,7 +224,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                             }
                             {api.messageSearchPhase != null &&
                                 <MotionSpan identityKey='btnCancelSearch' overrideAnimProps={animProps_span_messagesStatus}>
-                                    <Tooltip title='Stop searching'>
+                                    <Tooltip title='Stop searching' getPopupContainer={findPopupContainer}>
                                         <Button type='primary' danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
                                             <LayoutBypass >
                                                 <XCircleIcon size={20} />
@@ -279,32 +279,6 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                     <MessageSearchFilterBar />
                 </div>}
 
-
-
-                {/* Button (live search?) */}
-                {/* <div style={{ ...spaceStyle }}>
-                    <Input.Group compact>
-                        <Tooltip title='Load more messages'>
-                            <Button type='primary' className='messagesSpecialIconButton'>
-                                <span style={{ height: '100%' }}><ArrowRightIcon size={16} /></span>
-                                <span style={{ height: '100%', marginLeft: '-11px', transform: 'rotate(90deg)' }} ><DashIcon size={18} /></span>
-                            </Button>
-                        </Tooltip>
-                        <Tooltip title='Start live updating'>
-                            <Button type='primary' className='messagesSpecialIconButton'>
-                                <span style={{ height: '100%', width: '5px' }}><ChevronRightIcon size={16} /></span>
-                                <span style={{ height: '100%' }} ><ChevronRightIcon size={16} /></span>
-                            </Button>
-                        </Tooltip>
-                        <Button type='primary' className='messagesSpecialIconButton' style={{ padding: '0' }}>
-                            <div style={{ height: '100%', background: 'linear-gradient(to right, white 0%, rgba(255,255,255,0) 50%, white 100%)', backgroundSize: '80%', backgroundRepeat: 'repeat', padding: '0 15px' }}>
-                                <div style={{ width: '18px', height: '18px' }}>
-                                    <SvgCircleStop style={{ verticalAlign: 'baseline', fill: 'hsl(0, 0%, 95%)' }} />
-                                </div>
-                            </div>
-                        </Button>
-                    </Input.Group>
-                </div> */}
             </div>
 
         </React.Fragment>
@@ -432,7 +406,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                 filterDropdownVisible: false,
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
-                    return <Tooltip title='Column Settings' mouseEnterDelay={0.1}>
+                    return <Tooltip title='Column Settings' mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement='left'>
                         <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
                     </Tooltip>
                 },
@@ -1311,14 +1285,6 @@ class MessageSearchFilterBar extends Component {
 
     @observable hasChanges = false; // used by editor; shows "revert changes" when true
 
-    static readonly nameTip = <>
-        <LayoutBypass justifyContent='flex-start'>
-            <Tooltip placement='top' title={<span>Enter a custom name that will be shown in the list.<br />Otherwise the the code itself will be used as the name.</span>}>
-                <QuestionCircleTwoTone twoToneColor='deepskyblue' style={{ fontSize: '15px' }} />
-            </Tooltip>
-        </LayoutBypass>
-    </>
-
     render() {
         const settings = uiState.topicSettings.searchParams;
 
@@ -1484,5 +1450,5 @@ class MessageSearchFilterBar extends Component {
 
 function renderEmptyIcon(tooltipText?: string) {
     if (!tooltipText) tooltipText = "Empty";
-    return <Tooltip title={tooltipText} mouseEnterDelay={0.1}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>
+    return <Tooltip title={tooltipText} mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>
 }

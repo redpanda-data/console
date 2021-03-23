@@ -198,9 +198,9 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                         type: 'checkbox',
                         columnTitle: <div style={{ display: 'flex' }} >
                             <TextInfoIcon text="" info={<>
-                                If you want to select multiple items that are adjacent, you can<br />
-                                use the SHIFT key. Shift-Click selects the first item, last item and all items in between.
-                            </>} maxWidth='360px' iconSize='16px' />
+                                If you want to select multiple adjacent items, you can use the SHIFT key.<br />
+                                Shift-Click selects the first item, last item and all items in between.
+                            </>} iconSize='16px' placement='right' />
                         </div>,
                         renderCell: (value: boolean, record, index, originNode: React.ReactNode) => {
                             return <IndeterminateCheckbox
