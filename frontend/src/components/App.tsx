@@ -274,6 +274,11 @@ const AppContent = observer(() =>
 export default class App extends Component {
 
     render() {
+        setImmediate(() => {
+            api.refreshSupportedEndpoints(true);
+            console.log('refreshing supported endpoints')
+        })
+
         const r = this.loginHandling(); // Complete login, or fetch user if needed
         if (r) return r;
 

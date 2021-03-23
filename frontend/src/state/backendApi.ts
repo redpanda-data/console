@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility
 } from "./restInterfaces";
 import { computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -194,6 +194,8 @@ let currentWS: WebSocket | null = null;
 const apiStore = {
 
     // Data
+    endpointCompatibility: null as (EndpointCompatibility | null),
+
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
 
@@ -464,6 +466,11 @@ const apiStore = {
         const query = aclRequestToQuery(request);
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.ACLs = v?.aclResources ?? null, addError);
+    },
+
+    refreshSupportedEndpoints(force?: boolean) {
+        cachedApiRequest<EndpointCompatibilityResponse>(`./api/kowl/endpoints`, force)
+            .then(v => this.endpointCompatibility = v.endpointCompatibility, addError);
     },
 
     refreshCluster(force?: boolean) {
