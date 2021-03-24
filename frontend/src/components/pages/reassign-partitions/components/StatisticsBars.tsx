@@ -22,8 +22,21 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
         const brokers = this.involvedBrokers;
 
         const data = [
-            { title: 'Leader Partitions', value: partitionCountLeaders },
+            { title: 'Leader Partitions', value: partitionCountLeaders, },
             { title: 'Total Partitions', value: totalPartitionsCount },
+            // {
+            //     title: 'Partitions', value: <span style={{ display: 'inline-flex', gap: '1em' }}>
+            //         <span>
+            //             <span>{partitionCountLeaders}</span>
+            //             <span> leaders</span>
+            //         </span>
+            //         <span>
+            //             <span>{totalPartitionsCount}</span>
+            //             <span> total</span>
+            //         </span>
+            //     </span>
+            // },
+
             { title: 'Involved Topics', value: this.selectedPartitions.length },
             { title: 'Involved Brokers', value: brokers?.length ?? '...' },
             { title: 'Involved Racks', value: brokers?.map(b => b.rack).distinct().length ?? '...' },
@@ -31,7 +44,7 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
         ];
 
         return <div style={{ margin: this.props.margin }}>
-            <h5>Current Selection</h5>
+            <h4>Current Selection</h4>
             <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '3em', fontFamily: 'Open Sans', color: 'hsl(0deg, 0%, 30%)', fontSize: '1.1em' }}>
                 {data.map(item => <div key={item.title}>
                     <div style={{ fontSize: '.8em', opacity: 0.6, paddingBottom: '.5em' }}>{item.title}</div>

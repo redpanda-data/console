@@ -1,6 +1,6 @@
 import React, { ReactNode, Component } from "react";
 import { observer } from "mobx-react";
-import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification } from "antd";
+import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification, ConfigProvider } from "antd";
 import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
@@ -25,6 +25,7 @@ import { ApiData, computeReassignments, TopicPartitions } from "./logic/reassign
 import { computeMovedReplicas, partitionSelectionToTopicPartitions } from "./logic/utils";
 import { IsDev } from "../../../utils/env";
 import { Message } from "../../../utils/utils";
+import { ActiveReassignments } from "./components/ActiveReassignments";
 const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
@@ -159,6 +160,11 @@ class ReassignPartitions extends PageComponent {
                         <Statistic title='Replica Partitions' value={partitionCountOnlyReplicated} />
                         <Statistic title='Total Partitions' value={partitionCountLeaders + partitionCountOnlyReplicated} />
                     </Row>
+                </Card>
+
+                {/* Active Reassignments */}
+                <Card>
+                    <ActiveReassignments />
                 </Card>
 
                 {/* Content */}
