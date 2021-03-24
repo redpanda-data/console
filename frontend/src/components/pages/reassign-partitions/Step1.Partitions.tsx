@@ -23,11 +23,13 @@ export type TopicWithPartitions = Topic & { partitions: Partition[], activeReass
 export class StepSelectPartitions extends Component<{ partitionSelection: PartitionSelection }> {
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeSelect ?? 10);
     autorunHandle: IReactionDisposer | undefined = undefined;
-    @observable filterOpen = false;
+    @observable filterOpen = false; // topic name searchbar
+    // @observable expandedTopics: string[] = [];
 
     constructor(props: any) {
         super(props);
         this.setSelection = this.setSelection.bind(this);
+        this.setTopicSelection = this.setTopicSelection.bind(this);
         this.isSelected = this.isSelected.bind(this);
         this.getSelectedPartitions = this.getSelectedPartitions.bind(this);
         this.getTopicCheckState = this.getTopicCheckState.bind(this);
@@ -74,19 +76,27 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                     if (visible) this.filterOpen = visible;
                 },
             },
-            { title: 'Partitions', width: 130, dataIndex: 'partitionCount', sorter: sortField('partitionCount') },
             {
-                title: 'Replication Factor', width: 150, render: (t, r) => {
+                title: 'Partitions', width: 140, dataIndex: 'partitionCount',
+                sorter: sortField('partitionCount')
+            },
+            {
+                title: 'Replication Factor', width: 160, render: (t, r) => {
                     if (r.activeReassignments.length == 0) return r.replicationFactor;
                     return <TextInfoIcon text={String(r.replicationFactor)} info="While reassignment is active, replication factor is temporarily doubled." maxWidth="180px" />
                 },
                 sorter: sortField('replicationFactor')
             },
             {
-                title: 'Brokers', width: 100, dataIndex: 'partitions',
-                render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A'
+                title: 'Brokers', width: 160, dataIndex: 'partitions',
+                render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A',
+
             },
-            { title: 'Size', width: 100, render: (v, r) => prettyBytesOrNA(r.logDirSummary.totalSizeBytes), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes },
+            {
+                title: 'Size', width: 110,
+                render: (v, r) => prettyBytesOrNA(r.logDirSummary.totalSizeBytes),
+                sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes
+            },
         ];
 
 
@@ -120,11 +130,20 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                             this.pageConfig.current = p.current;
                             this.pageConfig.pageSize = p.pageSize;
                         }}
-                        showSorterTooltip={false}
 
                         dataSource={this.topicPartitions}
+                        columns={columns}
+                        showSorterTooltip={false}
+
                         rowKey={r => r.topicName}
                         rowClassName={'pureDisplayRow'}
+
+                        onRow={record => ({
+                            onClick: () => this.setTopicSelection(record, !this.getTopicCheckState(record.topicName).checked),
+                            // onDoubleClick: () => this.expandedTopics.includes(record.topicName)
+                            //     ? this.expandedTopics.remove(record.topicName)
+                            //     : this.expandedTopics.push(record.topicName),
+                        })}
 
                         rowSelection={{
                             type: 'checkbox',
@@ -142,12 +161,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                             },
                             onSelect: (record, selected: boolean, selectedRows) => {
                                 if (!record.partitions) return;
-
-                                // Select all partitions in this topic
-                                transaction(() => {
-                                    for (const p of record.partitions)
-                                        this.setSelection(record.topicName, p.id, selected);
-                                });
+                                this.setTopicSelection(record, selected);
                             },
                             onSelectMultiple: (selected, selectedRows, changeRows) => {
                                 transaction(() => {
@@ -157,8 +171,13 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                                 });
                             },
                         }}
-                        columns={columns}
+
                         expandable={{
+                            // expandedRowKeys: this.expandedTopics.slice(),
+                            // onExpandedRowsChange: keys => {
+                            //     // console.log('replacing expanded row keys', { current: this.expandedTopics, new: keys })
+                            //     this.expandedTopics = keys as string[];
+                            // },
                             // expandIconColumnIndex: 1,
                             expandedRowRender: topic => topic.partitions
                                 ? <SelectPartitionTable
@@ -174,6 +193,13 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 </ConfigProvider>
             </div>
         </>
+    }
+
+    setTopicSelection(topic: TopicWithPartitions, isSelected: boolean) {
+        transaction(() => {
+            for (const p of topic.partitions)
+                this.setSelection(topic.topicName, p.id, isSelected);
+        });
     }
 
     setSelection(topic: string, partition: number, isSelected: boolean) {

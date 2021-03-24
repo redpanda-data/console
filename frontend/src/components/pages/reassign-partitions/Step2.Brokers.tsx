@@ -30,11 +30,13 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
             return <div>Error: no brokers available</div>;
         }
 
+        const selectedBrokers = this.props.selectedBrokerIds;
+
         const columns: ColumnProps<Broker>[] = [
-            { width: undefined, title: 'Broker Address', dataIndex: 'address' },
-            { width: '130px', title: 'Broker ID', dataIndex: 'brokerId' },
-            { width: undefined, title: 'Rack', dataIndex: 'rack' },
-            { width: '150px', title: 'Used Space', dataIndex: 'logDirSize', render: (value) => prettyBytesOrNA(value) },
+            { title: 'ID', width: 40, dataIndex: 'brokerId' },
+            { title: 'Broker Address', width: undefined, dataIndex: 'address' },
+            { title: 'Rack', width: undefined, dataIndex: 'rack' },
+            { title: 'Used Space', width: 150, dataIndex: 'logDirSize', render: prettyBytesOrNA },
         ];
 
         return <>
@@ -53,20 +55,28 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
                     this.pageConfig.current = p.current;
                     this.pageConfig.pageSize = p.pageSize;
                 }}
+
                 dataSource={this.brokers}
                 columns={columns}
+
+                onRow={record => ({
+                    onClick: () => selectedBrokers.includes(record.brokerId)
+                        ? selectedBrokers.remove(record.brokerId)
+                        : selectedBrokers.push(record.brokerId),
+                })}
+
                 rowKey='brokerId'
                 rowClassName={() => 'pureDisplayRow'}
                 rowSelection={{
                     type: 'checkbox',
-                    selectedRowKeys: this.props.selectedBrokerIds.slice(),
+                    selectedRowKeys: selectedBrokers.slice(),
                     onChange: (keys, values) => {
                         transaction(() => {
-                            this.props.selectedBrokerIds.splice(0);
+                            selectedBrokers.splice(0);
                             for (const broker of values)
-                                this.props.selectedBrokerIds.push(broker.brokerId);
+                                selectedBrokers.push(broker.brokerId);
                         });
-                    }
+                    },
                 }} />
         </>;
     }
