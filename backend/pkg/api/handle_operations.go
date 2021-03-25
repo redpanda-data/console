@@ -7,6 +7,7 @@ import (
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"net/http"
+	"strings"
 )
 
 func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
@@ -15,7 +16,13 @@ func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		topicDetails, restErr := api.OwlSvc.GetTopicDetails(r.Context(), nil)
+		var topicNames []string
+		requestedTopicNames := r.URL.Query().Get("topicNames")
+		if requestedTopicNames != "" {
+			topicNames = strings.Split(requestedTopicNames, ",")
+		}
+
+		topicDetails, restErr := api.OwlSvc.GetTopicDetails(r.Context(), topicNames)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
