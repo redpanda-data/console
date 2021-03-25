@@ -135,8 +135,7 @@ const uiSettings = observable({
         pageSizeBrokers: 10,
 
         // Review
-        pageSizeReview: 10,
-        limitReplicationTraffic: false,
+        pageSizeReview: 20,
         maxReplicationTraffic: 0, // bytes per second
         maxReplicationSizePower: 1, // 1000^X   (0 = bytes, 1 = kb, 2 = mb, 3 = gb)
     },

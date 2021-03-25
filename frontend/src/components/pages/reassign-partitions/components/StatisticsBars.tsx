@@ -86,24 +86,3 @@ export class SelectionInfoBar extends Component<{ partitionSelection: PartitionS
         return api.clusterInfo.brokers.filter(b => brokerIds.has(b.brokerId));
     }
 }
-
-@observer
-export class ReviewInfoBar extends Component<{ topicsWithMoves: TopicWithMoves[] }> {
-
-    render() {
-        const data = [
-            { title: 'Replicas to move', value: this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas)) },
-            { title: 'Traffic', value: prettyBytesOrNA(this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas * p.replicaSize))) },
-        ];
-
-        return <div style={{ margin: '2em 1em 2em 1em' }}>
-            <h3>Summary</h3>
-            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '3em', fontFamily: 'Open Sans', color: 'hsl(0deg, 0%, 30%)', fontSize: '1.1em' }}>
-                {data.map(item => <div key={item.title}>
-                    <div style={{ fontSize: '.8em', opacity: 0.6, paddingBottom: '.5em' }}>{item.title}</div>
-                    <div style={{}}>{item.value}</div>
-                </div>)}
-            </div>
-        </div>;
-    }
-}

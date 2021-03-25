@@ -78,7 +78,7 @@ export class ActiveReassignments extends Component {
 
 
         return <>
-            <h3 style={{ marginLeft: '.2em' }}>Active Reassignments</h3>
+            <h3 style={{ marginLeft: '.2em' }}>Current Reassignments</h3>
             <ConfigProvider renderEmpty={() =>
                 <div style={{ color: '#00000059', margin: '.4em 0' }}>No reassignments currently in progress</div>
             }>

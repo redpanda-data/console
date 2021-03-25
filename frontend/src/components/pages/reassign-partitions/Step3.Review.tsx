@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { observer } from "mobx-react";
-import { Button, Checkbox, Empty, Input, InputNumber, Select, Slider, Table } from "antd";
+import { Button, Empty, Input, Select, Slider, Table } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { api } from "../../../state/backendApi";
 import { makePaginationConfig } from "../../misc/common";
@@ -8,13 +8,12 @@ import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from 
 import { computed, observable } from "mobx";
 import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
 import { DefaultSkeleton, Label, TextInfoIcon } from "../../../utils/tsxUtils";
-import { ElementOf } from "antd/lib/_util/type";
-import { ReviewInfoBar, SelectionInfoBar } from "./components/StatisticsBars";
 import { BrokerList } from "./components/BrokerList";
 import ReassignPartitions, { PartitionSelection, } from "./ReassignPartitions";
 import { clone } from "../../../utils/jsonUtils";
 import { computeMovedReplicas } from "./logic/utils";
 import { uiSettings } from "../../../state/ui";
+import { IsDev } from "../../../utils/env";
 
 export type PartitionWithMoves = Partition & { movedReplicas: number };
 export type TopicWithMoves = { topicName: string; topic: Topic; allPartitions: Partition[]; selectedPartitions: PartitionWithMoves[]; };
@@ -26,10 +25,11 @@ export class StepReview extends Component<{
     assignments: PartitionReassignmentRequest,
     reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
-    pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeReview ?? 10);
+    pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeReview, true);
 
     get requestInProgress() { return this.props.reassignPartitions.requestInProgress; }
     set requestInProgress(v) { this.props.reassignPartitions.requestInProgress = v; }
+
 
     render() {
         if (!api.topics)
@@ -67,11 +67,9 @@ export class StepReview extends Component<{
 
         return <>
             <div style={{ margin: '2em 1em' }}>
-                <h2>Review</h2>
-                <p>Review the plan Kowl computed to distribute the selected partitions onto the selected brokers.</p>
+                <h2>Review Reassignment Plan</h2>
+                <p>Kowl computed the following reassignment plan to distribute the selected partitions onto the selected brokers.</p>
             </div>
-
-            <SelectionInfoBar partitionSelection={this.props.partitionSelection} />
 
             <Table
                 style={{ margin: '0', }} size={'middle'}
@@ -94,85 +92,15 @@ export class StepReview extends Component<{
                             topicPartitions={topic.selectedPartitions}
                             assignments={this.props.assignments.topics.first(t => t.topicName == topic.topicName)!} />
                         : <>Error loading partitions</>,
-                }} />
+                }}
+            />
 
-            <ReviewInfoBar topicsWithMoves={this.props.topicsWithMoves} />
+            {this.reassignmentOptions()}
 
-            {this.renderReassignmentOptions()}
-        </>;
-    }
-    renderReassignmentOptions() {
-        const settings = uiSettings.reassignment;
-        const setLimits = settings.limitReplicationTraffic;
-
-        const showTimeEstimate = setLimits && settings.maxReplicationTraffic > 0;
-        const estimatedTime = showTimeEstimate
-            ? (this.totalMovedData / settings.maxReplicationTraffic) * 1000
-            : 0;
+            {this.summary()}
 
 
-        return <div>
-            <div style={{ display: 'flex', gap: '1em', marginTop: '2em', alignItems: 'center' }}>
-                <Label text="Maximum replication traffic">
-                    <>
-                        <Slider min={2} max={12} style={{ width: '300px', margin: '0 10px' }}
-                            marks={{
-                                2: "Off",
-                                3: "1kB",
-                                6: "1MB",
-                                9: "1GB",
-                                12: "1TB",
-                            }}
-                            step={0.01}
-                            included={true}
-                            tipFormatter={f => settings.maxReplicationTraffic < 1000
-                                ? 'No limit'
-                                : prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'}
-
-                            value={Math.log10(settings.maxReplicationTraffic)}
-                            onChange={sv => {
-                                const n = Number(sv.valueOf());
-                                const newLimit = Math.pow(10, n);
-                                if (newLimit >= 1000) {
-                                    settings.maxReplicationTraffic = newLimit;
-                                }
-                                else {
-                                    if (newLimit < 500)
-                                        settings.maxReplicationTraffic = 0;
-                                    else settings.maxReplicationTraffic = 1000;
-                                }
-
-
-                            }}
-                        />
-                    </>
-
-                </Label>
-
-
-                <Input size='middle' style={{ maxWidth: '180px' }} disabled={!setLimits || this.requestInProgress}
-                    value={(settings.maxReplicationTraffic / Math.pow(1000, settings.maxReplicationSizePower)).toFixed(2)}
-                    onChange={v => {
-                        const val = Number(v.target.value);
-                        if (!Number.isFinite(val) || val < 0) return;
-                        settings.maxReplicationTraffic = val * Math.pow(1000, settings.maxReplicationSizePower);
-                    }}
-                    addonAfter={
-                        <Select style={{ width: '75px' }} options={[
-                            { label: 'B/s', value: 0 }, // value = power
-                            { label: 'kB/s', value: 1 },
-                            { label: 'MB/s', value: 2 },
-                            { label: 'GB/s', value: 3 },
-                        ]}
-                            value={uiSettings.reassignment.maxReplicationSizePower}
-                            onChange={e => uiSettings.reassignment.maxReplicationSizePower = e}
-                        />
-                    }
-                />
-                {showTimeEstimate && <span>
-                    {prettyMilliseconds(estimatedTime)}
-                </span>}
-
+            <div className='devOnly' style={{ display: IsDev ? 'flex' : 'none', gap: '1em', marginTop: '3em' }}>
                 <Button danger loading={this.requestInProgress}
                     disabled={this.requestInProgress}
                     onClick={async () => {
@@ -194,10 +122,108 @@ export class StepReview extends Component<{
                                 await this.props.reassignPartitions.resetTrafficLimit(rq, false);
                         } finally { this.requestInProgress = false; }
                     }}>Reset throttle config</Button>
-
             </div>
-            {/* todo: warning that the user will have to reset/remove this config manually after the reassignment is done */}
+        </>;
+    }
+
+    reassignmentOptions() {
+        const settings = uiSettings.reassignment;
+
+        return <div style={{ margin: '3em 1em' }}>
+            <h2>Bandwidth Throttle</h2>
+            <div style={{ color: 'hsl(216deg, 15%, 52%)' }}>
+                Using throttling you can limit the network traffic for the reassignment.<br />
+                <div style={{ marginTop: '0.5em' }}>
+                    <span style={{ fontWeight: 600 }}>Please Note: </span>
+                    Throttling applies to all replication traffic, not just during reassignments.
+                    Once the reassignment completes you'll have to manually remove the throttling configuration.
+                    This can be done here in Kowl: <a>Some config page thing asdasdasdasd</a>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1em', marginTop: '2em', paddingBottom: '1em', alignItems: 'center' }}>
+
+                <Slider style={{ minWidth: '300px', margin: '0 1em', paddingBottom: '2em', flex: 1 }}
+                    min={2} max={12} step={0.1}
+                    marks={{ 2: "Off", 3: "1kB", 6: "1MB", 9: "1GB", 12: "1TB", }}
+                    included={true}
+                    tipFormatter={f => settings.maxReplicationTraffic < 1000
+                        ? 'No limit'
+                        : prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'}
+
+                    value={Math.log10(settings.maxReplicationTraffic)}
+                    onChange={sv => {
+                        const n = Number(sv.valueOf());
+                        const newLimit = Math.pow(10, n);
+                        if (newLimit >= 1000) {
+                            settings.maxReplicationTraffic = newLimit;
+                        }
+                        else {
+                            if (newLimit < 500)
+                                settings.maxReplicationTraffic = 0;
+                            else settings.maxReplicationTraffic = 1000;
+                        }
+                    }}
+                />
+
+                <Input size='middle' style={{ maxWidth: '180px', display: 'none' }} disabled={this.requestInProgress}
+                    value={(settings.maxReplicationTraffic / Math.pow(1000, settings.maxReplicationSizePower)).toFixed(2)}
+                    onChange={v => {
+                        const val = Number(v.target.value);
+                        if (!Number.isFinite(val) || val < 0) return;
+                        settings.maxReplicationTraffic = val * Math.pow(1000, settings.maxReplicationSizePower);
+                    }}
+                    addonAfter={
+                        <Select style={{ width: '75px' }} options={[
+                            { label: 'B/s', value: 0 }, // value = power
+                            { label: 'kB/s', value: 1 },
+                            { label: 'MB/s', value: 2 },
+                            { label: 'GB/s', value: 3 },
+                        ]}
+                            value={uiSettings.reassignment.maxReplicationSizePower}
+                            onChange={e => uiSettings.reassignment.maxReplicationSizePower = e}
+                        />
+                    }
+                />
+            </div>
         </div>
+    }
+
+    summary() {
+        const settings = uiSettings.reassignment;
+
+        const totalTraffic = this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas * p.replicaSize));
+        const isThrottled = settings.maxReplicationTraffic > 0;
+        const trafficThrottle = isThrottled
+            ? prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'
+            : 'disabled';
+
+        const estimatedTimeSec = totalTraffic / settings.maxReplicationTraffic;
+        const estimatedTime = !isThrottled ? '-'
+            : estimatedTimeSec < 10
+                ? '< 10 seconds'
+                : prettyMilliseconds(estimatedTimeSec * 1000, { secondsDecimalDigits: 0, unitCount: 2, verbose: true })
+
+        const data = [
+            { title: 'Moved Replicas', value: this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas)) },
+            { title: 'Total Traffic', value: "~" + prettyBytesOrNA(totalTraffic) },
+            { title: 'Traffic Throttle', value: trafficThrottle },
+            { title: 'Estimated Time', value: estimatedTime },
+        ];
+
+        return <div style={{ margin: '2em 1em 5em 1em' }}>
+            <h2>Summary</h2>
+            <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: '3em',
+                marginTop: '1em',
+                color: 'hsl(0deg, 0%, 30%)'
+            }}>
+                {data.map(item => <div key={item.title}>
+                    <div style={{ opacity: 0.6, }}>{item.title}</div>
+                    <div style={{ fontSize: 'calc(1em * 24 / 14)', }}>{item.value}</div>
+                </div>)}
+            </div>
+        </div>;
     }
 
     @computed get brokersAfter(): number[] {

@@ -337,7 +337,7 @@ class ReassignPartitions extends PageComponent {
 
 
     async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
-        if (uiSettings.reassignment.limitReplicationTraffic && uiSettings.reassignment.maxReplicationTraffic > 0) {
+        if (uiSettings.reassignment.maxReplicationTraffic > 0) {
             const success = await this.setTrafficLimit(request, false, false);
             if (!success) return false;
         }

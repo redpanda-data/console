@@ -104,15 +104,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             <div style={{ margin: '1em 1em 2em 1em' }}>
 
                 {/* Current Selection */}
-                <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="1.5em ​0em 0em 0.3em" />
-
-                {/* Statistics, Quicksearch */}
-                <div style={{ margin: '0 1px', marginBottom: '1em', display: 'flex', gap: '2.5em', alignItems: 'flex-end' }}>
-                    {/* <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px' }}
-                        value={uiSettings.reassignment.quickSearch}
-                        onChange={x => uiSettings.reassignment.quickSearch = x.target.value}
-                    /> */}
-                </div>
+                <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="2em 0em 1em 0.3em" />
 
                 {/* Topic / Partitions */}
                 <ConfigProvider getPopupContainer={t => {
