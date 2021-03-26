@@ -104,7 +104,7 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 	// We could unmarshal the loaded koanf input after loading both providers, however we want to unmarshal the YAML
 	// config with `ErrorUnused` set to true, but unmarshal environment variables with `ErrorUnused` set to false (default).
 	// Rationale: Orchestrators like Kubernetes inject unrelated environment variables, which we still want to allow.
-	err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
+	unmarshalCfg := koanf.UnmarshalConf{
 		Tag:       "yaml",
 		FlatPaths: false,
 		DecoderConfig: &mapstructure.DecoderConfig{
@@ -116,7 +116,8 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 			ErrorUnused:      true,
 			TagName:          "yaml",
 		},
-	})
+	}
+	err := k.UnmarshalWithConf("", &cfg, unmarshalCfg)
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to unmarshal YAML config into config struct: %w", err)
 	}
@@ -137,7 +138,8 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 		return Config{}, fmt.Errorf("failed to unmarshal environment variables into config struct: %w", err)
 	}
 
-	err = k.Unmarshal("", &cfg)
+	unmarshalCfg.DecoderConfig.ErrorUnused = false
+	err = k.UnmarshalWithConf("", &cfg, unmarshalCfg)
 	if err != nil {
 		return Config{}, err
 	}
