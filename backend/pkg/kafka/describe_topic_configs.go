@@ -20,11 +20,10 @@ func (s *Service) DescribeTopicsConfigs(ctx context.Context, topicNames []string
 		resources[i] = r
 	}
 
-	req := kmsg.DescribeConfigsRequest{
-		Resources:            resources,
-		IncludeSynonyms:      false,
-		IncludeDocumentation: false,
-	}
+	req := kmsg.NewDescribeConfigsRequest()
+	req.Resources = resources
+	req.IncludeDocumentation = true
+	req.IncludeSynonyms = true
 
 	res, err := req.RequestWith(ctx, s.KafkaClient)
 	if err != nil {
