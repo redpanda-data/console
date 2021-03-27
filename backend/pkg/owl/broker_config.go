@@ -3,147 +3,90 @@ package owl
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
-	"strconv"
-	"sync"
+	"net/http"
 )
 
-type ClusterConfig struct {
-	BrokerConfigs []*BrokerConfig             `json:"brokerConfigs"`
-	RequestErrors []*BrokerConfigRequestError `json:"requestErrors"`
-}
-
-type BrokerConfigRequestError struct {
-	BrokerID     int32  `json:"brokerId"`
-	ErrorMessage string `json:"errorMessage"`
-}
-
-type BrokerConfig struct {
-	BrokerID      int32                `json:"brokerId"`
-	Error         error                `json:"error"`
-	ConfigEntries []*BrokerConfigEntry `json:"configEntries"`
+type BrokerConfigs struct {
+	BrokerID int32               `json:"brokerId"`
+	Configs  []BrokerConfigEntry `json:"configs"`
 }
 
 type BrokerConfigEntry struct {
-	Name      string  `json:"name"`
-	Value     *string `json:"value"`
-	IsDefault bool    `json:"isDefault"`
+	Name          string                `json:"name"`
+	Value         *string               `json:"value"` // If value is sensitive this will be nil
+	Source        string                `json:"source"`
+	Type          string                `json:"type"`
+	IsDefault     bool                  `json:"isDefault"`
+	IsReadOnly    bool                  `json:"isReadOnly"`
+	IsSensitive   bool                  `json:"isSensitive"`
+	Documentation *string               `json:"documentation"` // Will be nil for Kafka <v2.6.0
+	Synonyms      []BrokerConfigSynonym `json:"synonyms"`
 }
 
-// GetClusterConfig tries to fetch all config resources for all brokers in the cluster. If at least one response from a
-// broker can be returned this function won't return an error. If all requests fail an error will be returned.
-func (s *Service) GetClusterConfig(ctx context.Context) (ClusterConfig, error) {
-	metadata, err := s.kafkaSvc.GetMetadata(ctx, nil)
+type BrokerConfigSynonym struct {
+	Name   string  `json:"name"`
+	Value  *string `json:"value"`
+	Source string  `json:"source"`
+}
+
+func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]BrokerConfigEntry, *rest.Error) {
+	res, err := s.kafkaSvc.DescribeBrokerConfig(ctx, brokerID, nil)
 	if err != nil {
-		return ClusterConfig{}, fmt.Errorf("failed to get broker ids: %w", err)
+		return nil, &rest.Error{
+			Err:      fmt.Errorf("failed to request broker config: %w", err),
+			Status:   http.StatusServiceUnavailable,
+			Message:  fmt.Sprintf("Failed to request broker's config: %v", err.Error()),
+			IsSilent: false,
+		}
 	}
 
-	brokerIDs := make([]int32, len(metadata.Brokers))
-	for i, broker := range metadata.Brokers {
-		brokerIDs[i] = broker.NodeID
-	}
-
-	// Send one broker config request for each broker concurrently
-	type chResponse struct {
-		config *BrokerConfig
-		err    *BrokerConfigRequestError
-	}
-	resCh := make(chan chResponse)
-	wg := sync.WaitGroup{}
-	for _, brokerID := range brokerIDs {
-		wg.Add(1)
-		go func(bId int32) {
-			defer wg.Done()
-			cfg, reqErr := s.GetBrokerConfig(ctx, bId)
-			resCh <- chResponse{
-				config: cfg,
-				err:    reqErr,
+	// Resources should always be of length = 1
+	for _, resource := range res.Resources {
+		err := kerr.TypedErrorForCode(resource.ErrorCode)
+		if err != nil {
+			return nil, &rest.Error{
+				Err:      err,
+				Status:   http.StatusServiceUnavailable,
+				Message:  fmt.Sprintf("Failed to describe broker config resource: %v", err.Error()),
+				IsSilent: false,
 			}
-		}(brokerID)
-	}
-
-	// Close channel once all go routines are done
-	go func() {
-		wg.Wait()
-		close(resCh)
-	}()
-
-	haveAllRequestsFailed := true
-	brokerConfigs := make([]*BrokerConfig, 0, len(metadata.Brokers))
-	requestErrors := make([]*BrokerConfigRequestError, 0, len(metadata.Brokers))
-	for res := range resCh {
-		if res.config != nil {
-			brokerConfigs = append(brokerConfigs, res.config)
-			haveAllRequestsFailed = false
 		}
-		if res.err != nil {
-			requestErrors = append(requestErrors, res.err)
+
+		configEntries := make([]BrokerConfigEntry, len(resource.Configs))
+		for j, cfg := range resource.Configs {
+			innerEntries := make([]BrokerConfigSynonym, len(cfg.ConfigSynonyms))
+			for j, innerCfg := range cfg.ConfigSynonyms {
+				innerEntries[j] = BrokerConfigSynonym{
+					Name:   innerCfg.Name,
+					Value:  innerCfg.Value,
+					Source: innerCfg.Source.String(),
+				}
+			}
+
+			isDefault := cfg.IsDefault || cfg.Source == kmsg.ConfigSourceDefaultConfig
+			configEntries[j] = BrokerConfigEntry{
+				Name:          cfg.Name,
+				Value:         cfg.Value,
+				Source:        cfg.Source.String(),
+				Type:          cfg.ConfigType.String(),
+				IsDefault:     isDefault,
+				IsReadOnly:    cfg.ReadOnly,
+				IsSensitive:   cfg.IsSensitive,
+				Documentation: cfg.Documentation,
+				Synonyms:      innerEntries,
+			}
 		}
+
+		return configEntries, nil
 	}
 
-	if haveAllRequestsFailed {
-		return ClusterConfig{}, fmt.Errorf("all broker requests have failed")
+	return nil, &rest.Error{
+		Err:      fmt.Errorf("broker describe config response was empty"),
+		Status:   http.StatusInternalServerError,
+		Message:  "Broker config response was empty",
+		IsSilent: false,
 	}
-
-	return ClusterConfig{
-		BrokerConfigs: brokerConfigs,
-		RequestErrors: requestErrors,
-	}, nil
-}
-
-func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) (*BrokerConfig, *BrokerConfigRequestError) {
-	res, err := s.kafkaSvc.DescribeBrokerConfig(ctx, strconv.Itoa(int(brokerID)), nil)
-	if err != nil {
-		return nil, &BrokerConfigRequestError{
-			BrokerID:     brokerID,
-			ErrorMessage: fmt.Sprintf("failed to describe broker configs: %v", err.Error()),
-		}
-	}
-
-	if len(res) != 1 {
-		return nil, &BrokerConfigRequestError{
-			BrokerID:     brokerID,
-			ErrorMessage: fmt.Sprintf("received '%v' responses for broker config describe, expectec exactly 1!", len(res)),
-		}
-	}
-	brokerResponse := res[0]
-
-	bID, err := strconv.ParseInt(brokerResponse.ResourceName, 10, 32)
-	if err != nil {
-		s.logger.Warn("failed to parse broker id as int from broker config response",
-			zap.String("returned_value", brokerResponse.ResourceName))
-		bID = -1
-	}
-
-	brokerConfig := &BrokerConfig{
-		BrokerID:      int32(bID),
-		Error:         nil,
-		ConfigEntries: nil,
-	}
-
-	// On error set error message and continue to next broker response
-	err = kerr.ErrorForCode(brokerResponse.ErrorCode)
-	if err != nil {
-		return nil, &BrokerConfigRequestError{
-			BrokerID:     brokerID,
-			ErrorMessage: fmt.Sprintf("failed to get broker config: %v", err.Error()),
-		}
-	}
-
-	// Prepare config entries
-	configEntries := make([]*BrokerConfigEntry, len(brokerResponse.Configs))
-	for i, entry := range brokerResponse.Configs {
-		isDefault := entry.IsDefault || entry.Source == kmsg.ConfigSourceDefaultConfig
-		e := &BrokerConfigEntry{
-			Name:      entry.Name,
-			Value:     entry.Value,
-			IsDefault: isDefault,
-		}
-		configEntries[i] = e
-	}
-	brokerConfig.ConfigEntries = configEntries
-
-	return brokerConfig, nil
 }
