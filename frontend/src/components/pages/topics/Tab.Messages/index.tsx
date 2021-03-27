@@ -1,5 +1,5 @@
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
-import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
+import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
 import { Alert, AutoComplete, Button, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu, message, Modal, Popover, Radio, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
@@ -30,7 +30,7 @@ import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelp
 import { editQuery } from "../../../../utils/queryHelper";
 import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
 import { bindObjectToUrl, cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
-import { toJson } from "../../../../utils/jsonUtils";
+import { clone, toJson } from "../../../../utils/jsonUtils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
@@ -67,6 +67,9 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     quickSearchReaction: IReactionDisposer | null = null;
 
     currentSearchRun: string | null = null;
+
+    @observable downloadMessages: TopicMessage[] | null;
+
 
     constructor(props: { topic: Topic }) {
         super(props);
@@ -378,9 +381,11 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                 <Menu.Item key="2" onClick={() => this.copyMessage(record, 'jsonValue')}>
                     Copy Value
                 </Menu.Item>
-
                 <Menu.Item key="4" onClick={() => this.copyMessage(record, 'timestamp')}>
                     Copy Epoch Timestamp
+                </Menu.Item>
+                <Menu.Item key="5" onClick={() => this.downloadMessages = [record]}>
+                    Save to File
                 </Menu.Item>
             </Menu>
         );
@@ -477,6 +482,15 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                     columns={filteredColumns}
                 />
 
+                <Button
+                    type='primary'
+                    icon={<span style={{ paddingRight: '4px' }}><DownloadIcon /></span>}
+                    onClick={() => { this.downloadMessages = api.messages; }}
+                    disabled={!api.messages || api.messages.length == 0}
+                >Save Messages</Button>
+
+                <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} />
+
                 {
                     (this.messageSource?.data?.length > 0) &&
                     <PreviewSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showPreviewSettings} setShowDialog={s => this.showPreviewSettings = s} />
@@ -497,7 +511,6 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
     // we can only write text to the clipboard, so rawKey/rawValue have been removed for now
     copyMessage(record: TopicMessage, field: "jsonKey" | "jsonValue" | "timestamp") {
-
         switch (field) {
             case "jsonKey":
                 typeof record.key.payload === 'string'
@@ -643,6 +656,92 @@ function ${name}() {
         <br />
         <span>Either the selected topic/partition did not contain any messages</span>
     </>} />
+}
+
+@observer
+class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, onClose: () => void }> {
+    @observable isOpen = false;
+    @observable format = 'json' as 'json' | 'csv';
+
+    radioStyle = { display: 'block', lineHeight: '30px' };
+
+    render() {
+        const { messages, onClose } = this.props;
+        const count = (messages?.length ?? 0);
+        const title = count > 1 ? "Save Messages" : "Save Message";
+
+        // Keep dialog open after closing it, so it can play its closing animation
+        if (count > 0 && !this.isOpen) setImmediate(() => this.isOpen = true);
+        if (this.isOpen && count == 0) setImmediate(() => this.isOpen = false);
+
+        return <Modal
+            title={title} centered closable={false}
+            visible={count > 0}
+            onOk={() => this.saveMessages()}
+            onCancel={onClose}
+            afterClose={onClose}
+            okText="Save Messages"
+        >
+            <div>Select the format in which you want to save {count == 1 ? "the message" : "all messages"}</div>
+            <Radio.Group value={this.format} onChange={e => this.format = e.target.value}>
+                <Radio value='json' style={this.radioStyle}>JSON</Radio>
+                <Radio value='csv' disabled={true} style={this.radioStyle}>CSV</Radio>
+            </Radio.Group>
+        </Modal>
+    }
+
+    saveMessages() {
+        const cleanMessages = this.cleanMessages(this.props.messages ?? []);
+
+        const json = toJson(cleanMessages, 4);
+
+        const link = document.createElement("a");
+        const file = new Blob([json], { type: 'application/json' });
+        link.href = URL.createObjectURL(file);
+        link.download = "messages.json";
+        document.body.appendChild(link); // required in firefox
+        link.click();
+
+        this.props.onClose();
+    }
+
+    cleanMessages(messages: TopicMessage[]): any[] {
+        const ar: any[] = [];
+
+        // create a copy of each message, omitting properties that don't make
+        // sense for the user, like 'size' or caching properties like 'keyJson'.
+
+        const cleanPayload = function (p: Payload): Payload {
+            if (!p) return undefined as any;
+            return {
+                payload: p.payload,
+                encoding: p.encoding,
+                avroSchemaId: p.avroSchemaId,
+            } as any as Payload;
+        }
+
+        for (const src of messages) {
+            const msg = {} as Partial<typeof src>;
+
+            msg.partitionID = src.partitionID;
+            msg.offset = src.offset
+            msg.timestamp = src.timestamp;
+            msg.compression = src.compression;
+            msg.isTransactional = src.isTransactional;
+
+            msg.headers = src.headers.map(h => ({
+                key: h.key,
+                value: cleanPayload(h.value),
+            }));
+
+            msg.key = cleanPayload(src.key);
+            msg.value = cleanPayload(src.value);
+
+            ar.push(msg);
+        }
+
+        return ar;
+    }
 }
 
 const renderKey = (p: Payload, record: TopicMessage) => {

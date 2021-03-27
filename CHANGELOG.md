@@ -2,10 +2,12 @@
 
 ## unreleased / pending in master
 
+
 - [CHANGE] We removed the Kafka library and replaced it with [franz-go](https://github.com/twmb/franz-go). This allows us to add a lot more features in the future.
 - [CHANGE] Configuration for the topic documentation feature has changed
 - [FEATURE] Support setting the listen adress of the webserver (config entry: `server.http.listen-address`, or flag: `listenAddress`). [#150](https://github.com/cloudhut/kowl/issues/150) 
 - **[FEATURE] Add Protobuf support**
+- **[FEATURE] You can now save messages by clicking the 'Save Messages' button below the message list, or save a single message from its context menu (right-most column of a message row, visible on hover)**
 - **[FEATURE] Reassign partitions via setup wizard. Use it to balance partition count, disk usage, move replicas to new brokers or decomission brokers**
 - [FEATURE] Add rackId config option to consume from brokers that reside in the same rack if possible (rack aware consuming)
 - [FEATURE] You can now select a date/time as the "start offset" when searching for messages.
