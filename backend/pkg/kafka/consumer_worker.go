@@ -13,6 +13,27 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 	defer wg.Done()
 
 	for record := range jobs {
+		// We consume control records because the last message in a partition we expect might be a control record.
+		// We need to acknowledge that we received the message but it is ineligible to be sent to the frontend.
+		// Quit early if it is a control record!
+		isControlRecord := record.Attrs.IsControl()
+		if isControlRecord {
+			topicMessage := &TopicMessage{
+				PartitionID: record.Partition,
+				Offset:      record.Offset,
+				Timestamp:   record.Timestamp.UnixNano() / int64(time.Millisecond),
+				IsMessageOk: false,
+				MessageSize: int64(len(record.Key) + len(record.Value)),
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			case resultsCh <- topicMessage:
+				continue
+			}
+		}
+
 		// Run Interpreter filter and check if message passes the filter
 		deserializedRec := s.Deserializer.DeserializeRecord(record)
 

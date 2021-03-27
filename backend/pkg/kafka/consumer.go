@@ -120,7 +120,7 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	messageCountByPartition := make(map[int32]int64)
 	remainingPartitionRequests := len(consumeRequest.Partitions)
 	for msg := range resultsCh {
-		// todo: Since a 'kafka message' is likely transmitted in compressed batches this is not really accurate
+		// Since a 'kafka message' is likely transmitted in compressed batches this size is not really accurate
 		progress.OnMessageConsumed(msg.MessageSize)
 
 		partitionReq := consumeRequest.Partitions[msg.PartitionID]
