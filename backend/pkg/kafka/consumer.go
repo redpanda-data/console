@@ -39,7 +39,7 @@ type TopicMessage struct {
 	// Below properties are used for the internal communication via Go channels
 	IsMessageOk  bool   `json:"-"`
 	ErrorMessage string `json:"-"`
-	MessageSize  int64  `json:""`
+	MessageSize  int64  `json:"-"`
 }
 
 // MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
