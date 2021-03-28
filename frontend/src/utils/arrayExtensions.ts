@@ -17,15 +17,29 @@ declare global {
         any<T>(this: T[], selector: (x: T) => boolean): boolean;
         all<T>(this: T[], selector: (x: T) => boolean): boolean;
 
+        /** group elements into a Map<> using the given key selector */
         groupBy<T, K>(this: T[], selector: (x: T) => K): Map<K, T[]>;
+        /** groups elements (into an array of groups) using the given key selector */
         groupInto<T, K>(this: T[], selector: (x: T) => K): { key: K, items: T[] }[];
 
+        /** returns a new array containing only distinct elements */
         distinct<T>(this: T[], keySelector?: ((x: T) => any)): T[];
         pushDistinct<T>(this: T[], ...elements: T[]): void;
+
+        /**
+         * returns an array containing all elements that are present in both this and the other array
+         */
         intersection<T>(this: T[], other: T[]): T[];
+
+        /**
+         * returns a copy containing all elements except for those that are also in 'other'
+         */
         except<T>(this: T[], other: T[]): T[];
 
         genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[];
+        /**
+         * Like normal .join() but skips over empty, null, and undefined
+         */
         joinStr(this: (string | null | undefined)[], separator: string): string;
 
         toMap<TItem, TKey, TValue>(this: TItem[], computeKey: (item: TItem) => TKey, computeValue: (item: TItem) => TValue): Map<TKey, TValue>;
@@ -161,10 +175,10 @@ Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: 
 };
 
 Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): T[] {
-    const set = new Set<T>(this);
+    const thisSet = new Set<T>(this);
     const results: T[] = [];
     for (const e of other)
-        if (set.has(e))
+        if (thisSet.has(e))
             results.push(e);
     return results;
 };

@@ -9,8 +9,9 @@ const settingsName = 'uiSettings-v3';
 
 
 export interface PreviewTag {
-    value: string;
-    active: boolean;
+    id: string;
+    isActive: boolean;
+    text: string;
 }
 
 export interface ColumnList {

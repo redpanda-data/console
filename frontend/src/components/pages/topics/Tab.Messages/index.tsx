@@ -1,6 +1,6 @@
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
-import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
-import { Alert, AutoComplete, Button, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu, message, Modal, Popover, Radio, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
+import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, ThreeBarsIcon, XCircleIcon } from '@primer/octicons-v2-react';
+import { Alert, AutoComplete, Button, Checkbox, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu, message, Modal, Popover, Radio, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -13,7 +13,7 @@ import "prismjs/components/prism-js-extras";
 import 'prismjs/prism.js';
 import 'prismjs/themes/prism.css';
 import queryString from 'query-string';
-import React, { Component, ReactNode } from "react";
+import React, { Component, CSSProperties, ReactNode } from "react";
 import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
@@ -29,7 +29,7 @@ import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
 import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { bindObjectToUrl, cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
+import { bindObjectToUrl, cullText, findElementDeep, getAllMessageKeys, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
 import { clone, toJson } from "../../../../utils/jsonUtils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
@@ -38,7 +38,9 @@ import styles from './styles.module.scss';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
 import { MarkGithubIcon } from '@primer/octicons-react';
+import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import * as moment from 'moment';
+
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -53,9 +55,12 @@ const InputGroup = Input.Group;
 @observer
 export class TopicMessageView extends Component<{ topic: Topic }> {
 
-    @observable previewDisplay: string[] = [];
-    @observable allCurrentKeys: string[] = [];
     @observable showPreviewSettings = false;
+    @observable previewDisplay: string[] = [];
+    // @observable allCurrentKeys: string[];
+
+
+
     @observable showColumnSettings = false;
 
     @observable fetchError = null as Error | null;
@@ -343,8 +348,8 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     }
 
     @computed
-    get activeTags() {
-        return uiState.topicSettings.previewTags.filter(t => t.active).map(t => t.value);
+    get activePreviewTags(): PreviewTag[] {
+        return uiState.topicSettings.previewTags.filter(t => t.isActive);
     }
 
     MessageTable = observer(() => {
@@ -364,7 +369,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                     <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                     <span style={{ marginLeft: '.3em', fontSize: '85%' }}>Preview</span>
                     {(() => {
-                        const count = uiState.topicSettings.previewTags.sum(t => t.active ? 1 : 0);
+                        const count = uiState.topicSettings.previewTags.sum(t => t.isActive ? 1 : 0);
                         if (count > 0)
                             return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>
                         return <></>;
@@ -401,7 +406,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                 dataIndex: 'value',
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
-                render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activeTags} />,
+                render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
@@ -493,10 +498,10 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
                 {
                     (this.messageSource?.data?.length > 0) &&
-                    <PreviewSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showPreviewSettings} setShowDialog={s => this.showPreviewSettings = s} />
+                    <PreviewSettings getShowDialog={() => this.showPreviewSettings} setShowDialog={s => this.showPreviewSettings = s} />
                 }
 
-                <ColumnSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
+                <ColumnSettings getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
 
 
             </ConfigProvider>
@@ -846,11 +851,11 @@ class DateTimePickerExtraFooter extends Component {
 
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => string[] }> {
+class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTag[] }> {
     render() {
         const msg = this.props.msg;
         const value = msg.value.payload;
-        const fields = this.props.previewFields();
+
 
         try {
             let text: ReactNode = <></>;
@@ -867,33 +872,44 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 // Binary data is displayed as hex dump
                 text = msg.valueBinHexPreview;
             }
-            else if (fields.length > 0) {
-                // Json!
-                // Construct our preview object
-                const previewObj: any = {};
-                const searchOptions = { caseSensitive: uiState.topicSettings.previewTagsCaseSensitive, returnFirstResult: uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst' };
-                for (let f of fields) {
-                    const results = findElementDeep(value, f, searchOptions);
-
-                    if (results.length > 0) {
-                        const propName = (!searchOptions.returnFirstResult && uiState.topicSettings.previewShowResultCount)
-                            ? `${results[0].propertyName}(${results.length})`
-                            : results[0].propertyName;
-
-                        if (results.length == 1 || searchOptions.returnFirstResult)
-                            previewObj[propName] = results[0].value; // show only first value
-                        else
-                            previewObj[propName] = results.map(r => r.value); // show array of all found values
-                    }
-                }
-
-                // text = cullText(JSON.stringify(value), 100);
-                // text = JSON.stringify(previewObj, undefined, 2)
-                text = JSON.stringify(previewObj, undefined, 4).removePrefix('{').removeSuffix('}').trim();
-            }
             else {
-                // Normal display (json, no filters). Just stringify the whole object
-                text = cullText(JSON.stringify(value), 100);
+                const previewTags = this.props.previewFields();
+                if (previewTags.length > 0) {
+                    // Json!
+                    // Construct our preview object
+                    const previewObj: any = {};
+                    const searchOptions = {
+                        caseSensitive: uiState.topicSettings.previewTagsCaseSensitive,
+                        returnFirstResult: uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst'
+                    };
+
+                    const tags = getPreviewTags(value, previewTags);
+                    text = <span className='cellDiv fade' style={{ fontSize: '95%' }}>
+                        <div style={{ display: 'inline-flex', gap: '16px' }}>
+                            {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
+                        </div>
+                    </span>
+                    return text;
+
+                    // for (let f of previewTags) {
+                    //     const results = findElementDeep(value, f, searchOptions);
+
+                    //     if (results.length > 0) {
+                    //         const propName = (!searchOptions.returnFirstResult && uiState.topicSettings.previewShowResultCount)
+                    //             ? `${results[0].propertyName}(${results.length})`
+                    //             : results[0].propertyName;
+
+                    //         if (results.length == 1 || searchOptions.returnFirstResult)
+                    //             previewObj[propName] = results[0].value; // show only first value
+                    //         else
+                    //             previewObj[propName] = results.map(r => r.value); // show array of all found values
+                    //     }
+                    // }
+                }
+                else {
+                    // Normal display (json, no filters). Just stringify the whole object
+                    text = cullText(JSON.stringify(value), 100);
+                }
             }
 
             return <code><span className='cellDiv' style={{ fontSize: '95%' }}>{text}</span></code>
@@ -1053,74 +1069,9 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
     </div>
 });
 
-@observer
-class PreviewSettings extends Component<{ allCurrentKeys: string[], getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
-    render() {
-
-        const content = <>
-            <Paragraph>
-                <Text>
-                    When viewing large messages we're often only interested in a few specific fields.
-                            To make the preview more helpful, add all the json keys you want to see.<br />
-                            Click on an existing tag to toggle it on/off, or <b>x</b> to remove it.<br />
-                </Text>
-            </Paragraph>
-            <div style={{ padding: '1.5em 1em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px' }}>
-                <CustomTagList tags={uiState.topicSettings.previewTags} allCurrentKeys={this.props.allCurrentKeys} />
-            </div>
-            <div style={{ marginTop: '1em' }}>
-                <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
-                <Space size='large'>
-                    <OptionGroup label='Matching' options={{ 'Ignore Case': false, 'Case Sensitive': true }}
-                        value={uiState.topicSettings.previewTagsCaseSensitive}
-                        onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
-                    />
-                    <OptionGroup label='Multiple Results' options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
-                        value={uiState.topicSettings.previewMultiResultMode}
-                        onChange={e => uiState.topicSettings.previewMultiResultMode = e}
-                    />
-                    {uiState.topicSettings.previewMultiResultMode == 'showAll' &&
-                        <OptionGroup label='Result Count' options={{ 'Hide': false, 'As part of name': true }}
-                            value={uiState.topicSettings.previewShowResultCount}
-                            onChange={e => uiState.topicSettings.previewShowResultCount = e}
-                        />
-                    }
-                </Space>
-                {
-                    // - Show Empty Messages: when unchecked, and the field-filters don't find anything, the whole message will be hidden instead of showing an empty "{}"
-                    // - JS filters! You get a small textbox where you can type in something like those examples:
-                    //     Example 1 | // if the name matches, show this prop in the preview
-                    //               | if (prop.key == 'name') show(prop)
-
-                    // - JS filters could also be submitted to the backend, so it can do the filtering there already
-                }
-                {
-                    // <Checkbox
-                    //     checked={uiSettings.topicList.previewShowEmptyMessages}
-                    //     onChange={e => uiSettings.topicList.previewShowEmptyMessages = e.target.checked}
-                    // >Show Empty Messages</Checkbox>
-                }
-            </div>
-        </>
-
-        return <Modal
-            title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
-            visible={this.props.getShowDialog()}
-            onOk={() => this.props.setShowDialog(false)}
-            onCancel={() => this.props.setShowDialog(false)}
-            width={750}
-            okText='Close'
-            cancelButtonProps={{ style: { display: 'none' } }}
-            closable={false}
-            maskClosable={true}
-        >
-            {content}
-        </Modal>;
-    }
-}
 
 @observer
-class ColumnSettings extends Component<{ allCurrentKeys: string[], getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
+class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
 
     render() {
 
@@ -1208,128 +1159,6 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
                 .filter(columnList => !!columnList) as ColumnList[];
             uiState.topicSettings.previewColumnFields = columnsSelected;
         }
-    }
-}
-
-@observer
-class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: string[] }> {
-    @observable inputVisible = false;
-    @observable inputValue = '';
-
-    @observable activeTags: string[] = [];
-
-    render() {
-
-        const tagSuggestions = this.props.allCurrentKeys.filter(k => this.props.tags.all(t => t.value != k));
-        console.log('tag suggestions', this.props.allCurrentKeys)
-
-        return <>
-            <AnimatePresence>
-                <MotionDiv positionTransition>
-
-                    {this.props.tags.map(v => <CustomTag key={v.value} tag={v} tagList={this} />)}
-
-                    {this.inputVisible &&
-                        <motion.span positionTransition>
-                            {/* <Input
-                                ref={r => { if (r) { r.focus(); } }}
-                                type="text"
-                                size="small"
-                                style={{ width: 78 }}
-                                value={this.inputValue}
-                                onChange={e => this.inputValue = e.target.value}
-                                onBlur={this.handleInputConfirm}
-                                onPressEnter={this.handleInputConfirm}
-                            /> */}
-                            <span onKeyDown={e => {
-                                if (e.key == 'Enter') this.handleInputConfirm();
-                                if (e.key == 'Escape') { this.inputValue = ''; this.handleInputConfirm(); }
-                            }}>
-                                <AutoComplete
-                                    ref={r => { if (r) { r.focus(); } }}
-                                    options={tagSuggestions.map(t => ({ label: t, value: t }))}
-                                    size="small"
-                                    style={{ width: 130 }}
-                                    value={this.inputValue}
-                                    onChange={e => this.inputValue = e.toString()}
-                                    onBlur={() => { this.handleInputConfirm(); }}
-                                    filterOption={true}
-                                />
-                            </span>
-
-                        </motion.span>
-                    }
-
-                    {!this.inputVisible &&
-                        <motion.span positionTransition>
-                            <Button onClick={() => this.inputVisible = true} size='small' type='dashed'>
-                                <PlusOutlined style={{ color: '#999' }} />
-                                <>Add Preview</>
-                            </Button>
-                        </motion.span>
-                    }
-
-                    <br />
-
-                    {/* <Select<string> mode='tags'
-                        style={{ minWidth: '26em' }} size='large'
-                        placeholder='Enter properties for preview'
-                    >
-                        {tagSuggestions.map(k =>
-                            <Select.Option key={k} value={k}>{k}</Select.Option>
-                        )}
-                    </Select> */}
-
-                </MotionDiv>
-            </AnimatePresence>
-        </>
-    }
-
-    handleInputConfirm = () => {
-        const tags = this.props.tags;
-        const newTag = this.inputValue;
-        if (newTag && tags.all(t => t.value != newTag)) {
-            tags.push({ value: newTag, active: true });
-        }
-        this.inputVisible = false;
-        this.inputValue = '';
-    };
-
-    get tags(): PreviewTag[] { return this.props.tags; }
-    get tagNames(): string[] { return this.props.tags.map(t => t.value); }
-    get activeTagNames(): string[] { return this.props.tags.filter(t => t.active).map(t => t.value); }
-
-    setTagActive(tag: string, isActive: boolean) {
-        if (!isActive) {
-            this.activeTags.remove(tag);
-        } else {
-            this.activeTags.push(tag);
-        }
-    }
-
-    removeTag(tag: string) {
-        this.props.tags.removeAll(t => t.value === tag);
-    }
-}
-
-@observer
-class CustomTag extends Component<{ tag: PreviewTag, tagList: CustomTagList }> {
-    @observable isActive = false;
-
-    render() {
-        const tag = this.props.tag;
-        const list = this.props.tagList;
-        const value = tag.value;
-
-        return <motion.span>
-            <Tag
-                color={tag.active ? 'blue' : undefined}
-                key={value}
-                onClick={() => tag.active = !tag.active}
-                closable
-                onClose={() => list.removeTag(value)}
-            >{value}</Tag>
-        </motion.span>
     }
 }
 
