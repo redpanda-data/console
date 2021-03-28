@@ -65,7 +65,6 @@ class TopicList extends PageComponent {
 
     render() {
         if (!api.topics) return DefaultSkeleton;
-        if (api.topics.length == 0) return <Empty />;
 
         const topics = this.getTopics();
 
