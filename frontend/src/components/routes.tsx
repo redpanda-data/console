@@ -203,22 +203,22 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 //
 export const APP_ROUTES: IRouteEntry[] = [
 
-    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span role='img' className='anticon'><DatabaseIcon /></span>),
+    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span className='menuIcon anticon'><DatabaseIcon /></span>),
 
-    MakeRoute<{}>('/topics', TopicList, 'Topics', <span role='img' className='anticon'><RepoIcon /></span>),
+    MakeRoute<{}>('/topics', TopicList, 'Topics', <span className='menuIcon anticon'><RepoIcon /></span>),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
-    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span role='img' className='anticon'><ChipIcon /></span>),
+    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span className='menuIcon anticon'><ChipIcon /></span>),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-    MakeRoute<{}>('/acls', AclList, 'ACLs', <span role='img' className='anticon'><ShieldLockIcon /></span>, true, () => ({ visible: true, enabled: api.userData?.canListAcls ?? true })),
+    MakeRoute<{}>('/acls', AclList, 'ACLs', <span className='menuIcon anticon'><ShieldLockIcon /></span>, true, () => ({ visible: true, enabled: api.userData?.canListAcls ?? true })),
 
-    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span role='img' className='anticon'><FileCodeIcon /></span>),
+    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span className='menuIcon anticon'><FileCodeIcon /></span>),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
-    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span role='img' className='anticon'><PackageDependentsIcon /></span>),
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className='menuIcon anticon'><PackageDependentsIcon /></span>),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', <span role='img' className='anticon'><ToolsIcon /></span>, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', <span className='menuIcon anticon'><ToolsIcon /></span>, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
 

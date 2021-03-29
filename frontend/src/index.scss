@@ -955,6 +955,7 @@ svg {
 
 .ant-progress-success-bg,
 .ant-progress-bg {
+    // Don't animate progress (looks strange when it goes smoothly from 100% to 0%)
     transition-duration: 0s;
 }
 
@@ -1886,4 +1887,21 @@ tr.inprogress {
 .devOnly {
     padding: 1em;
     background: hsl(53deg, 100%, 80%);
+}
+
+.activeReassignments {
+    .ant-progress-status-active .ant-progress-bg::before {
+        animation: ant-progress-active 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+    }
+}
+
+
+.ant-menu-dark .ant-menu-item-selected .menuIcon {
+    color: hsl(0deg, 0%, 100%);
+}
+
+.menuIcon {
+    display: inline-flex;
+    width: 19px;
+    margin-right: 10px;
 }
