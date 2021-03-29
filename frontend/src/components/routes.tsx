@@ -20,7 +20,8 @@ import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
 import { IsDev } from "../utils/env";
-import { CommentDiscussionIcon, DatabaseIcon, FileCodeIcon, GitCompareIcon, LawIcon, PackageDependenciesIcon, RepoIcon, ShieldLockIcon, ToolsIcon } from "@primer/octicons-v2-react";
+import { ChipIcon } from '@heroicons/react/outline'
+import { DatabaseIcon, FileCodeIcon, RepoIcon, ShieldLockIcon, ToolsIcon } from "@primer/octicons-v2-react";
 import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
 import { PackageDependentsIcon } from "@primer/octicons-react";
 
@@ -207,7 +208,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/topics', TopicList, 'Topics', <span role='img' className='anticon'><RepoIcon /></span>),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
-    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span role='img' className='anticon'><CommentDiscussionIcon /></span>),
+    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span role='img' className='anticon'><ChipIcon /></span>),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
     MakeRoute<{}>('/acls', AclList, 'ACLs', <span role='img' className='anticon'><ShieldLockIcon /></span>, true, () => ({ visible: true, enabled: api.userData?.canListAcls ?? true })),

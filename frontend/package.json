@@ -6,6 +6,7 @@
     "homepage": ".",
     "dependencies": {
         "@ant-design/icons": "^4.1.0",
+        "@heroicons/react": "^1.0.0",
         "@primer/octicons-react": "^10.0.0",
         "@primer/octicons-v2-react": "0.0.0-53e900d",
         "@types/prismjs": "^1.16.1",
