@@ -20,8 +20,7 @@ import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
 import { IsDev } from "../utils/env";
-import { ChipIcon } from '@heroicons/react/outline'
-import { DatabaseIcon, FileCodeIcon, RepoIcon, ShieldLockIcon, ToolsIcon } from "@primer/octicons-v2-react";
+import { AdjustmentsIcon, ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, PuzzleIcon, ShieldCheckIcon } from '@heroicons/react/outline'
 import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
 import { PackageDependentsIcon } from "@primer/octicons-react";
 
@@ -203,22 +202,22 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 //
 export const APP_ROUTES: IRouteEntry[] = [
 
-    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span className='menuIcon anticon'><DatabaseIcon /></span>),
+    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span className='menuIcon anticon'><ChipIcon /></span>),
 
-    MakeRoute<{}>('/topics', TopicList, 'Topics', <span className='menuIcon anticon'><RepoIcon /></span>),
+    MakeRoute<{}>('/topics', TopicList, 'Topics', <span className='menuIcon anticon'><CollectionIcon /></span>),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
-    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span className='menuIcon anticon'><ChipIcon /></span>),
+    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span className='menuIcon anticon'><FilterIcon /></span>),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-    MakeRoute<{}>('/acls', AclList, 'ACLs', <span className='menuIcon anticon'><ShieldLockIcon /></span>, true, () => ({ visible: true, enabled: api.userData?.canListAcls ?? true })),
+    MakeRoute<{}>('/acls', AclList, 'ACLs', <span className='menuIcon anticon'><ShieldCheckIcon /></span>, true, () => ({ visible: true, enabled: api.userData?.canListAcls ?? true })),
 
-    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span className='menuIcon anticon'><FileCodeIcon /></span>),
+    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span className='menuIcon anticon'><CubeTransparentIcon /></span>),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
-    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className='menuIcon anticon'><PackageDependentsIcon /></span>),
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className='menuIcon anticon'><AdjustmentsIcon /></span>),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', <span className='menuIcon anticon'><ToolsIcon /></span>, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', <span className='menuIcon anticon'><CogIcon /></span>, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
 
     //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
 
