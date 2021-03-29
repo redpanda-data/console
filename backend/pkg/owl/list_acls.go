@@ -66,7 +66,6 @@ func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest)
 		overview.ACLs = acls
 		resources[i] = overview
 	}
-	// TODO: Maybe add sorting to ensure consistently sorted results / no flapping?
 
 	return &AclOverview{
 		AclResources:        resources,

@@ -60,7 +60,10 @@ class AclList extends PageComponent {
             ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} />
             : null;
 
-        const resources = this.flatResourceList.filter(this.isFilterMatch); // quick search
+        const resources = this.flatResourceList.filter(this.isFilterMatch)
+            .sort((a, b) => a.resourceName.localeCompare(b.resourceName))
+            .sort((a, b) => a.operation.localeCompare(b.operation))
+            .sort((a, b) => a.principal.localeCompare(b.principal));
 
         const columns: ColumnProps<AclRuleFlat>[] = [
             { width: '120px', title: 'Resource', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
