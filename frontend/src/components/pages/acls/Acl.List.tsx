@@ -50,10 +50,14 @@ class AclList extends PageComponent {
 
     render() {
         if (api.userData != null && !api.userData.canListAcls) return PermissionDenied;
-        if (api.ACLs === undefined) return DefaultSkeleton;
+        if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
 
         const warning = api.ACLs === null
             ? <Alert type="warning" message="You do not have the necessary permissions to view ACLs" showIcon style={{ marginBottom: '1em' }} />
+            : null;
+
+        const noAclAuthorizer = !api.ACLs?.isAuthorizerEnabled
+            ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} />
             : null;
 
         const resources = this.flatResourceList.filter(this.isFilterMatch); // quick search
@@ -81,6 +85,7 @@ class AclList extends PageComponent {
                     <this.SearchControls />
 
                     {warning}
+                    {noAclAuthorizer}
 
                     <Table
                         style={{ margin: '0', padding: '0' }} size={'middle'}
@@ -103,18 +108,18 @@ class AclList extends PageComponent {
 
     @computed get availableResourceTypes(): { value: string, label: string }[] {
         const acls = api.ACLs;
-        if (acls == null) return [];
+        if (acls?.aclResources == null) return [];
         // issue: we can't easily filter by 'resourceType' (because it is a string, and we have to use an enum for requests...)
         // so we have to cheat by building our own list of what types are available
-        const ar = acls.map(res => res.resourceType).distinct().map(str => ({ value: str, label: capitalize(str.toLowerCase()) }));
+        const ar = acls.aclResources.map(res => res.resourceType).distinct().map(str => ({ value: str, label: capitalize(str.toLowerCase()) }));
         ar.unshift({ label: 'Any', value: '' });
         return ar;
     }
 
     @computed get flatResourceList() {
         const acls = api.ACLs;
-        if (acls == null) return [];
-        return acls
+        if (acls?.aclResources == null) return [];
+        return acls.aclResources
             .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
             .map(res => res.acls.map(rule => ({ ...res, ...rule })))
             .flat();

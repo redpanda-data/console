@@ -213,7 +213,7 @@ const apiStore = {
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     topicConsumers: new Map<string, TopicConsumer[]>(),
 
-    ACLs: undefined as AclResource[] | undefined | null,
+    ACLs: undefined as AclResponse | undefined | null,
 
     consumerGroups: null as (GroupDescription[] | null),
 
@@ -465,7 +465,7 @@ const apiStore = {
     refreshAcls(request: AclRequest, force?: boolean) {
         const query = aclRequestToQuery(request);
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
-            .then(v => this.ACLs = v?.aclResources ?? null, addError);
+            .then(v => this.ACLs = v ?? null, addError);
     },
 
     refreshSupportedEndpoints(force?: boolean) {

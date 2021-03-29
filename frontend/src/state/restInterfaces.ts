@@ -470,6 +470,7 @@ export const AclRequestDefault = {
 
 export interface AclResponse {
     aclResources: AclResource[];
+    isAuthorizerEnabled: boolean;
 }
 
 export interface AclResource {
