@@ -227,7 +227,7 @@ export interface Broker {
     brokerId: number;
     logDirSize: number; // bytes of the whole directory
     address: string;
-    rack: string;
+    rack: string | null;
 }
 
 export interface EndpointCompatibilityResponse {
@@ -261,10 +261,6 @@ export interface ClusterInfo {
     brokers: Broker[];
     controllerId: number;
     kafkaVersion: string;
-}
-
-export interface ClusterInfoResponse {
-    clusterInfo: ClusterInfo;
 }
 
 export interface ClusterInfoResponse {
