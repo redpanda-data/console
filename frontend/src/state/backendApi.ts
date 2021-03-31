@@ -405,8 +405,16 @@ const apiStore = {
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
-    refreshPartitionsForAllTopics(force?: boolean) {
-        cachedApiRequest<GetAllPartitionsResponse | null>(`./api/operations/topic-details`, force)
+    refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
+        if (Array.isArray(topics))
+            // sort in order to maximize cache hits (todo: track/cache each topic individually instead)
+            topics = topics.sort().map(t => encodeURIComponent(t));
+
+        const url = topics == 'all'
+            ? `./api/operations/topic-details`
+            : `./api/operations/topic-details?topicNames=${topics.joinStr(",")}`;
+
+        return cachedApiRequest<GetAllPartitionsResponse | null>(url, force)
             .then(response => {
                 if (!response?.topics) return;
                 transaction(() => {
@@ -545,8 +553,8 @@ const apiStore = {
             .catch(addError)
     },
 
-    refreshPartitionReassignments(force?: boolean) {
-        cachedApiRequest<PartitionReassignmentsResponse | null>('./api/operations/reassign-partitions', force)
+    refreshPartitionReassignments(force?: boolean): Promise<void> {
+        return cachedApiRequest<PartitionReassignmentsResponse | null>('./api/operations/reassign-partitions', force)
             .then(v => {
                 if (v === null)
                     this.partitionReassignments = null;

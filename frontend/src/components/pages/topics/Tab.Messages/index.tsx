@@ -105,24 +105,6 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
             })
         }, { name: 'update query string' });
 
-        /*
-        message.config({ top: 8 });
-        const content = <div>
-            <div style={{ minWidth: '300px', lineHeight: 0 }}>
-                <Progress percent={80} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
-            </div>
-            <div style={{ display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' }}>
-                <div>Status</div>
-                <div style={{ marginLeft: 'auto', paddingLeft: '2em' }}>76/200</div>
-            </div>
-        </div>
-        const hide = message.open({ content: content, key: 'messageSearchStatus', icon: <span />, duration: null, type: 'loading' });
-        */
-        //setTimeout(hide, 2000);
-
-        // const searchProgressIndicatorReaction = autorun(() => {
-        // });
-
         this.messageSource.filterText = uiState.topicSettings.quickSearch;
     }
     componentWillUnmount() {
