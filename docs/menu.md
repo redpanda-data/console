@@ -10,3 +10,7 @@
         - [Groups Sync](./authorization/groups-sync.md)
         - [Roles](./authorization/roles.md)
         - [RoleBindings](./authorization/role-bindings.md)
+    - **Provider Setup**
+        - [GitHub](./provider-setup/github.md)
+        - [Google](./provider-setup/google.md)
+        - [Okta](./provider-setup/okta.md)

@@ -63,4 +63,4 @@ mappings:
 
 ### Full configuration
 
-Take a look at the reference config how to configure Protobuf in Kowl: [/docs/config/kowl.yaml](/docs/config/kowl.yaml)
+Take a look at the reference config how to configure Protobuf in Kowl: [/docs/config/kowl.yaml](../config/kowl.yaml)
