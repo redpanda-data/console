@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig
 } from "./restInterfaces";
 import { computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -423,19 +423,32 @@ const apiStore = {
                             console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
                             continue;
                         }
+
+                        let partitionErrors = 0;
+                        let waterMarkErrors = 0;
+
                         // Add some local/cached properties to make working with the data easier
                         for (const p of t.partitions) {
-                            // replicaSize
-                            const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
-                            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
-                            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-
                             // topicName
                             p.topicName = t.topicName;
+
+                            if (p.partitionError) partitionErrors++;
+                            if (p.waterMarksError) waterMarkErrors++;
+                            if (partitionErrors || waterMarkErrors) continue;
+
+                            // replicaSize
+                            const validLogDirs = p.partitionLogDirs.filter(e => !e.error && e.size >= 0);
+                            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
+                            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
                         }
 
-                        // Set partitions
-                        this.topicPartitions.set(t.topicName, t.partitions);
+                        if (partitionErrors == 0 && waterMarkErrors == 0) {
+                            // Set partitions
+                            this.topicPartitions.set(t.topicName, t.partitions);
+                        } else {
+                            console.error(`refreshAllTopicPartitions: response has partition errors (t=${t.topicName} p=${partitionErrors}, w=${waterMarkErrors})`)
+                        }
+
                     }
                 });
             }, addError);
@@ -445,19 +458,30 @@ const apiStore = {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
             .then(response => {
                 if (response?.partitions) {
+                    let partitionErrors = 0, waterMarkErrors = 0;
+
                     // Add some local/cached properties to make working with the data easier
                     for (const p of response.partitions) {
+                        // topicName
+                        p.topicName = topicName;
+
+                        if (p.partitionError) partitionErrors++;
+                        if (p.waterMarksError) waterMarkErrors++;
+                        if (partitionErrors || waterMarkErrors) continue;
+
                         // replicaSize
                         const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
                         const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
                         p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-
-                        // topicName
-                        p.topicName = topicName;
                     }
 
-                    // Set partitions
-                    this.topicPartitions.set(topicName, response.partitions);
+                    if (partitionErrors == 0 && waterMarkErrors == 0) {
+                        // Set partitions
+                        this.topicPartitions.set(topicName, response.partitions);
+                    } else {
+                        console.error(`refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors}, w=${waterMarkErrors})`)
+                    }
+
                 } else {
                     // Set null to indicate that we're not allowed to see the partitions
                     this.topicPartitions.set(topicName, null);
@@ -592,7 +616,93 @@ const apiStore = {
         return data;
     },
 
-    async changeConfig(request: PatchConfigsRequest) {
+
+    async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number): Promise<PatchConfigsResponse> {
+
+        maxBytesPerSecond = Math.ceil(maxBytesPerSecond);
+
+        const configRequest: PatchConfigsRequest = { resources: [] };
+
+        for (const b of brokerIds) {
+            configRequest.resources.push({
+                resourceType: ConfigResourceType.Broker,
+                resourceName: String(b),
+                configs: [
+                    { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                    { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                ]
+            });
+        }
+
+        return await this.changeConfig(configRequest);
+    },
+
+    async setThrottledReplicas(
+        topicReplicas: {
+            topicName: string,
+            leaderReplicas: { brokerId: number, partitionId: number }[],
+            followerReplicas: { brokerId: number, partitionId: number }[]
+        }[]): Promise<PatchConfigsResponse> {
+
+        const configRequest: PatchConfigsRequest = { resources: [] };
+
+        for (const t of topicReplicas) {
+            const res: ResourceConfig = { // Set which topics to throttle
+                resourceType: ConfigResourceType.Topic,
+                resourceName: t.topicName,
+                configs: [],
+            };
+
+            const leaderReplicas = t.leaderReplicas.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
+            res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: leaderReplicas });
+            const followerReplicas = t.followerReplicas.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
+            res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: followerReplicas });
+
+            // individual request for each topic
+            configRequest.resources.push(res);
+        }
+
+        return await this.changeConfig(configRequest);
+    },
+
+    async resetThrottledReplicas(topicNames: string[]): Promise<PatchConfigsResponse> {
+
+        const configRequest: PatchConfigsRequest = { resources: [] };
+
+        // reset throttled replicas for those topics
+        for (const t of topicNames) {
+            configRequest.resources.push({
+                resourceType: ConfigResourceType.Topic,
+                resourceName: t,
+                configs: [
+                    { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
+                    { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete }
+                ],
+            });
+        }
+
+        return await this.changeConfig(configRequest);
+    },
+
+    async resetReplicationThrottleRate(brokerIds: number[]): Promise<PatchConfigsResponse> {
+
+        const configRequest: PatchConfigsRequest = { resources: [] };
+
+        for (const b of brokerIds) {
+            configRequest.resources.push({
+                resourceType: ConfigResourceType.Broker,
+                resourceName: String(b),
+                configs: [
+                    { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                    { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                ]
+            });
+        }
+
+        return await this.changeConfig(configRequest);
+    },
+
+    async changeConfig(request: PatchConfigsRequest): Promise<PatchConfigsResponse> {
         const response = await fetch('./api/operations/configs', {
             method: 'PATCH',
             headers: [

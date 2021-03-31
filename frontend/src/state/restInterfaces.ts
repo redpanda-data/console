@@ -36,22 +36,24 @@ export interface GetTopicsResponse {
 
 export interface Partition {
     id: number;
+
+    // When set, all props from replicas to partitionLogDirs are null
     partitionError: string | null;
     replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
     offlineReplicas: number[] | null;
     inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
     leader: number; // id of the "leader" broker for this partition
-
-    waterMarksError: string | null;
-    waterMarkLow: number;
-    waterMarkHigh: number;
-
     partitionLogDirs: {
         error: string, // empty when no error
         brokerId: number,
         partitionId: number, // redundant?
         size: number, // size (in bytes) of log dir on that broker
     }[];
+
+    // When set, waterMarkLow/High are not set
+    waterMarksError: string | null;
+    waterMarkLow: number;
+    waterMarkHigh: number;
 
     // added by frontend:
     replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause

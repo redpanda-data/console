@@ -26,6 +26,7 @@ import { computeMovedReplicas, partitionSelectionToTopicPartitions } from "./log
 import { IsDev } from "../../../utils/env";
 import { Message } from "../../../utils/utils";
 import { ActiveReassignments } from "./components/ActiveReassignments";
+import { ReassignmentTracker } from "./logic/reassignmentTracker";
 const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
@@ -35,7 +36,6 @@ export interface PartitionSelection { // Which partitions are selected?
 @observer
 class ReassignPartitions extends PageComponent {
     pageConfig = makePaginationConfig(15, true);
-    autorunHandle: IReactionDisposer | undefined = undefined;
 
     @observable currentStep = 0; // current page of the wizard
 
@@ -52,11 +52,9 @@ class ReassignPartitions extends PageComponent {
     @observable _debug_topicPartitions: TopicPartitions[] | null = null;
     @observable _debug_brokers: Broker[] | null = null;
 
-    refreshCurrentReassignmentsTimer: NodeJS.Timeout | null;
+    reassignmentTracker: ReassignmentTracker;
 
     @observable requestInProgress = false;
-
-    autoRefreshInterval = 999999999; //IsDev ? 1500 : 4000;
 
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
@@ -65,33 +63,6 @@ class ReassignPartitions extends PageComponent {
         appGlobal.onRefresh = () => this.refreshData(true);
         this.refreshData(true);
 
-        this.autorunHandle = autorun(() => {
-            if (api.topics != null)
-                api.refreshPartitionsForAllTopics(false);
-        });
-
-        // Debug
-        // const partitionChance = 5 / 100;
-        // autorun(() => {
-        //     if (api.topics != null)
-        //         transaction(() => {
-        //             untracked(() => {
-        //                 // clear
-        //                 for (const t in this.partitionSelection)
-        //                     delete this.partitionSelection[t];
-
-        //                 // select random partitions
-        //                 for (const t of api.topics!)
-        //                     for (let p = 0; p < t.partitionCount; p++) {
-        //                         if (Math.random() < partitionChance) {
-        //                             const partitions = this.partitionSelection[t.topicName] ?? [];
-        //                             partitions.push(p);
-        //                             this.partitionSelection[t.topicName] = partitions;
-        //                         }
-        //                     }
-        //             });
-        //         });
-        // }, { delay: 1000 });
 
         const oriOnNextPage = this.onNextPage.bind(this);
         this.onNextPage = () => transaction(oriOnNextPage);
@@ -100,39 +71,21 @@ class ReassignPartitions extends PageComponent {
         this.onPreviousPage = () => transaction(oriOnPrevPage);
     }
 
+    componentDidMount() {
+        this.reassignmentTracker = new ReassignmentTracker();
+    }
+
     refreshData(force: boolean) {
         api.refreshCluster(force);
-        api.refreshClusterConfig(force);
+        // api.refreshClusterConfig(force);
         api.refreshTopics(force);
-        api.refreshPartitionsForAllTopics(force);
+        api.refreshPartitions('all', force);
         api.refreshPartitionReassignments(force);
     }
 
-    componentDidMount() {
-        this.refreshCurrentReassignmentsTimer = setInterval(() => {
-            if (api.activeRequests.length > 0) return;
-            try {
-                api.refreshPartitionReassignments(true);
-            } catch (err) {
-                console.log("error in partition reassignments auto refresh, stopping refresh");
-                if (this.refreshCurrentReassignmentsTimer) {
-                    clearInterval(this.refreshCurrentReassignmentsTimer);
-                    this.refreshCurrentReassignmentsTimer = null;
-                }
-            }
-        }, this.autoRefreshInterval);
-    }
-
     componentWillUnmount() {
-        if (this.autorunHandle) {
-            this.autorunHandle();
-            this.autorunHandle = undefined;
-        }
-
-        if (this.refreshCurrentReassignmentsTimer !== null) {
-            clearInterval(this.refreshCurrentReassignmentsTimer);
-            this.refreshCurrentReassignmentsTimer = null;
-        }
+        if (this.reassignmentTracker)
+            this.reassignmentTracker.stop();
     }
 
     render() {
@@ -164,7 +117,7 @@ class ReassignPartitions extends PageComponent {
 
                 {/* Active Reassignments */}
                 <Card>
-                    <ActiveReassignments />
+                    {this.reassignmentTracker && <ActiveReassignments tracker={this.reassignmentTracker} />}
                 </Card>
 
                 {/* Content */}
@@ -338,7 +291,7 @@ class ReassignPartitions extends PageComponent {
 
     async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
         if (uiSettings.reassignment.maxReplicationTraffic > 0) {
-            const success = await this.setTrafficLimit(request, false, false);
+            const success = await this.setTrafficLimit(request);
             if (!success) return false;
         }
 
@@ -367,113 +320,88 @@ class ReassignPartitions extends PageComponent {
         return true;
     }
 
-    async setTrafficLimit(request: PartitionReassignmentRequest, useReplicasWildcard: boolean, useBrokerWildcard: boolean): Promise<boolean> {
+    async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
         const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic);
 
-        const configRequest: PatchConfigsRequest = { resources: [] };
-
-        if (useBrokerWildcard) {
-            configRequest.resources.push({
-                resourceType: ConfigResourceType.Broker,
-                resourceName: "", // String(brokerId) // omit = all brokers
-                configs: [
-                    { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                    { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                ]
-            });
-        } else {
-            for (const b of api.clusterInfo!.brokers) {
-                configRequest.resources.push({
-                    resourceType: ConfigResourceType.Broker,
-                    resourceName: String(b.brokerId),
-                    configs: [
-                        { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                        { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                    ]
-                });
-            }
-        }
+        const topicReplicas: {
+            topicName: string,
+            leaderReplicas: { brokerId: number, partitionId: number }[],
+            followerReplicas: { brokerId: number, partitionId: number }[]
+        }[] = [];
 
         for (const t of request.topics) {
             const topicName = t.topicName;
-            const res: ResourceConfig = { // Set which topics to throttle
-                resourceType: ConfigResourceType.Topic,
-                resourceName: t.topicName,
-                configs: [],
-            };
-
-            // Create config for throttling.
-            // [partitionId]:[brokerId],[partitionId]:[brokerId],...
-            const leaderThrottle: { partitionId: number, brokerId: number }[] = [];
-            const followerThrottle: { partitionId: number, brokerId: number }[] = [];
+            const leaderReplicas: { partitionId: number, brokerId: number }[] = [];
+            const followerReplicas: { partitionId: number, brokerId: number }[] = [];
             for (const p of t.partitions) {
                 const partitionId = p.partitionId;
                 const brokersOld = api.topicPartitions?.get(t.topicName)?.first(p => p.id == partitionId)?.replicas;
                 const brokersNew = p.replicas;
 
                 if (brokersOld == null || brokersNew == null) {
-                    console.log("reset traffic limit; skipping partition because old or new brokers can't be found", { topicName, partitionId, brokersOld, brokersNew, });
+                    console.log("traffic limit: skipping partition because old or new brokers can't be found", { topicName, partitionId, brokersOld, brokersNew, });
                     continue;
                 }
 
                 // leader throttling is applied to all sources (all brokers that have a replica of this partition)
                 for (const sourceBroker of brokersOld)
-                    leaderThrottle.push({ partitionId: partitionId, brokerId: sourceBroker });
+                    leaderReplicas.push({ partitionId: partitionId, brokerId: sourceBroker });
 
                 // follower throttling is applied only to target brokers that do not yet have a copy
                 const newBrokers = brokersNew.except(brokersOld);
                 for (const targetBroker of newBrokers)
-                    followerThrottle.push({ partitionId: partitionId, brokerId: targetBroker });
+                    followerReplicas.push({ partitionId: partitionId, brokerId: targetBroker });
             }
 
-            if (useReplicasWildcard) {
-                res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
-                res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
-            } else {
-                const leaderReplicas = leaderThrottle.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
-                res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: leaderReplicas });
-                const followerReplicas = followerThrottle.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
-                res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: followerReplicas });
-            }
-
-            // individual request for each topic
-            configRequest.resources.push(res);
+            topicReplicas.push({
+                topicName: t.topicName,
+                leaderReplicas: leaderReplicas,
+                followerReplicas: followerReplicas,
+            })
         }
 
-        return await this.modifyConfig([configRequest]);
+        const msg = new Message("Setting bandwidth throttle... 1/2");
+        try {
+            let response = await api.setReplicationThrottleRate(api.clusterInfo!.brokers.map(b => b.brokerId), maxBytesPerSecond);
+            let errors = response.patchedConfigs.filter(c => c.error);
+            if (errors.length > 0)
+                throw new Error(toJson(errors));
+
+            msg.setLoading("Setting bandwidth throttle... 2/2");
+
+            response = await api.setThrottledReplicas(topicReplicas);
+            errors = response.patchedConfigs.filter(c => c.error);
+            if (errors.length > 0)
+                throw new Error(toJson(errors));
+
+            msg.setSuccess("Setting bandwidth throttle... done");
+            return true;
+        } catch (err) {
+            msg.hide();
+            console.error("error setting throttle", err);
+            return false;
+        }
     }
 
-    async resetTrafficLimit(request: PartitionReassignmentRequest, useBrokerWildcard: boolean): Promise<boolean> {
-
+    async resetTrafficLimit(topicNames: string[], brokerIds: number[]): Promise<boolean> {
         const configRequest: PatchConfigsRequest = { resources: [] };
 
-        if (useBrokerWildcard) {
+        for (const b of brokerIds) {
             configRequest.resources.push({
                 resourceType: ConfigResourceType.Broker,
-                resourceName: null as any as string, // String(brokerId) // omit = all brokers
+                resourceName: String(b),
                 configs: [
                     { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
                     { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
                 ]
             });
-        } else {
-            for (const b of api.clusterInfo!.brokers) {
-                configRequest.resources.push({
-                    resourceType: ConfigResourceType.Broker,
-                    resourceName: String(b.brokerId),
-                    configs: [
-                        { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                        { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                    ]
-                });
-            }
         }
 
         // reset throttled replicas for those topics
-        for (const t of request.topics) {
+        for (const t of topicNames) {
             configRequest.resources.push({
                 resourceType: ConfigResourceType.Topic,
-                resourceName: t.topicName,
+                resourceName: t,
                 configs: [
                     { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
                     { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete }
@@ -481,32 +409,28 @@ class ReassignPartitions extends PageComponent {
             });
         }
 
-        return await this.modifyConfig([configRequest]);
-    }
-
-    async modifyConfig(requests: PatchConfigsRequest[]): Promise<boolean> {
-
-        const msg = new Message("Modifying config...");
+        const msg = new Message("Resetting bandwidth throttle... 1/2");
         try {
-            for (let i = 0; i < requests.length; i++) {
-                msg.setLoading(`Modifying config... (${i + 1} / ${requests.length})`);
 
-                const changeConfigResponse = await api.changeConfig(requests[i]);
+            let response = await api.resetThrottledReplicas(topicNames);
+            let errors = response.patchedConfigs.filter(c => c.error);
+            if (errors.length > 0)
+                throw new Error(toJson(errors));
 
-                if (changeConfigResponse.patchedConfigs.any(r => r.error != null))
-                    throw new Error("Errors while setting config: " + toJson(changeConfigResponse.patchedConfigs.filter(r => r.error != null)));
-            }
-            msg.setSuccess("Modifying config - done");
+            msg.setLoading("Resetting bandwidth throttle... 2/2");
+
+            response = await api.resetReplicationThrottleRate(brokerIds);
+            errors = response.patchedConfigs.filter(c => c.error);
+            if (errors.length > 0)
+                throw new Error(toJson(errors));
+
+            msg.setSuccess("Resetting bandwidth throttle... done");
+            return true;
         } catch (err) {
-            notification.error({
-                message: "Error setting broker configuration:\n" + String(err),
-                duration: 0, // don't close automatically
-            });
             msg.hide();
+            console.error("error resetting throttle", err);
             return false;
         }
-
-        return true;
     }
 
 
@@ -527,6 +451,7 @@ class ReassignPartitions extends PageComponent {
             api.topicPartitions,
         );
     }
+
 
 }
 export default ReassignPartitions;

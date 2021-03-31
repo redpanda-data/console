@@ -108,7 +108,7 @@ export class StepReview extends Component<{
                         try {
                             const rq = this.props.reassignPartitions.reassignmentRequest;
                             if (rq)
-                                await this.props.reassignPartitions.setTrafficLimit(rq, false, false);
+                                await this.props.reassignPartitions.setTrafficLimit(rq);
                         } finally { this.requestInProgress = false; }
                     }}>Set throttle config</Button>
 
@@ -119,7 +119,7 @@ export class StepReview extends Component<{
                         try {
                             const rq = this.props.reassignPartitions.reassignmentRequest;
                             if (rq)
-                                await this.props.reassignPartitions.resetTrafficLimit(rq, false);
+                                await this.props.reassignPartitions.resetTrafficLimit(rq.topics.map(t => t.topicName), api.clusterInfo!.brokers.map(b => b.brokerId));
                         } finally { this.requestInProgress = false; }
                     }}>Reset throttle config</Button>
             </div>
