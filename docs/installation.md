@@ -20,7 +20,8 @@ We do not provide any precompiled binaries as of now. For Kowl you can obviously
 Kowl Business supports Authentication and Authorization. In order to configure OAuth you first must setup the OAuth application in your desired identity provider:
 
 - [Google OAuth setup](./provider-setup/google.md#google-oauth-provider-setup)
-- GitHub OAuth setup (TODO)
+- [GitHub OAuth setup](./provider-setup/github.md#github-oauth-provider-setup)
+- [Okta OAuth setup](./provider-setup/okta.md#okta-oidc-provider-setup)
 
 ## Deployment
 
