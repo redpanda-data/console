@@ -560,8 +560,9 @@ export type TopicAssignment = {
         // Since the replicationFactor of a partition tells us the total number
         // of 'instances' of a partition (leader + follower replicas) the length of the array is always 'replicationFactor'.
         // The first entry in the array is the brokerId that will host the leader replica
-        // can also be null to cancel a pending reassignment.
         // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
+        //
+        // Can also be null to cancel a pending reassignment.
     }[];
 };
 

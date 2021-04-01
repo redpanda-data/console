@@ -9,7 +9,7 @@ import { makePaginationConfig, sortField } from "../../../misc/common";
 import { uiSettings } from "../../../../state/ui";
 import { ColumnProps } from "antd/lib/table";
 import { TopicWithPartitions } from "../Step1.Partitions";
-import { prettyBytesOrNA, prettyMilliseconds } from "../../../../utils/utils";
+import { Message, prettyBytesOrNA, prettyMilliseconds } from "../../../../utils/utils";
 import { BrokerList } from "./BrokerList";
 import { ReassignmentState, ReassignmentTracker } from "../logic/reassignmentTracker";
 import { observer } from "mobx-react";
@@ -268,17 +268,52 @@ export class ReassignmentDetailsModal extends Component<{ state: ReassignmentSta
 
     applyBandwidthThrottle() {
         const state = this.props.state;
-        if (state)
-            api.setThrottledReplicas([{
-                topicName: state.topicName,
-                leaderReplicas: [],
-                followerReplicas: [],
-            }])
+        if (state == null) {
+            console.error("apply bandwidth throttle: this.props.state is null");
+            return;
+        }
+
+        api.setThrottledReplicas([{
+            topicName: state.topicName,
+            leaderReplicas: [],
+            followerReplicas: [],
+        }])
         this.props.onClose();
     }
 
-    cancelReassignment() {
+    async cancelReassignment() {
+        const state = this.props.state;
+        if (state == null) {
+            console.error("cancel reassignment: this.props.state is null");
+            return;
+        }
 
+        const partitions = state.partitions.map(p => p.partitionId);
+
+        const msg = new Message(`Cancelling reassignment of '${state.topicName}'...`);
+        try {
+            const cancelRequest = {
+                topics: [
+                    {
+                        topicName: state.topicName,
+                        partitions: partitions.map(p => ({
+                            partitionId: p,
+                            replicas: null, // cancel
+                        })),
+                    }
+                ]
+            };
+            const response = await api.startPartitionReassignment(cancelRequest);
+
+            console.log('cancel reassignment result', { request: cancelRequest, response: response });
+
+            msg.setSuccess();
+            this.props.onClose();
+        }
+        catch (err) {
+            console.error("cancel reassignment: " + String(err));
+            msg.setError();
+        }
     }
 }
 
