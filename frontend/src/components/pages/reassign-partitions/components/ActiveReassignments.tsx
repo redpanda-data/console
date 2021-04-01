@@ -1,5 +1,5 @@
 import React, { Component, useState } from "react";
-import { Tag, Popover, Tooltip, ConfigProvider, Table, Progress, Button, Modal, Slider, Popconfirm } from "antd";
+import { Tag, Popover, Tooltip, ConfigProvider, Table, Progress, Button, Modal, Slider, Popconfirm, Checkbox } from "antd";
 import { LazyMap } from "../../../../utils/LazyMap";
 import { Broker, Partition, PartitionReassignmentsPartition } from "../../../../state/restInterfaces";
 import { api, brokerMap } from "../../../../state/backendApi";
@@ -14,6 +14,7 @@ import { BrokerList } from "./BrokerList";
 import { ReassignmentState, ReassignmentTracker } from "../logic/reassignmentTracker";
 import { observer } from "mobx-react";
 import { EllipsisOutlined } from "@ant-design/icons";
+import { strictEqual } from "assert";
 
 
 @observer
@@ -22,9 +23,9 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
 
     // When set, a modal will be shown for the reassignment state
     @observable reassignmentDetails: ReassignmentState | null = null;
+    @observable showThrottleDialog = false;
 
     render() {
-
         const columnsActiveReassignments: ColumnProps<ReassignmentState>[] = [
             {
                 title: 'Topic', width: '1%',
@@ -42,7 +43,7 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
                 }
             },
             {
-                title: 'ETA', width: '170px',
+                title: 'ETA', width: '100px', align: 'right',
                 render: (v, t) => <ETACol state={t} />,
                 sorter: (a, b) => {
                     if (a.estimateCompletionTime == null && b.estimateCompletionTime != null) return 1;
@@ -58,8 +59,26 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
             },
         ];
 
+        const minThrottle = this.minThrottle;
+        const throttleText = minThrottle === undefined
+            ? <>Set Throttle</>
+            : <>Throttle: {prettyBytesOrNA(minThrottle)}/s</>
+
         return <>
-            <h3 style={{ marginLeft: '.2em' }}>Current Reassignments</h3>
+            <div style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
+                <span style={{
+                    fontSize: '1.17em', fontWeight: 500, color: 'hsl(0deg, 0%, 0%, 85%)',
+                    marginLeft: '.2em', paddingBottom: '2px'
+                }}
+                >Current Reassignments
+                </span>
+
+                {this.props.tracker.trackingReassignments.length > 0 &&
+                    <Button type='link' onClick={() => this.showThrottleDialog = true}
+                        style={{ fontSize: 'smaller' }}
+                    >{throttleText}</Button>
+                }
+            </div>
             <ConfigProvider renderEmpty={() =>
                 <div style={{ color: '#00000059', margin: '.4em 0' }}>No reassignments currently in progress</div>
             }>
@@ -84,15 +103,11 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
                         this.pageConfig.current = p.current;
                         this.pageConfig.pageSize = p.pageSize;
                     }}
-
-                // expandable={{
-                //     expandIconColumnIndex: 1,
-                //     expandedRowRender: topic => <></>,
-                // }}
                 />
 
             </ConfigProvider>
             <ReassignmentDetailsModal state={this.reassignmentDetails} onClose={() => this.reassignmentDetails = null} />
+            <ThrottleDialog visible={this.showThrottleDialog} onClose={() => this.showThrottleDialog = false} />
         </>
     }
 
@@ -111,28 +126,47 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
         const current = api.partitionReassignments ?? [];
         return current.toMap(x => x.topicName, x => x.partitions);
     }
+
+    @computed get throttleSettings(): ({ followerThrottle: number | undefined, leaderThrottle: number | undefined }) {
+        const leaderThrottle = api.clusterConfig?.brokerConfigs
+            .flatMap(c => c.configEntries)
+            .first(e => e.name == 'leader.replication.throttled.rate');
+        const followerThrottle = api.clusterConfig?.brokerConfigs
+            .flatMap(c => c.configEntries)
+            .first(e => e.name == 'follower.replication.throttled.rate');
+
+
+        const result = {
+            leaderThrottle: leaderThrottle ? Number(leaderThrottle.value) : undefined,
+            followerThrottle: followerThrottle ? Number(followerThrottle.value) : undefined
+        };
+
+        return result;
+    }
+
+    @computed get minThrottle(): number | undefined {
+        const t = this.throttleSettings;
+        if (t.followerThrottle !== undefined || t.leaderThrottle !== undefined)
+            return Math.min(
+                t.followerThrottle ?? Number.POSITIVE_INFINITY,
+                t.leaderThrottle ?? Number.POSITIVE_INFINITY
+            );
+
+        return undefined;
+    }
 }
 
 
 @observer
-export class ReassignmentDetailsModal extends Component<{ state: ReassignmentState | null, onClose: () => void }> {
-    lastState: ReassignmentState | null;
+export class ThrottleDialog extends Component<{ visible: boolean, onClose: () => void }> {
+    @observable newThrottleValue: number = 0;
 
     render() {
-        const state = this.lastState ?? this.props.state;
-        if (state == null) return null;
-        const visible = this.props.state != null;
-        if (this.lastState != state) this.lastState = state;
-
-        const settings = uiSettings.reassignment;
-
         return <Modal
-            title={"Reassignment: " + state.topicName}
-            visible={visible}
-            okButtonProps={{ style: { display: 'none' } }}
-            cancelText="Close"
+            title="Throttle Settings"
+            visible={this.props.visible} maskClosable={true}
             onCancel={this.props.onClose}
-            maskClosable={true}
+            onOk={() => this.applyBandwidthThrottle()}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3em', }}>
 
@@ -141,25 +175,80 @@ export class ReassignmentDetailsModal extends Component<{ state: ReassignmentSta
                         min={2} max={12} step={0.1}
                         marks={{ 2: "Off", 3: "1kB", 6: "1MB", 9: "1GB", 12: "1TB", }}
                         included={true}
-                        tipFormatter={f => settings.maxReplicationTraffic < 1000
+                        tipFormatter={f => this.newThrottleValue < 1000
                             ? 'No limit'
-                            : prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'}
+                            : prettyBytesOrNA(this.newThrottleValue) + '/s'}
 
-                        value={Math.log10(settings.maxReplicationTraffic)}
+                        value={Math.log10(this.newThrottleValue)}
                         onChange={sv => {
                             const n = Number(sv.valueOf());
                             const newLimit = Math.pow(10, n);
                             if (newLimit >= 1000) {
-                                settings.maxReplicationTraffic = newLimit;
+                                this.newThrottleValue = newLimit;
                             }
                             else {
                                 if (newLimit < 500)
-                                    settings.maxReplicationTraffic = 0;
-                                else settings.maxReplicationTraffic = 1000;
+                                    this.newThrottleValue = 0;
+                                else this.newThrottleValue = 1000;
                             }
                         }}
                     />
-                    <Button type='primary' onClick={() => this.applyBandwidthThrottle()}>Apply</Button>
+                </div>
+
+                <div>
+                    - current leader/follower throttle
+                    -
+                </div>
+
+                <Button type='default' onClick={() => this.applyBandwidthThrottle()}>Remove Bandwidth Throttle</Button>
+            </div>
+
+        </Modal>
+    }
+
+    applyBandwidthThrottle() {
+
+    }
+
+    resetBandwidthThrottle() {
+        //resetTrafficLimit(rq.topics.map(t => t.topicName), api.clusterInfo!.brokers.map(b => b.brokerId));
+    }
+}
+
+
+@observer
+export class ReassignmentDetailsModal extends Component<{ state: ReassignmentState | null, onClose: () => void }> {
+    lastState: ReassignmentState | null;
+    @observable shouldThrottle = false;
+
+
+    render() {
+        const state = this.lastState ?? this.props.state;
+        if (state == null) return null;
+        const visible = this.props.state != null;
+        if (this.lastState != state) {
+            this.lastState = state;
+            setImmediate(() => { this.shouldThrottle = this.isThrottled() })
+        }
+
+        const settings = uiSettings.reassignment;
+
+        return <Modal
+            title={"Reassignment: " + state.topicName}
+            visible={visible}
+            onOk={() => this.applyBandwidthThrottle()}
+            onCancel={this.props.onClose}
+            maskClosable={true}
+        >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3em', }}>
+
+                <div style={{ display: 'flex', gap: '1em' }}>
+                    <Checkbox checked={this.shouldThrottle} onChange={e => this.shouldThrottle = e.target.checked}>
+                        <div>
+                            <span>Throttle Reassignment</span>
+                            <span style={{ fontSize: 'smaller', opacity: '0.6' }}>Using global throttle limit for all replication traffic</span>
+                        </div>
+                    </Checkbox>
                 </div>
 
                 <Popconfirm title="Are you sure you want to stop the reassignment?" okText="Yes" cancelText="No"
@@ -173,12 +262,19 @@ export class ReassignmentDetailsModal extends Component<{ state: ReassignmentSta
         </Modal>
     }
 
-    applyBandwidthThrottle() {
-
+    isThrottled(): boolean {
+        return true; // todo
     }
 
-    resetBandwidthThrottle() {
-        //resetTrafficLimit(rq.topics.map(t => t.topicName), api.clusterInfo!.brokers.map(b => b.brokerId));
+    applyBandwidthThrottle() {
+        const state = this.props.state;
+        if (state)
+            api.setThrottledReplicas([{
+                topicName: state.topicName,
+                leaderReplicas: [],
+                followerReplicas: [],
+            }])
+        this.props.onClose();
     }
 
     cancelReassignment() {
@@ -215,8 +311,15 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
         } else if (state.progressPercent < 100) {
             // Progressing
             progressBar = <ProgressBar percent={state.progressPercent} state='active'
-                left={state.progressPercent.toFixed(1) + '%'}
-                right={<>{prettyBytesOrNA(transferred)} / {prettyBytesOrNA(state.totalTransferSize)}</>} />
+                left={<span>{state.progressPercent.toFixed(1) + '%'}</span>}
+                right={<>
+                    {state.estimateSpeed != null &&
+                        <span style={{ paddingRight: '1em', opacity: '0.6' }}>({prettyBytesOrNA(state.estimateSpeed)}/s)</span>
+                    }
+                    <span>
+                        {prettyBytesOrNA(transferred)} / {prettyBytesOrNA(state.totalTransferSize)}
+                    </span>
+                </>} />
         } else {
             // Completed
             progressBar = <ProgressBar percent={100} state='success'
@@ -243,17 +346,9 @@ export class ETACol extends Component<{ state: ReassignmentState }> {
 
         const remainingMs = state.estimateCompletionTime.getTime() - new Date().getTime();
 
-        const bps = state.estimateSpeed > 0
-            ? prettyBytesOrNA(state.estimateSpeed) + "/s"
-            : '-';
-        return <>
-            <span style={{ marginRight: '1em' }}>
-                {prettyMilliseconds(remainingMs, { secondsDecimalDigits: 0, unitCount: 2 })}
-            </span>
-            <span>
-                ({bps})
-            </span>
-        </>
+        return <span >
+            {prettyMilliseconds(remainingMs, { secondsDecimalDigits: 0, unitCount: 2 })}
+        </span>
 
     }
 }

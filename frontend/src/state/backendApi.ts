@@ -616,7 +616,6 @@ const apiStore = {
         return data;
     },
 
-
     async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number): Promise<PatchConfigsResponse> {
 
         maxBytesPerSecond = Math.ceil(maxBytesPerSecond);

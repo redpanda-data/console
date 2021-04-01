@@ -1158,10 +1158,10 @@ const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): Re
 const helpEntries = [
     makeHelpEntry('Basics', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
         <li>The filter code is a javascript function body (click 'parameters' to see what arguments are available)</li>
-        <li>Return true to allow a message, Return false to discard the message</li>
-        <li>The context is re-used between messages, but every partition has its own context</li>
+        <li>Return true to allow a message, return false to discard the message.</li>
         <li>You can omit the 'return' keyword if your filter is just an 'expression'</li>
-        <li>Multiple filters are combined with 'and'. Meaning that ALL filters have to return true for the message to pass.</li>
+        <li>If you have multiple active filters, they're combined with 'and'. Meaning that ALL filters a message is tested on must return true for it to be passed to the frontend.</li>
+        <li>The context is re-used between messages, but every partition has its own context</li>
     </ul>),
     makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
         <li><span className='codeBox'>offset</span> (number)</li>
@@ -1171,6 +1171,7 @@ const helpEntries = [
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>offset &gt; 10000</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>value != null</span> Skips tombstone messages</li>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>if (key == 'example') return true</span></li>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
         <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} loading='lazy' /></div></li>
