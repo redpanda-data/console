@@ -4,6 +4,7 @@
 - **Features**
     - [Hosting](./features/hosting.md)
     - [Topic Documentation](./features/topic-documentation.md)
+    - [Protobuf](./features/protobuf.md)
 - **Kowl Business**
     - [Authentication](./authentication/authentication.md)
     - **Authorization**
