@@ -13,6 +13,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kbin"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/vmihailenco/msgpack"
 
 	xj "github.com/basgys/goxml2json"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
@@ -35,6 +36,7 @@ const (
 	messageEncodingText            messageEncoding = "text"
 	messageEncodingConsumerOffsets messageEncoding = "consumerOffsets"
 	messageEncodingBinary          messageEncoding = "binary"
+	messageEncodingMsgP            messageEncoding = "msgpack"
 )
 
 // normalizedPayload is a wrapper of the original message with the purpose of having a custom JSON marshal method
@@ -199,6 +201,19 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 			Payload:            payload,
 			RecognizedEncoding: messageEncodingText,
 		}, Object: string(payload), RecognizedEncoding: messageEncodingText, Size: len(payload)}
+	}
+
+	// 6. Test for msgp
+	var obj interface{}
+	err := msgpack.Unmarshal(payload, &obj)
+	if err == nil {
+		data, err := json.Marshal(obj)
+		if err == nil {
+			return &deserializedPayload{Payload: normalizedPayload{
+				Payload:            data,
+				RecognizedEncoding: messageEncodingMsgP,
+			}, Object: string(payload), RecognizedEncoding: messageEncodingMsgP, Size: len(payload)}
+		}
 	}
 
 	// Anything else is considered as binary content
