@@ -6,12 +6,13 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"unicode/utf8"
+
 	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/twmb/franz-go/pkg/kbin"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"strings"
-	"unicode/utf8"
 
 	xj "github.com/basgys/goxml2json"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
@@ -107,7 +108,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		return &deserializedPayload{Payload: normalizedPayload{
 			Payload:            payload,
 			RecognizedEncoding: messageEncodingNone,
-		}, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(payload)}
+		}, Object: nil, RecognizedEncoding: messageEncodingNone, Size: len(payload)}
 	}
 
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
