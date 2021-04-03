@@ -70,4 +70,5 @@ func (c *Config) SetDefaults() {
 
 	c.SASL.SetDefaults()
 	c.Protobuf.SetDefaults()
+	c.MessagePack.SetDefaults()
 }
