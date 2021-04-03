@@ -28,8 +28,8 @@ import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
-import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { bindObjectToUrl, cullText, findElementDeep, getAllMessageKeys, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
+import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
+import { cullText, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
 import { clone, toJson } from "../../../../utils/jsonUtils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
@@ -37,7 +37,6 @@ import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
 import styles from './styles.module.scss';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
-import { MarkGithubIcon } from '@primer/octicons-react';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import * as moment from 'moment';
 
@@ -838,23 +837,29 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
         const msg = this.props.msg;
         const value = msg.value.payload;
 
+        const isPrimitive =
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean';
 
         try {
             let text: ReactNode = <></>;
 
-            if (!value || msg.isValueNull) {
+            if (value === null || value === undefined || msg.isValueNull) {
                 // null: tombstone
                 text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
             }
-            else if (msg.value.encoding == 'text') {
-                // Raw Text (wtf :P)
-                text = value;
-            }
             else if (msg.value.encoding == 'binary') {
-                // Binary data is displayed as hex dump
+                // If the original data was binary, display as hex dump
                 text = msg.valueBinHexPreview;
             }
+            else if (isPrimitive) {
+                // If we can show the value as a primitive, do so.
+                text = value;
+            }
             else {
+                // Only thing left is 'object'
+                // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
                 const previewTags = this.props.previewFields();
                 if (previewTags.length > 0) {
                     // Json!
@@ -890,7 +895,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 }
                 else {
                     // Normal display (json, no filters). Just stringify the whole object
-                    text = cullText(JSON.stringify(value), 100);
+                    text = cullText(JSON.stringify(value), 300);
                 }
             }
 
@@ -922,18 +927,26 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
     </div>
 }
 
-function renderPayload(value: Payload, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
-        if (!value || !value.payload) return <code>null</code>
+        if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined)
+            return <code>null</code>
+
+        const val = payload.payload;
+        const isPrimitive =
+            typeof val === 'string' ||
+            typeof val === 'number' ||
+            typeof val === 'boolean';
+
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
-        if (value.encoding == 'binary') {
+        if (payload.encoding == 'binary') {
             const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
-                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{value}</code>
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>
             }
             else if (mode == 'hex') {
-                const str = value.payload as string;
+                const str = String(val);
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     let n = str.charCodeAt(i).toString(16);
@@ -944,7 +957,7 @@ function renderPayload(value: Payload, shouldExpand?: ((x: CollapsedFieldProps) 
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>
             }
             else {
-                const str = value.payload as string;
+                const str = String(val);
                 let result = '';
                 const isPrintable = /[\x20-\x7E]/;
                 for (let i = 0; i < str.length; i++) {
@@ -957,20 +970,11 @@ function renderPayload(value: Payload, shouldExpand?: ((x: CollapsedFieldProps) 
             }
         }
 
-        if (value.encoding == 'text') {
-            return <div className='codeBox'>{String(value.payload)}</div>
+        if (isPrimitive) {
+            return <div className='codeBox'>{String(val)}</div>
         }
 
-        return (
-            <>
-                {/* <Affix offsetTop={30}>
-                    <Button icon='copy' shape='circle' size='large'
-                        style={{ float: 'right', margin: '1em', zIndex: 10 }} />
-                </Affix> */}
-
-                <KowlJsonView src={value.payload} shouldCollapse={shouldCollapse} />
-            </>
-        )
+        return <KowlJsonView src={val} shouldCollapse={shouldCollapse} />
     }
     catch (e) {
         return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {e.toString()}</span>
@@ -1108,7 +1112,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
         { title: 'Partition', dataIndex: 'partitionID' },
         { title: 'Timestamp', dataIndex: 'timestamp' },
         { title: 'Key', dataIndex: 'key' },
-        { title: 'Headers', dataIndex: 'headers' },
+        // { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
         // { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
     ];
