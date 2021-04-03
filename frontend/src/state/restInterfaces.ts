@@ -87,7 +87,7 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'none' | 'json' | 'xml' | 'avro' | 'text' | 'binary';
+export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'consumerOffsets' | 'binary' | 'msgpack';
 export type CompressionType = 'uncompressed' | 'gzip' | 'snappy' | 'lz4' | 'zstd' | 'unknown';
 export interface Payload {
     payload: any, // json obj
