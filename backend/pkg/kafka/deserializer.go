@@ -13,7 +13,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kbin"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"github.com/vmihailenco/msgpack"
+	"github.com/vmihailenco/msgpack/v5"
 
 	xj "github.com/basgys/goxml2json"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
