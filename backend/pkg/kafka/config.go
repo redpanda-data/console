@@ -3,6 +3,8 @@ package kafka
 import (
 	"flag"
 	"fmt"
+
+	"github.com/cloudhut/kowl/backend/pkg/msgpack"
 	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 )
@@ -16,8 +18,9 @@ type Config struct {
 	RackID         string   `yaml:"rackId"`
 
 	// Schema Registry
-	Schema   schema.Config `yaml:"schemaRegistry"`
-	Protobuf proto.Config  `yaml:"protobuf"`
+	Schema      schema.Config  `yaml:"schemaRegistry"`
+	Protobuf    proto.Config   `yaml:"protobuf"`
+	MessagePack msgpack.Config `yaml:"messagePack"`
 
 	TLS  TLSConfig  `yaml:"tls"`
 	SASL SASLConfig `yaml:"sasl"`
@@ -50,6 +53,11 @@ func (c *Config) Validate() error {
 	err = c.SASL.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate sasl config: %w", err)
+	}
+
+	err = c.MessagePack.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate msgpack config: %w", err)
 	}
 
 	return nil

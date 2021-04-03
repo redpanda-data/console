@@ -16,13 +16,15 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	xj "github.com/basgys/goxml2json"
+	kmsgpack "github.com/cloudhut/kowl/backend/pkg/msgpack"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 )
 
 // deserializer can deserialize messages from various formats (json, xml, avro, ..) into a Go native form.
 type deserializer struct {
-	SchemaService *schema.Service
-	ProtoService  *proto.Service
+	SchemaService  *schema.Service
+	ProtoService   *proto.Service
+	MsgPackService *kmsgpack.Service
 }
 
 type messageEncoding string
@@ -204,15 +206,17 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 	}
 
 	// 6. Test for msgp
-	var obj interface{}
-	err := msgpack.Unmarshal(payload, &obj)
-	if err == nil {
-		data, err := json.Marshal(obj)
+	if d.MsgPackService != nil && d.MsgPackService.IsTopicAllowed(topicName) {
+		var obj interface{}
+		err := msgpack.Unmarshal(payload, &obj)
 		if err == nil {
-			return &deserializedPayload{Payload: normalizedPayload{
-				Payload:            data,
-				RecognizedEncoding: messageEncodingMsgP,
-			}, Object: string(payload), RecognizedEncoding: messageEncodingMsgP, Size: len(payload)}
+			data, err := json.Marshal(obj)
+			if err == nil {
+				return &deserializedPayload{Payload: normalizedPayload{
+					Payload:            data,
+					RecognizedEncoding: messageEncodingMsgP,
+				}, Object: string(payload), RecognizedEncoding: messageEncodingMsgP, Size: len(payload)}
+			}
 		}
 	}
 
