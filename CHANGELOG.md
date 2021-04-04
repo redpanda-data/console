@@ -12,6 +12,7 @@
 - **[FEATURE] You can now save messages by clicking the 'Save Messages' button below the message list, or save a single message from its context menu (right-most column of a message row, visible on hover)**
 - **[FEATURE] Reassign partitions via setup wizard. Use it to balance partition count, disk usage, move replicas to new brokers or decomission brokers**
 - [FEATURE] Add rackId config option to consume from brokers that reside in the same rack if possible (rack aware consuming)
+- [FEATURE] Add MessagePack support in deserializer
 - [FEATURE] You can now select a date/time as the "start offset" when searching for messages.
 - [ENHANCEMENT] Kowl can now be configured using environment variables as well
 - [ENHANCEMENT] Show Kafka version in Brokers page
