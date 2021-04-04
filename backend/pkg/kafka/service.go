@@ -3,10 +3,12 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/twmb/franz-go/pkg/kerr"
-	"github.com/twmb/franz-go/pkg/kversion"
 	"time"
 
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kversion"
+
+	"github.com/cloudhut/kowl/backend/pkg/msgpack"
 	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -76,6 +78,15 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		protoSvc = svc
 	}
 
+	// Msgpack service
+	var msgPackSvc *msgpack.Service
+	if cfg.MessagePack.Enabled {
+		msgPackSvc, err = msgpack.NewService(cfg.MessagePack)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create msgpack service: %w", err)
+		}
+	}
+
 	return &Service{
 		Config:           cfg,
 		Logger:           logger,
@@ -84,8 +95,9 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		SchemaService:    schemaSvc,
 		ProtoService:     protoSvc,
 		Deserializer: deserializer{
-			SchemaService: schemaSvc,
-			ProtoService:  protoSvc,
+			SchemaService:  schemaSvc,
+			ProtoService:   protoSvc,
+			MsgPackService: msgPackSvc,
 		},
 		MetricsNamespace: metricsNamespace,
 	}, nil
