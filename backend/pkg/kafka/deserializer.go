@@ -196,16 +196,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		}
 	}
 
-	// 5. Test for UTF-8 validity
-	isUTF8 := utf8.Valid(payload)
-	if isUTF8 {
-		return &deserializedPayload{Payload: normalizedPayload{
-			Payload:            payload,
-			RecognizedEncoding: messageEncodingText,
-		}, Object: string(payload), RecognizedEncoding: messageEncodingText, Size: len(payload)}
-	}
-
-	// 6. Test for msgp
+	// 5. Test for MessagePack (only if enabled and topic allowed)
 	if d.MsgPackService != nil && d.MsgPackService.IsTopicAllowed(topicName) {
 		var obj interface{}
 		err := msgpack.Unmarshal(payload, &obj)
@@ -218,6 +209,15 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 				}, Object: string(payload), RecognizedEncoding: messageEncodingMsgP, Size: len(payload)}
 			}
 		}
+	}
+	
+	// 6. Test for UTF-8 validity
+	isUTF8 := utf8.Valid(payload)
+	if isUTF8 {
+		return &deserializedPayload{Payload: normalizedPayload{
+			Payload:            payload,
+			RecognizedEncoding: messageEncodingText,
+		}, Object: string(payload), RecognizedEncoding: messageEncodingText, Size: len(payload)}
 	}
 
 	// Anything else is considered as binary content
