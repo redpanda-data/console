@@ -1,10 +1,10 @@
 import React, { Component, useState } from "react";
-import { Tag, Popover, Tooltip, ConfigProvider, Table, Progress, Button, Modal, Slider, Popconfirm, Checkbox } from "antd";
+import { Tag, Popover, Tooltip, ConfigProvider, Table, Progress, Button, Modal, Slider, Popconfirm, Checkbox, Skeleton, message } from "antd";
 import { LazyMap } from "../../../../utils/LazyMap";
 import { Broker, Partition, PartitionReassignmentsPartition } from "../../../../state/restInterfaces";
 import { api, brokerMap } from "../../../../state/backendApi";
 import { computed, observable } from "mobx";
-import { findPopupContainer, QuickTable } from "../../../../utils/tsxUtils";
+import { DefaultSkeleton, findPopupContainer, QuickTable } from "../../../../utils/tsxUtils";
 import { makePaginationConfig, sortField } from "../../../misc/common";
 import { uiSettings } from "../../../../state/ui";
 import { ColumnProps } from "antd/lib/table";
@@ -24,6 +24,11 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
     // When set, a modal will be shown for the reassignment state
     @observable reassignmentDetails: ReassignmentState | null = null;
     @observable showThrottleDialog = false;
+
+    constructor(p: any) {
+        super(p);
+        api.refreshClusterConfig(true);
+    }
 
     render() {
         const columnsActiveReassignments: ColumnProps<ReassignmentState>[] = [
@@ -107,7 +112,7 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
 
             </ConfigProvider>
             <ReassignmentDetailsModal state={this.reassignmentDetails} onClose={() => this.reassignmentDetails = null} />
-            <ThrottleDialog visible={this.showThrottleDialog} onClose={() => this.showThrottleDialog = false} />
+            <ThrottleDialog visible={this.showThrottleDialog} lastKnownMinThrottle={minThrottle} onClose={() => this.showThrottleDialog = false} />
         </>
     }
 
@@ -135,7 +140,6 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
             .flatMap(c => c.configEntries)
             .first(e => e.name == 'follower.replication.throttled.rate');
 
-
         const result = {
             leaderThrottle: leaderThrottle ? Number(leaderThrottle.value) : undefined,
             followerThrottle: followerThrottle ? Number(followerThrottle.value) : undefined
@@ -158,15 +162,23 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
 
 
 @observer
-export class ThrottleDialog extends Component<{ visible: boolean, onClose: () => void }> {
-    @observable newThrottleValue: number = 0;
+export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinThrottle: number | undefined, onClose: () => void }> {
+    @observable newThrottleValue: number | undefined = undefined;
 
     render() {
+        const throttleValue = this.newThrottleValue ?? this.props.lastKnownMinThrottle ?? 0;
+        console.log('throttle dialog', { newVal: this.newThrottleValue, lastKnown: this.props.lastKnownMinThrottle, actual: throttleValue });
+
+
         return <Modal
             title="Throttle Settings"
             visible={this.props.visible} maskClosable={true}
-            onCancel={this.props.onClose}
+
+            okText="Apply &amp; Close"
             onOk={() => this.applyBandwidthThrottle()}
+
+            cancelText="Close"
+            onCancel={this.props.onClose}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3em', }}>
 
@@ -175,11 +187,11 @@ export class ThrottleDialog extends Component<{ visible: boolean, onClose: () =>
                         min={2} max={12} step={0.1}
                         marks={{ 2: "Off", 3: "1kB", 6: "1MB", 9: "1GB", 12: "1TB", }}
                         included={true}
-                        tipFormatter={f => this.newThrottleValue < 1000
+                        tipFormatter={f => throttleValue < 1000
                             ? 'No limit'
-                            : prettyBytesOrNA(this.newThrottleValue) + '/s'}
+                            : prettyBytesOrNA(throttleValue) + '/s'}
 
-                        value={Math.log10(this.newThrottleValue)}
+                        value={Math.log10(throttleValue)}
                         onChange={sv => {
                             const n = Number(sv.valueOf());
                             const newLimit = Math.pow(10, n);
@@ -195,23 +207,43 @@ export class ThrottleDialog extends Component<{ visible: boolean, onClose: () =>
                     />
                 </div>
 
-                <div>
-                    - current leader/follower throttle
-                    -
-                </div>
-
-                <Button type='default' onClick={() => this.applyBandwidthThrottle()}>Remove Bandwidth Throttle</Button>
+                {/* <Button type='default' onClick={() => this.applyBandwidthThrottle()}>Remove Bandwidth Throttle</Button> */}
             </div>
 
         </Modal>
     }
 
-    applyBandwidthThrottle() {
+    async applyBandwidthThrottle() {
 
-    }
+        const msg = new Message("Setting throttle rate...");
+        try {
+            const allBrokers = api.clusterInfo?.brokers.map(b => b.brokerId);
+            if (!allBrokers) {
+                message.error('Error: Cluster info not available');
+                return;
+            }
 
-    resetBandwidthThrottle() {
-        //resetTrafficLimit(rq.topics.map(t => t.topicName), api.clusterInfo!.brokers.map(b => b.brokerId));
+            if (this.newThrottleValue && this.newThrottleValue > 0) {
+                await api.setReplicationThrottleRate(allBrokers, this.newThrottleValue);
+            }
+            else {
+                await api.resetReplicationThrottleRate(allBrokers);
+            }
+
+            setImmediate(() => {
+                // need to update actual value after changing
+                api.refreshClusterConfig(true);
+            });
+
+            msg.setSuccess("Setting throttle rate... done");
+
+        }
+        catch (err) {
+            console.error("error in applyBandwidthThrottle: " + err);
+            msg.setError();
+        }
+
+        this.props.onClose();
     }
 }
 
@@ -220,50 +252,146 @@ export class ThrottleDialog extends Component<{ visible: boolean, onClose: () =>
 export class ReassignmentDetailsModal extends Component<{ state: ReassignmentState | null, onClose: () => void }> {
     lastState: ReassignmentState | null;
     @observable shouldThrottle = false;
-
+    wasVisible = false;
 
     render() {
-        const state = this.lastState ?? this.props.state;
-        if (state == null) return null;
-        const visible = this.props.state != null;
-        if (this.lastState != state) {
-            this.lastState = state;
-            setImmediate(() => { this.shouldThrottle = this.isThrottled() })
-        }
+        if (this.props.state == null) return null;
 
+        const state = this.props.state;
+        if (this.lastState != state)
+            this.lastState = state;
+
+        const visible = this.props.state != null;
+        if (this.wasVisible != visible) {
+            // became visible or invisible
+            // force update of topic config, so isThrottle has up to date information
+            setImmediate(async () => {
+                console.log('updating topic config...');
+                api.topicConfig.delete(state.topicName);
+                await api.refreshTopicConfig(state.topicName, true);
+                this.shouldThrottle = this.isThrottled();
+            });
+        }
+        this.wasVisible = visible;
+
+
+        const topicConfig = api.topicConfig.get(state.topicName);
+
+
+        console.log('modal render ', { shouldThrottle: this.shouldThrottle });
         const settings = uiSettings.reassignment;
 
-        return <Modal
-            title={"Reassignment: " + state.topicName}
-            visible={visible}
-            onOk={() => this.applyBandwidthThrottle()}
-            onCancel={this.props.onClose}
-            maskClosable={true}
-        >
+        const replicas = state.partitions.flatMap(p => p.replicas).distinct();
+        const addingReplicas = state.partitions.flatMap(p => p.addingReplicas).distinct();
+        const removingReplicas = state.partitions.flatMap(p => p.removingReplicas).distinct();
+
+
+        const modalContent = Boolean(topicConfig) ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3em', }}>
 
+                {/* Info */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1em', }}>
+                    <div>
+                        {QuickTable([
+                            ["Replicas", replicas],
+                            ["Adding", addingReplicas],
+                            ["Removing", removingReplicas],
+                        ])}
+                    </div>
+                </div>
+
+                {/* Throttle */}
                 <div style={{ display: 'flex', gap: '1em' }}>
                     <Checkbox checked={this.shouldThrottle} onChange={e => this.shouldThrottle = e.target.checked}>
-                        <div>
-                            <span>Throttle Reassignment</span>
-                            <span style={{ fontSize: 'smaller', opacity: '0.6' }}>Using global throttle limit for all replication traffic</span>
-                        </div>
+                        <span>
+                            <span>Throttle Reassignment</span><br />
+                            <span style={{ fontSize: 'smaller', opacity: '0.6', marginLeft: '2em' }}>Using global throttle limit for all replication traffic</span>
+                        </span>
                     </Checkbox>
                 </div>
 
+                {/* Cancel */}
                 <Popconfirm title="Are you sure you want to stop the reassignment?" okText="Yes" cancelText="No"
                     onConfirm={() => this.cancelReassignment()}
                 >
                     <Button type='dashed' danger>Cancel Reassignment</Button>
                 </Popconfirm>
-
             </div>
+        ) : <Skeleton loading={true} active={true} paragraph={{ rows: 5 }} />;
 
+        return <Modal
+            title={"Reassignment: " + state.topicName}
+            visible={visible}
+
+            okText="Apply &amp; Close"
+            onOk={() => {
+                this.applyBandwidthThrottle();
+                this.props.onClose();
+            }}
+
+            cancelText="Close"
+            onCancel={this.props.onClose}
+            maskClosable={true}
+        >
+            {modalContent}
         </Modal>
     }
 
     isThrottled(): boolean {
-        return true; // todo
+        // Reassignment is throttled when the topic contains any partition/broker pair that is currently being reassigned
+        if (!this.lastState) {
+            return false;
+        }
+        const config = api.topicConfig.get(this.lastState.topicName);
+        if (!config) {
+            return false;
+        }
+
+        // partitionId:brokerId, ...
+        const leaderThrottleValue = config.configEntries.first(e => e.name == 'leader.replication.throttled.replicas');
+        const leaderThrottleEntries = leaderThrottleValue?.value.split(',').map(e => {
+            const ar = e.split(':');
+            if (ar.length != 2) return null;
+            return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
+        }).filterNull();
+
+        if (leaderThrottleEntries) {
+            // Go through all partitions that are being reassigned
+            for (const p of this.lastState.partitions) {
+                const sourceBrokers = p.replicas;
+
+                // ...and check if this broker-partition combo is being throttled
+                const hasThrottle = leaderThrottleEntries.any(e =>
+                    e.partitionId == p.partitionId && sourceBrokers.includes(e.brokerId)
+                );
+
+                if (hasThrottle) return true;
+            }
+        }
+
+        // partitionId:brokerId, ...
+        const followerThrottleValue = config.configEntries.first(e => e.name == 'follower.replication.throttled.replicas');
+        const followerThrottleEntries = followerThrottleValue?.value.split(',').map(e => {
+            const ar = e.split(':');
+            if (ar.length != 2) return null;
+            return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
+        }).filterNull();
+
+        if (followerThrottleEntries) {
+            // Go through all partitions that are being reassigned
+            for (const p of this.lastState.partitions) {
+                const targetBrokers = p.addingReplicas;
+
+                // ...and check if this broker-partition combo is being throttled
+                const hasThrottle = followerThrottleEntries.any(e =>
+                    e.partitionId == p.partitionId && targetBrokers.includes(e.brokerId)
+                );
+
+                if (hasThrottle) return true;
+            }
+        }
+
+        return false;
     }
 
     applyBandwidthThrottle() {
@@ -273,12 +401,39 @@ export class ReassignmentDetailsModal extends Component<{ state: ReassignmentSta
             return;
         }
 
-        api.setThrottledReplicas([{
-            topicName: state.topicName,
-            leaderReplicas: [],
-            followerReplicas: [],
-        }])
-        this.props.onClose();
+        if (this.shouldThrottle) {
+            const leaderReplicas: { partitionId: number, brokerId: number }[] = [];
+            const followerReplicas: { partitionId: number, brokerId: number }[] = [];
+            for (const p of state.partitions) {
+                const partitionId = p.partitionId;
+                const brokersOld = p.replicas;
+                const brokersNew = p.addingReplicas;
+
+                if (brokersOld == null || brokersNew == null) {
+                    console.warn("active reassignments, traffic limit: skipping partition because old or new brokers can't be found", { state: state });
+                    continue;
+                }
+
+                // leader throttling is applied to all sources (all brokers that have a replica of this partition)
+                for (const sourceBroker of brokersOld)
+                    leaderReplicas.push({ partitionId: partitionId, brokerId: sourceBroker });
+
+                // follower throttling is applied only to target brokers that do not yet have a copy
+                const newBrokers = brokersNew.except(brokersOld);
+                for (const targetBroker of newBrokers)
+                    followerReplicas.push({ partitionId: partitionId, brokerId: targetBroker });
+            }
+
+            api.setThrottledReplicas([{
+                topicName: state.topicName,
+                leaderReplicas: leaderReplicas,
+                followerReplicas: followerReplicas,
+            }]);
+        }
+        else {
+            api.resetThrottledReplicas([state.topicName]);
+        }
+
     }
 
     async cancelReassignment() {

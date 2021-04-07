@@ -385,9 +385,10 @@ const apiStore = {
             }, addError);
     },
 
-    refreshTopicConfig(topicName: string, force?: boolean) {
-        cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
+    async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
+        const promise = cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
             .then(v => this.topicConfig.set(topicName, v?.topicDescription ?? null), addError); // 403 -> null
+        return promise as Promise<void>;
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {

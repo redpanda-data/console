@@ -76,8 +76,8 @@ class ReassignPartitions extends PageComponent {
     }
 
     refreshData(force: boolean) {
-        api.refreshCluster(force);
-        // api.refreshClusterConfig(force);
+        api.refreshCluster(force); // need to know brokers for reassignment calculation
+        api.refreshClusterConfig(force); // used to display throttle traffic limit
         api.refreshTopics(force);
         api.refreshPartitions('all', force);
         api.refreshPartitionReassignments(force);
@@ -264,6 +264,7 @@ class ReassignPartitions extends PageComponent {
                     if (success) {
                         // Reset settings, go back to first page
                         transaction(() => {
+                            this.refreshData(true);
                             this.partitionSelection = {};
                             this.selectedBrokerIds = [];
                             this.reassignmentRequest = null;

@@ -75,6 +75,12 @@ export class ReassignmentTracker {
 
         // Broker status
         this.clusterTimer = setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
+
+        // Immediately refresh as well
+        setImmediate(() => {
+            this.refreshReassignments();
+            api.refreshCluster(true);
+        });
     }
 
     async refreshReassignments() { // timer
@@ -93,7 +99,7 @@ export class ReassignmentTracker {
             for (const r of liveReassignments) {
                 const existingState = this.trackingReassignments.first(x => x.id == r.id);
                 if (existingState == null) {
-                    console.log('adding new state', { id: r.id, reassignment: r });
+                    // console.log('adding new state', { id: r.id, reassignment: r });
                     const state = this.createReassignmentState(r);
                     this.trackingReassignments.push(state);
                 }
