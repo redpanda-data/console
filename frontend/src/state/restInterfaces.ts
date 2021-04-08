@@ -232,6 +232,7 @@ export interface Broker {
     rack: string | null;
 }
 
+
 export interface EndpointCompatibilityResponse {
     endpointCompatibility: EndpointCompatibility;
 }
@@ -247,16 +248,6 @@ export interface EndpointCompatibilityEntry {
     isSupported: boolean;
 }
 
-interface FeatureEntry {
-    endpoint: string;
-    method: string;
-}
-export class Feature {
-    static readonly ClusterConfig: FeatureEntry = { endpoint: "/api/cluster/config", method: 'GET' };
-    static readonly ConsumerGroups: FeatureEntry = { endpoint: "/api/consumer-groups", method: 'GET' };
-    static readonly GetReassignments: FeatureEntry = { endpoint: "/api/operations/reassign-partitions", method: 'GET' };
-    static readonly PatchReassignments: FeatureEntry = { endpoint: "/api/operations/reassign-partitions", method: 'PATCH' };
-}
 
 
 export interface ClusterInfo {
@@ -318,7 +309,10 @@ export interface UserData {
     seat: Seat;
     canManageKowl: boolean;
     canListAcls: boolean;
+    canReassignPartitions: boolean;
+    canPatchConfigs: boolean;
 }
+export type UserPermissions = Exclude<keyof UserData, 'user' | 'seat'>;
 
 
 
