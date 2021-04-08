@@ -214,7 +214,9 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                 borderRadius: '5px',
                 padding: '1.5em'
             }}>
-                <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span>
+                {p.onlyShowPartitionsWithLag
+                    ? <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span>
+                    : null}
             </Empty>
 
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{topicEntries}</Collapse>;
@@ -304,7 +306,9 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                 borderRadius: '5px',
                 padding: '1.5em'
             }}>
-                <span>All {memberEntries.length} members have been filtered (no lag on any partition).</span>
+                {p.onlyShowPartitionsWithLag
+                    ? <span>All {memberEntries.length} members have been filtered (no lag on any partition).</span>
+                    : null}
             </Empty>
 
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{memberEntries}</Collapse>;
