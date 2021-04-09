@@ -135,7 +135,7 @@ class AclList extends PageComponent {
         if (containsIgnoreCase(item.permissionType, text)) return true;
         if (containsIgnoreCase(item.principal, text)) return true;
         if (containsIgnoreCase(item.resourceName, text)) return true;
-        if (containsIgnoreCase(item.resourcePatternType, text)) return true;
+        if (containsIgnoreCase(String(item.resourcePatternType), text)) return true;
         if (containsIgnoreCase(item.resourceType, text)) return true;
 
         return false;
