@@ -91,7 +91,13 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	defer cancel()
 
 	wg := sync.WaitGroup{}
-	workerCount := 4
+
+	// If we use more than one worker the order of messages in each partition gets lost. Hence we only use it where
+	// multiple workers are actually beneficial - for potentially high throughput stream requests.
+	workerCount := 1
+	if consumeRequest.FilterInterpreterCode != "" {
+		workerCount = 6
+	}
 	for i := 0; i < workerCount; i++ {
 		// Setup JavaScript interpreter
 		isMessageOK, err := s.setupInterpreter(consumeRequest.FilterInterpreterCode)
