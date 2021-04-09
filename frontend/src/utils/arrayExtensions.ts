@@ -45,6 +45,7 @@ declare global {
         toMap<TItem, TKey, TValue>(this: TItem[], computeKey: (item: TItem) => TKey, computeValue: (item: TItem) => TValue): Map<TKey, TValue>;
 
         filterNull<T>(this: (T | null | undefined)[]): T[];
+        filterFalsy<T>(this: (T | null | undefined)[]): T[];
     }
 }
 
@@ -144,6 +145,17 @@ Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)
 
     this.forEach(item => {
         if (item !== null && item !== undefined)
+            ar.push(item);
+    });
+
+    return ar;
+};
+
+Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefined)[]): T[] {
+    const ar: T[] = [];
+
+    this.forEach(item => {
+        if (item)
             ar.push(item);
     });
 

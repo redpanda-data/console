@@ -167,8 +167,6 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
     render() {
         const throttleValue = this.newThrottleValue ?? this.props.lastKnownMinThrottle ?? 0;
-        console.log('throttle dialog', { newVal: this.newThrottleValue, lastKnown: this.props.lastKnownMinThrottle, actual: throttleValue });
-
 
         return <Modal
             title="Throttle Settings"
@@ -266,7 +264,6 @@ export class ReassignmentDetailsModal extends Component<{ state: ReassignmentSta
             // became visible or invisible
             // force update of topic config, so isThrottle has up to date information
             setImmediate(async () => {
-                console.log('updating topic config...');
                 api.topicConfig.delete(state.topicName);
                 await api.refreshTopicConfig(state.topicName, true);
                 this.shouldThrottle = this.isThrottled();
@@ -277,8 +274,6 @@ export class ReassignmentDetailsModal extends Component<{ state: ReassignmentSta
 
         const topicConfig = api.topicConfig.get(state.topicName);
 
-
-        console.log('modal render ', { shouldThrottle: this.shouldThrottle });
         const settings = uiSettings.reassignment;
 
         const replicas = state.partitions.flatMap(p => p.replicas).distinct();

@@ -14,7 +14,7 @@ import { computed, IReactionDisposer, observable, transaction } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
 import Highlighter from 'react-highlight-words';
 import { uiSettings } from "../../../state/ui";
-import { FilterDropdownProps } from "antd/lib/table/interface";
+import { ColumnFilterItem, FilterDropdownProps } from "antd/lib/table/interface";
 import { SearchOutlined } from "@ant-design/icons";
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
@@ -24,7 +24,8 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeSelect ?? 10);
     autorunHandle: IReactionDisposer | undefined = undefined;
     @observable filterOpen = false; // topic name searchbar
-    // @observable expandedTopics: string[] = [];
+
+    @observable selectedBrokerFilters: (string | number)[] | null = null;
 
     constructor(props: any) {
         super(props);
@@ -46,27 +47,27 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         if (!api.topics) return DefaultSkeleton;
         if (api.topicPartitions.size == 0) return <Empty />
 
-        let filterActive = uiSettings.reassignment.quickSearch?.length > 1;
-        const searchWords = filterActive ? (uiSettings.reassignment.quickSearch?.split(' ') ?? []) : [];
-        const searchRegexes = searchWords.map(w => {
-            try { return new RegExp(w, 'i') } catch { return null; }
-        }).filterNull();
-        if (searchRegexes.length == 0)
-            filterActive = false;
+        const query = uiSettings.reassignment.quickSearch ?? "";
+        let filterActive = query.length > 1;
 
+        let searchRegex: RegExp | undefined = undefined;
+        if (filterActive) try { searchRegex = new RegExp(uiSettings.reassignment.quickSearch, 'i') } catch { return null; }
+
+        const rackToBrokers = this.rackToBrokers;
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
             {
                 title: <SearchTitle title='Topic' isFilterOpen={() => this.filterOpen} setFilterOpen={x => this.filterOpen = x} />,
+                dataIndex: 'topicName',
                 render: (v, record) => filterActive
-                    ? <Highlighter searchWords={searchWords} textToHighlight={record.topicName} />
+                    ? <Highlighter searchWords={[query]} textToHighlight={record.topicName} />
                     : record.topicName,
 
                 sorter: sortField('topicName'), defaultSortOrder: 'ascend',
 
-                filtered: filterActive,
-                filteredValue: filterActive ? searchWords : null,
-                onFilter: (value, record) => searchRegexes.any(r => r.test(record.topicName)),
+                // to support both filters at the same time (topic and brokers), both filters *must* be in controlled mode
+                filteredValue: filterActive ? [query] : undefined,
+                onFilter: (value, record) => searchRegex?.test(record.topicName) ?? false,
 
                 filterIcon: filterIcon(filterActive),
                 filterDropdown: <></>,
@@ -91,6 +92,23 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 title: 'Brokers', width: 160, dataIndex: 'partitions',
                 render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A',
 
+                // to support both filters at the same time (topic and brokers), both filters *must* be in controlled mode
+                filteredValue: this.selectedBrokerFilters,
+                filters: this.brokerFilters,
+                onFilter: (v, r) => {
+                    if (typeof v === 'number') {
+                        // Broker ID
+                        return r.partitions.any(p => p.replicas.includes(v));
+                    }
+                    if (typeof v === 'string') {
+                        // Rack
+                        const brokers = rackToBrokers.get(v);
+                        if (!brokers) return false;
+                        return r.partitions.any(p => p.replicas.intersection(brokers).length > 0);
+                    }
+                    return false;
+                },
+                filterMultiple: true,
             },
             {
                 title: 'Size', width: 110,
@@ -117,10 +135,12 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                     <Table
                         style={{ margin: '0', }} size={'middle'}
                         pagination={this.pageConfig}
-                        onChange={(p) => {
+                        onChange={(p, filters, sorters) => {
                             if (p.pageSize) uiSettings.reassignment.pageSizeSelect = p.pageSize;
                             this.pageConfig.current = p.current;
                             this.pageConfig.pageSize = p.pageSize;
+
+                            this.selectedBrokerFilters = filters['partitions']?.filterNull() ?? null;
                         }}
 
                         dataSource={this.topicPartitions}
@@ -251,6 +271,48 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
     @computed get inProgress() {
         const current = api.partitionReassignments ?? [];
         return current.toMap(x => x.topicName, x => x.partitions);
+    }
+
+    @computed get allBrokers() {
+        const brokerIdsOfTopicPartitions = this.topicPartitions.flatMap(t => t.partitions).flatMap(p => p.replicas).distinct();
+        const allBrokers = api.clusterInfo?.brokers;
+        if (!allBrokers || brokerIdsOfTopicPartitions.length == 0) return [];
+
+        return allBrokers.filter(b => brokerIdsOfTopicPartitions.includes(b.brokerId));
+    }
+
+    @computed get rackToBrokers(): Map<string, number[]> {
+        const brokers = this.allBrokers;
+        const racks = brokers.map(b => b.rack).filterFalsy().distinct();
+
+        // rack name => brokerIds
+        return racks.toMap(
+            r => r,
+            r => brokers.filter(b => b.rack === r).map(b => b.brokerId).distinct())
+    }
+
+    @computed get brokerFilters(): ColumnFilterItem[] | undefined {
+        const brokers = this.allBrokers;
+        const racks = brokers.map(b => b.rack).filterFalsy().distinct();
+
+        const brokerFilters: ColumnFilterItem[] = [];
+
+        // Individual Brokers
+        const brokerItems = brokers.map(b => ({ text: b.address, value: b.brokerId }));
+        if (brokerItems.length > 0)
+            brokerFilters.push({
+                text: "Brokers", value: "Brokers",
+                children: brokerItems,
+            });
+
+        // Racks
+        if (racks.length > 0)
+            brokerFilters.push({
+                text: "Racks", value: "Racks",
+                children: racks.map(r => ({ text: r, value: r })),
+            });
+
+        return brokerFilters;
     }
 }
 
