@@ -178,14 +178,18 @@ function computeReplicaAssignments(partition: Partition, replicas: number, broke
     if (sourceBrokers.any(x => x == null)) throw new Error(`replicas of partition ${partition.id} (${toJson(partition.replicas)}) define a brokerId which can't be found in 'allBrokers': ${toJson(allBrokers.map(b => ({ id: b.brokerId, address: b.address, rack: b.rack })))}`);
     const sourceRacks = sourceBrokers.map(b => b.rack).distinct();
 
+    // Track brokers we've used so far so we don't use any broker twice
+    const consumedBrokers: ExBroker[] = [];
 
     for (let i = 0; i < replicas; i++) {
         // For each replica to be assigned, we create a set of potential brokers.
         // The potential brokers are those that have least assignments from this partition.
         // If we'd only assign based on the additional metrics, all replicas would be assigned to only one broker (which would be bad if rf=1)
+
         brokerReplicaCount.sort((a, b) => a.assignedReplicas - b.assignedReplicas);
-        const minAssignments = brokerReplicaCount[0].assignedReplicas;
-        const potential = brokerReplicaCount.filter(b => b.assignedReplicas == minAssignments);
+        const filteredBrokerCounts = brokerReplicaCount.filter(b => !consumedBrokers.includes(b.broker));
+        const minAssignments = filteredBrokerCounts[0].assignedReplicas;
+        const potential = filteredBrokerCounts.filter(b => b.assignedReplicas == minAssignments);
 
         // Multiple brokers, sort by additional metrics
         if (potential.length > 1) {
@@ -225,6 +229,7 @@ function computeReplicaAssignments(partition: Partition, replicas: number, broke
         potential[0].assignedReplicas++; // increase temporary counter (which only tracks assignments within the topic)
         const bestBroker = potential[0].broker;
         resultBrokers.push(bestBroker);
+        consumedBrokers.push(bestBroker);
 
         // increase total number of assigned replicas
         bestBroker.assignedReplicas++;
