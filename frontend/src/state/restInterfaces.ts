@@ -465,10 +465,13 @@ export interface AclResponse {
     isAuthorizerEnabled: boolean;
 }
 
+export enum ResourcePatternType {
+    'UNKNOWN', 'MATCH', 'LITERAL', 'PREFIXED'
+}
 export interface AclResource {
     resourceType: string;
     resourceName: string;
-    resourcePatternType: string;
+    resourcePatternType: ResourcePatternType;
     acls: AclRule[];
 }
 

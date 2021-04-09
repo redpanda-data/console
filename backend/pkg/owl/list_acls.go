@@ -3,6 +3,7 @@ package owl
 import (
 	"context"
 	"fmt"
+
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
@@ -50,7 +51,7 @@ func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest)
 		overview := &AclResource{
 			ResourceType:        aclResponse.ResourceType.String(),
 			ResourceName:        aclResponse.ResourceName,
-			ResourcePatternType: "",
+			ResourcePatternType: aclResponse.ResourcePatternType.String(),
 			ACLs:                nil,
 		}
 

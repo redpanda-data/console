@@ -70,7 +70,7 @@ class AclList extends PageComponent {
             { width: '120px', title: 'Permission', dataIndex: 'permissionType', sorter: sortField('permissionType') },
             { width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal') },
             { width: '160px', title: 'Operation', dataIndex: 'operation', sorter: sortField('operation') },
-            { width: 'auto', title: 'Pattern', dataIndex: 'resourcePatternType', sorter: sortField('resourcePatternType') },
+            { width: 'auto', title: 'PatternType', dataIndex: 'resourcePatternType', sorter: sortField('resourcePatternType') },
             { width: 'auto', title: 'Name', dataIndex: 'resourceName', sorter: sortField('resourceName') },
             { width: '120px', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
         ];
