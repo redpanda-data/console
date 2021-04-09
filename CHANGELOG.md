@@ -20,6 +20,7 @@
 - [ENHANCEMENT] Support schema registry with thousands of subjects by reducing the number of information in the schema registry overview page
 - [BUGFIX] Deserialize messages with Avro with a higher priority than UTF-8 messages, so that Avro serialized messages will always be recognized correctly
 - [BUGFIX] Fix deadlock where schema registry requests against older Schema Registries would time out due to the missing /mode endpoint.
+- [BUGFIX] ResourcePatternType is now correctly shown in the ACLs list.
 
 
 ## 1.2.2 / 2020-11-23
