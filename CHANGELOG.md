@@ -14,6 +14,7 @@
 - [FEATURE] Add rackId config option to consume from brokers that reside in the same rack if possible (rack aware consuming)
 - [FEATURE] Add MessagePack support in deserializer
 - [FEATURE] You can now select a date/time as the "start offset" when searching for messages.
+- [ENHANCEMENT] Show rebalance protocol and coordinator id in consumer group pages
 - [ENHANCEMENT] Kowl can now be configured using environment variables as well
 - [ENHANCEMENT] Show Kafka version in Brokers page
 - [ENHANCEMENT] Add support for decoding messages in the `__consumer_offsets` topic
