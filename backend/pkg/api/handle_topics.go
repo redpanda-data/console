@@ -4,6 +4,7 @@ import (
 	_ "context"
 	"fmt"
 	"net/http"
+	"strings"
 	_ "time"
 
 	"go.uber.org/zap"
@@ -147,6 +148,87 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 
 		res := response{
 			TopicDescription: description,
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+// handleGetTopicsConfigs returns all set configuration options for one or more topics
+func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
+	type response struct {
+		TopicDescriptions []*owl.TopicConfig `json:"topicDescriptions"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse optional filters. If no filter is set they will be treated as wildcards
+		var topicNames []string
+		requestedTopicNames := r.URL.Query().Get("topicNames")
+		if requestedTopicNames != "" {
+			topicNames = strings.Split(requestedTopicNames, ",")
+		}
+
+		var configKeys []string
+		requestedConfigKeys := r.URL.Query().Get("configKeys")
+		if requestedConfigKeys != "" {
+			configKeys = strings.Split(requestedConfigKeys, ",")
+		}
+
+		logger := api.Logger.With(zap.Int("topics_length", len(topicNames)), zap.Int("config_keys_length", len(configKeys)))
+
+		// 2. Fetch all topic names from metadata as no topic filter has been specified
+		if len(topicNames) == 0 {
+			var err error
+			topicNames, err = api.OwlSvc.GetAllTopicNames(r.Context(), nil)
+			if err != nil {
+				restErr := &rest.Error{
+					Err:      fmt.Errorf("failed to request metadata to fetch topic names: %w", err),
+					Status:   http.StatusForbidden,
+					Message:  fmt.Sprintf("Failed to fetch metadata from brokers to fetch topicNames '%v'", err.Error()),
+					IsSilent: false,
+				}
+				rest.SendRESTError(w, r, logger, restErr)
+				return
+			}
+		}
+
+		// 3. Check if user is allowed to view the config for these topics
+		for _, topicName := range topicNames {
+			canView, restErr := api.Hooks.Owl.CanViewTopicConfig(r.Context(), topicName)
+			if restErr != nil {
+				rest.SendRESTError(w, r, logger, restErr)
+				return
+			}
+			if !canView {
+				restErr := &rest.Error{
+					Err:      fmt.Errorf("requester has no permissions to view config for one of the requested topics"),
+					Status:   http.StatusForbidden,
+					Message:  fmt.Sprintf("You don't have permissions to view the config for topic '%v'", topicName),
+					IsSilent: false,
+				}
+				rest.SendRESTError(w, r, logger, restErr)
+				return
+			}
+		}
+
+		// 4. Request topics configs and return them
+		descriptions, err := api.OwlSvc.GetTopicsConfigs(r.Context(), topicNames, configKeys)
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("failed to describe topic configs: %w", err),
+				Status:   http.StatusServiceUnavailable,
+				Message:  fmt.Sprintf("Failed to describe topic configs '%v'", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, logger, restErr)
+			return
+		}
+		result := make([]*owl.TopicConfig, 0, len(descriptions))
+		for _, description := range descriptions {
+			result = append(result, description)
+		}
+
+		res := response{
+			TopicDescriptions: result,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
