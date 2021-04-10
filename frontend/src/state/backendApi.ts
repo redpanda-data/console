@@ -5,7 +5,7 @@ import {
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
     ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig
 } from "./restInterfaces";
-import { computed, observable, transaction } from "mobx";
+import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
@@ -157,32 +157,18 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
     const entry = cache.get(url);
 
     if (entry.isPending) {
-        // console.log("debug: request already pending", entry);
+        // return already running request
         return entry.lastPromise;
     }
 
     if (entry.resultAge > REST_CACHE_DURATION_SEC || force) {
-        // Start or refresh request
-        // console.log("debug: refreshing...", entry);
-
-        const promise = rest<T>(url); //.catch(r => { throw new Error(url) });
+        // expired or force refresh
+        const promise = rest<T>(url);
         entry.setPromise(promise);
-
-    } else {
-        // console.log("debug: cached request still valid??", entry);
     }
 
-    // Not ready yet, don't update, return last result
+    // Return last result (can be still pending, or completed but not yet expired)
     return entry.lastPromise;
-}
-
-async function getSchemaOverview(force?: boolean) {
-    return cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>
-}
-
-async function getSchemaDetails(subjectName: string, version?: number | 'latest', force?: boolean) {
-    if (version == null) version = 'latest';
-    return cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
 }
 
 
@@ -508,7 +494,14 @@ const apiStore = {
 
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
-            .then(v => this.clusterInfo = v.clusterInfo, addError);
+            .then(v => {
+
+                // don't assign if the value didn't change
+                // we'd re-trigger all observers!
+                if (comparer.structural(this.clusterInfo, v.clusterInfo)) return;
+
+                this.clusterInfo = v.clusterInfo;
+            }, addError);
     },
 
     refreshClusterConfig(force?: boolean) {
@@ -567,15 +560,20 @@ const apiStore = {
     },
 
     refreshSchemaOverview(force?: boolean) {
-        getSchemaOverview(force)
+        const rq = cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>;
+        return rq
             .then(({ schemaOverview, isConfigured }) => [this.schemaOverview, this.schemaOverviewIsConfigured] = [schemaOverview, isConfigured])
-            .catch(addError)
+            .catch(addError);
     },
 
     refreshSchemaDetails(subjectName: string, version: number | 'latest', force?: boolean) {
-        getSchemaDetails(subjectName, version, force)
+        if (version == null) version = 'latest';
+
+        const rq = cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
+
+        return rq
             .then(({ schemaDetails }) => (this.schemaDetails = schemaDetails))
-            .catch(addError)
+            .catch(addError);
     },
 
     refreshPartitionReassignments(force?: boolean): Promise<void> {
@@ -732,6 +730,7 @@ const apiStore = {
     }
 }
 
+
 export const brokerMap = computed(() => {
     const brokers = api.clusterInfo?.brokers;
     if (brokers == null) return null;
@@ -741,7 +740,8 @@ export const brokerMap = computed(() => {
         map.set(b.brokerId, b);
 
     return map;
-});
+}, { name: 'brokerMap', equals: comparer.structural });
+
 
 export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);

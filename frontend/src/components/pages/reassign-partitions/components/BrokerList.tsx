@@ -3,20 +3,21 @@ import { Tag, Popover, Tooltip } from "antd";
 import { LazyMap } from "../../../../utils/LazyMap";
 import { Broker, Partition } from "../../../../state/restInterfaces";
 import { api, brokerMap } from "../../../../state/backendApi";
-import { computed } from "mobx";
 import { findPopupContainer, QuickTable } from "../../../../utils/tsxUtils";
 import { CheckIcon } from "@primer/octicons-v2-react";
-
-// const tooltipMap = new LazyMap<number, JSX.Element>(id =>
-//     <Tooltip>
-
-//     </Tooltip>
-//     );
+import { observer } from "mobx-react";
 
 type BrokerListProps = { brokerIds: number[]; addedIds?: number[], removedIds?: number[], leaderId?: number; } | { partition: Partition };
 
-
+@observer
 export class BrokerList extends Component<BrokerListProps> {
+
+    constructor(p: any) {
+        super(p);
+        if (!api.clusterInfo)
+            setImmediate(() => api.refreshCluster());
+    }
+
     render() {
         let leaderId: number;
         let sortedIds: number[];
