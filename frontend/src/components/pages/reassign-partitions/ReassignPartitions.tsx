@@ -2,14 +2,14 @@ import React, { ReactNode, Component } from "react";
 import { observer } from "mobx-react";
 import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification, ConfigProvider } from "antd";
 import { PageComponent, PageInitHelper } from "../Page";
-import { api } from "../../../state/backendApi";
+import { api, partialTopicConfigs } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
-import { toJson } from "../../../utils/jsonUtils";
+import { clone, toJson } from "../../../utils/jsonUtils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
@@ -53,6 +53,8 @@ class ReassignPartitions extends PageComponent {
     @observable _debug_brokers: Broker[] | null = null;
 
     reassignmentTracker: ReassignmentTracker;
+    refreshTopicConfigsTimer: NodeJS.Timer | null = null;
+    topicsWithThrottle: string[] = [];
 
     @observable requestInProgress = false;
 
@@ -63,12 +65,17 @@ class ReassignPartitions extends PageComponent {
         appGlobal.onRefresh = () => this.refreshData(true);
         this.refreshData(true);
 
+        this.removeThrottleFromTopics = this.removeThrottleFromTopics.bind(this);
 
         const oriOnNextPage = this.onNextPage.bind(this);
         this.onNextPage = () => transaction(oriOnNextPage);
 
         const oriOnPrevPage = this.onPreviousPage.bind(this);
         this.onPreviousPage = () => transaction(oriOnPrevPage);
+
+
+        this.refreshTopicConfigs();
+        this.refreshTopicConfigsTimer = setInterval(this.refreshTopicConfigs, 6000);
     }
 
     componentDidMount() {
@@ -86,6 +93,10 @@ class ReassignPartitions extends PageComponent {
     componentWillUnmount() {
         if (this.reassignmentTracker)
             this.reassignmentTracker.stop();
+        if (this.refreshTopicConfigsTimer) {
+            clearInterval(this.refreshTopicConfigsTimer);
+            this.refreshTopicConfigsTimer = null;
+        }
     }
 
     render() {
@@ -117,7 +128,10 @@ class ReassignPartitions extends PageComponent {
 
                 {/* Active Reassignments */}
                 <Card>
-                    {this.reassignmentTracker && <ActiveReassignments tracker={this.reassignmentTracker} />}
+                    {this.reassignmentTracker && <ActiveReassignments
+                        tracker={this.reassignmentTracker}
+                        onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
+                    />}
                 </Card>
 
                 {/* Content */}
@@ -133,7 +147,9 @@ class ReassignPartitions extends PageComponent {
                     <motion.div {...animProps} key={"step" + this.currentStep}> {(() => {
                         switch (this.currentStep) {
                             case 0: return <StepSelectPartitions
-                                partitionSelection={this.partitionSelection} />;
+                                partitionSelection={this.partitionSelection}
+                                throttledTopics={this.topicsWithThrottle}
+                            />;
                             case 1: return <StepSelectBrokers
                                 partitionSelection={this.partitionSelection}
                                 selectedBrokerIds={this.selectedBrokerIds} />;
@@ -175,6 +191,10 @@ class ReassignPartitions extends PageComponent {
                     </div>
                 </Card>
 
+                <div>
+                    <div>topics with throttle</div>
+                    <pre>{toJson(this.topicsWithThrottle, 4)}</pre>
+                </div>
                 {/* Debug */}
                 {/* <div style={{ margin: '2em 0 1em 0', display: 'flex', flexWrap: 'wrap', gap: '3em' }}>
                     <div>
@@ -434,6 +454,41 @@ class ReassignPartitions extends PageComponent {
         }
     }
 
+    async refreshTopicConfigs() {
+        try {
+            const topicConfigs = await partialTopicConfigs([
+                "follower.replication.throttled.replicas",
+                "leader.replication.throttled.replicas"
+            ]);
+            this.topicsWithThrottle = topicConfigs.topicDescriptions
+                .filter(t => t.configEntries.any(x => Boolean(x.value)))
+                .map(t => t.topicName).sort();
+
+        } catch (err) {
+            console.error("error while refreshing topic configs, stopping auto refresh", { error: err });
+            if (this.refreshTopicConfigsTimer) {
+                clearInterval(this.refreshTopicConfigsTimer);
+                this.refreshTopicConfigsTimer = null;
+            }
+        }
+    }
+
+    async removeThrottleFromTopics() {
+        const throttledTopics = clone(this.topicsWithThrottle);
+        const baseText = 'Removing throttle config from topics';
+        const msg = new Message(baseText + '...');
+
+        const result = await api.resetThrottledReplicas(throttledTopics);
+        const errors = result.patchedConfigs.filter(r => r.error);
+
+        if (errors.length == 0) {
+            msg.setSuccess(baseText + " - Done");
+        }
+        else {
+            msg.setError(baseText + ": " + errors.length + " errors");
+            console.error("errors in removeThrottleFromTopics", errors);
+        }
+    }
 
     @computed get selectedTopicPartitions(): TopicPartitions[] {
         return partitionSelectionToTopicPartitions(
@@ -442,6 +497,7 @@ class ReassignPartitions extends PageComponent {
             api.topics!
         );
     }
+
     @computed get topicsWithMoves(): TopicWithMoves[] {
         if (this.reassignmentRequest == null) return [];
         if (api.topics == null) return [];
@@ -452,8 +508,6 @@ class ReassignPartitions extends PageComponent {
             api.topicPartitions,
         );
     }
-
-
 }
 export default ReassignPartitions;
 

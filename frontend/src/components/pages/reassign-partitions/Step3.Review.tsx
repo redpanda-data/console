@@ -136,8 +136,8 @@ export class StepReview extends Component<{
                 <div style={{ marginTop: '0.5em' }}>
                     <span style={{ fontWeight: 600 }}>Please Note: </span>
                     Throttling applies to all replication traffic, not just during reassignments.
-                    Once the reassignment completes you'll have to manually remove the throttling configuration.
-                    This can be done here in Kowl: <a>Some config page thing asdasdasdasd</a>
+                    Once the reassignment completes you'll have to remove the throttling configuration.
+                    You can check for topics that still have a throttle config using the button below 'Current Reassignments' (at the top of the 'Reassign Partitions' page).
                 </div>
             </div>
 

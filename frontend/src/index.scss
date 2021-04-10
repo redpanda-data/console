@@ -1635,6 +1635,30 @@ svg {
 
         border-radius: 1px;
     }
+
+    // section
+    .currentReassignments {
+        display: flex;
+        place-items: center;
+        margin-bottom: .5em;
+        gap: .5em;
+
+        .title {
+            font-size: 1.17em;
+            font-weight: 500;
+            color: hsla(0deg, 0%, 0%, 85%);
+            margin-left: .2em;
+            padding-bottom: 2px;
+        }
+
+        button {
+            background: hsla(210deg, 100%, 56%, 0.05);
+
+            &:hover {
+                background: hsl(210deg, 80%, 95%);
+            }
+        }
+    }
 }
 
 .nestedTable .ant-table-container tr {
@@ -1881,6 +1905,8 @@ tr.inprogress {
     background: hsl(53deg, 100%, 80%);
 }
 
+
+// table
 .activeReassignments {
 
     // slow animation of progress bar

@@ -18,7 +18,7 @@ import { strictEqual } from "assert";
 
 
 @observer
-export class ActiveReassignments extends Component<{ tracker: ReassignmentTracker }> {
+export class ActiveReassignments extends Component<{ tracker: ReassignmentTracker, onRemoveThrottleFromTopics: () => void }> {
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeActive ?? 10);
 
     // When set, a modal will be shown for the reassignment state
@@ -70,20 +70,22 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
             : <>Throttle: {prettyBytesOrNA(minThrottle)}/s</>
 
         return <>
-            <div style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
-                <span style={{
-                    fontSize: '1.17em', fontWeight: 500, color: 'hsl(0deg, 0%, 0%, 85%)',
-                    marginLeft: '.2em', paddingBottom: '2px'
-                }}
-                >Current Reassignments
-                </span>
+            {/* Title */}
+            <div className='currentReassignments' style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
+                <span className='title'>Current Reassignments</span>
+
+                <Button type='link' size='small' style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                    onClick={this.props.onRemoveThrottleFromTopics}
+                >Remove throttle from completed topics</Button>
 
                 {this.props.tracker.trackingReassignments.length > 0 &&
-                    <Button type='link' onClick={() => this.showThrottleDialog = true}
-                        style={{ fontSize: 'smaller' }}
+                    <Button type='link' size='small' style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                        onClick={() => this.showThrottleDialog = true}
                     >{throttleText}</Button>
                 }
             </div>
+
+            {/* Table */}
             <ConfigProvider renderEmpty={() =>
                 <div style={{ color: '#00000059', margin: '.4em 0' }}>No reassignments currently in progress</div>
             }>
@@ -109,9 +111,9 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
                         this.pageConfig.pageSize = p.pageSize;
                     }}
                 />
-
             </ConfigProvider>
-            <ReassignmentDetailsModal state={this.reassignmentDetails} onClose={() => this.reassignmentDetails = null} />
+
+            <ReassignmentDetailsDialog state={this.reassignmentDetails} onClose={() => this.reassignmentDetails = null} />
             <ThrottleDialog visible={this.showThrottleDialog} lastKnownMinThrottle={minThrottle} onClose={() => this.showThrottleDialog = false} />
         </>
     }
@@ -247,7 +249,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
 
 @observer
-export class ReassignmentDetailsModal extends Component<{ state: ReassignmentState | null, onClose: () => void }> {
+export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentState | null, onClose: () => void }> {
     lastState: ReassignmentState | null;
     @observable shouldThrottle = false;
     wasVisible = false;

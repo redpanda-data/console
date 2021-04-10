@@ -151,6 +151,9 @@ export interface TopicDescription {
 export interface TopicConfigResponse {
     topicDescription: TopicDescription
 }
+export interface PartialTopicConfigsResponse {
+    topicDescriptions: TopicDescription[];
+}
 export interface TopicDocumentation {
     // if false: topic documentation is not configured
     isEnabled: boolean;

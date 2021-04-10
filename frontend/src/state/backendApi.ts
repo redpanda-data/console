@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -747,6 +747,35 @@ export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);
     const query = filters.map(x => `${x.key}=${x.value}`).join('&');
     return query;
+}
+
+export async function partialTopicConfigs(configKeys: string[], topics?: string[]): Promise<PartialTopicConfigsResponse> {
+    const keys = configKeys.map(k => encodeURIComponent(k)).join(',');
+    const topicNames = topics?.map(t => encodeURIComponent(t)).join(',');
+    const query = topicNames
+        ? `topicNames=${topicNames}&configKeys=${keys}`
+        : `configKeys=${keys}`;
+
+    const response = await fetch('./api/topics-configs?' + query);
+
+    if (!response.ok) {
+        const text = await response.text();
+        try {
+            const errObj = JSON.parse(text) as ApiError;
+            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                // if the shape matches, reformat it a bit
+                throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+            }
+        }
+        catch { } // not json
+
+        // use generic error text
+        throw new Error(`${text} (${response.status} - ${response.statusText})`);
+    }
+
+    const str = await response.text();
+    const data = (JSON.parse(str) as PartialTopicConfigsResponse);
+    return data;
 }
 
 export interface MessageSearchRequest {

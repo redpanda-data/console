@@ -8,7 +8,7 @@ import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
 import { SelectionInfoBar } from "./components/StatisticsBars";
 import { DebugTimerStore, prettyBytesOrNA } from "../../../utils/utils";
 import { ColumnProps } from "antd/lib/table/Column";
-import { DefaultSkeleton, findPopupContainer, OptionGroup, TextInfoIcon } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, findPopupContainer, LayoutBypass, OptionGroup, TextInfoIcon } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
 import { computed, IReactionDisposer, observable, transaction } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
@@ -16,11 +16,12 @@ import Highlighter from 'react-highlight-words';
 import { uiSettings } from "../../../state/ui";
 import { ColumnFilterItem, FilterDropdownProps } from "antd/lib/table/interface";
 import { SearchOutlined } from "@ant-design/icons";
+import { AlertIcon } from "@primer/octicons-v2-react";
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
 
 @observer
-export class StepSelectPartitions extends Component<{ partitionSelection: PartitionSelection }> {
+export class StepSelectPartitions extends Component<{ partitionSelection: PartitionSelection, throttledTopics: string[] }> {
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeSelect ?? 10);
     autorunHandle: IReactionDisposer | undefined = undefined;
     @observable filterOpen = false; // topic name searchbar
@@ -45,7 +46,6 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
     render() {
         if (!api.topics) return DefaultSkeleton;
-        if (api.topicPartitions.size == 0) return <Empty />
 
         const query = uiSettings.reassignment.quickSearch ?? "";
         let filterActive = query.length > 1;
@@ -59,9 +59,35 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             {
                 title: <SearchTitle title='Topic' isFilterOpen={() => this.filterOpen} setFilterOpen={x => this.filterOpen = x} />,
                 dataIndex: 'topicName',
-                render: (v, record) => filterActive
-                    ? <Highlighter searchWords={[query]} textToHighlight={record.topicName} />
-                    : record.topicName,
+                render: (v, record) => {
+                    const content = filterActive
+                        ? <Highlighter searchWords={[query]} textToHighlight={record.topicName} />
+                        : record.topicName;
+
+                    if (this.props.throttledTopics.includes(record.topicName))
+                        return <div>
+                            <span>{content}</span>
+                            <LayoutBypass >
+                                <div className='tooltip' style={{
+                                    color: 'hsl(33deg, 90%, 65%)',
+                                    // background: 'hsl(0deg, 100%, 50%)',
+                                    borderRadius: '25px',
+                                    display: 'inline-flex',
+                                    placeItems: 'center',
+                                    verticalAlign: 'middle',
+                                    marginLeft: '30px',
+                                    width: '22px', height: '22px',
+
+                                }}>
+                                    <AlertIcon />
+                                    <span className='tooltiptext'>Topic replication is throttled</span>
+                                </div>
+                            </LayoutBypass>
+
+                        </div>
+
+                    return content;
+                },
 
                 sorter: sortField('topicName'), defaultSortOrder: 'ascend',
 
