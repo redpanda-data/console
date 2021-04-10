@@ -1909,3 +1909,66 @@ tr.inprogress {
     width: 20px;
     margin-right: 10px;
 }
+
+
+
+// Container for text that has the tooltip
+.tooltip {
+    position: relative;
+    display: inline-block;
+
+    // Text shown in the bubble
+    .tooltiptext {
+        position: absolute;
+        z-index: 1;
+        visibility: hidden;
+        min-width: 60px;
+
+        padding: .5em .75em;
+        border-radius: 4px;
+
+        background-color: hsla(210, 14%, 20%, 0.9);
+        color: hsl(0, 0%, 87%);
+        text-align: center;
+
+        font-size: 11px;
+        font-family: Verdana, 'Segoe UI', Tahoma, Geneva, sans-serif;
+        line-height: 1.5;
+
+        // position at top
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+
+        // animate
+        opacity: 0;
+        transition: opacity 150ms 300ms;
+
+
+        // make tooltip not instantly dissapear when trying to copy from it
+        &::after {
+            $space: -6px;
+
+            content: ' ';
+            position: absolute;
+            top: $space;
+            left: $space;
+            bottom: $space;
+            right: $space;
+            z-index: -1;
+            background: transparent;
+        }
+
+    }
+
+    &:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+    }
+
+}
+
+.nbspSeparator {
+    white-space: nowrap;
+    font-size: 66%;
+}
