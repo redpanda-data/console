@@ -15,10 +15,11 @@ import { ReassignmentState, ReassignmentTracker } from "../logic/reassignmentTra
 import { observer } from "mobx-react";
 import { EllipsisOutlined } from "@ant-design/icons";
 import { strictEqual } from "assert";
+import { reassignmentTracker } from "../ReassignPartitions";
 
 
 @observer
-export class ActiveReassignments extends Component<{ tracker: ReassignmentTracker, throttledTopics: string[], onRemoveThrottleFromTopics: () => void }> {
+export class ActiveReassignments extends Component<{ throttledTopics: string[], onRemoveThrottleFromTopics: () => void }> {
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeActive ?? 10);
 
     // When set, a modal will be shown for the reassignment state
@@ -74,7 +75,7 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
             <div className='currentReassignments' style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
                 <span className='title'>Current Reassignments</span>
 
-                {this.props.tracker.trackingReassignments.length > 0 &&
+                {reassignmentTracker.trackingReassignments.length > 0 &&
                     <Button type='link' size='small' style={{ fontSize: 'smaller', padding: '0px 8px' }}
                         onClick={() => this.showThrottleDialog = true}
                     >{throttleText}</Button>
@@ -89,7 +90,7 @@ export class ActiveReassignments extends Component<{ tracker: ReassignmentTracke
                     style={{ margin: '0', }} size={'middle'}
                     className='activeReassignments'
 
-                    dataSource={this.props.tracker.trackingReassignments.slice() ?? []}
+                    dataSource={reassignmentTracker.trackingReassignments.slice() ?? []}
                     columns={columnsActiveReassignments}
 
                     rowKey={r => r.topicName}

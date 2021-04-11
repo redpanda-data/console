@@ -33,6 +33,11 @@ export interface PartitionSelection { // Which partitions are selected?
     [topicName: string]: number[] // topicName -> array of partitionIds
 }
 
+
+const reassignmentTracker = new ReassignmentTracker();
+export { reassignmentTracker };
+
+
 @observer
 class ReassignPartitions extends PageComponent {
     pageConfig = makePaginationConfig(15, true);
@@ -52,7 +57,6 @@ class ReassignPartitions extends PageComponent {
     @observable _debug_topicPartitions: TopicPartitions[] | null = null;
     @observable _debug_brokers: Broker[] | null = null;
 
-    reassignmentTracker: ReassignmentTracker;
     refreshTopicConfigsTimer: NodeJS.Timer | null = null;
     refreshTopicConfigsRequestsInProgress: number = 0;
 
@@ -69,8 +73,6 @@ class ReassignPartitions extends PageComponent {
     }
 
     componentDidMount() {
-        this.reassignmentTracker = new ReassignmentTracker();
-
         this.removeThrottleFromTopics = this.removeThrottleFromTopics.bind(this);
 
         const oriOnNextPage = this.onNextPage.bind(this);
@@ -79,9 +81,14 @@ class ReassignPartitions extends PageComponent {
         const oriOnPrevPage = this.onPreviousPage.bind(this);
         this.onPreviousPage = () => transaction(oriOnPrevPage);
 
+        this.startRefreshingTopicConfigs = this.startRefreshingTopicConfigs.bind(this);
+        this.stopRefreshingTopicConfigs = this.stopRefreshingTopicConfigs.bind(this);
+
         this.refreshTopicConfigs = this.refreshTopicConfigs.bind(this);
         this.refreshTopicConfigs();
-        this.refreshTopicConfigsTimer = setInterval(this.refreshTopicConfigs, 6000);
+
+
+        reassignmentTracker.start();
     }
 
     refreshData(force: boolean) {
@@ -93,12 +100,9 @@ class ReassignPartitions extends PageComponent {
     }
 
     componentWillUnmount() {
-        if (this.reassignmentTracker)
-            this.reassignmentTracker.stop();
-        if (this.refreshTopicConfigsTimer) {
-            clearInterval(this.refreshTopicConfigsTimer);
-            this.refreshTopicConfigsTimer = null;
-        }
+        reassignmentTracker.stop();
+
+        this.stopRefreshingTopicConfigs();
     }
 
     render() {
@@ -130,11 +134,10 @@ class ReassignPartitions extends PageComponent {
 
                 {/* Active Reassignments */}
                 <Card>
-                    {this.reassignmentTracker && <ActiveReassignments
-                        tracker={this.reassignmentTracker}
+                    <ActiveReassignments
                         throttledTopics={this.topicsWithThrottle}
                         onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
-                    />}
+                    />
                 </Card>
 
                 {/* Content */}
@@ -453,6 +456,17 @@ class ReassignPartitions extends PageComponent {
         }
     }
 
+    startRefreshingTopicConfigs() {
+        if (this.refreshTopicConfigsTimer == null)
+            this.refreshTopicConfigsTimer = setInterval(this.refreshTopicConfigs, 6000);
+    }
+    stopRefreshingTopicConfigs() {
+        if (this.refreshTopicConfigsTimer) {
+            clearInterval(this.refreshTopicConfigsTimer);
+            this.refreshTopicConfigsTimer = null;
+        }
+    }
+
     async refreshTopicConfigs() {
         try {
             if (this.refreshTopicConfigsRequestsInProgress > 0) return;
@@ -470,10 +484,7 @@ class ReassignPartitions extends PageComponent {
 
         } catch (err) {
             console.error("error while refreshing topic configs, stopping auto refresh", { error: err });
-            if (this.refreshTopicConfigsTimer) {
-                clearInterval(this.refreshTopicConfigsTimer);
-                this.refreshTopicConfigsTimer = null;
-            }
+            this.stopRefreshingTopicConfigs();
         } finally {
             this.refreshTopicConfigsRequestsInProgress--;
         }

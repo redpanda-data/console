@@ -69,6 +69,14 @@ export class ReassignmentTracker {
         this.updateReassignmentState = this.updateReassignmentState.bind(this);
         this.computeId = this.computeId.bind(this);
         this.stop = this.stop.bind(this);
+        this.start = this.start.bind(this);
+
+        this.start();
+    }
+
+    start() {
+        const alreadyStarted = this.reassignTimer != null;
+        if (alreadyStarted) return;
 
         // Active reassignments
         this.reassignTimer = setInterval(() => this.refreshReassignments(), refreshIntervals.reassignments);
