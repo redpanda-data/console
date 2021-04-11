@@ -427,10 +427,10 @@ const apiStore = {
 
                             let partitionHasError = false;
                             if (p.partitionError) {
-                                partitionErrors.push({ topicName: t.topicName, partitionId: p.id, error: p.partitionError });
+                                partitionErrors.push({ partitionId: p.id, error: p.partitionError });
                                 partitionHasError = true;
                             } if (p.waterMarksError) {
-                                waterMarkErrors.push({ topicName: t.topicName, partitionId: p.id, error: p.waterMarksError });
+                                waterMarkErrors.push({ partitionId: p.id, error: p.waterMarksError });
                                 partitionHasError = true;
                             }
                             if (partitionHasError) continue;
