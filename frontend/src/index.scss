@@ -1941,7 +1941,6 @@ tr.inprogress {
 // Container for text that has the tooltip
 .tooltip {
     position: relative;
-    display: inline-block;
 
     // Text shown in the bubble
     .tooltiptext {
@@ -1992,6 +1991,12 @@ tr.inprogress {
         opacity: 1;
     }
 
+    code {
+        background: hsl(210deg, 8%, 35%);
+        border-radius: 2px;
+        padding: 2px 4px;
+        line-height: 2;
+    }
 }
 
 .nbspSeparator {

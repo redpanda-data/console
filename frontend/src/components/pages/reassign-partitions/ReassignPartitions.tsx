@@ -1,6 +1,6 @@
 import React, { ReactNode, Component } from "react";
 import { observer } from "mobx-react";
-import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification, ConfigProvider } from "antd";
+import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification, ConfigProvider, Modal } from "antd";
 import { PageComponent, PageInitHelper } from "../Page";
 import { api, partialTopicConfigs } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
@@ -12,7 +12,7 @@ import { observable, computed, autorun, IReactionDisposer, transaction, untracke
 import { clone, toJson } from "../../../utils/jsonUtils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
-import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { DefaultSkeleton, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
 import { stringify } from "query-string";
@@ -55,7 +55,8 @@ class ReassignPartitions extends PageComponent {
     reassignmentTracker: ReassignmentTracker;
     refreshTopicConfigsTimer: NodeJS.Timer | null = null;
     refreshTopicConfigsRequestsInProgress: number = 0;
-    topicsWithThrottle: string[] = [];
+
+    @observable topicsWithThrottle: string[] = [];
 
     @observable requestInProgress = false;
 
@@ -78,7 +79,7 @@ class ReassignPartitions extends PageComponent {
         const oriOnPrevPage = this.onPreviousPage.bind(this);
         this.onPreviousPage = () => transaction(oriOnPrevPage);
 
-
+        this.refreshTopicConfigs = this.refreshTopicConfigs.bind(this);
         this.refreshTopicConfigs();
         this.refreshTopicConfigsTimer = setInterval(this.refreshTopicConfigs, 6000);
     }
@@ -131,6 +132,7 @@ class ReassignPartitions extends PageComponent {
                 <Card>
                     {this.reassignmentTracker && <ActiveReassignments
                         tracker={this.reassignmentTracker}
+                        throttledTopics={this.topicsWithThrottle}
                         onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
                     />}
                 </Card>
@@ -459,9 +461,12 @@ class ReassignPartitions extends PageComponent {
                 "follower.replication.throttled.replicas",
                 "leader.replication.throttled.replicas"
             ]);
-            this.topicsWithThrottle = topicConfigs.topicDescriptions
+
+            const newThrottledTopics = topicConfigs.topicDescriptions
                 .filter(t => t.configEntries.any(x => Boolean(x.value)))
-                .map(t => t.topicName).sort();
+                .map(t => t.topicName).sort();;
+
+            this.topicsWithThrottle.updateWith(newThrottledTopics);
 
         } catch (err) {
             console.error("error while refreshing topic configs, stopping auto refresh", { error: err });
@@ -476,19 +481,68 @@ class ReassignPartitions extends PageComponent {
 
     async removeThrottleFromTopics() {
         const throttledTopics = clone(this.topicsWithThrottle);
-        const baseText = 'Removing throttle config from topics';
-        const msg = new Message(baseText + '...');
+        const refreshTopicConfigs = this.refreshTopicConfigs;
 
-        const result = await api.resetThrottledReplicas(throttledTopics);
-        const errors = result.patchedConfigs.filter(r => r.error);
+        Modal.confirm({
+            title: 'Remove throttle config from topics',
+            icon: <ExclamationCircleOutlined />,
+            width: 'auto',
+            style: { maxWidth: '66%' },
+            content:
+                <div>
+                    <div>
+                        There are {this.topicsWithThrottle.length} topics with throttling applied to their replicas.<br />
+                        Kowl implements throttling of reassignments by
+                        setting{' '}
+                        <span className='tooltip' style={{ textDecoration: 'dotted underline' }}>
+                            two configuration values
+                            <span className='tooltiptext' style={{ textAlign: 'left', width: '500px' }}>
+                                Kowl sets those two configuration entries when throttling a topic reassignment:
+                                <div style={{ marginTop: '.5em' }}>
+                                    <code>leader.replication.throttled.replicas</code><br />
+                                    <code>follower.replication.throttled.replicas</code>
+                                </div>
+                            </span>
+                        </span>{' '}
+                        in a topics configuration.<br />
+                        So if you previously used Kowl to reassign any of the partitions of the following topics, the throttling config might still be active.
+                    </div>
+                    <div style={{ margin: '1em 0' }}>
+                        <h4>Throttled Topics</h4>
+                        <ul style={{ maxHeight: '145px', overflowY: 'scroll' }}>
+                            {throttledTopics.map(t => <li key={t}>{t}</li>)}
+                        </ul>
+                    </div>
+                    <div>
+                        Do you want to remove the throttle config from those topics?
+                    </div>
+                </div>,
 
-        if (errors.length == 0) {
-            msg.setSuccess(baseText + " - Done");
-        }
-        else {
-            msg.setError(baseText + ": " + errors.length + " errors");
-            console.error("errors in removeThrottleFromTopics", errors);
-        }
+            okText: 'Remove throttle',
+            okButtonProps: { danger: true, autoFocus: false, },
+            async onOk() {
+                const baseText = 'Removing throttle config from topics';
+                const msg = new Message(baseText + '...');
+
+                const result = await api.resetThrottledReplicas(throttledTopics);
+                const errors = result.patchedConfigs.filter(r => r.error);
+
+                if (errors.length == 0) {
+                    msg.setSuccess(baseText + " - Done");
+                }
+                else {
+                    msg.setError(baseText + ": " + errors.length + " errors");
+                    console.error("errors in removeThrottleFromTopics", errors);
+                }
+
+                refreshTopicConfigs();
+            },
+
+            maskClosable: true,
+            cancelButtonProps: { autoFocus: true },
+        })
+
+
     }
 
     @computed get selectedTopicPartitions(): TopicPartitions[] {
