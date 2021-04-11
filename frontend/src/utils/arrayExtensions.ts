@@ -46,6 +46,17 @@ declare global {
 
         filterNull<T>(this: (T | null | undefined)[]): T[];
         filterFalsy<T>(this: (T | null | undefined)[]): T[];
+
+        /**
+         * Replace the content with the given data.
+         * Intended to be used with mobx observable arrays, where setting the whole
+         * array (even with identical contents) would notify all observers.
+         *
+         * This function instead computes the difference and adds/removes them.
+         *
+         * It is strongly reccomended to wrap calls to this in a mobx transaction() or similar.
+         */
+        updateWith<T>(this: T[], newData: T[]): void;
     }
 }
 
@@ -160,6 +171,27 @@ Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefine
     });
 
     return ar;
+};
+
+Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): void {
+
+    // Early out, compare both arrays
+    if (this.length == newData.length) {
+        let same = true;
+        for (let i = 0; i < this.length; i++)
+            if (this[i] != newData[i]) {
+                same = false;
+                break;
+            }
+        if (same) return;
+    }
+
+    const added = newData.except(this);
+    const removed = this.except(newData);
+
+    this.removeAll(x => removed.includes(x));
+    for (const a of added)
+        this.push(a);
 };
 
 
