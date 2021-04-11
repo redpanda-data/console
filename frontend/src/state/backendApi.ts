@@ -38,17 +38,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
         return null;
     }
 
-    try {
-        for (const [k, v] of res.headers) {
-            if (k.toLowerCase() == 'app-version') {
-                const serverVersion = JSON.parse(v) as ServerVersionInfo;
-                if (typeof serverVersion === 'object')
-                    if (uiState.serverVersion == null || (serverVersion.ts != uiState.serverVersion.ts))
-                        uiState.serverVersion = serverVersion;
-                break;
-            }
-        }
-    } catch { } // Catch malformed json (old versions where info is not sent as json yet)
+    processVersionInfo(res);
 
     if (!res.ok) {
         const text = await res.text();
@@ -93,6 +83,20 @@ async function handle401(res: Response) {
 
     // Redirect to login
     appGlobal.history.push('/login');
+}
+
+function processVersionInfo(res: Response) {
+    try {
+        for (const [k, v] of res.headers) {
+            if (k.toLowerCase() == 'app-version') {
+                const serverVersion = JSON.parse(v) as ServerVersionInfo;
+                if (typeof serverVersion === 'object')
+                    if (uiState.serverVersion == null || (serverVersion.ts != uiState.serverVersion.ts))
+                        uiState.serverVersion = serverVersion;
+                break;
+            }
+        }
+    } catch { } // Catch malformed json (old versions where info is not sent as json yet)
 }
 
 const cache = new LazyMap<string, CacheEntry>(u => new CacheEntry(u));
