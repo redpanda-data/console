@@ -54,6 +54,7 @@ class ReassignPartitions extends PageComponent {
 
     reassignmentTracker: ReassignmentTracker;
     refreshTopicConfigsTimer: NodeJS.Timer | null = null;
+    refreshTopicConfigsRequestsInProgress: number = 0;
     topicsWithThrottle: string[] = [];
 
     @observable requestInProgress = false;
@@ -64,6 +65,10 @@ class ReassignPartitions extends PageComponent {
 
         appGlobal.onRefresh = () => this.refreshData(true);
         this.refreshData(true);
+    }
+
+    componentDidMount() {
+        this.reassignmentTracker = new ReassignmentTracker();
 
         this.removeThrottleFromTopics = this.removeThrottleFromTopics.bind(this);
 
@@ -76,10 +81,6 @@ class ReassignPartitions extends PageComponent {
 
         this.refreshTopicConfigs();
         this.refreshTopicConfigsTimer = setInterval(this.refreshTopicConfigs, 6000);
-    }
-
-    componentDidMount() {
-        this.reassignmentTracker = new ReassignmentTracker();
     }
 
     refreshData(force: boolean) {
@@ -191,10 +192,6 @@ class ReassignPartitions extends PageComponent {
                     </div>
                 </Card>
 
-                <div>
-                    <div>topics with throttle</div>
-                    <pre>{toJson(this.topicsWithThrottle, 4)}</pre>
-                </div>
                 {/* Debug */}
                 {/* <div style={{ margin: '2em 0 1em 0', display: 'flex', flexWrap: 'wrap', gap: '3em' }}>
                     <div>
@@ -456,6 +453,8 @@ class ReassignPartitions extends PageComponent {
 
     async refreshTopicConfigs() {
         try {
+            if (this.refreshTopicConfigsRequestsInProgress > 0) return;
+            this.refreshTopicConfigsRequestsInProgress++;
             const topicConfigs = await partialTopicConfigs([
                 "follower.replication.throttled.replicas",
                 "leader.replication.throttled.replicas"
@@ -470,6 +469,8 @@ class ReassignPartitions extends PageComponent {
                 clearInterval(this.refreshTopicConfigsTimer);
                 this.refreshTopicConfigsTimer = null;
             }
+        } finally {
+            this.refreshTopicConfigsRequestsInProgress--;
         }
     }
 
