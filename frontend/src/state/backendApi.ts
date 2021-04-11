@@ -405,38 +405,56 @@ const apiStore = {
             .then(response => {
                 if (!response?.topics) return;
                 transaction(() => {
+
+                    const errors: {
+                        topicName: string,
+                        partitionErrors: { partitionId: number, error: string }[],
+                        waterMarkErrors: { partitionId: number, error: string }[],
+                    }[] = [];
+
                     for (const t of response.topics) {
                         if (t.error != null) {
                             console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
                             continue;
                         }
 
-                        let partitionErrors = 0;
-                        let waterMarkErrors = 0;
-
-                        // Add some local/cached properties to make working with the data easier
+                        // If any partition has any errors, don't set the result for that topic
+                        const partitionErrors = [];
+                        const waterMarkErrors = [];
                         for (const p of t.partitions) {
                             // topicName
                             p.topicName = t.topicName;
 
-                            if (p.partitionError) partitionErrors++;
-                            if (p.waterMarksError) waterMarkErrors++;
-                            if (partitionErrors || waterMarkErrors) continue;
+                            let partitionHasError = false;
+                            if (p.partitionError) {
+                                partitionErrors.push({ topicName: t.topicName, partitionId: p.id, error: p.partitionError });
+                                partitionHasError = true;
+                            } if (p.waterMarksError) {
+                                waterMarkErrors.push({ topicName: t.topicName, partitionId: p.id, error: p.waterMarksError });
+                                partitionHasError = true;
+                            }
+                            if (partitionHasError) continue;
 
-                            // replicaSize
+                            // Add some local/cached properties to make working with the data easier
                             const validLogDirs = p.partitionLogDirs.filter(e => !e.error && e.size >= 0);
                             const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
                             p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
                         }
 
-                        if (partitionErrors == 0 && waterMarkErrors == 0) {
-                            // Set partitions
+                        if (partitionErrors.length == 0 && waterMarkErrors.length == 0) {
+                            // Set partition
                             this.topicPartitions.set(t.topicName, t.partitions);
                         } else {
-                            console.error(`refreshAllTopicPartitions: response has partition errors (t=${t.topicName} p=${partitionErrors}, w=${waterMarkErrors})`)
+                            errors.push({
+                                topicName: t.topicName,
+                                partitionErrors: partitionErrors,
+                                waterMarkErrors: waterMarkErrors,
+                            })
                         }
-
                     }
+
+                    if (errors.length > 0)
+                        console.error('refreshAllTopicPartitions: response had errors', errors);
                 });
             }, addError);
     },
