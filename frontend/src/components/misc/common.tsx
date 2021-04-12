@@ -152,6 +152,8 @@ export class UpdatePopup extends Component {
 
         // don't downgrade
         if (serverTimestamp < curTimestamp) return null;
+        // version already matches
+        if (serverTimestamp == curTimestamp) return null;
 
         console.log('frontend update available', {
             serverTimestamp: serverTimestamp,
