@@ -22,7 +22,7 @@ import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
 import { SelectPartitionTable, StepSelectPartitions } from "./Step1.Partitions";
 import { PartitionWithMoves, StepReview, TopicWithMoves } from "./Step3.Review";
 import { ApiData, computeReassignments, TopicPartitions } from "./logic/reassignLogic";
-import { computeMovedReplicas, partitionSelectionToTopicPartitions } from "./logic/utils";
+import { computeMovedReplicas, partitionSelectionToTopicPartitions, removeRedundantReassignments, topicAssignmentsToReassignmentRequest } from "./logic/utils";
 import { IsDev } from "../../../utils/env";
 import { Message } from "../../../utils/utils";
 import { ActiveReassignments } from "./components/ActiveReassignments";
@@ -51,7 +51,8 @@ class ReassignPartitions extends PageComponent {
     // brokers selected by user
     @observable selectedBrokerIds: number[] = [];
     // computed reassignments
-    @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request that will be sent
+    @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request as returned by the computation
+    @observable optimizedReassignmentRequest: PartitionReassignmentRequest | null = null; // optimized request that will be sent
 
     @observable _debug_apiData: ApiData | null = null;
     @observable _debug_topicPartitions: TopicPartitions[] | null = null;
@@ -255,24 +256,15 @@ class ReassignPartitions extends PageComponent {
             this._debug_topicPartitions = topicPartitions;
             this._debug_brokers = targetBrokers;
 
-            const topics = [];
-            for (const t in topicAssignments) {
-                const topicAssignment = topicAssignments[t];
-                const partitions: { partitionId: number, replicas: number[] | null }[] = [];
-                for (const partitionId in topicAssignment)
-                    partitions.push({
-                        partitionId: Number(partitionId),
-                        replicas: topicAssignment[partitionId].brokers.map(b => b.brokerId)
-                    });
+            const optimizedAssignments = removeRedundantReassignments(topicAssignments, apiData);
 
-                topics.push({ topicName: t, partitions: partitions });
-            }
-            this.reassignmentRequest = { topics: topics };
+            this.reassignmentRequest = topicAssignmentsToReassignmentRequest(topicAssignments);
+            this.optimizedReassignmentRequest = topicAssignmentsToReassignmentRequest(optimizedAssignments);
         }
 
         if (this.currentStep == 2) {
             // Review -> Start
-            const request = this.reassignmentRequest;
+            const request = this.optimizedReassignmentRequest;
             if (request == null) {
                 message.error('reassignment request was null', 3);
                 return;
