@@ -471,10 +471,16 @@ class ReassignPartitions extends PageComponent {
                 "leader.replication.throttled.replicas"
             ]);
 
+            // Only get the names of the topics that have throttles applied
             const newThrottledTopics = topicConfigs.topicDescriptions
                 .filter(t => t.configEntries.any(x => Boolean(x.value)))
                 .map(t => t.topicName).sort();;
 
+            // Filter topics that are still being reassigned
+            const inProgress = this.topicPartitionsInProgress;
+            newThrottledTopics.removeAll(t => inProgress.includes(t));
+
+            // Update observable
             const changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
             if (changes.added || changes.removed)
                 if (IsDev) console.log('refreshTopicConfigs updated', changes);
@@ -570,6 +576,10 @@ class ReassignPartitions extends PageComponent {
             api.topics,
             api.topicPartitions,
         );
+    }
+
+    @computed get topicPartitionsInProgress(): string[] {
+        return api.partitionReassignments?.map(r => r.topicName) ?? [];
     }
 }
 export default ReassignPartitions;
