@@ -275,7 +275,7 @@ class ExBroker implements Broker {
 
     recompute(apiData: ApiData, selectedTopicPartitions: TopicPartitions[]) {
         this.recomputeActual(apiData);
-        this.recomputeInitial(apiData, selectedTopicPartitions);
+        this.recomputeInitial(selectedTopicPartitions);
     }
 
     private recomputeActual(apiData: ApiData) {
@@ -308,7 +308,7 @@ class ExBroker implements Broker {
         }
     }
 
-    private recomputeInitial(apiData: ApiData, selectedTopicPartitions: TopicPartitions[]) {
+    private recomputeInitial(selectedTopicPartitions: TopicPartitions[]) {
         // Subtract the stats of the selected partitions
         let selectedReplicas = 0;
         let selectedSize = 0;
@@ -319,7 +319,7 @@ class ExBroker implements Broker {
                 selectedReplicas += p.replicas.count(x => x == this.brokerId);
                 selectedLeader += p.leader == this.brokerId ? 1 : 0;
 
-                // using 'first()' because each broker has exactly one entry (or maybe zero if broker is offline)
+                // using 'first()' because each broker as exactly one logDirEntry (or maybe zero if broker is offline)
                 let logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId);
                 if (logDirEntry) {
                     // direct match

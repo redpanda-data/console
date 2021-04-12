@@ -52,7 +52,7 @@ class ReassignPartitions extends PageComponent {
     @observable selectedBrokerIds: number[] = [];
     // computed reassignments
     @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request as returned by the computation
-    @observable optimizedReassignmentRequest: PartitionReassignmentRequest | null = null; // optimized request that will be sent
+    // @observable optimizedReassignmentRequest: PartitionReassignmentRequest | null = null; // optimized request that will be sent
 
     @observable _debug_apiData: ApiData | null = null;
     @observable _debug_topicPartitions: TopicPartitions[] | null = null;
@@ -87,6 +87,7 @@ class ReassignPartitions extends PageComponent {
 
         this.refreshTopicConfigs = this.refreshTopicConfigs.bind(this);
         this.refreshTopicConfigs();
+        this.startRefreshingTopicConfigs();
 
 
         reassignmentTracker.start();
@@ -256,15 +257,15 @@ class ReassignPartitions extends PageComponent {
             this._debug_topicPartitions = topicPartitions;
             this._debug_brokers = targetBrokers;
 
-            const optimizedAssignments = removeRedundantReassignments(topicAssignments, apiData);
 
             this.reassignmentRequest = topicAssignmentsToReassignmentRequest(topicAssignments);
-            this.optimizedReassignmentRequest = topicAssignmentsToReassignmentRequest(optimizedAssignments);
+            // const optimizedAssignments = removeRedundantReassignments(topicAssignments, apiData);
+            // this.optimizedReassignmentRequest = topicAssignmentsToReassignmentRequest(optimizedAssignments);
         }
 
         if (this.currentStep == 2) {
             // Review -> Start
-            const request = this.optimizedReassignmentRequest;
+            const request = this.reassignmentRequest;
             if (request == null) {
                 message.error('reassignment request was null', 3);
                 return;
@@ -449,10 +450,12 @@ class ReassignPartitions extends PageComponent {
     }
 
     startRefreshingTopicConfigs() {
+        if (IsDev) console.log('starting refreshTopicConfigs', { stack: new Error().stack });
         if (this.refreshTopicConfigsTimer == null)
             this.refreshTopicConfigsTimer = setInterval(this.refreshTopicConfigs, 6000);
     }
     stopRefreshingTopicConfigs() {
+        if (IsDev) console.log('stopping refreshTopicConfigs', { stack: new Error().stack });
         if (this.refreshTopicConfigsTimer) {
             clearInterval(this.refreshTopicConfigsTimer);
             this.refreshTopicConfigsTimer = null;
@@ -472,7 +475,9 @@ class ReassignPartitions extends PageComponent {
                 .filter(t => t.configEntries.any(x => Boolean(x.value)))
                 .map(t => t.topicName).sort();;
 
-            this.topicsWithThrottle.updateWith(newThrottledTopics);
+            const changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
+            if (changes.added || changes.removed)
+                if (IsDev) console.log('refreshTopicConfigs updated', changes);
 
         } catch (err) {
             console.error("error while refreshing topic configs, stopping auto refresh", { error: err });

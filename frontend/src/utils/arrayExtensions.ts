@@ -56,7 +56,7 @@ declare global {
          *
          * It is strongly reccomended to wrap calls to this in a mobx transaction() or similar.
          */
-        updateWith<T>(this: T[], newData: T[]): void;
+        updateWith<T>(this: T[], newData: T[]): { removed: number, added: number };
     }
 }
 
@@ -173,7 +173,7 @@ Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefine
     return ar;
 };
 
-Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): void {
+Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { removed: number, added: number } {
 
     // Early out, compare both arrays
     if (this.length == newData.length) {
@@ -183,7 +183,7 @@ Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): vo
                 same = false;
                 break;
             }
-        if (same) return;
+        if (same) return { removed: 0, added: 0 };
     }
 
     const added = newData.except(this);
@@ -192,6 +192,8 @@ Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): vo
     this.removeAll(x => removed.includes(x));
     for (const a of added)
         this.push(a);
+
+    return { removed: removed.length, added: added.length }
 };
 
 
