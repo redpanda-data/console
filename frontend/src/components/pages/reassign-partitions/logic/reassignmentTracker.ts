@@ -70,8 +70,6 @@ export class ReassignmentTracker {
         this.computeId = this.computeId.bind(this);
         this.stop = this.stop.bind(this);
         this.start = this.start.bind(this);
-
-        this.start();
     }
 
     start() {
