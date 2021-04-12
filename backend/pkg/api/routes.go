@@ -90,8 +90,6 @@ func (api *API) routes() *chi.Mux {
 
 			// SPA Files
 			router.Group(func(r chi.Router) {
-				r.Use(cache)
-
 				handleIndex, handleResources := api.createFrontendHandlers(frontendDir)
 				r.Get("/", handleIndex)
 				r.Get("/*", handleResources)
