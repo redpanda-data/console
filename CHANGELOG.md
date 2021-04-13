@@ -1,6 +1,6 @@
 # Changelog
 
-## unreleased / pending in master
+## 1.3.0 / 2021-04-13
 
 
 - [CHANGE] We removed the Kafka library and replaced it with [franz-go](https://github.com/twmb/franz-go). This allows us to add a lot more features in the future.
