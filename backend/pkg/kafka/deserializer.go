@@ -6,21 +6,25 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"unicode/utf8"
+
 	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/twmb/franz-go/pkg/kbin"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"strings"
-	"unicode/utf8"
+	"github.com/vmihailenco/msgpack/v5"
 
 	xj "github.com/basgys/goxml2json"
+	kmsgpack "github.com/cloudhut/kowl/backend/pkg/msgpack"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 )
 
 // deserializer can deserialize messages from various formats (json, xml, avro, ..) into a Go native form.
 type deserializer struct {
-	SchemaService *schema.Service
-	ProtoService  *proto.Service
+	SchemaService  *schema.Service
+	ProtoService   *proto.Service
+	MsgPackService *kmsgpack.Service
 }
 
 type messageEncoding string
@@ -34,6 +38,7 @@ const (
 	messageEncodingText            messageEncoding = "text"
 	messageEncodingConsumerOffsets messageEncoding = "consumerOffsets"
 	messageEncodingBinary          messageEncoding = "binary"
+	messageEncodingMsgP            messageEncoding = "msgpack"
 )
 
 // normalizedPayload is a wrapper of the original message with the purpose of having a custom JSON marshal method
@@ -107,7 +112,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		return &deserializedPayload{Payload: normalizedPayload{
 			Payload:            payload,
 			RecognizedEncoding: messageEncodingNone,
-		}, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(payload)}
+		}, Object: nil, RecognizedEncoding: messageEncodingNone, Size: len(payload)}
 	}
 
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
@@ -191,7 +196,22 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		}
 	}
 
-	// 5. Test for UTF-8 validity
+	// 5. Test for MessagePack (only if enabled and topic allowed)
+	if d.MsgPackService != nil && d.MsgPackService.IsTopicAllowed(topicName) {
+		var obj interface{}
+		err := msgpack.Unmarshal(payload, &obj)
+		if err == nil {
+			data, err := json.Marshal(obj)
+			if err == nil {
+				return &deserializedPayload{Payload: normalizedPayload{
+					Payload:            data,
+					RecognizedEncoding: messageEncodingMsgP,
+				}, Object: string(payload), RecognizedEncoding: messageEncodingMsgP, Size: len(payload)}
+			}
+		}
+	}
+	
+	// 6. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(payload)
 	if isUTF8 {
 		return &deserializedPayload{Payload: normalizedPayload{

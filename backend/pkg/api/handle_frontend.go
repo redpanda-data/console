@@ -2,9 +2,13 @@ package api
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"go.uber.org/zap"
@@ -12,7 +16,6 @@ import (
 
 // createFrontendHandlers creates two handlers: one to handle the '/' route and one to handle any other route
 func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.HandlerFunc, handleFrontendResources http.HandlerFunc) {
-
 	indexPath := frontendDir + "/index.html"
 	indexOriginal, err := ioutil.ReadFile(indexPath)
 	if err != nil {
@@ -42,6 +45,19 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 			index = indexOriginal
 		}
 
+		hash := hashData(index)
+		// For index.html we always set cache-control and etag
+		w.Header().Set("Cache-Control", "public, max-age=900, must-revalidate") // 900s = 15m
+		w.Header().Set("ETag", hash)
+
+		// Check if the client sent 'If-None-Match' potentially return "304" (not mofified / unchanged)
+		clientEtag := r.Header.Get("If-None-Match")
+		if len(clientEtag) > 0 && hash == clientEtag {
+			// Client already has the latest version of the file
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+
 		_, err := w.Write(index)
 		if err != nil {
 			api.Logger.Error("failed to write index file to response writer", zap.Error(err))
@@ -54,6 +70,9 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 	root := http.Dir(frontendDir)
 	fs := http.StripPrefix("/", http.FileServer(root))
 
+	// pre calculate hashes for all files in the given directory
+	fileHashes := hashFilesInDirectory(frontendDir)
+
 	handleFrontendResources = func(w http.ResponseWriter, r *http.Request) {
 		f, err := root.Open(r.RequestURI)
 		if os.IsNotExist(err) {
@@ -63,8 +82,74 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 		}
 		defer f.Close()
 
+		// Set Cache-Control and ETag
+		hash, hashFound := fileHashes[r.RequestURI]
+		w.Header().Set("Cache-Control", "public, max-age=900, must-revalidate") // 900s = 15min
+		if hashFound {
+
+			// api.Logger.Warn("hash for requested file", zap.String("hash", hash), zap.String("requestURI", r.RequestURI))
+
+			w.Header().Set("ETag", hash)
+			clientEtag := r.Header.Get("If-None-Match")
+			if len(clientEtag) > 0 && hash == clientEtag {
+				// Client already has the latest version of the file
+				// api.Logger.Warn("client etag matches, will return 304", zap.String("requestURI", r.RequestURI))
+
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+		} else {
+			// api.Logger.Warn("no hash found for requested file", zap.String("requestURI", r.RequestURI))
+		}
+
 		fs.ServeHTTP(w, r)
 	}
 
 	return
+}
+
+// hashFilesInDirectory takes a directory, goes through all files
+// in it recursively and calculates a sha256 for each one.
+// It returns a map from file path to sha256 (already pre formatted in hex).
+func hashFilesInDirectory(directory string) map[string]string {
+	// expand directory name in case it contains '..' or something
+	absDir, err := filepath.Abs(directory)
+	if err != nil {
+		panic(fmt.Errorf("hashFilesInDirectory cannot build absolute path from '%v'", directory))
+	}
+
+	fileHashes := make(map[string]string)
+	err = filepath.Walk(absDir, func(path string, info os.FileInfo, err error) error {
+		// ignore base directory, replace backslash with forward slash
+		filePath := strings.TrimPrefix(path, absDir)
+		filePath = strings.ReplaceAll(filePath, "\\", "/")
+
+		if !info.IsDir() {
+			fileHashes[filePath] = hashFile(path)
+		}
+		return nil
+	})
+
+	if err != nil {
+		panic(fmt.Errorf("Could not construct eTagCache, error while scanning files in directory '%v': %v", directory, err))
+	}
+
+	return fileHashes
+}
+
+func hashFile(filePath string) string {
+	fileData, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		panic(fmt.Errorf("Could read file to calculate sha256 for file '%v': %v", filePath, err))
+	}
+
+	return hashData(fileData)
+}
+
+// hashData takes a byte array, calculates its sha256, and returns the hash as a hex encoded string
+func hashData(data []byte) string {
+	hasher := sha256.New()
+	hasher.Write(data)
+	hash := hasher.Sum(nil)
+	return hex.EncodeToString(hash)
 }

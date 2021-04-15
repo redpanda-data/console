@@ -161,29 +161,35 @@ function computeTopicAssignments(
     }
 }
 
+
+// todo:
+// The current approach is "greedy" in that it just wants to assign a replica to whatever broker.
+// But because of 'example#2' it is possible that we'll end up causing a lot of network traffic that
+// could have been avoided if we had just the two brokers.
+
+// A better appraoch would be to find the best broker for each replica, but instead of commiting to that immediately,
+// we'd first save that as a "pending" assignment, along with a score of how much work that assignment would be.
+// That'd give us a list of pending assignments, which we can sort by their score.
+// To determine that score we'd just re-use the first two very simple metrics (same broker is best: score=2, and same rack is almost as good: score=1)
+
 function computeReplicaAssignments(partition: Partition, replicas: number, brokerReplicaCount: BrokerReplicaCount[], allBrokers: ExBroker[]): ExBroker[] {
     const resultBrokers: ExBroker[] = []; // result
     const sourceBrokers = partition.replicas.map(id => allBrokers.first(b => b.brokerId == id)!);
     if (sourceBrokers.any(x => x == null)) throw new Error(`replicas of partition ${partition.id} (${toJson(partition.replicas)}) define a brokerId which can't be found in 'allBrokers': ${toJson(allBrokers.map(b => ({ id: b.brokerId, address: b.address, rack: b.rack })))}`);
     const sourceRacks = sourceBrokers.map(b => b.rack).distinct();
 
-    // todo:
-    // The current approach is "greedy" in that it just wants to assign a replica to whatever broker.
-    // But because of 'example#2' it is possible that we'll end up causing a lot of network traffic that
-    // could have been avoided if we had just the two brokers.
-
-    // A better appraoch would be to find the best broker for each replica, but instead of commiting to that immediately,
-    // we'd first save that as a "pending" assignment, along with a score of how much work that assignment would be.
-    // That'd give us a list of pending assignments, which we can sort by their score.
-    // To determine that score we'd just re-use the first two very simple metrics (same broker is best: score=2, and same rack is almost as good: score=1)
+    // Track brokers we've used so far so we don't use any broker twice
+    const consumedBrokers: ExBroker[] = [];
 
     for (let i = 0; i < replicas; i++) {
         // For each replica to be assigned, we create a set of potential brokers.
         // The potential brokers are those that have least assignments from this partition.
         // If we'd only assign based on the additional metrics, all replicas would be assigned to only one broker (which would be bad if rf=1)
+
         brokerReplicaCount.sort((a, b) => a.assignedReplicas - b.assignedReplicas);
-        const minAssignments = brokerReplicaCount[0].assignedReplicas;
-        const potential = brokerReplicaCount.filter(b => b.assignedReplicas == minAssignments);
+        const filteredBrokerCounts = brokerReplicaCount.filter(b => !consumedBrokers.includes(b.broker));
+        const minAssignments = filteredBrokerCounts[0].assignedReplicas;
+        const potential = filteredBrokerCounts.filter(b => b.assignedReplicas == minAssignments);
 
         // Multiple brokers, sort by additional metrics
         if (potential.length > 1) {
@@ -223,6 +229,7 @@ function computeReplicaAssignments(partition: Partition, replicas: number, broke
         potential[0].assignedReplicas++; // increase temporary counter (which only tracks assignments within the topic)
         const bestBroker = potential[0].broker;
         resultBrokers.push(bestBroker);
+        consumedBrokers.push(bestBroker);
 
         // increase total number of assigned replicas
         bestBroker.assignedReplicas++;
@@ -268,7 +275,7 @@ class ExBroker implements Broker {
 
     recompute(apiData: ApiData, selectedTopicPartitions: TopicPartitions[]) {
         this.recomputeActual(apiData);
-        this.recomputeInitial(apiData, selectedTopicPartitions);
+        this.recomputeInitial(selectedTopicPartitions);
     }
 
     private recomputeActual(apiData: ApiData) {
@@ -301,7 +308,7 @@ class ExBroker implements Broker {
         }
     }
 
-    private recomputeInitial(apiData: ApiData, selectedTopicPartitions: TopicPartitions[]) {
+    private recomputeInitial(selectedTopicPartitions: TopicPartitions[]) {
         // Subtract the stats of the selected partitions
         let selectedReplicas = 0;
         let selectedSize = 0;
@@ -312,7 +319,7 @@ class ExBroker implements Broker {
                 selectedReplicas += p.replicas.count(x => x == this.brokerId);
                 selectedLeader += p.leader == this.brokerId ? 1 : 0;
 
-                // using 'first()' because each broker has exactly one entry (or maybe zero if broker is offline)
+                // using 'first()' because each broker as exactly one logDirEntry (or maybe zero if broker is offline)
                 let logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId);
                 if (logDirEntry) {
                     // direct match

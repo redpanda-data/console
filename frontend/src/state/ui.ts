@@ -9,8 +9,9 @@ const settingsName = 'uiSettings-v3';
 
 
 export interface PreviewTag {
-    value: string;
-    active: boolean;
+    id: string;
+    isActive: boolean;
+    text: string;
 }
 
 export interface ColumnList {
@@ -124,6 +125,9 @@ const uiSettings = observable({
     },
 
     reassignment: { // partition reassignment
+        // Active
+        pageSizeActive: 5,
+
         // Select
         quickSearch: '',
         pageSizeSelect: 10,
@@ -132,8 +136,7 @@ const uiSettings = observable({
         pageSizeBrokers: 10,
 
         // Review
-        pageSizeReview: 10,
-        limitReplicationTraffic: false,
+        pageSizeReview: 20,
         maxReplicationTraffic: 0, // bytes per second
         maxReplicationSizePower: 1, // 1000^X   (0 = bytes, 1 = kb, 2 = mb, 3 = gb)
     },

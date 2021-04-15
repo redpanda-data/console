@@ -3,6 +3,7 @@ package owl
 import (
 	"context"
 	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"sort"
 	"time"
 
@@ -24,21 +25,16 @@ type TopicSummary struct {
 
 // GetTopicsOverview returns a TopicSummary for all Kafka Topics
 func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error) {
+	// 1. Request metadata
 	metadata, err := s.kafkaSvc.GetMetadata(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	topicNames := make([]string, len(metadata.Topics))
-	for i, topic := range metadata.Topics {
-		err := kerr.ErrorForCode(topic.ErrorCode)
-		if err != nil {
-			s.logger.Error("failed to get topic metadata while listing topics",
-				zap.String("topic_name", topic.Topic),
-				zap.Error(err))
-			return nil, err
-		}
 
-		topicNames[i] = topic.Topic
+	// 2. Extract all topicNames from metadata
+	topicNames, err := s.GetAllTopicNames(ctx, metadata)
+	if err != nil {
+		return nil, err
 	}
 
 	// 3. Get log dir sizes for each topic
@@ -87,4 +83,31 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 	})
 
 	return res, nil
+}
+
+// GetAllTopicNames returns all topic names from the metadata. You can either pass the metadata response into
+// this method (to avoid duplicate requests) or let the function request the metadata.
+func (s *Service) GetAllTopicNames(ctx context.Context, metadata *kmsg.MetadataResponse) ([]string, error) {
+	if metadata == nil {
+		var err error
+		metadata, err = s.kafkaSvc.GetMetadata(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	topicNames := make([]string, len(metadata.Topics))
+	for i, topic := range metadata.Topics {
+		err := kerr.ErrorForCode(topic.ErrorCode)
+		if err != nil {
+			s.logger.Error("failed to get topic metadata while listing topics",
+				zap.String("topic_name", topic.Topic),
+				zap.Error(err))
+			return nil, err
+		}
+
+		topicNames[i] = topic.Topic
+	}
+
+	return topicNames, nil
 }

@@ -28,6 +28,7 @@ import { observable } from 'mobx';
 import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
 import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
+import { featureErrors } from '../state/supportedFeatures';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -275,9 +276,9 @@ export default class App extends Component {
 
     render() {
         setImmediate(() => {
-            api.refreshSupportedEndpoints(true);
-            console.log('refreshing supported endpoints')
-        })
+            if (api.endpointCompatibility == null)
+                api.refreshSupportedEndpoints(true);
+        });
 
         const r = this.loginHandling(); // Complete login, or fetch user if needed
         if (r) return r;
@@ -301,6 +302,7 @@ export default class App extends Component {
                         </Layout>
                     </Route>
                 </Switch>
+                <FeatureErrorCheck />
             </ErrorBoundary>
         );
     }
@@ -338,6 +340,8 @@ export default class App extends Component {
                     api.userData = {
                         canManageKowl: false,
                         canListAcls: true,
+                        canPatchConfigs: true,
+                        canReassignPartitions: true,
                         seat: null as any,
                         user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                     };
@@ -353,44 +357,14 @@ export default class App extends Component {
     }
 }
 
-// const asdad = observable({
-//     value: 3
-// })
 
-// const Test = observer(() => {
-
-//     const options = [
-//         { value: 1, title: 'Option A', text: 'The first option' },
-//         { value: 2, title: 'Option B', text: 'The second option. This text is longer, pretty long actually, hopefully long enough that there will be some line-wrapping going on...' },
-//         { value: 3, title: 'Option C', text: 'The third option' },
-//     ]
-
-//     return <div id='test' style={{
-//         position: 'absolute',
-//         width: '100%', height: '100%',
-//         zIndex: 1,
-//     }}>
-//         <div style={{
-//             borderRadius: '6px',
-//             // position: 'absolute',
-//             background: 'white',
-//             margin: 'auto',
-//             width: '400px',
-//             height: '500px',
-//             marginTop: '40px',
-//             marginLeft: 'auto',
-//             marginRight: 'auto',
-//             border: '1px hsl(0deg 0% 91%) solid',
-//         }}>
-
-//             <div style={{ margin: '2rem' }}>
-
-//                 <RadioOptionGroup
-//                     options={options}
-//                     onChange={x => { asdad.value = x; }}
-//                     value={asdad.value}
-//                 />
-//             </div>
-//         </div>
-//     </div>
-// });
+@observer
+class FeatureErrorCheck extends Component {
+    render() {
+        if (featureErrors.length > 0) {
+            const allErrors = featureErrors.join(" ");
+            throw new Error(allErrors);
+        }
+        return null;
+    }
+}

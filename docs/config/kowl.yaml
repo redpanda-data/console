@@ -66,6 +66,9 @@ kafka:
   #     # - topicName: xy
   #     #   valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
   #     #   keyProtoType: package.Type
+  # messagePack:
+  #   enabled: false
+  #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
 #     # Git is where the .proto files come from, in the future there might be additional options
 #     git:
 #       enabled: false

@@ -7,6 +7,7 @@ import queryString from 'query-string';
 import { editQuery } from "./queryHelper";
 import { message } from "antd";
 import { MessageType } from "antd/lib/message";
+import { TopicMessage } from "../state/restInterfaces";
 
 
 
@@ -240,7 +241,6 @@ type PropertySearchOptions = { caseSensitive: boolean, returnFirstResult: boolea
 type PropertySearchResult = 'continue' | 'abort';
 type PropertySearchContext = { targetPropertyName: string, currentPath: string[], results: FoundProperty[], options: PropertySearchOptions }
 
-// todo: this only finds the first match, what if we want to find all?
 export function findElementDeep(obj: any, name: string, options: PropertySearchOptions): FoundProperty[] {
     const ctx: PropertySearchContext = {
         targetPropertyName: name,
@@ -284,30 +284,148 @@ function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchR
 }
 
 
-export function getAllKeys(target: any): Set<string> {
-    const set = new Set<string>();
-    if (typeof target != 'object') return set;
 
-    getAllKeysRecursive(target, set);
-    return set;
+type PropertySearchExContext = {
+    isMatch: (propertyName: string, path: string[], value: any) => boolean,
+    currentPath: string[],
+    results: FoundProperty[],
+    returnFirstResult: boolean
 }
 
-function getAllKeysRecursive(target: any, keys: Set<string>) {
-    const isArray = Array.isArray(target);
-    for (let key in target) {
+export function findElementDeepEx(obj: any, isMatch: (propertyName: string, path: string[], value: any) => boolean, returnFirstMatch: boolean): FoundProperty[] {
+    const ctx: PropertySearchExContext = {
+        isMatch: isMatch,
+        currentPath: [],
+        results: [],
+        returnFirstResult: returnFirstMatch,
+    };
+    findElementDeepEx2(ctx, obj);
+    return ctx.results;
+}
 
-        // Add key name (but not array indices)
-        if (!isArray) {
-            keys.add(key);
+function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
+    for (let key in obj) {
+
+        const value = obj[key];
+
+        // property match?
+        const isMatch = ctx.isMatch(key, ctx.currentPath, value);
+
+        if (isMatch) {
+            const clonedPath = Object.assign([], ctx.currentPath);
+            ctx.results.push({ propertyName: key, path: clonedPath, value: value });
+
+            if (ctx.returnFirstResult) return 'abort';
         }
 
-        // Descend into properties / elements
-        const value = target[key];
-        if (typeof value == 'object') {
-            getAllKeysRecursive(value, keys);
+        // descend into object
+        if (typeof value === 'object') {
+            ctx.currentPath.push(key);
+            const childResult = findElementDeepEx2(ctx, value);
+            ctx.currentPath.pop();
+
+            if (childResult == 'abort')
+                return 'abort';
         }
     }
+
+    return 'continue';
 }
+
+
+
+
+
+
+export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
+    const ctx: GetAllKeysContext = {
+        currentFullPath: "",
+        currentPath: [],
+        results: [],
+        existingPaths: new Set<string>(),
+    };
+
+    // slice is needed because messages array is observable
+    for (const m of messages.slice()) {
+        const payload = m.value.payload;
+        getAllKeysRecursive(ctx, payload);
+
+        ctx.currentPath = [];
+        ctx.currentFullPath = "";
+    }
+
+    console.log('getAllMessageKeys', ctx.results);
+
+    return ctx.results;
+}
+
+
+interface Property {
+    /** property name */
+    propertyName: string;
+    /** path to the property (excluding 'prop' itself) */
+    path: string[];
+    /** path + prop */
+    fullPath: string;
+}
+type GetAllKeysContext = {
+    currentPath: string[], // complete, real path
+    currentFullPath: string, // string path, with array indices replaced by a start
+    existingPaths: Set<string>, // list of 'currentFullPath' entries, used to filter duplicates
+    results: Property[],
+}
+
+function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchResult {
+    const isArray = Array.isArray(obj);
+    let result = 'continue' as PropertySearchResult;
+
+    const pathToHere = ctx.currentFullPath;
+
+    for (let key in obj) {
+        const value = obj[key];
+
+        ctx.currentPath.push(key);
+        const currentFullPath = isArray
+            ? pathToHere + `[*]`
+            : pathToHere + `.${key}`;
+        ctx.currentFullPath = currentFullPath;
+
+        if (!isArray) { // add result, but only for object properties
+            const isNewPath = !ctx.existingPaths.has(currentFullPath);
+            if (isNewPath) { // and only if its a new path
+                ctx.existingPaths.add(currentFullPath);
+
+                const clonedPath = Object.assign([], ctx.currentPath);
+                ctx.results.push({
+                    propertyName: key,
+                    path: clonedPath, // all the keys
+                    fullPath: currentFullPath,
+                });
+            }
+        }
+
+
+        // descend into object
+        if (typeof value === 'object' && value != null) {
+
+            const childResult = getAllKeysRecursive(ctx, value);
+
+            if (childResult == 'abort')
+                result = 'abort';
+        }
+
+        ctx.currentPath.pop();
+        ctx.currentFullPath = currentFullPath;
+
+        if (result == 'abort') break;
+    }
+
+    ctx.currentFullPath = pathToHere;
+
+    return result;
+}
+
+
 
 const secToMs = 1000;
 const minToMs = 60 * secToMs;
@@ -393,6 +511,9 @@ export const prettyMilliseconds = function (n: number, options?: prettyMilliseco
             // something else: object, function, ...
             return "NaN";
         }
+    }
+    else {
+        if (!isFinite(n)) return "N/A";
     }
 
     // n is a finite number
@@ -538,4 +659,22 @@ export class Message {
         this.duration = 3;
         this.update();
     }
+}
+
+
+//
+// https://stackoverflow.com/a/52171480/372434
+//
+const hashSeed = 0;
+export function hashString(str: string): number {
+    let h1 = 0xdeadbeef ^ hashSeed, h2 = 0x41c6ce57 ^ hashSeed;
+    for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+
 }

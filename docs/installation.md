@@ -20,7 +20,8 @@ We do not provide any precompiled binaries as of now. For Kowl you can obviously
 Kowl Business supports Authentication and Authorization. In order to configure OAuth you first must setup the OAuth application in your desired identity provider:
 
 - [Google OAuth setup](./provider-setup/google.md#google-oauth-provider-setup)
-- GitHub OAuth setup (TODO)
+- [GitHub OAuth setup](./provider-setup/github.md#github-oauth-provider-setup)
+- [Okta OAuth setup](./provider-setup/okta.md#okta-oidc-provider-setup)
 
 ## Deployment
 
@@ -75,10 +76,10 @@ As the Business version is an extension of the normal Kowl version these flags a
 
 All available settings which can be configured in your YAML configs can be found here and should document themselves:
 
-[/docs/config/kowl.yaml](./config/kowl.yaml)
+[/docs/config/kowl.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml)
 
-[/docs/config/kowl-business.yaml](./config/kowl-business.yaml)
+[/docs/config/kowl-business.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business.yaml)
 
-[/docs/config/kowl-business-roles.yaml](./config/kowl-business-roles.yaml)
+[/docs/config/kowl-business-roles.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business-roles.yaml)
 
-[/docs/config/kowl-business-role-bindings.yaml](./config/kowl-business-role-bindings.yaml)
+[/docs/config/kowl-business-role-bindings.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business-role-bindings.yaml)

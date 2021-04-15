@@ -17,6 +17,7 @@ import Card from "../../misc/Card";
 import { editQuery } from "../../../utils/queryHelper";
 import { uiState } from "../../../state/uiState";
 import { DefaultSkeleton, Label, OptionGroup } from "../../../utils/tsxUtils";
+import { BrokerList } from "../reassign-partitions/components/BrokerList";
 
 
 @observer
@@ -59,7 +60,6 @@ class GroupList extends PageComponent {
 
     render() {
         if (!api.consumerGroups) return DefaultSkeleton;
-        if (api.consumerGroups.length == 0) return <Empty />
 
         const groups = api.consumerGroups;
         const stateGroups = groups.groupInto(g => g.state);
@@ -113,6 +113,8 @@ class GroupList extends PageComponent {
                                 onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
                                 render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
                             },
+                            { title: 'Coordinator', dataIndex: 'coordinatorId', width: 1, render: (x: number) => <BrokerList brokerIds={[x]} />},
+                            { title: 'Protocol', dataIndex: 'protocol', width: 1},
                             { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length, defaultSortOrder: 'descend' },
                             { title: 'Lag (Sum)', dataIndex: 'lagSum', sorter: (a, b) => a.lagSum - b.lagSum },
                         ]} />

@@ -1,7 +1,8 @@
-import { Partition, PartitionReassignmentRequest, Topic } from "../../../../state/restInterfaces";
+import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from "../../../../state/restInterfaces";
+import { clone } from "../../../../utils/jsonUtils";
 import { PartitionSelection } from "../ReassignPartitions";
 import { PartitionWithMoves, TopicWithMoves } from "../Step3.Review";
-import { TopicPartitions } from "./reassignLogic";
+import { ApiData, TopicAssignments, TopicPartitions } from "./reassignLogic";
 
 export function partitionSelectionToTopicPartitions(
     partitionSelection: PartitionSelection,
@@ -53,7 +54,7 @@ export function computeMovedReplicas(
                 const intersection = oldBrokers.intersection(newBrokers);
                 moves = oldBrokers.length - intersection.length;
             }
-            partitionsWithMoves.push({ ...partition, movedReplicas: moves });
+            partitionsWithMoves.push({ ...partition, movedReplicas: moves, brokersBefore: oldBrokers, brokersAfter: newBrokers ?? [] });
         }
 
         ar.push({
@@ -64,4 +65,94 @@ export function computeMovedReplicas(
         });
     }
     return ar;
+}
+
+/**
+ * Returns a clone of topicAssignments with redundant reassignments removed
+*/
+export function removeRedundantReassignments(topicAssignments: TopicAssignments, apiData: ApiData): TopicAssignments {
+
+    topicAssignments = clone(topicAssignments);
+
+    // Remove partition reassignments that have no effect
+    let totalRemovedPartitions = 0;
+    const emptyTopics: string[] = [];
+    for (const t in topicAssignments) {
+        const topicAssignment = topicAssignments[t];
+        const curTopicPartitions = apiData.topicPartitions.get(t);
+        if (!curTopicPartitions) continue;
+
+        const partitionIdsToRemove: string[] = [];
+        let originalReassignedPartitionsCount = 0;
+        for (const partitionId in topicAssignment) {
+            originalReassignedPartitionsCount++;
+            const a = topicAssignment[partitionId];
+            const brokersBefore = curTopicPartitions.first(p => p.id == Number(partitionId))?.replicas;
+            if (!brokersBefore) continue;
+            const brokersAfter = a.brokers;
+
+            if (brokersBefore.length != brokersAfter.length) {
+                console.warn('remove empty reassignments: brokersBefore.length != brokersAfter.length');
+                continue;
+            }
+
+            let sameBrokers = true;
+            for (let i = 0; i < brokersBefore.length; i++) {
+                if (brokersBefore[i] != brokersAfter[i].brokerId) {
+                    sameBrokers = false;
+                    break;
+                }
+            }
+
+            if (sameBrokers)
+                partitionIdsToRemove.push(partitionId);
+        }
+
+        totalRemovedPartitions += partitionIdsToRemove.length;
+
+        if (partitionIdsToRemove.length == originalReassignedPartitionsCount) {
+            // All partition reassignments for this topic have are redundant, remove the whole topic
+            emptyTopics.push(t);
+        }
+        else if (partitionIdsToRemove.length > 0) {
+            // Only some of the reassignments need to be removed
+            for (const r of partitionIdsToRemove)
+                delete topicAssignment[Number(r)];
+        }
+        else {
+            // All are required
+        }
+    }
+
+
+    // Remove topics that are completely redundant
+    for (const t of emptyTopics)
+        delete topicAssignments[t];
+
+    console.log('removed redundant partition reassignments', {
+        totalRemovedTopics: emptyTopics.length,
+        totalRemovedPartitions: totalRemovedPartitions,
+        removedTopics: emptyTopics,
+        optimizedAssignments: clone(topicAssignments)
+    });
+
+    return topicAssignments;
+}
+
+export function topicAssignmentsToReassignmentRequest(topicAssignments: TopicAssignments): PartitionReassignmentRequest {
+    // Construct reassignment request from topicAssignments
+    const topics = [];
+    for (const t in topicAssignments) {
+        const topicAssignment = topicAssignments[t];
+        const partitions: { partitionId: number, replicas: number[] | null }[] = [];
+        for (const partitionId in topicAssignment)
+            partitions.push({
+                partitionId: Number(partitionId),
+                replicas: topicAssignment[partitionId].brokers.map(b => b.brokerId)
+            });
+
+        topics.push({ topicName: t, partitions: partitions });
+    }
+
+    return { topics: topics };
 }

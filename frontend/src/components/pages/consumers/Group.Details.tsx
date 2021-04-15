@@ -53,8 +53,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         const requiredTopics = group.members.flatMap(m => m.assignments.map(a => a.topicName)).distinct();
 
         const totalPartitions = group.members.flatMap(m => m.assignments).sum(a => a.partitionIds.length);
-        const partitionsWithOffset = group.lag.topicLags.sum(tl => tl.partitionsWithOffset);
-        const topicsWithOffset = group.lag.topicLags.length;
 
         return (
             <MotionDiv style={{ margin: '0 1rem' }}>
@@ -67,9 +65,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                             <ProtocolType group={group} />
                             <Statistic title='Members' value={group.members.length} />
                             <Statistic title='Assigned Topics' value={requiredTopics.length} />
-                            <Statistic title='Topics with offset' value={topicsWithOffset} />
                             <Statistic title='Assigned Partitions' value={totalPartitions} />
-                            <Statistic title='Partitions with offset' value={partitionsWithOffset} />
+                            <Statistic title='Protocol Type' value={group.protocolType} />
+                            <Statistic title='Protocol' value={group.protocol} />
+                            <Statistic title='Coordinator ID' value={group.coordinatorId} />
                             <Statistic title='Total Lag' value={group.lagSum} />
                         </Row>
                     </Card>
@@ -214,7 +213,9 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                 borderRadius: '5px',
                 padding: '1.5em'
             }}>
-                <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span>
+                {p.onlyShowPartitionsWithLag
+                    ? <span>All {topicEntries.length} topics have been filtered (no lag on any partition).</span>
+                    : null}
             </Empty>
 
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{topicEntries}</Collapse>;
@@ -304,7 +305,9 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                 borderRadius: '5px',
                 padding: '1.5em'
             }}>
-                <span>All {memberEntries.length} members have been filtered (no lag on any partition).</span>
+                {p.onlyShowPartitionsWithLag
+                    ? <span>All {memberEntries.length} members have been filtered (no lag on any partition).</span>
+                    : null}
             </Empty>
 
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{memberEntries}</Collapse>;

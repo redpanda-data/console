@@ -17,9 +17,13 @@ import { TooltipPlacement } from "antd/lib/tooltip";
 
 
 const thousandsSeperator = (1234).toLocaleString()[1];
+const decimalSeperator = (0.123).toLocaleString()[1];
+
+const nbsp = '\xA0'; // non breaking space
 
 export function numberToThousandsString(n: number): JSX.Element {
     const parts = n.toLocaleString().split(thousandsSeperator);
+    const separator = nbsp;
 
     const result: JSX.Element[] = [];
     for (let i = 0; i < parts.length; i++) {
@@ -30,7 +34,7 @@ export function numberToThousandsString(n: number): JSX.Element {
 
         // Add a dot
         if (!last)
-            result.push(<span key={i + '.'} className='noSelect'>{thousandsSeperator}</span>);
+            result.push(<span key={i + '.'} className='noSelect nbspSeparator'>{separator}</span>);
     }
 
     return <>{result}</>

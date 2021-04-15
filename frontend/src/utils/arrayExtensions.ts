@@ -17,20 +17,46 @@ declare global {
         any<T>(this: T[], selector: (x: T) => boolean): boolean;
         all<T>(this: T[], selector: (x: T) => boolean): boolean;
 
+        /** group elements into a Map<> using the given key selector */
         groupBy<T, K>(this: T[], selector: (x: T) => K): Map<K, T[]>;
+        /** groups elements (into an array of groups) using the given key selector */
         groupInto<T, K>(this: T[], selector: (x: T) => K): { key: K, items: T[] }[];
 
+        /** returns a new array containing only distinct elements */
         distinct<T>(this: T[], keySelector?: ((x: T) => any)): T[];
         pushDistinct<T>(this: T[], ...elements: T[]): void;
+
+        /**
+         * returns an array containing all elements that are present in both this and the other array
+         */
         intersection<T>(this: T[], other: T[]): T[];
+
+        /**
+         * returns a copy containing all elements except for those that are also in 'other'
+         */
         except<T>(this: T[], other: T[]): T[];
 
         genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[];
+        /**
+         * Like normal .join() but skips over empty, null, and undefined
+         */
         joinStr(this: (string | null | undefined)[], separator: string): string;
 
         toMap<TItem, TKey, TValue>(this: TItem[], computeKey: (item: TItem) => TKey, computeValue: (item: TItem) => TValue): Map<TKey, TValue>;
 
         filterNull<T>(this: (T | null | undefined)[]): T[];
+        filterFalsy<T>(this: (T | null | undefined)[]): T[];
+
+        /**
+         * Replace the content with the given data.
+         * Intended to be used with mobx observable arrays, where setting the whole
+         * array (even with identical contents) would notify all observers.
+         *
+         * This function instead computes the difference and adds/removes them.
+         *
+         * It is strongly reccomended to wrap calls to this in a mobx transaction() or similar.
+         */
+        updateWith<T>(this: T[], newData: T[]): { removed: number, added: number };
     }
 }
 
@@ -136,6 +162,40 @@ Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)
     return ar;
 };
 
+Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefined)[]): T[] {
+    const ar: T[] = [];
+
+    this.forEach(item => {
+        if (item)
+            ar.push(item);
+    });
+
+    return ar;
+};
+
+Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { removed: number, added: number } {
+
+    // Early out, compare both arrays
+    if (this.length == newData.length) {
+        let same = true;
+        for (let i = 0; i < this.length; i++)
+            if (this[i] != newData[i]) {
+                same = false;
+                break;
+            }
+        if (same) return { removed: 0, added: 0 };
+    }
+
+    const added = newData.except(this);
+    const removed = this.except(newData);
+
+    this.removeAll(x => removed.includes(x));
+    for (const a of added)
+        this.push(a);
+
+    return { removed: removed.length, added: added.length }
+};
+
 
 Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => any): T[] {
     const selector = keySelector ? keySelector : (x: T) => x;
@@ -161,10 +221,10 @@ Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: 
 };
 
 Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): T[] {
-    const set = new Set<T>(this);
+    const thisSet = new Set<T>(this);
     const results: T[] = [];
     for (const e of other)
-        if (set.has(e))
+        if (thisSet.has(e))
             results.push(e);
     return results;
 };

@@ -1,18 +1,18 @@
 import React, { ReactNode, Component } from "react";
 import { observer } from "mobx-react";
-import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification } from "antd";
+import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification, ConfigProvider, Modal } from "antd";
 import { PageComponent, PageInitHelper } from "../Page";
-import { api } from "../../../state/backendApi";
+import { api, partialTopicConfigs } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
-import { toJson } from "../../../utils/jsonUtils";
+import { clone, toJson } from "../../../utils/jsonUtils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
-import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { DefaultSkeleton, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
 import { stringify } from "query-string";
@@ -22,19 +22,25 @@ import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
 import { SelectPartitionTable, StepSelectPartitions } from "./Step1.Partitions";
 import { PartitionWithMoves, StepReview, TopicWithMoves } from "./Step3.Review";
 import { ApiData, computeReassignments, TopicPartitions } from "./logic/reassignLogic";
-import { computeMovedReplicas, partitionSelectionToTopicPartitions } from "./logic/utils";
+import { computeMovedReplicas, partitionSelectionToTopicPartitions, removeRedundantReassignments, topicAssignmentsToReassignmentRequest } from "./logic/utils";
 import { IsDev } from "../../../utils/env";
 import { Message } from "../../../utils/utils";
+import { ActiveReassignments } from "./components/ActiveReassignments";
+import { ReassignmentTracker } from "./logic/reassignmentTracker";
 const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
     [topicName: string]: number[] // topicName -> array of partitionIds
 }
 
+
+const reassignmentTracker = new ReassignmentTracker();
+export { reassignmentTracker };
+
+
 @observer
 class ReassignPartitions extends PageComponent {
     pageConfig = makePaginationConfig(15, true);
-    autorunHandle: IReactionDisposer | undefined = undefined;
 
     @observable currentStep = 0; // current page of the wizard
 
@@ -45,17 +51,19 @@ class ReassignPartitions extends PageComponent {
     // brokers selected by user
     @observable selectedBrokerIds: number[] = [];
     // computed reassignments
-    @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request that will be sent
+    @observable reassignmentRequest: PartitionReassignmentRequest | null = null; // request as returned by the computation
+    // @observable optimizedReassignmentRequest: PartitionReassignmentRequest | null = null; // optimized request that will be sent
 
     @observable _debug_apiData: ApiData | null = null;
     @observable _debug_topicPartitions: TopicPartitions[] | null = null;
     @observable _debug_brokers: Broker[] | null = null;
 
-    refreshCurrentReassignmentsTimer: NodeJS.Timeout | null;
+    refreshTopicConfigsTimer: NodeJS.Timer | null = null;
+    refreshTopicConfigsRequestsInProgress: number = 0;
+
+    @observable topicsWithThrottle: string[] = [];
 
     @observable requestInProgress = false;
-
-    autoRefreshInterval = 999999999; //IsDev ? 1500 : 4000;
 
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
@@ -63,75 +71,40 @@ class ReassignPartitions extends PageComponent {
 
         appGlobal.onRefresh = () => this.refreshData(true);
         this.refreshData(true);
+    }
 
-        this.autorunHandle = autorun(() => {
-            if (api.topics != null)
-                api.refreshPartitionsForAllTopics(false);
-        });
-
-        // Debug
-        // const partitionChance = 5 / 100;
-        // autorun(() => {
-        //     if (api.topics != null)
-        //         transaction(() => {
-        //             untracked(() => {
-        //                 // clear
-        //                 for (const t in this.partitionSelection)
-        //                     delete this.partitionSelection[t];
-
-        //                 // select random partitions
-        //                 for (const t of api.topics!)
-        //                     for (let p = 0; p < t.partitionCount; p++) {
-        //                         if (Math.random() < partitionChance) {
-        //                             const partitions = this.partitionSelection[t.topicName] ?? [];
-        //                             partitions.push(p);
-        //                             this.partitionSelection[t.topicName] = partitions;
-        //                         }
-        //                     }
-        //             });
-        //         });
-        // }, { delay: 1000 });
+    componentDidMount() {
+        this.removeThrottleFromTopics = this.removeThrottleFromTopics.bind(this);
 
         const oriOnNextPage = this.onNextPage.bind(this);
         this.onNextPage = () => transaction(oriOnNextPage);
 
         const oriOnPrevPage = this.onPreviousPage.bind(this);
         this.onPreviousPage = () => transaction(oriOnPrevPage);
+
+        this.startRefreshingTopicConfigs = this.startRefreshingTopicConfigs.bind(this);
+        this.stopRefreshingTopicConfigs = this.stopRefreshingTopicConfigs.bind(this);
+
+        this.refreshTopicConfigs = this.refreshTopicConfigs.bind(this);
+        this.refreshTopicConfigs();
+        this.startRefreshingTopicConfigs();
+
+
+        reassignmentTracker.start();
     }
 
     refreshData(force: boolean) {
-        api.refreshCluster(force);
-        api.refreshClusterConfig(force);
+        api.refreshCluster(force); // need to know brokers for reassignment calculation
+        api.refreshClusterConfig(force); // used to display throttle traffic limit
         api.refreshTopics(force);
-        api.refreshPartitionsForAllTopics(force);
+        api.refreshPartitions('all', force);
         api.refreshPartitionReassignments(force);
     }
 
-    componentDidMount() {
-        this.refreshCurrentReassignmentsTimer = setInterval(() => {
-            if (api.activeRequests.length > 0) return;
-            try {
-                api.refreshPartitionReassignments(true);
-            } catch (err) {
-                console.log("error in partition reassignments auto refresh, stopping refresh");
-                if (this.refreshCurrentReassignmentsTimer) {
-                    clearInterval(this.refreshCurrentReassignmentsTimer);
-                    this.refreshCurrentReassignmentsTimer = null;
-                }
-            }
-        }, this.autoRefreshInterval);
-    }
-
     componentWillUnmount() {
-        if (this.autorunHandle) {
-            this.autorunHandle();
-            this.autorunHandle = undefined;
-        }
+        reassignmentTracker.stop();
 
-        if (this.refreshCurrentReassignmentsTimer !== null) {
-            clearInterval(this.refreshCurrentReassignmentsTimer);
-            this.refreshCurrentReassignmentsTimer = null;
-        }
+        this.stopRefreshingTopicConfigs();
     }
 
     render() {
@@ -161,6 +134,14 @@ class ReassignPartitions extends PageComponent {
                     </Row>
                 </Card>
 
+                {/* Active Reassignments */}
+                <Card>
+                    <ActiveReassignments
+                        throttledTopics={this.topicsWithThrottle}
+                        onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
+                    />
+                </Card>
+
                 {/* Content */}
                 <Card>
                     {/* Steps */}
@@ -174,7 +155,9 @@ class ReassignPartitions extends PageComponent {
                     <motion.div {...animProps} key={"step" + this.currentStep}> {(() => {
                         switch (this.currentStep) {
                             case 0: return <StepSelectPartitions
-                                partitionSelection={this.partitionSelection} />;
+                                partitionSelection={this.partitionSelection}
+                                throttledTopics={this.topicsWithThrottle}
+                            />;
                             case 1: return <StepSelectBrokers
                                 partitionSelection={this.partitionSelection}
                                 selectedBrokerIds={this.selectedBrokerIds} />;
@@ -274,19 +257,10 @@ class ReassignPartitions extends PageComponent {
             this._debug_topicPartitions = topicPartitions;
             this._debug_brokers = targetBrokers;
 
-            const topics = [];
-            for (const t in topicAssignments) {
-                const topicAssignment = topicAssignments[t];
-                const partitions: { partitionId: number, replicas: number[] | null }[] = [];
-                for (const partitionId in topicAssignment)
-                    partitions.push({
-                        partitionId: Number(partitionId),
-                        replicas: topicAssignment[partitionId].brokers.map(b => b.brokerId)
-                    });
 
-                topics.push({ topicName: t, partitions: partitions });
-            }
-            this.reassignmentRequest = { topics: topics };
+            this.reassignmentRequest = topicAssignmentsToReassignmentRequest(topicAssignments);
+            // const optimizedAssignments = removeRedundantReassignments(topicAssignments, apiData);
+            // this.optimizedReassignmentRequest = topicAssignmentsToReassignmentRequest(optimizedAssignments);
         }
 
         if (this.currentStep == 2) {
@@ -305,10 +279,17 @@ class ReassignPartitions extends PageComponent {
                     if (success) {
                         // Reset settings, go back to first page
                         transaction(() => {
+                            this.refreshData(true);
                             this.partitionSelection = {};
                             this.selectedBrokerIds = [];
                             this.reassignmentRequest = null;
-                            this.currentStep = 0;
+
+                            setTimeout(() => {
+                                this.currentStep = 0;
+
+                                // todo: we need to scroll the "main content", not the window/document
+                                window.scrollTo(0, 0);
+                            }, 300);
                         });
                     }
                 }
@@ -331,8 +312,8 @@ class ReassignPartitions extends PageComponent {
 
 
     async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
-        if (uiSettings.reassignment.limitReplicationTraffic && uiSettings.reassignment.maxReplicationTraffic > 0) {
-            const success = await this.setTrafficLimit(request, false, false);
+        if (uiSettings.reassignment.maxReplicationTraffic > 0) {
+            const success = await this.setTrafficLimit(request);
             if (!success) return false;
         }
 
@@ -361,113 +342,88 @@ class ReassignPartitions extends PageComponent {
         return true;
     }
 
-    async setTrafficLimit(request: PartitionReassignmentRequest, useReplicasWildcard: boolean, useBrokerWildcard: boolean): Promise<boolean> {
+    async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
         const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic);
 
-        const configRequest: PatchConfigsRequest = { resources: [] };
-
-        if (useBrokerWildcard) {
-            configRequest.resources.push({
-                resourceType: ConfigResourceType.Broker,
-                resourceName: "", // String(brokerId) // omit = all brokers
-                configs: [
-                    { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                    { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                ]
-            });
-        } else {
-            for (const b of api.clusterInfo!.brokers) {
-                configRequest.resources.push({
-                    resourceType: ConfigResourceType.Broker,
-                    resourceName: String(b.brokerId),
-                    configs: [
-                        { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                        { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
-                    ]
-                });
-            }
-        }
+        const topicReplicas: {
+            topicName: string,
+            leaderReplicas: { brokerId: number, partitionId: number }[],
+            followerReplicas: { brokerId: number, partitionId: number }[]
+        }[] = [];
 
         for (const t of request.topics) {
             const topicName = t.topicName;
-            const res: ResourceConfig = { // Set which topics to throttle
-                resourceType: ConfigResourceType.Topic,
-                resourceName: t.topicName,
-                configs: [],
-            };
-
-            // Create config for throttling.
-            // [partitionId]:[brokerId],[partitionId]:[brokerId],...
-            const leaderThrottle: { partitionId: number, brokerId: number }[] = [];
-            const followerThrottle: { partitionId: number, brokerId: number }[] = [];
+            const leaderReplicas: { partitionId: number, brokerId: number }[] = [];
+            const followerReplicas: { partitionId: number, brokerId: number }[] = [];
             for (const p of t.partitions) {
                 const partitionId = p.partitionId;
                 const brokersOld = api.topicPartitions?.get(t.topicName)?.first(p => p.id == partitionId)?.replicas;
                 const brokersNew = p.replicas;
 
                 if (brokersOld == null || brokersNew == null) {
-                    console.log("reset traffic limit; skipping partition because old or new brokers can't be found", { topicName, partitionId, brokersOld, brokersNew, });
+                    console.log("traffic limit: skipping partition because old or new brokers can't be found", { topicName, partitionId, brokersOld, brokersNew, });
                     continue;
                 }
 
                 // leader throttling is applied to all sources (all brokers that have a replica of this partition)
                 for (const sourceBroker of brokersOld)
-                    leaderThrottle.push({ partitionId: partitionId, brokerId: sourceBroker });
+                    leaderReplicas.push({ partitionId: partitionId, brokerId: sourceBroker });
 
                 // follower throttling is applied only to target brokers that do not yet have a copy
                 const newBrokers = brokersNew.except(brokersOld);
                 for (const targetBroker of newBrokers)
-                    followerThrottle.push({ partitionId: partitionId, brokerId: targetBroker });
+                    followerReplicas.push({ partitionId: partitionId, brokerId: targetBroker });
             }
 
-            if (useReplicasWildcard) {
-                res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
-                res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: "*" });
-            } else {
-                const leaderReplicas = leaderThrottle.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
-                res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: leaderReplicas });
-                const followerReplicas = followerThrottle.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
-                res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: followerReplicas });
-            }
-
-            // individual request for each topic
-            configRequest.resources.push(res);
+            topicReplicas.push({
+                topicName: t.topicName,
+                leaderReplicas: leaderReplicas,
+                followerReplicas: followerReplicas,
+            })
         }
 
-        return await this.modifyConfig([configRequest]);
+        const msg = new Message("Setting bandwidth throttle... 1/2");
+        try {
+            let response = await api.setReplicationThrottleRate(api.clusterInfo!.brokers.map(b => b.brokerId), maxBytesPerSecond);
+            let errors = response.patchedConfigs.filter(c => c.error);
+            if (errors.length > 0)
+                throw new Error(toJson(errors));
+
+            msg.setLoading("Setting bandwidth throttle... 2/2");
+
+            response = await api.setThrottledReplicas(topicReplicas);
+            errors = response.patchedConfigs.filter(c => c.error);
+            if (errors.length > 0)
+                throw new Error(toJson(errors));
+
+            msg.setSuccess("Setting bandwidth throttle... done");
+            return true;
+        } catch (err) {
+            msg.hide();
+            console.error("error setting throttle", err);
+            return false;
+        }
     }
 
-    async resetTrafficLimit(request: PartitionReassignmentRequest, useBrokerWildcard: boolean): Promise<boolean> {
-
+    async resetTrafficLimit(topicNames: string[], brokerIds: number[]): Promise<boolean> {
         const configRequest: PatchConfigsRequest = { resources: [] };
 
-        if (useBrokerWildcard) {
+        for (const b of brokerIds) {
             configRequest.resources.push({
                 resourceType: ConfigResourceType.Broker,
-                resourceName: null as any as string, // String(brokerId) // omit = all brokers
+                resourceName: String(b),
                 configs: [
                     { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
                     { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
                 ]
             });
-        } else {
-            for (const b of api.clusterInfo!.brokers) {
-                configRequest.resources.push({
-                    resourceType: ConfigResourceType.Broker,
-                    resourceName: String(b.brokerId),
-                    configs: [
-                        { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                        { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                    ]
-                });
-            }
         }
 
         // reset throttled replicas for those topics
-        for (const t of request.topics) {
+        for (const t of topicNames) {
             configRequest.resources.push({
                 resourceType: ConfigResourceType.Topic,
-                resourceName: t.topicName,
+                resourceName: t,
                 configs: [
                     { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
                     { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete }
@@ -475,34 +431,139 @@ class ReassignPartitions extends PageComponent {
             });
         }
 
-        return await this.modifyConfig([configRequest]);
-    }
-
-    async modifyConfig(requests: PatchConfigsRequest[]): Promise<boolean> {
-
-        const msg = new Message("Modifying config...");
+        const msg = new Message("Resetting bandwidth throttle... 1/2");
         try {
-            for (let i = 0; i < requests.length; i++) {
-                msg.setLoading(`Modifying config... (${i + 1} / ${requests.length})`);
 
-                const changeConfigResponse = await api.changeConfig(requests[i]);
+            let response = await api.resetThrottledReplicas(topicNames);
+            let errors = response.patchedConfigs.filter(c => c.error);
+            if (errors.length > 0)
+                throw new Error(toJson(errors));
 
-                if (changeConfigResponse.patchedConfigs.any(r => r.error != null))
-                    throw new Error("Errors while setting config: " + toJson(changeConfigResponse.patchedConfigs.filter(r => r.error != null)));
-            }
-            msg.setSuccess("Modifying config - done");
+            msg.setLoading("Resetting bandwidth throttle... 2/2");
+
+            response = await api.resetReplicationThrottleRate(brokerIds);
+            errors = response.patchedConfigs.filter(c => c.error);
+            if (errors.length > 0)
+                throw new Error(toJson(errors));
+
+            msg.setSuccess("Resetting bandwidth throttle... done");
+            return true;
         } catch (err) {
-            notification.error({
-                message: "Error setting broker configuration:\n" + String(err),
-                duration: 0, // don't close automatically
-            });
             msg.hide();
+            console.error("error resetting throttle", err);
             return false;
         }
-
-        return true;
     }
 
+    startRefreshingTopicConfigs() {
+        if (IsDev) console.log('starting refreshTopicConfigs', { stack: new Error().stack });
+        if (this.refreshTopicConfigsTimer == null)
+            this.refreshTopicConfigsTimer = setInterval(this.refreshTopicConfigs, 6000);
+    }
+    stopRefreshingTopicConfigs() {
+        if (IsDev) console.log('stopping refreshTopicConfigs', { stack: new Error().stack });
+        if (this.refreshTopicConfigsTimer) {
+            clearInterval(this.refreshTopicConfigsTimer);
+            this.refreshTopicConfigsTimer = null;
+        }
+    }
+
+    async refreshTopicConfigs() {
+        try {
+            if (this.refreshTopicConfigsRequestsInProgress > 0) return;
+            this.refreshTopicConfigsRequestsInProgress++;
+            const topicConfigs = await partialTopicConfigs([
+                "follower.replication.throttled.replicas",
+                "leader.replication.throttled.replicas"
+            ]);
+
+            // Only get the names of the topics that have throttles applied
+            const newThrottledTopics = topicConfigs.topicDescriptions
+                .filter(t => t.configEntries.any(x => Boolean(x.value)))
+                .map(t => t.topicName).sort();;
+
+            // Filter topics that are still being reassigned
+            const inProgress = this.topicPartitionsInProgress;
+            newThrottledTopics.removeAll(t => inProgress.includes(t));
+
+            // Update observable
+            const changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
+            if (changes.added || changes.removed)
+                if (IsDev) console.log('refreshTopicConfigs updated', changes);
+
+        } catch (err) {
+            console.error("error while refreshing topic configs, stopping auto refresh", { error: err });
+            this.stopRefreshingTopicConfigs();
+        } finally {
+            this.refreshTopicConfigsRequestsInProgress--;
+        }
+    }
+
+    async removeThrottleFromTopics() {
+        const throttledTopics = clone(this.topicsWithThrottle);
+        const refreshTopicConfigs = this.refreshTopicConfigs;
+
+        Modal.confirm({
+            title: 'Remove throttle config from topics',
+            icon: <ExclamationCircleOutlined />,
+            width: 'auto',
+            style: { maxWidth: '66%' },
+            content:
+                <div>
+                    <div>
+                        There are {this.topicsWithThrottle.length} topics with throttling applied to their replicas.<br />
+                        Kowl implements throttling of reassignments by
+                        setting{' '}
+                        <span className='tooltip' style={{ textDecoration: 'dotted underline' }}>
+                            two configuration values
+                            <span className='tooltiptext' style={{ textAlign: 'left', width: '500px' }}>
+                                Kowl sets those two configuration entries when throttling a topic reassignment:
+                                <div style={{ marginTop: '.5em' }}>
+                                    <code>leader.replication.throttled.replicas</code><br />
+                                    <code>follower.replication.throttled.replicas</code>
+                                </div>
+                            </span>
+                        </span>{' '}
+                        in a topics configuration.<br />
+                        So if you previously used Kowl to reassign any of the partitions of the following topics, the throttling config might still be active.
+                    </div>
+                    <div style={{ margin: '1em 0' }}>
+                        <h4>Throttled Topics</h4>
+                        <ul style={{ maxHeight: '145px', overflowY: 'scroll' }}>
+                            {throttledTopics.map(t => <li key={t}>{t}</li>)}
+                        </ul>
+                    </div>
+                    <div>
+                        Do you want to remove the throttle config from those topics?
+                    </div>
+                </div>,
+
+            okText: 'Remove throttle',
+            okButtonProps: { danger: true, autoFocus: false, },
+            async onOk() {
+                const baseText = 'Removing throttle config from topics';
+                const msg = new Message(baseText + '...');
+
+                const result = await api.resetThrottledReplicas(throttledTopics);
+                const errors = result.patchedConfigs.filter(r => r.error);
+
+                if (errors.length == 0) {
+                    msg.setSuccess(baseText + " - Done");
+                }
+                else {
+                    msg.setError(baseText + ": " + errors.length + " errors");
+                    console.error("errors in removeThrottleFromTopics", errors);
+                }
+
+                refreshTopicConfigs();
+            },
+
+            maskClosable: true,
+            cancelButtonProps: { autoFocus: true },
+        })
+
+
+    }
 
     @computed get selectedTopicPartitions(): TopicPartitions[] {
         return partitionSelectionToTopicPartitions(
@@ -511,6 +572,7 @@ class ReassignPartitions extends PageComponent {
             api.topics!
         );
     }
+
     @computed get topicsWithMoves(): TopicWithMoves[] {
         if (this.reassignmentRequest == null) return [];
         if (api.topics == null) return [];
@@ -522,6 +584,9 @@ class ReassignPartitions extends PageComponent {
         );
     }
 
+    @computed get topicPartitionsInProgress(): string[] {
+        return api.partitionReassignments?.map(r => r.topicName) ?? [];
+    }
 }
 export default ReassignPartitions;
 

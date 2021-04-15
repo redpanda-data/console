@@ -65,6 +65,7 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/cluster", api.handleDescribeCluster())
 				r.Get("/topics", api.handleGetTopics())
 				r.Get("/acls", api.handleGetACLsOverview())
+				r.Get("/topics-configs", api.handleGetTopicsConfigs())
 				r.Get("/topics/{topicName}/partitions", api.handleGetPartitions())
 				r.Get("/topics/{topicName}/configuration", api.handleGetTopicConfig())
 				r.Get("/topics/{topicName}/consumers", api.handleGetTopicConsumers())
@@ -89,8 +90,6 @@ func (api *API) routes() *chi.Mux {
 
 			// SPA Files
 			router.Group(func(r chi.Router) {
-				r.Use(cache)
-
 				handleIndex, handleResources := api.createFrontendHandlers(frontendDir)
 				r.Get("/", handleIndex)
 				r.Get("/*", handleResources)

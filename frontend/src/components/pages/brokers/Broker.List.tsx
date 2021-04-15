@@ -100,7 +100,9 @@ class BrokerList extends PageComponent {
 
     isMatch(filter: string, item: Broker) {
         if (item.address.includes(filter)) return true;
-        if (item.rack.toLowerCase().includes(filter.toLowerCase())) return true;
+
+        if (item.rack)
+            if (item.rack.toLowerCase().includes(filter.toLowerCase())) return true;
 
         return false;
     }

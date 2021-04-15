@@ -36,22 +36,24 @@ export interface GetTopicsResponse {
 
 export interface Partition {
     id: number;
+
+    // When set, all props from replicas to partitionLogDirs are null
     partitionError: string | null;
     replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
     offlineReplicas: number[] | null;
     inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
     leader: number; // id of the "leader" broker for this partition
-
-    waterMarksError: string | null;
-    waterMarkLow: number;
-    waterMarkHigh: number;
-
     partitionLogDirs: {
         error: string, // empty when no error
         brokerId: number,
         partitionId: number, // redundant?
         size: number, // size (in bytes) of log dir on that broker
     }[];
+
+    // When set, waterMarkLow/High are not set
+    waterMarksError: string | null;
+    waterMarkLow: number;
+    waterMarkHigh: number;
 
     // added by frontend:
     replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
@@ -85,7 +87,7 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'none' | 'json' | 'xml' | 'avro' | 'text' | 'binary';
+export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'consumerOffsets' | 'binary' | 'msgpack';
 export type CompressionType = 'uncompressed' | 'gzip' | 'snappy' | 'lz4' | 'zstd' | 'unknown';
 export interface Payload {
     payload: any, // json obj
@@ -149,6 +151,9 @@ export interface TopicDescription {
 export interface TopicConfigResponse {
     topicDescription: TopicDescription
 }
+export interface PartialTopicConfigsResponse {
+    topicDescriptions: TopicDescription[];
+}
 export interface TopicDocumentation {
     // if false: topic documentation is not configured
     isEnabled: boolean;
@@ -187,6 +192,7 @@ export type GroupAction = 'all' | typeof GroupActions[number];
 export interface GroupDescription {
     groupId: string; // name of the group
     state: string; // Dead, Initializing, Rebalancing, Stable
+    protocol: string;
     protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
     members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     coordinatorId: number;
@@ -227,8 +233,9 @@ export interface Broker {
     brokerId: number;
     logDirSize: number; // bytes of the whole directory
     address: string;
-    rack: string;
+    rack: string | null;
 }
+
 
 export interface EndpointCompatibilityResponse {
     endpointCompatibility: EndpointCompatibility;
@@ -245,26 +252,12 @@ export interface EndpointCompatibilityEntry {
     isSupported: boolean;
 }
 
-interface FeatureEntry {
-    endpoint: string;
-    method: string;
-}
-export class Feature {
-    static readonly ClusterConfig: FeatureEntry = { endpoint: "/api/cluster/config", method: 'GET' };
-    static readonly ConsumerGroups: FeatureEntry = { endpoint: "/api/consumer-groups", method: 'GET' };
-    static readonly GetReassignments: FeatureEntry = { endpoint: "/api/operations/reassign-partitions", method: 'GET' };
-    static readonly PatchReassignments: FeatureEntry = { endpoint: "/api/operations/reassign-partitions", method: 'PATCH' };
-}
 
 
 export interface ClusterInfo {
     brokers: Broker[];
     controllerId: number;
     kafkaVersion: string;
-}
-
-export interface ClusterInfoResponse {
-    clusterInfo: ClusterInfo;
 }
 
 export interface ClusterInfoResponse {
@@ -320,7 +313,10 @@ export interface UserData {
     seat: Seat;
     canManageKowl: boolean;
     canListAcls: boolean;
+    canReassignPartitions: boolean;
+    canPatchConfigs: boolean;
 }
+export type UserPermissions = Exclude<keyof UserData, 'user' | 'seat'>;
 
 
 
@@ -470,12 +466,16 @@ export const AclRequestDefault = {
 
 export interface AclResponse {
     aclResources: AclResource[];
+    isAuthorizerEnabled: boolean;
 }
 
+export enum ResourcePatternType {
+    'UNKNOWN', 'MATCH', 'LITERAL', 'PREFIXED'
+}
 export interface AclResource {
     resourceType: string;
     resourceName: string;
-    resourcePatternType: string;
+    resourcePatternType: ResourcePatternType;
     acls: AclRule[];
 }
 
@@ -561,8 +561,9 @@ export type TopicAssignment = {
         // Since the replicationFactor of a partition tells us the total number
         // of 'instances' of a partition (leader + follower replicas) the length of the array is always 'replicationFactor'.
         // The first entry in the array is the brokerId that will host the leader replica
-        // can also be null to cancel a pending reassignment.
         // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
+        //
+        // Can also be null to cancel a pending reassignment.
     }[];
 };
 

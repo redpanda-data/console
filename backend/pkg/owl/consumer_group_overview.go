@@ -3,6 +3,7 @@ package owl
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"sort"
@@ -15,7 +16,7 @@ type ConsumerGroupOverview struct {
 	GroupID        string                   `json:"groupId"`
 	State          string                   `json:"state"`
 	ProtocolType   string                   `json:"protocolType"`
-	Protocol       string                   `json:"-"`
+	Protocol       string                   `json:"protocol"`
 	Members        []GroupMemberDescription `json:"members"`
 	CoordinatorID  int32                    `json:"coordinatorId"`
 	Lags           *ConsumerGroupLag        `json:"lag"`
@@ -53,41 +54,55 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context) ([]ConsumerGrou
 		return nil, fmt.Errorf("failed to get consumer group lags: %w", err)
 	}
 
-	res := make([]ConsumerGroupOverview, 0)
-	converted, err := s.convertKgoGroupDescriptions(describedGroupsSharded.GetDescribedGroups(), groupLags)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert group descriptions into group members: %w", err)
-	}
-	res = append(res, converted...)
+	res := s.convertKgoGroupDescriptions(describedGroupsSharded, groupLags)
 	sort.Slice(res, func(i, j int) bool { return res[i].GroupID < res[j].GroupID })
 
 	return res, nil
 }
 
-func (s *Service) convertKgoGroupDescriptions(descriptions []kmsg.DescribeGroupsResponseGroup, lags map[string]*ConsumerGroupLag) ([]ConsumerGroupOverview, error) {
-	response := make([]ConsumerGroupOverview, len(descriptions))
-	for i, d := range descriptions {
-		err := kerr.ErrorForCode(d.ErrorCode)
-		if err != nil {
-			return nil, err
+func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeConsumerGroupsResponseSharded, lags map[string]*ConsumerGroupLag) []ConsumerGroupOverview {
+	result := make([]ConsumerGroupOverview, 0)
+	for _, response := range describedGroups.Groups {
+		if response.Error != nil {
+			s.logger.Warn("failed to describe consumer groups from one group coordinator",
+				zap.Error(response.Error),
+				zap.Int32("coordinator_id", response.BrokerMetadata.NodeID),
+			)
+			continue
 		}
+		coordinatorID := response.BrokerMetadata.NodeID
 
-		members, err := s.convertGroupMembers(d.Members)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert group members from described groups to kowl response type: %w", err)
-		}
-		response[i] = ConsumerGroupOverview{
-			GroupID:       d.Group,
-			State:         d.State,
-			ProtocolType:  d.ProtocolType,
-			Protocol:      d.Protocol,
-			Members:       members,
-			CoordinatorID: 0,
-			Lags:          lags[d.Group],
+		for _, d := range response.Groups.Groups {
+			err := kerr.ErrorForCode(d.ErrorCode)
+			if err != nil {
+				s.logger.Warn("failed to describe consumer group, inner kafka error",
+					zap.Error(err),
+					zap.String("group_id", d.Group),
+				)
+				continue
+			}
+
+			members, err := s.convertGroupMembers(d.Members)
+			if err != nil {
+				s.logger.Warn("failed to convert group members from described groups to kowl result type",
+					zap.Error(err),
+					zap.String("group_id", d.Group),
+				)
+				continue
+			}
+			result = append(result, ConsumerGroupOverview{
+				GroupID:       d.Group,
+				State:         d.State,
+				ProtocolType:  d.ProtocolType,
+				Protocol:      d.Protocol,
+				Members:       members,
+				CoordinatorID: coordinatorID,
+				Lags:          lags[d.Group],
+			})
 		}
 	}
 
-	return response, nil
+	return result
 }
 
 func (s *Service) convertGroupMembers(members []kmsg.DescribeGroupsResponseGroupMember) ([]GroupMemberDescription, error) {

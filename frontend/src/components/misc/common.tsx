@@ -8,8 +8,9 @@ import { observer } from "mobx-react";
 import { Grid, Modal, Tag } from "antd";
 import { uiState } from "../../state/uiState";
 import { hoursToMilliseconds, prettyMilliseconds } from "../../utils/utils";
-import env, { IsBusiness } from "../../utils/env";
+import env, { IsBusiness, IsDev } from "../../utils/env";
 import { QuickTable } from "../../utils/tsxUtils";
+import { toJson } from "../../utils/jsonUtils";
 
 const { useBreakpoint } = Grid;
 
@@ -128,20 +129,62 @@ export function range(start: number, end: number): number[] {
     return ar;
 }
 
+let updateDialogOpen = false;
+
+
 @observer
 export class UpdatePopup extends Component {
     render() {
+        if (updateDialogOpen) return null;
 
-        if (!uiState.serverVersion) return null; // server version not known yet
         const serverVersion = uiState.serverVersion;
+        if (!serverVersion) return null; // server version not known yet
         if (serverVersion.sha == 'dev' || serverVersion.branch == 'dev') return null; // don't show popup in dev
         if (uiState.updatePromtHiddenUntil !== undefined)
             if (new Date().getTime() < uiState.updatePromtHiddenUntil)
                 return null; // not yet
 
-        return null; // temporarily disabled
+        const curTimestamp = Number(env.REACT_APP_KOWL_TIMESTAMP);
+        const serverTimestamp = Number(serverVersion.ts);
 
+        if (!curTimestamp || !Number.isFinite(curTimestamp)) return null;
+        if (!serverTimestamp || !Number.isFinite(curTimestamp)) return null;
 
+        // don't downgrade
+        if (serverTimestamp < curTimestamp) return null;
+        // version already matches
+        if (serverTimestamp == curTimestamp) return null;
+
+        console.log('frontend update available', {
+            serverTimestamp: serverTimestamp,
+            serverDate: new Date(serverTimestamp * 1000),
+            serverVersionInfo: serverVersion,
+            localTimestamp: curTimestamp,
+            localDate: new Date(curTimestamp * 1000),
+            localVersion: env,
+        });
+
+        updateDialogOpen = true;
+        setImmediate(() => {
+            Modal.info({
+                title: 'Kowl has been updated',
+                content: <div>The page must be reloaded to apply the newest version of the frontend.</div>,
+                mask: true,
+                maskClosable: false,
+                centered: true,
+                okText: 'Reload',
+                onOk: () => {
+                    console.log('reloading frontend...');
+                    window.location.reload();
+                    updateDialogOpen = false;
+                },
+                onCancel: () => { updateDialogOpen = false; }
+            });
+        });
+
+        return null;
+
+        /*
         const curSha = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : '(dev)');
         const curRef = env.REACT_APP_KOWL_GIT_REF;
         const curShaBusiness = env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
@@ -216,6 +259,7 @@ export class UpdatePopup extends Component {
                 <p>Do you want to reload the page now?</p>
             </div>
         </Modal>
+        */
     }
 }
 

@@ -80,9 +80,6 @@ class SchemaList extends PageComponent<{}> {
         if (api.schemaOverview === undefined) return DefaultSkeleton; // request in progress
         if (api.schemaOverview === null || api.schemaOverviewIsConfigured === false) return renderNotConfigured(); // actually no data to display after successful request
 
-        // todo: what if there are lets say 5 schemas, but all we got was 5 entries in 'requestErrors' instead?
-        if (api.schemaOverview.subjects.length <= 0) return <Empty />;
-
         const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
 
         return (
