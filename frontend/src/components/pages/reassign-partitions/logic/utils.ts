@@ -54,7 +54,7 @@ export function computeMovedReplicas(
                 const intersection = oldBrokers.intersection(newBrokers);
                 moves = oldBrokers.length - intersection.length;
             }
-            partitionsWithMoves.push({ ...partition, movedReplicas: moves });
+            partitionsWithMoves.push({ ...partition, movedReplicas: moves, brokersBefore: oldBrokers, brokersAfter: newBrokers ?? [] });
         }
 
         ar.push({

@@ -15,7 +15,7 @@ import { computeMovedReplicas } from "./logic/utils";
 import { uiSettings } from "../../../state/ui";
 import { IsDev } from "../../../utils/env";
 
-export type PartitionWithMoves = Partition & { movedReplicas: number };
+export type PartitionWithMoves = Partition & { movedReplicas: number, brokersBefore: number[], brokersAfter: number[] };
 export type TopicWithMoves = { topicName: string; topic: Topic; allPartitions: Partition[]; selectedPartitions: PartitionWithMoves[]; };
 
 @observer
@@ -167,13 +167,56 @@ export class StepReview extends Component<{
     summary() {
         const settings = uiSettings.reassignment;
 
-        const totalTraffic = this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas * p.replicaSize));
+        const trafficStats = this.props.topicsWithMoves.map(t => {
+            const partitionStats = t.selectedPartitions.map(p => {
+                const totalTraffic = p.replicaSize * p.movedReplicas;
+
+                if (totalTraffic == 0) {
+                    // Moving zero replicas or replicas with zero size won't take any time
+                    return {
+                        ...p,
+                        totalTraffic: 0,
+                        potentialBandwidth: 0,
+                        estimatedTimeSec: 0,
+                    };
+                }
+
+                // if there are 2 senders and 2 receivers, the bandwidth limit is effectively double
+                // but for (1sender and 2receivers), or (2senders and 1receiver) it won't go any faster.
+                const senders = p.brokersBefore.except(p.brokersAfter);
+                const receivers = p.brokersAfter.except(p.brokersBefore);
+
+                const participatingTransferPairs = Math.min(senders.length, receivers.length);
+                const potentialBandwidth = participatingTransferPairs * settings.maxReplicationTraffic;
+
+                let estimatedTimeSec = totalTraffic / potentialBandwidth;
+                if (estimatedTimeSec <= 0 || !Number.isFinite(estimatedTimeSec)) {
+                    console.warn('error calculating estimatedTimeSec', { topic: t.topicName, partition: p.id, senders, receivers, potentialBandwidth, maxReplicationTraffic: settings.maxReplicationTraffic, estimatedTimeSec, });
+                    estimatedTimeSec = 0;
+                }
+
+                return {
+                    ...p,
+                    totalTraffic: totalTraffic,
+                    potentialBandwidth: potentialBandwidth,
+                    estimatedTimeSec: estimatedTimeSec,
+                }
+            });
+
+            return {
+                ...t,
+                partitionStats: partitionStats,
+            }
+        });
+        const estimatedTimeSec = trafficStats.sum(t => t.partitionStats.sum(p => p.estimatedTimeSec));
+
+        const totalTraffic = trafficStats.sum(t => t.partitionStats.sum(p => p.totalTraffic));
+
         const isThrottled = settings.maxReplicationTraffic > 0;
         const trafficThrottle = isThrottled
             ? prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'
             : 'disabled';
 
-        const estimatedTimeSec = totalTraffic / settings.maxReplicationTraffic;
         const estimatedTime = !isThrottled ? '-'
             : estimatedTimeSec < 10
                 ? '< 10 seconds'
@@ -209,10 +252,6 @@ export class StepReview extends Component<{
                     for (const id of p.replicas)
                         set.add(id);
         return [...set.values()];
-    }
-
-    @computed get totalMovedData(): number {
-        return this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas * p.replicaSize));
     }
 }
 
