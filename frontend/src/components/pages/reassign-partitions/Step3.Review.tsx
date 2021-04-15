@@ -98,31 +98,6 @@ export class StepReview extends Component<{
             {this.reassignmentOptions()}
 
             {this.summary()}
-
-
-            <div className='devOnly' style={{ display: IsDev ? 'flex' : 'none', gap: '1em', marginTop: '3em' }}>
-                <Button danger loading={this.requestInProgress}
-                    disabled={this.requestInProgress}
-                    onClick={async () => {
-                        this.requestInProgress = true;
-                        try {
-                            const rq = this.props.reassignPartitions.reassignmentRequest;
-                            if (rq)
-                                await this.props.reassignPartitions.setTrafficLimit(rq);
-                        } finally { this.requestInProgress = false; }
-                    }}>Set throttle config</Button>
-
-                <Button danger loading={this.requestInProgress}
-                    disabled={this.requestInProgress}
-                    onClick={async () => {
-                        this.requestInProgress = true;
-                        try {
-                            const rq = this.props.reassignPartitions.reassignmentRequest;
-                            if (rq)
-                                await this.props.reassignPartitions.resetTrafficLimit(rq.topics.map(t => t.topicName), api.clusterInfo!.brokers.map(b => b.brokerId));
-                        } finally { this.requestInProgress = false; }
-                    }}>Reset throttle config</Button>
-            </div>
         </>;
     }
 

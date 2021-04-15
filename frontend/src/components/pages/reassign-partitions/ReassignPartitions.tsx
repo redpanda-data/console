@@ -283,7 +283,13 @@ class ReassignPartitions extends PageComponent {
                             this.partitionSelection = {};
                             this.selectedBrokerIds = [];
                             this.reassignmentRequest = null;
-                            this.currentStep = 0;
+
+                            setTimeout(() => {
+                                this.currentStep = 0;
+
+                                // todo: we need to scroll the "main content", not the window/document
+                                window.scrollTo(0, 0);
+                            }, 300);
                         });
                     }
                 }
