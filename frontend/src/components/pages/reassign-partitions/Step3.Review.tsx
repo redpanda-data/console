@@ -107,7 +107,7 @@ export class StepReview extends Component<{
 
         return <div style={{ margin: '3em 1em' }}>
             <h2>Bandwidth Throttle</h2>
-            <div style={{ color: 'hsl(216deg, 15%, 52%)' }}>
+            <div>
                 Using throttling you can limit the network traffic for the reassignment.<br />
                 <div style={{ marginTop: '0.5em' }}>
                     <span style={{ fontWeight: 600 }}>Please Note: </span>
