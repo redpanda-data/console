@@ -152,25 +152,11 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
 };
 
 Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)[]): T[] {
-    const ar: T[] = [];
-
-    this.forEach(item => {
-        if (item !== null && item !== undefined)
-            ar.push(item);
-    });
-
-    return ar;
+    return this.filter(x => x != null) as T[];
 };
 
 Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefined)[]): T[] {
-    const ar: T[] = [];
-
-    this.forEach(item => {
-        if (item)
-            ar.push(item);
-    });
-
-    return ar;
+    return this.filter(Boolean) as T[];
 };
 
 Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { removed: number, added: number } {
@@ -198,13 +184,14 @@ Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { 
 
 
 Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => any): T[] {
-    const selector = keySelector ? keySelector : (x: T) => x;
+    if (!keySelector)
+        return [... new Set(this)];
 
     const set = new Set<any>();
     const ar: T[] = [];
 
     this.forEach(item => {
-        const key = selector(item);
+        const key = keySelector(item);
         if (!set.has(key)) {
             set.add(key);
             ar.push(item);
@@ -215,6 +202,13 @@ Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) 
 };
 
 Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: T[]): void {
+    if (this.length + elements.length > 50) {
+        const s = new Set(this);
+        for (const e of elements)
+            if (!s.has(e))
+                this.push(e);
+    }
+
     for (let e of elements)
         if (!this.includes(e))
             this.push(e);
