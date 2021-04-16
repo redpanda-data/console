@@ -7,10 +7,12 @@ import Draggable from "react-draggable";
 import { observer } from "mobx-react";
 import { Grid, Modal, Tag } from "antd";
 import { uiState } from "../../state/uiState";
-import { hoursToMilliseconds, prettyMilliseconds } from "../../utils/utils";
+import { hoursToMilliseconds, prettyBytesOrNA, prettyMilliseconds } from "../../utils/utils";
 import env, { IsBusiness, IsDev } from "../../utils/env";
-import { QuickTable } from "../../utils/tsxUtils";
+import { LayoutBypass, QuickTable } from "../../utils/tsxUtils";
 import { toJson } from "../../utils/jsonUtils";
+import { TopicLogDirSummary } from "../../state/restInterfaces";
+import { AlertIcon } from "@primer/octicons-v2-react";
 
 const { useBreakpoint } = Grid;
 
@@ -279,4 +281,30 @@ function formatTimestamp(unixTimestampSeconds: number | string | null | undefine
         console.error('failed to parse/format the timestamp: ' + String(unixTimestampSeconds));
         return null;
     }
+}
+
+
+export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
+    if (!summary.hint)
+        return <>{prettyBytesOrNA(summary.totalSizeBytes)}</>
+
+    return <>{prettyBytesOrNA(summary.totalSizeBytes)} <WarningToolip content={summary.hint} /></>
+}
+
+export function WarningToolip(p: { content: React.ReactNode }): JSX.Element {
+    return <LayoutBypass>
+        <div className='tooltip' style={{
+            color: 'hsl(33deg, 90%, 65%)',
+            borderRadius: '25px',
+            display: 'inline-flex',
+            placeItems: 'center',
+            verticalAlign: 'middle',
+            marginLeft: '30px',
+            width: '22px', height: '22px',
+
+        }}>
+            <AlertIcon />
+            <span className='tooltiptext'>{p.content}</span>
+        </div>
+    </LayoutBypass>
 }

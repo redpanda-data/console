@@ -13,7 +13,7 @@ import { editQuery } from '../../../utils/queryHelper';
 import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import Card from '../../misc/Card';
-import { makePaginationConfig, sortField } from '../../misc/common';
+import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import SearchBar from '../../misc/SearchBar';
 import { PageComponent, PageInitHelper } from '../Page';
 
@@ -136,7 +136,7 @@ class TopicList extends PageComponent {
                             { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
                             { title: 'Replication', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
                             { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', sorter: sortField('cleanupPolicy'), width: 1 },
-                            { title: 'Size', render: (t, r) => prettyBytesOrNA(r.logDirSummary.totalSizeBytes), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes, width: '140px' },
+                            { title: 'Size', render: (t, r) => renderLogDirSummary(r.logDirSummary), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes, width: '140px' },
                         ]}
                     />
                 </Card>
