@@ -16,6 +16,7 @@ import { observer } from "mobx-react";
 import { EllipsisOutlined } from "@ant-design/icons";
 import { strictEqual } from "assert";
 import { reassignmentTracker } from "../ReassignPartitions";
+import { BandwidthSlider } from "./BandwidthSlider";
 
 
 @observer
@@ -186,33 +187,9 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
             onCancel={this.props.onClose}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3em', }}>
-
                 <div style={{ display: 'flex', gap: '1em' }}>
-                    <Slider style={{ minWidth: '300px', margin: '0 1em', paddingBottom: '2em', flex: 1 }}
-                        min={2} max={12} step={0.1}
-                        marks={{ 2: "Off", 3: "1kB", 6: "1MB", 9: "1GB", 12: "1TB", }}
-                        included={true}
-                        tipFormatter={f => throttleValue < 1000
-                            ? 'No limit'
-                            : prettyBytesOrNA(throttleValue) + '/s'}
-
-                        value={Math.log10(throttleValue)}
-                        onChange={sv => {
-                            const n = Number(sv.valueOf());
-                            const newLimit = Math.pow(10, n);
-                            if (newLimit >= 1000) {
-                                this.newThrottleValue = newLimit;
-                            }
-                            else {
-                                if (newLimit < 500)
-                                    this.newThrottleValue = 0;
-                                else this.newThrottleValue = 1000;
-                            }
-                        }}
-                    />
+                    <BandwidthSlider value={throttleValue} onChange={x => this.newThrottleValue = x} />
                 </div>
-
-                {/* <Button type='default' onClick={() => this.applyBandwidthThrottle()}>Remove Bandwidth Throttle</Button> */}
             </div>
 
         </Modal>

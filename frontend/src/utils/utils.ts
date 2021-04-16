@@ -661,20 +661,35 @@ export class Message {
     }
 }
 
+/**
+ * Scroll the main content region
+ */
+export function scrollToTop(): void {
+    const mainLayout = document.getElementById('mainLayout');
+    if (!mainLayout) return;
 
-//
-// https://stackoverflow.com/a/52171480/372434
-//
-const hashSeed = 0;
-export function hashString(str: string): number {
-    let h1 = 0xdeadbeef ^ hashSeed, h2 = 0x41c6ce57 ^ hashSeed;
-    for (let i = 0, ch; i < str.length; i++) {
-        ch = str.charCodeAt(i);
-        h1 = Math.imul(h1 ^ ch, 2654435761);
-        h2 = Math.imul(h2 ^ ch, 1597334677);
+    mainLayout.scrollTo({ behavior: 'smooth', left: 0, top: 0 });
+}
+
+/**
+ * Scroll the main content region to the target element (which is found by the given id)
+ */
+export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number): void {
+    const mainLayout = document.getElementById('mainLayout');
+    if (!mainLayout) return;
+    const target = document.getElementById(targetId);
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+    let top = 0;
+    switch (anchor) {
+        case 'start': top = rect.top; break;
+        case 'center': top = (rect.top + rect.bottom) / 2; break;
+        case 'end': top = rect.bottom; break;
     }
-    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 
+    mainLayout.scrollTo({
+        behavior: 'smooth',
+        top: target.getBoundingClientRect().top + mainLayout.scrollTop + (offset ?? 0)
+    });
 }

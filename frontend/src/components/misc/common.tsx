@@ -124,6 +124,9 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
     }
 }
 
+/**
+ * returns an array with the numbers from start, up to end (does not include end!)
+ */
 export function range(start: number, end: number): number[] {
     const ar = []
     for (let i = start; i < end; i++)

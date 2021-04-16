@@ -4,7 +4,7 @@ import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Sele
 import { PageComponent, PageInitHelper } from "../Page";
 import { api, partialTopicConfigs } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
-import { makePaginationConfig, sortField } from "../../misc/common";
+import { makePaginationConfig, range, sortField } from "../../misc/common";
 import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
@@ -114,8 +114,8 @@ class ReassignPartitions extends PageComponent {
         if (api.topicPartitions.size < api.topics.length) return DefaultSkeleton;
         if (api.partitionReassignments === undefined) return DefaultSkeleton;
 
-        const partitionCountLeaders = api.topics.sum(t => t.partitionCount);
-        const partitionCountOnlyReplicated = api.topics.sum(t => t.partitionCount * (t.replicationFactor - 1));
+        const partitionCountLeaders = api.topics?.sum(t => t.partitionCount);
+        const partitionCountOnlyReplicated = api.topics?.sum(t => t.partitionCount * (t.replicationFactor - 1));
 
         const step = steps[this.currentStep];
         const nextButtonCheck = step.nextButton.isEnabled(this);
@@ -128,11 +128,14 @@ class ReassignPartitions extends PageComponent {
                 <Card>
                     <Row>
                         <Statistic title='Broker Count' value={api.clusterInfo?.brokers.length} />
-                        <Statistic title='Leader Partitions' value={partitionCountLeaders} />
-                        <Statistic title='Replica Partitions' value={partitionCountOnlyReplicated} />
-                        <Statistic title='Total Partitions' value={partitionCountLeaders + partitionCountOnlyReplicated} />
+                        <Statistic title='Leader Partitions' value={partitionCountLeaders ?? '...'} />
+                        <Statistic title='Replica Partitions' value={partitionCountOnlyReplicated ?? '...'} />
+                        <Statistic title='Total Partitions' value={(partitionCountLeaders != null && partitionCountOnlyReplicated != null)
+                            ? (partitionCountLeaders + partitionCountOnlyReplicated)
+                            : '...'} />
                     </Row>
                 </Card>
+
 
                 {/* Active Reassignments */}
                 <Card>
@@ -143,7 +146,7 @@ class ReassignPartitions extends PageComponent {
                 </Card>
 
                 {/* Content */}
-                <Card>
+                <Card id='wizard'>
                     {/* Steps */}
                     <div style={{ margin: '.75em 1em 1em 1em' }}>
                         <Steps current={this.currentStep}>
@@ -167,16 +170,19 @@ class ReassignPartitions extends PageComponent {
                                 assignments={this.reassignmentRequest!}
                                 reassignPartitions={this} />;
                         }
-                    })()} </motion.div>
+                    })()}
+                    </motion.div>
 
                     {/* Navigation */}
-                    <div style={{ margin: '2.5em 0 1.5em', display: 'flex', alignItems: 'center', height: '2.5em' }}>
+                    <div style={{
+                        margin: '2.5em 0 1.5em', display: 'flex', alignItems: 'flex-end', height: '2.5em'
+                    }}>
                         {/* Back */}
                         {step.backButton &&
                             <Button
                                 onClick={this.onPreviousPage}
                                 disabled={this.currentStep <= 0 || this.requestInProgress}
-                                style={{ minWidth: '12em', height: 'auto' }}
+                                style={{ minWidth: '14em', height: 'auto' }}
                             >
                                 <span><ChevronLeftIcon /></span>
                                 <span>{step.backButton}</span>
@@ -188,9 +194,10 @@ class ReassignPartitions extends PageComponent {
                             <div>{nextButtonHelp}</div>
                             <Button
                                 type='primary'
-                                style={{ minWidth: '12em', height: 'auto', marginLeft: 'auto' }}
+                                style={{ minWidth: '14em', height: 'auto', marginLeft: 'auto' }}
                                 disabled={!nextButtonEnabled || this.requestInProgress}
                                 onClick={this.onNextPage}
+                                autoFocus={true}
                             >
                                 <span>{step.nextButton.text}</span>
                                 <span><ChevronRightIcon /></span>
@@ -199,30 +206,6 @@ class ReassignPartitions extends PageComponent {
                     </div>
                 </Card>
 
-                {/* Debug */}
-                {/* <div style={{ margin: '2em 0 1em 0', display: 'flex', flexWrap: 'wrap', gap: '3em' }}>
-                    <div>
-                        <h2>Partition Selection</h2>
-                        <div className='codeBox'>{toJson(this.partitionSelection, 4)}</div>
-                    </div>
-
-                    <div>
-                        <h2>Broker Selection</h2>
-                        <div className='codeBox'>{toJson(this.selectedBrokerIds)}</div>
-                    </div>
-
-                    {
-                    // <div>
-                    //    <h2>Api Data</h2>
-                    //    <div className='codeBox'>{toJson(this._debug_apiData, 4)}</div>
-                    //</div>
-                    }
-
-                    <div>
-                        <h2>Computed Assignments</h2>
-                        <div className='codeBox'>{toJson(this.reassignmentRequest, 4)}</div>
-                    </div>
-                </div> */}
             </motion.div>
         </>
     }

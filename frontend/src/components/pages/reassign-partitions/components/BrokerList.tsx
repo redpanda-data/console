@@ -7,7 +7,9 @@ import { findPopupContainer, QuickTable } from "../../../../utils/tsxUtils";
 import { CheckIcon } from "@primer/octicons-v2-react";
 import { observer } from "mobx-react";
 
-type BrokerListProps = { brokerIds: number[]; addedIds?: number[], removedIds?: number[], leaderId?: number; } | { partition: Partition };
+type BrokerListProps =
+    { brokerIds: number[]; addedIds?: number[], removedIds?: number[], leaderId?: number; } |
+    { partition: Partition };
 
 @observer
 export class BrokerList extends Component<BrokerListProps> {

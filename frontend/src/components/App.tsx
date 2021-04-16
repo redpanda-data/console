@@ -250,7 +250,7 @@ const AppPageHeader = observer(() => {
 });
 
 const AppContent = observer(() =>
-    <Layout className='overflowYOverlay' style={{ borderLeft: '1px solid #ddd' }}>
+    <Layout className='overflowYOverlay' style={{ borderLeft: '1px solid #ddd' }} id="mainLayout">
 
         <RenderTrap name='AppContentLayout' />
 

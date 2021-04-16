@@ -14,6 +14,7 @@ import { clone } from "../../../utils/jsonUtils";
 import { computeMovedReplicas } from "./logic/utils";
 import { uiSettings } from "../../../state/ui";
 import { IsDev } from "../../../utils/env";
+import { BandwidthSlider } from "./components/BandwidthSlider";
 
 export type PartitionWithMoves = Partition & { movedReplicas: number, brokersBefore: number[], brokersAfter: number[] };
 export type TopicWithMoves = { topicName: string; topic: Topic; allPartitions: Partition[]; selectedPartitions: PartitionWithMoves[]; };
@@ -117,49 +118,7 @@ export class StepReview extends Component<{
             </div>
 
             <div style={{ display: 'flex', gap: '1em', marginTop: '2em', paddingBottom: '1em', alignItems: 'center' }}>
-
-                <Slider style={{ minWidth: '300px', margin: '0 1em', paddingBottom: '2em', flex: 1 }}
-                    min={2} max={12} step={0.1}
-                    marks={{ 2: "Off", 3: "1kB", 6: "1MB", 9: "1GB", 12: "1TB", }}
-                    included={true}
-                    tipFormatter={f => settings.maxReplicationTraffic < 1000
-                        ? 'No limit'
-                        : prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'}
-
-                    value={Math.log10(settings.maxReplicationTraffic)}
-                    onChange={sv => {
-                        const n = Number(sv.valueOf());
-                        const newLimit = Math.pow(10, n);
-                        if (newLimit >= 1000) {
-                            settings.maxReplicationTraffic = newLimit;
-                        }
-                        else {
-                            if (newLimit < 500)
-                                settings.maxReplicationTraffic = 0;
-                            else settings.maxReplicationTraffic = 1000;
-                        }
-                    }}
-                />
-
-                <Input size='middle' style={{ maxWidth: '180px', display: 'none' }} disabled={this.requestInProgress}
-                    value={(settings.maxReplicationTraffic / Math.pow(1000, settings.maxReplicationSizePower)).toFixed(2)}
-                    onChange={v => {
-                        const val = Number(v.target.value);
-                        if (!Number.isFinite(val) || val < 0) return;
-                        settings.maxReplicationTraffic = val * Math.pow(1000, settings.maxReplicationSizePower);
-                    }}
-                    addonAfter={
-                        <Select style={{ width: '75px' }} options={[
-                            { label: 'B/s', value: 0 }, // value = power
-                            { label: 'kB/s', value: 1 },
-                            { label: 'MB/s', value: 2 },
-                            { label: 'GB/s', value: 3 },
-                        ]}
-                            value={uiSettings.reassignment.maxReplicationSizePower}
-                            onChange={e => uiSettings.reassignment.maxReplicationSizePower = e}
-                        />
-                    }
-                />
+                <BandwidthSlider settings={settings} />
             </div>
         </div>
     }
