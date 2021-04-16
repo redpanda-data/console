@@ -67,7 +67,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                     if (this.props.throttledTopics.includes(record.topicName))
                         return <div>
                             <span>{content}</span>
-                            <WarningToolip content="Topic replication is throttled" />
+                            <WarningToolip content="Topic replication is throttled" position="top" />
                         </div>
 
                     return content;

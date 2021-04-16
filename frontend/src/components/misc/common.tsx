@@ -291,10 +291,22 @@ export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
     if (!summary.hint)
         return <>{prettyBytesOrNA(summary.totalSizeBytes)}</>
 
-    return <>{prettyBytesOrNA(summary.totalSizeBytes)} <WarningToolip content={summary.hint} /></>
+    return <>{prettyBytesOrNA(summary.totalSizeBytes)} <WarningToolip content={summary.hint} position="left" /></>
 }
 
-export function WarningToolip(p: { content: React.ReactNode }): JSX.Element {
+export function WarningToolip(p: { content: React.ReactNode, position: 'top' | 'left' }): JSX.Element {
+    const styleTop = {
+        bottom: '100%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+    };
+    const styleLeft = {
+        bottom: '-2px',
+        left: 'auto',
+        right: '105%',
+        transform: 'none',
+    };
+
     return <LayoutBypass>
         <div className='tooltip' style={{
             color: 'hsl(33deg, 90%, 65%)',
@@ -307,7 +319,7 @@ export function WarningToolip(p: { content: React.ReactNode }): JSX.Element {
 
         }}>
             <AlertIcon />
-            <span className='tooltiptext'>{p.content}</span>
+            <span className='tooltiptext' style={p.position == 'left' ? styleLeft : undefined}>{p.content}</span>
         </div>
     </LayoutBypass>
 }
