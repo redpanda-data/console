@@ -1416,8 +1416,8 @@ svg {
             }
 
             .ant-descriptions-item-content {
-                max-width: 400px;
-                white-space: normal;
+                white-space: pre-wrap;
+                word-break: break-all;
                 background: hsl(220, 19%, 97%);
             }
         }
