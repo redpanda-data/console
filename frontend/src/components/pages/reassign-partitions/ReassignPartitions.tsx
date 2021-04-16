@@ -24,7 +24,7 @@ import { PartitionWithMoves, StepReview, TopicWithMoves } from "./Step3.Review";
 import { ApiData, computeReassignments, TopicPartitions } from "./logic/reassignLogic";
 import { computeMovedReplicas, partitionSelectionToTopicPartitions, removeRedundantReassignments, topicAssignmentsToReassignmentRequest } from "./logic/utils";
 import { IsDev } from "../../../utils/env";
-import { Message } from "../../../utils/utils";
+import { Message, scrollTo, scrollToTop } from "../../../utils/utils";
 import { ActiveReassignments } from "./components/ActiveReassignments";
 import { ReassignmentTracker } from "./logic/reassignmentTracker";
 const { Step } = Steps;
@@ -65,6 +65,9 @@ class ReassignPartitions extends PageComponent {
 
     @observable requestInProgress = false;
 
+    autoScrollReactionDisposer: IReactionDisposer | null = null;
+
+
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
         p.addBreadcrumb('Reassign Partitions', '/reassign-partitions');
@@ -89,6 +92,10 @@ class ReassignPartitions extends PageComponent {
         this.refreshTopicConfigs();
         this.startRefreshingTopicConfigs();
 
+        this.autoScrollReactionDisposer = autorun(() => {
+            const x = this.currentStep;
+            setTimeout(() => scrollTo('wizard', 'start', -20), 20);
+        })
 
         reassignmentTracker.start();
     }
@@ -103,6 +110,7 @@ class ReassignPartitions extends PageComponent {
 
     componentWillUnmount() {
         reassignmentTracker.stop();
+        if (this.autoScrollReactionDisposer) this.autoScrollReactionDisposer();
 
         this.stopRefreshingTopicConfigs();
     }
@@ -138,7 +146,7 @@ class ReassignPartitions extends PageComponent {
 
 
                 {/* Active Reassignments */}
-                <Card>
+                <Card id='activeReassignments'>
                     <ActiveReassignments
                         throttledTopics={this.topicsWithThrottle}
                         onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
@@ -269,9 +277,7 @@ class ReassignPartitions extends PageComponent {
 
                             setTimeout(() => {
                                 this.currentStep = 0;
-
-                                // todo: we need to scroll the "main content", not the window/document
-                                window.scrollTo(0, 0);
+                                setImmediate(() => scrollToTop());
                             }, 300);
                         });
                     }
@@ -287,7 +293,6 @@ class ReassignPartitions extends PageComponent {
 
             return;
         }
-
 
         this.currentStep++;
     }
