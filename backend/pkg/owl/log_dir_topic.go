@@ -187,9 +187,9 @@ func (s *Service) logDirsByTopic(ctx context.Context, metadata *kmsg.MetadataRes
 		// Construct topic log dir summary
 		hint := ""
 		if partitionsFailed > 0 {
-			hint = fmt.Sprintf("Topic size is unknown because '%d' partitions size is unknown", partitionsFailed)
+			hint = fmt.Sprintf("Topic size is unknown because the size of %d partitions is unknown", partitionsFailed)
 		} else if partitionsEstimated > 0 {
-			hint = fmt.Sprintf("Topic size is an estimate because '%d' partitions sizes is estimated", partitionsEstimated)
+			hint = fmt.Sprintf("Topic size is an estimate because the size of %d partitions was estimated", partitionsEstimated)
 		}
 
 		replicaErrors := make([]TopicLogDirSummaryReplicaError, 0)
