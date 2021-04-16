@@ -278,10 +278,8 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         }
         this.wasVisible = visible;
 
-
         const topicConfig = api.topicConfig.get(state.topicName);
-
-        const settings = uiSettings.reassignment;
+        if (!topicConfig) setImmediate(() => { api.refreshTopicConfig(state.topicName); });
 
         const replicas = state.partitions.flatMap(p => p.replicas).distinct();
         const addingReplicas = state.partitions.flatMap(p => p.addingReplicas).distinct();
