@@ -5,6 +5,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"sort"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -43,13 +44,17 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 	defer cancel()
 
 	configs := make(map[string]*TopicConfig)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		configs, err = s.GetTopicsConfigs(childCtx, topicNames, []string{"cleanup.policy"})
 		if err != nil {
 			s.logger.Warn("failed to fetch topic configs to return cleanup.policy", zap.Error(err))
 		}
 	}()
 	logDirsByTopic := s.logDirsByTopic(childCtx, metadata)
+	wg.Wait()
 
 	// 4. Merge information from all requests and construct the TopicSummary object
 	res := make([]*TopicSummary, len(topicNames))
