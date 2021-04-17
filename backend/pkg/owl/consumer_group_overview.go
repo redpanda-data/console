@@ -16,14 +16,16 @@ import (
 
 // ConsumerGroupOverview for a Kafka Consumer Group
 type ConsumerGroupOverview struct {
-	GroupID        string                   `json:"groupId"`
-	State          string                   `json:"state"`
-	ProtocolType   string                   `json:"protocolType"`
-	Protocol       string                   `json:"protocol"`
-	Members        []GroupMemberDescription `json:"members"`
-	CoordinatorID  int32                    `json:"coordinatorId"`
-	Lags           *ConsumerGroupLag        `json:"lag"`
-	AllowedActions []string                 `json:"allowedActions"`
+	GroupID       string                   `json:"groupId"`
+	State         string                   `json:"state"`
+	ProtocolType  string                   `json:"protocolType"`
+	Protocol      string                   `json:"protocol"`
+	Members       []GroupMemberDescription `json:"members"`
+	CoordinatorID int32                    `json:"coordinatorId"`
+	TopicOffsets  []GroupTopicOffsets      `json:"topicOffsets"`
+
+	// AllowedActions define the Kowl Business permissions on this specific group
+	AllowedActions []string `json:"allowedActions"`
 }
 
 // GroupMemberDescription is a member (e. g. connected host) of a Consumer Group
@@ -81,7 +83,7 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []stri
 		}
 	}
 
-	groupLags, err := s.getConsumerGroupLags(ctx, describedGroupsSharded.GetGroupIDs())
+	groupLags, err := s.getConsumerGroupOffsets(ctx, describedGroupsSharded.GetGroupIDs())
 	if err != nil {
 		return nil, &rest.Error{
 			Err:      fmt.Errorf("failed to get consumer group lags: %w", err),
@@ -97,7 +99,7 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []stri
 	return res, nil
 }
 
-func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeConsumerGroupsResponseSharded, lags map[string]*ConsumerGroupLag) []ConsumerGroupOverview {
+func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeConsumerGroupsResponseSharded, offsets map[string][]GroupTopicOffsets) []ConsumerGroupOverview {
 	result := make([]ConsumerGroupOverview, 0)
 	for _, response := range describedGroups.Groups {
 		if response.Error != nil {
@@ -134,7 +136,7 @@ func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeCon
 				Protocol:      d.Protocol,
 				Members:       members,
 				CoordinatorID: coordinatorID,
-				Lags:          lags[d.Group],
+				TopicOffsets:  offsets[d.Group],
 			})
 		}
 	}
