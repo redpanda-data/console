@@ -10,7 +10,6 @@ import (
 func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) (*kmsg.OffsetCommitResponse, error) {
 	req := kmsg.NewOffsetCommitRequest()
 	req.Group = groupID
-	req.MemberID = "kowl"
 	req.Topics = topics
 
 	res, err := req.RequestWith(ctx, s.KafkaClient)
