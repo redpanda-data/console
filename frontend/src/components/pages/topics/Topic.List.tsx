@@ -6,14 +6,14 @@ import { observer } from 'mobx-react';
 import React, { RefObject } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { TopicActions, TopicDetail } from '../../../state/restInterfaces';
+import { TopicActions, Topic } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
 import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import Card from '../../misc/Card';
-import { makePaginationConfig, sortField } from '../../misc/common';
+import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import SearchBar from '../../misc/SearchBar';
 import { PageComponent, PageInitHelper } from '../Page';
 
@@ -21,7 +21,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 class TopicList extends PageComponent {
     pageConfig = makePaginationConfig(uiSettings.topicList.pageSize);
     quickSearchReaction: IReactionDisposer;
-    @observable filteredTopics: TopicDetail[];
+    @observable filteredTopics: Topic[];
 
     initPage(p: PageInitHelper): void {
         p.title = 'Topics';
@@ -58,14 +58,13 @@ class TopicList extends PageComponent {
         return api.topics.filter((t) => (uiSettings.topicList.hideInternalTopics && t.isInternal ? false : true));
     }
 
-    isFilterMatch(filter: string, item: TopicDetail): boolean {
+    isFilterMatch(filter: string, item: Topic): boolean {
         if (item.topicName.toLowerCase().includes(filter.toLowerCase())) return true;
         return false;
     }
 
     render() {
         if (!api.topics) return DefaultSkeleton;
-        if (api.topics.length == 0) return <Empty />;
 
         const topics = this.getTopics();
 
@@ -101,7 +100,7 @@ class TopicList extends PageComponent {
                 <Card>
                     <Row justify="space-between" align="middle">
                         <Col span="auto">
-                            <SearchBar<TopicDetail>
+                            <SearchBar<Topic>
                                 dataSource={this.getTopics}
                                 isFilterMatch={this.isFilterMatch}
                                 filterText={uiSettings.topicList.quickSearch}
@@ -137,7 +136,7 @@ class TopicList extends PageComponent {
                             { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
                             { title: 'Replication', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
                             { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', sorter: sortField('cleanupPolicy'), width: 1 },
-                            { title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), sorter: (a, b) => a.logDirSize - b.logDirSize, width: '140px' },
+                            { title: 'Size', render: (t, r) => renderLogDirSummary(r.logDirSummary), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes, width: '140px' },
                         ]}
                     />
                 </Card>
@@ -162,7 +161,7 @@ const iconClosedEye = (
     </span>
 );
 
-const renderName = (topic: TopicDetail) => {
+const renderName = (topic: Topic) => {
     const actions = topic.allowedActions;
 
     if (!actions || actions[0] == 'all') return topic.topicName; // happens in non-business version

@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Empty, Skeleton, Row, Statistic, Tag, Input, Divider } from "antd";
+import { Table, Empty, Skeleton, Row, Statistic, Tag, Input, Divider, Checkbox } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../../state/backendApi";
@@ -16,7 +16,8 @@ import { containsIgnoreCase } from "../../../utils/utils";
 import Card from "../../misc/Card";
 import { editQuery } from "../../../utils/queryHelper";
 import { uiState } from "../../../state/uiState";
-import { DefaultSkeleton } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, Label, OptionGroup } from "../../../utils/tsxUtils";
+import { BrokerList } from "../reassign-partitions/components/BrokerList";
 
 
 @observer
@@ -67,7 +68,7 @@ class GroupList extends PageComponent {
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
-                    <Row>{/*<Row type="flex">*/}
+                    <Row>
                         <Statistic title='Total Groups' value={groups.length} />
                         <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
                         {stateGroups.map(g =>
@@ -77,8 +78,17 @@ class GroupList extends PageComponent {
                 </Card>
 
                 <Card>
-                    <this.SearchBar />
+                    {/* Searchbar */} {/* Filters */}
+                    <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '2em' }}>
+                        <this.SearchBar />
+                        {/* <Checkbox
+                            value={uiSettings.consumerGroupList.hideEmpty}
+                            onChange={c => uiSettings.consumerGroupList.hideEmpty = c.target.checked}
+                        >Hide Empty
+                        </Checkbox> */}
+                    </div>
 
+                    {/* Content */}
                     <Table
                         style={{ margin: '0', padding: '0' }} size={'middle'}
                         onRow={(record) =>
@@ -104,7 +114,9 @@ class GroupList extends PageComponent {
                                 onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
                                 render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
                             },
-                            { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length },
+                            { title: 'Coordinator', dataIndex: 'coordinatorId', width: 1, render: (x: number) => <BrokerList brokerIds={[x]} />},
+                            { title: 'Protocol', dataIndex: 'protocol', width: 1},
+                            { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length, defaultSortOrder: 'descend' },
                             { title: 'Lag (Sum)', dataIndex: 'lagSum', sorter: (a, b) => a.lagSum - b.lagSum },
                         ]} />
                 </Card>
@@ -113,9 +125,7 @@ class GroupList extends PageComponent {
     }
 
     SearchBar = observer(() => {
-
-        return <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap' }}>
-
+        return <>
             <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: '350px' }}
                 onChange={e => uiSettings.consumerGroupList.quickSearch = e.target.value}
                 value={uiSettings.consumerGroupList.quickSearch}
@@ -127,7 +137,7 @@ class GroupList extends PageComponent {
             />
 
             {/* <this.FilterSummary /> */}
-        </div>
+        </>
     })
 
     GroupId = (p: { group: GroupDescription }) => {

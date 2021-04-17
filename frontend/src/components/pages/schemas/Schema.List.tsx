@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { makePaginationConfig, sortField } from '../../misc/common';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { SchemaOverviewRequestError, SchemaSubject } from '../../../state/restInterfaces';
+import { SchemaOverviewRequestError } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 
 import './Schema.List.scss';
@@ -58,8 +58,8 @@ function renderNotConfigured() {
 @observer
 class SchemaList extends PageComponent<{}> {
     paginationConfig = makePaginationConfig(uiSettings.schemaList.pageSize);
-    @observable searchBar: RefObject<SearchBar<SchemaSubject>> = React.createRef();
-    @observable filteredSchemaSubjects: SchemaSubject[];
+    @observable searchBar: RefObject<SearchBar<any>> = React.createRef();
+    @observable filteredSchemaSubjects: { name: string }[];
 
     initPage(p: PageInitHelper): void {
         p.title = 'Schema Registry';
@@ -72,16 +72,13 @@ class SchemaList extends PageComponent<{}> {
         api.refreshSchemaOverview(force);
     }
 
-    isFilterMatch(filterString: string, subject: SchemaSubject) {
+    isFilterMatch(filterString: string, subject: { name: string }) {
         return subject.name.toLowerCase().includes(filterString.toLowerCase());
     }
 
     render() {
         if (api.schemaOverview === undefined) return DefaultSkeleton; // request in progress
         if (api.schemaOverview === null || api.schemaOverviewIsConfigured === false) return renderNotConfigured(); // actually no data to display after successful request
-
-        // todo: what if there are lets say 5 schemas, but all we got was 5 entries in 'requestErrors' instead?
-        if (api.schemaOverview.subjects.length <= 0) return <Empty />;
 
         const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
 
@@ -95,8 +92,8 @@ class SchemaList extends PageComponent<{}> {
                 </Card>
                 {renderRequestErrors(requestErrors)}
                 <Card>
-                    <SearchBar<SchemaSubject>
-                        dataSource={() => api.schemaOverview?.subjects || []}
+                    <SearchBar<{ name: string }>
+                        dataSource={() => (api.schemaOverview?.subjects || []).map(str => ({ name: str }))}
                         isFilterMatch={this.isFilterMatch}
                         filterText={uiSettings.schemaList.quickSearch}
                         onQueryChanged={(filterText) => (uiSettings.schemaList.quickSearch = filterText)}
@@ -105,17 +102,17 @@ class SchemaList extends PageComponent<{}> {
 
                     <Table
                         size="middle"
-                        onRow={({ name, latestVersion }) => ({
-                            onClick: () => appGlobal.history.push(`/schema-registry/${name}?version=${latestVersion}`),
-                        })}
                         rowClassName={() => 'hoverLink'}
+                        rowKey="name"
+                        onRow={({ name }) => ({
+                            onClick: () => appGlobal.history.push(`/schema-registry/${name}`),
+                        })}
                         columns={[
                             { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
-                            { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel'), width: 150 },
-                            { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount'), width: 80 },
-                            { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
+                            // { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel'), width: 150 },
+                            // { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount'), width: 80 },
+                            // { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
                         ]}
-                        rowKey="name"
                         dataSource={this.filteredSchemaSubjects ?? []}
                         pagination={this.paginationConfig}
                         onChange={(pagination) => {

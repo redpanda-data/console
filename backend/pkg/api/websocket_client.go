@@ -22,8 +22,7 @@ type websocketClient struct {
 func (wc *websocketClient) upgrade(w http.ResponseWriter, r *http.Request) *rest.Error {
 	upgrader := websocket.Upgrader{
 		EnableCompression: true,
-		// TODO(security): Implement origin check once something can be modified or deleted via websockets, not necessary for fetching messages only
-		CheckOrigin: func(r *http.Request) bool { return true },
+		CheckOrigin:       func(r *http.Request) bool { return true },
 	}
 
 	// TODO: Add user information to logger?

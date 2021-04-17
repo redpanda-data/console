@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
@@ -51,7 +52,10 @@ func (s *Service) ListConsumerGroups(ctx context.Context) (*ListConsumerGroupsRe
 			result.RequestsFailed++
 			lastErr = kresp.Err
 		}
-		res := kresp.Resp.(*kmsg.ListGroupsResponse)
+
+		// Important: If we don't declare the second parameter, telling us if the cast succeeded,
+		// we'll get a panic when the cast fails, instead of being able to continue.
+		res, _ := kresp.Resp.(*kmsg.ListGroupsResponse)
 
 		result.Groups = append(result.Groups, ListConsumerGroupsResponse{
 			BrokerMetadata: kresp.Meta,

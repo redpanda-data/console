@@ -7,9 +7,12 @@ import Draggable from "react-draggable";
 import { observer } from "mobx-react";
 import { Grid, Modal, Tag } from "antd";
 import { uiState } from "../../state/uiState";
-import { hoursToMilliseconds, prettyMilliseconds } from "../../utils/utils";
-import env, { IsBusiness } from "../../utils/env";
-import { QuickTable } from "../../utils/tsxUtils";
+import { hoursToMilliseconds, prettyBytesOrNA, prettyMilliseconds } from "../../utils/utils";
+import env, { IsBusiness, IsDev } from "../../utils/env";
+import { LayoutBypass, QuickTable } from "../../utils/tsxUtils";
+import { toJson } from "../../utils/jsonUtils";
+import { TopicLogDirSummary } from "../../state/restInterfaces";
+import { AlertIcon } from "@primer/octicons-v2-react";
 
 const { useBreakpoint } = Grid;
 
@@ -121,6 +124,9 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
     }
 }
 
+/**
+ * returns an array with the numbers from start, up to end (does not include end!)
+ */
 export function range(start: number, end: number): number[] {
     const ar = []
     for (let i = start; i < end; i++)
@@ -128,20 +134,62 @@ export function range(start: number, end: number): number[] {
     return ar;
 }
 
+let updateDialogOpen = false;
+
+
 @observer
 export class UpdatePopup extends Component {
     render() {
+        if (updateDialogOpen) return null;
 
-        if (!uiState.serverVersion) return null; // server version not known yet
         const serverVersion = uiState.serverVersion;
+        if (!serverVersion) return null; // server version not known yet
         if (serverVersion.sha == 'dev' || serverVersion.branch == 'dev') return null; // don't show popup in dev
         if (uiState.updatePromtHiddenUntil !== undefined)
             if (new Date().getTime() < uiState.updatePromtHiddenUntil)
                 return null; // not yet
 
-        return null; // temporarily disabled
+        const curTimestamp = Number(env.REACT_APP_KOWL_TIMESTAMP);
+        const serverTimestamp = Number(serverVersion.ts);
 
+        if (!curTimestamp || !Number.isFinite(curTimestamp)) return null;
+        if (!serverTimestamp || !Number.isFinite(curTimestamp)) return null;
 
+        // don't downgrade
+        if (serverTimestamp < curTimestamp) return null;
+        // version already matches
+        if (serverTimestamp == curTimestamp) return null;
+
+        console.log('frontend update available', {
+            serverTimestamp: serverTimestamp,
+            serverDate: new Date(serverTimestamp * 1000),
+            serverVersionInfo: serverVersion,
+            localTimestamp: curTimestamp,
+            localDate: new Date(curTimestamp * 1000),
+            localVersion: env,
+        });
+
+        updateDialogOpen = true;
+        setImmediate(() => {
+            Modal.info({
+                title: 'Kowl has been updated',
+                content: <div>The page must be reloaded to apply the newest version of the frontend.</div>,
+                mask: true,
+                maskClosable: false,
+                centered: true,
+                okText: 'Reload',
+                onOk: () => {
+                    console.log('reloading frontend...');
+                    window.location.reload();
+                    updateDialogOpen = false;
+                },
+                onCancel: () => { updateDialogOpen = false; }
+            });
+        });
+
+        return null;
+
+        /*
         const curSha = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : '(dev)');
         const curRef = env.REACT_APP_KOWL_GIT_REF;
         const curShaBusiness = env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
@@ -216,6 +264,7 @@ export class UpdatePopup extends Component {
                 <p>Do you want to reload the page now?</p>
             </div>
         </Modal>
+        */
     }
 }
 
@@ -235,4 +284,42 @@ function formatTimestamp(unixTimestampSeconds: number | string | null | undefine
         console.error('failed to parse/format the timestamp: ' + String(unixTimestampSeconds));
         return null;
     }
+}
+
+
+export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
+    if (!summary.hint)
+        return <>{prettyBytesOrNA(summary.totalSizeBytes)}</>
+
+    return <>{prettyBytesOrNA(summary.totalSizeBytes)} <WarningToolip content={summary.hint} position="left" /></>
+}
+
+export function WarningToolip(p: { content: React.ReactNode, position: 'top' | 'left' }): JSX.Element {
+    const styleTop = {
+        bottom: '100%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+    };
+    const styleLeft = {
+        bottom: '-2px',
+        left: 'auto',
+        right: '105%',
+        transform: 'none',
+    };
+
+    return <LayoutBypass>
+        <div className='tooltip' style={{
+            color: 'hsl(33deg, 90%, 65%)',
+            borderRadius: '25px',
+            display: 'inline-flex',
+            placeItems: 'center',
+            verticalAlign: 'middle',
+            marginLeft: '30px',
+            width: '22px', height: '22px',
+
+        }}>
+            <AlertIcon />
+            <span className='tooltiptext' style={p.position == 'left' ? styleLeft : undefined}>{p.content}</span>
+        </div>
+    </LayoutBypass>
 }

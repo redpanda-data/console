@@ -9,22 +9,54 @@ declare global {
         first<T>(this: T[], selector: (x: T) => boolean): T | undefined;
         last<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
 
+        count<T>(this: T[], selector: (x: T) => boolean): number;
         sum<T>(this: T[], selector: (x: T) => number): number;
+        min<T>(this: T[], selector: (x: T) => number): number;
         max<T>(this: T[], selector: (x: T) => number): number;
 
         any<T>(this: T[], selector: (x: T) => boolean): boolean;
         all<T>(this: T[], selector: (x: T) => boolean): boolean;
 
+        /** group elements into a Map<> using the given key selector */
         groupBy<T, K>(this: T[], selector: (x: T) => K): Map<K, T[]>;
+        /** groups elements (into an array of groups) using the given key selector */
         groupInto<T, K>(this: T[], selector: (x: T) => K): { key: K, items: T[] }[];
 
+        /** returns a new array containing only distinct elements */
         distinct<T>(this: T[], keySelector?: ((x: T) => any)): T[];
         pushDistinct<T>(this: T[], ...elements: T[]): void;
 
+        /**
+         * returns an array containing all elements that are present in both this and the other array
+         */
+        intersection<T>(this: T[], other: T[]): T[];
+
+        /**
+         * returns a copy containing all elements except for those that are also in 'other'
+         */
+        except<T>(this: T[], other: T[]): T[];
+
         genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[];
+        /**
+         * Like normal .join() but skips over empty, null, and undefined
+         */
         joinStr(this: (string | null | undefined)[], separator: string): string;
 
         toMap<TItem, TKey, TValue>(this: TItem[], computeKey: (item: TItem) => TKey, computeValue: (item: TItem) => TValue): Map<TKey, TValue>;
+
+        filterNull<T>(this: (T | null | undefined)[]): T[];
+        filterFalsy<T>(this: (T | null | undefined)[]): T[];
+
+        /**
+         * Replace the content with the given data.
+         * Intended to be used with mobx observable arrays, where setting the whole
+         * array (even with identical contents) would notify all observers.
+         *
+         * This function instead computes the difference and adds/removes them.
+         *
+         * It is strongly reccomended to wrap calls to this in a mobx transaction() or similar.
+         */
+        updateWith<T>(this: T[], newData: T[]): { removed: number, added: number };
     }
 }
 
@@ -62,8 +94,16 @@ Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean)
     return undefined;
 };
 
+Array.prototype.count = function count<T>(this: T[], selector: (x: T) => boolean) {
+    return this.reduce((pre, cur) => selector(cur) ? pre + 1 : pre, 0);
+};
+
 Array.prototype.sum = function sum<T>(this: T[], selector: (x: T) => number) {
     return this.reduce((pre, cur) => pre + selector(cur), 0);
+};
+
+Array.prototype.min = function min<T>(this: T[], selector: (x: T) => number) {
+    return this.reduce((pre, cur) => Math.min(pre, selector(cur)), 0);
 };
 
 Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {
@@ -111,15 +151,47 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
     return ar;
 };
 
+Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)[]): T[] {
+    return this.filter(x => x != null) as T[];
+};
+
+Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefined)[]): T[] {
+    return this.filter(Boolean) as T[];
+};
+
+Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { removed: number, added: number } {
+
+    // Early out, compare both arrays
+    if (this.length == newData.length) {
+        let same = true;
+        for (let i = 0; i < this.length; i++)
+            if (this[i] != newData[i]) {
+                same = false;
+                break;
+            }
+        if (same) return { removed: 0, added: 0 };
+    }
+
+    const added = newData.except(this);
+    const removed = this.except(newData);
+
+    this.removeAll(x => removed.includes(x));
+    for (const a of added)
+        this.push(a);
+
+    return { removed: removed.length, added: added.length }
+};
+
 
 Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => any): T[] {
-    const selector = keySelector ? keySelector : (x: T) => x;
+    if (!keySelector)
+        return [... new Set(this)];
 
     const set = new Set<any>();
     const ar: T[] = [];
 
     this.forEach(item => {
-        const key = selector(item);
+        const key = keySelector(item);
         if (!set.has(key)) {
             set.add(key);
             ar.push(item);
@@ -130,9 +202,35 @@ Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) 
 };
 
 Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: T[]): void {
+    if (this.length + elements.length > 50) {
+        const s = new Set(this);
+        for (const e of elements)
+            if (!s.has(e))
+                this.push(e);
+    }
+
     for (let e of elements)
         if (!this.includes(e))
             this.push(e);
+};
+
+Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): T[] {
+    const thisSet = new Set<T>(this);
+    const results: T[] = [];
+    for (const e of other)
+        if (thisSet.has(e))
+            results.push(e);
+    return results;
+};
+
+Array.prototype.except = function except<T>(this: T[], other: T[]): T[] {
+    const ar = [];
+    const otherSet = new Set<T>(other);
+    for (const e of this) {
+        if (otherSet.has(e)) continue;
+        ar.push(e);
+    }
+    return ar;
 };
 
 Array.prototype.genericJoin = function genericJoin<T>(this: T[], getSeparator: (last: T, current: T, index: number) => T): T[] {

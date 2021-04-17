@@ -6,7 +6,9 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
+	"go.uber.org/zap"
 	"sort"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -32,11 +34,25 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	var logDirsByBroker map[int32]LogDirsByBroker
 	var metadata *kmsg.MetadataResponse
-	var kafkaVersion string
+	kafkaVersion := "unknown"
+
+	// We use a child context with a shorter timeout because otherwise we'll potentially have very long response
+	// times in case of a single broker being down.
+	childCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
+	defer cancel()
 
 	eg.Go(func() error {
 		var err error
-		logDirsByBroker, err = s.logDirsByBroker(ctx)
+		logDirsByBroker, err = s.logDirsByBroker(childCtx)
+		if err != nil {
+			s.logger.Warn("failed to request brokers log dirs", zap.Error(err))
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		var err error
+		metadata, err = s.kafkaSvc.GetMetadata(childCtx, nil)
 		if err != nil {
 			return err
 		}
@@ -45,18 +61,9 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	eg.Go(func() error {
 		var err error
-		metadata, err = s.kafkaSvc.GetMetadata(ctx, nil)
+		kafkaVersion, err = s.GetKafkaVersion(childCtx)
 		if err != nil {
-			return err
-		}
-		return nil
-	})
-
-	eg.Go(func() error {
-		var err error
-		kafkaVersion, err = s.GetKafkaVersion(ctx)
-		if err != nil {
-			return err
+			s.logger.Warn("failed to request kafka version", zap.Error(err))
 		}
 		return nil
 	})

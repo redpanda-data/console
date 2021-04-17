@@ -3,24 +3,48 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 	"sync"
+	"time"
 )
 
 func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage) {
 	defer wg.Done()
 
 	for record := range jobs {
-		// Run Interpreter filter and check if message passes the filter
-		value := s.Deserializer.DeserializePayload(record.Value, record.Topic, proto.RecordValue)
-		key := s.Deserializer.DeserializePayload(record.Key, record.Topic, proto.RecordKey)
-		headers := s.DeserializeHeaders(record.Headers)
+		// We consume control records because the last message in a partition we expect might be a control record.
+		// We need to acknowledge that we received the message but it is ineligible to be sent to the frontend.
+		// Quit early if it is a control record!
+		isControlRecord := record.Attrs.IsControl()
+		if isControlRecord {
+			topicMessage := &TopicMessage{
+				PartitionID: record.Partition,
+				Offset:      record.Offset,
+				Timestamp:   record.Timestamp.UnixNano() / int64(time.Millisecond),
+				IsMessageOk: false,
+				MessageSize: int64(len(record.Key) + len(record.Value)),
+			}
 
-		headersByKey := make(map[string]interface{}, len(headers))
-		for _, header := range headers {
-			headersByKey[header.Key] = header.Value.Object
+			select {
+			case <-ctx.Done():
+				return
+			case resultsCh <- topicMessage:
+				continue
+			}
+		}
+
+		// Run Interpreter filter and check if message passes the filter
+		deserializedRec := s.Deserializer.DeserializeRecord(record)
+
+		headersByKey := make(map[string]interface{}, len(deserializedRec.Headers))
+		headers := make([]MessageHeader, 0)
+		for key, header := range deserializedRec.Headers {
+			headersByKey[key] = header.Object
+			headers = append(headers, MessageHeader{
+				Key:   key,
+				Value: header,
+			})
 		}
 
 		// Check if message passes filter code
@@ -28,8 +52,8 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 			PartitionID:  record.Partition,
 			Offset:       record.Offset,
 			Timestamp:    record.Timestamp,
-			Key:          key.Object,
-			Value:        value.Object,
+			Key:          deserializedRec.Key.Object,
+			Value:        deserializedRec.Value.Object,
 			HeadersByKey: headersByKey,
 		}
 
@@ -43,12 +67,12 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 		topicMessage := &TopicMessage{
 			PartitionID:     record.Partition,
 			Offset:          record.Offset,
-			Timestamp:       record.Timestamp.Unix(),
+			Timestamp:       record.Timestamp.UnixNano() / int64(time.Millisecond),
 			Headers:         headers,
 			Compression:     compressionTypeDisplayname(record.Attrs.CompressionType()),
 			IsTransactional: record.Attrs.IsTransactional(),
-			Key:             key,
-			Value:           value,
+			Key:             deserializedRec.Key,
+			Value:           deserializedRec.Value,
 			IsValueNull:     record.Value == nil,
 			IsMessageOk:     isOK,
 			ErrorMessage:    errMessage,

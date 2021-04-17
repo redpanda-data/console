@@ -1,6 +1,6 @@
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
-import { PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-v2-react';
-import { Alert, AutoComplete, Button, ConfigProvider, Dropdown, Empty, Input, Menu, message, Modal, Popover, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
+import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, ThreeBarsIcon, XCircleIcon } from '@primer/octicons-v2-react';
+import { Alert, AutoComplete, Button, Checkbox, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu, message, Modal, Popover, Radio, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -13,12 +13,12 @@ import "prismjs/components/prism-js-extras";
 import 'prismjs/prism.js';
 import 'prismjs/themes/prism.css';
 import queryString from 'query-string';
-import React, { Component, ReactNode } from "react";
+import React, { Component, CSSProperties, ReactNode } from "react";
 import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
 import { api } from "../../../../state/backendApi";
-import { Payload, TopicDetail, TopicMessage } from "../../../../state/restInterfaces";
+import { Payload, Topic, TopicMessage } from "../../../../state/restInterfaces";
 import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
@@ -28,15 +28,18 @@ import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
-import { Ellipsis, Label, LayoutBypass, numberToThousandsString, OptionGroup, QuickTable, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { cullText, findElementDeep, prettyBytes, prettyMilliseconds, titleCase, toJson } from "../../../../utils/utils";
+import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
+import { cullText, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
+import { clone, toJson } from "../../../../utils/jsonUtils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
 import styles from './styles.module.scss';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
-import { MarkGithubIcon } from '@primer/octicons-react';
+import { getPreviewTags, PreviewSettings } from './PreviewSettings';
+import * as moment from 'moment';
+
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -49,11 +52,14 @@ const InputGroup = Input.Group;
 */
 
 @observer
-export class TopicMessageView extends Component<{ topic: TopicDetail }> {
+export class TopicMessageView extends Component<{ topic: Topic }> {
 
-    @observable previewDisplay: string[] = [];
-    @observable allCurrentKeys: string[] = [];
     @observable showPreviewSettings = false;
+    @observable previewDisplay: string[] = [];
+    // @observable allCurrentKeys: string[];
+
+
+
     @observable showColumnSettings = false;
 
     @observable fetchError = null as Error | null;
@@ -66,7 +72,10 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
     currentSearchRun: string | null = null;
 
-    constructor(props: { topic: TopicDetail }) {
+    @observable downloadMessages: TopicMessage[] | null;
+
+
+    constructor(props: { topic: Topic }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
     }
@@ -85,7 +94,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
 
         // Auto search when parameters change
-
         this.autoSearchReaction = autorun(() => this.searchFunc('auto'), { delay: 100, name: 'auto search when parameters change' });
 
         // Quick search -> url
@@ -95,24 +103,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                 query["q"] = q ? q : undefined;
             })
         }, { name: 'update query string' });
-
-        /*
-        message.config({ top: 8 });
-        const content = <div>
-            <div style={{ minWidth: '300px', lineHeight: 0 }}>
-                <Progress percent={80} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
-            </div>
-            <div style={{ display: 'flex', fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%' }}>
-                <div>Status</div>
-                <div style={{ marginLeft: 'auto', paddingLeft: '2em' }}>76/200</div>
-            </div>
-        </div>
-        const hide = message.open({ content: content, key: 'messageSearchStatus', icon: <span />, duration: null, type: 'loading' });
-        */
-        //setTimeout(hide, 2000);
-
-        // const searchProgressIndicatorReaction = autorun(() => {
-        // });
 
         this.messageSource.filterText = uiState.topicSettings.quickSearch;
     }
@@ -176,22 +166,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         <Select<TopicOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => searchParams.offsetOrigin = e} size='middle'
                             dropdownMatchSelectWidth={false} style={{ width: '9em' }}
                         >
-                            {/* riki's solution: */}
-                            { /* First */}
-                            { /* Last */}
-                            { /* Next */}
-                            { /* Custom */}
-                            {/* weeco's solution: https://i.imgur.com/mhbgyPS.png */}
                             <Option value={TopicOffsetOrigin.End}>Newest</Option>
                             <Option value={TopicOffsetOrigin.EndMinusResults}>Newest<span style={{ opacity: '90%' }}>-{searchParams.maxResults}</span></Option>
                             <Option value={TopicOffsetOrigin.Start}>Oldest</Option>
                             <Option value={TopicOffsetOrigin.Custom}>Custom</Option>
+                            <Option value={TopicOffsetOrigin.Timestamp}>Timestamp</Option>
                         </Select>
                         {
                             searchParams.offsetOrigin == TopicOffsetOrigin.Custom &&
                             <Input style={{ width: '7.5em' }} maxLength={20}
                                 value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
                                 disabled={searchParams.offsetOrigin != TopicOffsetOrigin.Custom} />
+                        }
+                        {
+                            searchParams.offsetOrigin == TopicOffsetOrigin.Timestamp &&
+                            <StartOffsetDateTimePicker />
                         }
                     </InputGroup>
                 </Label>
@@ -215,7 +204,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                         <AnimatePresence>
                             {api.messageSearchPhase == null &&
                                 <MotionSpan identityKey='btnRefresh' overrideAnimProps={animProps_span_messagesStatus}>
-                                    <Tooltip title='Repeat current search'>
+                                    <Tooltip title='Repeat current search' getPopupContainer={findPopupContainer}>
                                         <Button type='primary' onClick={() => this.searchFunc('manual')}>
                                             <SyncIcon size={16} />
                                         </Button>
@@ -224,7 +213,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                             }
                             {api.messageSearchPhase != null &&
                                 <MotionSpan identityKey='btnCancelSearch' overrideAnimProps={animProps_span_messagesStatus}>
-                                    <Tooltip title='Stop searching'>
+                                    <Tooltip title='Stop searching' getPopupContainer={findPopupContainer}>
                                         <Button type='primary' danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
                                             <LayoutBypass >
                                                 <XCircleIcon size={20} />
@@ -279,32 +268,6 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     <MessageSearchFilterBar />
                 </div>}
 
-
-
-                {/* Button (live search?) */}
-                {/* <div style={{ ...spaceStyle }}>
-                    <Input.Group compact>
-                        <Tooltip title='Load more messages'>
-                            <Button type='primary' className='messagesSpecialIconButton'>
-                                <span style={{ height: '100%' }}><ArrowRightIcon size={16} /></span>
-                                <span style={{ height: '100%', marginLeft: '-11px', transform: 'rotate(90deg)' }} ><DashIcon size={18} /></span>
-                            </Button>
-                        </Tooltip>
-                        <Tooltip title='Start live updating'>
-                            <Button type='primary' className='messagesSpecialIconButton'>
-                                <span style={{ height: '100%', width: '5px' }}><ChevronRightIcon size={16} /></span>
-                                <span style={{ height: '100%' }} ><ChevronRightIcon size={16} /></span>
-                            </Button>
-                        </Tooltip>
-                        <Button type='primary' className='messagesSpecialIconButton' style={{ padding: '0' }}>
-                            <div style={{ height: '100%', background: 'linear-gradient(to right, white 0%, rgba(255,255,255,0) 50%, white 100%)', backgroundSize: '80%', backgroundRepeat: 'repeat', padding: '0 15px' }}>
-                                <div style={{ width: '18px', height: '18px' }}>
-                                    <SvgCircleStop style={{ verticalAlign: 'baseline', fill: 'hsl(0, 0%, 95%)' }} />
-                                </div>
-                            </div>
-                        </Button>
-                    </Input.Group>
-                </div> */}
             </div>
 
         </React.Fragment>
@@ -314,7 +277,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         // need to do this first, so we trigger mobx
         const params = uiState.topicSettings.searchParams;
-        const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset;
+        const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset + params.startTimestamp;
 
         if (this.currentSearchRun)
             return console.log(`searchFunc: function already in progress (trigger:${source})`);
@@ -340,7 +303,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     isFilterMatch(str: string, m: TopicMessage) {
         str = str.toLowerCase();
         if (m.offset.toString().toLowerCase().includes(str)) return true;
-        if (m.key && String(m.key).toLowerCase().includes(str)) return true;
+        if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
         if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;
         return false;
     }
@@ -366,8 +329,8 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
     }
 
     @computed
-    get activeTags() {
-        return uiState.topicSettings.previewTags.filter(t => t.active).map(t => t.value);
+    get activePreviewTags(): PreviewTag[] {
+        return uiState.topicSettings.previewTags.filter(t => t.isActive);
     }
 
     MessageTable = observer(() => {
@@ -387,7 +350,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                     <span style={{ marginLeft: '.3em', fontSize: '85%' }}>Preview</span>
                     {(() => {
-                        const count = uiState.topicSettings.previewTags.sum(t => t.active ? 1 : 0);
+                        const count = uiState.topicSettings.previewTags.sum(t => t.isActive ? 1 : 0);
                         if (count > 0)
                             return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>
                         return <></>;
@@ -398,18 +361,17 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
 
         const copyDropdown = (record: TopicMessage) => (
             <Menu>
-                <Menu.Item key="0" onClick={() => this.copyMessage(record, 'key')}>
+                <Menu.Item key="0" onClick={() => this.copyMessage(record, 'jsonKey')}>
                     Copy Key
                 </Menu.Item>
-
-                <Menu.Item key="1" onClick={() => this.copyMessage(record, 'rawValue')}>
-                    Copy Value (Raw)
-                </Menu.Item>
                 <Menu.Item key="2" onClick={() => this.copyMessage(record, 'jsonValue')}>
-                    Copy Value (JSON Format)
+                    Copy Value
                 </Menu.Item>
                 <Menu.Item key="4" onClick={() => this.copyMessage(record, 'timestamp')}>
                     Copy Epoch Timestamp
+                </Menu.Item>
+                <Menu.Item key="5" onClick={() => this.downloadMessages = [record]}>
+                    Save to File
                 </Menu.Item>
             </Menu>
         );
@@ -422,29 +384,20 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
             { width: 2, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
             {
+                dataIndex: 'value',
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
-                dataIndex: 'value',
-                render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activeTags} />,
+                render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
-            // {
-            //     width: 1, title: 'Headers', dataIndex: 'headers', sorter: (a, b, order) => b.headers.length - a.headers.length, render: (t, r) => r.headers.length,
-            // },
-
-            // todo: size was a guess anyway, might be added back later
-            // {
-            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
-            //     sorter: (a, b) => b.size - a.size
-            // },
             {
                 width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                 filters: [],
                 filterDropdownVisible: false,
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
-                    return <Tooltip title='Column Settings' mouseEnterDelay={0.1}>
+                    return <Tooltip title='Column Settings' mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement='left'>
                         <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
                     </Tooltip>
                 },
@@ -466,6 +419,11 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     // <Divider type="vertical" />
                 ),
             },
+            // todo: size was a guess anyway, might be added back later
+            // {
+            //     width: 1, title: 'Size', dataIndex: 'size', render: (s) => { if (s > 1000) s = Math.round(s / 1000) * 1000; return prettyBytes(s) },
+            //     sorter: (a, b) => b.size - a.size
+            // },
         ];
 
         // If the previewColumnFields is empty then use the default columns, otherwise filter it based on it
@@ -480,10 +438,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     // Add the action tab at the end
                     .concat(columns[columns.length - 1]) as (ColumnProps<TopicMessage>)[];
 
-        // remove headers column if no message has headers
-        // const hasHeaders = this.messageSource.data.any(m => m.headers.length > 0);
-        // if (!hasHeaders) filteredColumns.removeAll(c => c.dataIndex == 'headers');
-
+        const showTombstones = this.props.topic.cleanupPolicy.includes('compact');
 
         return <>
             <ConfigProvider renderEmpty={this.empty}>
@@ -501,7 +456,7 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     dataSource={this.messageSource.data}
 
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
-                    rowClassName={(r: TopicMessage) => (r.isValueNull) ? 'tombstone' : ''}
+                    rowClassName={(r: TopicMessage) => (r.isValueNull && showTombstones) ? 'tombstone' : ''}
 
                     expandable={{
                         expandRowByClick: false,
@@ -513,12 +468,21 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
                     columns={filteredColumns}
                 />
 
+                <Button
+                    type='primary'
+                    icon={<span style={{ paddingRight: '4px' }}><DownloadIcon /></span>}
+                    onClick={() => { this.downloadMessages = api.messages; }}
+                    disabled={!api.messages || api.messages.length == 0}
+                >Save Messages</Button>
+
+                <SaveMessagesDialog messages={this.downloadMessages} onClose={() => this.downloadMessages = null} />
+
                 {
                     (this.messageSource?.data?.length > 0) &&
-                    <PreviewSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showPreviewSettings} setShowDialog={s => this.showPreviewSettings = s} />
+                    <PreviewSettings getShowDialog={() => this.showPreviewSettings} setShowDialog={s => this.showPreviewSettings = s} />
                 }
 
-                <ColumnSettings allCurrentKeys={this.allCurrentKeys} getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
+                <ColumnSettings getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
 
 
             </ConfigProvider>
@@ -531,22 +495,20 @@ export class TopicMessageView extends Component<{ topic: TopicDetail }> {
         return ta.localeCompare(tb);
     }
 
-    copyMessage(record: TopicMessage, field: "key" | "rawValue" | "jsonValue" | "timestamp") {
-
+    // we can only write text to the clipboard, so rawKey/rawValue have been removed for now
+    copyMessage(record: TopicMessage, field: "jsonKey" | "jsonValue" | "timestamp") {
         switch (field) {
-            case "key":
-                typeof record.key === "string" ?
-                    navigator.clipboard.writeText(record.key as string) :
-                    navigator.clipboard.writeText(JSON.stringify(record.key));
+            case "jsonKey":
+                typeof record.key.payload === 'string'
+                    ? navigator.clipboard.writeText(record.key.payload as string)
+                    : navigator.clipboard.writeText(JSON.stringify(record.key.payload, null, 4));
                 message.success('Key copied to clipboard', 5);
                 break;
-            case "rawValue":
-                navigator.clipboard.writeText(record.valueJson);
-                message.success('Raw Value copied to clipboard', 5);
-                break;
             case "jsonValue":
-                navigator.clipboard.writeText(JSON.stringify(record.value, null, 4));
-                message.success('Message Value (JSON) copied to clipboard', 5);
+                typeof record.value.payload === 'string'
+                    ? navigator.clipboard.writeText(record.value.payload as string)
+                    : navigator.clipboard.writeText(JSON.stringify(record.value.payload, null, 4));
+                message.success('Value copied to clipboard', 5);
                 break;
             case "timestamp":
                 navigator.clipboard.writeText(record.timestamp.toString());
@@ -608,9 +570,13 @@ function ${name}() {
             topicName: this.props.topic.topicName,
             partitionId: searchParams.partitionID,
             startOffset: searchParams.startOffset,
+            startTimestamp: searchParams.startTimestamp,
             maxResults: searchParams.maxResults,
             filterInterpreterCode: btoa(sanitizeString(filterCode)),
         };
+
+        // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
+        //     console.error("startTimestamp is not valid", { request: request, searchParams: searchParams });
 
         transaction(async () => {
             try {
@@ -678,6 +644,92 @@ function ${name}() {
     </>} />
 }
 
+@observer
+class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, onClose: () => void }> {
+    @observable isOpen = false;
+    @observable format = 'json' as 'json' | 'csv';
+
+    radioStyle = { display: 'block', lineHeight: '30px' };
+
+    render() {
+        const { messages, onClose } = this.props;
+        const count = (messages?.length ?? 0);
+        const title = count > 1 ? "Save Messages" : "Save Message";
+
+        // Keep dialog open after closing it, so it can play its closing animation
+        if (count > 0 && !this.isOpen) setImmediate(() => this.isOpen = true);
+        if (this.isOpen && count == 0) setImmediate(() => this.isOpen = false);
+
+        return <Modal
+            title={title} centered closable={false}
+            visible={count > 0}
+            onOk={() => this.saveMessages()}
+            onCancel={onClose}
+            afterClose={onClose}
+            okText="Save Messages"
+        >
+            <div>Select the format in which you want to save {count == 1 ? "the message" : "all messages"}</div>
+            <Radio.Group value={this.format} onChange={e => this.format = e.target.value}>
+                <Radio value='json' style={this.radioStyle}>JSON</Radio>
+                <Radio value='csv' disabled={true} style={this.radioStyle}>CSV</Radio>
+            </Radio.Group>
+        </Modal>
+    }
+
+    saveMessages() {
+        const cleanMessages = this.cleanMessages(this.props.messages ?? []);
+
+        const json = toJson(cleanMessages, 4);
+
+        const link = document.createElement("a");
+        const file = new Blob([json], { type: 'application/json' });
+        link.href = URL.createObjectURL(file);
+        link.download = "messages.json";
+        document.body.appendChild(link); // required in firefox
+        link.click();
+
+        this.props.onClose();
+    }
+
+    cleanMessages(messages: TopicMessage[]): any[] {
+        const ar: any[] = [];
+
+        // create a copy of each message, omitting properties that don't make
+        // sense for the user, like 'size' or caching properties like 'keyJson'.
+
+        const cleanPayload = function (p: Payload): Payload {
+            if (!p) return undefined as any;
+            return {
+                payload: p.payload,
+                encoding: p.encoding,
+                avroSchemaId: p.avroSchemaId,
+            } as any as Payload;
+        }
+
+        for (const src of messages) {
+            const msg = {} as Partial<typeof src>;
+
+            msg.partitionID = src.partitionID;
+            msg.offset = src.offset
+            msg.timestamp = src.timestamp;
+            msg.compression = src.compression;
+            msg.isTransactional = src.isTransactional;
+
+            msg.headers = src.headers.map(h => ({
+                key: h.key,
+                value: cleanPayload(h.value),
+            }));
+
+            msg.key = cleanPayload(src.key);
+            msg.value = cleanPayload(src.value);
+
+            ar.push(msg);
+        }
+
+        return ar;
+    }
+}
+
 const renderKey = (p: Payload, record: TopicMessage) => {
     const value = p.payload;
     const text = typeof value === 'string' ? value : toJson(value);
@@ -707,7 +759,7 @@ const renderKey = (p: Payload, record: TopicMessage) => {
             onOk() { },
         });
 
-        return <span className='hoverLink cellDiv' style={{ minWidth: '120px' }} onClick={() => modal()}>
+        return <span className='cellDiv' style={{ minWidth: '120px' }}>
             <code style={{ fontSize: '95%' }}>{text.slice(0, 44)}&hellip;</code>
         </span>
     }
@@ -717,56 +769,134 @@ const renderKey = (p: Payload, record: TopicMessage) => {
     </span>;
 };
 
+@observer
+class StartOffsetDateTimePicker extends Component {
+
+    constructor(p: any) {
+        super(p);
+        const searchParams = uiState.topicSettings.searchParams;
+        // console.log('time picker 1', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
+        if (!searchParams.startTimestampWasSetByUser) {
+            // so far, the user did not change the startTimestamp, so we set it to 'now'
+            searchParams.startTimestamp = new Date().getTime();
+        }
+        // console.log('time picker 2', { setByUser: searchParams.startTimestampWasSetByUser, startTimestamp: searchParams.startTimestamp, format: new Date(searchParams.startTimestamp).toLocaleDateString() })
+    }
+
+    render() {
+        const searchParams = uiState.topicSettings.searchParams;
+        // new Date().getTimezoneOffset()
+
+        // startTimestamp is always in unixSeconds, so for display we might have to convert
+        let format = "DD.MM.YYYY HH:mm:ss";
+        let current: moment.Moment | undefined = searchParams.startTimestamp <= 0 ? undefined : moment.utc(searchParams.startTimestamp);
+
+        if (uiState.topicSettings.searchParametersLocalTimeMode) {
+            current = current?.local();
+            format += " [(Local)]";
+        } else {
+            format += " [(UTC)]";
+        }
+
+        return <DatePicker showTime={true} allowClear={false}
+            renderExtraFooter={() => <DateTimePickerExtraFooter />}
+            format={format}
+            value={current}
+            onChange={e => {
+                console.log('onChange', { value: e?.format() ?? 'null', isLocal: e?.isLocal(), unix: e?.valueOf() });
+                searchParams.startTimestamp = e?.valueOf() ?? -1;
+                searchParams.startTimestampWasSetByUser = true;
+            }}
+            onOk={e => {
+                console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
+                searchParams.startTimestamp = e.valueOf();
+            }}
+        />
+    }
+}
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => string[] }> {
+class DateTimePickerExtraFooter extends Component {
+    render() {
+        return <Radio.Group
+            value={uiState.topicSettings.searchParametersLocalTimeMode ? 'local' : 'utc'}
+            onChange={e => {
+                // console.log("date mode changed", { newValue: e.target.value, isLocalMode: uiState.topicSettings.searchParametersLocalTimeMode });
+                uiState.topicSettings.searchParametersLocalTimeMode = e.target.value == 'local';
+            }}>
+            <Radio value='local'>Local</Radio>
+            <Radio value='utc'>UTC</Radio>
+        </Radio.Group>
+    }
+}
+
+
+@observer
+class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTag[] }> {
     render() {
         const msg = this.props.msg;
         const value = msg.value.payload;
-        const fields = this.props.previewFields();
+
+        const isPrimitive =
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean';
 
         try {
             let text: ReactNode = <></>;
 
-            if (!value || msg.isValueNull) {
+            if (value === null || value === undefined || msg.isValueNull) {
                 // null: tombstone
                 text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
             }
-            else if (msg.value.encoding == 'text') {
-                // Raw Text (wtf :P)
-                text = value;
-            }
             else if (msg.value.encoding == 'binary') {
-                // Binary data is displayed as hex dump
+                // If the original data was binary, display as hex dump
                 text = msg.valueBinHexPreview;
             }
-            else if (fields.length > 0) {
-                // Json!
-                // Construct our preview object
-                const previewObj: any = {};
-                const searchOptions = { caseSensitive: uiState.topicSettings.previewTagsCaseSensitive, returnFirstResult: uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst' };
-                for (let f of fields) {
-                    const results = findElementDeep(value, f, searchOptions);
-
-                    if (results.length > 0) {
-                        const propName = (!searchOptions.returnFirstResult && uiState.topicSettings.previewShowResultCount)
-                            ? `${results[0].propertyName}(${results.length})`
-                            : results[0].propertyName;
-
-                        if (results.length == 1 || searchOptions.returnFirstResult)
-                            previewObj[propName] = results[0].value; // show only first value
-                        else
-                            previewObj[propName] = results.map(r => r.value); // show array of all found values
-                    }
-                }
-
-                // text = cullText(JSON.stringify(value), 100);
-                // text = JSON.stringify(previewObj, undefined, 2)
-                text = JSON.stringify(previewObj, undefined, 4).removePrefix('{').removeSuffix('}').trim();
+            else if (isPrimitive) {
+                // If we can show the value as a primitive, do so.
+                text = value;
             }
             else {
-                // Normal display (json, no filters). Just stringify the whole object
-                text = cullText(JSON.stringify(value), 100);
+                // Only thing left is 'object'
+                // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
+                const previewTags = this.props.previewFields();
+                if (previewTags.length > 0) {
+                    // Json!
+                    // Construct our preview object
+                    const previewObj: any = {};
+                    const searchOptions = {
+                        caseSensitive: uiState.topicSettings.previewTagsCaseSensitive,
+                        returnFirstResult: uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst'
+                    };
+
+                    const tags = getPreviewTags(value, previewTags);
+                    text = <span className='cellDiv fade' style={{ fontSize: '95%' }}>
+                        <div style={{ display: 'inline-flex', gap: '16px' }}>
+                            {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
+                        </div>
+                    </span>
+                    return text;
+
+                    // for (let f of previewTags) {
+                    //     const results = findElementDeep(value, f, searchOptions);
+
+                    //     if (results.length > 0) {
+                    //         const propName = (!searchOptions.returnFirstResult && uiState.topicSettings.previewShowResultCount)
+                    //             ? `${results[0].propertyName}(${results.length})`
+                    //             : results[0].propertyName;
+
+                    //         if (results.length == 1 || searchOptions.returnFirstResult)
+                    //             previewObj[propName] = results[0].value; // show only first value
+                    //         else
+                    //             previewObj[propName] = results.map(r => r.value); // show array of all found values
+                    //     }
+                    // }
+                }
+                else {
+                    // Normal display (json, no filters). Just stringify the whole object
+                    text = cullText(JSON.stringify(value), 300);
+                }
             }
 
             return <code><span className='cellDiv' style={{ fontSize: '95%' }}>{text}</span></code>
@@ -783,14 +913,12 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
         <MessageMetaData msg={msg} />
 
         {/* .ant-tabs-nav { width: ??; } */}
-        <Tabs animated={false}>
-            <Tabs.TabPane key='value' tab='Value'>
-                {renderMessageValue(msg, shouldExpand)}
-            </Tabs.TabPane>
+        <Tabs animated={false} defaultActiveKey='value'>
             <Tabs.TabPane key='key' tab='Key'>
-                <span className='cellDiv' style={{ width: 'auto' }}>
-                    <code style={{}}>{toSafeString(msg.key.payload)}</code>
-                </span>
+                {renderPayload(msg.key, shouldExpand)}
+            </Tabs.TabPane>
+            <Tabs.TabPane key='value' tab='Value'>
+                {renderPayload(msg.value, shouldExpand)}
             </Tabs.TabPane>
             <Tabs.TabPane key='headers' tab='Headers' disabled={msg.headers.length == 0}>
                 <MessageHeaders msg={msg} />
@@ -799,18 +927,26 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
     </div>
 }
 
-function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
+function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
-        if (!msg || !msg.value || !msg.value.payload) return <code>null</code>
+        if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined)
+            return <code>null</code>
+
+        const val = payload.payload;
+        const isPrimitive =
+            typeof val === 'string' ||
+            typeof val === 'number' ||
+            typeof val === 'boolean';
+
         const shouldCollapse = shouldExpand ? shouldExpand : false;
 
-        if (msg.value.encoding == 'binary') {
+        if (payload.encoding == 'binary') {
             const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
-                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{msg.value}</code>
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>
             }
             else if (mode == 'hex') {
-                const str = msg.value.payload as string;
+                const str = String(val);
                 let hex = '';
                 for (let i = 0; i < str.length; i++) {
                     let n = str.charCodeAt(i).toString(16);
@@ -821,7 +957,7 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
                 return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>
             }
             else {
-                const str = msg.value.payload as string;
+                const str = String(val);
                 let result = '';
                 const isPrintable = /[\x20-\x7E]/;
                 for (let i = 0; i < str.length; i++) {
@@ -834,16 +970,11 @@ function renderMessageValue(msg: TopicMessage, shouldExpand?: ((x: CollapsedFiel
             }
         }
 
-        return (
-            <>
-                {/* <Affix offsetTop={30}>
-                    <Button icon='copy' shape='circle' size='large'
-                        style={{ float: 'right', margin: '1em', zIndex: 10 }} />
-                </Affix> */}
+        if (isPrimitive) {
+            return <div className='codeBox'>{String(val)}</div>
+        }
 
-                <KowlJsonView src={msg.value.payload} shouldCollapse={shouldCollapse} />
-            </>
-        )
+        return <KowlJsonView src={val} shouldCollapse={shouldCollapse} />
     }
     catch (e) {
         return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {e.toString()}</span>
@@ -864,8 +995,8 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     return <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: '0.75rem', gap: '1em 3em', color: 'rgba(0, 0, 0, 0.8)', margin: '1em 0em 1.5em .3em' }}>
         {Object.entries(data).map(([k, v]) => <React.Fragment key={k}>
             <div style={{ display: 'flex', rowGap: '.4em', flexDirection: 'column', fontFamily: 'Open Sans' }}>
-                <div style={{ fontWeight: 600 }}>{v}</div>
-                <div style={{ color: 'rgba(0, 0, 0, 0.4)' }}>{k}</div>
+                <div style={{ fontWeight: 600 }}>{k}</div>
+                <div style={{ color: 'rgba(0, 0, 0, 0.6)', }}>{v}</div>
             </div>
         </React.Fragment>)}
     </div>
@@ -924,74 +1055,9 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
     </div>
 });
 
-@observer
-class PreviewSettings extends Component<{ allCurrentKeys: string[], getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
-    render() {
-
-        const content = <>
-            <Paragraph>
-                <Text>
-                    When viewing large messages we're often only interested in a few specific fields.
-                            To make the preview more helpful, add all the json keys you want to see.<br />
-                            Click on an existing tag to toggle it on/off, or <b>x</b> to remove it.<br />
-                </Text>
-            </Paragraph>
-            <div style={{ padding: '1.5em 1em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px' }}>
-                <CustomTagList tags={uiState.topicSettings.previewTags} allCurrentKeys={this.props.allCurrentKeys} />
-            </div>
-            <div style={{ marginTop: '1em' }}>
-                <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
-                <Space size='large'>
-                    <OptionGroup label='Matching' options={{ 'Ignore Case': false, 'Case Sensitive': true }}
-                        value={uiState.topicSettings.previewTagsCaseSensitive}
-                        onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
-                    />
-                    <OptionGroup label='Multiple Results' options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
-                        value={uiState.topicSettings.previewMultiResultMode}
-                        onChange={e => uiState.topicSettings.previewMultiResultMode = e}
-                    />
-                    {uiState.topicSettings.previewMultiResultMode == 'showAll' &&
-                        <OptionGroup label='Result Count' options={{ 'Hide': false, 'As part of name': true }}
-                            value={uiState.topicSettings.previewShowResultCount}
-                            onChange={e => uiState.topicSettings.previewShowResultCount = e}
-                        />
-                    }
-                </Space>
-                {
-                    // - Show Empty Messages: when unchecked, and the field-filters don't find anything, the whole message will be hidden instead of showing an empty "{}"
-                    // - JS filters! You get a small textbox where you can type in something like those examples:
-                    //     Example 1 | // if the name matches, show this prop in the preview
-                    //               | if (prop.key == 'name') show(prop)
-
-                    // - JS filters could also be submitted to the backend, so it can do the filtering there already
-                }
-                {
-                    // <Checkbox
-                    //     checked={uiSettings.topicList.previewShowEmptyMessages}
-                    //     onChange={e => uiSettings.topicList.previewShowEmptyMessages = e.target.checked}
-                    // >Show Empty Messages</Checkbox>
-                }
-            </div>
-        </>
-
-        return <Modal
-            title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
-            visible={this.props.getShowDialog()}
-            onOk={() => this.props.setShowDialog(false)}
-            onCancel={() => this.props.setShowDialog(false)}
-            width={750}
-            okText='Close'
-            cancelButtonProps={{ style: { display: 'none' } }}
-            closable={false}
-            maskClosable={true}
-        >
-            {content}
-        </Modal>;
-    }
-}
 
 @observer
-class ColumnSettings extends Component<{ allCurrentKeys: string[], getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
+class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
 
     render() {
 
@@ -1007,7 +1073,14 @@ class ColumnSettings extends Component<{ allCurrentKeys: string[], getShowDialog
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>More Settings</h3>
                 <Space size='large'>
-                    <OptionGroup label='Timestamp' options={{ 'Local DateTime': 'default', 'Unix Seconds': 'unixSeconds', 'Relative': 'relative', 'Local Date': 'onlyDate', 'Local Time': 'onlyTime' }}
+                    <OptionGroup label='Timestamp' options={{
+                        'Local DateTime': 'default',
+                        'Unix DateTime': 'unixTimestamp',
+                        'Relative': 'relative',
+                        'Local Date': 'onlyDate',
+                        'Local Time': 'onlyTime',
+                        'Unix Seconds': 'unixSeconds',
+                    }}
                         value={uiState.topicSettings.previewTimestamps}
                         onChange={e => uiState.topicSettings.previewTimestamps = e}
                     />
@@ -1039,7 +1112,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
         { title: 'Partition', dataIndex: 'partitionID' },
         { title: 'Timestamp', dataIndex: 'timestamp' },
         { title: 'Key', dataIndex: 'key' },
-        { title: 'Headers', dataIndex: 'headers' },
+        // { title: 'Headers', dataIndex: 'headers' },
         { title: 'Value', dataIndex: 'value' },
         // { title: 'Size', dataIndex: 'size' }, // size of the whole message is not available (bc it was a bad guess), might be added back later
     ];
@@ -1075,128 +1148,6 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
     }
 }
 
-@observer
-class CustomTagList extends Component<{ tags: PreviewTag[], allCurrentKeys: string[] }> {
-    @observable inputVisible = false;
-    @observable inputValue = '';
-
-    @observable activeTags: string[] = [];
-
-    render() {
-
-        const tagSuggestions = this.props.allCurrentKeys.filter(k => this.props.tags.all(t => t.value != k));
-        console.log('tag suggestions', this.props.allCurrentKeys)
-
-        return <>
-            <AnimatePresence>
-                <MotionDiv positionTransition>
-
-                    {this.props.tags.map(v => <CustomTag key={v.value} tag={v} tagList={this} />)}
-
-                    {this.inputVisible &&
-                        <motion.span positionTransition>
-                            {/* <Input
-                                ref={r => { if (r) { r.focus(); } }}
-                                type="text"
-                                size="small"
-                                style={{ width: 78 }}
-                                value={this.inputValue}
-                                onChange={e => this.inputValue = e.target.value}
-                                onBlur={this.handleInputConfirm}
-                                onPressEnter={this.handleInputConfirm}
-                            /> */}
-                            <span onKeyDown={e => {
-                                if (e.key == 'Enter') this.handleInputConfirm();
-                                if (e.key == 'Escape') { this.inputValue = ''; this.handleInputConfirm(); }
-                            }}>
-                                <AutoComplete
-                                    ref={r => { if (r) { r.focus(); } }}
-                                    options={tagSuggestions.map(t => ({ label: t, value: t }))}
-                                    size="small"
-                                    style={{ width: 130 }}
-                                    value={this.inputValue}
-                                    onChange={e => this.inputValue = e.toString()}
-                                    onBlur={() => { this.handleInputConfirm(); }}
-                                    filterOption={true}
-                                />
-                            </span>
-
-                        </motion.span>
-                    }
-
-                    {!this.inputVisible &&
-                        <motion.span positionTransition>
-                            <Button onClick={() => this.inputVisible = true} size='small' type='dashed'>
-                                <PlusOutlined style={{ color: '#999' }} />
-                                <>Add Preview</>
-                            </Button>
-                        </motion.span>
-                    }
-
-                    <br />
-
-                    {/* <Select<string> mode='tags'
-                        style={{ minWidth: '26em' }} size='large'
-                        placeholder='Enter properties for preview'
-                    >
-                        {tagSuggestions.map(k =>
-                            <Select.Option key={k} value={k}>{k}</Select.Option>
-                        )}
-                    </Select> */}
-
-                </MotionDiv>
-            </AnimatePresence>
-        </>
-    }
-
-    handleInputConfirm = () => {
-        const tags = this.props.tags;
-        const newTag = this.inputValue;
-        if (newTag && tags.all(t => t.value != newTag)) {
-            tags.push({ value: newTag, active: true });
-        }
-        this.inputVisible = false;
-        this.inputValue = '';
-    };
-
-    get tags(): PreviewTag[] { return this.props.tags; }
-    get tagNames(): string[] { return this.props.tags.map(t => t.value); }
-    get activeTagNames(): string[] { return this.props.tags.filter(t => t.active).map(t => t.value); }
-
-    setTagActive(tag: string, isActive: boolean) {
-        if (!isActive) {
-            this.activeTags.remove(tag);
-        } else {
-            this.activeTags.push(tag);
-        }
-    }
-
-    removeTag(tag: string) {
-        this.props.tags.removeAll(t => t.value === tag);
-    }
-}
-
-@observer
-class CustomTag extends Component<{ tag: PreviewTag, tagList: CustomTagList }> {
-    @observable isActive = false;
-
-    render() {
-        const tag = this.props.tag;
-        const list = this.props.tagList;
-        const value = tag.value;
-
-        return <motion.span>
-            <Tag
-                color={tag.active ? 'blue' : undefined}
-                key={value}
-                onClick={() => tag.active = !tag.active}
-                closable
-                onClose={() => list.removeTag(value)}
-            >{value}</Tag>
-        </motion.span>
-    }
-}
-
 
 const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
     <Popover key={title} trigger='click' title={popTitle} content={content}>
@@ -1211,10 +1162,10 @@ const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): Re
 const helpEntries = [
     makeHelpEntry('Basics', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
         <li>The filter code is a javascript function body (click 'parameters' to see what arguments are available)</li>
-        <li>Return true to allow a message, Return false to discard the message</li>
-        <li>The context is re-used between messages, but every partition has its own context</li>
+        <li>Return true to allow a message, return false to discard the message.</li>
         <li>You can omit the 'return' keyword if your filter is just an 'expression'</li>
-        <li>Multiple filters are combined with 'and'. Meaning that ALL filters have to return true for the message to pass.</li>
+        <li>If you have multiple active filters, they're combined with 'and'. Meaning that ALL filters a message is tested on must return true for it to be passed to the frontend.</li>
+        <li>The context is re-used between messages, but every partition has its own context</li>
     </ul>),
     makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
         <li><span className='codeBox'>offset</span> (number)</li>
@@ -1224,6 +1175,7 @@ const helpEntries = [
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>offset &gt; 10000</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>value != null</span> Skips tombstone messages</li>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>if (key == 'example') return true</span></li>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
         <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} loading='lazy' /></div></li>
@@ -1247,14 +1199,6 @@ class MessageSearchFilterBar extends Component {
     currentIsNew = false; // true: 'onCancel' must remove the filter again
 
     @observable hasChanges = false; // used by editor; shows "revert changes" when true
-
-    static readonly nameTip = <>
-        <LayoutBypass justifyContent='flex-start'>
-            <Tooltip placement='top' title={<span>Enter a custom name that will be shown in the list.<br />Otherwise the the code itself will be used as the name.</span>}>
-                <QuestionCircleTwoTone twoToneColor='deepskyblue' style={{ fontSize: '15px' }} />
-            </Tooltip>
-        </LayoutBypass>
-    </>
 
     render() {
         const settings = uiState.topicSettings.searchParams;
@@ -1421,5 +1365,5 @@ class MessageSearchFilterBar extends Component {
 
 function renderEmptyIcon(tooltipText?: string) {
     if (!tooltipText) tooltipText = "Empty";
-    return <Tooltip title={tooltipText} mouseEnterDelay={0.1}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>
+    return <Tooltip title={tooltipText} mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>
 }

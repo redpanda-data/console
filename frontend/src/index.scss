@@ -11,6 +11,10 @@ code {
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
+h2 {
+    font-size: 1.4em;
+}
+
 .scroll-on-hover-y {
     overflow-y: hidden;
     overflow-x: hidden;
@@ -47,6 +51,19 @@ code {
     text-overflow: ellipsis;
     white-space: nowrap;
     vertical-align: text-bottom;
+
+    position: relative;
+
+    &.fade::after {
+        content: ' ';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 30px;
+
+        background: linear-gradient(to right, transparent, white);
+    }
 }
 
 /*
@@ -112,21 +129,17 @@ span>.icon-container~span {
     opacity: 1;
 }
 
-.spinner {
-    width: 100%;
-    height: 100%;
-    border-radius: 100%;
-    display: inline-block;
-    /* margin    : auto;
-	position        : absolute;
-	left            : 0;
-	right           : 0;
-	top             : 0;
-	bottom          : 0;
-	margin          : auto; */
+.spinnerText {
+    user-select: none;
+    margin-left: 10px;
 }
 
 .spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 100%;
+
     border: 2px solid transparent;
     border-bottom-color: hsl(205, 100%, 50%);
     border-top-color: hsl(205, 100%, 50%);
@@ -134,39 +147,41 @@ span>.icon-container~span {
         rotateIn 1.2s cubic-bezier(0.25, 0.80, 0.9, 0.9) 0s 1,
         rotate 0.7s linear 1.2s infinite,
         spinnerFadeIn 0.5s ease 0s 1;
+
+
+    @keyframes rotateIn {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(1800deg);
+        }
+    }
+
+    @keyframes rotate {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes spinnerFadeIn {
+        from {
+            opacity: 0;
+            scale: 120%;
+        }
+
+        to {
+            opacity: 1;
+            scale: 100%;
+        }
+    }
 }
 
-@keyframes rotateIn {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(1800deg);
-    }
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes spinnerFadeIn {
-    from {
-        opacity: 0;
-        scale: 120%;
-    }
-
-    to {
-        opacity: 1;
-        scale: 100%;
-    }
-}
 
 .pulsating {
     animation: pulse 0.5s linear 0s infinite;
@@ -251,7 +266,7 @@ span>.icon-container~span {
     padding: var(--headerVertical) var(--padCells);
 }
 
-.ant-table.ant-table-middle .ant-table-thead>tr>th:first-child {
+.ant-table.ant-table-middle .ant-table-thead>tr>th:first-child:not(.ant-table-row-expand-icon-cell) {
     /* Header: first (normal + sorter)*/
     padding-left: var(--padOutside);
 }
@@ -274,7 +289,7 @@ span>.icon-container~span {
     padding: var(--padRowHeight) var(--padCells);
 }
 
-.ant-table.ant-table-middle .ant-table-tbody>tr>td:first-child {
+.ant-table.ant-table-middle .ant-table-tbody>tr>td:first-child:not(.ant-table-row-expand-icon-cell) {
     /* Cell: first */
     padding-left: var(--padOutside);
 }
@@ -304,9 +319,16 @@ span>.icon-container~span {
     overflow: visible;
 }
 
-.ant-table-tbody>tr:hover:not(.ant-table-row-selected),
-.pureDisplayRow>td {
-    background-color: initial !important;
+.ant-table-tbody>tr.ant-table-row:hover>td {
+    background-color: unset;
+}
+
+td.ant-table-column-sort {
+    background-color: unset;
+}
+
+.ant-table-tbody>tr.ant-table-row-selected>td {
+    background-color: unset;
 }
 
 .ant-pagination-total-text {
@@ -627,6 +649,15 @@ span>.icon-container~span {
     opacity: .5;
 }
 
+.ant-menu.ant-menu-root.ant-menu-inline {
+    li {
+        a {
+            // fix vertical alignment of menu items in sidebar
+            display: flex;
+        }
+    }
+}
+
 .menu-permission-tooltip {
     user-select: none;
 
@@ -676,11 +707,8 @@ tr.tombstone {
     color: rgba(0, 0, 0, 0.25);
 }
 
-tr.tombstone .ant-table-row-expand-icon {
-    display: none;
-}
-
 .kowlCard {
+    position: relative;
     margin: 0;
     margin-bottom: .75rem;
     padding: 1rem 1.5rem;
@@ -931,6 +959,7 @@ svg {
 
 .ant-progress-success-bg,
 .ant-progress-bg {
+    // Don't animate progress (looks strange when it goes smoothly from 100% to 0%)
     transition-duration: 0s;
 }
 
@@ -990,7 +1019,8 @@ svg {
 
 .ant-tooltip {
     font-size: 12px;
-    max-width: 400px;
+    max-width: unset;
+    white-space: normal;
 
     --ant-tooltip-color: hsl(0deg, 0%, 87%);
 }
@@ -1390,8 +1420,8 @@ svg {
             }
 
             .ant-descriptions-item-content {
-                max-width: 400px;
-                white-space: normal;
+                white-space: pre-wrap;
+                word-break: break-all;
                 background: hsl(220, 19%, 97%);
             }
         }
@@ -1473,6 +1503,59 @@ svg {
     cursor: default;
 }
 
+.radioOptionGroup {
+    $borderRadius: 8px;
+
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+
+    border: 1px solid hsl(0deg, 0%, 94%);
+    border-radius: $borderRadius;
+
+    user-select: none;
+
+    .ant-radio-wrapper {
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        margin: 0;
+        display: inline-block;
+
+        // & span:nth-child(1) {
+        //     display: inline-block;
+        // }
+
+        &>span:nth-child(2) {
+            display: contents;
+        }
+    }
+
+    .ant-radio-wrapper:first-child {
+        border-radius: $borderRadius $borderRadius 0px 0px;
+    }
+
+    .ant-radio-wrapper:last-child {
+        border-radius: 0px 0px $borderRadius $borderRadius;
+    }
+
+    .ant-radio-wrapper:not(:last-child) {
+        border-bottom: 1px solid hsl(0deg, 0%, 94%);
+    }
+
+    .ant-radio-wrapper:hover:not(.ant-radio-wrapper-checked) {
+        background: hsl(0deg, 0%, 99%);
+    }
+
+    .ant-radio-wrapper-checked {
+        background: #e5f7ff;
+        box-shadow: 0px 0px 2px 1px #1890ff61;
+        z-index: 1;
+    }
+}
+
+
+
 .waitingForMessagesText {
     animation: waitingForMessagesTextPulse 1.5s ease-in-out 0s infinite;
 }
@@ -1525,4 +1608,402 @@ svg {
     100% {
         box-shadow: 0 0 4px 1px hsla(206deg, 10%, 85%, 50%);
     }
+}
+
+.reassignPartitions {
+    .ant-steps-item-custom {
+        user-select: none;
+
+        .ant-steps-item-icon>.ant-steps-icon {
+            font-size: 20px;
+        }
+    }
+
+    .ant-table-expanded-row th {
+        cursor: default;
+    }
+
+    .ant-table-expanded-row>td {
+        &::before {
+            content: ' ';
+            display: block;
+            position: absolute;
+            box-shadow: 0px 0px 3px 0px #000000;
+            top: 1px;
+            left: 2px;
+            right: 2px;
+            bottom: 0px;
+            z-index: -1;
+            border-radius: 2px;
+        }
+
+        border-radius: 1px;
+    }
+
+    // section
+    .currentReassignments {
+        display: flex;
+        place-items: center;
+        margin-bottom: .5em;
+        gap: .5em;
+
+        .title {
+            font-size: 1.17em;
+            font-weight: 500;
+            color: hsla(0deg, 0%, 0%, 85%);
+            margin-left: .2em;
+            padding-bottom: 2px;
+        }
+
+        button {
+            background: hsla(210deg, 100%, 56%, 0.05);
+
+            &:hover {
+                background: hsl(210deg, 80%, 95%);
+            }
+        }
+    }
+}
+
+.nestedTable .ant-table-container tr {
+
+    &:nth-child(2n+1) {
+        background: hsl(0deg, 0%, 98%) !important;
+    }
+
+    &>th {
+        padding: 8px 2px !important;
+    }
+
+    &>td {
+        padding: 3px 2px !important;
+    }
+}
+
+// Hide scrollbar when it's not needed
+.ant-table-body {
+    overflow-y: auto !important;
+}
+
+
+.brokerTagList {
+    display: inline-flex;
+    gap: 1px;
+    border-radius: 4px;
+    background: hsl(0deg, 0%, 85%);
+
+    .broker-tag {
+        position: relative;
+        border: none;
+        // font-size: 13px;
+        user-select: none;
+        // padding: 1px 9px;
+        margin: 0;
+        padding: 1px 12px;
+        border-radius: 0;
+        background: hsl(207deg, 10%, 95%);
+        color: hsl(0deg, 0%, 45%);
+
+
+        &:hover {
+            opacity: 1;
+        }
+
+        &.offline {
+            background: hsl(0deg, 80%, 76%);
+            color: hsl(0deg, 80%, 25%);
+        }
+
+        &.added {
+            // background: hsl(111deg, 82%, 69%);
+            color: hsl(111deg, 100%, 34%);
+
+            &::after {
+                content: ' ';
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+
+                border-radius: 3px;
+
+                border: 0px solid hsl(105deg, 100%, 40%);
+                border-bottom-width: 2px;
+            }
+
+            // &::before {
+            //     content: '+';
+            //     position: absolute;
+            //     top: -3px;
+            //     left: 1px;
+
+            //     width: 14px;
+            //     height: 14px;
+            //     background: hsl(9deg, 0%, 66%);
+            //     border-radius: 100%;
+
+            //     display: flex;
+            //     place-content: center;
+            //     place-items: center;
+
+            //     color: white;
+            //     font-family: 'Open Sans';
+            //     font-size: 15px;
+            //     font-weight: bold;
+
+            //     padding-bottom: 2px;
+            // }
+
+        }
+
+
+
+        &.removed {
+            color: hsl(15deg, 75%, 60%);
+            // box-shadow: inset #ff7054 0px 0px 2px 1px;
+
+            &::after {
+                content: ' ';
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+
+                border-radius: 3px;
+
+                border: 0px solid hsl(16deg, 100%, 50%);
+                border-bottom-width: 2px;
+            }
+        }
+
+
+        &:first-child {
+            border-top-left-radius: 3px;
+            border-bottom-left-radius: 3px;
+        }
+
+        &:last-child {
+            border-top-right-radius: 3px;
+            border-bottom-right-radius: 3px;
+        }
+
+    }
+}
+
+table tr th.ant-table-selection-column,
+table tr td.ant-table-selection-column {
+    width: 1px;
+    min-width: 0;
+}
+
+.ant-picker-time-panel-column>li.ant-picker-time-panel-cell .ant-picker-time-panel-cell-inner {
+    padding: 0 0 0 14px;
+    text-align: unset;
+}
+
+mark {
+    padding: 1px;
+    background-color: hsl(54deg, 100%, 50%);
+}
+
+.ant-input-suffix {
+    span.ant-input-clear-icon {
+        position: relative;
+
+        &::before {
+            content: ' ';
+            display: block;
+            position: absolute;
+            top: -66%;
+            right: -66%;
+            bottom: -66%;
+            left: -66%;
+
+            // background: #f004;
+        }
+    }
+}
+
+// Partition reassignment: selection
+tr.inprogress {
+    // color: hsl(0deg, 0%, 70%);
+    // background: hsla(200deg, 100%, 50%, 0.06);
+
+    // position: relative;
+    // &::after {
+    //     content: ' ';
+    //     display: block;
+    //     position: absolute;
+    //     top: 0px;
+    //     right: 0px;
+    //     bottom: 0px;
+    //     left: 0px;
+    //     // background: #f004;
+    // }
+}
+
+
+.partitionReassignmentSpinner {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border-radius: 100%;
+
+    vertical-align: text-bottom;
+    margin-bottom: 1px;
+
+    border: 2px solid hsl(0, 0%, 85%);
+    border-bottom-color: hsl(205, 100%, 50%);
+    border-top-color: hsl(205, 100%, 50%);
+    animation: rotate 1.5s linear 0s infinite;
+
+    @keyframes rotate {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+}
+
+.ant-table-filter-trigger {
+    width: 36px;
+    background: hsl(0deg, 0%, 94%);
+}
+
+.tableInlineSearchBox {
+    .ant-input-affix-wrapper {
+        // transform-origin: right 50%;
+        transform-origin: center center;
+        // ease-out ^3
+        animation: visible 120ms cubic-bezier(0.19, 1, 0.22, 1) 0ms 1;
+
+        $zoom: 0.96;
+        $aspectRatio: 5;
+        $initialScale: $zoom, (($zoom - 1) * $aspectRatio) + 1;
+
+
+        @keyframes visible {
+            from {
+                opacity: 0;
+                // transform: scale(0.95, 0.8) perspective(900px) rotateX(45deg) translateY(8px);
+                transform: scale($initialScale);
+            }
+
+            to {
+                opacity: 1;
+                // transform: scale(1.0) perspective(900px) rotateX(0deg) translateY(0px);
+                transform: scale(1);
+            }
+        }
+
+    }
+}
+
+.devOnly {
+    padding: 1em;
+    background: hsl(53deg, 100%, 80%);
+}
+
+
+// table
+.activeReassignments {
+
+    // slow animation of progress bar
+    .ant-progress-status-active .ant-progress-bg::before {
+        animation: ant-progress-active 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+    }
+
+    // make rows appear clickable
+    tr {
+        cursor: pointer;
+
+        &:hover {
+            color: hsl(205, 100%, 50%);
+            background: hsl(205, 100%, 98%);
+        }
+    }
+}
+
+
+.ant-menu-dark .ant-menu-item-selected .menuIcon {
+    color: hsl(0deg, 0%, 100%);
+}
+
+.menuIcon {
+    display: inline-flex;
+    width: 20px;
+    margin-right: 10px;
+}
+
+
+
+// Container for text that has the tooltip
+.tooltip {
+    position: relative;
+
+    // Text shown in the bubble
+    .tooltiptext {
+        position: absolute;
+        z-index: 1;
+        visibility: hidden;
+        min-width: 60px;
+
+        padding: .5em .75em;
+        border-radius: 4px;
+
+        background-color: hsla(210, 14%, 20%, 0.9);
+        color: hsl(0, 0%, 87%);
+        text-align: center;
+
+        font-size: 11px;
+        font-family: Verdana, 'Segoe UI', Tahoma, Geneva, sans-serif;
+        line-height: 1.5;
+
+        // position at top
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+
+        // animate
+        opacity: 0;
+        transition: opacity 150ms 300ms;
+
+
+        // make tooltip not instantly dissapear when trying to copy from it
+        &::after {
+            $space: -6px;
+
+            content: ' ';
+            position: absolute;
+            top: $space;
+            left: $space;
+            bottom: $space;
+            right: $space;
+            z-index: -1;
+            background: transparent;
+        }
+
+    }
+
+    &:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    code {
+        background: hsl(210deg, 8%, 35%);
+        border-radius: 2px;
+        padding: 2px 4px;
+        line-height: 2;
+    }
+}
+
+.nbspSeparator {
+    white-space: nowrap;
+    font-size: 66%;
 }

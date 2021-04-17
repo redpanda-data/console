@@ -4,7 +4,8 @@ import { Layout, Menu, PageHeader, Button, Tooltip, Popover, Dropdown } from 'an
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
 import { RenderTrap, DebugDisplay, UpdatePopup } from './misc/common';
-import { DebugTimerStore, prettyMilliseconds, toJson } from '../utils/utils';
+import { DebugTimerStore, prettyMilliseconds } from '../utils/utils';
+import { toJson } from "../utils/jsonUtils";
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
@@ -25,8 +26,9 @@ import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined } from '@ant-design/icons';
 import { observable } from 'mobx';
 import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
-import { LayoutBypass, toSafeString } from '../utils/tsxUtils';
+import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
+import { featureErrors } from '../state/supportedFeatures';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -157,7 +159,7 @@ const AppSide = observer(() => (
 ))
 
 
-
+let lastRequestCount = 0;
 const DataRefreshButton = observer(() => {
 
     const spinnerSize = '16px';
@@ -168,6 +170,14 @@ const DataRefreshButton = observer(() => {
         </div>
         // TODO: small table that shows what cached data we have and how old it is
     }
+
+    // Track how many requests we've sent in total
+    if (api.activeRequests.length == 0) lastRequestCount = 0;
+    else lastRequestCount = Math.max(lastRequestCount, api.activeRequests.length);
+
+    const countStr = lastRequestCount > 1
+        ? `${lastRequestCount - api.activeRequests.length} / ${lastRequestCount}`
+        : "";
 
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div style={{
@@ -195,7 +205,7 @@ const DataRefreshButton = observer(() => {
                 :
                 <>
                     <span className='spinner' style={{ marginLeft: '8px', width: spinnerSize, height: spinnerSize }} />
-                    <span className='pulsating' style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data...</span>
+                    <span className='pulsating' style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data... {countStr}</span>
                 </>
         }
     </div>
@@ -240,7 +250,7 @@ const AppPageHeader = observer(() => {
 });
 
 const AppContent = observer(() =>
-    <Layout className='overflowYOverlay' style={{ borderLeft: '1px solid #ddd' }}>
+    <Layout className='overflowYOverlay' style={{ borderLeft: '1px solid #ddd' }} id="mainLayout">
 
         <RenderTrap name='AppContentLayout' />
 
@@ -265,6 +275,11 @@ const AppContent = observer(() =>
 export default class App extends Component {
 
     render() {
+        setImmediate(() => {
+            if (api.endpointCompatibility == null)
+                api.refreshSupportedEndpoints(true);
+        });
+
         const r = this.loginHandling(); // Complete login, or fetch user if needed
         if (r) return r;
 
@@ -281,9 +296,13 @@ export default class App extends Component {
                         <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
                             <AppSide />
                             <AppContent />
+
+                            {/* <Test /> */}
+
                         </Layout>
                     </Route>
                 </Switch>
+                <FeatureErrorCheck />
             </ErrorBoundary>
         );
     }
@@ -321,6 +340,8 @@ export default class App extends Component {
                     api.userData = {
                         canManageKowl: false,
                         canListAcls: true,
+                        canPatchConfigs: true,
+                        canReassignPartitions: true,
                         seat: null as any,
                         user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
                     };
@@ -333,5 +354,17 @@ export default class App extends Component {
                 devPrint('user is set: ' + JSON.stringify(api.userData));
             return null;
         }
+    }
+}
+
+
+@observer
+class FeatureErrorCheck extends Component {
+    render() {
+        if (featureErrors.length > 0) {
+            const allErrors = featureErrors.join(" ");
+            throw new Error(allErrors);
+        }
+        return null;
     }
 }

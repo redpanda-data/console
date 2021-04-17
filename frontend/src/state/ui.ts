@@ -1,5 +1,6 @@
 import { observable, autorun } from "mobx";
-import { touch, assignDeep, randomId, simpleUniqueId, uniqueId4, clone } from "../utils/utils";
+import { assignDeep, randomId, simpleUniqueId, uniqueId4 } from "../utils/utils";
+import { touch, clone } from "../utils/jsonUtils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
 import { AclRequest, AclRequestDefault } from "./restInterfaces";
@@ -8,8 +9,9 @@ const settingsName = 'uiSettings-v3';
 
 
 export interface PreviewTag {
-    value: string;
-    active: boolean;
+    id: string;
+    isActive: boolean;
+    text: string;
 }
 
 export interface ColumnList {
@@ -50,8 +52,18 @@ export class FilterEntry {
 }
 
 
-export type TimestampDisplayFormat = 'default' | 'onlyDate' | 'onlyTime' | 'unixSeconds' | 'relative';
-export enum TopicOffsetOrigin { EndMinusResults = -1, Start = -2, End = -3, Custom = 0 }
+export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 'onlyTime' | 'unixSeconds' | 'relative';
+export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
+    switch (timestampType) {
+        case 'default': return true; // 'localDateTime'
+        case 'onlyDate': return true;
+        case 'onlyTime': return true;
+        case 'relative': return true;
+    }
+    return false;
+}
+
+export enum TopicOffsetOrigin { EndMinusResults = -1, Start = -2, End = -3, Timestamp = -4, Custom = 0 }
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams']
 // Settings for an individual topic
 export class TopicDetailsSettings {
@@ -60,6 +72,8 @@ export class TopicDetailsSettings {
     @observable searchParams = {
         offsetOrigin: -1 as TopicOffsetOrigin, // start, end, custom
         startOffset: -1, // used when offsetOrigin is custom
+        startTimestamp: -1, // used when offsetOrigin is timestamp
+        startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
         partitionID: -1,
         maxResults: 50,
 
@@ -80,6 +94,7 @@ export class TopicDetailsSettings {
     @observable showMessageMetadata = true;
     @observable showMessageHeaders = false;
 
+    @observable searchParametersLocalTimeMode = true;
     @observable previewTimestamps = 'default' as TimestampDisplayFormat;
     @observable previewColumnFields = [] as ColumnList[];
 
@@ -109,18 +124,38 @@ const uiSettings = observable({
         propsOrder: 'alphabetical' as 'changedFirst' | 'default' | 'alphabetical',
     },
 
-    topicList: {
-        valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
-        propsOrder: 'changedFirst' as 'changedFirst' | 'default',
-        propsFilter: 'all' as 'all' | 'onlyChanged',
-        hideInternalTopics: true,
-        pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
+    reassignment: { // partition reassignment
+        // Active
+        pageSizeActive: 5,
+
+        // Select
         quickSearch: '',
+        pageSizeSelect: 10,
+
+        // Brokers
+        pageSizeBrokers: 10,
+
+        // Review
+        pageSizeReview: 20,
+        maxReplicationTraffic: 0, // bytes per second
+        maxReplicationSizePower: 1, // 1000^X   (0 = bytes, 1 = kb, 2 = mb, 3 = gb)
+    },
+
+    topicList: {
+        hideInternalTopics: true,
+        quickSearch: '',
+        pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
+
+        // Topic Configuration
+        valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
+        propsFilter: 'all' as 'all' | 'onlyChanged',
+        propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
+        configColumns: 2 as 1 | 2,
     },
 
     consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
-        quickSearch: '',
+        quickSearch: ''
     },
 
     consumerGroupDetails: {

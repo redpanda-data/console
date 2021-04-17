@@ -25,8 +25,6 @@ func (s *Service) ListConsumerGroupOffsets(ctx context.Context, group string) (*
 	if err != nil {
 		return nil, fmt.Errorf("failed to request group offsets for group '%v'. Inner error: %w", group, err)
 	}
-	// TODO: Each partition in res.Topics[*].Partitions[*] can have a request error as well. We should propagate
-	// 	that to the frontend, so that we can still return results along with a warning that results are incomplete
 
 	return res, nil
 }

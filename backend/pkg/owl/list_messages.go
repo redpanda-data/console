@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.uber.org/zap"
 	"math"
 	"time"
 )
@@ -19,13 +22,16 @@ const (
 	StartOffsetOldest int64 = -2
 	// Newest = High water mark / Live tail
 	StartOffsetNewest int64 = -3
+	// Timestamp = Start offset is specified as unix timestamp in ms
+	StartOffsetTimestamp int64 = -4
 )
 
 // ListMessageRequest carries all filter, sort and cancellation options for fetching messages from Kafka
 type ListMessageRequest struct {
 	TopicName             string
 	PartitionID           int32 // -1 for all partitions
-	StartOffset           int64 // -1 for recent (high - n), -2 for oldest offset, -3 for newest offset
+	StartOffset           int64 // -1 for recent (high - n), -2 for oldest offset, -3 for newest offset, -4 for timestamp
+	StartTimestamp        int64 // Start offset by unix timestamp in ms
 	MessageCount          int
 	FilterInterpreterCode string
 }
@@ -63,14 +69,19 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		partitionIDs = append(partitionIDs, listReq.PartitionID)
 	}
 
-	progress.OnPhase("Get Watermarks")
+	progress.OnPhase("Get Watermarks and calculate consuming requests")
 	marks, err := s.kafkaSvc.GetPartitionMarks(ctx, listReq.TopicName, partitionIDs)
 	if err != nil {
 		return fmt.Errorf("failed to get watermarks: %w", err)
 	}
 
 	// Get partition consume request by calculating start and end offsets for each partition
-	consumeRequests := calculateConsumeRequests(&listReq, marks)
+	consumeRequests, err := s.calculateConsumeRequests(ctx, &listReq, marks)
+	if len(consumeRequests) == 0 {
+		// No partitions/messages to consume, we can quit early.
+		progress.OnComplete(time.Since(start).Milliseconds(), false)
+		return nil
+	}
 	topicConsumeRequest := kafka.TopicConsumeRequest{
 		TopicName:             listReq.TopicName,
 		MaxMessageCount:       listReq.MessageCount,
@@ -97,10 +108,25 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 // calculateConsumeRequests is supposed to calculate the start and end offsets for each partition consumer, so that
 // we'll end up with ${messageCount} messages in total. To do so we'll take the known low and high watermarks into
 // account. Gaps between low and high watermarks (caused by compactions) will be neglected for now.
-func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka.PartitionMarks) map[int32]*kafka.PartitionConsumeRequest {
+func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMessageRequest, marks map[int32]*kafka.PartitionMarks) (map[int32]*kafka.PartitionConsumeRequest, error) {
 	requests := make(map[int32]*kafka.PartitionConsumeRequest, len(marks))
 
 	predictableResults := listReq.StartOffset != StartOffsetNewest && listReq.FilterInterpreterCode == ""
+
+	// Resolve offsets by partitionID if the user sent a timestamp as start offset
+	var startOffsetByPartitionID map[int32]int64
+	if listReq.StartOffset == StartOffsetTimestamp {
+		partitionIDs := make([]int32, 0)
+		for _, mark := range marks {
+			partitionIDs = append(partitionIDs, mark.PartitionID)
+		}
+		offsets, err := s.requestOffsetsByTimestamp(ctx, listReq.TopicName, partitionIDs, listReq.StartTimestamp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get start offset by timestamp: %w", err)
+		}
+		startOffsetByPartitionID = offsets
+	}
+
 	// Init result map
 	notInitialized := int64(-100)
 	for _, mark := range marks {
@@ -125,7 +151,22 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka
 			// In Live tail mode we consume onwards until max results are reached. Start Offset is always high watermark
 			// and end offset is always MaxInt64.
 			p.StartOffset = -1
+		} else if listReq.StartOffset == StartOffsetTimestamp {
+			// Request start offset by timestamp first and then consider it like a normal forward consuming / custom offset
+			offset, exists := startOffsetByPartitionID[mark.PartitionID]
+			if !exists {
+				s.logger.Warn("resolved start offset (by timestamp) does not exist for this partition",
+					zap.String("topic", listReq.TopicName),
+					zap.Int32("partition_id", mark.PartitionID))
+			}
+			if offset < 0 {
+				// If there's no newer message than the given offset is -1 here, let's replace this with the newest
+				// consumable offset which equals to high water mark - 1.
+				offset = marks[mark.PartitionID].High - 1
+			}
+			p.StartOffset = offset
 		} else {
+			// Either custom offset or resolved offset by timestamp is given
 			p.StartOffset = listReq.StartOffset
 
 			if p.StartOffset < mark.Low {
@@ -156,7 +197,7 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka
 	if !predictableResults {
 		// Predictable results are required for the balancing method we usually try to apply. If that's not possible
 		// we can quit early as there won't be any balancing across partitions enforced.
-		return requests
+		return requests, nil
 	}
 
 	// We strive to return an equal number of messages across all requested partitions.
@@ -187,8 +228,8 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka
 				// Consume "backwards" by lowering the start offset
 				req.StartOffset--
 			} else {
-				// We add +1 to end offset because if you set highWatermark as start offset this message can still be consumed
-				maxDelta := req.EndOffset - req.StartOffset
+				// We add +1 because the start offset itself is a consumable message
+				maxDelta := req.EndOffset - req.StartOffset + 1
 				isDrained := maxDelta == req.MaxMessageCount
 				if isDrained {
 					req.IsDrained = true
@@ -217,5 +258,42 @@ func calculateConsumeRequests(listReq *ListMessageRequest, marks map[int32]kafka
 		filteredRequests[pID] = req
 	}
 
-	return filteredRequests
+	return filteredRequests, nil
+}
+
+// requestOffsetsByTimestamp returns the offset that has been resolved for the given timestamp in a map which is indexed
+// by partitionID.
+func (s *Service) requestOffsetsByTimestamp(ctx context.Context, topicName string, partitionIDs []int32, timestamp int64) (map[int32]int64, error) {
+	req := kmsg.NewListOffsetsRequest()
+	topicReq := kmsg.NewListOffsetsRequestTopic()
+	topicReq.Topic = topicName
+
+	partitionReqs := make([]kmsg.ListOffsetsRequestTopicPartition, len(partitionIDs))
+	for i, partitionID := range partitionIDs {
+		partitionReq := kmsg.NewListOffsetsRequestTopicPartition()
+		partitionReq.Partition = partitionID
+		partitionReq.Timestamp = timestamp
+		partitionReqs[i] = partitionReq
+	}
+
+	topicReq.Partitions = partitionReqs
+	req.Topics = []kmsg.ListOffsetsRequestTopic{topicReq}
+
+	kres, err := req.RequestWith(ctx, s.kafkaSvc.KafkaClient)
+	if err != nil {
+		return nil, err
+	}
+
+	offsetByPartition := make(map[int32]int64)
+	for _, topic := range kres.Topics {
+		for _, partition := range topic.Partitions {
+			typedErr := kerr.TypedErrorForCode(partition.ErrorCode)
+			if typedErr != nil {
+				return nil, fmt.Errorf("failed to get timestamp for at least one partition. Inner Kafka error: %w", typedErr.Error())
+			}
+			offsetByPartition[partition.Partition] = partition.Offset
+		}
+	}
+
+	return offsetByPartition, nil
 }

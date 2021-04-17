@@ -14,8 +14,9 @@ import { prettyBytesOrNA } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CrownOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, OptionGroup } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, findPopupContainer, OptionGroup } from "../../../utils/tsxUtils";
 import { DataValue } from "../topics/Tab.Config";
+
 
 
 @observer
@@ -52,7 +53,7 @@ class BrokerList extends PageComponent {
         const renderIdColumn = (text: string, record: Broker) => {
             if (record.brokerId != info.controllerId) return text;
             return <>{text}
-                <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'}>
+                <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'} getPopupContainer={findPopupContainer} placement='right'>
                     <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
                 </Tooltip>
             </>
@@ -99,7 +100,9 @@ class BrokerList extends PageComponent {
 
     isMatch(filter: string, item: Broker) {
         if (item.address.includes(filter)) return true;
-        if (item.rack.toLowerCase().includes(filter.toLowerCase())) return true;
+
+        if (item.rack)
+            if (item.rack.toLowerCase().includes(filter.toLowerCase())) return true;
 
         return false;
     }

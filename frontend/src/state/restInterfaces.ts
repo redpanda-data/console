@@ -9,33 +9,71 @@ export interface ApiError {
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];
 
-export class TopicDetail {
+export interface Topic {
     topicName: string;
     isInternal: boolean;
     partitionCount: number;
     replicationFactor: number;
     cleanupPolicy: string;
-    logDirSize: number; // how much space this topic takes up (files in its log dir)
+    logDirSummary: TopicLogDirSummary;
     allowedActions: TopicAction[] | undefined;
-
-    // Added by frontend
-    // messageCount: number;
 }
 
-export class GetTopicsResponse {
-    topics: TopicDetail[];
+export interface TopicLogDirSummary {
+    totalSizeBytes: number; // how much space this topic takes up (files in its log dir)
+    replicaErrors: {
+        brokerId: number;
+        error: string | null;
+    }[] | null;
+    hint: string | null;
 }
+
+export interface GetTopicsResponse {
+    topics: Topic[];
+}
+
+
 
 export interface Partition {
     id: number;
+
+    // When set, all props from replicas to partitionLogDirs are null
+    partitionError: string | null;
+    replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
+    offlineReplicas: number[] | null;
+    inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
+    leader: number; // id of the "leader" broker for this partition
+    partitionLogDirs: {
+        error: string, // empty when no error
+        brokerId: number,
+        partitionId: number, // redundant?
+        size: number, // size (in bytes) of log dir on that broker
+    }[];
+
+    // When set, waterMarkLow/High are not set
+    waterMarksError: string | null;
     waterMarkLow: number;
     waterMarkHigh: number;
+
+    // added by frontend:
+    replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
+    topicName: string; // used for finding the actual topic this partition belongs to (in case we pass around a partition reference on its own)
 }
 
 export interface GetPartitionsResponse {
     topicName: string;
+    error: string | null; // only set if metadata request has failed for the whole topic
     partitions: Partition[];
 }
+
+export interface GetAllPartitionsResponse {
+    topics: {
+        topicName: string;
+        error: string | null;
+        partitions: Partition[];
+    }[];
+}
+
 
 
 export interface TopicConsumer {
@@ -49,7 +87,7 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'none' | 'json' | 'xml' | 'avro' | 'text' | 'binary';
+export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'consumerOffsets' | 'binary' | 'msgpack';
 export type CompressionType = 'uncompressed' | 'gzip' | 'snappy' | 'lz4' | 'zstd' | 'unknown';
 export interface Payload {
     payload: any, // json obj
@@ -74,11 +112,11 @@ export interface TopicMessage {
     value: Payload,
 
     isValueNull: boolean, // todo: rename to isTombstone
-    // todo: Tab.Messages/index.tsx: isFilterMatch(): use 'keyJson' instead
 
-    // Added by the frontend (sometimes)
+    // Added by the frontend
     valueJson: string,
     valueBinHexPreview: string,
+    keyJson: string,
 }
 
 export interface ListMessageResponse {
@@ -112,6 +150,9 @@ export interface TopicDescription {
 }
 export interface TopicConfigResponse {
     topicDescription: TopicDescription
+}
+export interface PartialTopicConfigsResponse {
+    topicDescriptions: TopicDescription[];
 }
 export interface TopicDocumentation {
     // if false: topic documentation is not configured
@@ -151,6 +192,7 @@ export type GroupAction = 'all' | typeof GroupActions[number];
 export interface GroupDescription {
     groupId: string; // name of the group
     state: string; // Dead, Initializing, Rebalancing, Stable
+    protocol: string;
     protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
     members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     coordinatorId: number;
@@ -199,8 +241,26 @@ export interface Broker {
     brokerId: number;
     logDirSize: number; // bytes of the whole directory
     address: string;
-    rack: string;
+    rack: string | null;
 }
+
+
+export interface EndpointCompatibilityResponse {
+    endpointCompatibility: EndpointCompatibility;
+}
+
+export interface EndpointCompatibility {
+    kafkaVersion: string;
+    endpoints: EndpointCompatibilityEntry[];
+}
+
+export interface EndpointCompatibilityEntry {
+    endpoint: string;
+    method: string;
+    isSupported: boolean;
+}
+
+
 
 export interface ClusterInfo {
     brokers: Broker[];
@@ -211,7 +271,6 @@ export interface ClusterInfo {
 export interface ClusterInfoResponse {
     clusterInfo: ClusterInfo;
 }
-
 
 export interface ClusterConfigResponse {
     clusterConfig: ClusterConfig;
@@ -262,7 +321,10 @@ export interface UserData {
     seat: Seat;
     canManageKowl: boolean;
     canListAcls: boolean;
+    canReassignPartitions: boolean;
+    canPatchConfigs: boolean;
 }
+export type UserPermissions = Exclude<keyof UserData, 'user' | 'seat'>;
 
 
 
@@ -412,12 +474,16 @@ export const AclRequestDefault = {
 
 export interface AclResponse {
     aclResources: AclResource[];
+    isAuthorizerEnabled: boolean;
 }
 
+export enum ResourcePatternType {
+    'UNKNOWN', 'MATCH', 'LITERAL', 'PREFIXED'
+}
 export interface AclResource {
     resourceType: string;
     resourceName: string;
-    resourcePatternType: string;
+    resourcePatternType: ResourcePatternType;
     acls: AclRule[];
 }
 
@@ -437,21 +503,13 @@ export interface SchemaOverviewResponse {
 export interface SchemaOverview {
     mode: string;
     compatibilityLevel: string;
-    subjects: SchemaSubject[];
+    subjects: string[];
     requestErrors: SchemaOverviewRequestError[];
 }
 
 export interface SchemaOverviewRequestError {
     requestDescription: string;
     errorMessage: string;
-}
-
-export interface SchemaSubject { // @martin wtf is schemaSubject? why is this name so confusing?
-    name: string;
-    compatibilityLevel: string;
-    versionsCount: number;
-    latestVersion: string;
-    requestError: string;
 }
 
 export interface SchemaDetailsResponse {
@@ -462,6 +520,7 @@ export interface SchemaDetails {
     string: string;
     schemaId: number;
     version: number;
+    compatibility: string;
     schema: Schema;
     registeredVersions: number[];
 }
@@ -479,4 +538,137 @@ export interface SchemaField {
     type: string | object | null | undefined;
     doc?: string | null | undefined;
     default?: string | object | null | undefined;
+}
+
+
+// Partition Reassignments - Get
+export interface PartitionReassignmentsResponse {
+    topics: PartitionReassignments[];
+}
+export interface PartitionReassignments {
+    topicName: string;
+    partitions: PartitionReassignmentsPartition[];
+}
+export interface PartitionReassignmentsPartition {
+    partitionId: number;
+    addingReplicas: number[];
+    removingReplicas: number[];
+    replicas: number[];
+}
+
+// PartitionReassignments - Patch
+export interface PartitionReassignmentRequest {
+    topics: TopicAssignment[];
+}
+export type TopicAssignment = {
+    topicName: string; // name of topic to change
+    partitions: { // partitions to reassign
+        partitionId: number;
+        replicas: number[] | null;
+        // Entries are brokerIds.
+        // Since the replicationFactor of a partition tells us the total number
+        // of 'instances' of a partition (leader + follower replicas) the length of the array is always 'replicationFactor'.
+        // The first entry in the array is the brokerId that will host the leader replica
+        // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
+        //
+        // Can also be null to cancel a pending reassignment.
+    }[];
+};
+
+export interface AlterPartitionReassignmentsResponse {
+    reassignPartitionsResponses: {
+        topicName: string;
+        partitions: AlterPartitionReassignmentsPartitionResponse[];
+    }[];
+}
+export interface AlterPartitionReassignmentsPartitionResponse {
+    partitionId: number;
+    errorCode: string;
+    errorMessage: string | null;
+}
+
+
+// Change broker config
+// PATCH api/operations/configs
+export enum ConfigResourceType {
+    Unknown = 0,
+    Topic = 2,
+    Broker = 4,
+    BrokerLogger = 8,
+}
+
+// export enum ConfigSource {
+//     Unknown = 0,
+//     DynamicTopicConfig = 1,
+//     DynamicBrokerConfig = 2,
+//     DynamicDefaultBrokerConfig = 3,
+//     StaticBrokerConfig = 4,
+//     DefaultConfig = 5,
+//     DynamicBrokerLoggerConfig = 6,
+// }
+
+export enum AlterConfigOperation {
+    Set = 0,
+    Delete = 1,
+    Append = 2,
+    Subtract = 3,
+}
+
+export interface IncrementalAlterConfigsRequestResourceConfig {
+    // name of key to modify (e.g segment.bytes)
+    name: string;
+
+    // set(0) value must not be null
+    // delete(1) delete a config key
+    // append(2) append value to list of values, the config entry must be a list
+    // subtract(3) remove an entry from a list of values
+    op: AlterConfigOperation;
+
+    // value to set the key to
+    value?: string;
+}
+
+// Example
+// To throttle replication rate for reassignments (bytes per second):
+// - On the leader
+//      --add-config 'leader.replication.throttled.rate=10000'
+//      --entity-type broker
+//      --entity-name brokerId
+//
+// - On the follower
+//      --add-config 'follower.replication.throttled.rate=10000'
+//      --entity-type broker
+//      --entity-name brokerId
+
+export interface ResourceConfig {
+    // ResourceType is an enum that represents TOPIC, BROKER or BROKER_LOGGER
+    resourceType: ConfigResourceType;
+
+    // ResourceName is the name of config to alter.
+    //
+    // If the requested type is a topic, this corresponds to a topic name.
+    //
+    // If the requested type if a broker, this should either be empty or be
+    // the ID of the broker this request is issued to. If it is empty, this
+    // updates all broker configs. If a specific ID, this updates just the
+    // broker. Using a specific ID also ensures that brokers reload config
+    // or secret files even if the file path has not changed. Lastly, password
+    // config options can only be defined on a per broker basis.
+    //
+    // If the type is broker logger, this must be a broker ID.
+    resourceName: string
+
+    // key/value config pairs to set on the resource.
+    configs: IncrementalAlterConfigsRequestResourceConfig[];
+}
+export interface PatchConfigsRequest {
+    resources: ResourceConfig[];
+}
+
+export interface PatchConfigsResponse {
+    patchedConfigs: {
+        error: string | null;
+        resourceName: string;
+        resourceType: ConfigResourceType;
+    }[];
 }

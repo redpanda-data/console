@@ -33,9 +33,8 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
 			}
-
-			if canSee {
-				visibleGroups = append(visibleGroups, group)
+			if !canSee {
+				continue
 			}
 
 			// Attach allowed actions for each topic
@@ -44,10 +43,11 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
 			}
+			visibleGroups = append(visibleGroups, group)
 		}
 
 		response := GetConsumerGroupsResponse{
-			ConsumerGroups: describedGroups,
+			ConsumerGroups: visibleGroups,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}

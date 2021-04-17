@@ -3,8 +3,15 @@ package owl
 import (
 	"context"
 	"fmt"
+
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
+
+type AclOverview struct {
+	AclResources        []*AclResource `json:"aclResources"`
+	IsAuthorizerEnabled bool           `json:"isAuthorizerEnabled"`
+}
 
 // AclResource is all information we get when listing ACLs
 type AclResource struct {
@@ -22,18 +29,29 @@ type AclRule struct {
 }
 
 // ListAllACLs returns a list of all stored ACLs.
-func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest) ([]*AclResource, error) {
+func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest) (*AclOverview, error) {
 	aclResponses, err := s.kafkaSvc.ListACLs(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ACLs from Kafka: %w", err)
 	}
 
-	res := make([]*AclResource, len(aclResponses.Resources))
+	kafkaErr := kerr.TypedErrorForCode(aclResponses.ErrorCode)
+	if kafkaErr != nil {
+		if kafkaErr == kerr.SecurityDisabled {
+			return &AclOverview{
+				AclResources:        nil,
+				IsAuthorizerEnabled: false,
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to get ACLs from Kafka: %v", kafkaErr.Error())
+	}
+
+	resources := make([]*AclResource, len(aclResponses.Resources))
 	for i, aclResponse := range aclResponses.Resources {
 		overview := &AclResource{
 			ResourceType:        aclResponse.ResourceType.String(),
 			ResourceName:        aclResponse.ResourceName,
-			ResourcePatternType: "",
+			ResourcePatternType: aclResponse.ResourcePatternType.String(),
 			ACLs:                nil,
 		}
 
@@ -47,9 +65,11 @@ func (s *Service) ListAllACLs(ctx context.Context, req kmsg.DescribeACLsRequest)
 			}
 		}
 		overview.ACLs = acls
-		res[i] = overview
+		resources[i] = overview
 	}
-	// TODO: Maybe add sorting to ensure consistently sorted results / no flapping?
 
-	return res, nil
+	return &AclOverview{
+		AclResources:        resources,
+		IsAuthorizerEnabled: true,
+	}, nil
 }

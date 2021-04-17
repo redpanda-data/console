@@ -69,7 +69,7 @@ func (g *getAclsOverviewRequest) ToKafkaRequest() kmsg.DescribeACLsRequest {
 func (api *API) handleGetACLsOverview() http.HandlerFunc {
 	// response represents the data which is returned for listing ACLs
 	type response struct {
-		AclResources []*owl.AclResource `json:"aclResources"`
+		*owl.AclOverview
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -117,12 +117,12 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			return
 		}
 
-		aclResources, err := api.OwlSvc.ListAllACLs(r.Context(), req.ToKafkaRequest())
+		aclOverview, err := api.OwlSvc.ListAllACLs(r.Context(), req.ToKafkaRequest())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
 				Status:   http.StatusInternalServerError,
-				Message:  "Could not list ACLs",
+				Message:  fmt.Sprintf("Could not list ACLs: %v", err.Error()),
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -130,7 +130,7 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 		}
 
 		res := response{
-			AclResources: aclResources,
+			aclOverview,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}

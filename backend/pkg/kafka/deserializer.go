@@ -5,30 +5,40 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
-	"github.com/cloudhut/kowl/backend/pkg/proto"
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/cloudhut/kowl/backend/pkg/proto"
+	"github.com/twmb/franz-go/pkg/kbin"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/vmihailenco/msgpack/v5"
+
 	xj "github.com/basgys/goxml2json"
+	kmsgpack "github.com/cloudhut/kowl/backend/pkg/msgpack"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
 )
 
 // deserializer can deserialize messages from various formats (json, xml, avro, ..) into a Go native form.
 type deserializer struct {
-	SchemaService *schema.Service
-	ProtoService  *proto.Service
+	SchemaService  *schema.Service
+	ProtoService   *proto.Service
+	MsgPackService *kmsgpack.Service
 }
 
 type messageEncoding string
 
 const (
-	messageEncodingNone     messageEncoding = "none"
-	messageEncodingAvro     messageEncoding = "avro"
-	messageEncodingProtobuf messageEncoding = "protobuf"
-	messageEncodingJSON     messageEncoding = "json"
-	messageEncodingXML      messageEncoding = "xml"
-	messageEncodingText     messageEncoding = "text"
-	messageEncodingBinary   messageEncoding = "binary"
+	messageEncodingNone            messageEncoding = "none"
+	messageEncodingAvro            messageEncoding = "avro"
+	messageEncodingProtobuf        messageEncoding = "protobuf"
+	messageEncodingJSON            messageEncoding = "json"
+	messageEncodingXML             messageEncoding = "xml"
+	messageEncodingText            messageEncoding = "text"
+	messageEncodingConsumerOffsets messageEncoding = "consumerOffsets"
+	messageEncodingBinary          messageEncoding = "binary"
+	messageEncodingMsgP            messageEncoding = "msgpack"
 )
 
 // normalizedPayload is a wrapper of the original message with the purpose of having a custom JSON marshal method
@@ -64,18 +74,45 @@ type deserializedPayload struct {
 	Size               int             `json:"size"` // number of 'raw' bytes
 }
 
+type deserializedRecord struct {
+	Key     *deserializedPayload
+	Value   *deserializedPayload
+	Headers map[string]*deserializedPayload
+}
+
 // DeserializePayload tries to deserialize a given byte array.
 // The payload's byte array may represent
 //  - an encoded message such as JSON, Avro or XML
 //  - UTF-8 Text
 //  - Binary content
 // Idea: Add encoding hint where user can suggest the backend to test this encoding first.
-func (d *deserializer) DeserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
+func (d *deserializer) DeserializeRecord(record *kgo.Record) *deserializedRecord {
+	// 1. Test if it's a known binary Format
+	if record.Topic == "__consumer_offsets" {
+		rec, err := d.deserializeConsumerOffset(record)
+		if err == nil {
+			return rec
+		}
+	}
+
+	headers := make(map[string]*deserializedPayload)
+	for _, header := range record.Headers {
+		headers[header.Key] = d.deserializePayload(header.Value, record.Topic, proto.RecordValue)
+	}
+	return &deserializedRecord{
+		Key:     d.deserializePayload(record.Key, record.Topic, proto.RecordKey),
+		Value:   d.deserializePayload(record.Value, record.Topic, proto.RecordValue),
+		Headers: headers,
+	}
+}
+
+func (d *deserializer) deserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
+	// 0. Check if payload is empty / whitespace only
 	if len(payload) == 0 {
 		return &deserializedPayload{Payload: normalizedPayload{
 			Payload:            payload,
 			RecognizedEncoding: messageEncodingNone,
-		}, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(payload)}
+		}, Object: nil, RecognizedEncoding: messageEncodingNone, Size: len(payload)}
 	}
 
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
@@ -123,7 +160,7 @@ func (d *deserializer) DeserializePayload(payload []byte, topicName string, reco
 			if err == nil {
 				native, _, err := codec.NativeFromBinary(payload[5:])
 				if err == nil {
-					normalized, _ := json.Marshal(native)
+					normalized, _ := codec.TextualFromNative(nil, native)
 					return &deserializedPayload{
 						Payload: normalizedPayload{
 							Payload:            normalized,
@@ -159,7 +196,22 @@ func (d *deserializer) DeserializePayload(payload []byte, topicName string, reco
 		}
 	}
 
-	// 5. Test for UTF-8 validity
+	// 5. Test for MessagePack (only if enabled and topic allowed)
+	if d.MsgPackService != nil && d.MsgPackService.IsTopicAllowed(topicName) {
+		var obj interface{}
+		err := msgpack.Unmarshal(payload, &obj)
+		if err == nil {
+			data, err := json.Marshal(obj)
+			if err == nil {
+				return &deserializedPayload{Payload: normalizedPayload{
+					Payload:            data,
+					RecognizedEncoding: messageEncodingMsgP,
+				}, Object: string(payload), RecognizedEncoding: messageEncodingMsgP, Size: len(payload)}
+			}
+		}
+	}
+	
+	// 6. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(payload)
 	if isUTF8 {
 		return &deserializedPayload{Payload: normalizedPayload{
@@ -173,4 +225,104 @@ func (d *deserializer) DeserializePayload(payload []byte, topicName string, reco
 		Payload:            payload,
 		RecognizedEncoding: messageEncodingBinary,
 	}, Object: payload, RecognizedEncoding: messageEncodingBinary, Size: len(payload)}
+}
+
+// deserializeConsumerOffset deserializes the binary messages in the __consumer_offsets topic
+func (d *deserializer) deserializeConsumerOffset(record *kgo.Record) (*deserializedRecord, error) {
+	if len(record.Key) < 2 {
+		return nil, fmt.Errorf("offset commit key is supposed to be at least 2 bytes long")
+	}
+
+	// 1. Figure out what kind of message we've got. On this topic we'll find OffsetCommits as well as GroupMetadata
+	// messages.
+	messageVer := (&kbin.Reader{Src: record.Key}).Int16()
+
+	var deserializedKey *deserializedPayload
+	var deserializedVal *deserializedPayload
+	switch messageVer {
+	case 0, 1:
+		// We got an offset commit message
+		offsetCommitKey := kmsg.NewOffsetCommitKey()
+		err := offsetCommitKey.ReadFrom(record.Key)
+		if err == nil {
+			key, _ := json.Marshal(offsetCommitKey)
+			deserializedKey = &deserializedPayload{
+				Payload: normalizedPayload{
+					Payload:            key,
+					RecognizedEncoding: messageEncodingConsumerOffsets,
+				},
+				Object:             offsetCommitKey,
+				RecognizedEncoding: messageEncodingConsumerOffsets,
+				Size:               len(record.Key),
+			}
+		}
+
+		if record.Value == nil {
+			break
+		}
+		offsetCommitValue := kmsg.NewOffsetCommitValue()
+		err = offsetCommitValue.ReadFrom(record.Value)
+		if err == nil {
+			val, _ := json.Marshal(offsetCommitValue)
+			deserializedVal = &deserializedPayload{
+				Payload: normalizedPayload{
+					Payload:            val,
+					RecognizedEncoding: messageEncodingConsumerOffsets,
+				},
+				Object:             val,
+				RecognizedEncoding: messageEncodingConsumerOffsets,
+				Size:               len(record.Value),
+			}
+		}
+	case 2:
+		// We got a group metadata message
+		metadataKey := kmsg.NewGroupMetadataKey()
+		err := metadataKey.ReadFrom(record.Key)
+		if err == nil {
+			key, _ := json.Marshal(metadataKey)
+			deserializedKey = &deserializedPayload{
+				Payload: normalizedPayload{
+					Payload:            key,
+					RecognizedEncoding: messageEncodingConsumerOffsets,
+				},
+				Object:             metadataKey,
+				RecognizedEncoding: messageEncodingConsumerOffsets,
+				Size:               len(record.Key),
+			}
+		}
+
+		if record.Value == nil {
+			break
+		}
+		metadataValue := kmsg.NewGroupMetadataValue()
+		err = metadataValue.ReadFrom(record.Value)
+		if err == nil {
+			key, _ := json.Marshal(metadataValue)
+			deserializedVal = &deserializedPayload{
+				Payload: normalizedPayload{
+					Payload:            key,
+					RecognizedEncoding: messageEncodingConsumerOffsets,
+				},
+				Object:             metadataValue,
+				RecognizedEncoding: messageEncodingConsumerOffsets,
+				Size:               len(record.Value),
+			}
+		}
+	default:
+		// Unknown format
+		return nil, fmt.Errorf("unknown message version '%d' detected", messageVer)
+	}
+
+	if deserializedVal == nil {
+		// Tombstone
+		deserializedVal = &deserializedPayload{Payload: normalizedPayload{
+			Payload:            record.Value,
+			RecognizedEncoding: messageEncodingNone,
+		}, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(record.Value)}
+	}
+	return &deserializedRecord{
+		Key:     deserializedKey,
+		Value:   deserializedVal,
+		Headers: nil,
+	}, nil
 }

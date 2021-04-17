@@ -1,3 +1,8 @@
+---
+title: Protobuf Deserialization
+path: /docs/features/protobuf
+---
+
 # Protobuf Deserialization
 
 If you have one or more topics with Protobuf serialized messages you can configure Kowl to deserialize
@@ -58,4 +63,4 @@ mappings:
 
 ### Full configuration
 
-Take a look at the reference config how to configure Protobuf in Kowl: [/docs/config/kowl.yaml](/docs/config/kowl.yaml)
+Take a look at the reference config how to configure Protobuf in Kowl: [/docs/config/kowl.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml)

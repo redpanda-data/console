@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/cloudhut/kowl/backend/pkg/interpreter"
-	"github.com/cloudhut/kowl/backend/pkg/proto"
 	"github.com/dop251/goja"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
@@ -40,7 +39,7 @@ type TopicMessage struct {
 	// Below properties are used for the internal communication via Go channels
 	IsMessageOk  bool   `json:"-"`
 	ErrorMessage string `json:"-"`
-	MessageSize  int64  `json:""`
+	MessageSize  int64  `json:"-"`
 }
 
 // MessageHeader represents the deserialized key/value pair of a Kafka key + value. The key and value in Kafka is in fact
@@ -92,7 +91,13 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	defer cancel()
 
 	wg := sync.WaitGroup{}
-	workerCount := 4
+
+	// If we use more than one worker the order of messages in each partition gets lost. Hence we only use it where
+	// multiple workers are actually beneficial - for potentially high throughput stream requests.
+	workerCount := 1
+	if consumeRequest.FilterInterpreterCode != "" {
+		workerCount = 6
+	}
 	for i := 0; i < workerCount; i++ {
 		// Setup JavaScript interpreter
 		isMessageOK, err := s.setupInterpreter(consumeRequest.FilterInterpreterCode)
@@ -118,17 +123,19 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	// 4. Receive decoded messages until our request is satisfied. Once that's the case we will cancel the context
 	// that propagate to all the launched go routines.
 	messageCount := 0
+	messageCountByPartition := make(map[int32]int64)
 	remainingPartitionRequests := len(consumeRequest.Partitions)
 	for msg := range resultsCh {
-		// todo: Since a 'kafka message' is likely transmitted in compressed batches this is not really accurate
+		// Since a 'kafka message' is likely transmitted in compressed batches this size is not really accurate
 		progress.OnMessageConsumed(msg.MessageSize)
 
-		if msg.IsMessageOk {
+		partitionReq := consumeRequest.Partitions[msg.PartitionID]
+		if msg.IsMessageOk && messageCountByPartition[msg.PartitionID] < partitionReq.MaxMessageCount {
 			messageCount++
+			messageCountByPartition[msg.PartitionID]++
 			progress.OnMessage(msg)
 		}
 
-		partitionReq := consumeRequest.Partitions[msg.PartitionID]
 		if msg.Offset >= partitionReq.EndOffset {
 			remainingPartitionRequests--
 		}
@@ -163,9 +170,7 @@ func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, 
 		case <-ctx.Done():
 			return
 		default:
-			fetchStart := time.Now()
 			fetches := client.PollFetches(ctx)
-			s.Logger.Info("fetched new batch", zap.Duration("duration", time.Since(fetchStart)))
 			errors := fetches.Errors()
 			for _, err := range errors {
 				s.Logger.Error("errors while fetching records",
@@ -259,20 +264,6 @@ func (s *Service) setupInterpreter(interpreterCode string) (isMessageOkFunc, err
 	}
 
 	return isMessageOk, nil
-}
-
-func (s *Service) DeserializeHeaders(headers []kgo.RecordHeader) []MessageHeader {
-	res := make([]MessageHeader, len(headers))
-	for i, header := range headers {
-		// Dummy parameters - we don't support protobuf deserialization for header values
-		value := s.Deserializer.DeserializePayload(header.Value, "", proto.RecordValue)
-		res[i] = MessageHeader{
-			Key:   header.Key,
-			Value: value,
-		}
-	}
-
-	return res
 }
 
 func compressionTypeDisplayname(compressionType uint8) string {

@@ -1,8 +1,13 @@
+---
+title: Topic Documentation
+path: /docs/features/topic-documentation
+---
+
 # Topic Documentation
 
 If you wish to embed your topic's documentation into the Kowl user interface you can do this by providing access to a git repository which hosts your documentations in Markdown format. In practice this could look like this:
 
-![Kowl Topic documentation embedded](/docs/assets/topic-documentation.png)
+![Kowl Topic documentation embedded](../assets/topic-documentation.png)
 
 ## How does it work
 

@@ -1,3 +1,8 @@
+---
+title: Github OAuth Provider Setup
+path: /docs/provider-setup/github
+---
+
 # GitHub OAuth Provider Setup
 
 This section guides you through the required steps to setup an OAuth application at GitHub.

@@ -1,9 +1,13 @@
 import React, { memo, ReactNode, PureComponent, FunctionComponent, ReactElement, Component, Fragment, ReactNodeArray } from "react";
-import { observable } from "mobx";
+import { autorun, IReactionDisposer, observable } from "mobx";
 import prettyBytesOriginal from "pretty-bytes";
 import prettyMillisecondsOriginal from 'pretty-ms';
-import qs, { ParsedQuery } from 'query-string';
 import url from "url";
+import queryString from 'query-string';
+import { editQuery } from "./queryHelper";
+import { message } from "antd";
+import { MessageType } from "antd/lib/message";
+import { TopicMessage } from "../state/restInterfaces";
 
 
 
@@ -33,46 +37,6 @@ export class AutoRefresh extends Component {
         return (this.props.children);
     }
 }
-
-const seen = new Set();
-// Serialize object to json, handling reference loops gracefully
-export function toJson(obj: any, space?: string | number | undefined): string {
-    seen.clear();
-    try {
-        return JSON.stringify(obj,
-            (key: string, value: any) => {
-                if (typeof value === "object" && value !== null) {
-                    if (seen.has(value)) {
-                        return;
-                    }
-                    seen.add(value);
-                }
-                return value;
-            },
-            space
-        );
-    }
-    finally {
-        seen.clear();
-    }
-}
-
-// Clone object using serialization
-export function clone<T>(obj: T): T {
-    if (!obj) return obj;
-    return JSON.parse(toJson(obj));
-}
-
-
-// Accesses all members of an object by serializing it
-export function touch(obj: any): void {
-    JSON.stringify(obj, (k, v) => {
-        if (typeof v === 'object')
-            return v;
-        return '';
-    })
-}
-
 
 export class TimeSince {
     timestamp: number = Date.now();
@@ -217,35 +181,6 @@ export class DebugTimerStore {
 }
 
 
-export class LazyMap<K, V> extends Map<K, V> {
-    constructor(private defaultCreate: (key: K) => V) {
-        super();
-    }
-
-    /**
-     * @description Returns the value corrosponding to key
-     * @param key Key of the value
-     * @param create An optional `create` method to use instead of `defaultCreate` to create missing values
-     */
-    get(key: K, create?: (key: K) => V): V {
-        let v = super.get(key);
-        if (v !== undefined) {
-            return v;
-        }
-
-        v = this.handleMiss(key, create);
-        this.set(key, v);
-        return v;
-    }
-
-    private handleMiss(key: K, create?: ((key: K) => V)): V {
-        if (create) {
-            return create(key);
-        }
-        return this.defaultCreate(key);
-    }
-}
-
 let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
 export const alwaysChanging = () => refreshCounter = (refreshCounter + 1) % 1000;
 
@@ -297,12 +232,15 @@ const collator = new Intl.Collator(undefined, {
     usage: 'search',
     sensitivity: 'base',
 });
+export function compareIgnoreCase(a: string, b: string) {
+    return collator.compare(a, b);
+}
+
 type FoundProperty = { propertyName: string, path: string[], value: any }
 type PropertySearchOptions = { caseSensitive: boolean, returnFirstResult: boolean; }
 type PropertySearchResult = 'continue' | 'abort';
 type PropertySearchContext = { targetPropertyName: string, currentPath: string[], results: FoundProperty[], options: PropertySearchOptions }
 
-// todo: this only finds the first match, what if we want to find all?
 export function findElementDeep(obj: any, name: string, options: PropertySearchOptions): FoundProperty[] {
     const ctx: PropertySearchContext = {
         targetPropertyName: name,
@@ -322,7 +260,7 @@ function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchR
         // property match?
         const isMatch = ctx.options.caseSensitive
             ? key === ctx.targetPropertyName
-            : collator.compare(ctx.targetPropertyName, key) === 0;
+            : compareIgnoreCase(ctx.targetPropertyName, key) === 0;
 
         if (isMatch) {
             const clonedPath = Object.assign([], ctx.currentPath);
@@ -346,30 +284,148 @@ function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchR
 }
 
 
-export function getAllKeys(target: any): Set<string> {
-    const set = new Set<string>();
-    if (typeof target != 'object') return set;
 
-    getAllKeysRecursive(target, set);
-    return set;
+type PropertySearchExContext = {
+    isMatch: (propertyName: string, path: string[], value: any) => boolean,
+    currentPath: string[],
+    results: FoundProperty[],
+    returnFirstResult: boolean
 }
 
-function getAllKeysRecursive(target: any, keys: Set<string>) {
-    const isArray = Array.isArray(target);
-    for (let key in target) {
+export function findElementDeepEx(obj: any, isMatch: (propertyName: string, path: string[], value: any) => boolean, returnFirstMatch: boolean): FoundProperty[] {
+    const ctx: PropertySearchExContext = {
+        isMatch: isMatch,
+        currentPath: [],
+        results: [],
+        returnFirstResult: returnFirstMatch,
+    };
+    findElementDeepEx2(ctx, obj);
+    return ctx.results;
+}
 
-        // Add key name (but not array indices)
-        if (!isArray) {
-            keys.add(key);
+function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
+    for (let key in obj) {
+
+        const value = obj[key];
+
+        // property match?
+        const isMatch = ctx.isMatch(key, ctx.currentPath, value);
+
+        if (isMatch) {
+            const clonedPath = Object.assign([], ctx.currentPath);
+            ctx.results.push({ propertyName: key, path: clonedPath, value: value });
+
+            if (ctx.returnFirstResult) return 'abort';
         }
 
-        // Descend into properties / elements
-        const value = target[key];
-        if (typeof value == 'object') {
-            getAllKeysRecursive(value, keys);
+        // descend into object
+        if (typeof value === 'object') {
+            ctx.currentPath.push(key);
+            const childResult = findElementDeepEx2(ctx, value);
+            ctx.currentPath.pop();
+
+            if (childResult == 'abort')
+                return 'abort';
         }
     }
+
+    return 'continue';
 }
+
+
+
+
+
+
+export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
+    const ctx: GetAllKeysContext = {
+        currentFullPath: "",
+        currentPath: [],
+        results: [],
+        existingPaths: new Set<string>(),
+    };
+
+    // slice is needed because messages array is observable
+    for (const m of messages.slice()) {
+        const payload = m.value.payload;
+        getAllKeysRecursive(ctx, payload);
+
+        ctx.currentPath = [];
+        ctx.currentFullPath = "";
+    }
+
+    console.log('getAllMessageKeys', ctx.results);
+
+    return ctx.results;
+}
+
+
+interface Property {
+    /** property name */
+    propertyName: string;
+    /** path to the property (excluding 'prop' itself) */
+    path: string[];
+    /** path + prop */
+    fullPath: string;
+}
+type GetAllKeysContext = {
+    currentPath: string[], // complete, real path
+    currentFullPath: string, // string path, with array indices replaced by a start
+    existingPaths: Set<string>, // list of 'currentFullPath' entries, used to filter duplicates
+    results: Property[],
+}
+
+function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchResult {
+    const isArray = Array.isArray(obj);
+    let result = 'continue' as PropertySearchResult;
+
+    const pathToHere = ctx.currentFullPath;
+
+    for (let key in obj) {
+        const value = obj[key];
+
+        ctx.currentPath.push(key);
+        const currentFullPath = isArray
+            ? pathToHere + `[*]`
+            : pathToHere + `.${key}`;
+        ctx.currentFullPath = currentFullPath;
+
+        if (!isArray) { // add result, but only for object properties
+            const isNewPath = !ctx.existingPaths.has(currentFullPath);
+            if (isNewPath) { // and only if its a new path
+                ctx.existingPaths.add(currentFullPath);
+
+                const clonedPath = Object.assign([], ctx.currentPath);
+                ctx.results.push({
+                    propertyName: key,
+                    path: clonedPath, // all the keys
+                    fullPath: currentFullPath,
+                });
+            }
+        }
+
+
+        // descend into object
+        if (typeof value === 'object' && value != null) {
+
+            const childResult = getAllKeysRecursive(ctx, value);
+
+            if (childResult == 'abort')
+                result = 'abort';
+        }
+
+        ctx.currentPath.pop();
+        ctx.currentFullPath = currentFullPath;
+
+        if (result == 'abort') break;
+    }
+
+    ctx.currentFullPath = pathToHere;
+
+    return result;
+}
+
+
 
 const secToMs = 1000;
 const minToMs = 60 * secToMs;
@@ -456,6 +512,9 @@ export const prettyMilliseconds = function (n: number, options?: prettyMilliseco
             return "NaN";
         }
     }
+    else {
+        if (!isFinite(n)) return "N/A";
+    }
 
     // n is a finite number
     return prettyMillisecondsOriginal(n, options);
@@ -487,4 +546,150 @@ export function uniqueId4(): string {
 export function titleCase(str: string): string {
     if (!str) return str;
     return str[0].toUpperCase() + str.slice(1);
+}
+
+
+// Bind an observable object to the url query
+// - reads the current query parameters and sets them on the observable
+// - whenever a prop in the observable changes, it updates the url
+// You might want to use different names for the query parameters:
+// observable = { propA: 5 }
+// queryNames = { 'propA': 'x' }
+// query => ?x=5
+
+// export function bindObjectToUrl<
+//     T extends { [key: string]: (number | string | number[] | string[]) },
+// >(observable: T, queryNames: { [K in keyof T]?: string }): IReactionDisposer {
+export function bindObjectToUrl<
+    TObservable extends { [K in keyof TQueryNames]: (number | string | number[] | string[] | null | undefined) },
+    TQueryNames extends { [K in keyof TObservable]: string },
+    >(
+        observable: { [K in keyof TQueryNames]: any },
+        queryNames: TQueryNames,
+        shouldInclude?: (propName: keyof TObservable, obj: TObservable) => boolean
+    ): IReactionDisposer {
+
+    const query = queryString.parse(window.location.search);
+
+    // query -> observable
+    for (const propName of Object.keys(queryNames) as [keyof TObservable]) {
+        const queryName = queryNames[propName];
+
+        let value = query[queryName as string];
+        if (value == null) continue;
+
+        if (Array.isArray(value)) {
+            const allNum = value.all(v => Number.isFinite(Number(v)));
+            const ar = allNum ? value.map(v => Number(v)) : value;
+            observable[propName] = ar as any;
+        } else {
+            const v = Number.isFinite(Number(value)) ? Number(value) : value;
+            observable[propName] = v as any;
+        }
+    }
+
+    const disposer = autorun(() => {
+        editQuery(query => {
+            for (const propName of Object.keys(queryNames) as [keyof TObservable]) {
+
+                const queryName = queryNames[propName];
+                const newValue = observable[propName];
+
+                if (shouldInclude && !shouldInclude(propName, observable)) {
+                    query[queryName] = null;
+                    continue;
+                }
+
+                if (newValue == null)
+                    query[queryName] = null;
+                else if (typeof newValue === 'boolean')
+                    query[queryName] = String(Number(newValue));
+                else
+                    query[queryName] = String(newValue);
+
+                // console.log('updated', { propName: propName, queryName: queryName, newValue: newValue });
+            }
+        })
+    });
+
+    return disposer;
+}
+
+
+type NoticeType = 'info' | 'success' | 'error' | 'warning' | 'loading';
+export class Message {
+    private key: string;
+    private hideFunc: MessageType;
+
+    constructor(private text: string, private type: NoticeType = 'loading', private duration: number | null = 0) {
+        this.key = randomId();
+        this.update();
+    }
+
+    private update() {
+        this.hideFunc = message.open({
+            content: this.text,
+            key: this.key,
+            type: this.type,
+            duration: this.duration,
+        });
+    }
+
+    hide() {
+        this.hideFunc();
+    }
+
+    setLoading(text?: string) {
+        if (text) this.text = text;
+        this.type = 'loading';
+        this.duration = 0;
+        this.update();
+    }
+
+    setSuccess(text?: string) {
+        if (text) this.text = text;
+        this.type = 'success';
+        this.duration = 3;
+        this.update();
+    }
+
+    setError(text?: string) {
+        if (text) this.text = text;
+        this.type = 'error';
+        this.duration = 3;
+        this.update();
+    }
+}
+
+/**
+ * Scroll the main content region
+ */
+export function scrollToTop(): void {
+    const mainLayout = document.getElementById('mainLayout');
+    if (!mainLayout) return;
+
+    mainLayout.scrollTo({ behavior: 'smooth', left: 0, top: 0 });
+}
+
+/**
+ * Scroll the main content region to the target element (which is found by the given id)
+ */
+export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number): void {
+    const mainLayout = document.getElementById('mainLayout');
+    if (!mainLayout) return;
+    const target = document.getElementById(targetId);
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+    let top = 0;
+    switch (anchor) {
+        case 'start': top = rect.top; break;
+        case 'center': top = (rect.top + rect.bottom) / 2; break;
+        case 'end': top = rect.bottom; break;
+    }
+
+    mainLayout.scrollTo({
+        behavior: 'smooth',
+        top: target.getBoundingClientRect().top + mainLayout.scrollTop + (offset ?? 0)
+    });
 }

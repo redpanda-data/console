@@ -13,7 +13,7 @@ import { TopicConfiguration } from "./Tab.Config";
 import { TopicMessageView } from "./Tab.Messages";
 import { appGlobal } from "../../../state/appGlobal";
 import { TopicPartitions } from "./Tab.Partitions";
-import { TopicConfigEntry, TopicDetail, TopicAction } from "../../../state/restInterfaces";
+import { TopicConfigEntry, Topic, TopicAction } from "../../../state/restInterfaces";
 import Card from "../../misc/Card";
 import { TopicConsumers } from "./Tab.Consumers";
 import { simpleUniqueId } from "../../../utils/utils";
@@ -31,12 +31,12 @@ export type TopicTabId = typeof TopicTabIds[number];
 // A tab (specifying title+content) that disable/lock itself if the user doesn't have some required permissions.
 class TopicTab {
     constructor(
-        public readonly topicGetter: () => TopicDetail | undefined | null,
+        public readonly topicGetter: () => Topic | undefined | null,
         public id: TopicTabId,
         private requiredPermission: TopicAction,
         public titleText: string,
-        private contentFunc: (topic: TopicDetail) => React.ReactNode,
-        private disableHooks?: ((topic: TopicDetail) => React.ReactNode | undefined)[]
+        private contentFunc: (topic: Topic) => React.ReactNode,
+        private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
     ) { }
 
     @computed get isEnabled(): boolean {
@@ -111,9 +111,16 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         p.title = topicName;
         p.addBreadcrumb('Topics', '/topics');
         p.addBreadcrumb(topicName, '/topics/' + topicName);
+
+        // clear messages from different topic if we have some
+        if (api.messagesFor != '' && api.messagesFor != topicName) {
+            api.messages = [];
+            api.messagesFor = '';
+        }
     }
 
     refreshData(force: boolean) {
+        // there is no single endpoint to refresh a single topic
         api.refreshTopics(force);
 
         api.refreshTopicPermissions(this.props.topicName, force);
@@ -123,7 +130,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             api.refreshTopicConsumers(this.props.topicName, force);
 
         // partitions are always required to display message count in the statistics bar
-        api.refreshTopicPartitions(this.props.topicName, force);
+        api.refreshPartitionsForTopic(this.props.topicName, force);
 
         // configuration is always required for the statistics bar
         api.refreshTopicConfig(this.props.topicName, force);
@@ -134,7 +141,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
 
-    @computed get topic(): undefined | TopicDetail | null { // undefined = not yet known, null = known to be null
+    @computed get topic(): undefined | Topic | null { // undefined = not yet known, null = known to be null
         if (!api.topics) return undefined;
         const topic = api.topics.find(e => e.topicName == this.props.topicName);
         if (!topic) return null;
@@ -179,6 +186,11 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             location.hash = anchor;
             appGlobal.history.replace(location);
         }
+    }
+
+    componentWillUnmount() {
+        // leaving the topic details view, stop any pending message searches
+        api.stopMessageSearch();
     }
 
     render() {

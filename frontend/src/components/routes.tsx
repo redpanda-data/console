@@ -1,12 +1,11 @@
 
 import { Menu, Tooltip } from "antd";
 import { Link, Switch } from "react-router-dom";
-import React, { Component } from "react";
+import React from "react";
 import { Section } from "./misc/common";
 import { Route, Redirect } from "react-router";
 import { queryToObj } from "../utils/queryHelper";
 import { PageComponentType, PageProps } from "./pages/Page";
-import { uiSettings } from "../state/ui";
 import TopicList from "./pages/topics/Topic.List";
 import TopicDetails from "./pages/topics/Topic.Details";
 import { observer } from "mobx-react";
@@ -15,15 +14,17 @@ import GroupDetails from "./pages/consumers/Group.Details";
 import BrokerList from "./pages/brokers/Broker.List";
 import { AnimatePresence } from "framer-motion";
 import { uiState } from "../state/uiState";
-import { SettingsPage } from "./pages/Settings";
 import AdminPage from "./pages/admin/AdminPage";
 import { api } from "../state/backendApi";
-import { DebugTimerStore, toJson } from "../utils/utils";
-import Icon, { HddOutlined, ProfileOutlined, FunnelPlotOutlined, ToolOutlined, PartitionOutlined, UnorderedListOutlined, FileProtectOutlined } from '@ant-design/icons';
 import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
-import { observable } from "mobx";
+import { IsDev } from "../utils/env";
+import { AdjustmentsIcon, ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, PuzzleIcon, ShieldCheckIcon } from '@heroicons/react/outline'
+import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
+import { PackageDependentsIcon } from "@primer/octicons-react";
+import { Feature, FeatureEntry, Features, isSupported } from "../state/supportedFeatures";
+import { UserPermissions } from "../state/restInterfaces";
 
 
 //
@@ -43,18 +44,15 @@ export interface PageDefinition<TRouteParams = {}> {
     routeJsx: JSX.Element
     icon?: JSX.Element
     menuItemKey?: string, // set by 'CreateRouteMenuItems'
-    showCallback?: () => MenuItemState,
+    visibilityCheck?: () => MenuItemState,
 }
 export interface SeparatorEntry { isSeparator: boolean; }
 
 export function isPageDefinition(x: IRouteEntry): x is PageDefinition<any> { return (x as PageDefinition<any>).path !== undefined; }
 export function isSeparator(x: IRouteEntry): x is SeparatorEntry { return (x as SeparatorEntry).isSeparator !== undefined; }
 
-const MenuGroupTitle = observer((p: { title: string }) =>
-    <div className={uiSettings.sideBarOpen ? '' : 'menu-divider-group-title'}>{p.title}</div>
-);
 
-export const RouteMenu = observer((p: {}) =>
+export const RouteMenu = observer(() =>
     <Menu mode="inline"
         theme='dark'
         selectedKeys={uiState.selectedMenuKeys}
@@ -74,10 +72,14 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
                 return null; // only root-routes (no param) can be in menu
 
             let isEnabled = true;
-            if (entry.showCallback) {
-                const visibility = entry.showCallback();
+            let disabledText: JSX.Element = <></>;
+            if (entry.visibilityCheck) {
+                const visibility = entry.visibilityCheck();
                 if (!visibility.visible) return null;
-                isEnabled = visibility.enabled;
+
+                isEnabled = visibility.disabledReasons.length == 0;
+                if (!isEnabled)
+                    disabledText = disabledReasonText[visibility.disabledReasons[0]];
             }
             const isDisabled = !isEnabled;
 
@@ -85,7 +87,7 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
             return <Menu.Item key={entry.path} disabled={isDisabled}>
                 <Tooltip
                     overlayClassName='menu-permission-tooltip'
-                    overlay={<span>You don't have premissions<br />to view this page</span>}
+                    overlay={disabledText}
                     align={{ points: ['cc', 'cc'], offset: [0, 0] }}
                     trigger={isDisabled ? 'hover' : 'none'}
                     mouseEnterDelay={0.05}
@@ -161,9 +163,21 @@ export const RouteView = (() =>
     </AnimatePresence>
 )
 
+enum DisabledReasons {
+    "notSupported", // kafka cluster version too low
+    "noPermission", // user doesn't have permissions to use the feature
+}
+
+const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
+    [DisabledReasons.noPermission]:
+        <span>You don't have premissions<br />to view this page</span>,
+    [DisabledReasons.notSupported]:
+        <span>The Kafka Cluster does not<br />support this feature</span>,
+} as const;
+
 interface MenuItemState {
     visible: boolean;
-    enabled: boolean;
+    disabledReasons: DisabledReasons[];
 }
 
 function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRouteParams>, title: string, icon?: JSX.Element, exact: boolean = true, showCallback?: () => MenuItemState): PageDefinition<TRouteParams> {
@@ -174,7 +188,7 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
         pageType: page,
         routeJsx: (null as unknown as JSX.Element), // will be set below
         icon,
-        showCallback: showCallback,
+        visibilityCheck: showCallback,
     }
 
     // todo: verify that path and route params match
@@ -200,29 +214,73 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
     return route;
 }
 
+function routeVisibility(
+    visible: boolean | (() => boolean),
+    requiredFeatures?: FeatureEntry[],
+    requiredPermissions?: UserPermissions[]): () => MenuItemState {
+    return () => {
+        const v = typeof visible === 'boolean'
+            ? visible
+            : visible();
+
+        const disabledReasons: DisabledReasons[] = [];
+        if (requiredFeatures)
+            for (const f of requiredFeatures) {
+                if (!isSupported(f)) {
+                    disabledReasons.push(DisabledReasons.notSupported);
+                    break;
+                }
+            }
+
+        if (requiredPermissions && api.userData)
+            for (const p of requiredPermissions) {
+                const hasPermission = api.userData[p];
+                if (!hasPermission) {
+                    disabledReasons.push(DisabledReasons.noPermission);
+                    break;
+                }
+            }
+
+        return {
+            visible: v,
+            disabledReasons: disabledReasons
+        }
+    }
+}
+
 //
 // Route Definitions
 // If a route has one or more parameters it will not be shown in the main menu (obviously, since the parameter would have to be known!)
 //
 export const APP_ROUTES: IRouteEntry[] = [
 
-    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <HddOutlined />),
+    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span className='menuIcon anticon'><ChipIcon /></span>),
 
-    MakeRoute<{}>('/topics', TopicList, 'Topics', <ProfileOutlined />),
-    MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics', <ProfileOutlined />),
+    MakeRoute<{}>('/topics', TopicList, 'Topics', <span className='menuIcon anticon'><CollectionIcon /></span>),
+    MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
-    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <FunnelPlotOutlined />),
-    MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups', <FunnelPlotOutlined />),
+    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span className='menuIcon anticon'><FilterIcon /></span>, undefined,
+        routeVisibility(true, [Feature.ConsumerGroups])
+    ),
+    MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-    MakeRoute<{}>('/acls', AclList, 'ACLs', <FileProtectOutlined />, true, () => ({ visible: true, enabled: api.userData?.canListAcls ?? true })),
+    MakeRoute<{}>('/acls', AclList, 'ACLs', <span className='menuIcon anticon'><ShieldCheckIcon /></span>, true,
+        routeVisibility(true, [], ['canListAcls'])
+    ),
 
-    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <PartitionOutlined />),
+    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span className='menuIcon anticon'><CubeTransparentIcon /></span>),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', <ToolOutlined />, false, () => ({ visible: api.userData?.canManageKowl ?? false, enabled: true })),
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className='menuIcon anticon'><AdjustmentsIcon /></span>, false,
+        routeVisibility(true,
+            [Feature.GetReassignments, Feature.PatchReassignments],
+            ['canPatchConfigs', 'canReassignPartitions']
+        )
+    ),
 
-    //MakeRoute<{}>('/settings', SettingsPage, 'Settings', 'tool'), // Tool Settings, UserSettings, Access, ...
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', <span className='menuIcon anticon'><CogIcon /></span>, false,
+        routeVisibility(() => api.userData?.canManageKowl ?? false)
+    ),
 
-    //MakeRoute<{}>('/users', UrlTestPage, 'Users', 'user'),
-    //MakeRoute<{}>('/license', UrlTestPage, 'License', 'copyright'),
-];
+
+].filterNull();

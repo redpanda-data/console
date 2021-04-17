@@ -1,13 +1,15 @@
 /*eslint block-scoped-var: "error"*/
 
 import {
-    GetTopicsResponse, TopicDetail, GetConsumerGroupsResponse, GroupDescription, UserData,
+    GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, GetConsumerGroupResponse, TopicDocumentation, TopicDescription, ApiError
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse
 } from "./restInterfaces";
-import { observable, transaction } from "mobx";
+import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { toJson, LazyMap, TimeSince, clone } from "../utils/utils";
+import { TimeSince } from "../utils/utils";
+import { LazyMap } from "../utils/LazyMap";
+import { toJson, clone } from "../utils/jsonUtils";
 import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";
@@ -36,23 +38,13 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
         return null;
     }
 
-    try {
-        for (const [k, v] of res.headers) {
-            if (k.toLowerCase() == 'app-version') {
-                const serverVersion = JSON.parse(v) as ServerVersionInfo;
-                if (typeof serverVersion === 'object')
-                    if (uiState.serverVersion == null || (serverVersion.ts != uiState.serverVersion.ts))
-                        uiState.serverVersion = serverVersion;
-                break;
-            }
-        }
-    } catch { } // Catch malformed json (old versions where info is not sent as json yet)
+    processVersionInfo(res);
 
     if (!res.ok) {
         const text = await res.text();
         try {
             const errObj = JSON.parse(text) as ApiError;
-            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message != "undefined") {
+            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
                 // if the shape matches, reformat it a bit
                 throw new Error(`${errObj.message} (${res.status} - ${res.statusText})`);
             }
@@ -91,6 +83,20 @@ async function handle401(res: Response) {
 
     // Redirect to login
     appGlobal.history.push('/login');
+}
+
+function processVersionInfo(res: Response) {
+    try {
+        for (const [k, v] of res.headers) {
+            if (k.toLowerCase() == 'app-version') {
+                const serverVersion = JSON.parse(v) as ServerVersionInfo;
+                if (typeof serverVersion === 'object')
+                    if (uiState.serverVersion == null || (serverVersion.ts != uiState.serverVersion.ts))
+                        uiState.serverVersion = serverVersion;
+                break;
+            }
+        }
+    } catch { } // Catch malformed json (old versions where info is not sent as json yet)
 }
 
 const cache = new LazyMap<string, CacheEntry>(u => new CacheEntry(u));
@@ -155,31 +161,18 @@ function cachedApiRequest<T>(url: string, force: boolean = false): Promise<T> {
     const entry = cache.get(url);
 
     if (entry.isPending) {
-        // console.log("debug: request already pending", entry);
+        // return already running request
         return entry.lastPromise;
     }
 
     if (entry.resultAge > REST_CACHE_DURATION_SEC || force) {
-        // Start or refresh request
-        // console.log("debug: refreshing...", entry);
-
-        const promise = rest<T>(url); //.catch(r => { throw new Error(url) });
+        // expired or force refresh
+        const promise = rest<T>(url);
         entry.setPromise(promise);
-
-    } else {
-        // console.log("debug: cached request still valid??", entry);
     }
 
-    // Not ready yet, don't update, return last result
+    // Return last result (can be still pending, or completed but not yet expired)
     return entry.lastPromise;
-}
-
-async function getSchemaOverview(force?: boolean) {
-    return cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>
-}
-
-async function getSchemaDetails(subjectName: string, version: number, force?: boolean) {
-    return cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
 }
 
 
@@ -191,25 +184,30 @@ let currentWS: WebSocket | null = null;
 const apiStore = {
 
     // Data
+    endpointCompatibility: null as (EndpointCompatibility | null),
+
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
-    clusterConfig: null as (ClusterConfig | null),
-    adminInfo: null as (AdminInfo | null),
+
+    clusterConfig: null as (ClusterConfig | null | undefined),
+    adminInfo: undefined as (AdminInfo | undefined | null),
 
     schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
     schemaOverviewIsConfigured: undefined as boolean | undefined,
     schemaDetails: null as (SchemaDetails | null),
 
-    topics: null as (TopicDetail[] | null),
+    topics: null as (Topic[] | null),
     topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
     topicDocumentation: new Map<string, TopicDocumentation>(),
     topicPermissions: new Map<string, TopicPermissions | null>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     topicConsumers: new Map<string, TopicConsumer[]>(),
 
-    ACLs: undefined as AclResource[] | undefined | null,
+    ACLs: undefined as AclResponse | undefined | null,
 
     consumerGroups: new Map<string, GroupDescription>(),
+
+    partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -224,7 +222,6 @@ const apiStore = {
 
     // Fetch errors
     errors: [] as any[],
-
 
     messageSearchPhase: null as string | null,
     messagesFor: '', // for what topic?
@@ -317,7 +314,7 @@ const apiStore = {
                         }
                     }
 
-                    // debugModifyHeaders(m);
+                    m.keyJson = JSON.stringify(m.key.payload);
 
                     m.valueJson = JSON.stringify(m.value.payload);
 
@@ -378,9 +375,10 @@ const apiStore = {
             }, addError);
     },
 
-    refreshTopicConfig(topicName: string, force?: boolean) {
-        cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
+    async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
+        const promise = cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
             .then(v => this.topicConfig.set(topicName, v?.topicDescription ?? null), addError); // 403 -> null
+        return promise as Promise<void>;
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
@@ -398,9 +396,106 @@ const apiStore = {
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
-    refreshTopicPartitions(topicName: string, force?: boolean) {
+    refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
+        if (Array.isArray(topics))
+            // sort in order to maximize cache hits (todo: track/cache each topic individually instead)
+            topics = topics.sort().map(t => encodeURIComponent(t));
+
+        const url = topics == 'all'
+            ? `./api/operations/topic-details`
+            : `./api/operations/topic-details?topicNames=${topics.joinStr(",")}`;
+
+        return cachedApiRequest<GetAllPartitionsResponse | null>(url, force)
+            .then(response => {
+                if (!response?.topics) return;
+                transaction(() => {
+
+                    const errors: {
+                        topicName: string,
+                        partitionErrors: { partitionId: number, error: string }[],
+                        waterMarkErrors: { partitionId: number, error: string }[],
+                    }[] = [];
+
+                    for (const t of response.topics) {
+                        if (t.error != null) {
+                            console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
+                            continue;
+                        }
+
+                        // If any partition has any errors, don't set the result for that topic
+                        const partitionErrors = [];
+                        const waterMarkErrors = [];
+                        for (const p of t.partitions) {
+                            // topicName
+                            p.topicName = t.topicName;
+
+                            let partitionHasError = false;
+                            if (p.partitionError) {
+                                partitionErrors.push({ partitionId: p.id, error: p.partitionError });
+                                partitionHasError = true;
+                            } if (p.waterMarksError) {
+                                waterMarkErrors.push({ partitionId: p.id, error: p.waterMarksError });
+                                partitionHasError = true;
+                            }
+                            if (partitionHasError) continue;
+
+                            // Add some local/cached properties to make working with the data easier
+                            const validLogDirs = p.partitionLogDirs.filter(e => !e.error && e.size >= 0);
+                            const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
+                            p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+                        }
+
+                        if (partitionErrors.length == 0 && waterMarkErrors.length == 0) {
+                            // Set partition
+                            this.topicPartitions.set(t.topicName, t.partitions);
+                        } else {
+                            errors.push({
+                                topicName: t.topicName,
+                                partitionErrors: partitionErrors,
+                                waterMarkErrors: waterMarkErrors,
+                            })
+                        }
+                    }
+
+                    if (errors.length > 0)
+                        console.error('refreshAllTopicPartitions: response had errors', errors);
+                });
+            }, addError);
+    },
+
+    refreshPartitionsForTopic(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
-            .then(x => this.topicPartitions.set(topicName, x === null ? null : (x?.partitions ?? null)), addError);
+            .then(response => {
+                if (response?.partitions) {
+                    let partitionErrors = 0, waterMarkErrors = 0;
+
+                    // Add some local/cached properties to make working with the data easier
+                    for (const p of response.partitions) {
+                        // topicName
+                        p.topicName = topicName;
+
+                        if (p.partitionError) partitionErrors++;
+                        if (p.waterMarksError) waterMarkErrors++;
+                        if (partitionErrors || waterMarkErrors) continue;
+
+                        // replicaSize
+                        const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                        const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
+                        p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+                    }
+
+                    if (partitionErrors == 0 && waterMarkErrors == 0) {
+                        // Set partitions
+                        this.topicPartitions.set(topicName, response.partitions);
+                    } else {
+                        console.error(`refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors}, w=${waterMarkErrors})`)
+                    }
+
+                } else {
+                    // Set null to indicate that we're not allowed to see the partitions
+                    this.topicPartitions.set(topicName, null);
+                }
+            }, addError);
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
@@ -411,12 +506,24 @@ const apiStore = {
     refreshAcls(request: AclRequest, force?: boolean) {
         const query = aclRequestToQuery(request);
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
-            .then(v => this.ACLs = v?.aclResources ?? null, addError);
+            .then(v => this.ACLs = v ?? null, addError);
+    },
+
+    refreshSupportedEndpoints(force?: boolean) {
+        cachedApiRequest<EndpointCompatibilityResponse>(`./api/kowl/endpoints`, force)
+            .then(v => this.endpointCompatibility = v.endpointCompatibility, addError);
     },
 
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
-            .then(v => this.clusterInfo = v.clusterInfo, addError);
+            .then(v => {
+
+                // don't assign if the value didn't change
+                // we'd re-trigger all observers!
+                if (comparer.structural(this.clusterInfo, v.clusterInfo)) return;
+
+                this.clusterInfo = v.clusterInfo;
+            }, addError);
     },
 
     refreshClusterConfig(force?: boolean) {
@@ -445,8 +552,13 @@ const apiStore = {
     },
 
     refreshAdminInfo(force?: boolean) {
-        cachedApiRequest<AdminInfo>(`./api/admin`, force)
+        cachedApiRequest<AdminInfo | null>(`./api/admin`, force)
             .then(info => {
+                if (info == null) {
+                    this.adminInfo = null;
+                    return;
+                }
+
                 // normalize responses (missing arrays, or arrays with an empty string)
                 // todo: not needed anymore, responses are always correct now
                 for (const role of info.roles)
@@ -480,22 +592,222 @@ const apiStore = {
     },
 
     refreshSchemaOverview(force?: boolean) {
-        getSchemaOverview(force)
+        const rq = cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>;
+        return rq
             .then(({ schemaOverview, isConfigured }) => [this.schemaOverview, this.schemaOverviewIsConfigured] = [schemaOverview, isConfigured])
-            .catch(addError)
+            .catch(addError);
     },
 
-    refreshSchemaDetails(subjectName: string, version: number, force?: boolean) {
-        getSchemaDetails(subjectName, version, force)
+    refreshSchemaDetails(subjectName: string, version: number | 'latest', force?: boolean) {
+        if (version == null) version = 'latest';
+
+        const rq = cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
+
+        return rq
             .then(({ schemaDetails }) => (this.schemaDetails = schemaDetails))
-            .catch(addError)
+            .catch(addError);
+    },
+
+    refreshPartitionReassignments(force?: boolean): Promise<void> {
+        return cachedApiRequest<PartitionReassignmentsResponse | null>('./api/operations/reassign-partitions', force)
+            .then(v => {
+                if (v === null)
+                    this.partitionReassignments = null;
+                else
+                    this.partitionReassignments = v.topics;
+            }, addError);
+    },
+
+    async startPartitionReassignment(request: PartitionReassignmentRequest): Promise<AlterPartitionReassignmentsResponse> {
+        const response = await fetch('./api/operations/reassign-partitions', {
+            method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as AlterPartitionReassignmentsResponse);
+        return data;
+    },
+
+    async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number): Promise<PatchConfigsResponse> {
+
+        maxBytesPerSecond = Math.ceil(maxBytesPerSecond);
+
+        const configRequest: PatchConfigsRequest = { resources: [] };
+
+        for (const b of brokerIds) {
+            configRequest.resources.push({
+                resourceType: ConfigResourceType.Broker,
+                resourceName: String(b),
+                configs: [
+                    { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                    { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Set, value: String(maxBytesPerSecond) },
+                ]
+            });
+        }
+
+        return await this.changeConfig(configRequest);
+    },
+
+    async setThrottledReplicas(
+        topicReplicas: {
+            topicName: string,
+            leaderReplicas: { brokerId: number, partitionId: number }[],
+            followerReplicas: { brokerId: number, partitionId: number }[]
+        }[]): Promise<PatchConfigsResponse> {
+
+        const configRequest: PatchConfigsRequest = { resources: [] };
+
+        for (const t of topicReplicas) {
+            const res: ResourceConfig = { // Set which topics to throttle
+                resourceType: ConfigResourceType.Topic,
+                resourceName: t.topicName,
+                configs: [],
+            };
+
+            const leaderReplicas = t.leaderReplicas.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
+            res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: leaderReplicas });
+            const followerReplicas = t.followerReplicas.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
+            res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: followerReplicas });
+
+            // individual request for each topic
+            configRequest.resources.push(res);
+        }
+
+        return await this.changeConfig(configRequest);
+    },
+
+    async resetThrottledReplicas(topicNames: string[]): Promise<PatchConfigsResponse> {
+
+        const configRequest: PatchConfigsRequest = { resources: [] };
+
+        // reset throttled replicas for those topics
+        for (const t of topicNames) {
+            configRequest.resources.push({
+                resourceType: ConfigResourceType.Topic,
+                resourceName: t,
+                configs: [
+                    { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
+                    { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete }
+                ],
+            });
+        }
+
+        return await this.changeConfig(configRequest);
+    },
+
+    async resetReplicationThrottleRate(brokerIds: number[]): Promise<PatchConfigsResponse> {
+
+        const configRequest: PatchConfigsRequest = { resources: [] };
+
+        for (const b of brokerIds) {
+            configRequest.resources.push({
+                resourceType: ConfigResourceType.Broker,
+                resourceName: String(b),
+                configs: [
+                    { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                    { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+                ]
+            });
+        }
+
+        return await this.changeConfig(configRequest);
+    },
+
+    async changeConfig(request: PatchConfigsRequest): Promise<PatchConfigsResponse> {
+        const response = await fetch('./api/operations/configs', {
+            method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as PatchConfigsResponse);
+        return data;
     }
 }
+
+
+export const brokerMap = computed(() => {
+    const brokers = api.clusterInfo?.brokers;
+    if (brokers == null) return null;
+
+    const map = new Map<number, Broker>();
+    for (const b of brokers)
+        map.set(b.brokerId, b);
+
+    return map;
+}, { name: 'brokerMap', equals: comparer.structural });
+
 
 export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);
     const query = filters.map(x => `${x.key}=${x.value}`).join('&');
     return query;
+}
+
+export async function partialTopicConfigs(configKeys: string[], topics?: string[]): Promise<PartialTopicConfigsResponse> {
+    const keys = configKeys.map(k => encodeURIComponent(k)).join(',');
+    const topicNames = topics?.map(t => encodeURIComponent(t)).join(',');
+    const query = topicNames
+        ? `topicNames=${topicNames}&configKeys=${keys}`
+        : `configKeys=${keys}`;
+
+    const response = await fetch('./api/topics-configs?' + query);
+
+    if (!response.ok) {
+        const text = await response.text();
+        try {
+            const errObj = JSON.parse(text) as ApiError;
+            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                // if the shape matches, reformat it a bit
+                throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+            }
+        }
+        catch { } // not json
+
+        // use generic error text
+        throw new Error(`${text} (${response.status} - ${response.statusText})`);
+    }
+
+    const str = await response.text();
+    const data = (JSON.parse(str) as PartialTopicConfigsResponse);
+    return data;
 }
 
 export interface MessageSearchRequest {

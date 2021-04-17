@@ -1,5 +1,5 @@
 import React from "react";
-import { TopicConfigEntry, TopicDetail } from "../../../state/restInterfaces";
+import { TopicConfigEntry, Topic } from "../../../state/restInterfaces";
 import { message, Row, Statistic } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
@@ -9,16 +9,18 @@ import { FavoritePopover, FormatConfigValue } from "./Tab.Config";
 import { uiSettings } from "../../../state/ui";
 import { prettyBytesOrNA } from "../../../utils/utils";
 
-const statsSeparator = <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
+const StatsSeparator = () => <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
 
 
 // todo: rename QuickInfo
-export const TopicQuickInfoStatistic = observer((p: { topic: TopicDetail }) => {
+export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
     const topic = p.topic;
     const statsAr = [] as JSX.Element[];
 
     // Size
-    const size = <Statistic key='size' title='Size' value={topic ? prettyBytesOrNA(topic.logDirSize) : "..."} />
+    const size = <Statistic key='size' title='Size' value={topic
+        ? prettyBytesOrNA(topic.logDirSummary.totalSizeBytes)
+        : "..."} />
     statsAr.push(size);
 
     // Messages
@@ -40,7 +42,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: TopicDetail }) => {
             );
 
         if (configStats.length > 0)
-            statsAr.push(statsSeparator);
+            statsAr.push(<StatsSeparator key={'separator'} />);
 
         statsAr.push(...configStats);
     }

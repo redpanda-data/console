@@ -1,15 +1,16 @@
 import React, { CSSProperties } from "react";
 import { observer } from "mobx-react";
 import { observable } from "mobx";
-import { toJson } from "../../utils/utils";
-import { Button, Layout, message, Space } from "antd";
+import { toJson } from "../../utils/jsonUtils";
+import { Button, Layout, message, Space, Skeleton } from "antd";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
 import { envVarDebugAr } from "../../utils/env";
 import { NoClipboardPopover } from "./NoClipboardPopover";
 import { isClipboardAvailable } from "../../utils/featureDetection";
-import { ObjToKv } from "../../utils/tsxUtils";
+import { DefaultSkeleton, ObjToKv } from "../../utils/tsxUtils";
+import StackTrace from "stacktrace-js";
 
-const { Content, Footer, Sider, Header } = Layout;
+const { Content } = Layout;
 
 // background       rgb(35, 35, 35)
 // div              rgba(206, 17, 38, 0.1)
@@ -31,25 +32,22 @@ const valueStyle: CSSProperties = {
 
 interface InfoItem {
     name: string;
-    value: string;
+    value: string | (() => any);
 }
 
 @observer
 export class ErrorBoundary extends React.Component {
     @observable hasError = false;
-    error: Error | null;
-    errorInfo: object | null;
+    error: Error | null = null;
+    errorInfo: object | null = null;
+    @observable decodingDone: boolean = false;
 
-    infoItems: InfoItem[] = [];
+    @observable infoItems: InfoItem[] = [];
 
     componentDidCatch(error: Error | null, errorInfo: object) {
         this.error = error;
         this.errorInfo = errorInfo;
-
-        console.log("ErrorBoundary: 'error'")
-        console.dir(error)
-        console.log("ErrorBoundary: 'errorInfo'")
-        console.dir(errorInfo)
+        this.decodingDone = false;
 
         this.infoItems = [];
 
@@ -65,11 +63,36 @@ export class ErrorBoundary extends React.Component {
 
         // Call Stack
         if (this.error?.stack) {
+            const dataHolder = observable({
+                value: null as null | any,
+            });
+
+            this.infoItems.push({
+                name: 'Stack (Decoded)', value: () => {
+                    if (dataHolder.value == null) return <>
+                        <div style={{ fontSize: '2rem' }}>Decoding stack trace, please wait...</div>
+                    </>;
+                    return dataHolder.value;
+                }
+            });
+
+            StackTrace.fromError(this.error).then(frames => {
+                // Decode Success
+                dataHolder.value = frames.join('\n');
+                this.decodingDone = true;
+            }).catch(err => {
+                // Decode Error
+                dataHolder.value = "Unable to decode stacktrace\n" + String(err);
+                this.decodingDone = true;
+            });
+
+
+            // Normal stack trace
             let s = this.error.stack;
             if (s.toLowerCase().startsWith("error:")) s = s.substr(6).trim(); // todo removePrefix()
             if (this.error.message && s.startsWith(this.error.message))
                 s = s.substr(this.error.message.length).trimStart();
-            this.infoItems.push({ name: "Stack", value: s });
+            this.infoItems.push({ name: "Stack (Raw)", value: s });
         }
 
         // Component Stack
@@ -111,20 +134,16 @@ export class ErrorBoundary extends React.Component {
             this.infoItems.push({ name: "Location", value: "(error printing location, please include the url in your bug report)" });
         }
 
-
-        // Remove indentation from stack traces
-        for (const e of this.infoItems)
-            e.value = e.value.replace(/\n\s*/g, "\n").trim();
-
-
         this.hasError = true;
     }
 
     copyError() {
         let data = "";
 
-        for (const e of this.infoItems)
-            data += `${e.name}:\n${e.value}\n\n`;
+        for (const e of this.infoItems) {
+            const str = getStringFromInfo(e);
+            data += `${e.name}:\n${str}\n\n`;
+        }
 
         navigator.clipboard.writeText(data);
         message.success('All info copied to clipboard!', 5);
@@ -134,6 +153,7 @@ export class ErrorBoundary extends React.Component {
         this.error = null;
         this.errorInfo = null;
         this.hasError = false;
+        this.decodingDone = false;
     }
 
     render() {
@@ -148,7 +168,10 @@ export class ErrorBoundary extends React.Component {
                         Dismiss
                     </Button>
                     <NoClipboardPopover>
-                        <Button icon={<CopyOutlined />} ghost type='primary' size='large' disabled={!isClipboardAvailable} onClick={() => this.copyError()}>
+                        <Button type='primary' size='large' ghost icon={<CopyOutlined />}
+                            disabled={!isClipboardAvailable || !this.decodingDone}
+                            loading={!this.decodingDone}
+                            onClick={() => this.copyError()}>
                             Copy Info
                         </Button>
                     </NoClipboardPopover>
@@ -156,14 +179,51 @@ export class ErrorBoundary extends React.Component {
             </div>
             <Content>
                 <Space direction='vertical' size={30} style={{ width: '100%' }}>
-                    {this.infoItems.map(e => <InfoItem key={e.name} data={e} />)}
+                    {this.infoItems.map(e => <InfoItemDisplay key={e.name} data={e} />)}
                 </Space>
             </Content>
         </Layout>
     }
 }
 
-const InfoItem = (p: { data: InfoItem }) => <div>
-    <h2>{p.data.name}</h2>
-    <pre style={valueStyle}>{p.data.value}</pre>
-</div>
+function getStringFromInfo(info: InfoItem) {
+    if (!info) return "";
+
+    if (typeof info.value === 'string') return info.value;
+    try {
+        const r = info.value();
+        return String(r);
+    } catch (err) {
+        return "Error calling infoItem func: " + err;
+    }
+}
+
+@observer
+export class InfoItemDisplay extends React.Component<{ data: InfoItem }> {
+    render() {
+        const title = this.props.data.name;
+        const value = this.props.data.value;
+        let content: any;
+        if (typeof value === 'string') {
+            content = value;
+        }
+        else {
+            try {
+                content = value();
+            } catch (err) {
+                content = "error rendering: " + String(err);
+            }
+        }
+
+        if (typeof content === 'string') {
+            content = content.replace(/\n\s*/g, "\n").trim();
+        }
+
+        return (
+            <div>
+                <h2>{title}</h2>
+                <pre style={valueStyle}>{content}</pre>
+            </div>
+        )
+    }
+}

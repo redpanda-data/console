@@ -1,7 +1,6 @@
 package owl
 
 import (
-	"errors"
 	"fmt"
 	"github.com/twmb/franz-go/pkg/kerr"
 )
@@ -16,23 +15,15 @@ func (e *KafkaError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Message, e.Description)
 }
 
-func newKafkaError(err error) *KafkaError {
-	if err == nil {
+func newKafkaError(errCode int16) *KafkaError {
+	typedError := kerr.TypedErrorForCode(errCode)
+	if typedError == nil {
 		return nil
 	}
 
-	var kErr *kerr.Error
-	if errors.As(err, &kErr) {
-		return &KafkaError{
-			Code:        kErr.Code,
-			Message:     kErr.Message,
-			Description: kErr.Description,
-		}
-	}
-
 	return &KafkaError{
-		Code:        -99,
-		Message:     err.Error(),
-		Description: "No known error that could be parsed as Kafka Error",
+		Code:        typedError.Code,
+		Message:     typedError.Message,
+		Description: typedError.Description,
 	}
 }
