@@ -141,8 +141,20 @@ export interface KafkaError {
 export interface TopicConfigEntry {
     name: string,
     value: string,
+    source: string,
+    type: string,
     isDefault: boolean,
+    isSensitive: boolean,
+    documentation: string,
+    synonyms: TopicConfigEntrySynonym[]
 }
+
+interface TopicConfigEntrySynonym {
+    name: string,
+    value: string,
+    source: string
+}
+
 export interface TopicDescription {
     topicName: string
     configEntries: TopicConfigEntry[]
