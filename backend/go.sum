@@ -452,6 +452,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/twmb/franz-go v0.6.10 h1:KBQhoUyxgUF/XYOwi6dKBRhwcjtLcU/FRvzO5z/kxWg=
 github.com/twmb/franz-go v0.6.10/go.mod h1:Ghd7UKXqxRgImB5IdZBu9CiGzhuWXndIzyN8yoHTgi8=
+github.com/twmb/franz-go v0.6.11-0.20210416185632-3edbe09f4115 h1:P8i9CYeHvXA6QIdbnMiDLde/nVqd+Fd8hVKNgXAQqMM=
+github.com/twmb/franz-go v0.6.11-0.20210416185632-3edbe09f4115/go.mod h1:Ghd7UKXqxRgImB5IdZBu9CiGzhuWXndIzyN8yoHTgi8=
 github.com/twmb/go-rbtree v1.0.0 h1:KxN7dXJ8XaZ4cvmHV1qqXTshxX3EBvX/toG5+UR49Mg=
 github.com/twmb/go-rbtree v1.0.0/go.mod h1:UlIAI8gu3KRPkXSobZnmJfVwCJgEhD/liWzT5ppzIyc=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
