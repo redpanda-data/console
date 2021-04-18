@@ -5,10 +5,13 @@ import (
 	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
+	"time"
 )
 
 // Service provides functionality to serve files from a git repository. The contents are stored in memory.
@@ -42,13 +45,61 @@ func (c *Service) Start() error {
 		return nil
 	}
 
+	// Initially do it once to ensure there's no error. Afterwards we'll do that periodically and only print errors
+	// instead of propagating them back.
+	loadedFiles, err := c.loadFilesIntoCache()
+	if err != nil {
+		return err
+	}
+	c.logger.Info("successfully loaded all files from filesystem into cache", zap.Int("loaded_files", loadedFiles))
+
+	go func(refreshInterval time.Duration) {
+		// Stop sync when we receive a signal
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+		ticker := time.NewTicker(refreshInterval)
+		for {
+			select {
+			case <-quit:
+				c.logger.Info("stopped sync", zap.String("reason", "received signal"))
+				return
+			case <-ticker.C:
+				loadedFiles, err := c.loadFilesIntoCache()
+				if err != nil {
+					c.logger.Warn("failed to read files in file provider", zap.Error(err))
+					break
+				}
+
+				if c.OnFilesUpdatedHook != nil {
+					c.OnFilesUpdatedHook()
+				}
+				c.logger.Debug("successfully loaded all files from filesystem into cache", zap.Int("loaded_files", loadedFiles))
+			}
+		}
+	}(c.Cfg.RefreshInterval)
+
+	return nil
+}
+
+func (c *Service) loadFilesIntoCache() (int, error) {
+	filesByName, err := c.readFiles()
+	if err != nil {
+		return 0, fmt.Errorf("failed to read files in file provider: %w", err)
+	}
+
+	c.setFileContents(filesByName)
+	return len(filesByName), nil
+}
+
+func (c *Service) readFiles() (map[string]File, error) {
 	filesByName := make(map[string]File, 0)
 	foundFiles := 0
 	loadedFiles := 0
 	for _, p := range c.Cfg.Paths {
 		absPath, err := filepath.Abs(p)
 		if err != nil {
-			return fmt.Errorf("failed to get abs path for given path '%v': %w", p, err)
+			return nil, fmt.Errorf("failed to get abs path for given path '%v': %w", p, err)
 		}
 
 		err = filepath.Walk(absPath, func(currentPath string, info os.FileInfo, err error) error {
@@ -92,14 +143,13 @@ func (c *Service) Start() error {
 
 			return nil
 		})
+
 		if err != nil {
-			return fmt.Errorf("failed to load files from file system: %w", err)
+			return nil, fmt.Errorf("failed to load files from file system: %w", err)
 		}
 	}
-	c.setFileContents(filesByName)
-	c.logger.Info("loaded all files from filesystem", zap.Int("found_files", foundFiles), zap.Int("loaded_files", loadedFiles))
 
-	return nil
+	return filesByName, nil
 }
 
 // setFileContents saves file contents into memory, so that they are accessible at any time.

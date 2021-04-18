@@ -83,6 +83,7 @@ func (s *Service) Start() error {
 		if err != nil {
 			return fmt.Errorf("failed to start filesystem service: %w", err)
 		}
+		s.fsSvc.OnFilesUpdatedHook = s.tryCreateProtoRegistry
 	}
 
 	err := s.createProtoRegistry()

@@ -1,5 +1,10 @@
 package filesystem
 
+import (
+	"fmt"
+	"time"
+)
+
 // Config for Filesystem service
 type Config struct {
 	Enabled bool `yaml:"enabled"`
@@ -14,6 +19,9 @@ type Config struct {
 	// Whether or not to use the filename or the full filepath as key in the map
 	IndexByFullFilepath bool `yaml:"-"`
 
+	// RefreshInterval specifies how often the repository shall be pulled to check for new changes.
+	RefreshInterval time.Duration `yaml:"refreshInterval"`
+
 	// Paths whose files shall be watched. Subdirectories and their files will be included.
 	Paths []string `yaml:"paths"`
 }
@@ -23,6 +31,9 @@ func (c *Config) Validate() error {
 	if !c.Enabled {
 		return nil
 	}
+	if c.RefreshInterval == 0 {
+		return fmt.Errorf("filesystem provider is enabled but refresh interval is set to 0")
+	}
 
 	return nil
 }
@@ -31,4 +42,5 @@ func (c *Config) Validate() error {
 func (c *Config) SetDefaults() {
 	c.MaxFileSize = 500 * 1000 // 500KB
 	c.IndexByFullFilepath = false
+	c.RefreshInterval = 5 * time.Minute
 }

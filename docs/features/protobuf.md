@@ -30,6 +30,7 @@ kafka:
         keyProtoType: package.Type
     fileSystem:
       enabled: true
+      refreshInterval: 5m # 5min is the default refresh interval
       paths:
         - /etc/protos
 ```
