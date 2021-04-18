@@ -18,13 +18,46 @@ or a Git repository that is cloned and periodically pulled again to make sure it
 ### Local Filesystem
 
 Put all of your required .proto files into a git repository. It doesn't matter in what directory you put them,
-but the files' extension must be `.proto`.
+but the files' extension must be `.proto`. You can configure Kowl to search one or more paths for proto files:
+
+```yaml
+kafka:
+  protobuf:
+    enabled: true
+    mappings: []
+      - topicName: xy
+        valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
+        keyProtoType: package.Type
+    fileSystem:
+      enabled: true
+      paths:
+        - /etc/protos
+```
 
 ### Git repository
 
 If you want to provide the files via a git repository, put all of your required .proto files in there.
 It doesn't matter in what directory as Kowl will search for all files with the file extension `.proto`
 in your repository up to a directory depth of 5 levels. All files with other file extensions will be ignored.
+
+```yaml
+kafka:
+  protobuf:
+    enabled: true
+    mappings: []
+      - topicName: xy
+        valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
+        keyProtoType: package.Type
+    git:
+      enabled: true
+      refreshInterval: 5m
+      repository:
+        url: https://github.com/cloudhut/owlshop-protos.git
+      basicAuth:
+        enabled: true
+        username: token # Uses an API token via basic auth
+        password: redacted
+```
 
 ### Imports
 
