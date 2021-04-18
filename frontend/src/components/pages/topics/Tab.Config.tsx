@@ -1,33 +1,21 @@
-import React, { Component } from "react";
-import { KafkaError, TopicConfigEntry, Topic } from "../../../state/restInterfaces";
-import {
-    Tooltip,
-    Descriptions,
-    Popover,
-    Checkbox,
-    Empty,
-    Typography,
-    Row,
-    Space,
-    Button,
-    Result,
-    Table
-} from "antd";
-import { observer } from "mobx-react";
-import { uiSettings } from "../../../state/ui";
-import topicConfigInfo from "../../../assets/topicConfigInfo.json";
-import Paragraph from "antd/lib/typography/Paragraph";
-import "../../../utils/arrayExtensions";
+import React, { Component } from 'react';
+import { KafkaError, TopicConfigEntry, Topic } from '../../../state/restInterfaces';
+import { Tooltip, Descriptions, Popover, Checkbox, Empty, Typography, Row, Space, Button, Result, Table } from 'antd';
+import { observer } from 'mobx-react';
+import { uiSettings } from '../../../state/ui';
+import topicConfigInfo from '../../../assets/topicConfigInfo.json';
+import Paragraph from 'antd/lib/typography/Paragraph';
+import '../../../utils/arrayExtensions';
 import Icon, { CloseCircleOutlined, HighlightTwoTone } from '@ant-design/icons';
-import { uiState } from "../../../state/uiState";
-import { DefaultSkeleton, findPopupContainer, OptionGroup, toSafeString } from "../../../utils/tsxUtils";
-import { api } from "../../../state/backendApi";
-import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
-import { clone, toJson } from "../../../utils/jsonUtils";
-import { LockIcon } from "@primer/octicons-v2-react";
-import { appGlobal } from "../../../state/appGlobal";
-import { computed } from "mobx";
-import styles from './TabConfig.module.scss'
+import { uiState } from '../../../state/uiState';
+import { DefaultSkeleton, findPopupContainer, OptionGroup, toSafeString } from '../../../utils/tsxUtils';
+import { api } from '../../../state/backendApi';
+import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
+import { clone, toJson } from '../../../utils/jsonUtils';
+import { LockIcon } from '@primer/octicons-v2-react';
+import { appGlobal } from '../../../state/appGlobal';
+import { computed } from 'mobx';
+import styles from './TabConfig.module.scss';
 
 const { Text } = Typography;
 
@@ -55,24 +43,37 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
             const first = configEntries.slice(0, middle);
             const second = configEntries.slice(middle);
 
-            descriptions = <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2em' }}>
-                {this.renderConfigList(first)}
-                {this.renderConfigList(second)}
-            </div>;
+            descriptions = (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2em' }}>
+                    {this.renderConfigList(first)}
+                    {this.renderConfigList(second)}
+                </div>
+            );
         }
 
-        return <>
-            <ConfigDisplaySettings />
-            {descriptions}
-        </>
+        return (
+            <>
+                <ConfigDisplaySettings />
+                {descriptions}
+            </>
+        );
     }
 
     renderConfigList(configEntries: TopicConfigEntry[]): JSX.Element {
         const columns = [
-            { title: 'Configuration', dataIndex: 'name' },
+            { title: 'Configuration', dataIndex: 'name', render: (text: string) => <span className={styles.name}>{text}</span> },
             { title: 'Value', dataIndex: 'value', render: (_: unknown, record: Partial<TopicConfigEntry>) => FormatConfigValue(record.name as string, record.value as string, uiSettings.topicList.valueDisplay) },
-            { title: 'Type', dataIndex: 'type' },
-            { title: 'Source', dataIndex: 'source' },
+            { title: 'Type', dataIndex: 'type', render: (text: string) => <span className={styles.type}>{text.toLowerCase()}</span> },
+            {
+                title: 'Source',
+                dataIndex: 'source',
+                render: (text: string) =>
+                    text
+                        .toLowerCase()
+                        .split('_')
+                        .map((s) => s.replace(/^\w/, (c) => c.toUpperCase()))
+                        .join(' '),
+            },
         ];
         return (
             <Table
@@ -81,11 +82,20 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
                 expandable={{
                     rowExpandable: (record) => !record.isDefault,
                     expandedRowRender: (record) => {
-                        return <Table columns={columns} dataSource={record.synonyms.filter((synonym) => synonym.source !== record.source).map((synonym) => ({ ...synonym, type: record.type }))} pagination={false} showHeader={false} />;
+                        return (
+                            <Table
+                                className={styles.nested}
+                                columns={columns}
+                                dataSource={record.synonyms.filter((synonym) => synonym.source !== record.source).map((synonym) => ({ ...synonym, type: record.type }))}
+                                pagination={false}
+                                showHeader={false}
+                                rowClassName={styles.default}
+                            />
+                        );
                     },
                 }}
                 columns={columns}
-                rowClassName={record => record.isDefault ? '' : styles.overidden}
+                rowClassName={(record) => (record.isDefault ? styles.default : styles.overidden)}
             />
         );
 
@@ -103,11 +113,13 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         if (config == null) return [];
 
         return config.configEntries
-            .filter(e => uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isDefault : true)
+            .filter((e) => (uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isDefault : true))
             .sort((a, b) => {
                 switch (uiSettings.topicList.propsOrder) {
-                    case 'default': return 0;
-                    case 'alphabetical': return a.name.localeCompare(b.name);
+                    case 'default':
+                        return 0;
+                    case 'alphabetical':
+                        return a.name.localeCompare(b.name);
                     case 'changedFirst':
                         if (uiSettings.topicList.propsOrder != 'changedFirst') return 0;
                         const v1 = a.isDefault ? 1 : 0;
@@ -120,117 +132,124 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
     handleError(): JSX.Element | null {
         const config = api.topicConfig.get(this.props.topic.topicName);
         if (config === undefined) return DefaultSkeleton; // still loading
-        if (config && config.error)
-            return this.renderKafkaError(this.props.topic.topicName, config.error);
+        if (config && config.error) return this.renderKafkaError(this.props.topic.topicName, config.error);
 
         if (config === null || config.configEntries.length == 0) {
             // config===null should never happen, so we catch it together with empty
-            const desc = <>
-                <Text type='secondary' strong style={{ fontSize: '125%' }}>No config entries</Text>
-                <br />
-            </>
-            return <Empty description={desc} />
+            const desc = (
+                <>
+                    <Text type="secondary" strong style={{ fontSize: '125%' }}>
+                        No config entries
+                    </Text>
+                    <br />
+                </>
+            );
+            return <Empty description={desc} />;
         }
         return null;
     }
 
     renderKafkaError(topicName: string, error: KafkaError) {
-        return <div style={{ marginBottom: '2em', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column' }}>
-                <Result style={{ margin: 0, padding: 0, marginTop: '1em' }}
-                    status='error'
-                    title="Kafka Error"
-                    subTitle={<>Kowl received the following error while fetching the configuration for topic <Text code>{topicName}</Text> from Kafka:</>}
-                >
-                </Result>
-                <div style={{ margin: '1.5em 0', marginTop: '1em' }}>
-                    <div className='codeBox w100' style={{ padding: '0.5em 1em' }}>{toJson(error, 4)}</div>
+        return (
+            <div style={{ marginBottom: '2em', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ maxWidth: '800px', display: 'flex', flexDirection: 'column' }}>
+                    <Result
+                        style={{ margin: 0, padding: 0, marginTop: '1em' }}
+                        status="error"
+                        title="Kafka Error"
+                        subTitle={
+                            <>
+                                Kowl received the following error while fetching the configuration for topic <Text code>{topicName}</Text> from Kafka:
+                            </>
+                        }
+                    ></Result>
+                    <div style={{ margin: '1.5em 0', marginTop: '1em' }}>
+                        <div className="codeBox w100" style={{ padding: '0.5em 1em' }}>
+                            {toJson(error, 4)}
+                        </div>
+                    </div>
+                    <Button type="primary" size="large" onClick={() => appGlobal.onRefresh()} style={{ width: '12em', margin: '0', alignSelf: 'center' }}>
+                        Retry
+                    </Button>
                 </div>
-                <Button type="primary" size="large" onClick={() => appGlobal.onRefresh()} style={{ width: '12em', margin: '0', alignSelf: 'center' }} >Retry</Button>
             </div>
-        </div >
+        );
     }
 }
 
-
-const ConfigDisplaySettings = observer(() =>
-    <div style={{
-        marginLeft: '1px', marginBottom: '1.5em',
-        display: 'flex', flexWrap: 'wrap', gap: '2em', rowGap: '1em'
-    }}>
-        <OptionGroup label='Formatting'
+const ConfigDisplaySettings = observer(() => (
+    <div
+        style={{
+            marginLeft: '1px',
+            marginBottom: '1.5em',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '2em',
+            rowGap: '1em',
+        }}
+    >
+        <OptionGroup
+            label="Formatting"
             options={{
-                "Friendly": 'friendly',
-                "Raw": 'raw'
+                Friendly: 'friendly',
+                Raw: 'raw',
             }}
             value={uiSettings.topicList.valueDisplay}
-            onChange={s => uiSettings.topicList.valueDisplay = s}
+            onChange={(s) => (uiSettings.topicList.valueDisplay = s)}
         />
 
-        <OptionGroup label='Filter'
+        <OptionGroup
+            label="Filter"
             options={{
-                "Show All": 'all',
-                "Only Changed": 'onlyChanged'
+                'Show All': 'all',
+                'Only Changed': 'onlyChanged',
             }}
             value={uiSettings.topicList.propsFilter}
-            onChange={s => uiSettings.topicList.propsFilter = s}
+            onChange={(s) => (uiSettings.topicList.propsFilter = s)}
         />
 
-        <OptionGroup label='Sort'
+        <OptionGroup
+            label="Sort"
             options={{
-                "None": 'default',
-                "Alphabetical": 'alphabetical',
-                "Changed First": 'changedFirst',
+                None: 'default',
+                Alphabetical: 'alphabetical',
+                'Changed First': 'changedFirst',
             }}
             value={uiSettings.topicList.propsOrder}
-            onChange={s => uiSettings.topicList.propsOrder = s}
+            onChange={(s) => (uiSettings.topicList.propsOrder = s)}
         />
 
-        <OptionGroup label='Display Columns'
+        <OptionGroup
+            label="Display Columns"
             options={{
-                "Single": 1,
-                "Double": 2
+                Single: 1,
+                Double: 2,
             }}
             value={uiSettings.topicList.configColumns}
-            onChange={s => uiSettings.topicList.configColumns = s}
+            onChange={(s) => (uiSettings.topicList.configColumns = s)}
         />
-    </div>);
+    </div>
+));
 
+const markerIcon = <HighlightTwoTone twoToneColor="#1890ff" style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
 
-const markerIcon = (
-    <HighlightTwoTone twoToneColor="#1890ff" style={{ fontSize: "1.5em", marginRight: ".25em" }} />
-);
-
-export const FavoritePopover = (
-    configEntry: TopicConfigEntry,
-    children: React.ReactNode
-) => {
+export const FavoritePopover = (configEntry: TopicConfigEntry, children: React.ReactNode) => {
     const name = configEntry.name;
     const favs = uiState.topicSettings.favConfigEntries;
     const isFav = favs.includes(name);
-    const toggleFav = isFav
-        ? () => favs.splice(favs.indexOf(name), 1)
-        : () => favs.push(name);
+    const toggleFav = isFav ? () => favs.splice(favs.indexOf(name), 1) : () => favs.push(name);
 
-    const infoEntry = topicConfigInfo.find(e => e.Name == name);
+    const infoEntry = topicConfigInfo.find((e) => e.Name == name);
 
     const popupContent = (
         <div>
-            <Paragraph style={{ maxWidth: "400px" }}>
+            <Paragraph style={{ maxWidth: '400px' }}>
                 <b>Description</b>
                 <br />
-                <Text>
-                    {infoEntry
-                        ? infoEntry.Description
-                        : "Config property '" + name + "' unknown"}
-                </Text>
+                <Text>{infoEntry ? infoEntry.Description : "Config property '" + name + "' unknown"}</Text>
             </Paragraph>
 
-            <Checkbox
-                children="Show this setting in 'Quick Info'"
-                checked={isFav}
-                onChange={() => toggleFav()}
-            />
+            <Checkbox children="Show this setting in 'Quick Info'" checked={isFav} onChange={() => toggleFav()} />
         </div>
     );
 
@@ -246,10 +265,7 @@ export const FavoritePopover = (
             }
             content={popupContent}
         >
-            <div
-                className="hoverLink"
-                style={{ display: "flex", verticalAlign: "middle", cursor: "pointer" }}
-            >
+            <div className="hoverLink" style={{ display: 'flex', verticalAlign: 'middle', cursor: 'pointer' }}>
                 {children}
                 {/* <div style={{ flexGrow: 1 }} /> */}
             </div>
@@ -264,7 +280,7 @@ function DataName(configEntry: TopicConfigEntry) {
 export function DataValue(name: string, value: string, isDefault: boolean, formatType: 'friendly' | 'raw' | 'both') {
     value = FormatConfigValue(name, value, formatType);
 
-    if (isDefault) return <code>{value}</code>
+    if (isDefault) return <code>{value}</code>;
 
     return (
         <Tooltip title="Value is different from the default" getPopupContainer={findPopupContainer}>
@@ -280,53 +296,48 @@ export function FormatConfigValue(name: string, value: string, formatType: 'frie
     let suffix: string;
 
     switch (formatType) {
-        case "friendly":
-            suffix = "";
+        case 'friendly':
+            suffix = '';
             break;
-        case "both":
-            suffix = " (" + value + ")";
+        case 'both':
+            suffix = ' (' + value + ')';
             break;
 
-        case "raw":
+        case 'raw':
         default:
             return value;
     }
 
     const num = Number(value);
 
-    if (value == null || value == "" || value == "0" || Number.isNaN(num))
-        return value;
+    if (value == null || value == '' || value == '0' || Number.isNaN(num)) return value;
 
     // Special cases
-    if (name == "flush.messages" && num > Math.pow(2, 60))
-        return "Never" + suffix; // messages between each fsync
+    if (name == 'flush.messages' && num > Math.pow(2, 60)) return 'Never' + suffix; // messages between each fsync
 
-    if (name.endsWith(".bytes.per.second")) {
-        if (num >= Number.MAX_SAFE_INTEGER) return "Infinite" + suffix;
-        return prettyBytesOrNA(num) + "/s" + suffix;
+    if (name.endsWith('.bytes.per.second')) {
+        if (num >= Number.MAX_SAFE_INTEGER) return 'Infinite' + suffix;
+        return prettyBytesOrNA(num) + '/s' + suffix;
     }
 
     // Time
     const endsWithSeconds = name.endsWith('.seconds');
-    if (name.endsWith(".ms") || endsWithSeconds) {
-        if (num > Number.MAX_SAFE_INTEGER || num == -1) return "Infinite" + suffix;
+    if (name.endsWith('.ms') || endsWithSeconds) {
+        if (num > Number.MAX_SAFE_INTEGER || num == -1) return 'Infinite' + suffix;
         // Convert into a readable format
         const ms = endsWithSeconds ? num * 1000 : num;
         return prettyMilliseconds(ms, { verbose: true }) + suffix;
     }
 
     // Bytes
-    if (name.endsWith(".bytes")
-        || name.endsWith(".buffer.size")
-        || name.endsWith(".replication.throttled.rate")
-        || name.endsWith(".reassignment.throttled.rate")) {
-        if (num < 0 || num >= Number.MAX_VALUE) return "Infinite" + suffix;
+    if (name.endsWith('.bytes') || name.endsWith('.buffer.size') || name.endsWith('.replication.throttled.rate') || name.endsWith('.reassignment.throttled.rate')) {
+        if (num < 0 || num >= Number.MAX_VALUE) return 'Infinite' + suffix;
         return prettyBytesOrNA(num) + suffix;
     }
 
     // Ratio
-    if (name.endsWith(".ratio")) {
-        return (num * 100).toLocaleString() + "%"
+    if (name.endsWith('.ratio')) {
+        return (num * 100).toLocaleString() + '%';
     }
 
     return value;

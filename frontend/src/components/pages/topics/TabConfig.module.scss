@@ -1,3 +1,28 @@
+.default {
+    color: #bfbfbf;
+}
+
 .overidden {
     font-weight: 700;
+}
+
+.name {
+    font-family: monospace;
+    background-color: #f5f5f5;
+    border: solid thin #d1d1d1;
+    border-radius: 3px;
+    display: inline-block;
+    padding: 1px 4px;
+    color: #696969;
+}
+
+.type {
+    color: #cb398f;
+    font-family: monospace;
+}
+
+.nested {
+    :global(.ant-table) {
+        background: transparent;
+    }
 }
