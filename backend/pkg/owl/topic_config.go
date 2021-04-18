@@ -19,14 +19,15 @@ type TopicConfig struct {
 
 // TopicConfigEntry is a key value pair of a config property with it's value
 type TopicConfigEntry struct {
-	Name          string               `json:"name"`
-	Value         *string              `json:"value"` // If value is sensitive this will be nil
-	Source        string               `json:"source"`
-	Type          string               `json:"type"`
-	IsDefault     bool                 `json:"isDefault"`
-	IsSensitive   bool                 `json:"isSensitive"`
-	Documentation *string              `json:"documentation"` // Will be nil for Kafka <v2.6.0
-	Synonyms      []TopicConfigSynonym `json:"synonyms"`
+	Name            string               `json:"name"`
+	Value           *string              `json:"value"` // If value is sensitive this will be nil
+	Source          string               `json:"source"`
+	Type            string               `json:"type"`
+	IsExplicitlySet bool                 `json:"isExplicitlySet"`
+	IsDefaultValue  bool                 `json:"isDefaultValue"`
+	IsSensitive     bool                 `json:"isSensitive"`
+	Documentation   *string              `json:"documentation"` // Will be nil for Kafka <v2.6.0
+	Synonyms        []TopicConfigSynonym `json:"synonyms"`
 }
 
 type TopicConfigSynonym struct {
@@ -91,6 +92,7 @@ func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, con
 
 		entries := make([]*TopicConfigEntry, len(res.Configs))
 		for i, cfg := range res.Configs {
+			isDefaultValue := false
 			innerEntries := make([]TopicConfigSynonym, len(cfg.ConfigSynonyms))
 			for j, innerCfg := range cfg.ConfigSynonyms {
 				innerEntries[j] = TopicConfigSynonym{
@@ -98,18 +100,23 @@ func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, con
 					Value:  innerCfg.Value,
 					Source: innerCfg.Source.String(),
 				}
+				if innerCfg.Source == kmsg.ConfigSourceDefaultConfig {
+					isDefaultValue = derefString(cfg.Value) == derefString(innerCfg.Value)
+				}
 			}
+
 			// Kafka <v1.1 uses the IsDefault property. Since then it's been deprecated by ConfigSource
-			isDefault := cfg.IsDefault || cfg.Source == kmsg.ConfigSourceDefaultConfig
+			isExplicitlySet := !cfg.IsDefault || cfg.Source == kmsg.ConfigSourceDynamicTopicConfig
 			entries[i] = &TopicConfigEntry{
-				Name:          cfg.Name,
-				Value:         cfg.Value,
-				Source:        cfg.Source.String(),
-				Type:          cfg.ConfigType.String(),
-				IsDefault:     isDefault,
-				IsSensitive:   cfg.IsSensitive,
-				Documentation: cfg.Documentation,
-				Synonyms:      innerEntries,
+				Name:            cfg.Name,
+				Value:           cfg.Value,
+				Source:          cfg.Source.String(),
+				Type:            cfg.ConfigType.String(),
+				IsExplicitlySet: isExplicitlySet,
+				IsDefaultValue:  isDefaultValue,
+				IsSensitive:     cfg.IsSensitive,
+				Documentation:   cfg.Documentation,
+				Synonyms:        innerEntries,
 			}
 		}
 

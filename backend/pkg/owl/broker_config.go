@@ -15,15 +15,17 @@ type BrokerConfigs struct {
 }
 
 type BrokerConfigEntry struct {
-	Name          string                `json:"name"`
-	Value         *string               `json:"value"` // If value is sensitive this will be nil
-	Source        string                `json:"source"`
-	Type          string                `json:"type"`
-	IsDefault     bool                  `json:"isDefault"`
-	IsReadOnly    bool                  `json:"isReadOnly"`
-	IsSensitive   bool                  `json:"isSensitive"`
-	Documentation *string               `json:"documentation"` // Will be nil for Kafka <v2.6.0
-	Synonyms      []BrokerConfigSynonym `json:"synonyms"`
+	Name   string  `json:"name"`
+	Value  *string `json:"value"` // If value is sensitive this will be nil
+	Source string  `json:"source"`
+	Type   string  `json:"type"`
+	// IsExplicitlySet indicates whether this config's value was explicitly configured. It could still be the default value.
+	IsExplicitlySet bool                  `json:"isExplicitlySet"`
+	IsDefaultValue  bool                  `json:"isDefaultValue"`
+	IsReadOnly      bool                  `json:"isReadOnly"`
+	IsSensitive     bool                  `json:"isSensitive"`
+	Documentation   *string               `json:"documentation"` // Will be nil for Kafka <v2.6.0
+	Synonyms        []BrokerConfigSynonym `json:"synonyms"`
 }
 
 type BrokerConfigSynonym struct {
@@ -57,6 +59,7 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]Broker
 
 		configEntries := make([]BrokerConfigEntry, len(resource.Configs))
 		for j, cfg := range resource.Configs {
+			isDefaultValue := false
 			innerEntries := make([]BrokerConfigSynonym, len(cfg.ConfigSynonyms))
 			for j, innerCfg := range cfg.ConfigSynonyms {
 				innerEntries[j] = BrokerConfigSynonym{
@@ -64,19 +67,25 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]Broker
 					Value:  innerCfg.Value,
 					Source: innerCfg.Source.String(),
 				}
+				if innerCfg.Source == kmsg.ConfigSourceDefaultConfig {
+					isDefaultValue = derefString(cfg.Value) == derefString(innerCfg.Value)
+				}
 			}
 
-			isDefault := cfg.IsDefault || cfg.Source == kmsg.ConfigSourceDefaultConfig
+			isExplicitlySet := !cfg.IsDefault ||
+				cfg.Source == kmsg.ConfigSourceStaticBrokerConfig ||
+				cfg.Source == kmsg.ConfigSourceDynamicBrokerConfig
 			configEntries[j] = BrokerConfigEntry{
-				Name:          cfg.Name,
-				Value:         cfg.Value,
-				Source:        cfg.Source.String(),
-				Type:          cfg.ConfigType.String(),
-				IsDefault:     isDefault,
-				IsReadOnly:    cfg.ReadOnly,
-				IsSensitive:   cfg.IsSensitive,
-				Documentation: cfg.Documentation,
-				Synonyms:      innerEntries,
+				Name:            cfg.Name,
+				Value:           cfg.Value,
+				Source:          cfg.Source.String(),
+				Type:            cfg.ConfigType.String(),
+				IsExplicitlySet: isExplicitlySet,
+				IsDefaultValue:  isDefaultValue,
+				IsReadOnly:      cfg.ReadOnly,
+				IsSensitive:     cfg.IsSensitive,
+				Documentation:   cfg.Documentation,
+				Synonyms:        innerEntries,
 			}
 		}
 
