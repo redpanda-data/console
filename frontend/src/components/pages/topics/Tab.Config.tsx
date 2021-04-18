@@ -10,7 +10,8 @@ import {
     Row,
     Space,
     Button,
-    Result
+    Result,
+    Table
 } from "antd";
 import { observer } from "mobx-react";
 import { uiSettings } from "../../../state/ui";
@@ -26,6 +27,7 @@ import { clone, toJson } from "../../../utils/jsonUtils";
 import { LockIcon } from "@primer/octicons-v2-react";
 import { appGlobal } from "../../../state/appGlobal";
 import { computed } from "mobx";
+import styles from './TabConfig.module.scss'
 
 const { Text } = Typography;
 
@@ -66,13 +68,34 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
     }
 
     renderConfigList(configEntries: TopicConfigEntry[]): JSX.Element {
-        return <Descriptions bordered size="small" colon={false} layout="horizontal" column={1} style={{ display: "inline-block" }}>
-            {configEntries.map(e =>
-                <Descriptions.Item key={e.name} label={DataName(e)}>
-                    {DataValue(e.name, e.value, e.isDefault, uiSettings.topicList.valueDisplay)}
-                </Descriptions.Item>
-            )}
-        </Descriptions>
+        const columns = [
+            { title: 'Configuration', dataIndex: 'name' },
+            { title: 'Value', dataIndex: 'value', render: (_: unknown, record: Partial<TopicConfigEntry>) => FormatConfigValue(record.name as string, record.value as string, uiSettings.topicList.valueDisplay) },
+            { title: 'Type', dataIndex: 'type' },
+            { title: 'Source', dataIndex: 'source' },
+        ];
+        return (
+            <Table
+                rowKey="name"
+                dataSource={configEntries}
+                expandable={{
+                    rowExpandable: (record) => !record.isDefault,
+                    expandedRowRender: (record) => {
+                        return <Table columns={columns} dataSource={record.synonyms.filter((synonym) => synonym.source !== record.source).map((synonym) => ({ ...synonym, type: record.type }))} pagination={false} showHeader={false} />;
+                    },
+                }}
+                columns={columns}
+                rowClassName={record => record.isDefault ? '' : styles.overidden}
+            />
+        );
+
+        // return <Descriptions bordered size="small" colon={false} layout="horizontal" column={1} style={{ display: "inline-block" }}>
+        //     {configEntries.map(e =>
+        //         <Descriptions.Item key={e.name} label={DataName(e)}>
+        //             {DataValue(e.name, e.value, e.isDefault, uiSettings.topicList.valueDisplay)}
+        //         </Descriptions.Item>
+        //     )}
+        // </Descriptions>
     }
 
     @computed get configEntries(): TopicConfigEntry[] {
