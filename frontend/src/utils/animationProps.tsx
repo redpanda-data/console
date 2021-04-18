@@ -17,6 +17,7 @@ const transition: Transition = {
 };
 
 
+// Page switch
 export const animProps = {
     transition: transition,
     initial: { opacity: 0, x: dx100em[0], position: 'static' as PositionProp },
@@ -57,14 +58,21 @@ export const animProps_span_messagesStatus = {
     },
 };
 
+export const animProps_radioOptionGroup = {
+    transition: transition,
+    initial: { opacity: 0, y: '-1em', height: 0, marginTop: 0 },
+    animate: { opacity: 1, y: '0em', height: 'auto' },
+    exit: { opacity: 0, y: '1em', height: 0, marginTop: 0 },
+};
+
 
 export const MotionAlways: FC = (p: { children?: React.ReactNode, style?: CSSProperties }) =>
     <motion.div key={alwaysChanging()} {...animProps} style={p.style}>
         {p.children}
     </motion.div>;
 
-export const MotionDiv: FC<{ identityKey?: any, positionTransition?: boolean, layoutTransition?: boolean, style?: CSSProperties, className?: string }> = (p) =>
-    <motion.div className={p.className} key={p.identityKey} positionTransition={p.positionTransition} layoutTransition={p.layoutTransition} style={p.style} {...animProps} >
+export const MotionDiv: FC<{ identityKey?: any, positionTransition?: boolean, layoutTransition?: boolean, animProps?: any, style?: CSSProperties, className?: string }> = (p) =>
+    <motion.div className={p.className} key={p.identityKey} positionTransition={p.positionTransition} layoutTransition={p.layoutTransition} style={p.style} {...(p.animProps ?? animProps)} >
         {p.children}
     </motion.div>;
 
@@ -73,9 +81,12 @@ export const MotionSpan: FC<{ identityKey?: any, overrideAnimProps?: any, style?
         {p.children}
     </motion.span>;
 
-export const MotionDivInvertedScale: FC<{ children?: React.ReactNode, style?: CSSProperties }> = p => {
+export const MotionDivInvertedScale: FC<{ layoutTransition?: boolean, children?: React.ReactNode, style?: CSSProperties }> = p => {
     const { scaleX, scaleY } = useInvertedScale();
-    return <motion.div style={{ scaleX, scaleY, ...p.style }}>
+    return <motion.div
+        layoutTransition={p.layoutTransition}
+        style={{ scaleX, scaleY, ...p.style }}
+    >
         {p.children}
     </motion.div>
 }

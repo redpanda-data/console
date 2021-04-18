@@ -196,17 +196,31 @@ export interface GroupDescription {
     protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
     members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     coordinatorId: number;
-    lag: GroupLagDescription;
+    topicOffsets: GroupTopicOffsets[];
     allowedActions: GroupAction[];
 
     // Computed by frontend
     lagSum: number;
 }
 
-export interface GroupLagDescription {
-    groupId: string;
-    topicLags: TopicLag[];
+export interface GroupTopicOffsets {
+    topic: string;
+    summedLag: number; // summed lag of all partitions (non consumed partitions are not considered)
+    partitionCount: number;
+    partitionsWithOffset: number; // number of partitions that have an active group offset
+    partitionOffsets: PartitionOffset[];
 }
+
+// PartitionOffset describes the kafka lag for a partition for a single consumer group
+export interface PartitionOffset {
+    error: string | null; // Error will be set when the high water mark could not be fetched
+
+    partitionId: number;
+    groupOffset: number;
+    highWaterMark: number;
+    lag: number;
+}
+
 
 export interface TopicLag {
     topic: string; // name

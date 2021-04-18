@@ -540,9 +540,9 @@ const apiStore = {
     refreshConsumerGroups(force?: boolean) {
         cachedApiRequest<GetConsumerGroupsResponse>('./api/consumer-groups', force)
             .then(v => {
-                for (const g of v.consumerGroups) {
-                    g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
-                }
+                for (const g of v.consumerGroups)
+                    g.lagSum = g.topicOffsets.sum(o => o.summedLag);
+
                 transaction(() => {
                     this.consumerGroups.clear();
                     for (const g of v.consumerGroups)

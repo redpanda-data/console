@@ -1,12 +1,12 @@
 import React, { Component } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip, Popover, Empty } from "antd";
+import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip, Popover, Empty, Modal, Select } from "antd";
 import { observer } from "mobx-react";
 
 import { api } from "../../../state/backendApi";
 import { PageComponent, PageInitHelper } from "../Page";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { MotionDiv } from "../../../utils/animationProps";
-import { GroupDescription } from "../../../state/restInterfaces";
+import { GroupDescription, GroupMemberDescription } from "../../../state/restInterfaces";
 import { observable } from "mobx";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
@@ -14,15 +14,19 @@ import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, Ques
 import { TablePaginationConfig } from "antd/lib/table";
 import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, RadioOptionGroup } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
-import { PencilIcon, SkipIcon } from "@primer/octicons-v2-react";
+import { SkipIcon } from "@primer/octicons-v2-react";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
+import { PencilIcon, TrashIcon, XCircleIcon } from '@heroicons/react/solid';
+import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
+import { EditOffsetsModal } from "./Modals";
 
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
     @observable viewMode: 'topic' | 'member' = 'topic';
     @observable onlyShowPartitionsWithLag: boolean = false;
-    pageRef = React.createRef();
+
+    @observable edittingMembersByTopic: GroupMembersByTopic | null = null;
 
     initPage(p: PageInitHelper): void {
         const group = this.props.groupId;
@@ -47,31 +51,30 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
         // Get info about each topic
         const requiredTopics = group.members.flatMap(m => m.assignments.map(a => a.topicName)).distinct();
-
         const totalPartitions = group.members.flatMap(m => m.assignments).sum(a => a.partitionIds.length);
 
         return (
-            <MotionDiv style={{ margin: '0 1rem' }}>
-                {/* States can be: Dead, Initializing, Rebalancing, Stable */}
-                {uiSettings.consumerGroupDetails.showStatisticsBar &&
-                    <Card className='statisticsBar'>
-                        <Row >
-                            <HideStatisticsBarButton onClick={() => uiSettings.consumerGroupDetails.showStatisticsBar = false} />
-                            <Statistic title='State' valueRender={() => <GroupState group={group} />} />
-                            <ProtocolType group={group} />
-                            <Statistic title='Members' value={group.members.length} />
-                            <Statistic title='Assigned Topics' value={requiredTopics.length} />
-                            <Statistic title='Assigned Partitions' value={totalPartitions} />
-                            <Statistic title='Protocol Type' value={group.protocolType} />
-                            <Statistic title='Protocol' value={group.protocol} />
-                            <Statistic title='Coordinator ID' value={group.coordinatorId} />
-                            <Statistic title='Total Lag' value={group.lagSum} />
-                        </Row>
-                    </Card>
+            <MotionDiv style={{ margin: '0 1rem' }} className="groupDetails">
+                {/* Statistics Card */}
+                {uiSettings.consumerGroupDetails.showStatisticsBar && <Card className='statisticsBar'>
+                    <Row >
+                        <HideStatisticsBarButton onClick={() => uiSettings.consumerGroupDetails.showStatisticsBar = false} />
+                        <Statistic title='State' valueRender={() => <GroupState group={group} />} />
+                        <ProtocolType group={group} />
+                        <Statistic title='Members' value={group.members.length} />
+                        <Statistic title='Assigned Topics' value={requiredTopics.length} />
+                        <Statistic title='Assigned Partitions' value={totalPartitions} />
+                        <Statistic title='Protocol Type' value={group.protocolType} />
+                        <Statistic title='Protocol' value={group.protocol} />
+                        <Statistic title='Coordinator ID' value={group.coordinatorId} />
+                        <Statistic title='Total Lag' value={group.lagSum} />
+                    </Row>
+                </Card>
                 }
 
+                {/* Main Card */}
                 <Card>
-                    {/* Settings: GroupBy, Partitions */}
+                    {/* View Buttons */}
                     <Space size='large' style={{ marginLeft: '.5em', marginBottom: '2em' }}>
 
                         <OptionGroup label='View'
@@ -95,18 +98,53 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
                     {this.viewMode == 'member'
                         ? <GroupByMembers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
-                        : <GroupByTopics group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
+                        : <GroupByTopics group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag}
+                            onEditTopic={g => this.edittingMembersByTopic = g}
+                        />
                     }
-
                 </Card>
+
+                {/* Modals */}
+                <>
+
+
+                    <EditOffsetsModal
+                        group={group}
+                        membersByTopic={this.edittingMembersByTopic}
+                        onClose={() => this.edittingMembersByTopic = null}
+                    />
+
+                    {/*
+                        font-family: "Inter";
+                        font-size: 12px;
+                        font-weight: 500;
+                    */}
+
+                </>
             </MotionDiv>
         );
     }
 }
 
+export type GroupMembersByTopic = {
+    topicName: string;
+    partitions: {
+        topicName: string;
+        partitionId: number;
+        lag: number;
+        assignedMember: GroupMemberDescription | undefined;
+        id: string | undefined;
+        clientId: string | undefined;
+        host: string | undefined;
+    }[];
+};
 
 @observer
-class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartitionsWithLag: boolean }>{
+class GroupByTopics extends Component<{
+    group: GroupDescription,
+    onlyShowPartitionsWithLag: boolean,
+    onEditTopic: (g: GroupMembersByTopic) => void,
+}>{
 
     pageConfig: TablePaginationConfig;
 
@@ -118,14 +156,14 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
     }
 
     render() {
-        const topicLags = this.props.group.lag.topicLags;
+        const topicLags = this.props.group.topicOffsets;
         const p = this.props;
         const allAssignments = p.group.members
             .flatMap(m => m.assignments
                 .map(as => ({ member: m, topicName: as.topicName, partitions: as.partitionIds })));
 
         const lagsFlat = topicLags.flatMap(topicLag =>
-            topicLag.partitionLags.map(partLag => {
+            topicLag.partitionOffsets.map(partLag => {
 
                 const assignedMember = allAssignments.find(e =>
                     e.topicName == topicLag.topic
@@ -134,7 +172,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                 return {
                     topicName: topicLag.topic,
                     partitionId: partLag.partitionId,
-                    offset: partLag.offset,
+                    offset: partLag.groupOffset,
                     lag: partLag.lag,
 
                     assignedMember: assignedMember?.member,
@@ -145,29 +183,35 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
             })
         );
 
-        const lagGroupsByTopic = lagsFlat.groupInto(e => e.topicName).sort((a, b) => a.key.localeCompare(b.key));
+        const lagGroupsByTopic = lagsFlat.groupInto(e => e.topicName).sort((a, b) => a.key.localeCompare(b.key))
+            .map(x => ({ topicName: x.key, partitions: x.items }));
 
         const topicEntries = lagGroupsByTopic.map(g => {
-            const totalLagAll = g.items.sum(c => c.lag ?? 0);
-            const partitionsAssigned = g.items.filter(c => c.assignedMember).length;
+            const totalLagAll = g.partitions.sum(c => c.lag ?? 0);
+            const partitionsAssigned = g.partitions.filter(c => c.assignedMember).length;
 
             if (p.onlyShowPartitionsWithLag)
-                g.items.removeAll(e => e.lag === 0);
+                g.partitions.removeAll(e => e.lag === 0);
 
-            if (g.items.length == 0)
+            if (g.partitions.length == 0)
                 return null;
 
-            return <Collapse.Panel key={g.key}
+            return <Collapse.Panel key={g.topicName}
                 header={
-                    <div>
-                        <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{g.key}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {/* Title */}
+                        <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{g.topicName}</span>
+
+                        {/* EditButtons */}
+                        <div style={{ width: '2px' }} />
+                        <div className="iconButton" onClick={() => p.onEditTopic(g)} ><PencilIcon /></div>
+                        <div className="iconButton"><TrashIcon /></div>
+
+                        {/* InfoTags */}
                         <Tooltip placement='top' title='Summed lag of all partitions of the topic' mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer} >
-                            <Tag style={{ marginLeft: '1em' }} color='blue'>lag: {totalLagAll}</Tag>
+                            <Tag style={{ margin: '0', marginLeft: '8px' }} color='blue'>lag: {totalLagAll}</Tag>
                         </Tooltip>
-                        {/* <Tooltip placement='top' title='Number of partitions assigned / Number of partitions in the topic' mouseEnterDelay={0}>
-                                <Tag color='blue'>partitions: {partitionCount}/{topicPartitionInfo?.length}</Tag>
-                            </Tooltip> */}
                         <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer}>
                             <Tag color='blue'>assigned partitions: {partitionsAssigned}</Tag>
@@ -184,7 +228,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                         this.pageConfig.current = pagination.current;
                         this.pageConfig.pageSize = pagination.pageSize;
                     }}
-                    dataSource={g.items}
+                    dataSource={g.partitions}
                     rowKey={r => r.partitionId}
                     rowClassName={(r) => (r.assignedMember) ? '' : 'consumerGroupNoMemberAssigned'}
                     columns={[
@@ -215,7 +259,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
                             render: (text, record) => (
                                 <Button className='iconButton'
                                     style={{ verticalAlign: 'middle' }}
-                                    type='link' icon={<PencilIcon verticalAlign='middle' size={20} />}
+                                    type='link' icon={<PencilIcon />}
                                     size='middle'
                                 />
                             ),
@@ -227,7 +271,7 @@ class GroupByTopics extends Component<{ group: GroupDescription, onlyShowPartiti
         });
 
         const defaultExpand = lagGroupsByTopic.length == 1
-            ? lagGroupsByTopic[0].key // only one -> expand
+            ? lagGroupsByTopic[0].topicName // only one -> expand
             : undefined; // more than one -> collapse
 
         const nullEntries = topicEntries.filter(e => e == null).length;
@@ -259,7 +303,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
     }
 
     render() {
-        const topicLags = this.props.group.lag.topicLags;
+        const topicLags = this.props.group.topicOffsets;
         const p = this.props;
 
         const memberEntries = p.group.members
@@ -271,7 +315,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                 const assignmentsFlat = assignments
                     .map(a => a.partitionIds.map(id => {
                         const topicLag = topicLags.find(t => t.topic == a.topicName);
-                        const partLag = topicLag?.partitionLags.find(p => p.partitionId == id)?.lag;
+                        const partLag = topicLag?.partitionOffsets.find(p => p.partitionId == id)?.lag;
                         return {
                             topicName: a.topicName,
                             partitionId: id,
@@ -338,49 +382,6 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
     }
 }
 
-type EditOffsetMode = 'start' | 'end' | 'time' | 'copy';
-class EditGroupOffsets extends Component {
-
-    options = [
-        { value: 'start', title: 'Start Offset', text: 'The first option' },
-        { value: 'end', title: 'End Offset', text: 'The second option. This text is longer, pretty long actually, hopefully long enough that there will be some line-wrapping going on...' },
-        { value: 'time', title: 'Specific Time', text: 'The third option' },
-        { value: 'copy', title: 'Copy from other', text: 'The third option' },
-    ] as { value: EditOffsetMode, title: string, text: string }[];
-
-    selectedMode = 'start' as EditOffsetMode;
-
-    render() {
-        return <>
-            <div id='test' style={{
-                position: 'absolute',
-                width: '100%', height: '100%',
-                zIndex: 1,
-            }}>
-                <div style={{
-                    borderRadius: '6px',
-                    // position: 'absolute',
-                    background: 'white',
-                    margin: 'auto',
-                    width: '400px',
-                    height: '500px',
-                    marginTop: '40px',
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
-                    border: '1px hsl(0deg 0% 91%) solid',
-                }}>
-                    <div style={{ margin: '2rem' }}>
-                        <RadioOptionGroup
-                            options={this.options}
-                            onChange={x => { this.selectedMode = x; }}
-                            value={this.selectedMode}
-                        />
-                    </div>
-                </div>
-            </div>
-        </>
-    }
-}
 
 const renderMergedID = (id?: string, clientId?: string) => {
     if (clientId && id?.startsWith(clientId)) { // should always be true...
