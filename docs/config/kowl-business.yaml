@@ -66,7 +66,11 @@ kafka:
   #     # - topicName: xy
   #     #   valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
   #     #   keyProtoType: package.Type
-  #   # Git is where the .proto files come from, in the future there might be additional options
+  #   # FileSystem can be configured if you want Kowl to search the local file system for the .proto files
+  #   fileSystem:
+  #     enabled: false
+  #     paths: []
+  #   # Git is one option where .proto files can come from. It requires a git repository that contains the proto files
   #   git:
   #     enabled: false
   #     repository:
