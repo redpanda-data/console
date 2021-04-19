@@ -2,6 +2,7 @@ package proto
 
 import (
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/filesystem"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
@@ -24,17 +25,29 @@ type Service struct {
 
 	mappingsByTopic map[string]ConfigTopicMapping
 	gitSvc          *git.Service
+	fsSvc           *filesystem.Service
 
 	registryMutex sync.RWMutex
 	registry      *msgregistry.MessageRegistry
 }
 
 func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
-	// Index by full filepath so that we support .proto files with the same filename in different directories
-	cfg.Git.IndexByFullFilepath = true
-	gitSvc, err := git.NewService(cfg.Git, logger, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create new git service: %w", err)
+	var err error
+
+	var gitSvc *git.Service
+	if cfg.Git.Enabled {
+		gitSvc, err = git.NewService(cfg.Git, logger, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create new git service: %w", err)
+		}
+	}
+
+	var fsSvc *filesystem.Service
+	if cfg.FileSystem.Enabled {
+		fsSvc, err = filesystem.NewService(cfg.FileSystem, logger, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create new git service: %w", err)
+		}
 	}
 
 	mappingsByTopic := make(map[string]ConfigTopicMapping)
@@ -48,6 +61,7 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 
 		mappingsByTopic: mappingsByTopic,
 		gitSvc:          gitSvc,
+		fsSvc:           fsSvc,
 
 		// registry has to be created afterwards
 		registry: nil,
@@ -55,18 +69,27 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 }
 
 func (s *Service) Start() error {
-	err := s.gitSvc.Start()
-	if err != nil {
-		return fmt.Errorf("failed to start git service: %w", err)
+	if s.gitSvc != nil {
+		err := s.gitSvc.Start()
+		if err != nil {
+			return fmt.Errorf("failed to start git service: %w", err)
+		}
+		// Git service periodically pulls the repo. If there are any file changes the proto registry will be rebuilt.
+		s.gitSvc.OnFilesUpdatedHook = s.tryCreateProtoRegistry
 	}
 
-	err = s.createProtoRegistry()
-	if err != nil {
-		return fmt.Errorf("failed to start git service: %w", err)
+	if s.fsSvc != nil {
+		err := s.fsSvc.Start()
+		if err != nil {
+			return fmt.Errorf("failed to start filesystem service: %w", err)
+		}
+		s.fsSvc.OnFilesUpdatedHook = s.tryCreateProtoRegistry
 	}
 
-	// Git service periodically pulls the repo. If there are any file changes the proto registry will be rebuilt.
-	s.gitSvc.OnFilesUpdatedHook = s.tryCreateProtoRegistry
+	err := s.createProtoRegistry()
+	if err != nil {
+		return fmt.Errorf("failed to create proto registry: %w", err)
+	}
 
 	return nil
 }
@@ -133,9 +156,18 @@ func (s *Service) tryCreateProtoRegistry() {
 }
 
 func (s *Service) createProtoRegistry() error {
-	files := s.gitSvc.GetFilesByFilename()
-	s.logger.Debug("fetched .proto files from git service cache",
-		zap.Int("fetched_proto_files", len(files)))
+	var files map[string]filesystem.File
+
+	if s.gitSvc != nil {
+		files = s.gitSvc.GetFilesByFilename()
+		s.logger.Debug("fetched .proto files from git service cache",
+			zap.Int("fetched_proto_files", len(files)))
+	}
+	if s.fsSvc != nil {
+		files = s.fsSvc.GetFilesByFilename()
+		s.logger.Debug("fetched .proto files from filesystem service cache",
+			zap.Int("fetched_proto_files", len(files)))
+	}
 
 	fileDescriptors, err := s.protoFileToDescriptor(files)
 	if err != nil {
@@ -160,7 +192,7 @@ func (s *Service) createProtoRegistry() error {
 				return fmt.Errorf("failed to get proto type from registry: %w", err)
 			}
 			if desc == nil {
-				s.logger.Info("protobuf type from configured topic mapping does not exist",
+				s.logger.Warn("protobuf type from configured topic mapping does not exist",
 					zap.String("topic_name", mapping.TopicName),
 					zap.String("value_proto_type", mapping.ValueProtoType))
 			}
@@ -187,7 +219,7 @@ func (s *Service) createProtoRegistry() error {
 //
 // ProtoPath is the path that contains all .proto files. This directory will be searched for imports.
 // Filename is the .proto file within the protoPath that shall be parsed.
-func (s *Service) protoFileToDescriptor(files map[string]git.File) ([]*desc.FileDescriptor, error) {
+func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*desc.FileDescriptor, error) {
 	filesStr := make(map[string]string, len(files))
 	filePaths := make([]string, 0, len(filesStr))
 	for _, file := range files {

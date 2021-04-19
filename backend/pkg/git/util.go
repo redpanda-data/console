@@ -2,6 +2,7 @@ package git
 
 import (
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/filesystem"
 	"github.com/go-git/go-billy/v5"
 	"go.uber.org/zap"
 	"path"
@@ -33,7 +34,7 @@ func readFile(fileName string, fs billy.Filesystem, maxSize int64) ([]byte, erro
 }
 
 // readFiles recursively reads the file systems' files until it has read all files or max depth is reached.
-func (c *Service) readFiles(fs billy.Filesystem, res map[string]File, currentPath string, maxDepth int) (map[string]File, error) {
+func (c *Service) readFiles(fs billy.Filesystem, res map[string]filesystem.File, currentPath string, maxDepth int) (map[string]filesystem.File, error) {
 	fileInfos, err := fs.ReadDir(currentPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read dir: %w", err)
@@ -63,7 +64,7 @@ func (c *Service) readFiles(fs billy.Filesystem, res map[string]File, currentPat
 		if c.Cfg.IndexByFullFilepath {
 			key = filePath
 		}
-		res[key] = File{
+		res[key] = filesystem.File{
 			Path:            filePath,
 			Filename:        name,
 			TrimmedFilename: trimmedFilename,

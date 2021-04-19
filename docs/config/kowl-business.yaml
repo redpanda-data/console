@@ -66,31 +66,35 @@ kafka:
   #     # - topicName: xy
   #     #   valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
   #     #   keyProtoType: package.Type
+  #   # FileSystem can be configured if you want Kowl to search the local file system for the .proto files
+  #   fileSystem:
+  #     enabled: false
+  #     paths: []
+  #   # Git is one option where .proto files can come from. It requires a git repository that contains the proto files
+  #   git:
+  #     enabled: false
+  #     repository:
+  #       url:
+  #       branch: (defaults to primary/default branch)
+  #     # How often Kowl shall pull the repository to look for new files. Set 0 to disable periodic pulls
+  #     refreshInterval: 1m
+  #     # Basic Auth
+  #     # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password
+  #     basicAuth:
+  #       enabled: true
+  #       username: token
+  #       password: #  This can be set via the via the --owl.topic-documentation.git.basic-auth.password flag as well
+  #     # SSH Auth
+  #     # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
+  #     ssh:
+  #       enabled: false
+  #       username:
+  #       privateKey: # This can be set via the via the --owl.topic-documentation.git.ssh.private-key flag as well
+  #       privateKeyFilepath:
+  #       passphrase: # This can be set via the via the --owl.topic-documentation.git.ssh.passphrase flag as well
   # messagePack:
   #   enabled: false
   #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
-#     # Git is where the .proto files come from, in the future there might be additional options
-#     git:
-#       enabled: false
-#       repository:
-#         url:
-#         branch: (defaults to primary/default branch)
-#       # How often Kowl shall pull the repository to look for new files. Set 0 to disable periodic pulls
-#       refreshInterval: 1m
-#       # Basic Auth
-#       # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password
-#       basicAuth:
-#         enabled: true
-#         username: token
-#         password: #  This can be set via the via the --owl.topic-documentation.git.basic-auth.password flag as well
-#       # SSH Auth
-#       # You can either pass the private key file directly via flag or yaml config or refer to a mounted key file
-#       ssh:
-#         enabled: false
-#         username:
-#         privateKey: # This can be set via the via the --owl.topic-documentation.git.ssh.private-key flag as well
-#         privateKeyFilepath:
-#         passphrase: # This can be set via the via the --owl.topic-documentation.git.ssh.passphrase flag as well
 
 # owl:
 #   # Config to use for embedded topic documentation, see /docs/features/topic-documentation.md for more details
