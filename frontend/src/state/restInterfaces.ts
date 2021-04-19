@@ -221,6 +221,29 @@ export interface PartitionOffset {
     lag: number;
 }
 
+export interface EditConsumerGroupOffsetsRequest {
+    groupId: string;
+    topics: {
+        topicName: string;
+        partitions: {
+            partitionId: number;
+            offset: number;
+        }[];
+    }[];
+}
+
+export interface EditConsumerGroupOffsetsResponse {
+    editOffsetResponse: {
+        topics: {
+            topicName: string,
+            partitions: {
+                partitionID: number,
+                error: string,
+            }[],
+        }[]
+    }
+}
+
 
 export interface TopicLag {
     topic: string; // name

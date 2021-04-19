@@ -551,6 +551,39 @@ const apiStore = {
             }, addError);
     },
 
+    async editConsumerGroupOffsets(groupId: string) {
+
+        // r.Patch("/consumer-groups/{groupId}", api.handlePatchConsumerGroup())
+
+        const response = await fetch('./api/consumer-groups/' + encodeURIComponent(groupId), {
+            method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as AlterPartitionReassignmentsResponse);
+        return data;
+    },
+
+
     refreshAdminInfo(force?: boolean) {
         cachedApiRequest<AdminInfo | null>(`./api/admin`, force)
             .then(info => {
