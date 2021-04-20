@@ -111,7 +111,7 @@ func (p *patchConsumerGroupRequest) OK() error {
 	}
 	for _, topic := range p.Topics {
 		if topic.Partitions == nil {
-			return fmt.Errorf("topic '%v' has no partitions set to be edited")
+			return fmt.Errorf("topic '%v' has no partitions set to be edited", topic.TopicName)
 		}
 	}
 
@@ -197,6 +197,114 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 		}
 
 		res := response{EditOffsetResponse: commitRes}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+type deleteConsumerGroupRequest struct {
+	GroupID string `json:"groupId"`
+	Topics  []struct {
+		// Topic is a topic to commit offsets for.
+		TopicName string `json:"topicName"`
+
+		// Partitions whose group offsets shall get deleted
+		Partitions []struct {
+			ID int32 `json:"partitionId"`
+		} `json:"partitions"`
+	} `json:"topics"`
+}
+
+func (p *deleteConsumerGroupRequest) OK() error {
+	if p.Topics == nil {
+		return fmt.Errorf("at least one topic and partition must be set")
+	}
+	for _, topic := range p.Topics {
+		if topic.Partitions == nil {
+			return fmt.Errorf("topic '%v' has no partitions set to be deleted", topic.TopicName)
+		}
+	}
+
+	return nil
+}
+
+func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
+	type response struct {
+		Topics []owl.DeleteConsumerGroupOffsetsResponseTopic `json:"topics"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse and validate request
+		var req deleteConsumerGroupRequest
+		err := rest.Decode(w, r, &req)
+		if err != nil {
+			var mr *rest.MalformedRequest
+			if errors.As(err, &mr) {
+				restErr := &rest.Error{
+					Err:      fmt.Errorf(mr.Error()),
+					Status:   mr.Status,
+					Message:  mr.Message,
+					IsSilent: false,
+				}
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			} else {
+				restErr := &rest.Error{
+					Err:      err,
+					Status:   http.StatusInternalServerError,
+					Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
+					IsSilent: false,
+				}
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
+			return
+		}
+
+		// 2. Check if logged in user is allowed to edit Consumer Group (always true for Kowl, but not for Kowl Business)
+		canEdit, restErr := api.Hooks.Owl.CanEditConsumerGroup(r.Context(), req.GroupID)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canEdit {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to edit consumer group"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to edit this consumer group",
+				InternalLogs: []zapcore.Field{zap.String("group_id", req.GroupID)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		// 3. Submit delete offset request
+		kmsgReq := make([]kmsg.OffsetDeleteRequestTopic, len(req.Topics))
+		for i, topic := range req.Topics {
+			partitions := make([]kmsg.OffsetDeleteRequestTopicPartition, len(topic.Partitions))
+			for j, partition := range topic.Partitions {
+				partitionReq := kmsg.NewOffsetDeleteRequestTopicPartition()
+				partitionReq.Partition = partition.ID
+				partitions[j] = partitionReq
+			}
+			topicReq := kmsg.NewOffsetDeleteRequestTopic()
+			topicReq.Topic = topic.TopicName
+			topicReq.Partitions = partitions
+			kmsgReq[i] = topicReq
+		}
+
+		// 4. Check response and pass it to the frontend
+		deletedTopics, err := api.OwlSvc.DeleteConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusServiceUnavailable,
+				Message:  fmt.Sprintf("Delete consumer group offset request has failed: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		res := response{Topics: deletedTopics}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
