@@ -3,7 +3,7 @@
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsWrapper, EditConsumerGroupOffsetsResponseTopic
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -551,9 +551,12 @@ const apiStore = {
             }, addError);
     },
 
-    async editConsumerGroupOffsets(groupId: string) {
-
-        // r.Patch("/consumer-groups/{groupId}", api.handlePatchConsumerGroup())
+    async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]):
+        Promise<EditConsumerGroupOffsetsResponseTopic[]> {
+        const request: EditConsumerGroupOffsetsRequest = {
+            groupId: groupId,
+            topics: topics
+        };
 
         const response = await fetch('./api/consumer-groups/' + encodeURIComponent(groupId), {
             method: 'PATCH',
@@ -579,8 +582,8 @@ const apiStore = {
         }
 
         const str = await response.text();
-        const data = (JSON.parse(str) as AlterPartitionReassignmentsResponse);
-        return data;
+        const data = (JSON.parse(str) as EditConsumerGroupOffsetsWrapper);
+        return data.editOffsetResponse.topics;
     },
 
 

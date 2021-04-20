@@ -205,7 +205,7 @@ class GroupByTopics extends Component<{
                         {/* EditButtons */}
                         <div style={{ width: '2px' }} />
                         <div className="iconButton" onClick={() => p.onEditTopic(g)} ><PencilIcon /></div>
-                        <div className="iconButton"><TrashIcon /></div>
+                        <div className="iconButton" onClick={() => this.onDeleteOffsets(g)} ><TrashIcon /></div>
 
                         {/* InfoTags */}
                         <Tooltip placement='top' title='Summed lag of all partitions of the topic' mouseEnterDelay={0}
@@ -256,13 +256,10 @@ class GroupByTopics extends Component<{
                             //         <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
                             //     </Tooltip>
                             // },
-                            render: (text, record) => (
-                                <Button className='iconButton'
-                                    style={{ verticalAlign: 'middle' }}
-                                    type='link' icon={<PencilIcon />}
-                                    size='middle'
-                                />
-                            ),
+                            render: (text, record) => <div style={{ paddingRight: '.5em', display: 'flex', gap: '4px' }}>
+                                <span className="iconButton" onClick={() => p.onEditTopic({ topicName: record.topicName, partitions: [record] })} ><PencilIcon /></span>
+                                <span className="iconButton" onClick={() => this.onDeleteOffsets({ topicName: record.topicName, partitions: [record] })} ><TrashIcon /></span>
+                            </div>,
                         },
                     ]}
                 />
@@ -287,6 +284,21 @@ class GroupByTopics extends Component<{
             </Empty>
 
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{topicEntries}</Collapse>;
+    }
+
+    async onDeleteOffsets(g: GroupMembersByTopic) {
+        const response = await api.editConsumerGroupOffsets(this.props.group.groupId, [{
+            topicName: g.topicName,
+            partitions: g.partitions.map(p => ({
+                partitionId: p.partitionId,
+                offset: 0,
+            }))
+        }]);
+
+        // need to refresh consumer groups after changing something
+        api.refreshConsumerGroup(this.props.group.groupId, true);
+
+        console.log('editConsumerGroupOffsets', { response: response });
     }
 }
 

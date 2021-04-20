@@ -2026,8 +2026,18 @@ tr.inprogress {
     }
 }
 
+
+tr .iconButton {
+    opacity: 0;
+}
+
+tr:hover .iconButton {
+    opacity: 1;
+}
+
 .groupDetails {
     .iconButton {
+        display: inline-block;
         color: #9EA6B2;
         width: 23px;
         height: 23px;

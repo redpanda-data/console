@@ -223,26 +223,34 @@ export interface PartitionOffset {
 
 export interface EditConsumerGroupOffsetsRequest {
     groupId: string;
-    topics: {
-        topicName: string;
-        partitions: {
-            partitionId: number;
-            offset: number;
-        }[];
+    topics: EditConsumerGroupOffsetsTopic[];
+}
+
+export interface EditConsumerGroupOffsetsTopic {
+    topicName: string;
+    partitions: {
+        partitionId: number;
+        offset: number;
     }[];
 }
 
-export interface EditConsumerGroupOffsetsResponse {
-    editOffsetResponse: {
-        topics: {
-            topicName: string,
-            partitions: {
-                partitionID: number,
-                error: string,
-            }[],
-        }[]
-    }
+
+export interface EditConsumerGroupOffsetsWrapper {
+    editOffsetResponse: EditConsumerGroupOffsetsResponse;
 }
+
+export interface EditConsumerGroupOffsetsResponse {
+    topics: EditConsumerGroupOffsetsResponseTopic[]
+}
+
+export interface EditConsumerGroupOffsetsResponseTopic {
+    topicName: string,
+    partitions: {
+        partitionID: number,
+        error: string,
+    }[],
+}
+
 
 
 export interface TopicLag {
