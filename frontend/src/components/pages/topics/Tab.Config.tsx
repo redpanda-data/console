@@ -63,7 +63,7 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         const columns = [
             { title: 'Configuration', dataIndex: 'name', render: (text: string) => <span className={styles.name}>{text}</span> },
             { title: 'Value', dataIndex: 'value', render: (_: unknown, record: Partial<TopicConfigEntry>) => FormatConfigValue(record.name as string, record.value as string, uiSettings.topicList.valueDisplay) },
-            { title: 'Type', dataIndex: 'type', render: (text: string) => <span className={styles.type}>{text.toLowerCase()}</span> },
+            { title: 'Type', dataIndex: 'type', render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span> },
             {
                 title: 'Source',
                 dataIndex: 'source',
@@ -78,34 +78,12 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         return (
             <Table
                 rowKey="name"
-                dataSource={configEntries}
-                expandable={{
-                    rowExpandable: (record) => !record.isDefault,
-                    expandedRowRender: (record) => {
-                        return (
-                            <Table
-                                className={styles.nested}
-                                columns={columns}
-                                dataSource={record.synonyms.filter((synonym) => synonym.source !== record.source).map((synonym) => ({ ...synonym, type: record.type }))}
-                                pagination={false}
-                                showHeader={false}
-                                rowClassName={styles.default}
-                            />
-                        );
-                    },
-                }}
+                dataSource={configEntries.map(filterRedundantSynonyms)}
+                childrenColumnName="synonyms"
                 columns={columns}
-                rowClassName={(record) => (record.isDefault ? styles.default : styles.overidden)}
+                rowClassName={(record) => (record.isExplicitlySet ? styles.overidden : styles.default)}
             />
         );
-
-        // return <Descriptions bordered size="small" colon={false} layout="horizontal" column={1} style={{ display: "inline-block" }}>
-        //     {configEntries.map(e =>
-        //         <Descriptions.Item key={e.name} label={DataName(e)}>
-        //             {DataValue(e.name, e.value, e.isDefault, uiSettings.topicList.valueDisplay)}
-        //         </Descriptions.Item>
-        //     )}
-        // </Descriptions>
     }
 
     @computed get configEntries(): TopicConfigEntry[] {
@@ -113,7 +91,7 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         if (config == null) return [];
 
         return config.configEntries
-            .filter((e) => (uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isDefault : true))
+            .filter((e) => (uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isExplicitlySet : true))
             .sort((a, b) => {
                 switch (uiSettings.topicList.propsOrder) {
                     case 'default':
@@ -122,8 +100,8 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
                         return a.name.localeCompare(b.name);
                     case 'changedFirst':
                         if (uiSettings.topicList.propsOrder != 'changedFirst') return 0;
-                        const v1 = a.isDefault ? 1 : 0;
-                        const v2 = b.isDefault ? 1 : 0;
+                        const v1 = a.isExplicitlySet ? 1 : 0;
+                        const v2 = b.isExplicitlySet ? 1 : 0;
                         return v1 - v2;
                 }
             });
@@ -341,4 +319,12 @@ export function FormatConfigValue(name: string, value: string, formatType: 'frie
     }
 
     return value;
+}
+
+function filterRedundantSynonyms({ synonyms, ...rest }: TopicConfigEntry): Partial<TopicConfigEntry> {
+    if (synonyms?.length <= 1) {
+        return rest;
+    }
+
+    return { ...rest, synonyms: synonyms.slice(1)}
 }

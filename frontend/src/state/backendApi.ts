@@ -377,7 +377,7 @@ const apiStore = {
 
     async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
         const promise = cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
-            .then(v => this.topicConfig.set(topicName, v?.topicDescription ?? null), addError); // 403 -> null
+            .then(v => this.topicConfig.set(topicName, addSynonymTypes(v) ?? null), addError); // 403 -> null
         return promise as Promise<void>;
     },
 
@@ -764,6 +764,15 @@ export const brokerMap = computed(() => {
     return map;
 }, { name: 'brokerMap', equals: comparer.structural });
 
+
+function addSynonymTypes(topicConfigResponse: TopicConfigResponse | null): TopicDescription | null {
+    topicConfigResponse?.topicDescription.configEntries.forEach(configEntry => {
+        configEntry.synonyms.forEach(synonym => {
+            synonym.type = configEntry.type
+        })
+    })
+    return topicConfigResponse?.topicDescription ?? null;
+}
 
 export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);

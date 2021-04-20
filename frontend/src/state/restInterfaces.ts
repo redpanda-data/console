@@ -143,13 +143,15 @@ export interface TopicConfigEntry {
     value: string,
     source: string,
     type: string,
-    isDefault: boolean,
+    isExplicitlySet: boolean,
+    isDefaultValue: boolean,
     isSensitive: boolean,
     documentation: string,
     synonyms: TopicConfigEntrySynonym[]
 }
 
 interface TopicConfigEntrySynonym {
+    type?: string;
     name: string,
     value: string,
     source: string
