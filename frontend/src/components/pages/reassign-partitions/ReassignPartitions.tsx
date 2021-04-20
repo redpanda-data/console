@@ -93,8 +93,9 @@ class ReassignPartitions extends PageComponent {
         this.startRefreshingTopicConfigs();
 
         this.autoScrollReactionDisposer = autorun(() => {
-            const x = this.currentStep;
-            setTimeout(() => scrollTo('wizard', 'start', -20), 20);
+            const currentStep = this.currentStep;
+            if (currentStep != 0)
+                setTimeout(() => scrollTo('wizard', 'start', -20), 20);
         })
 
         reassignmentTracker.start();
@@ -300,7 +301,7 @@ class ReassignPartitions extends PageComponent {
 
 
     async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
-        if (uiSettings.reassignment.maxReplicationTraffic > 0) {
+        if (uiSettings.reassignment.maxReplicationTraffic != null && uiSettings.reassignment.maxReplicationTraffic > 0) {
             const success = await this.setTrafficLimit(request);
             if (!success) return false;
         }
@@ -331,7 +332,7 @@ class ReassignPartitions extends PageComponent {
     }
 
     async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
-        const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic);
+        const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic ?? 0);
 
         const topicReplicas: {
             topicName: string,
@@ -517,7 +518,7 @@ class ReassignPartitions extends PageComponent {
                     </div>
                     <div style={{ margin: '1em 0' }}>
                         <h4>Throttled Topics</h4>
-                        <ul style={{ maxHeight: '145px', overflowY: 'scroll' }}>
+                        <ul style={{ maxHeight: '145px', overflowY: 'auto' }}>
                             {throttledTopics.map(t => <li key={t}>{t}</li>)}
                         </ul>
                     </div>

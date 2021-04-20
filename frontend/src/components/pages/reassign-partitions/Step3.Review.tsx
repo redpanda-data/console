@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { observer } from "mobx-react";
-import { Button, Empty, Input, Select, Slider, Table } from "antd";
+import { Button, Checkbox, Empty, Input, Select, Slider, Table } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { api } from "../../../state/backendApi";
 import { makePaginationConfig } from "../../misc/common";
@@ -105,26 +105,26 @@ export class StepReview extends Component<{
     reassignmentOptions() {
         const settings = uiSettings.reassignment;
 
-        return <div style={{ margin: '3em 1em' }}>
+        return <div style={{ margin: '4em 1em 3em 1em' }}>
             <h2>Bandwidth Throttle</h2>
-            <div>
-                Using throttling you can limit the network traffic for the reassignment.<br />
-                <div style={{ marginTop: '0.5em' }}>
-                    <span style={{ fontWeight: 600 }}>Please Note: </span>
-                    Throttling applies to all replication traffic, not just during reassignments.
-                    Once the reassignment completes you'll have to remove the throttling configuration.
-                    You can check for topics that still have a throttle config using the button below 'Current Reassignments' (at the top of the 'Reassign Partitions' page).
-                </div>
-            </div>
+            <p>Using throttling you can limit the network traffic for reassignments.</p>
 
-            <div style={{ display: 'flex', gap: '1em', marginTop: '2em', paddingBottom: '1em', alignItems: 'center' }}>
+            <div style={{ marginTop: '2em', paddingBottom: '1em' }}>
                 <BandwidthSlider settings={settings} />
             </div>
+
+            <ul style={{ marginTop: '0.5em' }}>
+                <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
+                <li>Once the reassignment completes you'll have to remove the throttling configuration. <br />
+                        Kowl will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
+                        </li>
+            </ul>
         </div>
     }
 
     summary() {
         const settings = uiSettings.reassignment;
+        const maxReplicationTraffic = settings.maxReplicationTraffic ?? 0;
 
         const trafficStats = this.props.topicsWithMoves.map(t => {
             const partitionStats = t.selectedPartitions.map(p => {
@@ -146,7 +146,7 @@ export class StepReview extends Component<{
                 const receivers = p.brokersAfter.except(p.brokersBefore);
 
                 const participatingTransferPairs = Math.min(senders.length, receivers.length);
-                const potentialBandwidth = participatingTransferPairs * settings.maxReplicationTraffic;
+                const potentialBandwidth = participatingTransferPairs * maxReplicationTraffic;
 
                 let estimatedTimeSec = totalTraffic / potentialBandwidth;
                 if (estimatedTimeSec <= 0 || !Number.isFinite(estimatedTimeSec)) {
@@ -171,9 +171,9 @@ export class StepReview extends Component<{
 
         const totalTraffic = trafficStats.sum(t => t.partitionStats.sum(p => p.totalTraffic));
 
-        const isThrottled = settings.maxReplicationTraffic > 0;
+        const isThrottled = settings.maxReplicationTraffic != null && settings.maxReplicationTraffic > 0;
         const trafficThrottle = isThrottled
-            ? prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'
+            ? prettyBytesOrNA(settings.maxReplicationTraffic ?? 0) + '/s'
             : 'disabled';
 
         const estimatedTime = !isThrottled ? '-'

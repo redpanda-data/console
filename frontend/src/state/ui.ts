@@ -137,8 +137,7 @@ const uiSettings = observable({
 
         // Review
         pageSizeReview: 20,
-        maxReplicationTraffic: 0, // bytes per second
-        maxReplicationSizePower: 1, // 1000^X   (0 = bytes, 1 = kb, 2 = mb, 3 = gb)
+        maxReplicationTraffic: 0 as number | null, // bytes per second, or "no change"
     },
 
     topicList: {
