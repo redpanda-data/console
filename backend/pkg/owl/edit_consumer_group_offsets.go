@@ -6,10 +6,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
-type EditConsumerGroupOffsetsResponse struct {
-	Topics []EditConsumerGroupOffsetsResponseTopic `json:"topics"`
-}
-
 type EditConsumerGroupOffsetsResponseTopic struct {
 	TopicName  string                                           `json:"topicName"`
 	Partitions []EditConsumerGroupOffsetsResponseTopicPartition `json:"partitions"`
@@ -21,15 +17,13 @@ type EditConsumerGroupOffsetsResponseTopicPartition struct {
 }
 
 //
-func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) (*EditConsumerGroupOffsetsResponse, error) {
+func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) ([]EditConsumerGroupOffsetsResponseTopic, error) {
 	commitResponse, err := s.kafkaSvc.EditConsumerGroupOffsets(ctx, groupID, topics)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &EditConsumerGroupOffsetsResponse{
-		Topics: make([]EditConsumerGroupOffsetsResponseTopic, len(commitResponse.Topics)),
-	}
+	res := make([]EditConsumerGroupOffsetsResponseTopic, len(commitResponse.Topics))
 	for i, topic := range commitResponse.Topics {
 		partitions := make([]EditConsumerGroupOffsetsResponseTopicPartition, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
@@ -43,7 +37,7 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 				Error: errMsg,
 			}
 		}
-		res.Topics[i] = EditConsumerGroupOffsetsResponseTopic{
+		res[i] = EditConsumerGroupOffsetsResponseTopic{
 			TopicName:  topic.Topic,
 			Partitions: partitions,
 		}
