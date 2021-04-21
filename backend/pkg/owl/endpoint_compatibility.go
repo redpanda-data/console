@@ -44,6 +44,16 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Requests: []kmsg.Request{&kmsg.DescribeGroupsRequest{}, &kmsg.ListGroupsRequest{}},
 		},
 		{
+			URL:      "/api/consumer-groups/{groupId}",
+			Method:   "PATCH",
+			Requests: []kmsg.Request{&kmsg.OffsetCommitRequest{}},
+		},
+		{
+			URL:      "/api/consumer-groups/{groupId}",
+			Method:   "DELETE",
+			Requests: []kmsg.Request{&kmsg.OffsetDeleteRequest{}},
+		},
+		{
 			URL:      "/api/operations/reassign-partitions",
 			Method:   "GET",
 			Requests: []kmsg.Request{&kmsg.ListPartitionReassignmentsRequest{}},
