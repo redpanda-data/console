@@ -21,6 +21,8 @@ const decimalSeperator = (0.123).toLocaleString()[1];
 const nbsp = '\xA0'; // non breaking space
 
 export function numberToThousandsString(n: number): JSX.Element {
+    if (typeof n !== 'number') return <>{n}</>
+
     const parts = n.toLocaleString().split(thousandsSeperator);
     const separator = nbsp;
 

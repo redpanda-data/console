@@ -12,7 +12,7 @@ import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { TablePaginationConfig } from "antd/lib/table";
-import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, RadioOptionGroup } from "../../../utils/tsxUtils";
+import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, RadioOptionGroup, numberToThousandsString } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
 import { SkipIcon } from "@primer/octicons-v2-react";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
@@ -210,7 +210,7 @@ class GroupByTopics extends Component<{
                         {/* InfoTags */}
                         <Tooltip placement='top' title='Summed lag of all partitions of the topic' mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer} >
-                            <Tag style={{ margin: '0', marginLeft: '8px' }} color='blue'>lag: {totalLagAll}</Tag>
+                            <Tag style={{ margin: '0', marginLeft: '8px' }} color='blue'>lag: {numberToThousandsString(totalLagAll)}</Tag>
                         </Tooltip>
                         <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer}>
@@ -244,8 +244,8 @@ class GroupByTopics extends Component<{
                             render: (t, r) => (r.host ??
                                 <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /></span>)
                         },
-                        { width: 120, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset') },
-                        { width: 80, title: 'Lag', dataIndex: 'lag', sorter: sortField('lag') },
+                        { width: 120, title: 'Offset', dataIndex: 'offset', render: v => numberToThousandsString(v), sorter: sortField('offset') },
+                        { width: 80, title: 'Lag', dataIndex: 'lag', render: v => numberToThousandsString(v), sorter: sortField('lag') },
                         {
                             width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                             // filters: [],
@@ -368,7 +368,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                         columns={[
                             { width: 'auto', title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName') },
                             { width: 150, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId') },
-                            { width: 150, title: 'Lag', dataIndex: 'partitionLag', sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
+                            { width: 150, title: 'Lag', dataIndex: 'partitionLag', render: v => numberToThousandsString(v), sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
                         ]}
                     />
                 </Collapse.Panel>
