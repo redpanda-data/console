@@ -28,10 +28,6 @@ export class StepReview extends Component<{
 }> {
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeReview, true);
 
-    get requestInProgress() { return this.props.reassignPartitions.requestInProgress; }
-    set requestInProgress(v) { this.props.reassignPartitions.requestInProgress = v; }
-
-
     render() {
         if (!api.topics)
             return DefaultSkeleton;
