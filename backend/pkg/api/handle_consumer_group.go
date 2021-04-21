@@ -106,12 +106,18 @@ type patchConsumerGroupRequest struct {
 }
 
 func (p *patchConsumerGroupRequest) OK() error {
-	if p.Topics == nil {
+	if len(p.Topics) == 0 {
 		return fmt.Errorf("at least one topic and partition must be set")
 	}
 	for _, topic := range p.Topics {
-		if topic.Partitions == nil {
+		if len(topic.Partitions) == 0 {
 			return fmt.Errorf("topic '%v' has no partitions set to be edited", topic.TopicName)
+		}
+
+		for _, partition := range topic.Partitions {
+			if partition.Offset < -2 {
+				return fmt.Errorf("topic '%v', partition '%v' has an invalid offset < -2", topic.TopicName, partition.ID)
+			}
 		}
 	}
 
@@ -184,14 +190,8 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 		}
 
 		// 4. Check response and pass it to the frontend
-		patchedTopics, err := api.OwlSvc.EditConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
-		if err != nil {
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusServiceUnavailable,
-				Message:  fmt.Sprintf("Edit consumer group offset request has failed: %v", err.Error()),
-				IsSilent: false,
-			}
+		patchedTopics, restErr := api.OwlSvc.EditConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
+		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
@@ -215,11 +215,11 @@ type deleteConsumerGroupRequest struct {
 }
 
 func (p *deleteConsumerGroupRequest) OK() error {
-	if p.Topics == nil {
+	if len(p.Topics) == 0 {
 		return fmt.Errorf("at least one topic and partition must be set")
 	}
 	for _, topic := range p.Topics {
-		if topic.Partitions == nil {
+		if len(topic.Partitions) == 0 {
 			return fmt.Errorf("topic '%v' has no partitions set to be deleted", topic.TopicName)
 		}
 	}
