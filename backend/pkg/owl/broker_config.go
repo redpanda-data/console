@@ -72,9 +72,14 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]Broker
 				}
 			}
 
-			isExplicitlySet := !cfg.IsDefault ||
-				cfg.Source == kmsg.ConfigSourceStaticBrokerConfig ||
-				cfg.Source == kmsg.ConfigSourceDynamicBrokerConfig
+			isExplicitlySet := false
+			if cfg.Source == kmsg.ConfigSourceUnknown {
+				// Kafka <v1.1 uses the IsDefault property. Since then it's been replaced by ConfigSource and defaults
+				// to false. Thus we only consider it if cfg.Source is not set / unknown.
+				isExplicitlySet = !cfg.IsDefault
+			} else {
+				isExplicitlySet = cfg.Source == kmsg.ConfigSourceStaticBrokerConfig || cfg.Source == kmsg.ConfigSourceDynamicBrokerConfig
+			}
 			configEntries[j] = BrokerConfigEntry{
 				Name:            cfg.Name,
 				Value:           cfg.Value,
