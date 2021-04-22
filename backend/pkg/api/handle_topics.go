@@ -2,7 +2,9 @@ package api
 
 import (
 	_ "context"
+	"errors"
 	"fmt"
+	"go.uber.org/zap/zapcore"
 	"net/http"
 	"strings"
 	_ "time"
@@ -279,5 +281,106 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 			Consumers: consumers,
 		}
 		rest.SendResponse(w, r, logger, http.StatusOK, res)
+	}
+}
+
+type listTopicsOffsetRequest struct {
+	Topics []struct {
+		// Topic is a topic to commit offsets for.
+		TopicName  string  `json:"topicName"`
+		Partitions []int32 `json:"partitionIds"`
+	} `json:"topics"`
+
+	// Timestamp (epoch ms) whose offset shall be listed
+	Timestamp int64 `json:"timestamp"`
+}
+
+func (p *listTopicsOffsetRequest) OK() error {
+	if p.Topics == nil {
+		return fmt.Errorf("at least one topic and partition must be set")
+	}
+	for _, topic := range p.Topics {
+		if topic.Partitions == nil {
+			return fmt.Errorf("topic '%v' has no partitions set whose assignments shall be altered", topic.TopicName)
+		}
+	}
+
+	return nil
+}
+
+func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
+	type response struct {
+		TopicOffsets []owl.TopicOffset `json:"topicOffsets"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse and validate request
+		var req listTopicsOffsetRequest
+		err := rest.Decode(w, r, &req)
+		if err != nil {
+			var mr *rest.MalformedRequest
+			if errors.As(err, &mr) {
+				restErr := &rest.Error{
+					Err:      fmt.Errorf(mr.Error()),
+					Status:   mr.Status,
+					Message:  mr.Message,
+					IsSilent: false,
+				}
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
+
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusInternalServerError,
+				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 2. Check if logged in user is allowed list partitions (always true for Kowl, but not for Kowl Business)
+		for _, topic := range req.Topics {
+			canView, restErr := api.Hooks.Owl.CanViewTopicPartitions(r.Context(), topic.TopicName)
+			if restErr != nil {
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
+
+			if !canView {
+				restErr := &rest.Error{
+					Err:          fmt.Errorf("requester has no permissions to view partitions for the requested topic"),
+					Status:       http.StatusForbidden,
+					Message:      "You don't have permissions to view partitions for that topic",
+					IsSilent:     false,
+					InternalLogs: []zapcore.Field{zap.String("topic_name", topic.TopicName)},
+				}
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
+		}
+
+		// 3. Request topic
+		topicPartitions := make(map[string][]int32)
+		for _, topic := range req.Topics {
+			topicPartitions[topic.TopicName] = topic.Partitions
+		}
+		topicOffsets, err := api.OwlSvc.ListOffsets(r.Context(), topicPartitions, req.Timestamp)
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("failed to list offsets: %w", err),
+				Status:   http.StatusForbidden,
+				Message:  fmt.Sprintf("Failed to list offsets from Kafka: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		res := response{
+			TopicOffsets: topicOffsets,
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
