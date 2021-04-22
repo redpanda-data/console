@@ -6,19 +6,21 @@ import { api } from "../../../state/backendApi";
 import { PageComponent, PageInitHelper } from "../Page";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { MotionDiv } from "../../../utils/animationProps";
-import { GroupDescription, GroupMemberDescription } from "../../../state/restInterfaces";
-import { observable } from "mobx";
+import { GroupDescription, } from "../../../state/restInterfaces";
+import { observable, transaction } from "mobx";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { TablePaginationConfig } from "antd/lib/table";
-import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, RadioOptionGroup, numberToThousandsString } from "../../../utils/tsxUtils";
+import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
 import { SkipIcon } from "@primer/octicons-v2-react";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
 import { PencilIcon, TrashIcon, XCircleIcon } from '@heroicons/react/solid';
 import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
-import { EditOffsetsModal } from "./Modals";
+import { EditOffsetsModal, GroupOffset } from "./Modals";
+import { AnimatePresence, AnimateSharedLayout, motion } from "framer-motion";
+import ReactCSSTransitionReplace from 'react-css-transition-replace';
 
 
 @observer
@@ -26,7 +28,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     @observable viewMode: 'topic' | 'member' = 'topic';
     @observable onlyShowPartitionsWithLag: boolean = false;
 
-    @observable edittingMembersByTopic: GroupMembersByTopic | null = null;
+    @observable edittingOffsets: GroupOffset[] | null = null;
 
     initPage(p: PageInitHelper): void {
         const group = this.props.groupId;
@@ -75,7 +77,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 {/* Main Card */}
                 <Card>
                     {/* View Buttons */}
-                    <Space size='large' style={{ marginLeft: '.5em', marginBottom: '2em' }}>
+                    <div style={{ display: 'flex', marginLeft: '.5em', marginBottom: '2em', gap: '2em' }}>
 
                         <OptionGroup label='View'
                             options={{
@@ -94,56 +96,36 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                             value={this.onlyShowPartitionsWithLag}
                             onChange={s => this.onlyShowPartitionsWithLag = s}
                         />
-                    </Space>
+                    </div>
 
                     {this.viewMode == 'member'
                         ? <GroupByMembers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
                         : <GroupByTopics group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag}
-                            onEditTopic={g => this.edittingMembersByTopic = g}
+                            onEditOffsets={g => this.edittingOffsets = g}
+                            onDeleteOffsets={g => { /* todo */ }}
                         />
                     }
                 </Card>
 
                 {/* Modals */}
                 <>
-
-
                     <EditOffsetsModal
                         group={group}
-                        membersByTopic={this.edittingMembersByTopic}
-                        onClose={() => this.edittingMembersByTopic = null}
+                        offsets={this.edittingOffsets}
+                        onClose={() => this.edittingOffsets = null}
                     />
-
-                    {/*
-                        font-family: "Inter";
-                        font-size: 12px;
-                        font-weight: 500;
-                    */}
-
                 </>
             </MotionDiv>
         );
     }
 }
 
-export type GroupMembersByTopic = {
-    topicName: string;
-    partitions: {
-        topicName: string;
-        partitionId: number;
-        lag: number;
-        assignedMember: GroupMemberDescription | undefined;
-        id: string | undefined;
-        clientId: string | undefined;
-        host: string | undefined;
-    }[];
-};
-
 @observer
 class GroupByTopics extends Component<{
     group: GroupDescription,
     onlyShowPartitionsWithLag: boolean,
-    onEditTopic: (g: GroupMembersByTopic) => void,
+    onEditOffsets: (offsets: GroupOffset[]) => void,
+    onDeleteOffsets: (offsets: GroupOffset[]) => void,
 }>{
 
     pageConfig: TablePaginationConfig;
@@ -204,8 +186,8 @@ class GroupByTopics extends Component<{
 
                         {/* EditButtons */}
                         <div style={{ width: '2px' }} />
-                        <div className="iconButton" onClick={() => p.onEditTopic(g)} ><PencilIcon /></div>
-                        <div className="iconButton" onClick={() => this.onDeleteOffsets(g)} ><TrashIcon /></div>
+                        <div className="iconButton" onClick={e => { p.onEditOffsets(g.partitions); e.stopPropagation(); }} ><PencilIcon /></div>
+                        <div className="iconButton" onClick={e => { p.onDeleteOffsets(g.partitions); e.stopPropagation(); }} ><TrashIcon /></div>
 
                         {/* InfoTags */}
                         <Tooltip placement='top' title='Summed lag of all partitions of the topic' mouseEnterDelay={0}
@@ -257,8 +239,8 @@ class GroupByTopics extends Component<{
                             //     </Tooltip>
                             // },
                             render: (text, record) => <div style={{ paddingRight: '.5em', display: 'flex', gap: '4px' }}>
-                                <span className="iconButton" onClick={() => p.onEditTopic({ topicName: record.topicName, partitions: [record] })} ><PencilIcon /></span>
-                                <span className="iconButton" onClick={() => this.onDeleteOffsets({ topicName: record.topicName, partitions: [record] })} ><TrashIcon /></span>
+                                <span className="iconButton" onClick={() => p.onEditOffsets([record])} ><PencilIcon /></span>
+                                <span className="iconButton" onClick={() => p.onDeleteOffsets([record])} ><TrashIcon /></span>
                             </div>,
                         },
                     ]}
@@ -286,20 +268,7 @@ class GroupByTopics extends Component<{
         return <Collapse bordered={false} defaultActiveKey={defaultExpand}>{topicEntries}</Collapse>;
     }
 
-    async onDeleteOffsets(g: GroupMembersByTopic) {
-        const response = await api.editConsumerGroupOffsets(this.props.group.groupId, [{
-            topicName: g.topicName,
-            partitions: g.partitions.map(p => ({
-                partitionId: p.partitionId,
-                offset: 0,
-            }))
-        }]);
 
-        // need to refresh consumer groups after changing something
-        api.refreshConsumerGroup(this.props.group.groupId, true);
-
-        console.log('editConsumerGroupOffsets', { response: response });
-    }
 }
 
 @observer
@@ -459,3 +428,4 @@ const ProtocolType = (p: { group: GroupDescription }) => {
 }
 
 export default GroupDetails;
+

@@ -258,24 +258,22 @@ export class RadioOptionGroup<T> extends Component<{
 
         const radioGroup = (
             <Radio.Group className='radioOptionGroup' value={p.value} onChange={e => p.onChange(e.target.value)}>
-                <AnimatePresence>
-                    {p.options.map(kv =>
-                        <Radio key={kv.key ?? kv.value} value={kv.value}>
-                            <div style={{ fontWeight: 500, display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
-                            <div style={{ marginLeft: '27px', color: '#999', whiteSpace: 'normal' }}>{kv.subTitle}</div>
-                            <AnimatePresence>
+                {p.options.map(kv =>
+                    <Radio key={kv.key ?? kv.value} value={kv.value}>
+                        <div style={{ fontWeight: 500, display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
+                        <div style={{ marginLeft: '27px', color: '#999', whiteSpace: 'normal' }}>{kv.subTitle}</div>
+                        <AnimatePresence>
 
-                                {kv.content && (p.showContent == 'always' || (p.value == kv.value)) &&
+                            {kv.content && (p.showContent == 'always' || (p.value == kv.value)) &&
 
-                                    <MotionDiv animProps={animProps_radioOptionGroup} key={String(kv.value)} style={{ marginLeft: '27px', marginTop: '12px' }}>
-                                        <div >{kv.content}</div>
-                                    </MotionDiv>
+                                <MotionDiv animProps={animProps_radioOptionGroup} key={String(kv.value)} style={{ marginLeft: '27px', marginTop: '12px' }}>
+                                    <div >{kv.content}</div>
+                                </MotionDiv>
 
-                                }
-                            </AnimatePresence>
-                        </Radio>
-                    )}
-                </AnimatePresence>
+                            }
+                        </AnimatePresence>
+                    </Radio>
+                )}
             </Radio.Group>
         );
 

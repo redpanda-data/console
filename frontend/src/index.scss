@@ -2048,3 +2048,69 @@ tr:hover .iconButton {
         }
     }
 }
+
+
+$easeInQuad: cubic-bezier(0.550, 0.085, 0.680, 0.530);
+$easeInCubic: cubic-bezier(0.550, 0.055, 0.675, 0.190);
+$easeInSine: cubic-bezier(0.470, 0.000, 0.745, 0.715);
+$easeInExpo: cubic-bezier(0.950, 0.050, 0.795, 0.035);
+$easeInCirc: cubic-bezier(0.600, 0.040, 0.980, 0.335);
+
+$easeOutQuad: cubic-bezier(0.250, 0.460, 0.450, 0.940);
+$easeOutCubic: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+$easeOutSine: cubic-bezier(0.390, 0.575, 0.565, 1.000);
+$easeOutExpo: cubic-bezier(0.190, 1.000, 0.220, 1.000);
+$easeOutCirc: cubic-bezier(0.075, 0.820, 0.165, 1.000);
+
+$easeInOutQuad: cubic-bezier(0.455, 0.030, 0.515, 0.955);
+$easeInOutCubic: cubic-bezier(0.645, 0.045, 0.355, 1.000);
+$easeInOutSine: cubic-bezier(0.445, 0.050, 0.550, 0.950);
+$easeInOutExpo: cubic-bezier(1.000, 0.000, 0.000, 1.000);
+$easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
+
+.crossFade {
+    $fadeTimeIn: 400ms;
+    $fadeTimeOut: 400ms;
+    $fadeTimeHeight: 200ms;
+
+    outline: solid red 2px;
+
+    &-enter {
+        position: absolute;
+        opacity: 0;
+        transform: translateX(-20px) scale(1);
+    }
+
+
+    &-enter-active {
+        opacity: 1;
+
+        transition:
+            opacity $fadeTimeIn $easeOutCirc,
+            transform $fadeTimeIn $easeOutCirc;
+
+        transform: translateX(0) scale(1);
+    }
+
+    &-leave {
+        position: absolute;
+        opacity: 1;
+        transform: translateX(0em) scale(1);
+    }
+
+    &-leave-active {
+        opacity: 0;
+        transform: translateX(10px) scale(1);
+
+        transition:
+            opacity $fadeTimeOut $easeOutCirc,
+            transform $fadeTimeOut $easeOutCirc;
+    }
+
+
+    &-height {
+        transition:
+            height $fadeTimeHeight $easeOutCirc,
+            width $fadeTimeHeight $easeOutCirc;
+    }
+}

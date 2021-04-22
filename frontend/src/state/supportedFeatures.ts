@@ -21,7 +21,7 @@ export class Feature {
     static readonly GetReassignments: FeatureEntry = { endpoint: "/api/operations/reassign-partitions", method: 'GET' };
     static readonly PatchReassignments: FeatureEntry = { endpoint: "/api/operations/reassign-partitions", method: 'PATCH' };
     static readonly PatchGroup: FeatureEntry = { endpoint: "/api/consumer-groups/{groupId}", method: 'PATCH' };
-    static readonly DeleteGroup: FeatureEntry = { endpoint: "/api/consumer-groups/{groupId}", method: 'PATCH' };
+    static readonly DeleteGroup: FeatureEntry = { endpoint: "/api/consumer-groups/{groupId}", method: 'DELETE' };
 }
 
 // As soon as the supported endpoints are available we should check if

@@ -9,7 +9,7 @@ import { toJson } from "../utils/jsonUtils";
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { MotionDiv, MotionDivInvertedScale } from '../utils/animationProps';
+import { MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
