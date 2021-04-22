@@ -8,7 +8,7 @@ import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
 import { SelectionInfoBar } from "./components/StatisticsBars";
 import { DebugTimerStore, prettyBytesOrNA } from "../../../utils/utils";
 import { ColumnProps } from "antd/lib/table/Column";
-import { DefaultSkeleton, findPopupContainer, LayoutBypass, OptionGroup, TextInfoIcon } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, findPopupContainer, LayoutBypass, OptionGroup, InfoText } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
 import { computed, IReactionDisposer, observable, transaction } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
@@ -94,7 +94,9 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             {
                 title: 'Replication Factor', width: 160, render: (t, r) => {
                     if (r.activeReassignments.length == 0) return r.replicationFactor;
-                    return <TextInfoIcon text={String(r.replicationFactor)} info="While reassignment is active, replication factor is temporarily doubled." maxWidth="180px" />
+                    return <InfoText tooltip="While reassignment is active, replication factor is temporarily doubled." maxWidth="180px">
+                        {r.replicationFactor}
+                    </InfoText>
                 },
                 sorter: sortField('replicationFactor')
             },
@@ -170,7 +172,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                         rowSelection={{
                             type: 'checkbox',
                             columnTitle: <div style={{ display: 'flex' }} >
-                                <TextInfoIcon text="" info={<>
+                                <InfoText tooltip={<>
                                     If you want to select multiple adjacent items, you can use the SHIFT key.<br />
                                 Shift-Click selects the first item, last item and all items in between.
                             </>} iconSize='16px' placement='right' />

@@ -870,7 +870,7 @@ td .ant-table-cell {
 }
 
 tr.consumerGroupNoMemberAssigned {
-    color: rgba(0, 0, 0, 0.25);
+    color: rgba(0, 0, 0, 0.3);
 }
 
 .labelText {
@@ -1164,6 +1164,10 @@ svg {
     background: rgb(219, 219, 219);
     border-width: 0px;
 }
+
+// .ant-collapse-borderless {
+//     background-color: #f7fafc;
+// }
 
 .ant-collapse>.ant-collapse-item>.ant-collapse-header {
     padding: 6px;
@@ -2113,4 +2117,76 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
             height $fadeTimeHeight $easeOutCirc,
             width $fadeTimeHeight $easeOutCirc;
     }
+}
+
+
+// Reduce paddings for small table
+.ant-table.ant-table-small .ant-table-title,
+.ant-table.ant-table-small .ant-table-footer,
+.ant-table.ant-table-small .ant-table-thead>tr>th,
+.ant-table.ant-table-small .ant-table-tbody>tr>td,
+.ant-table.ant-table-small tfoot>tr>th,
+.ant-table.ant-table-small tfoot>tr>td {
+    padding: 6px 8px;
+}
+
+.consumerGroupModal {
+    &-edit {
+        // edit dialog
+    }
+
+    &-delete {
+        // delete dialog
+    }
+
+    .ant-collapse-content-box {
+        padding: 8px;
+    }
+
+    .ant-table.ant-table-small {
+
+        .ant-table-tbody,
+        .ant-table-thead {
+            &>tr {
+
+                &.unchanged {
+                    color: rgba(0, 0, 0, 0.3);
+                }
+
+                &>th.ant-table-cell {
+                    padding-left: 10px;
+                }
+
+                &>td {
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+
+                    &:first-child {
+                        padding-left: 16px;
+                    }
+                }
+
+            }
+        }
+
+
+    }
+
+    .ant-table-wrapper {
+        .ant-pagination {
+            // curent antd has a bug: pagination position 'none' has no effect, so we fix it in css
+            display: none;
+        }
+    }
+
+
+}
+
+.ant-table.ant-table-small .ant-table-title,
+.ant-table.ant-table-small .ant-table-footer,
+.ant-table.ant-table-small .ant-table-thead>tr>th,
+.ant-table.ant-table-small .ant-table-tbody>tr>td,
+.ant-table.ant-table-small tfoot>tr>th,
+.ant-table.ant-table-small tfoot>tr>td {
+    // color: red;
 }

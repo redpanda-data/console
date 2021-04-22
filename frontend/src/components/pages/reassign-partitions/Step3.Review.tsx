@@ -7,7 +7,7 @@ import { makePaginationConfig } from "../../misc/common";
 import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from "../../../state/restInterfaces";
 import { computed, observable } from "mobx";
 import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
-import { DefaultSkeleton, Label, TextInfoIcon } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, Label, InfoText } from "../../../utils/tsxUtils";
 import { BrokerList } from "./components/BrokerList";
 import ReassignPartitions, { PartitionSelection, } from "./ReassignPartitions";
 import { clone } from "../../../utils/jsonUtils";
@@ -53,11 +53,10 @@ export class StepReview extends Component<{
             },
             {
                 width: 100, title: (p) =>
-                    <TextInfoIcon
-                        text="Reassignments"
-                        info="The number of replicas that will be moved to a different broker."
+                    <InfoText
+                        tooltip="The number of replicas that will be moved to a different broker."
                         maxWidth='180px'
-                    />,
+                    >Reassignments</InfoText>,
                 render: (v, r) => r.selectedPartitions.sum(p => p.movedReplicas),
             },
             {

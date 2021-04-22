@@ -186,8 +186,17 @@ export function findPopupContainer(current: HTMLElement): HTMLElement {
     return current;
 }
 
-export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor?: string, tooltipOverText?: boolean, iconSize?: string, maxWidth?: string, placement?: TooltipPlacement }) => {
-    const overlay = p.maxWidth == null ? p.info : <div style={{ maxWidth: p.maxWidth }}>{p.info}</div>
+export const InfoText = (p: {
+    tooltip: React.ReactNode,
+    children?: React.ReactNode
+    iconColor?: string,
+    tooltipOverText?: boolean,
+    iconSize?: string,
+    maxWidth?: string,
+    placement?: TooltipPlacement
+}) => {
+
+    const overlay = p.maxWidth == null ? p.tooltip : <div style={{ maxWidth: p.maxWidth }}>{p.tooltip}</div>
 
     const size = p.iconSize ?? '14px';
 
@@ -200,13 +209,13 @@ export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor
     if (p.tooltipOverText == null || p.tooltipOverText === true)
         return <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                {p.text}
+                {p.children}
                 {icon}
             </span>
         </Tooltip>
 
     return <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-        {p.text}
+        {p.children}
         <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
             {icon}
         </Tooltip>

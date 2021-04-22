@@ -803,12 +803,12 @@ class StartOffsetDateTimePicker extends Component {
             format={format}
             value={current}
             onChange={e => {
-                console.log('onChange', { value: e?.format() ?? 'null', isLocal: e?.isLocal(), unix: e?.valueOf() });
+                // console.log('onChange', { value: e?.format() ?? 'null', isLocal: e?.isLocal(), unix: e?.valueOf() });
                 searchParams.startTimestamp = e?.valueOf() ?? -1;
                 searchParams.startTimestampWasSetByUser = true;
             }}
             onOk={e => {
-                console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
+                // console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
                 searchParams.startTimestamp = e.valueOf();
             }}
         />

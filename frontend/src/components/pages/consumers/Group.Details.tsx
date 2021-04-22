@@ -7,7 +7,7 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { MotionDiv } from "../../../utils/animationProps";
 import { GroupDescription, } from "../../../state/restInterfaces";
-import { observable, transaction } from "mobx";
+import { computed, observable, transaction } from "mobx";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
@@ -42,13 +42,13 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     }
 
     refreshData(force: boolean) {
-        api.refreshConsumerGroups(force);
+        api.refreshConsumerGroup(this.props.groupId);
     };
 
     render() {
         // Get info about the group
         if (api.consumerGroups.size == 0) return DefaultSkeleton;
-        const group = api.consumerGroups.get(this.props.groupId);
+        const group = this.group;
         if (!group) return DefaultSkeleton;
 
         // Get info about each topic
@@ -77,7 +77,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 {/* Main Card */}
                 <Card>
                     {/* View Buttons */}
-                    <div style={{ display: 'flex', marginLeft: '.5em', marginBottom: '2em', gap: '2em' }}>
+                    <div style={{ display: 'flex', marginLeft: '.5em', marginBottom: '2em', gap: '1em', alignItems: 'flex-end' }}>
 
                         <OptionGroup label='View'
                             options={{
@@ -96,8 +96,12 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                             value={this.onlyShowPartitionsWithLag}
                             onChange={s => this.onlyShowPartitionsWithLag = s}
                         />
+
+                        <Button style={{ marginLeft: 'auto' }} onClick={() => this.editCompleteGroup()}>Edit Group</Button>
+                        <Button danger>Delete Group</Button>
                     </div>
 
+                    {/* Main Content */}
                     {this.viewMode == 'member'
                         ? <GroupByMembers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
                         : <GroupByTopics group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag}
@@ -117,6 +121,22 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 </>
             </MotionDiv>
         );
+    }
+
+    @computed get group() {
+        return api.consumerGroups.get(this.props.groupId);
+    }
+
+    editCompleteGroup() {
+        const groupOffsets = this.group?.topicOffsets.flatMap(x => {
+            return x.partitionOffsets.map(p => {
+                return { topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset } as GroupOffset;
+            });
+        });
+
+        if (!groupOffsets) return;
+
+        this.edittingOffsets = groupOffsets;
     }
 }
 
@@ -335,9 +355,9 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                         dataSource={assignmentsFlat}
                         rowKey={r => r.topicName + r.partitionId}
                         columns={[
-                            { width: 'auto', title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName') },
-                            { width: 150, title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId') },
-                            { width: 150, title: 'Lag', dataIndex: 'partitionLag', render: v => numberToThousandsString(v), sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
+                            { width: 130, title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName') },
+                            { title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId') },
+                            { title: 'Lag', dataIndex: 'partitionLag', render: v => numberToThousandsString(v), sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
                         ]}
                     />
                 </Collapse.Panel>
