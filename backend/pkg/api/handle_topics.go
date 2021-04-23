@@ -2,10 +2,10 @@ package api
 
 import (
 	_ "context"
-	"errors"
 	"fmt"
 	"go.uber.org/zap/zapcore"
 	"net/http"
+	"strconv"
 	"strings"
 	_ "time"
 
@@ -284,56 +284,43 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 	}
 }
 
-type listTopicsOffsetRequest struct {
-	Topics []struct {
-		// Topic is a topic to commit offsets for.
-		TopicName  string  `json:"topicName"`
-		Partitions []int32 `json:"partitionIds"`
-	} `json:"topics"`
-
-	// Timestamp (epoch ms) whose offset shall be listed
-	Timestamp int64 `json:"timestamp"`
-}
-
-func (p *listTopicsOffsetRequest) OK() error {
-	if p.Topics == nil {
-		return fmt.Errorf("at least one topic and partition must be set")
-	}
-	for _, topic := range p.Topics {
-		if topic.Partitions == nil {
-			return fmt.Errorf("topic '%v' has no partitions set whose assignments shall be altered", topic.TopicName)
-		}
-	}
-
-	return nil
-}
-
 func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 	type response struct {
 		TopicOffsets []owl.TopicOffset `json:"topicOffsets"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Parse and validate request
-		var req listTopicsOffsetRequest
-		err := rest.Decode(w, r, &req)
-		if err != nil {
-			var mr *rest.MalformedRequest
-			if errors.As(err, &mr) {
-				restErr := &rest.Error{
-					Err:      fmt.Errorf(mr.Error()),
-					Status:   mr.Status,
-					Message:  mr.Message,
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-
+		// 1. Parse topic names and timestamp from URL. It's a list of topic names that is comma separated
+		requestedTopicNames := r.URL.Query().Get("topicNames")
+		if requestedTopicNames == "" {
 			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
+				Err:      fmt.Errorf("required parameter topicNames is missing"),
+				Status:   http.StatusBadRequest,
+				Message:  "Required parameter topicNames is missing",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		topicNames := strings.Split(requestedTopicNames, ",")
+
+		timestampStr := r.URL.Query().Get("timestamp")
+		if timestampStr == "" {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("required parameter timestamp is missing"),
+				Status:   http.StatusBadRequest,
+				Message:  "Required parameter timestamp is missing",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		timestamp, err := strconv.Atoi(timestampStr)
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("timestamp parameter must be a valid int"),
+				Status:   http.StatusBadRequest,
+				Message:  "Timestamp parameter must be a valid int",
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -341,8 +328,8 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 		}
 
 		// 2. Check if logged in user is allowed list partitions (always true for Kowl, but not for Kowl Business)
-		for _, topic := range req.Topics {
-			canView, restErr := api.Hooks.Owl.CanViewTopicPartitions(r.Context(), topic.TopicName)
+		for _, topic := range topicNames {
+			canView, restErr := api.Hooks.Owl.CanViewTopicPartitions(r.Context(), topic)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -354,7 +341,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 					Status:       http.StatusForbidden,
 					Message:      "You don't have permissions to view partitions for that topic",
 					IsSilent:     false,
-					InternalLogs: []zapcore.Field{zap.String("topic_name", topic.TopicName)},
+					InternalLogs: []zapcore.Field{zap.String("topic_name", topic)},
 				}
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -362,11 +349,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 		}
 
 		// 3. Request topic
-		topicPartitions := make(map[string][]int32)
-		for _, topic := range req.Topics {
-			topicPartitions[topic.TopicName] = topic.Partitions
-		}
-		topicOffsets, err := api.OwlSvc.ListOffsets(r.Context(), topicPartitions, req.Timestamp)
+		topicOffsets, err := api.OwlSvc.ListOffsets(r.Context(), topicNames, int64(timestamp))
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("failed to list offsets: %w", err),
