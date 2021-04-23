@@ -3,9 +3,11 @@ package schema
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"time"
+	 "net/http"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -42,6 +44,46 @@ func newClient(cfg Config) (*Client, error) {
 	}
 	if cfg.BearerToken != "" {
 		client = client.SetAuthToken(cfg.BearerToken)
+	}
+
+	// Configure Client Certificat transport
+	if cfg.TLS.Enabled {
+
+		cert, err := ioutil.ReadFile(cfg.TLS.CertFilepath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read cert file for schema registry client: %w", err)
+		}
+
+		privateKey, err := ioutil.ReadFile(cfg.TLS.KeyFilepath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read key file for schema registry client: %w", err)
+		}
+
+		pemBlock, _ := pem.Decode(privateKey)
+		if pemBlock == nil {
+			return nil, fmt.Errorf("no valid private key found")
+		}
+		if x509.IsEncryptedPEMBlock(pemBlock) {
+			decryptedKey, err := x509.DecryptPEMBlock(pemBlock, []byte(cfg.TLS.Passphrase))
+			if err != nil {
+				return nil, fmt.Errorf("private key is encrypted, but could not decrypt it: %s", err)
+			}
+			// If private key was encrypted we can overwrite the original contents now with the decrypted version
+			privateKey = pem.EncodeToMemory(&pem.Block{Type: pemBlock.Type, Bytes: decryptedKey})
+		}
+
+		tlsCert, err := tls.X509KeyPair(cert, privateKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load certificate pair for schema registry client: %w", err)
+		}
+
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{tlsCert},
+		}
+		tlsConfig.BuildNameToCertificate()
+		transport := &http.Transport{TLSClientConfig: tlsConfig}
+
+		client.SetTransport(transport)
 	}
 
 	// Use custom root ca if desired
