@@ -620,15 +620,20 @@ type NoticeType = 'info' | 'success' | 'error' | 'warning' | 'loading';
 export class Message {
     private key: string;
     private hideFunc: MessageType;
+    private duration: number | null;
 
-    constructor(private text: string, private type: NoticeType = 'loading', private duration: number | null = 0) {
+    constructor(private text: string, private type: NoticeType = 'loading', private suffix: string = "") {
         this.key = randomId();
+        if (type == 'loading')
+            this.duration = 0; // loading stays open until changed
+        else
+            this.duration = null; // others disappear automatically
         this.update();
     }
 
     private update() {
         this.hideFunc = message.open({
-            content: this.text,
+            content: this.text + this.suffix,
             key: this.key,
             type: this.type,
             duration: this.duration,
@@ -639,24 +644,27 @@ export class Message {
         this.hideFunc();
     }
 
-    setLoading(text?: string) {
+    setLoading(text?: string, suffix?: string) {
         if (text) this.text = text;
+        if (suffix) this.suffix = suffix;
         this.type = 'loading';
         this.duration = 0;
         this.update();
     }
 
-    setSuccess(text?: string) {
+    setSuccess(text?: string, suffix?: string) {
         if (text) this.text = text;
+        if (suffix) this.suffix = suffix;
         this.type = 'success';
-        this.duration = 3;
+        this.duration = 2.5;
         this.update();
     }
 
-    setError(text?: string) {
+    setError(text?: string, suffix?: string) {
         if (text) this.text = text;
+        if (suffix) this.suffix = suffix;
         this.type = 'error';
-        this.duration = 3;
+        this.duration = 2.5;
         this.update();
     }
 }

@@ -189,9 +189,11 @@ export function findPopupContainer(current: HTMLElement): HTMLElement {
 export const InfoText = (p: {
     tooltip: React.ReactNode,
     children?: React.ReactNode
-    iconColor?: string,
     tooltipOverText?: boolean,
+
+    iconColor?: string,
     iconSize?: string,
+
     maxWidth?: string,
     placement?: TooltipPlacement
 }) => {
@@ -259,6 +261,7 @@ export class RadioOptionGroup<T> extends Component<{
     }[],
     value: T, onChange: (value: T) => void,
     showContent?: 'always' | 'onlyWhenSelected',
+    disabled?: boolean,
     children?: never
 }> {
 
@@ -268,7 +271,7 @@ export class RadioOptionGroup<T> extends Component<{
         const radioGroup = (
             <Radio.Group className='radioOptionGroup' value={p.value} onChange={e => p.onChange(e.target.value)}>
                 {p.options.map(kv =>
-                    <Radio key={kv.key ?? kv.value} value={kv.value}>
+                    <Radio key={kv.key ?? kv.value} value={kv.value} disabled={p.disabled}>
                         <div style={{ fontWeight: 500, display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
                         <div style={{ marginLeft: '27px', color: '#999', whiteSpace: 'normal' }}>{kv.subTitle}</div>
                         <AnimatePresence>

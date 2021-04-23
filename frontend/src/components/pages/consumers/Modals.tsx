@@ -4,10 +4,10 @@ import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '
 import { Component } from 'react';
 import React from 'react';
 import { findPopupContainer, numberToThousandsString, QuickTable, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
-import { Button, Collapse, ConfigProvider, DatePicker, message, Modal, Radio, Select, Table, Tooltip } from 'antd';
+import { Alert, Button, Collapse, ConfigProvider, DatePicker, message, Modal, Popover, Radio, Select, Table, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, computed, FlowCancellationError, IReactionDisposer, observable, transaction, untracked } from 'mobx';
-import { GroupDescription } from '../../../state/restInterfaces';
+import { GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-v2-react';
 import { animProps_modalPage, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { AnimatePresence, AnimateSharedLayout, motion } from 'framer-motion';
@@ -16,6 +16,8 @@ import { sortField } from '../../misc/common';
 import moment from 'moment';
 import { clone } from '../../../utils/jsonUtils';
 import { api } from '../../../state/backendApi';
+import { WarningOutlined } from '@ant-design/icons';
+import { Message } from '../../../utils/utils';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -34,7 +36,12 @@ export type GroupOffset = {
     // in that case we don't have a "Current Offset"
     offset?: number;
 
-    newOffset?: number | Date; // start/end/other: number, timestamp: Date
+    // start/end/other:
+    // undefined  =>
+    // number     => concrete offset from other consumer group
+    // Date       => placeholder for 'specific time' until real offsets are loaded
+    // PartitionOffset => real offsets for Date
+    newOffset?: number | Date | PartitionOffset;
 };
 
 
@@ -59,6 +66,8 @@ export class EditOffsetsModal extends Component<{
     @observable otherConsumerGroups: GroupDescription[] = [];
     @observable selectedGroup: string | undefined = undefined;
     @observable otherGroupCopyMode: 'all' | 'onlyExisting' = 'onlyExisting';
+
+    @observable isLoadingTimestamps = false;
 
     render() {
         let { group, offsets } = this.props;
@@ -118,6 +127,7 @@ export class EditOffsetsModal extends Component<{
     page1() {
 
         return <RadioOptionGroup<EditOptions>
+            disabled={this.isLoadingTimestamps}
             value={this.selectedOption}
             onChange={v => this.selectedOption = v}
             options={[
@@ -139,7 +149,7 @@ export class EditOffsetsModal extends Component<{
                         paddingTop: '6px',
                         marginLeft: '-1px',
                     }}>
-                        <GroupTimePicker valueUtcMs={this.timestampUtcMs} onChange={t => this.timestampUtcMs = t} />
+                        <GroupTimePicker valueUtcMs={this.timestampUtcMs} onChange={t => this.timestampUtcMs = t} disabled={this.isLoadingTimestamps} />
                     </div>
                 },
                 {
@@ -157,6 +167,7 @@ export class EditOffsetsModal extends Component<{
                                 options={this.otherConsumerGroups.map(g => ({ value: g.groupId, label: g.groupId, title: g.groupId, }))}
                                 value={this.selectedGroup}
                                 onChange={x => this.selectedGroup = x}
+                                disabled={this.isLoadingTimestamps}
                             />
 
                             <Radio.Group defaultValue='onlyExisting' style={{
@@ -166,12 +177,12 @@ export class EditOffsetsModal extends Component<{
                                 value={this.otherGroupCopyMode}
                                 onChange={x => this.otherGroupCopyMode = x.target.value}
                             >
-                                <Radio value='onlyExisting'>
+                                <Radio value='onlyExisting' disabled={this.isLoadingTimestamps} >
                                     <InfoText tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored." maxWidth="450px" >
                                         Copy matching offsets
                                         </InfoText>
                                 </Radio>
-                                <Radio value='all'>
+                                <Radio value='all' disabled={this.isLoadingTimestamps} >
                                     <InfoText tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway." maxWidth="450px" >
                                         Full Copy
                                         </InfoText>
@@ -186,6 +197,9 @@ export class EditOffsetsModal extends Component<{
 
     page2() {
         const firstTopic = this.offsetsByTopic[0].topicName;
+        const offsetsCanDiffer = this.selectedOption == 'startOffset'
+            || this.selectedOption == 'endOffset'
+            || this.selectedOption == 'time';
 
         return <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
             <Collapse bordered={false} defaultActiveKey={firstTopic}>
@@ -231,27 +245,7 @@ export class EditOffsetsModal extends Component<{
                                 },
                                 {
                                     title: 'Offset After',
-                                    render: (_, r) => {
-                                        const v = r.newOffset;
-                                        if (v == null)
-                                            return <Tooltip
-                                                title="Offset will not be changed"
-                                                mouseEnterDelay={0.1}
-                                                getPopupContainer={findPopupContainer}
-                                            >
-                                                <span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span>
-                                            </Tooltip>
-
-                                        if (typeof v === 'number')
-                                            return v < 0
-                                                ? (v == -1 ? 'Latest' : 'Earliest')
-                                                : numberToThousandsString(v);
-
-                                        if (v instanceof Date)
-                                            return v.toLocaleString();
-
-                                        return v;
-                                    },
+                                    render: (_, r) => <ColAfter record={r} />
                                 }
                             ]}
                         />
@@ -260,6 +254,22 @@ export class EditOffsetsModal extends Component<{
                 )}
             </Collapse>
         </div>
+    }
+
+    differWarning() {
+        const content = <div>
+            <p>The offsets that actually get applied may be different from what is shown in this column.</p>
+            <h6>Example</h6>
+            <p>
+                If you chose to change all group offsets to 'End Offset', the offsets for each topic (high/low watermarks) are fetched.
+                But when your change request reaches the backend, those offsets might have changed already because new messages were written to the topic.
+                The backend will correct for this difference and apply the correct offset.
+            </p>
+        </div>
+
+        return <Popover trigger='click' content={content}>
+            <WarningOutlined />
+        </Popover>
     }
 
     @action
@@ -277,7 +287,33 @@ export class EditOffsetsModal extends Component<{
                 this.props.offsets.forEach(x => x.newOffset = -1);
             } else if (op == 'time') {
                 // Time
-                this.props.offsets.forEach(x => x.newOffset = new Date(this.timestampUtcMs));
+                // this.props.offsets.forEach(x => x.newOffset = new Date(this.timestampUtcMs));
+                this.props.offsets.forEach(x => x.newOffset = "..." as any);
+                const requiredTopicPartitions = this.props.offsets.groupInto(g => g.topicName).map(g => ({
+                    topicName: g.key,
+                    partitionIds: g.items.map(p => p.partitionId),
+                }));
+
+                const propOffsets = this.props.offsets;
+                // Fetch offset for each partition
+                setImmediate(async () => {
+                    const msg = new Message('Fetching offsets for timestamp', 'loading', '...');
+
+                    let offsetsForTimestamp: TopicOffset[];
+                    try {
+                        offsetsForTimestamp = await api.getTopicOffsetsByTimestamp(this.timestampUtcMs, requiredTopicPartitions);
+                        msg.setSuccess(undefined, ' - done');
+                    } catch (err) {
+                        console.error('failed to fetch offsets for timestamp', { request: requiredTopicPartitions, error: err });
+                        msg.setError(undefined, ' - failed');
+                        return;
+                    }
+
+                    propOffsets.forEach(x => {
+                        const responseOffset = offsetsForTimestamp.first(t => t.topicName == x.topicName)?.partitions.first(p => p.partitionId == x.partitionId);
+                        x.newOffset = responseOffset;
+                    });
+                });
             } else {
                 // Other group
                 // Lookup offsets from the other group
@@ -325,11 +361,6 @@ export class EditOffsetsModal extends Component<{
                     message.error(`Could not find other consumer group "${this.selectedGroup}" to compute new offsets`);
                 }
             }
-
-            for (const x of this.props.offsets) {
-
-
-            }
         }
 
         this.page = page;
@@ -372,8 +403,14 @@ export class EditOffsetsModal extends Component<{
             setImmediate(() => {
                 // modal became visible
 
-                // need all groups to compute other groups
+                // need all groups for "other groups" dropdown
                 api.refreshConsumerGroups();
+
+                // need watermarks for all topics the group consumes
+                // in order to know earliest/latest offsets
+                const topics = this.props.group.topicOffsets.map(x => x.topic).distinct();
+                api.refreshPartitions(topics, true);
+
 
                 this.autorunDisposer = autorun(() => {
                     this.otherConsumerGroups = [...api.consumerGroups.values()]
@@ -403,6 +440,7 @@ export class EditOffsetsModal extends Component<{
 class GroupTimePicker extends Component<{
     valueUtcMs: number,
     onChange: (utcMs: number) => void,
+    disabled?: boolean
 }> {
 
     @observable isLocalTimeMode = false;
@@ -436,6 +474,7 @@ class GroupTimePicker extends Component<{
                 this.timestampUtcMs = e.valueOf();
                 this.props.onChange(this.timestampUtcMs);
             }}
+            disabled={this.props.disabled}
         />
     }
 
@@ -452,6 +491,70 @@ class GroupTimePicker extends Component<{
     }
 }
 
+@observer class ColAfter extends Component<{ record: GroupOffset }> {
+
+    render() {
+        const record = this.props.record;
+        const val = record.newOffset;
+
+        // No change
+        if (val == null) {
+            return <Tooltip title="Offset will not be changed" mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}>
+                <span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span>
+            </Tooltip>
+        }
+
+        // Set by timestamp
+        if (typeof val == 'object') {
+            // placeholder while loading
+            if (val instanceof Date)
+                return val.toLocaleString();
+
+            // actual offset
+            if ('offset' in val) {
+
+                // error
+                if (val.error) return <span style={{ color: 'orangered' }}>
+                    {val.error}
+                </span>
+
+                // successful fetch
+                return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                    <span>{numberToThousandsString(val.offset)}</span>
+                    <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}
+                    >({new Date(val.timestamp).toLocaleString()})</span>
+                </div>
+
+                // not found - no message after given timestamp
+                // return <div>
+                //     {val.offset > 0 && }
+                //     <span></span>
+                // </div>
+            }
+        }
+
+
+        // Earliest / Latest / OtherGroup
+        if (typeof val === 'number') {
+            // copied from other group
+            if (val >= 0) return numberToThousandsString(val);
+
+            // Get offset from current partition values
+            const partition = api.topicPartitions.get(record.topicName)?.first(p => p.id == record.partitionId);
+
+            let content = (val == -2)
+                ? { name: "Earliest", offset: partition?.waterMarkLow ?? '...' }
+                : { name: "Latest", offset: partition?.waterMarkHigh ?? '...' };
+
+            return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                <span>{typeof content.offset == 'number' ? numberToThousandsString(content.offset) : content.offset}</span>
+                <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}>({content.name})</span>
+            </div>
+        }
+
+        return `Unknown type in 'newOffset' type='${typeof val}' value='{v}'`;
+    }
+}
 
 
 export type GroupDeletingMode = 'group' | 'topic' | 'partition';

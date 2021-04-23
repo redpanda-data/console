@@ -208,18 +208,19 @@ export interface GroupTopicOffsets {
     summedLag: number; // summed lag of all partitions (non consumed partitions are not considered)
     partitionCount: number;
     partitionsWithOffset: number; // number of partitions that have an active group offset
-    partitionOffsets: PartitionOffset[];
+    partitionOffsets: GroupPartitionOffset[];
 }
 
 // PartitionOffset describes the kafka lag for a partition for a single consumer group
-export interface PartitionOffset {
-    error: string | null; // Error will be set when the high water mark could not be fetched
-
+export interface GroupPartitionOffset {
     partitionId: number;
     groupOffset: number;
+
+    error: string | undefined; // Error will be set when the high water mark could not be fetched
     highWaterMark: number;
     lag: number;
 }
+
 
 export interface EditConsumerGroupOffsetsRequest {
     groupId: string;
@@ -230,13 +231,8 @@ export interface EditConsumerGroupOffsetsTopic {
     topicName: string;
     partitions: {
         partitionId: number;
-        offset: number;
+        offset: number; // -1 latest, -2 earliest
     }[];
-}
-
-
-export interface EditConsumerGroupOffsetsWrapper {
-    editOffsetResponse: EditConsumerGroupOffsetsResponse;
 }
 
 export interface EditConsumerGroupOffsetsResponse {
@@ -250,6 +246,64 @@ export interface EditConsumerGroupOffsetsResponseTopic {
         error: string,
     }[],
 }
+
+
+
+
+export interface DeleteConsumerGroupOffsetsRequest {
+    groupId: string;
+    topics: DeleteConsumerGroupOffsetsTopic[];
+}
+export interface DeleteConsumerGroupOffsetsTopic {
+    topicName: string;
+    partitions: {
+        partitionId: number;
+    }[];
+}
+
+export interface DeleteConsumerGroupOffsetsResponse {
+    topics: DeleteConsumerGroupOffsetsResponseTopic[]
+}
+
+export interface DeleteConsumerGroupOffsetsResponseTopic {
+    topicName: string,
+    partitions: {
+        partitionID: number,
+        error: string | undefined,
+    }[],
+}
+
+
+export interface GetTopicOffsetsByTimestampRequest {
+    topics: GetTopicOffsetsByTimestampRequestTopic[];
+    timestamp: number; // unix ms
+}
+export interface GetTopicOffsetsByTimestampRequestTopic {
+    topicName: string;
+    partitionIds: number[];
+}
+
+export interface GetTopicOffsetsByTimestampResponse {
+    topicOffsets: TopicOffset[];
+}
+export interface TopicOffset {
+    topicName: string;
+    partitions: PartitionOffset[];
+}
+
+export interface PartitionOffset {
+    error: string | undefined;
+    partitionId: number;
+
+    // will return the first message after the given timestamp
+    // if there is no message at or after this timestamp, the offset will be -1
+    offset: number;
+
+    // unix ms
+    // if offset is not -1, this will tell us the timestamp of that message
+    timestamp: number;
+}
+
 
 
 
