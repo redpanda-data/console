@@ -7,7 +7,7 @@ import { findPopupContainer, numberToThousandsString, QuickTable, RadioOptionGro
 import { Alert, Button, Collapse, ConfigProvider, DatePicker, message, Modal, Popover, Radio, Select, Table, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, computed, FlowCancellationError, IReactionDisposer, observable, transaction, untracked } from 'mobx';
-import { GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
+import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-v2-react';
 import { animProps_modalPage, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { AnimatePresence, AnimateSharedLayout, motion } from 'framer-motion';
@@ -68,6 +68,7 @@ export class EditOffsetsModal extends Component<{
     @observable otherGroupCopyMode: 'all' | 'onlyExisting' = 'onlyExisting';
 
     @observable isLoadingTimestamps = false;
+    @observable isApplyingEdit = false;
 
     render() {
         let { group, offsets } = this.props;
@@ -368,19 +369,23 @@ export class EditOffsetsModal extends Component<{
 
     footer() {
         const disableContinue = this.selectedOption == 'otherGroup' && !this.selectedGroup;
+        const disableNav = this.isApplyingEdit || this.isLoadingTimestamps;
 
         if (this.page == 0) return <div>
             <Button key='cancel' onClick={this.props.onClose} >Cancel</Button>
 
             <Button key='next' type='primary' onClick={() => this.setPage(1)}
-                disabled={disableContinue}
+                disabled={disableContinue || disableNav}
+                loading={this.isLoadingTimestamps}
             >
                 <span>Review</span>
                 <span><ChevronRightIcon /></span>
             </Button>
         </div>
         else return <div style={{ display: 'flex' }}>
-            <Button key='back' onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }}>
+            <Button key='back' onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }}
+                disabled={disableNav}
+            >
                 <span><ChevronLeftIcon /></span>
                 <span>Back</span>
             </Button>
@@ -390,7 +395,9 @@ export class EditOffsetsModal extends Component<{
                 onClick={this.props.onClose}
             >Cancel</Button>
 
-            <Button key='next' type='primary'>
+            <Button key='next' type='primary' disabled={disableNav}
+                onClick={() => this.onApplyEdit()}
+            >
                 <span>Apply</span>
             </Button>
         </div>
@@ -433,6 +440,44 @@ export class EditOffsetsModal extends Component<{
         }
 
         this.lastVisible = visible;
+    }
+
+
+    @action async onApplyEdit() {
+        const { group, offsets } = this.props;
+        if (offsets == null) {
+            console.error('cannot apply offsets, "props.offsets" is null', { props: this.props });
+            return;
+        }
+
+        this.isApplyingEdit = true;
+        const msg = new Message('Applying offsets', 'loading', '...');
+        const topics = createEditRequest(offsets);
+        try {
+            const editResponse = await api.editConsumerGroupOffsets(group.groupId, topics);
+            const errors = editResponse.map(t => ({
+                ...t,
+                partitions: t.partitions.filter(x => x.error),
+            })).filter(t => t.partitions.length > 0);
+            if (errors.length > 0) {
+                console.error('backend returned errors for editOffsets', { request: topics, errors: errors });
+                throw new Error();
+            }
+
+            msg.setSuccess(undefined, ' - done');
+        }
+        catch (err) {
+            // todo: feedback dialog
+            // - close this dialog
+            // - open error dialog
+            console.error('failed to apply offset edit', { request: topics });
+            msg.setError(undefined, ' - failed');
+        }
+        finally {
+            this.isApplyingEdit = false;
+            api.refreshConsumerGroup(this.props.group.groupId, true);
+            this.props.onClose();
+        }
     }
 }
 
@@ -663,20 +708,101 @@ export class DeleteOffsetsModal extends Component<{
         </Modal >
     }
 
-    async onDeleteOffsets() {
-        // const response = await api.editConsumerGroupOffsets(this.props.group.groupId, [{
-        //     topicName: g.topicName,
-        //     partitions: g.partitions.map(p => ({
-        //         partitionId: p.partitionId,
-        //         offset: 0,
-        //     }))
-        // }]);
 
-        // // need to refresh consumer groups after changing something
-        // api.refreshConsumerGroup(this.props.group.groupId, true);
+    @action async onDeleteOffsets() {
+        const { group, offsets } = this.props;
+        if (offsets == null) {
+            console.error('cannot delete offsets, "props.offsets" is null', { props: this.props });
+            return;
+        }
 
-        // console.log('editConsumerGroupOffsets', { response: response });
+        const msg = new Message('Deleting offsets', 'loading', '...');
+        const deleteRequest = createDeleteRequest(offsets);
+        try {
+            const deleteResponse = await api.deleteConsumerGroupOffsets(group.groupId, deleteRequest);
+            const errors = deleteResponse.map(t => ({
+                ...t,
+                partitions: t.partitions.filter(x => x.error),
+            })).filter(t => t.partitions.length > 0);
+            if (errors.length > 0) {
+                console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
+                throw new Error();
+            }
 
-        this.props.onClose();
+            msg.setSuccess(undefined, ' - done');
+        }
+        catch (err) {
+            // todo: feedback dialog
+            // - close this dialog
+            // - open error dialog
+            console.error('failed to delete offsets', { request: deleteRequest });
+            msg.setError(undefined, ' - failed');
+        }
+        finally {
+            api.refreshConsumerGroup(this.props.group.groupId, true);
+            this.props.onClose();
+        }
     }
+
+}
+
+function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
+
+    const getOffset = function (x: GroupOffset['newOffset']): number | undefined {
+
+        // no offset set
+        if (x == null) return undefined;
+
+        // from other group
+        if (typeof x == 'number') return x;
+
+        // from timestamp
+        if ('offset' in x) return x.offset;
+
+        // otherwise 'x' might be 'Date', which means timestamps are resolved yet
+        return undefined;
+    }
+
+    const topicOffsets = offsets.groupInto(x => x.topicName).map(t => ({
+        topicName: t.key,
+        partitions: t.items.map(p => ({
+            partitionId: p.partitionId,
+            offset: getOffset(p.newOffset),
+        }))
+    }));
+
+    // filter undefined partitions
+    for (const t of topicOffsets)
+        t.partitions.removeAll(p => p.offset == null);
+
+    // assert type:
+    // we know that there can't be any undefined offsets anymore
+    const cleanOffsets = topicOffsets as {
+        topicName: string;
+        partitions: {
+            partitionId: number;
+            offset: number;
+        }[];
+    }[];
+
+    // filter topics with zero partitions
+    cleanOffsets.removeAll(t => t.partitions.length == 0);
+
+    return cleanOffsets;
+}
+
+
+function createDeleteRequest(offsets: GroupOffset[]): DeleteConsumerGroupOffsetsTopic[] {
+
+    const topicOffsets = offsets.groupInto(x => x.topicName).map(t => ({
+        topicName: t.key,
+        partitions: t.items.map(p => ({
+            partitionId: p.partitionId,
+        }))
+    }));
+
+    // filter topics with zero partitions
+    topicOffsets.removeAll(t => t.partitions.length == 0);
+
+    return topicOffsets;
 }
