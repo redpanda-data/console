@@ -204,9 +204,9 @@ export const InfoText = (p: {
     const blue = 'hsl(209deg, 100%, 55%)';
     const color = p.iconColor ?? gray;
 
-    const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size }} ><InfoIcon /></span>
+    const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size, marginLeft: '4px', }} ><InfoIcon /></span>
 
-    if (p.tooltipOverText == null || p.tooltipOverText === true)
+    if (p.tooltipOverText === true)
         return <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 {p.children}

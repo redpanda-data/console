@@ -4,7 +4,7 @@ import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '
 import { Component } from 'react';
 import React from 'react';
 import { findPopupContainer, numberToThousandsString, QuickTable, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
-import { Button, Collapse, DatePicker, message, Modal, Radio, Select, Table, Tooltip } from 'antd';
+import { Button, Collapse, ConfigProvider, DatePicker, message, Modal, Radio, Select, Table, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, computed, FlowCancellationError, IReactionDisposer, observable, transaction, untracked } from 'mobx';
 import { GroupDescription } from '../../../state/restInterfaces';
@@ -167,16 +167,14 @@ export class EditOffsetsModal extends Component<{
                                 onChange={x => this.otherGroupCopyMode = x.target.value}
                             >
                                 <Radio value='onlyExisting'>
-                                    <span style={{ display: 'inline-flex', gap: '0.5em' }}>
-                                        <span>Copy matching offsets</span>
-                                        <InfoText tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored." maxWidth="450px" />
-                                    </span>
+                                    <InfoText tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored." maxWidth="450px" >
+                                        Copy matching offsets
+                                        </InfoText>
                                 </Radio>
                                 <Radio value='all'>
-                                    <span style={{ display: 'inline-flex', gap: '0.5em' }}>
-                                        <span>Full copy</span>
-                                        <InfoText tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway." maxWidth="450px" />
-                                    </span>
+                                    <InfoText tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway." maxWidth="450px" >
+                                        Full Copy
+                                        </InfoText>
                                 </Radio>
                             </Radio.Group>
                         </div>
@@ -338,10 +336,14 @@ export class EditOffsetsModal extends Component<{
     }
 
     footer() {
-        if (this.page == 0) return <div>
-            <Button key='cancel' onClick={this.props.onClose}>Cancel</Button>
+        const disableContinue = this.selectedOption == 'otherGroup' && !this.selectedGroup;
 
-            <Button key='next' type='primary' onClick={() => this.setPage(1)}>
+        if (this.page == 0) return <div>
+            <Button key='cancel' onClick={this.props.onClose} >Cancel</Button>
+
+            <Button key='next' type='primary' onClick={() => this.setPage(1)}
+                disabled={disableContinue}
+            >
                 <span>Review</span>
                 <span><ChevronRightIcon /></span>
             </Button>
@@ -451,9 +453,20 @@ class GroupTimePicker extends Component<{
 }
 
 
+
+export type GroupDeletingMode = 'group' | 'topic' | 'partition';
+// Why do we pass 'mode'?
+//   It is the users "intent" (where he clicked).
+//   Without it, we'd have to infer it, which is possible, but will result in strange wording.
+//   For example:
+//     - user is viewing a group that has offsets for only one topic
+//     - user clicks 'delete' on the topic
+//     - dialog would show "you want to delete ALL offsets for this group"
+//       which is technically correct, but might give the impression of deleting more than he wanted
 @observer
 export class DeleteOffsetsModal extends Component<{
     group: GroupDescription,
+    mode: GroupDeletingMode,
     offsets: GroupOffset[] | null,
     onClose: () => void,
 }> {
@@ -461,38 +474,90 @@ export class DeleteOffsetsModal extends Component<{
     lastOffsets: GroupOffset[];
 
     render() {
-        let { group, offsets } = this.props;
+        let { group, offsets, mode } = this.props;
         const visible = Boolean(offsets);
         if (offsets) this.lastOffsets = offsets;
         offsets = offsets ?? this.lastOffsets;
+        if (!offsets) return null;
+
+        const offsetsByTopic = offsets.groupInto(x => x.topicName).map(g => ({ topicName: g.key, items: g.items }));
+        const singleTopic = offsetsByTopic.length == 1;
+        const singlePartition = offsets.length == 1;
+
+        const subTitle =
+            mode == 'group' && <span>All group offsets will be deleted for:</span> ||
+            mode == 'topic' && <span>Group offsets will be deleted for topic:</span> ||
+            mode == 'partition' && <span>Group offsets will be deleted for:</span>;
 
 
         return <Modal
-            title="Delete consumer group offsets"
+            title={mode == 'group'
+                ? "Delete consumer group"
+                : "Delete consumer group offsets"
+            }
             visible={visible}
             closeIcon={<></>} maskClosable={false}
-            okText="Yes"
+            width="600px"
+
+            okText="Delete"
             okButtonProps={{ danger: true }}
-            cancelText="No"
+            onOk={() => this.onDeleteOffsets()}
+
+            onCancel={() => this.props.onClose()}
         >
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '2em' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '1.8em' }}>
                 <div>
-                    <div style={{ width: '64px', height: '64px', padding: '12px', background: '#F53649', borderRadius: '1000px' }}>
+                    <div style={{
+                        width: '64px', height: '64px', padding: '12px', marginTop: '4px',
+                        background: '#F53649', borderRadius: '1000px'
+                    }}>
                         <TrashIconOutline color="white" />
                     </div>
                 </div>
                 <div>
-                    <p>Are you sure you want to delete all group offsets for the following consumer groups?</p>
                     <div>
-                        <span>Group offsets will be deleted for:</span>
-                        <ul style={{ fontWeight: 600 }}>
-                            <li>owlshop-customers / 12 partitions</li>
-                        </ul>
+                        <span>Are you sure you want to delete offsets from this consumer group?</span>
+                        <div style={{ fontWeight: 600, marginTop: '2px', marginBottom: '1.5em' }}>
+                            <div>Group: <span className='codeBox'>{group.groupId}</span></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        {mode == 'group' && <div>
+                            <span>Group offsets will be deleted for all topics and partitions:</span>
+                            <ul style={{ fontWeight: 600, margin: '6px 0' }}>
+                                {singleTopic
+                                    ? <>
+                                        <li>Topic: <span className='codeBox'>{offsetsByTopic[0].topicName}</span></li>
+                                        <li>{offsets.length} {singlePartition ? 'Partition' : 'Partitions'}</li>
+                                    </>
+                                    : <>
+                                        <li>{offsetsByTopic.length} Topics / {offsets.length} {singlePartition ? 'partition' : 'partitions'}</li>
+                                    </>
+                                }
+                            </ul>
+                        </div>}
+
+                        {mode == 'topic' && <div>
+                            <span>Group offsets will be deleted for topic:</span>
+                            <ul style={{ fontWeight: 600, margin: '6px 0' }}>
+                                <li>Topic: <span className='codeBox'>{offsetsByTopic[0].topicName}</span></li>
+                                <li>{offsets.length} {singlePartition ? 'Partition' : 'Partitions'}</li>
+                            </ul>
+                        </div>}
+
+                        {mode == 'partition' && <div>
+                            <span>Group offsets will be deleted for partition:</span>
+                            <ul style={{ fontWeight: 600, margin: '6px 0' }}>
+                                <li>Topic: <span className='codeBox'>{offsetsByTopic[0].topicName}</span></li>
+                                <li>Partition: <span className='codeBox'>{offsetsByTopic[0].items[0].partitionId}</span></li>
+                            </ul>
+                        </div>}
                     </div>
                 </div>
 
             </div>
-        </Modal>
+        </Modal >
     }
 
     async onDeleteOffsets() {
@@ -508,8 +573,7 @@ export class DeleteOffsetsModal extends Component<{
         // api.refreshConsumerGroup(this.props.group.groupId, true);
 
         // console.log('editConsumerGroupOffsets', { response: response });
+
+        this.props.onClose();
     }
 }
-
-
-
