@@ -179,12 +179,15 @@ func (s *Service) createProtoRegistry() error {
 	for _, descriptor := range fileDescriptors {
 		registry.AddFile("", descriptor)
 	}
+	s.logger.Info("successfully registered proto types in registry", zap.Int("registered_types", len(fileDescriptors)))
 
 	s.registryMutex.Lock()
 	defer s.registryMutex.Unlock()
 	s.registry = registry
 
 	// Let's compare the registry items against the mapping and let the user know if there are missing/mismatched proto types
+	foundTypes := 0
+	missingTypes := 0
 	for _, mapping := range s.cfg.Mappings {
 		if mapping.ValueProtoType != "" {
 			desc, err := s.registry.FindMessageTypeByUrl(mapping.ValueProtoType)
@@ -195,6 +198,9 @@ func (s *Service) createProtoRegistry() error {
 				s.logger.Warn("protobuf type from configured topic mapping does not exist",
 					zap.String("topic_name", mapping.TopicName),
 					zap.String("value_proto_type", mapping.ValueProtoType))
+				missingTypes++
+			} else {
+				foundTypes++
 			}
 		}
 		if mapping.KeyProtoType != "" {
@@ -206,9 +212,17 @@ func (s *Service) createProtoRegistry() error {
 				s.logger.Info("protobuf type from configured topic mapping does not exist",
 					zap.String("topic_name", mapping.TopicName),
 					zap.String("key_proto_type", mapping.KeyProtoType))
+				missingTypes++
+			} else {
+				foundTypes++
 			}
 		}
 	}
+
+	s.logger.Info("successfully checked whether all proto types exist in local registry",
+		zap.Int("types_found", foundTypes),
+		zap.Int("types_missing", missingTypes),
+		zap.Int("registered_types", len(fileDescriptors)))
 
 	return nil
 }
