@@ -3,11 +3,12 @@ package owl
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"net/http"
 )
 
 type EditConsumerGroupOffsetsResponseTopic struct {
@@ -17,7 +18,7 @@ type EditConsumerGroupOffsetsResponseTopic struct {
 
 type EditConsumerGroupOffsetsResponseTopicPartition struct {
 	ID    int32  `json:"partitionID"`
-	Error string `json:"error"`
+	Error string `json:"error,omitempty"`
 }
 
 // EditConsumerGroupOffsets edits the group offsets of one or more partitions.
