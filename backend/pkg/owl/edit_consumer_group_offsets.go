@@ -40,10 +40,17 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 			InternalLogs: nil,
 		}
 	}
-	for _, topic := range topics {
+
+	// Because topics is immutable and we want to replace special offsets (earliest/oldest) with the actual watermarks
+	// we are effectively rebuilding the offset commit request slice.
+	substitutedTopics := make([]kmsg.OffsetCommitRequestTopic, len(topics))
+	for i, topic := range topics {
 		watermark, topicMarkExists := waterMarks[topic.Topic]
-		for _, partition := range topic.Partitions {
+
+		substitutedPartitions := make([]kmsg.OffsetCommitRequestTopicPartition, len(topic.Partitions))
+		for j, partition := range topic.Partitions {
 			if partition.Offset >= 0 {
+				substitutedPartitions[j] = partition
 				continue
 			}
 
@@ -73,17 +80,15 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 			case kafka.TimestampEarliest:
 				partition.Offset = partitionMark.Low
 			}
+			substitutedPartitions[j] = partition
+		}
+		substitutedTopics[i] = kmsg.OffsetCommitRequestTopic{
+			Topic:      topic.Topic,
+			Partitions: substitutedPartitions,
 		}
 	}
 
-	// Let's check if
-	for _, topic := range topics {
-		for _, partition := range topic.Partitions {
-			topicPartitions[topic.Topic] = append(topicPartitions[topic.Topic], partition.Partition)
-		}
-	}
-
-	commitResponse, err := s.kafkaSvc.EditConsumerGroupOffsets(ctx, groupID, topics)
+	commitResponse, err := s.kafkaSvc.EditConsumerGroupOffsets(ctx, groupID, substitutedTopics)
 	if err != nil {
 		return nil, &rest.Error{
 			Err:     err,
