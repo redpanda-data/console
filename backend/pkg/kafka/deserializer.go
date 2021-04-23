@@ -80,9 +80,9 @@ type deserializedRecord struct {
 	Headers map[string]*deserializedPayload
 }
 
-// DeserializePayload tries to deserialize a given byte array.
+// DeserializeRecord tries to deserialize a whole record.
 // The payload's byte array may represent
-//  - an encoded message such as JSON, Avro or XML
+//  - an encoded message such as JSON, Avro, Protobuf, MsgPack or XML
 //  - UTF-8 Text
 //  - Binary content
 // Idea: Add encoding hint where user can suggest the backend to test this encoding first.
@@ -210,7 +210,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 			}
 		}
 	}
-	
+
 	// 6. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(payload)
 	if isUTF8 {
