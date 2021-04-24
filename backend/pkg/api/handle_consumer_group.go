@@ -126,7 +126,7 @@ func (p *patchConsumerGroupRequest) OK() error {
 
 func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 	type response struct {
-		Topics []owl.EditConsumerGroupOffsetsResponseTopic `json:"topics"`
+		*owl.EditConsumerGroupOffsetsResponse
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse and validate request
@@ -190,14 +190,13 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 		}
 
 		// 4. Check response and pass it to the frontend
-		patchedTopics, restErr := api.OwlSvc.EditConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
+		res, restErr := api.OwlSvc.EditConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
-		res := response{Topics: patchedTopics}
-		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, response{res})
 	}
 }
 

@@ -84,3 +84,26 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 
 	return result, nil
 }
+
+// DescribeConsumerGroup from Kafka and checks all possible errors that can occur for that request. If either the
+// request fails or the group could not be described (e.g. due to ACLs) an error will be returned.
+func (s *Service) DescribeConsumerGroup(ctx context.Context, groupID string) (kmsg.DescribeGroupsResponseGroup, error) {
+	req := kmsg.NewDescribeGroupsRequest()
+	req.Groups = []string{groupID}
+
+	res, err := req.RequestWith(ctx, s.KafkaClient)
+	if err != nil {
+		return kmsg.DescribeGroupsResponseGroup{}, err
+	}
+	if len(res.Groups) == 0 {
+		return kmsg.DescribeGroupsResponseGroup{}, fmt.Errorf("describe group response is empty, expected one group")
+	}
+
+	describedGroup := res.Groups[0]
+	err = kerr.ErrorForCode(describedGroup.ErrorCode)
+	if err != nil {
+		return kmsg.DescribeGroupsResponseGroup{}, fmt.Errorf("failed to describe consumer group: %w", err)
+	}
+
+	return describedGroup, nil
+}
