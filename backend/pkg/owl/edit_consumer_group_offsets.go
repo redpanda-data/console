@@ -11,6 +11,11 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+type EditConsumerGroupOffsetsResponse struct {
+	Error  string                                  `json:"error,omitempty"`
+	Topics []EditConsumerGroupOffsetsResponseTopic `json:"topics"`
+}
+
 type EditConsumerGroupOffsetsResponseTopic struct {
 	TopicName  string                                           `json:"topicName"`
 	Partitions []EditConsumerGroupOffsetsResponseTopicPartition `json:"partitions"`
@@ -22,7 +27,24 @@ type EditConsumerGroupOffsetsResponseTopicPartition struct {
 }
 
 // EditConsumerGroupOffsets edits the group offsets of one or more partitions.
-func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) ([]EditConsumerGroupOffsetsResponseTopic, *rest.Error) {
+func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) (*EditConsumerGroupOffsetsResponse, *rest.Error) {
+	// 0. Check if consumer group is empty, otherwise we can't edit the group offsets and want to provide a proper
+	// error message for the frontend.
+	describedGroup, err := s.kafkaSvc.DescribeConsumerGroup(ctx, groupID)
+	if err != nil {
+		return nil, &rest.Error{
+			Err:     fmt.Errorf("failed to check group state: %w", err),
+			Status:  http.StatusServiceUnavailable,
+			Message: fmt.Sprintf("Failed to check consumer group state before proceeding: %v", err.Error()),
+		}
+	}
+	if describedGroup.State != "empty" {
+		return &EditConsumerGroupOffsetsResponse{
+			Error:  fmt.Sprintf("Consumer group is still active and therefore can't be edited. Current Group State is: %v", describedGroup.State),
+			Topics: nil,
+		}, nil
+	}
+
 	// 1. The provided topic partitions might use special offsets (-2, -1) that need to be resolved to the earliest
 	// or oldest offset before sending the edit group request to Kafka.
 	topicPartitions := make(map[string][]int32)
@@ -97,7 +119,7 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 		}
 	}
 
-	res := make([]EditConsumerGroupOffsetsResponseTopic, len(commitResponse.Topics))
+	editedTopics := make([]EditConsumerGroupOffsetsResponseTopic, len(commitResponse.Topics))
 	for i, topic := range commitResponse.Topics {
 		partitions := make([]EditConsumerGroupOffsetsResponseTopicPartition, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
@@ -111,11 +133,14 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 				Error: errMsg,
 			}
 		}
-		res[i] = EditConsumerGroupOffsetsResponseTopic{
+		editedTopics[i] = EditConsumerGroupOffsetsResponseTopic{
 			TopicName:  topic.Topic,
 			Partitions: partitions,
 		}
 	}
 
-	return res, nil
+	return &EditConsumerGroupOffsetsResponse{
+		Error:  "",
+		Topics: editedTopics,
+	}, nil
 }
