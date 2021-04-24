@@ -117,24 +117,19 @@ class CacheEntry {
     setPromise<T>(promise: Promise<T>) {
         this.timeSinceRequestStarted.reset();
 
-        const self = this;
         this.isPending = true;
         this.promise = promise;
 
-        promise.then(
-            function onFulfilled(result: T) {
-                self.timeSinceLastResult.reset();
-                self.lastResult = result;
-            },
-            function onRejected(reason: any) {
-            }
-        ).finally(() => {
-            self.lastRequestTime = self.timeSinceRequestStarted.value;
+        promise.then(result => {
+            this.timeSinceLastResult.reset();
+            this.lastResult = result;
+        }).finally(() => {
+            this.lastRequestTime = this.timeSinceRequestStarted.value;
             const index = api.activeRequests.indexOf(this);
             if (index > -1) {
                 api.activeRequests.splice(index, 1);
             }
-            self.isPending = false;
+            this.isPending = false;
         });
 
         api.activeRequests.push(this);
@@ -307,7 +302,7 @@ const apiStore = {
                     break;
 
                 case 'message':
-                    let m = msg.message as TopicMessage;
+                    const m = msg.message as TopicMessage;
 
                     const keyData = m.key.payload;
                     if (keyData != null && keyData != undefined && keyData != "" && m.key.encoding == 'binary') {

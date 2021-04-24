@@ -71,7 +71,9 @@ export class EditOffsetsModal extends Component<{
     @observable isApplyingEdit = false;
 
     render() {
-        let { group, offsets } = this.props;
+        let offsets = this.props.offsets;
+        const group = this.props.group;
+
         const visible = Boolean(offsets);
         this.updateVisible(visible);
         if (offsets) this.lastOffsets = offsets;
@@ -587,7 +589,7 @@ class GroupTimePicker extends Component<{
             // Get offset from current partition values
             const partition = api.topicPartitions.get(record.topicName)?.first(p => p.id == record.partitionId);
 
-            let content = (val == -2)
+            const content = (val == -2)
                 ? { name: "Earliest", offset: partition?.waterMarkLow ?? '...' }
                 : { name: "Latest", offset: partition?.waterMarkHigh ?? '...' };
 
@@ -622,7 +624,9 @@ export class DeleteOffsetsModal extends Component<{
     lastOffsets: GroupOffset[];
 
     render() {
-        let { group, offsets, mode } = this.props;
+        const { group, mode } = this.props;
+        let offsets = this.props.offsets;
+
         const visible = Boolean(offsets);
         if (offsets) this.lastOffsets = offsets;
         offsets = offsets ?? this.lastOffsets;

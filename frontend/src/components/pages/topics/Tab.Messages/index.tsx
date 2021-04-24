@@ -100,7 +100,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
                 const q = String(uiState.topicSettings.quickSearch);
-                query["q"] = q ? q : undefined;
+                query["q"] = q ? q : null;
             })
         }, { name: 'update query string' });
 
@@ -738,27 +738,6 @@ const renderKey = (p: Payload, record: TopicMessage) => {
         return renderEmptyIcon("Empty Key");
 
     if (text.length > 45) {
-
-        const modal = () => Modal.info({
-            title: 'Key',
-            width: '80vw',
-            centered: true,
-            maskClosable: true,
-            content: (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div>
-                        Full view of the key<br />
-                        <b>todo: add different viewers here (plain, hex, ...)</b><br />
-                        <b>todo: fix layout</b><br />
-                    </div>
-                    <div className='codeBox' style={{ margin: '1em 0 0 0', padding: '1em', whiteSpace: 'normal', wordBreak: 'break-all', overflowY: 'scroll', maxHeight: '300px' }}>
-                        <code>{text}</code>
-                    </div>
-                </div>
-            ),
-            onOk() { },
-        });
-
         return <span className='cellDiv' style={{ minWidth: '120px' }}>
             <code style={{ fontSize: '95%' }}>{text.slice(0, 44)}&hellip;</code>
         </span>

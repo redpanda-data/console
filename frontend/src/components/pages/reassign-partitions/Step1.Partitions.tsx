@@ -48,7 +48,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         if (!api.topics) return DefaultSkeleton;
 
         const query = uiSettings.reassignment.quickSearch ?? "";
-        let filterActive = query.length > 1;
+        const filterActive = query.length > 1;
 
         let searchRegex: RegExp | undefined = undefined;
         if (filterActive) try { searchRegex = new RegExp(uiSettings.reassignment.quickSearch, 'i') } catch { return null; }
@@ -152,7 +152,10 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                             this.pageConfig.current = p.current;
                             this.pageConfig.pageSize = p.pageSize;
 
-                            this.selectedBrokerFilters = filters['partitions']?.filterNull() ?? null;
+                            const brokerFilters = filters['partitions']?.filterNull() ?? null;
+                            brokerFilters?.removeAll(x => typeof x === 'boolean');
+
+                            this.selectedBrokerFilters = brokerFilters as ((string | number)[] | null);
                         }}
 
                         dataSource={this.topicPartitions}

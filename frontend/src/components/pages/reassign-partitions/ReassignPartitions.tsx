@@ -227,7 +227,7 @@ class ReassignPartitions extends PageComponent {
         if (this.currentStep == 1) {
             // Assign -> Review
             const topicPartitions: TopicPartitions[] = this.selectedTopicPartitions;
-            const targetBrokers = this.selectedBrokerIds.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)!);
+            const targetBrokers = this.selectedBrokerIds.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)).filterFalsy();
             if (targetBrokers.any(b => b == null))
                 throw new Error('one or more broker ids could not be mapped to broker entries');
 
@@ -468,7 +468,7 @@ class ReassignPartitions extends PageComponent {
             // Only get the names of the topics that have throttles applied
             const newThrottledTopics = topicConfigs.topicDescriptions
                 .filter(t => t.configEntries.any(x => Boolean(x.value)))
-                .map(t => t.topicName).sort();;
+                .map(t => t.topicName).sort();
 
             // Filter topics that are still being reassigned
             const inProgress = this.topicPartitionsInProgress;

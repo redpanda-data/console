@@ -47,7 +47,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
     refreshData(force: boolean) {
         api.refreshConsumerGroup(this.props.groupId, force);
-    };
+    }
 
     render() {
         // Get info about the group

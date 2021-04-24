@@ -45,12 +45,12 @@ function sanitizeUrl(uri: string, children?: React.ReactNode, title?: string | u
 export class TopicDocumentation extends Component<{ topic: Topic }> {
 
     render() {
-        let docu = api.topicDocumentation.get(this.props.topic.topicName);
+        const docu = api.topicDocumentation.get(this.props.topic.topicName);
         if (docu === undefined) return DefaultSkeleton; // not yet loaded
         if (!docu.isEnabled)
             return errorNotConfigured;
 
-        let markdown = docu?.text;
+        const markdown = docu?.text;
         if (markdown === null || markdown === undefined)
             return errorNotFound;
 

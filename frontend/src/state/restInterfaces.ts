@@ -634,9 +634,9 @@ export interface Schema {
 
 export interface SchemaField {
     name: string;
-    type: string | object | null | undefined;
+    type: string | Record<string, unknown> | null | undefined;
     doc?: string | null | undefined;
-    default?: string | object | null | undefined;
+    default?: string | Record<string, unknown> | null | undefined;
 }
 
 

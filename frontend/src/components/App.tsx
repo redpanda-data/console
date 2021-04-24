@@ -33,7 +33,7 @@ import { featureErrors } from '../state/supportedFeatures';
 const { Content, Footer, Sider } = Layout;
 
 
-let siderCollapsedWidth = 80;
+const siderCollapsedWidth = 80;
 
 
 const DebugUserInfoBar = () => (
@@ -274,7 +274,7 @@ const AppContent = observer(() =>
 @observer
 export default class App extends Component {
 
-    render() {
+    render(): JSX.Element {
         setImmediate(() => {
             if (api.endpointCompatibility == null)
                 api.refreshSupportedEndpoints(true);

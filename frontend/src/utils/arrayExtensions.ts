@@ -112,14 +112,14 @@ Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {
 
 
 Array.prototype.any = function any<T>(this: T[], selector: (x: T) => boolean) {
-    for (let e of this)
+    for (const e of this)
         if (selector(e))
             return true;
     return false;
 };
 
 Array.prototype.all = function all<T>(this: T[], selector: (x: T) => boolean) {
-    for (let e of this)
+    for (const e of this)
         if (!selector(e))
             return false;
     return true;
@@ -209,7 +209,7 @@ Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: 
                 this.push(e);
     }
 
-    for (let e of elements)
+    for (const e of elements)
         if (!this.includes(e))
             this.push(e);
 };

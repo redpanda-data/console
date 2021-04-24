@@ -1,4 +1,3 @@
-
 import { Menu, Tooltip } from "antd";
 import { Link, Switch } from "react-router-dom";
 import React from "react";
@@ -120,13 +119,13 @@ function EmitRouteViews(entries: IRouteEntry[]): JSX.Element[] {
 
     const elements: JSX.Element[] = [];
 
-    for (let entry of entries) {
+    for (const entry of entries) {
         if (isPageDefinition(entry)) {
             elements.push(entry.routeJsx);
         } else if (isSeparator(entry)) {
             // seperators are not routes
         } else {
-            let childJsxElements = EmitRouteViews(entry.children);
+            const childJsxElements = EmitRouteViews(entry.children);
             elements.push(...childJsxElements);
         }
     }
@@ -201,11 +200,11 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
             //console.log('switching route: ' + routeStr(ui.currentRoute) + " -> " + routeStr(route));
         }
 
-        let pageProps: PageProps<TRouteParams> = {
+        const pageProps: PageProps<TRouteParams> = {
             matchedPath,
             query,
             ...params,
-        };
+        } as PageProps<TRouteParams>;
 
         uiState.currentRoute = route;
         return <route.pageType {...pageProps} />

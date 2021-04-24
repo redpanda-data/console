@@ -46,4 +46,4 @@ export function sanitizeString(input: string) {
             }
         })
         .join('');
-};
+}

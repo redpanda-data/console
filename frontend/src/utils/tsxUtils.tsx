@@ -141,7 +141,7 @@ export function toSafeString(x: any): string {
 
 export function ObjToKv(obj: any): { key: string, value: any }[] {
     const ar = [] as { key: string, value: any }[];
-    for (let k in obj) {
+    for (const k in obj) {
         ar.push({ key: k, value: obj[k] })
     }
     return ar;

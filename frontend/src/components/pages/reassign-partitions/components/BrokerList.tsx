@@ -23,7 +23,7 @@ export class BrokerList extends Component<BrokerListProps> {
     render() {
         let leaderId: number;
         let sortedIds: number[];
-        let offlineIds: number[] = [];
+        const offlineIds: number[] = [];
         let addedIds: number[] = [], removedIds: number[] = [];
 
         if ('partition' in this.props) {
@@ -83,7 +83,7 @@ export class BrokerListOld extends Component<BrokerListProps> {
     render() {
         let leaderId: number;
         let sortedIds: number[];
-        let offlineIds: number[] = [];
+        const offlineIds: number[] = [];
         let addedIds: number[] = [], removedIds: number[] = [];
 
         if ('partition' in this.props) {

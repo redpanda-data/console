@@ -46,7 +46,7 @@ class GroupList extends PageComponent {
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
                 const q = String(uiSettings.consumerGroupList.quickSearch);
-                query["q"] = q ? q : undefined;
+                query["q"] = q ? q : null;
             })
         });
     }
@@ -114,8 +114,8 @@ class GroupList extends PageComponent {
                                 onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
                                 render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
                             },
-                            { title: 'Coordinator', dataIndex: 'coordinatorId', width: 1, render: (x: number) => <BrokerList brokerIds={[x]} />},
-                            { title: 'Protocol', dataIndex: 'protocol', width: 1},
+                            { title: 'Coordinator', dataIndex: 'coordinatorId', width: 1, render: (x: number) => <BrokerList brokerIds={[x]} /> },
+                            { title: 'Protocol', dataIndex: 'protocol', width: 1 },
                             { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length, defaultSortOrder: 'descend' },
                             { title: 'Lag (Sum)', dataIndex: 'lagSum', sorter: (a, b) => a.lagSum - b.lagSum },
                         ]} />

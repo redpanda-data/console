@@ -71,7 +71,7 @@ class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Actio
                 {/* Body */}
                 <div style={{ display: 'flex', flexGrow: 1 }}>
                     {/* Menu */}
-                    <Menu mode='vertical' style={{ width: '160px', height: '100%' }} selectedKeys={[this.selectedTab]} onClick={p => this.selectedTab = p.key}>
+                    <Menu mode='vertical' style={{ width: '160px', height: '100%' }} selectedKeys={[this.selectedTab]} onClick={p => this.selectedTab = p.key.toString()}>
                         {settingsTabs.map(t => <Menu.Item key={t.name} >{t.name}</Menu.Item>)}
                     </Menu>
 
@@ -125,23 +125,6 @@ class StatsBarTab extends Component {
 
 
 @observer
-class MessageSearchTab extends Component {
-    render() {
-        return <>
-            <Label text='Max Results'>
-                <Input
-                    style={{ padding: '2px 8px' }}
-                    value={"abc 123"}
-                    onChange={e => { }}
-                    size='small' />
-            </Label>
-            <p>You can customize the available options in the </p>
-
-        </>
-    }
-}
-
-@observer
 class ImportExportTab extends Component {
     @observable importCode = '';
     @observable resetConfirm = '';
@@ -152,7 +135,9 @@ class ImportExportTab extends Component {
                     style={{ padding: '2px 8px' }}
                     placeholder='paste exported preferences string here'
                     value={this.importCode}
-                    onChange={e => { }}
+                    onChange={e => {
+                        // todo
+                    }}
                     onPaste={p => console.log('onPaste event', p)}
                     onPasteCapture={p => console.log('onPasteCapture event', p)}
                     size='small' />

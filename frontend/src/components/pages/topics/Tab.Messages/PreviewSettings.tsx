@@ -161,7 +161,7 @@ class SortItem extends Component<{ tag: PreviewTag, index: number, onRemove: () 
 
                 onChange={e => tag.text = e}
                 placeholder="Enter property name..."
-                filterOption={(inputValue, option) => option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
+                filterOption={(inputValue, option) => option?.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
                 // dropdownRender={(menu) => <span>asdf</span>}
                 notFoundContent="None"
             />
@@ -179,7 +179,7 @@ export function getPreviewTags(messageValue: any, tags: PreviewTag[]): React.Rea
 
     const onlyFirst = uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst';
 
-    for (let t of tags) {
+    for (const t of tags) {
         if (t.text.length == 0) continue;
         const searchPath = t.text.trim().split('.');
         const lastProp = searchPath[searchPath.length - 1];

@@ -121,7 +121,7 @@ export class Timer {
 
     /** Time (in ms) until done (or 0) */
     get timeLeft() {
-        let t = this.target - Date.now();
+        const t = this.target - Date.now();
         if (t < 0)
             return 0;
         return t;
@@ -187,8 +187,8 @@ export const alwaysChanging = () => refreshCounter = (refreshCounter + 1) % 1000
 
 
 export function assignDeep(target: any, source: any) {
-    for (let key in source) {
-        if (!source.hasOwnProperty(key)) continue;
+    for (const key in source) {
+        if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
         if (key === "__proto__" || key === "constructor") continue;
 
         const value = source[key];
@@ -253,7 +253,7 @@ export function findElementDeep(obj: any, name: string, options: PropertySearchO
 }
 
 function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchResult {
-    for (let key in obj) {
+    for (const key in obj) {
 
         const value = obj[key];
 
@@ -304,7 +304,7 @@ export function findElementDeepEx(obj: any, isMatch: (propertyName: string, path
 }
 
 function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
-    for (let key in obj) {
+    for (const key in obj) {
 
         const value = obj[key];
 
@@ -381,7 +381,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
 
     const pathToHere = ctx.currentFullPath;
 
-    for (let key in obj) {
+    for (const key in obj) {
         const value = obj[key];
 
         ctx.currentPath.push(key);
@@ -441,7 +441,7 @@ export const cullText = (str: string, length: number) => str.length > length ? `
 export function groupConsecutive(ar: number[]): number[][] {
     const groups: number[][] = [];
 
-    for (let cur of ar) {
+    for (const cur of ar) {
         const group = groups.length > 0 ? groups[groups.length - 1] : undefined;
 
         if (group) {
@@ -575,7 +575,7 @@ export function bindObjectToUrl<
     for (const propName of Object.keys(queryNames) as [keyof TObservable]) {
         const queryName = queryNames[propName];
 
-        let value = query[queryName as string];
+        const value = query[queryName as string];
         if (value == null) continue;
 
         if (Array.isArray(value)) {
