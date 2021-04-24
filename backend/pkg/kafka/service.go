@@ -55,7 +55,7 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	var schemaSvc *schema.Service
 	if cfg.Schema.Enabled {
 		logger.Info("creating schema registry client and testing connectivity")
-		schemaSvc, err = schema.NewSevice(cfg.Schema)
+		schemaSvc, err = schema.NewService(cfg.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create schema service: %w", err)
 		}

@@ -19,7 +19,7 @@ type Service struct {
 }
 
 // NewService to access schema registry. Returns an error if connection can't be established.
-func NewSevice(cfg Config) (*Service, error) {
+func NewService(cfg Config) (*Service, error) {
 	client, err := newClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create schema registry client: %w", err)
