@@ -120,8 +120,6 @@ func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVers
 		return nil, restErr
 	}
 
-	resStr := string(res.Body())
-	fmt.Println(resStr)
 	parsed, ok := res.Result().(*SchemaVersionedResponse)
 	if !ok {
 		return nil, fmt.Errorf("failed to parse schema by subject response")
