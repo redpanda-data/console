@@ -91,14 +91,16 @@ func (c *Client) GetSchemaByID(id uint32) (*SchemaResponse, error) {
 	return parsed, nil
 }
 
+// SchemaVersionedResponse represents the schema resource returned by the Schema Registry
 type SchemaVersionedResponse struct {
 	Subject  string `json:"subject"`
 	SchemaID int    `json:"id"`
 	Version  int    `json:"version"`
 	Schema   string `json:"schema"`
+	Type     string `json:"schemaType"`
 }
 
-// GetSchemaByID returns the schema for the specified version of this subject. The unescaped schema only is returned.
+// GetSchemaBySubject returns the schema for the specified version of this subject. The unescaped schema only is returned.
 // subject (string) – Name of the subject
 // version (versionId) – Version of the schema to be returned. Valid values for versionId are between [1,2^31-1] or
 // 		the string “latest”, which returns the last registered schema under the specified subject.
@@ -118,9 +120,14 @@ func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVers
 		return nil, restErr
 	}
 
+	resStr := string(res.Body())
+	fmt.Println(resStr)
 	parsed, ok := res.Result().(*SchemaVersionedResponse)
 	if !ok {
 		return nil, fmt.Errorf("failed to parse schema by subject response")
+	}
+	if parsed.Type == "" {
+		parsed.Type = "AVRO"
 	}
 
 	return parsed, nil
