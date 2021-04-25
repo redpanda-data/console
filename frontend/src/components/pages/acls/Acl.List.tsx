@@ -15,6 +15,7 @@ import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import { DefaultSkeleton, Label } from "../../../utils/tsxUtils";
 import { LockIcon } from "@primer/octicons-v2-react";
+import { toJson } from "../../../utils/jsonUtils";
 
 
 type AclRuleFlat = AclResource & AclRule
@@ -60,12 +61,9 @@ class AclList extends PageComponent {
             ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} />
             : null;
 
-        const resources = this.flatResourceList.filter(this.isFilterMatch)
-            .sort((a, b) => a.resourceName.localeCompare(b.resourceName))
-            .sort((a, b) => a.operation.localeCompare(b.operation))
-            .sort((a, b) => a.principal.localeCompare(b.principal));
+        const resources = this.filteredResources;
 
-        const columns: ColumnProps<AclRuleFlat>[] = [
+        const columns: ColumnProps<typeof resources[0]>[] = [
             { width: '120px', title: 'Resource', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
             { width: '120px', title: 'Permission', dataIndex: 'permissionType', sorter: sortField('permissionType') },
             { width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal') },
@@ -77,12 +75,6 @@ class AclList extends PageComponent {
 
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-                {/* <Card>
-                    <Row>
-                        <Statistic title='ControllerID' value={info.controllerId} />
-                        <Statistic title='Broker Count' value={brokers.length} />
-                    </Row>
-                </Card> */}
 
                 <Card>
                     <this.SearchControls />
@@ -95,21 +87,16 @@ class AclList extends PageComponent {
                         pagination={this.pageConfig}
                         onChange={x => { if (x.pageSize) { this.pageConfig.pageSize = uiSettings.brokerList.pageSize = x.pageSize } }}
                         dataSource={resources}
-                        rowKey={x => x.resourceName + x.resourceType}
+                        rowKey={x => x.eqKey}
                         rowClassName={() => 'pureDisplayRow'}
                         columns={columns}
-                    // expandable={{
-                    //     expandIconColumnIndex: 1,
-                    //     expandedRowRender: record => <BrokerDetails brokerId={record.brokerId} />,
-                    //     expandedRowClassName: r => 'noPadding',
-                    // }}
                     />
                 </Card>
             </motion.div>
         </>
     }
 
-    @computed get availableResourceTypes(): { value: string, label: string }[] {
+    @computed.struct get availableResourceTypes(): { value: string, label: string }[] {
         const acls = api.ACLs;
         if (acls?.aclResources == null) return [];
         // issue: we can't easily filter by 'resourceType' (because it is a string, and we have to use an enum for requests...)
@@ -119,13 +106,23 @@ class AclList extends PageComponent {
         return ar;
     }
 
-    @computed get flatResourceList() {
+    @computed({ equals: (a: FlatResource, b: FlatResource) => a.eqKey == b.eqKey }) get filteredResources() {
+        return this.flatResourceList.filter(this.isFilterMatch)
+            .sort((a, b) => a.resourceName.localeCompare(b.resourceName))
+            .sort((a, b) => a.operation.localeCompare(b.operation))
+            .sort((a, b) => a.principal.localeCompare(b.principal));
+    }
+
+    @computed({ equals: (a: FlatResource, b: FlatResource) => a.eqKey == b.eqKey }) get flatResourceList() {
         const acls = api.ACLs;
         if (acls?.aclResources == null) return [];
-        return acls.aclResources
+        const flatResources = acls.aclResources
             .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
             .map(res => res.acls.map(rule => ({ ...res, ...rule })))
-            .flat();
+            .flat()
+            .map(x => ({ ...x, eqKey: toJson(x) }));
+
+        return flatResources;
     }
 
     isFilterMatch = (item: AclRuleFlat) => {
@@ -165,6 +162,8 @@ class AclList extends PageComponent {
         );
     })
 }
+
+type FlatResource = AclList["flatResourceList"][0];
 
 export default AclList;
 
