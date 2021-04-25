@@ -8,11 +8,14 @@ import (
 )
 
 type Config struct {
-	Enabled    bool              `json:"enabled"`
-	Git        git.Config        `json:"git"`
-	FileSystem filesystem.Config `json:"fileSystem"`
+	Enabled bool `json:"enabled"`
 
-	// Mappings define what proto types shall be used for each Kafka topic.
+	// The required proto definitions can be provided via SchemaRegistry, Git or Filesystem
+	SchemaRegistry SchemaRegistryConfig `json:"schemaRegistry"`
+	Git            git.Config           `json:"git"`
+	FileSystem     filesystem.Config    `json:"fileSystem"`
+
+	// Mappings define what proto types shall be used for each Kafka topic. If SchemaRegistry is used, no mappings are required.
 	Mappings []ConfigTopicMapping `json:"mappings"`
 }
 
@@ -30,7 +33,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("protobuf deserializer is enabled, at least one source provider for proto files must be configured")
 	}
 
-	if len(c.Mappings) == 0 {
+	if len(c.Mappings) == 0 && !c.SchemaRegistry.Enabled {
 		return fmt.Errorf("protobuf deserializer is enabled, but no topic mappings have been configured")
 	}
 

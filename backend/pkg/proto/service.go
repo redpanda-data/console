@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/filesystem"
 	"github.com/cloudhut/kowl/backend/pkg/git"
+	"github.com/cloudhut/kowl/backend/pkg/schema"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
@@ -31,7 +32,7 @@ type Service struct {
 	registry      *msgregistry.MessageRegistry
 }
 
-func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
+func NewService(cfg Config, logger *zap.Logger, schemaSvc *schema.Service) (*Service, error) {
 	var err error
 
 	var gitSvc *git.Service
@@ -46,7 +47,29 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 	if cfg.FileSystem.Enabled {
 		fsSvc, err = filesystem.NewService(cfg.FileSystem, logger, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create new git service: %w", err)
+			return nil, fmt.Errorf("failed to create new filesystem service: %w", err)
+		}
+	}
+
+	if cfg.SchemaRegistry.Enabled {
+		// Check whether schema service is initialized (requires schema registry configuration)
+		if schemaSvc == nil {
+			return nil, fmt.Errorf("schema registry is enabled but schema service is nil. Make sure it is configured")
+		}
+
+		// Ensure that Protobuf is supported
+		supportedTypes, err := schemaSvc.GetSchemaTypes()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get supported schema types from registry. Ensure Protobuf is supported")
+		}
+		isProtobufSupported := false
+		for _, t := range supportedTypes {
+			if t == "PROTOBUF" {
+				isProtobufSupported = true
+			}
+		}
+		if !isProtobufSupported {
+			return nil, fmt.Errorf("protobuf is a not supported type in your schema registry")
 		}
 	}
 
@@ -190,11 +213,11 @@ func (s *Service) createProtoRegistry() error {
 	missingTypes := 0
 	for _, mapping := range s.cfg.Mappings {
 		if mapping.ValueProtoType != "" {
-			desc, err := s.registry.FindMessageTypeByUrl(mapping.ValueProtoType)
+			messageDesc, err := s.registry.FindMessageTypeByUrl(mapping.ValueProtoType)
 			if err != nil {
 				return fmt.Errorf("failed to get proto type from registry: %w", err)
 			}
-			if desc == nil {
+			if messageDesc == nil {
 				s.logger.Warn("protobuf type from configured topic mapping does not exist",
 					zap.String("topic_name", mapping.TopicName),
 					zap.String("value_proto_type", mapping.ValueProtoType))
@@ -204,11 +227,11 @@ func (s *Service) createProtoRegistry() error {
 			}
 		}
 		if mapping.KeyProtoType != "" {
-			desc, err := s.registry.FindMessageTypeByUrl(mapping.KeyProtoType)
+			messageDesc, err := s.registry.FindMessageTypeByUrl(mapping.KeyProtoType)
 			if err != nil {
 				return fmt.Errorf("failed to get proto type from registry: %w", err)
 			}
-			if desc == nil {
+			if messageDesc == nil {
 				s.logger.Info("protobuf type from configured topic mapping does not exist",
 					zap.String("topic_name", mapping.TopicName),
 					zap.String("key_proto_type", mapping.KeyProtoType))

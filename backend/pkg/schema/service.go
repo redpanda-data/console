@@ -79,6 +79,10 @@ func (s *Service) GetSubjects() (*SubjectsResponse, error) {
 	return s.registryClient.GetSubjects()
 }
 
+func (s *Service) GetSchemaTypes() ([]string, error) {
+	return s.registryClient.GetSchemaTypes()
+}
+
 func (s *Service) GetSubjectVersions(subject string) (*SubjectVersionsResponse, error) {
 	return s.registryClient.GetSubjectVersions(subject)
 }

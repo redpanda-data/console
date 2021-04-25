@@ -281,6 +281,30 @@ func (c *Client) GetSubjectConfig(subject string) (*ConfigResponse, error) {
 	return parsed, nil
 }
 
+// GetSchemaTypes returns supported types (AVRO, PROTOBUF, JSON)
+func (c *Client) GetSchemaTypes() ([]string, error) {
+	var supportedTypes []string
+	res, err := c.client.R().SetResult(&supportedTypes).Get("/config")
+	if err != nil {
+		return nil, fmt.Errorf("get config failed: %w", err)
+	}
+
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("get schema types failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	parsed, ok := res.Result().([]string)
+	if !ok {
+		return nil, fmt.Errorf("failed to parse schema types response")
+	}
+
+	return parsed, nil
+}
+
 // CheckConnectivity checks whether the schema registry can be access by GETing the /subjects
 func (c *Client) CheckConnectivity() error {
 	url := "subjects"

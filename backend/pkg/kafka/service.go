@@ -70,7 +70,7 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	// Proto Service
 	var protoSvc *proto.Service
 	if cfg.Protobuf.Enabled {
-		svc, err := proto.NewService(cfg.Protobuf, logger)
+		svc, err := proto.NewService(cfg.Protobuf, logger, schemaSvc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create protobuf service: %w", err)
 		}
