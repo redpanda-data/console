@@ -43,7 +43,7 @@ export class AdminRoleBindings extends Component {
         //     showSorterTooltip={false}
         //     dataSource={roleBindings}
         //     rowClassName={() => 'hoverLink'}
-        //     rowKey={(x, i) => x.roleName}
+        //     rowKey={x => x.roleName}
         //     columns={[
         //         { title: 'Metadata', dataIndex: 'metadata', render: (t, r) => <code>{ToJson(r.metadata)}</code> },
         //         { width: 2, title: 'Role', dataIndex: 'roleName', sorter: sortField('roleName') },
@@ -65,7 +65,6 @@ export class AdminRoleBindings extends Component {
             showSorterTooltip={false}
             dataSource={roleBindings}
             rowClassName={() => 'hoverLink'}
-            rowKey={(x, i) => x.roleName}
             columns={[
                 { title: 'Metadata', dataIndex: 'metadata', render: (t, r) => <code>{ToJson(r.metadata)}</code> },
                 { width: 2, title: 'Role', dataIndex: 'roleName', sorter: sortField('roleName') },

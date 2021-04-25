@@ -129,7 +129,7 @@ class TopicList extends PageComponent {
                         }}
                         rowClassName={() => 'hoverLink'}
                         dataSource={this.filteredTopics ?? []}
-                        rowKey={(x) => x.topicName}
+                        rowKey={x => x.topicName}
                         showSorterTooltip={false}
                         columns={[
                             { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', defaultSortOrder: 'ascend' },

@@ -1026,8 +1026,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
                         ? <div className='codeBox' style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
                         : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />,
                 }}
-
-                rowKey={(r, i) => String(i)}
+                rowKey={r => r.key}
             />
             <br />
         </div>
