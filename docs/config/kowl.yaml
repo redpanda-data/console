@@ -61,8 +61,8 @@ kafka:
   #     enabled: false # Enable Client certificate connexion to the schemaRegistry
   #     caFilepath: # Path to a custom CA file. If not specified the system's / trusted root ca is used.
   #     certFilepath:
-  #     keyFilepath:
-  #     passphrase:
+  #     keyFilepath:  # key should not be encrypted by a passphrase
+  #     insecureSkipTlsVerify: false
   # protobuf:
   #   enabled: false
   #   mappings: []
