@@ -10,7 +10,7 @@ import { uiState } from "../../state/uiState";
 import { hoursToMilliseconds, prettyBytesOrNA, prettyMilliseconds } from "../../utils/utils";
 import env, { IsBusiness, IsDev } from "../../utils/env";
 import { LayoutBypass, QuickTable } from "../../utils/tsxUtils";
-import { toJson } from "../../utils/jsonUtils";
+import { clone, toJson } from "../../utils/jsonUtils";
 import { TopicLogDirSummary } from "../../state/restInterfaces";
 import { AlertIcon } from "@primer/octicons-v2-react";
 
@@ -156,10 +156,10 @@ export class UpdatePopup extends Component {
         console.log('frontend update available', {
             serverTimestamp: serverTimestamp,
             serverDate: new Date(serverTimestamp * 1000),
-            serverVersionInfo: serverVersion,
+            serverVersionInfo: clone(serverVersion),
             localTimestamp: curTimestamp,
             localDate: new Date(curTimestamp * 1000),
-            localVersion: env,
+            localVersion: clone(env),
         });
 
         updateDialogOpen = true;
