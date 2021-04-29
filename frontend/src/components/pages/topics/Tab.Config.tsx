@@ -1,18 +1,17 @@
 import React, { Component } from 'react';
 import { KafkaError, TopicConfigEntry, Topic } from '../../../state/restInterfaces';
-import { Tooltip, Descriptions, Popover, Checkbox, Empty, Typography, Row, Space, Button, Result, Table } from 'antd';
+import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result, Table } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import topicConfigInfo from '../../../assets/topicConfigInfo.json';
 import Paragraph from 'antd/lib/typography/Paragraph';
 import '../../../utils/arrayExtensions';
-import Icon, { CloseCircleOutlined, HighlightTwoTone } from '@ant-design/icons';
+import { EyeInvisibleTwoTone, HighlightTwoTone, InfoCircleFilled } from '@ant-design/icons';
 import { uiState } from '../../../state/uiState';
-import { DefaultSkeleton, findPopupContainer, OptionGroup, toSafeString } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, findPopupContainer, OptionGroup } from '../../../utils/tsxUtils';
 import { api } from '../../../state/backendApi';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
-import { clone, toJson } from '../../../utils/jsonUtils';
-import { LockIcon } from '@primer/octicons-v2-react';
+import { toJson } from '../../../utils/jsonUtils';
 import { appGlobal } from '../../../state/appGlobal';
 import { computed } from 'mobx';
 import styles from './TabConfig.module.scss';
@@ -111,7 +110,19 @@ const ConfigList = observer(({ configEntries }: { configEntries: TopicConfigEntr
 
     const columns = [
         { title: 'Configuration', dataIndex: 'name', render: (text: string) => <span className={styles.name}>{text}</span> },
-        { title: 'Value', dataIndex: 'value', render: (_: unknown, record: Partial<TopicConfigEntry>) => FormatConfigValue(record.name as string, record.value as string, valueDisplay) },
+        {
+            title: 'Value',
+            dataIndex: 'value',
+            render: (_: unknown, record: Partial<TopicConfigEntry>) => {
+                return (
+                    <>
+                        {FormatConfigValue(record.name as string, record.value as string, valueDisplay)}
+                        &nbsp;
+                        {record.isSensitive ? <EyeInvisibleTwoTone twoToneColor="#1890ff" /> : null}
+                    </>
+                );
+            },
+        },
         { title: 'Type', dataIndex: 'type', render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span> },
         {
             title: 'Source',
