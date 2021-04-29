@@ -125,7 +125,14 @@ const ConfigList = observer(({ configEntries }: { configEntries: TopicConfigEntr
         },
         { title: 'Type', dataIndex: 'type', render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span> },
         {
-            title: 'Source',
+            title: (
+                <span className={styles.sourceHeader}>
+                    Source
+                    <Popover content={"Some text that describes what 'Source' is. Yet TBD."} title="Source" trigger="hover" placement="left">
+                        <InfoCircleFilled style={{ color: '#bbbbbb' }} />
+                    </Popover>
+                </span>
+            ),
             dataIndex: 'source',
             render: (text: string) =>
                 text
@@ -225,10 +232,6 @@ export const FavoritePopover = (configEntry: TopicConfigEntry, children: React.R
         </Popover>
     );
 };
-
-function DataName(configEntry: TopicConfigEntry) {
-    return FavoritePopover(configEntry, configEntry.name);
-}
 
 export function DataValue(name: string, value: string, isDefault: boolean, formatType: 'friendly' | 'raw' | 'both') {
     value = FormatConfigValue(name, value, formatType);
