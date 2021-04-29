@@ -29,60 +29,11 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         const renderedError = this.handleError();
         if (renderedError) return renderedError;
 
-        const configEntries = this.configEntries;
-
-        const singleColumn = uiSettings.topicList.configColumns == 1 || configEntries.length < 6;
-
-        let descriptions: JSX.Element;
-        if (singleColumn) {
-            // Single column
-            descriptions = this.renderConfigList(configEntries);
-        } else {
-            // Double column
-            const middle = Math.ceil(configEntries.length / 2);
-            const first = configEntries.slice(0, middle);
-            const second = configEntries.slice(middle);
-
-            descriptions = (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2em' }}>
-                    {this.renderConfigList(first)}
-                    {this.renderConfigList(second)}
-                </div>
-            );
-        }
-
         return (
             <>
                 <ConfigDisplaySettings />
-                {descriptions}
+                <ConfigList configEntries={this.configEntries} />
             </>
-        );
-    }
-
-    renderConfigList(configEntries: TopicConfigEntry[]): JSX.Element {
-        const columns = [
-            { title: 'Configuration', dataIndex: 'name', render: (text: string) => <span className={styles.name}>{text}</span> },
-            { title: 'Value', dataIndex: 'value', render: (_: unknown, record: Partial<TopicConfigEntry>) => FormatConfigValue(record.name as string, record.value as string, uiSettings.topicList.valueDisplay) },
-            { title: 'Type', dataIndex: 'type', render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span> },
-            {
-                title: 'Source',
-                dataIndex: 'source',
-                render: (text: string) =>
-                    text
-                        .toLowerCase()
-                        .split('_')
-                        .map((s) => s.replace(/^\w/, (c) => c.toUpperCase()))
-                        .join(' '),
-            },
-        ];
-        return (
-            <Table
-                rowKey="name"
-                dataSource={configEntries.map(filterRedundantSynonyms)}
-                childrenColumnName="synonyms"
-                columns={columns}
-                rowClassName={(record) => (record.isExplicitlySet ? styles.overidden : styles.default)}
-            />
         );
     }
 
@@ -91,7 +42,6 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         if (config == null) return [];
 
         return config.configEntries
-            .filter((e) => (uiSettings.topicList.propsFilter == 'onlyChanged' ? !e.isExplicitlySet : true))
             .sort((a, b) => {
                 switch (uiSettings.topicList.propsOrder) {
                     case 'default':
@@ -102,7 +52,7 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
                         if (uiSettings.topicList.propsOrder != 'changedFirst') return 0;
                         const v1 = a.isExplicitlySet ? 1 : 0;
                         const v2 = b.isExplicitlySet ? 1 : 0;
-                        return v1 - v2;
+                        return v2 - v1;
                 }
             });
     }
@@ -155,6 +105,37 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
     }
 }
 
+const ConfigList = observer(({ configEntries }: { configEntries: TopicConfigEntry[] }) => {
+    // this needs to be here, because when inlined in nested function, ConfigList won't react to changes of uiSettings.topicList.valueDisplay
+    const valueDisplay = uiSettings.topicList.valueDisplay
+
+    const columns = [
+        { title: 'Configuration', dataIndex: 'name', render: (text: string) => <span className={styles.name}>{text}</span> },
+        { title: 'Value', dataIndex: 'value', render: (_: unknown, record: Partial<TopicConfigEntry>) => FormatConfigValue(record.name as string, record.value as string, valueDisplay) },
+        { title: 'Type', dataIndex: 'type', render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span> },
+        {
+            title: 'Source',
+            dataIndex: 'source',
+            render: (text: string) =>
+                text
+                    .toLowerCase()
+                    .split('_')
+                    .map((s) => s.replace(/^\w/, (c) => c.toUpperCase()))
+                    .join(' '),
+        },
+    ];
+    return (
+        <Table
+            rowKey="name"
+            dataSource={configEntries.map(filterRedundantSynonyms)}
+            childrenColumnName="synonyms"
+            columns={columns}
+            rowClassName={(record) => (record.isExplicitlySet ? styles.overidden : styles.default)}
+            pagination={false}
+        />
+    );
+});
+
 const ConfigDisplaySettings = observer(() => (
     <div
         style={{
@@ -176,17 +157,7 @@ const ConfigDisplaySettings = observer(() => (
             onChange={(s) => (uiSettings.topicList.valueDisplay = s)}
         />
 
-        <OptionGroup
-            label="Filter"
-            options={{
-                'Show All': 'all',
-                'Only Changed': 'onlyChanged',
-            }}
-            value={uiSettings.topicList.propsFilter}
-            onChange={(s) => (uiSettings.topicList.propsFilter = s)}
-        />
-
-        <OptionGroup
+       <OptionGroup
             label="Sort"
             options={{
                 None: 'default',
@@ -195,16 +166,6 @@ const ConfigDisplaySettings = observer(() => (
             }}
             value={uiSettings.topicList.propsOrder}
             onChange={(s) => (uiSettings.topicList.propsOrder = s)}
-        />
-
-        <OptionGroup
-            label="Display Columns"
-            options={{
-                Single: 1,
-                Double: 2,
-            }}
-            value={uiSettings.topicList.configColumns}
-            onChange={(s) => (uiSettings.topicList.configColumns = s)}
         />
     </div>
 ));

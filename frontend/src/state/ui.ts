@@ -147,9 +147,7 @@ const uiSettings = observable({
 
         // Topic Configuration
         valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
-        propsFilter: 'all' as 'all' | 'onlyChanged',
         propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
-        configColumns: 2 as 1 | 2,
     },
 
     consumerGroupList: {
