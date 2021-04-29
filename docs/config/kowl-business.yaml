@@ -66,6 +66,10 @@ kafka:
   #     # - topicName: xy
   #     #   valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
   #     #   keyProtoType: package.Type
+  #   # SchemaRegistry does not require any mappings to be specified. The schema registry client configured on the kafka level will be reused.
+  #   schemaRegistry:
+  #     enabled: false
+  #     refreshInterval: 5m
   #   # FileSystem can be configured if you want Kowl to search the local file system for the .proto files
   #   fileSystem:
   #     enabled: false
