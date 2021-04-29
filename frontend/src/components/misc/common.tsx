@@ -7,10 +7,12 @@ import Draggable from "react-draggable";
 import { observer } from "mobx-react";
 import { Grid, Modal, Tag } from "antd";
 import { uiState } from "../../state/uiState";
-import { hoursToMilliseconds, prettyMilliseconds } from "../../utils/utils";
+import { hoursToMilliseconds, prettyBytesOrNA, prettyMilliseconds } from "../../utils/utils";
 import env, { IsBusiness, IsDev } from "../../utils/env";
-import { QuickTable } from "../../utils/tsxUtils";
+import { LayoutBypass, QuickTable } from "../../utils/tsxUtils";
 import { toJson } from "../../utils/jsonUtils";
+import { TopicLogDirSummary } from "../../state/restInterfaces";
+import { AlertIcon } from "@primer/octicons-v2-react";
 
 const { useBreakpoint } = Grid;
 
@@ -122,6 +124,9 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
     }
 }
 
+/**
+ * returns an array with the numbers from start, up to end (does not include end!)
+ */
 export function range(start: number, end: number): number[] {
     const ar = []
     for (let i = start; i < end; i++)
@@ -279,4 +284,42 @@ function formatTimestamp(unixTimestampSeconds: number | string | null | undefine
         console.error('failed to parse/format the timestamp: ' + String(unixTimestampSeconds));
         return null;
     }
+}
+
+
+export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
+    if (!summary.hint)
+        return <>{prettyBytesOrNA(summary.totalSizeBytes)}</>
+
+    return <>{prettyBytesOrNA(summary.totalSizeBytes)} <WarningToolip content={summary.hint} position="left" /></>
+}
+
+export function WarningToolip(p: { content: React.ReactNode, position: 'top' | 'left' }): JSX.Element {
+    const styleTop = {
+        bottom: '100%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+    };
+    const styleLeft = {
+        bottom: '-2px',
+        left: 'auto',
+        right: '105%',
+        transform: 'none',
+    };
+
+    return <LayoutBypass>
+        <div className='tooltip' style={{
+            color: 'hsl(33deg, 90%, 65%)',
+            borderRadius: '25px',
+            display: 'inline-flex',
+            placeItems: 'center',
+            verticalAlign: 'middle',
+            marginLeft: '30px',
+            width: '22px', height: '22px',
+
+        }}>
+            <AlertIcon />
+            <span className='tooltiptext' style={p.position == 'left' ? styleLeft : undefined}>{p.content}</span>
+        </div>
+    </LayoutBypass>
 }

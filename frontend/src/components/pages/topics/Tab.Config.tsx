@@ -286,9 +286,23 @@ export function FormatConfigValue(name: string, value: string, formatType: 'frie
             return value;
     }
 
-    const num = Number(value);
+    //
+    // String
+    //
+    if (name == "advertised.listeners" || name == "listener.security.protocol.map" || name == "listeners") {
+        const listeners = value.split(',');
+        return listeners.length > 1
+            ? "\n" + listeners.join('\n')
+            : listeners.join('\n');
+    }
 
-    if (value == null || value == '' || value == '0' || Number.isNaN(num)) return value;
+
+    //
+    // Numeric
+    //
+    const num = Number(value);
+    if (value == null || value == "" || value == "0" || Number.isNaN(num))
+        return value;
 
     // Special cases
     if (name == 'flush.messages' && num > Math.pow(2, 60)) return 'Never' + suffix; // messages between each fsync
@@ -299,11 +313,19 @@ export function FormatConfigValue(name: string, value: string, formatType: 'frie
     }
 
     // Time
-    const endsWithSeconds = name.endsWith('.seconds');
-    if (name.endsWith('.ms') || endsWithSeconds) {
-        if (num > Number.MAX_SAFE_INTEGER || num == -1) return 'Infinite' + suffix;
-        // Convert into a readable format
-        const ms = endsWithSeconds ? num * 1000 : num;
+    const timeExtensions: [string, number][] = [
+        // name ending -> conversion to milliseconds
+        [".ms", 1],
+        [".seconds", 1000],
+        [".minutes", 60 * 1000],
+        [".hours", 60 * 60 * 1000],
+        [".days", 24 * 60 * 60 * 1000],
+    ]
+    for (const [ext, msFactor] of timeExtensions) {
+        if (!name.endsWith(ext)) continue;
+        if (num > Number.MAX_SAFE_INTEGER || num == -1) return "Infinite" + suffix;
+
+        const ms = num * msFactor;
         return prettyMilliseconds(ms, { verbose: true }) + suffix;
     }
 

@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { observer } from "mobx-react";
-import { Button, Empty, Input, Select, Slider, Table } from "antd";
+import { Button, Checkbox, Empty, Input, Select, Slider, Table } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { api } from "../../../state/backendApi";
 import { makePaginationConfig } from "../../misc/common";
@@ -14,6 +14,7 @@ import { clone } from "../../../utils/jsonUtils";
 import { computeMovedReplicas } from "./logic/utils";
 import { uiSettings } from "../../../state/ui";
 import { IsDev } from "../../../utils/env";
+import { BandwidthSlider } from "./components/BandwidthSlider";
 
 export type PartitionWithMoves = Partition & { movedReplicas: number, brokersBefore: number[], brokersAfter: number[] };
 export type TopicWithMoves = { topicName: string; topic: Topic; allPartitions: Partition[]; selectedPartitions: PartitionWithMoves[]; };
@@ -26,10 +27,6 @@ export class StepReview extends Component<{
     reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeReview, true);
-
-    get requestInProgress() { return this.props.reassignPartitions.requestInProgress; }
-    set requestInProgress(v) { this.props.reassignPartitions.requestInProgress = v; }
-
 
     render() {
         if (!api.topics)
@@ -104,68 +101,26 @@ export class StepReview extends Component<{
     reassignmentOptions() {
         const settings = uiSettings.reassignment;
 
-        return <div style={{ margin: '3em 1em' }}>
+        return <div style={{ margin: '4em 1em 3em 1em' }}>
             <h2>Bandwidth Throttle</h2>
-            <div style={{ color: 'hsl(216deg, 15%, 52%)' }}>
-                Using throttling you can limit the network traffic for the reassignment.<br />
-                <div style={{ marginTop: '0.5em' }}>
-                    <span style={{ fontWeight: 600 }}>Please Note: </span>
-                    Throttling applies to all replication traffic, not just during reassignments.
-                    Once the reassignment completes you'll have to remove the throttling configuration.
-                    You can check for topics that still have a throttle config using the button below 'Current Reassignments' (at the top of the 'Reassign Partitions' page).
-                </div>
+            <p>Using throttling you can limit the network traffic for reassignments.</p>
+
+            <div style={{ marginTop: '2em', paddingBottom: '1em' }}>
+                <BandwidthSlider settings={settings} />
             </div>
 
-            <div style={{ display: 'flex', gap: '1em', marginTop: '2em', paddingBottom: '1em', alignItems: 'center' }}>
-
-                <Slider style={{ minWidth: '300px', margin: '0 1em', paddingBottom: '2em', flex: 1 }}
-                    min={2} max={12} step={0.1}
-                    marks={{ 2: "Off", 3: "1kB", 6: "1MB", 9: "1GB", 12: "1TB", }}
-                    included={true}
-                    tipFormatter={f => settings.maxReplicationTraffic < 1000
-                        ? 'No limit'
-                        : prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'}
-
-                    value={Math.log10(settings.maxReplicationTraffic)}
-                    onChange={sv => {
-                        const n = Number(sv.valueOf());
-                        const newLimit = Math.pow(10, n);
-                        if (newLimit >= 1000) {
-                            settings.maxReplicationTraffic = newLimit;
-                        }
-                        else {
-                            if (newLimit < 500)
-                                settings.maxReplicationTraffic = 0;
-                            else settings.maxReplicationTraffic = 1000;
-                        }
-                    }}
-                />
-
-                <Input size='middle' style={{ maxWidth: '180px', display: 'none' }} disabled={this.requestInProgress}
-                    value={(settings.maxReplicationTraffic / Math.pow(1000, settings.maxReplicationSizePower)).toFixed(2)}
-                    onChange={v => {
-                        const val = Number(v.target.value);
-                        if (!Number.isFinite(val) || val < 0) return;
-                        settings.maxReplicationTraffic = val * Math.pow(1000, settings.maxReplicationSizePower);
-                    }}
-                    addonAfter={
-                        <Select style={{ width: '75px' }} options={[
-                            { label: 'B/s', value: 0 }, // value = power
-                            { label: 'kB/s', value: 1 },
-                            { label: 'MB/s', value: 2 },
-                            { label: 'GB/s', value: 3 },
-                        ]}
-                            value={uiSettings.reassignment.maxReplicationSizePower}
-                            onChange={e => uiSettings.reassignment.maxReplicationSizePower = e}
-                        />
-                    }
-                />
-            </div>
+            <ul style={{ marginTop: '0.5em' }}>
+                <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
+                <li>Once the reassignment completes you'll have to remove the throttling configuration. <br />
+                        Kowl will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
+                        </li>
+            </ul>
         </div>
     }
 
     summary() {
         const settings = uiSettings.reassignment;
+        const maxReplicationTraffic = settings.maxReplicationTraffic ?? 0;
 
         const trafficStats = this.props.topicsWithMoves.map(t => {
             const partitionStats = t.selectedPartitions.map(p => {
@@ -187,7 +142,7 @@ export class StepReview extends Component<{
                 const receivers = p.brokersAfter.except(p.brokersBefore);
 
                 const participatingTransferPairs = Math.min(senders.length, receivers.length);
-                const potentialBandwidth = participatingTransferPairs * settings.maxReplicationTraffic;
+                const potentialBandwidth = participatingTransferPairs * maxReplicationTraffic;
 
                 let estimatedTimeSec = totalTraffic / potentialBandwidth;
                 if (estimatedTimeSec <= 0 || !Number.isFinite(estimatedTimeSec)) {
@@ -212,9 +167,9 @@ export class StepReview extends Component<{
 
         const totalTraffic = trafficStats.sum(t => t.partitionStats.sum(p => p.totalTraffic));
 
-        const isThrottled = settings.maxReplicationTraffic > 0;
+        const isThrottled = settings.maxReplicationTraffic != null && settings.maxReplicationTraffic > 0;
         const trafficThrottle = isThrottled
-            ? prettyBytesOrNA(settings.maxReplicationTraffic) + '/s'
+            ? prettyBytesOrNA(settings.maxReplicationTraffic ?? 0) + '/s'
             : 'disabled';
 
         const estimatedTime = !isThrottled ? '-'

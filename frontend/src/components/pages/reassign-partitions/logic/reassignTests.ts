@@ -67,19 +67,19 @@ const testData1 = {
             {
                 "brokerId": 0,
                 "logDirSize": 1549324103,
-                "address": "broker-0.plat-sandbox.kafka.rewe.cloud",
+                "address": "broker-0.localhost",
                 "rack": "europe-west1-c"
             },
             {
                 "brokerId": 1,
                 "logDirSize": 1548622760,
-                "address": "broker-1.plat-sandbox.kafka.rewe.cloud",
+                "address": "broker-1.localhost",
                 "rack": "europe-west1-b"
             },
             {
                 "brokerId": 2,
                 "logDirSize": 1562068308,
-                "address": "broker-2.plat-sandbox.kafka.rewe.cloud",
+                "address": "broker-2.localhost",
                 "rack": "europe-west1-d"
             }
         ],

@@ -1,7 +1,7 @@
 import React, { Component, useRef } from "react";
 import { observer } from "mobx-react";
 import { ConfigProvider, Empty, Input, Table, Tooltip } from "antd";
-import { makePaginationConfig, sortField } from "../../misc/common";
+import { makePaginationConfig, renderLogDirSummary, sortField, WarningToolip } from "../../misc/common";
 import { Partition, PartitionReassignmentsPartition, Topic } from "../../../state/restInterfaces";
 import { BrokerList } from "./components/BrokerList";
 import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
@@ -67,23 +67,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                     if (this.props.throttledTopics.includes(record.topicName))
                         return <div>
                             <span>{content}</span>
-                            <LayoutBypass >
-                                <div className='tooltip' style={{
-                                    color: 'hsl(33deg, 90%, 65%)',
-                                    // background: 'hsl(0deg, 100%, 50%)',
-                                    borderRadius: '25px',
-                                    display: 'inline-flex',
-                                    placeItems: 'center',
-                                    verticalAlign: 'middle',
-                                    marginLeft: '30px',
-                                    width: '22px', height: '22px',
-
-                                }}>
-                                    <AlertIcon />
-                                    <span className='tooltiptext'>Topic replication is throttled</span>
-                                </div>
-                            </LayoutBypass>
-
+                            <WarningToolip content="Topic replication is throttled" position="top" />
                         </div>
 
                     return content;
@@ -138,7 +122,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             },
             {
                 title: 'Size', width: 110,
-                render: (v, r) => prettyBytesOrNA(r.logDirSummary.totalSizeBytes),
+                render: (v, r) => renderLogDirSummary(r.logDirSummary),
                 sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes
             },
         ];

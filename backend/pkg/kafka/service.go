@@ -55,7 +55,7 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	var schemaSvc *schema.Service
 	if cfg.Schema.Enabled {
 		logger.Info("creating schema registry client and testing connectivity")
-		schemaSvc, err = schema.NewSevice(cfg.Schema)
+		schemaSvc, err = schema.NewService(cfg.Schema, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create schema service: %w", err)
 		}
@@ -67,11 +67,10 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		logger.Info("successfully tested schema registry connectivity")
 	}
 
-	// Protoservice
+	// Proto Service
 	var protoSvc *proto.Service
 	if cfg.Protobuf.Enabled {
-		cfg.Protobuf.Git.AllowedFileExtensions = []string{"proto"}
-		svc, err := proto.NewService(cfg.Protobuf, logger)
+		svc, err := proto.NewService(cfg.Protobuf, logger, schemaSvc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create protobuf service: %w", err)
 		}

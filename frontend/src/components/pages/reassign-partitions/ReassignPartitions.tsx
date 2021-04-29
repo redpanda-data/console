@@ -4,16 +4,16 @@ import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Sele
 import { PageComponent, PageInitHelper } from "../Page";
 import { api, partialTopicConfigs } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
-import { makePaginationConfig, sortField } from "../../misc/common";
-import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig } from "../../../state/restInterfaces";
+import { makePaginationConfig, range, sortField } from "../../misc/common";
+import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig, AlterPartitionReassignmentsPartitionResponse } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
 import { clone, toJson } from "../../../utils/jsonUtils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
-import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
+import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined, YahooFilled } from '@ant-design/icons';
+import { DefaultSkeleton, ObjToKv, OptionGroup, QuickTable } from "../../../utils/tsxUtils";
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
 import { stringify } from "query-string";
 import { StepSelectBrokers } from "./Step2.Brokers";
@@ -24,9 +24,10 @@ import { PartitionWithMoves, StepReview, TopicWithMoves } from "./Step3.Review";
 import { ApiData, computeReassignments, TopicPartitions } from "./logic/reassignLogic";
 import { computeMovedReplicas, partitionSelectionToTopicPartitions, removeRedundantReassignments, topicAssignmentsToReassignmentRequest } from "./logic/utils";
 import { IsDev } from "../../../utils/env";
-import { Message } from "../../../utils/utils";
+import { Message, scrollTo, scrollToTop } from "../../../utils/utils";
 import { ActiveReassignments } from "./components/ActiveReassignments";
 import { ReassignmentTracker } from "./logic/reassignmentTracker";
+import { ErrorModal } from "../../misc/ErrorModal";
 const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
@@ -65,6 +66,15 @@ class ReassignPartitions extends PageComponent {
 
     @observable requestInProgress = false;
 
+    @observable reassignError: {
+        modalTitle: () => JSX.Element,
+        errorTitle: () => JSX.Element,
+        content: () => JSX.Element,
+    } | null = null;
+
+    autoScrollReactionDisposer: IReactionDisposer | null = null;
+
+
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
         p.addBreadcrumb('Reassign Partitions', '/reassign-partitions');
@@ -89,6 +99,11 @@ class ReassignPartitions extends PageComponent {
         this.refreshTopicConfigs();
         this.startRefreshingTopicConfigs();
 
+        this.autoScrollReactionDisposer = autorun(() => {
+            const currentStep = this.currentStep;
+            if (currentStep != 0)
+                setTimeout(() => scrollTo('wizard', 'start', -20), 20);
+        })
 
         reassignmentTracker.start();
     }
@@ -103,6 +118,7 @@ class ReassignPartitions extends PageComponent {
 
     componentWillUnmount() {
         reassignmentTracker.stop();
+        if (this.autoScrollReactionDisposer) this.autoScrollReactionDisposer();
 
         this.stopRefreshingTopicConfigs();
     }
@@ -114,8 +130,8 @@ class ReassignPartitions extends PageComponent {
         if (api.topicPartitions.size < api.topics.length) return DefaultSkeleton;
         if (api.partitionReassignments === undefined) return DefaultSkeleton;
 
-        const partitionCountLeaders = api.topics.sum(t => t.partitionCount);
-        const partitionCountOnlyReplicated = api.topics.sum(t => t.partitionCount * (t.replicationFactor - 1));
+        const partitionCountLeaders = api.topics?.sum(t => t.partitionCount);
+        const partitionCountOnlyReplicated = api.topics?.sum(t => t.partitionCount * (t.replicationFactor - 1));
 
         const step = steps[this.currentStep];
         const nextButtonCheck = step.nextButton.isEnabled(this);
@@ -128,14 +144,17 @@ class ReassignPartitions extends PageComponent {
                 <Card>
                     <Row>
                         <Statistic title='Broker Count' value={api.clusterInfo?.brokers.length} />
-                        <Statistic title='Leader Partitions' value={partitionCountLeaders} />
-                        <Statistic title='Replica Partitions' value={partitionCountOnlyReplicated} />
-                        <Statistic title='Total Partitions' value={partitionCountLeaders + partitionCountOnlyReplicated} />
+                        <Statistic title='Leader Partitions' value={partitionCountLeaders ?? '...'} />
+                        <Statistic title='Replica Partitions' value={partitionCountOnlyReplicated ?? '...'} />
+                        <Statistic title='Total Partitions' value={(partitionCountLeaders != null && partitionCountOnlyReplicated != null)
+                            ? (partitionCountLeaders + partitionCountOnlyReplicated)
+                            : '...'} />
                     </Row>
                 </Card>
 
+
                 {/* Active Reassignments */}
-                <Card>
+                <Card id='activeReassignments'>
                     <ActiveReassignments
                         throttledTopics={this.topicsWithThrottle}
                         onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
@@ -143,7 +162,7 @@ class ReassignPartitions extends PageComponent {
                 </Card>
 
                 {/* Content */}
-                <Card>
+                <Card id='wizard'>
                     {/* Steps */}
                     <div style={{ margin: '.75em 1em 1em 1em' }}>
                         <Steps current={this.currentStep}>
@@ -167,16 +186,19 @@ class ReassignPartitions extends PageComponent {
                                 assignments={this.reassignmentRequest!}
                                 reassignPartitions={this} />;
                         }
-                    })()} </motion.div>
+                    })()}
+                    </motion.div>
 
                     {/* Navigation */}
-                    <div style={{ margin: '2.5em 0 1.5em', display: 'flex', alignItems: 'center', height: '2.5em' }}>
+                    <div style={{
+                        margin: '2.5em 0 1.5em', display: 'flex', alignItems: 'flex-end', height: '2.5em'
+                    }}>
                         {/* Back */}
                         {step.backButton &&
                             <Button
                                 onClick={this.onPreviousPage}
                                 disabled={this.currentStep <= 0 || this.requestInProgress}
-                                style={{ minWidth: '12em', height: 'auto' }}
+                                style={{ minWidth: '14em', height: 'auto' }}
                             >
                                 <span><ChevronLeftIcon /></span>
                                 <span>{step.backButton}</span>
@@ -188,9 +210,10 @@ class ReassignPartitions extends PageComponent {
                             <div>{nextButtonHelp}</div>
                             <Button
                                 type='primary'
-                                style={{ minWidth: '12em', height: 'auto', marginLeft: 'auto' }}
+                                style={{ minWidth: '14em', height: 'auto', marginLeft: 'auto' }}
                                 disabled={!nextButtonEnabled || this.requestInProgress}
                                 onClick={this.onNextPage}
+                                autoFocus={true}
                             >
                                 <span>{step.nextButton.text}</span>
                                 <span><ChevronRightIcon /></span>
@@ -199,30 +222,13 @@ class ReassignPartitions extends PageComponent {
                     </div>
                 </Card>
 
-                {/* Debug */}
-                {/* <div style={{ margin: '2em 0 1em 0', display: 'flex', flexWrap: 'wrap', gap: '3em' }}>
-                    <div>
-                        <h2>Partition Selection</h2>
-                        <div className='codeBox'>{toJson(this.partitionSelection, 4)}</div>
-                    </div>
+                {this.reassignError != null ? <ErrorModal
+                    modalTitle={this.reassignError.modalTitle()}
+                    errorTitle={this.reassignError.errorTitle()}
+                    content={this.reassignError.content()}
+                    onClose={() => this.reassignError = null}
+                /> : null}
 
-                    <div>
-                        <h2>Broker Selection</h2>
-                        <div className='codeBox'>{toJson(this.selectedBrokerIds)}</div>
-                    </div>
-
-                    {
-                    // <div>
-                    //    <h2>Api Data</h2>
-                    //    <div className='codeBox'>{toJson(this._debug_apiData, 4)}</div>
-                    //</div>
-                    }
-
-                    <div>
-                        <h2>Computed Assignments</h2>
-                        <div className='codeBox'>{toJson(this.reassignmentRequest, 4)}</div>
-                    </div>
-                </div> */}
             </motion.div>
         </>
     }
@@ -286,9 +292,7 @@ class ReassignPartitions extends PageComponent {
 
                             setTimeout(() => {
                                 this.currentStep = 0;
-
-                                // todo: we need to scroll the "main content", not the window/document
-                                window.scrollTo(0, 0);
+                                setImmediate(() => scrollToTop());
                             }, 300);
                         });
                     }
@@ -305,14 +309,13 @@ class ReassignPartitions extends PageComponent {
             return;
         }
 
-
         this.currentStep++;
     }
     onPreviousPage() { this.currentStep--; }
 
 
     async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
-        if (uiSettings.reassignment.maxReplicationTraffic > 0) {
+        if (uiSettings.reassignment.maxReplicationTraffic != null && uiSettings.reassignment.maxReplicationTraffic > 0) {
             const success = await this.setTrafficLimit(request);
             if (!success) return false;
         }
@@ -326,24 +329,31 @@ class ReassignPartitions extends PageComponent {
                 if (partErrors.length == 0) return null;
                 return { topicName: e.topicName, partitions: partErrors };
             }).filterNull();
+            const startedCount = response.reassignPartitionsResponses.sum(x => x.partitions.count(p => !p.errorCode));
 
-            if (errors.length > 0) {
-                console.error("error starting partition reassignment.", errors);
-                throw new Error();
+            if (errors.length == 0) {
+                // No errors
+                msg.setSuccess();
+                return true;
+            } else if (startedCount > 0) {
+                // Some errors
+                msg.setSuccess();
+                this.setReassignError(startedCount, errors);
+                return true;
+            } else {
+                // All errors
+                msg.setError();
+                this.setReassignError(startedCount, errors);
+                return false;
             }
-            msg.setSuccess();
-
         } catch (err) {
             msg.hide();
-            notification.error({ message: "Error starting partition reassignment.\nSee console for details.", duration: 0 });
             return false;
         }
-
-        return true;
     }
 
     async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
-        const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic);
+        const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic ?? 0);
 
         const topicReplicas: {
             topicName: string,
@@ -455,6 +465,30 @@ class ReassignPartitions extends PageComponent {
         }
     }
 
+    setReassignError(startedCount: number, errors: {
+        topicName: string;
+        partitions: AlterPartitionReassignmentsPartitionResponse[];
+    }[]) {
+        this.reassignError = {
+            modalTitle: () => <>Reassign Partitions</>,
+            errorTitle: () => <>Some partitions couldn't be reassigned</>,
+            content: () => <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                {errors.map((r, i) => <div key={i}>
+                    <div>
+                        <h4>Topic: "{r.topicName}"</h4>
+                        <ul>
+                            {r.partitions.map(p =>
+                                <li key={p.partitionId}>
+                                    PartitionID {p.partitionId}: {p.errorMessage}
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+                </div>)}
+            </div>
+        };
+    }
+
     startRefreshingTopicConfigs() {
         if (IsDev) console.log('starting refreshTopicConfigs', { stack: new Error().stack });
         if (this.refreshTopicConfigsTimer == null)
@@ -529,7 +563,7 @@ class ReassignPartitions extends PageComponent {
                     </div>
                     <div style={{ margin: '1em 0' }}>
                         <h4>Throttled Topics</h4>
-                        <ul style={{ maxHeight: '145px', overflowY: 'scroll' }}>
+                        <ul style={{ maxHeight: '145px', overflowY: 'auto' }}>
                             {throttledTopics.map(t => <li key={t}>{t}</li>)}
                         </ul>
                     </div>

@@ -120,6 +120,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
     refreshData(force: boolean) {
+        // there is no single endpoint to refresh a single topic
         api.refreshTopics(force);
 
         api.refreshTopicPermissions(this.props.topicName, force);

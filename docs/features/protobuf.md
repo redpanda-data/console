@@ -10,16 +10,80 @@ the binary content into JSON, so that it will be human readable and can also be 
 like a JavaScript object.
 
 To deserialize the binary content Kowl needs access to the used .proto files, as well as a mapping what
-Prototype (not file!) to use for each Kafka topic. The .proto files can be provided via a Git repository
-that is cloned and automatically pulled over and over again to make sure it'll be up to date.
+Prototype (not file!) to use for each Kafka topic. The .proto files can be provided via the schema registry,
+local filesystem or a Git repository that is cloned and periodically pulled again to make sure it'll 
+remain up to date. Messages that have been serialized using Confluent's KafkaProtobufSerializer can
+only be deserialized if the schema registry is configured. All providers can be used together.
 
 ## Preparation
 
+### Schema Registry
+
+Unlike the other providers the schema registry does not require you to setup mappings that define
+what topics use which proto types. Instead this information is inferred from the messages and
+the schema registry will be consulted to find the right prototype for deserialization.
+
+The protobuf deserializer will use the same schema registry client that is configured under
+`kafka.schemaRegistry`.
+
+```yaml
+kafka:
+  schemaRegistry:
+    enabled: true
+    urls: ["https://my-schema-registry.com"]
+    username: kowl
+    password: redacted # Or set via flags/env variable
+  protobuf:
+    enabled: true
+    schemaRegistry:
+      enabled: true # This tells the proto service to consider the schema registry when deserializing messages
+      refreshInterval: 5m # How often the compiled proto schemas in the cache should be updated
+```
+
+### Local Filesystem
+
+Put all of your required .proto files into a git repository. It doesn't matter in what directory you put them,
+but the files' extension must be `.proto`. You can configure Kowl to search one or more paths for proto files:
+
+```yaml
+kafka:
+  protobuf:
+    enabled: true
+    mappings: []
+      - topicName: xy
+        valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
+        keyProtoType: package.Type
+    fileSystem:
+      enabled: true
+      refreshInterval: 5m # 5min is the default refresh interval
+      paths:
+        - /etc/protos
+```
+
 ### Git repository
 
-Put all of your required .proto files into a git repository. It doesn't matter in what directory. Kowl
-will search for all files with the file extension `.proto` in your repository up to a directory depth
-of 5 levels. All files with other file extensions will be ignored.
+If you want to provide the files via a git repository, put all of your required .proto files in there.
+It doesn't matter in what directory as Kowl will search for all files with the file extension `.proto`
+in your repository up to a directory depth of 5 levels. All files with other file extensions will be ignored.
+
+```yaml
+kafka:
+  protobuf:
+    enabled: true
+    mappings: []
+      - topicName: xy
+        valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
+        keyProtoType: package.Type
+    git:
+      enabled: true
+      refreshInterval: 5m
+      repository:
+        url: https://github.com/cloudhut/owlshop-protos.git
+      basicAuth:
+        enabled: true
+        username: token # Uses an API token via basic auth
+        password: redacted
+```
 
 ### Imports
 

@@ -16,6 +16,7 @@ import { observer } from "mobx-react";
 import { EllipsisOutlined } from "@ant-design/icons";
 import { strictEqual } from "assert";
 import { reassignmentTracker } from "../ReassignPartitions";
+import { BandwidthSlider } from "./BandwidthSlider";
 
 
 @observer
@@ -67,7 +68,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
 
         const minThrottle = this.minThrottle;
         const throttleText = minThrottle === undefined
-            ? <>Set Throttle</>
+            ? <>Throttle: Not set (unlimited)</>
             : <>Throttle: {prettyBytesOrNA(minThrottle)}/s</>
 
         return <>
@@ -75,11 +76,9 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
             <div className='currentReassignments' style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
                 <span className='title'>Current Reassignments</span>
 
-                {reassignmentTracker.trackingReassignments.length > 0 &&
-                    <Button type='link' size='small' style={{ fontSize: 'smaller', padding: '0px 8px' }}
-                        onClick={() => this.showThrottleDialog = true}
-                    >{throttleText}</Button>
-                }
+                <Button type='link' size='small' style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                    onClick={() => this.showThrottleDialog = true}
+                >{throttleText}</Button>
             </div>
 
             {/* Table */}
@@ -170,49 +169,58 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
 
 @observer
 export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinThrottle: number | undefined, onClose: () => void }> {
-    @observable newThrottleValue: number | undefined = undefined;
+    @observable newThrottleValue: number | null = null;
+
+    constructor(p: any) {
+        super(p);
+        this.newThrottleValue = this.props.lastKnownMinThrottle ?? null;
+    }
 
     render() {
-        const throttleValue = this.newThrottleValue ?? this.props.lastKnownMinThrottle ?? 0;
+        const throttleValue = this.newThrottleValue ?? 0;
+        const noChange = (this.newThrottleValue === this.props.lastKnownMinThrottle)
+            || (this.newThrottleValue == null);
+
+        console.log('nochange:', { noChange, newVal: this.newThrottleValue, lastKnown: this.props.lastKnownMinThrottle })
 
         return <Modal
             title="Throttle Settings"
             visible={this.props.visible} maskClosable={true}
+            width="700px"
 
-            okText="Apply &amp; Close"
-            onOk={() => this.applyBandwidthThrottle()}
+            footer={<div style={{ display: 'flex' }}>
+                <Button
+                    danger
+                    onClick={() => {
+                        this.newThrottleValue = null;
+                        this.applyBandwidthThrottle();
+                    }}
+                >Remove throttle</Button>
 
-            cancelText="Close"
-            onCancel={this.props.onClose}
+                <Button
+                    style={{ marginLeft: 'auto' }}
+                    onClick={this.props.onClose}
+                >Close</Button>
+
+                <Button
+                    disabled={noChange}
+                    type='primary'
+                    onClick={() => this.applyBandwidthThrottle()}
+                >Apply</Button>
+            </div>}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3em', }}>
-
-                <div style={{ display: 'flex', gap: '1em' }}>
-                    <Slider style={{ minWidth: '300px', margin: '0 1em', paddingBottom: '2em', flex: 1 }}
-                        min={2} max={12} step={0.1}
-                        marks={{ 2: "Off", 3: "1kB", 6: "1MB", 9: "1GB", 12: "1TB", }}
-                        included={true}
-                        tipFormatter={f => throttleValue < 1000
-                            ? 'No limit'
-                            : prettyBytesOrNA(throttleValue) + '/s'}
-
-                        value={Math.log10(throttleValue)}
-                        onChange={sv => {
-                            const n = Number(sv.valueOf());
-                            const newLimit = Math.pow(10, n);
-                            if (newLimit >= 1000) {
-                                this.newThrottleValue = newLimit;
-                            }
-                            else {
-                                if (newLimit < 500)
-                                    this.newThrottleValue = 0;
-                                else this.newThrottleValue = 1000;
-                            }
-                        }}
-                    />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1em', }}>
+                <div style={{ margin: '0 1em' }}>
+                    <p style={{ margin: 0 }}>Using throttling you can limit the network traffic for reassignments.</p>
+                    <ul style={{ marginTop: '0.5em', padding: '0 1.5em' }}>
+                        <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
+                        <li>Once the reassignment completes you'll have to remove the throttling configuration. <br />
+                        Kowl will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
+                        </li>
+                    </ul>
                 </div>
 
-                {/* <Button type='default' onClick={() => this.applyBandwidthThrottle()}>Remove Bandwidth Throttle</Button> */}
+                <BandwidthSlider value={throttleValue} onChange={x => this.newThrottleValue = x} />
             </div>
 
         </Modal>
@@ -278,10 +286,8 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         }
         this.wasVisible = visible;
 
-
         const topicConfig = api.topicConfig.get(state.topicName);
-
-        const settings = uiSettings.reassignment;
+        if (!topicConfig) setImmediate(() => { api.refreshTopicConfig(state.topicName); });
 
         const replicas = state.partitions.flatMap(p => p.replicas).distinct();
         const addingReplicas = state.partitions.flatMap(p => p.addingReplicas).distinct();

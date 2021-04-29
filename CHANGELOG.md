@@ -1,7 +1,10 @@
 # Changelog
 
-## 1.3.0 / 2021-04-13
+## Master / pending release
+- [FEATURE] Proto files can now be provided via the local file system as well
+- [FEATURE] Schema registry support for Protobuf
 
+## 1.3.0 / 2021-04-13
 
 - [CHANGE] We removed the Kafka library and replaced it with [franz-go](https://github.com/twmb/franz-go). This allows us to add a lot more features in the future.
 - [CHANGE] Configuration for the topic documentation feature has changed

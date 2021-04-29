@@ -5,6 +5,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"sort"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -37,20 +38,23 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 		return nil, err
 	}
 
-	// 3. Get log dir sizes for each topic
+	// 3. Get log dir sizes & configs for each topic concurrently
 	// Use a shorter ctx timeout so that we don't wait for too long if one broker is currently down.
-	logDirCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	childCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	logDirsByTopic := s.logDirsByTopic(logDirCtx, metadata)
-	if err != nil {
-		return nil, err
-	}
 
-	// 3. Create config resources request objects for all topics
-	configs, err := s.GetTopicsConfigs(ctx, topicNames, []string{"cleanup.policy"})
-	if err != nil {
-		s.logger.Warn("failed to fetch topic configs to return cleanup.policy", zap.Error(err))
-	}
+	configs := make(map[string]*TopicConfig)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		configs, err = s.GetTopicsConfigs(childCtx, topicNames, []string{"cleanup.policy"})
+		if err != nil {
+			s.logger.Warn("failed to fetch topic configs to return cleanup.policy", zap.Error(err))
+		}
+	}()
+	logDirsByTopic := s.logDirsByTopic(childCtx, metadata)
+	wg.Wait()
 
 	// 4. Merge information from all requests and construct the TopicSummary object
 	res := make([]*TopicSummary, len(topicNames))

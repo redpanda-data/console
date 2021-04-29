@@ -14,6 +14,7 @@
         "antd": "^4.2.0",
         "array-move": "^3.0.1",
         "customize-cra": "^0.9.1",
+        "dayjs": "^1.10.4",
         "framer-motion": "^1.11.1",
         "less": "^3.10.3",
         "less-loader": "^6.0.0",
