@@ -63,7 +63,15 @@ func newClient(cfg Config) (*Client, error) {
 }
 
 type SchemaResponse struct {
-	Schema string `json:"schema"`
+	Schema     string      `json:"schema"`
+	SchemaType string      `json:"schemaType,omitempty"`
+	References []Reference `json:"references,omitempty"`
+}
+
+type Reference struct {
+	Name    string `json:"name"`
+	Subject string `json:"subject"`
+	Version int    `json:"version"`
 }
 
 // GetSchemaByID returns the schema string identified by the input ID.
@@ -93,11 +101,12 @@ func (c *Client) GetSchemaByID(id uint32) (*SchemaResponse, error) {
 
 // SchemaVersionedResponse represents the schema resource returned by the Schema Registry
 type SchemaVersionedResponse struct {
-	Subject  string `json:"subject"`
-	SchemaID int    `json:"id"`
-	Version  int    `json:"version"`
-	Schema   string `json:"schema"`
-	Type     string `json:"schemaType"`
+	Subject    string      `json:"subject"`
+	SchemaID   int         `json:"id"`
+	Version    int         `json:"version"`
+	Schema     string      `json:"schema"`
+	Type       string      `json:"schemaType"`
+	References []Reference `json:"references"`
 }
 
 // GetSchemaBySubject returns the schema for the specified version of this subject. The unescaped schema only is returned.
@@ -284,9 +293,9 @@ func (c *Client) GetSubjectConfig(subject string) (*ConfigResponse, error) {
 // GetSchemaTypes returns supported types (AVRO, PROTOBUF, JSON)
 func (c *Client) GetSchemaTypes() ([]string, error) {
 	var supportedTypes []string
-	res, err := c.client.R().SetResult(&supportedTypes).Get("/config")
+	res, err := c.client.R().SetResult(&supportedTypes).Get("/schemas/types")
 	if err != nil {
-		return nil, fmt.Errorf("get config failed: %w", err)
+		return nil, fmt.Errorf("get schema types failed: %w", err)
 	}
 
 	if res.IsError() {
@@ -297,12 +306,25 @@ func (c *Client) GetSchemaTypes() ([]string, error) {
 		return nil, restErr
 	}
 
-	parsed, ok := res.Result().([]string)
-	if !ok {
-		return nil, fmt.Errorf("failed to parse schema types response")
+	return supportedTypes, nil
+}
+
+func (c *Client) GetSchemas() ([]SchemaVersionedResponse, error) {
+	var schemas []SchemaVersionedResponse
+	res, err := c.client.R().SetResult(&schemas).Get("/schemas")
+	if err != nil {
+		return nil, fmt.Errorf("get schemas failed: %w", err)
 	}
 
-	return parsed, nil
+	if res.IsError() {
+		restErr, ok := res.Error().(*RestError)
+		if !ok {
+			return nil, fmt.Errorf("get schemas failed: Status code %d", res.StatusCode())
+		}
+		return nil, restErr
+	}
+
+	return schemas, nil
 }
 
 // CheckConnectivity checks whether the schema registry can be access by GETing the /subjects

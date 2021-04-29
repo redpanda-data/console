@@ -29,7 +29,7 @@ func (c *Config) Validate() error {
 		return nil
 	}
 
-	if !c.Git.Enabled && !c.FileSystem.Enabled {
+	if !c.Git.Enabled && !c.FileSystem.Enabled && !c.SchemaRegistry.Enabled {
 		return fmt.Errorf("protobuf deserializer is enabled, at least one source provider for proto files must be configured")
 	}
 
@@ -43,6 +43,7 @@ func (c *Config) Validate() error {
 func (c *Config) SetDefaults() {
 	c.Git.SetDefaults()
 	c.FileSystem.SetDefaults()
+	c.SchemaRegistry.SetDefaults()
 
 	// Index by full filepath so that we support .proto files with the same filename in different directories
 	c.Git.IndexByFullFilepath = true

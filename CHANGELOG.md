@@ -2,6 +2,7 @@
 
 ## Master / pending release
 - [FEATURE] Proto files can now be provided via the local file system as well
+- [FEATURE] Schema registry support for Protobuf
 
 ## 1.3.0 / 2021-04-13
 
