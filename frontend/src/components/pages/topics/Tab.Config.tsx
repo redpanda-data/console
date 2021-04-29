@@ -132,6 +132,7 @@ const ConfigList = observer(({ configEntries }: { configEntries: TopicConfigEntr
             columns={columns}
             rowClassName={(record) => (record.isExplicitlySet ? styles.overidden : styles.default)}
             pagination={false}
+            size="middle"
         />
     );
 });
