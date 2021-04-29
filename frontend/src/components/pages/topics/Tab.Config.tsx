@@ -144,6 +144,8 @@ const ConfigList = observer(({ configEntries }: { configEntries: TopicConfigEntr
             rowClassName={(record) => (record.isExplicitlySet ? styles.overidden : styles.default)}
             pagination={false}
             size="middle"
+            className={styles.configEntryTable}
+            indentSize={20}
         />
     );
 });
