@@ -153,8 +153,10 @@ type SchemaVersionedResponse struct {
 // 		the string “latest”, which returns the last registered schema under the specified subject.
 //		Note that there may be a new latest schema that gets registered right after this request is served.
 func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
-	url := fmt.Sprintf("/subjects/%s/versions/%s", subject, version)
-	res, err := c.client.R().SetResult(&SchemaVersionedResponse{}).Get(url)
+	res, err := c.client.R().SetResult(&SchemaVersionedResponse{}).SetPathParams(map[string]string{
+		"subjects": subject,
+		"version":  version,
+	}).Get("/subjects/{subjects}/versions/{version}")
 	if err != nil {
 		return nil, fmt.Errorf("get schema by subject request failed: %w", err)
 	}
@@ -354,12 +356,55 @@ func (c *Client) GetSchemas() ([]SchemaVersionedResponse, error) {
 		return nil, fmt.Errorf("get schemas failed: %w", err)
 	}
 
+	if res.StatusCode() == http.StatusNotFound {
+		// The /schemas endpoint has been introduced with v6.0.0, so instead we could achieve the same by querying
+		// every subject one by one
+		return c.GetSchemasIndividually()
+	}
+
 	if res.IsError() {
 		restErr, ok := res.Error().(*RestError)
 		if !ok {
 			return nil, fmt.Errorf("get schemas failed: Status code %d", res.StatusCode())
 		}
 		return nil, restErr
+	}
+
+	return schemas, nil
+}
+
+// GetSchemasIndividually returns all schemas by describing all schemas one by one. This may be used against
+// schema registry that don't support the /schemas endpoint that returns a list of all registered schemas.
+func (c *Client) GetSchemasIndividually() ([]SchemaVersionedResponse, error) {
+	subjectsRes, err := c.GetSubjects()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get subjects to fetch schemas for: %w", err)
+	}
+
+	type chRes struct {
+		schemaRes *SchemaVersionedResponse
+		err       error
+	}
+	ch := make(chan chRes, len(subjectsRes.Subjects))
+
+	// Describe all subjects concurrently one by one
+	for _, subject := range subjectsRes.Subjects {
+		go func(s string) {
+			r, err := c.GetSchemaBySubject(s, "latest")
+			ch <- chRes{
+				schemaRes: r,
+				err:       err,
+			}
+		}(subject)
+	}
+
+	schemas := make([]SchemaVersionedResponse, 0)
+	for i := 0; i < cap(ch); i++ {
+		res := <-ch
+		if res.err != nil {
+			return nil, fmt.Errorf("failed to fetch at least one schema: %w", res.err)
+		}
+		schemas = append(schemas, *res.schemaRes)
 	}
 
 	return schemas, nil
