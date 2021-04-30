@@ -192,7 +192,7 @@ export function assignDeep(target: any, source: any) {
         if (key === "__proto__" || key === "constructor") continue;
 
         const value = source[key];
-        const existing = target[key];
+        const existing = key in target ? target[key] : undefined;
 
         // if (existing === undefined && onlySetExisting) {
         // 	console.log('skipping key ' + key + ' because it doesnt exist in the target');
