@@ -27,7 +27,7 @@ const allowedProtocols = [
     "mailto://",
 ];
 
-function sanitizeUrl(uri: string, children?: React.ReactNode, title?: string | undefined): string {
+function sanitizeUrl(uri: string, children?: any, title?: string | null): string {
     const baseTransformed = baseUriTransformer(uri);
     if (baseTransformed != uri) return baseTransformed;
 
@@ -58,7 +58,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
             return errorEmpty;
 
         return <div className='topicDocumentation'>
-            <ReactMarkdown source={markdown} escapeHtml={false} transformLinkUri={sanitizeUrl} />
+            <ReactMarkdown children={markdown} skipHtml={false} transformLinkUri={sanitizeUrl} />
         </div>
     }
 }
