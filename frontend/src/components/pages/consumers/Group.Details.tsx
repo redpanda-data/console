@@ -7,7 +7,7 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { makePaginationConfig, sortField } from "../../misc/common";
 import { MotionDiv } from "../../../utils/animationProps";
 import { GroupDescription, } from "../../../state/restInterfaces";
-import { action, computed, observable, transaction } from "mobx";
+import { action, computed, makeObservable, observable, transaction } from "mobx";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
@@ -32,6 +32,11 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
     @observable deletingMode: GroupDeletingMode = 'group';
     @observable deletingOffsets: GroupOffset[] | null = null;
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
 
     initPage(p: PageInitHelper): void {

@@ -6,6 +6,7 @@ import {
     RouteComponentProps
 } from "react-router-dom";
 import * as serviceWorker from "./serviceWorker";
+import { configure } from "mobx";
 
 import "antd/dist/antd.css";
 import "./index.scss";
@@ -19,6 +20,11 @@ const HistorySetter = withRouter((p: RouteComponentProps) => {
     return <></>;
 });
 
+
+configure({
+    enforceActions: 'never',
+    safeDescriptors: true,
+})
 
 // > A properly formatted basename should have a leading slash, but no trailing slash.
 // https://reactrouter.com/web/api/BrowserRouter

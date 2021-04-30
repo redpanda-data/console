@@ -24,7 +24,7 @@ import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined } from '@ant-design/icons';
-import { observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
 import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
@@ -271,9 +271,7 @@ const AppContent = observer(() =>
     </Layout>
 );
 
-@observer
 export default class App extends Component {
-
     render(): JSX.Element {
         setImmediate(() => {
             if (api.endpointCompatibility == null)
@@ -360,6 +358,7 @@ export default class App extends Component {
 
 @observer
 class FeatureErrorCheck extends Component {
+
     render() {
         if (featureErrors.length > 0) {
             const allErrors = featureErrors.join(" ");

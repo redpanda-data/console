@@ -6,7 +6,7 @@ import React from 'react';
 import { findPopupContainer, numberToThousandsString, QuickTable, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
 import { Alert, Button, Collapse, ConfigProvider, DatePicker, message, Modal, Popover, Radio, Select, Table, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
-import { action, autorun, computed, FlowCancellationError, IReactionDisposer, observable, transaction, untracked } from 'mobx';
+import { action, autorun, computed, FlowCancellationError, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-v2-react';
 import { animProps_modalPage, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
@@ -69,6 +69,11 @@ export class EditOffsetsModal extends Component<{
 
     @observable isLoadingTimestamps = false;
     @observable isApplyingEdit = false;
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     render() {
         let offsets = this.props.offsets;
@@ -496,6 +501,7 @@ class GroupTimePicker extends Component<{
     constructor(p: any) {
         super(p);
         this.timestampUtcMs = this.props.valueUtcMs;
+        makeObservable(this);
     }
 
     render() {

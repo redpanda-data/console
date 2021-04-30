@@ -1,10 +1,11 @@
 import { Checkbox, Input } from 'antd';
 import { AnimatePresence } from 'framer-motion';
-import { autorun, IReactionDisposer, transaction } from 'mobx';
+import { autorun, IReactionDisposer, makeObservable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react'
 import { animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
+import { clone } from '../../utils/jsonUtils';
 
 // todo: extract out where the filterText is retreived from / saved.
 //       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
@@ -18,7 +19,6 @@ class SearchBar<TItem> extends Component<{
 }> {
 
     private filteredSource = {} as FilterableDataSource<TItem>;
-    get data() { return this.filteredSource.data; }
     autorunDisposer: IReactionDisposer | undefined = undefined;
 
     /*
@@ -33,16 +33,17 @@ class SearchBar<TItem> extends Component<{
         this.filteredSource = new FilterableDataSource<TItem>(this.props.dataSource, this.props.isFilterMatch);
         this.filteredSource.filterText = this.props.filterText;
 
-        this.onChange = this.onChange.bind(this)
+        this.onChange = this.onChange.bind(this);
     }
 
     componentDidMount() {
         this.autorunDisposer = autorun(() => {
+            const data = this.filteredSource.data;
+
             transaction(() => {
-                const data = this.data;
                 setImmediate(() => {
                     this.props.onFilteredDataChanged(data);
-                });
+                })
             });
         });
     }
@@ -55,7 +56,6 @@ class SearchBar<TItem> extends Component<{
     componentWillUnmount() {
         this.filteredSource.dispose();
         if (this.autorunDisposer) this.autorunDisposer();
-        // this.autorunDisposer?.();
     }
 
     render() {

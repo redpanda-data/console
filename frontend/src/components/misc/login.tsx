@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Spin, Modal } from 'antd';
 import { observer } from 'mobx-react';
-import { observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 
 import SvgLoginWave from '../../assets/login_wave.svg';
 import PngLogo from '../../assets/logo2.png';
@@ -42,6 +42,11 @@ async function getProviders() {
 
 @observer
 class Login extends Component {
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
 
     @observable providersResponse: ProvidersResponse | null = null;
     @observable providersError: string | null = null;

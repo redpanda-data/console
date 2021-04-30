@@ -6,12 +6,17 @@ import { motion, AnimatePresence } from "framer-motion"
 import { animProps, MotionDiv } from "../../utils/animationProps";
 import { observer } from "mobx-react";
 import { Checkbox } from "antd";
-import { observable } from "mobx";
+import { makeObservable, observable } from "mobx";
 
 @observer
 export class UrlTestPage extends PageComponent {
 
     @observable test: boolean = true;
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     initPage(p: PageInitHelper) {
         p.title = 'DEBUG PLACEHOLDER';

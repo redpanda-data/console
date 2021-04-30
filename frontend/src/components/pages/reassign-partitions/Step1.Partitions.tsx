@@ -10,7 +10,7 @@ import { DebugTimerStore, prettyBytesOrNA } from "../../../utils/utils";
 import { ColumnProps } from "antd/lib/table/Column";
 import { DefaultSkeleton, findPopupContainer, LayoutBypass, OptionGroup, InfoText } from "../../../utils/tsxUtils";
 import { api } from "../../../state/backendApi";
-import { computed, IReactionDisposer, observable, transaction } from "mobx";
+import { computed, IReactionDisposer, makeObservable, observable, transaction } from "mobx";
 import { PartitionSelection } from "./ReassignPartitions";
 import Highlighter from 'react-highlight-words';
 import { uiSettings } from "../../../state/ui";
@@ -35,6 +35,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         this.isSelected = this.isSelected.bind(this);
         this.getSelectedPartitions = this.getSelectedPartitions.bind(this);
         this.getTopicCheckState = this.getTopicCheckState.bind(this);
+        makeObservable(this);
     }
 
     componentWillUnmount() {

@@ -25,7 +25,7 @@ import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
 import { clone, toJson } from "../../../utils/jsonUtils";
 import { LockIcon } from "@primer/octicons-v2-react";
 import { appGlobal } from "../../../state/appGlobal";
-import { computed } from "mobx";
+import { computed, makeObservable } from "mobx";
 
 const { Text } = Typography;
 
@@ -35,6 +35,13 @@ const { Text } = Typography;
 // Full topic configuration
 @observer
 export class TopicConfiguration extends Component<{ topic: Topic }> {
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
+
     render() {
         const renderedError = this.handleError();
         if (renderedError) return renderedError;

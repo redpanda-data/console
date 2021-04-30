@@ -9,7 +9,7 @@ import { makePaginationConfig, sortField } from "../../misc/common";
 import { AclRequestDefault, AclResource, AclRule, Broker } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
-import { computed, observable } from "mobx";
+import { comparer, computed, makeObservable, observable } from "mobx";
 import { containsIgnoreCase } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
@@ -35,6 +35,11 @@ class AclList extends PageComponent {
     @observable resourceTypeFilter: string = "";
 
     @observable filterText = "";
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     initPage(p: PageInitHelper): void {
         p.title = 'ACLs';
@@ -106,22 +111,26 @@ class AclList extends PageComponent {
         return ar;
     }
 
-    @computed({ equals: (a: FlatResource, b: FlatResource) => a.eqKey == b.eqKey }) get filteredResources() {
-        return this.flatResourceList.filter(this.isFilterMatch)
+    @computed({ equals: comparer.structural }) get filteredResources() {
+
+        const filtered = this.flatResourceList
+            // filter by category
+            .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
+            // filter by name
+            .filter(this.isFilterMatch)
             .sort((a, b) => a.resourceName.localeCompare(b.resourceName))
             .sort((a, b) => a.operation.localeCompare(b.operation))
             .sort((a, b) => a.principal.localeCompare(b.principal));
+        return filtered;
     }
 
-    @computed({ equals: (a: FlatResource, b: FlatResource) => a.eqKey == b.eqKey }) get flatResourceList() {
+    @computed get flatResourceList() {
         const acls = api.ACLs;
         if (acls?.aclResources == null) return [];
         const flatResources = acls.aclResources
-            .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
             .map(res => res.acls.map(rule => ({ ...res, ...rule })))
             .flat()
             .map(x => ({ ...x, eqKey: toJson(x) }));
-
         return flatResources;
     }
 
@@ -139,7 +148,6 @@ class AclList extends PageComponent {
     };
 
     SearchControls = observer(() => {
-        //const state = uiState.aclSearchParams!;
 
         return (
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>

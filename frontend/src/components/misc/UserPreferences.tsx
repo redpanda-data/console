@@ -8,7 +8,7 @@ import Icon, { UserOutlined } from '@ant-design/icons';
 import { IsBusiness } from '../../utils/env';
 import { ChevronDownIcon, ToolsIcon } from '@primer/octicons-v2-react';
 import { Label } from '../../utils/tsxUtils';
-import { observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 
 const { Option } = Select;
 type Action = () => void;
@@ -16,6 +16,11 @@ type Action = () => void;
 @observer
 export class UserPreferencesButton extends Component {
     @observable isOpen = false;
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     render() {
 
@@ -38,7 +43,10 @@ const settingsTabs: { name: string, component: () => ReactNode }[] = [
 @observer
 class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Action }> {
     @observable selectedTab: string = settingsTabs[0].name;
-
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
     render() {
         const { visible, onClose } = this.props;
         const tab = settingsTabs.first(t => t.name == this.selectedTab);
@@ -88,6 +96,12 @@ class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Actio
 @observer
 class StatsBarTab extends Component {
     @observable visibility = 'visible';
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
     render() {
         return <div>
             <p>Controls on what pages kowl shows the statistics bar</p>
@@ -128,6 +142,12 @@ class StatsBarTab extends Component {
 class ImportExportTab extends Component {
     @observable importCode = '';
     @observable resetConfirm = '';
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
     render() {
         return <>
             <Label text='Import'>

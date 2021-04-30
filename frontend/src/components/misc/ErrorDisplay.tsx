@@ -5,10 +5,12 @@ import { Button } from 'antd';
 import { api } from '../../state/backendApi';
 import { CloseCircleOutlined } from '@ant-design/icons'
 import { toJson } from "../../utils/jsonUtils";
+import { makeObservable } from 'mobx';
 
 
 @observer
 export class ErrorDisplay extends React.Component {
+
     render() {
         if (api.errors.length === 0)
             return this.props.children;

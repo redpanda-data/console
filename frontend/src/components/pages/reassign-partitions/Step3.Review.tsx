@@ -5,7 +5,7 @@ import { ColumnProps } from "antd/lib/table";
 import { api } from "../../../state/backendApi";
 import { makePaginationConfig } from "../../misc/common";
 import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from "../../../state/restInterfaces";
-import { computed, observable } from "mobx";
+import { computed, makeObservable, observable } from "mobx";
 import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
 import { DefaultSkeleton, Label, InfoText } from "../../../utils/tsxUtils";
 import { BrokerList } from "./components/BrokerList";
@@ -27,6 +27,11 @@ export class StepReview extends Component<{
     reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeReview, true);
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     render() {
         if (!api.topics)
@@ -145,7 +150,6 @@ export class StepReview extends Component<{
 
                 let estimatedTimeSec = totalTraffic / potentialBandwidth;
                 if (estimatedTimeSec <= 0 || !Number.isFinite(estimatedTimeSec)) {
-                    console.warn('error calculating estimatedTimeSec', { topic: t.topicName, partition: p.id, senders, receivers, potentialBandwidth, maxReplicationTraffic: settings.maxReplicationTraffic, estimatedTimeSec, });
                     estimatedTimeSec = 0;
                 }
 

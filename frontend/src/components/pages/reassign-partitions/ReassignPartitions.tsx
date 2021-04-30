@@ -8,7 +8,7 @@ import { makePaginationConfig, range, sortField } from "../../misc/common";
 import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig, AlterPartitionReassignmentsPartitionResponse } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
-import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
+import { observable, computed, autorun, IReactionDisposer, transaction, untracked, makeObservable } from "mobx";
 import { clone, toJson } from "../../../utils/jsonUtils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
@@ -74,6 +74,11 @@ class ReassignPartitions extends PageComponent {
 
     autoScrollReactionDisposer: IReactionDisposer | null = null;
 
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';

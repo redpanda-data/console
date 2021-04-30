@@ -3,7 +3,7 @@ import { Tag, Popover, Tooltip, ConfigProvider, Table, Progress, Button, Modal, 
 import { LazyMap } from "../../../../utils/LazyMap";
 import { Broker, Partition, PartitionReassignmentsPartition } from "../../../../state/restInterfaces";
 import { api, brokerMap } from "../../../../state/backendApi";
-import { computed, observable } from "mobx";
+import { computed, makeObservable, observable } from "mobx";
 import { DefaultSkeleton, findPopupContainer, QuickTable } from "../../../../utils/tsxUtils";
 import { makePaginationConfig, sortField } from "../../../misc/common";
 import { uiSettings } from "../../../../state/ui";
@@ -30,6 +30,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
     constructor(p: any) {
         super(p);
         api.refreshClusterConfig(true);
+        makeObservable(this);
     }
 
     render() {
@@ -174,6 +175,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
     constructor(p: any) {
         super(p);
         this.newThrottleValue = this.props.lastKnownMinThrottle ?? null;
+        makeObservable(this);
     }
 
     render() {
@@ -266,6 +268,13 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     lastState: ReassignmentState | null;
     @observable shouldThrottle = false;
     wasVisible = false;
+
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
 
     render() {
         if (this.props.state == null) return null;

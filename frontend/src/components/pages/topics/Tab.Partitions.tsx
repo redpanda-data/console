@@ -55,9 +55,9 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
                 { title: 'Brokers', render: (v, r) => <BrokerList brokerIds={r.replicas} /> }
             ]} />
 
-        return <MotionAlways>
+        return <>
             {warning}
             {table}
-        </MotionAlways>
+        </>
     }
 }

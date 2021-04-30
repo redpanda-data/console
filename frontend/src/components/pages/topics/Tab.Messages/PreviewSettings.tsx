@@ -5,7 +5,7 @@ import Item from "antd/lib/list/Item";
 import Paragraph from "antd/lib/typography/Paragraph";
 import arrayMove from "array-move";
 import { AnimatePresence, motion } from "framer-motion";
-import { computed, observable } from "mobx";
+import { computed, makeObservable, observable } from "mobx";
 import { observer } from "mobx-react";
 import React from "react";
 import { Component } from "react";
@@ -29,6 +29,12 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
         console.log("get all current keys: " + unused);
         return getAllMessageKeys(api.messages).map(p => p.propertyName).distinct();
     }
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
 
     render() {
         const currentKeys = this.props.getShowDialog() ? this.allCurrentKeys : [];

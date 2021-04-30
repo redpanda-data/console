@@ -2,7 +2,7 @@ import React from 'react';
 import { Component } from 'react';
 import { Modal, Radio, Select } from 'antd';
 import { observer } from 'mobx-react';
-import { observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
 import { PencilIcon, TrashIcon, XCircleIcon } from '@heroicons/react/solid';
 
