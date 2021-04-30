@@ -9,7 +9,6 @@ import * as serviceWorker from "./serviceWorker";
 
 import "antd/dist/antd.css";
 import "./index.scss";
-import 'mobx-react-lite/batchingForReactDom'
 
 import App from "./components/App";
 import { appGlobal } from "./state/appGlobal";
