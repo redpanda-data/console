@@ -10,10 +10,35 @@ the binary content into JSON, so that it will be human readable and can also be 
 like a JavaScript object.
 
 To deserialize the binary content Kowl needs access to the used .proto files, as well as a mapping what
-Prototype (not file!) to use for each Kafka topic. The .proto files can be provided via the local filesystem
-or a Git repository that is cloned and periodically pulled again to make sure it'll remain up to date.
+Prototype (not file!) to use for each Kafka topic. The .proto files can be provided via the schema registry,
+local filesystem or a Git repository that is cloned and periodically pulled again to make sure it'll 
+remain up to date. Messages that have been serialized using Confluent's KafkaProtobufSerializer can
+only be deserialized if the schema registry is configured. All providers can be used together.
 
 ## Preparation
+
+### Schema Registry
+
+Unlike the other providers the schema registry does not require you to setup mappings that define
+what topics use which proto types. Instead this information is inferred from the messages and
+the schema registry will be consulted to find the right prototype for deserialization.
+
+The protobuf deserializer will use the same schema registry client that is configured under
+`kafka.schemaRegistry`.
+
+```yaml
+kafka:
+  schemaRegistry:
+    enabled: true
+    urls: ["https://my-schema-registry.com"]
+    username: kowl
+    password: redacted # Or set via flags/env variable
+  protobuf:
+    enabled: true
+    schemaRegistry:
+      enabled: true # This tells the proto service to consider the schema registry when deserializing messages
+      refreshInterval: 5m # How often the compiled proto schemas in the cache should be updated
+```
 
 ### Local Filesystem
 

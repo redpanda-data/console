@@ -469,7 +469,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                 />
 
                 <Button
-                    type='primary'
+                    type='primary' style={{ marginTop: '4px', marginLeft: '-2px' }}
                     icon={<span style={{ paddingRight: '4px' }}><DownloadIcon /></span>}
                     onClick={() => { this.downloadMessages = api.messages; }}
                     disabled={!api.messages || api.messages.length == 0}

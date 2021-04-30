@@ -5,15 +5,15 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { api, partialTopicConfigs } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, range, sortField } from "../../misc/common";
-import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig } from "../../../state/restInterfaces";
+import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig, AlterPartitionReassignmentsPartitionResponse } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
 import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
 import { clone, toJson } from "../../../utils/jsonUtils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
-import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, ObjToKv, OptionGroup } from "../../../utils/tsxUtils";
+import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined, YahooFilled } from '@ant-design/icons';
+import { DefaultSkeleton, ObjToKv, OptionGroup, QuickTable } from "../../../utils/tsxUtils";
 import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
 import { stringify } from "query-string";
 import { StepSelectBrokers } from "./Step2.Brokers";
@@ -27,6 +27,7 @@ import { IsDev } from "../../../utils/env";
 import { Message, scrollTo, scrollToTop } from "../../../utils/utils";
 import { ActiveReassignments } from "./components/ActiveReassignments";
 import { ReassignmentTracker } from "./logic/reassignmentTracker";
+import { ErrorModal } from "../../misc/ErrorModal";
 const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
@@ -65,6 +66,12 @@ class ReassignPartitions extends PageComponent {
 
     @observable requestInProgress = false;
 
+    @observable reassignError: {
+        modalTitle: () => JSX.Element,
+        errorTitle: () => JSX.Element,
+        content: () => JSX.Element,
+    } | null = null;
+
     autoScrollReactionDisposer: IReactionDisposer | null = null;
 
 
@@ -93,8 +100,9 @@ class ReassignPartitions extends PageComponent {
         this.startRefreshingTopicConfigs();
 
         this.autoScrollReactionDisposer = autorun(() => {
-            const x = this.currentStep;
-            setTimeout(() => scrollTo('wizard', 'start', -20), 20);
+            const currentStep = this.currentStep;
+            if (currentStep != 0)
+                setTimeout(() => scrollTo('wizard', 'start', -20), 20);
         })
 
         reassignmentTracker.start();
@@ -214,6 +222,13 @@ class ReassignPartitions extends PageComponent {
                     </div>
                 </Card>
 
+                {this.reassignError != null ? <ErrorModal
+                    modalTitle={this.reassignError.modalTitle()}
+                    errorTitle={this.reassignError.errorTitle()}
+                    content={this.reassignError.content()}
+                    onClose={() => this.reassignError = null}
+                /> : null}
+
             </motion.div>
         </>
     }
@@ -300,7 +315,7 @@ class ReassignPartitions extends PageComponent {
 
 
     async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
-        if (uiSettings.reassignment.maxReplicationTraffic > 0) {
+        if (uiSettings.reassignment.maxReplicationTraffic != null && uiSettings.reassignment.maxReplicationTraffic > 0) {
             const success = await this.setTrafficLimit(request);
             if (!success) return false;
         }
@@ -314,24 +329,31 @@ class ReassignPartitions extends PageComponent {
                 if (partErrors.length == 0) return null;
                 return { topicName: e.topicName, partitions: partErrors };
             }).filterNull();
+            const startedCount = response.reassignPartitionsResponses.sum(x => x.partitions.count(p => !p.errorCode));
 
-            if (errors.length > 0) {
-                console.error("error starting partition reassignment.", errors);
-                throw new Error();
+            if (errors.length == 0) {
+                // No errors
+                msg.setSuccess();
+                return true;
+            } else if (startedCount > 0) {
+                // Some errors
+                msg.setSuccess();
+                this.setReassignError(startedCount, errors);
+                return true;
+            } else {
+                // All errors
+                msg.setError();
+                this.setReassignError(startedCount, errors);
+                return false;
             }
-            msg.setSuccess();
-
         } catch (err) {
             msg.hide();
-            notification.error({ message: "Error starting partition reassignment.\nSee console for details.", duration: 0 });
             return false;
         }
-
-        return true;
     }
 
     async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
-        const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic);
+        const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic ?? 0);
 
         const topicReplicas: {
             topicName: string,
@@ -443,6 +465,30 @@ class ReassignPartitions extends PageComponent {
         }
     }
 
+    setReassignError(startedCount: number, errors: {
+        topicName: string;
+        partitions: AlterPartitionReassignmentsPartitionResponse[];
+    }[]) {
+        this.reassignError = {
+            modalTitle: () => <>Reassign Partitions</>,
+            errorTitle: () => <>Some partitions couldn't be reassigned</>,
+            content: () => <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                {errors.map((r, i) => <div key={i}>
+                    <div>
+                        <h4>Topic: "{r.topicName}"</h4>
+                        <ul>
+                            {r.partitions.map(p =>
+                                <li key={p.partitionId}>
+                                    PartitionID {p.partitionId}: {p.errorMessage}
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+                </div>)}
+            </div>
+        };
+    }
+
     startRefreshingTopicConfigs() {
         if (IsDev) console.log('starting refreshTopicConfigs', { stack: new Error().stack });
         if (this.refreshTopicConfigsTimer == null)
@@ -517,7 +563,7 @@ class ReassignPartitions extends PageComponent {
                     </div>
                     <div style={{ margin: '1em 0' }}>
                         <h4>Throttled Topics</h4>
-                        <ul style={{ maxHeight: '145px', overflowY: 'scroll' }}>
+                        <ul style={{ maxHeight: '145px', overflowY: 'auto' }}>
                             {throttledTopics.map(t => <li key={t}>{t}</li>)}
                         </ul>
                     </div>
