@@ -26,6 +26,7 @@ type TopicConfigEntry struct {
 	IsExplicitlySet bool                 `json:"isExplicitlySet"`
 	IsDefaultValue  bool                 `json:"isDefaultValue"`
 	IsSensitive     bool                 `json:"isSensitive"`
+	IsReadOnly      bool                 `json:"isReadOnly"`
 	Documentation   *string              `json:"documentation"` // Will be nil for Kafka <v2.6.0
 	Synonyms        []TopicConfigSynonym `json:"synonyms"`
 }
@@ -121,6 +122,7 @@ func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, con
 				IsExplicitlySet: isExplicitlySet,
 				IsDefaultValue:  isDefaultValue,
 				IsSensitive:     cfg.IsSensitive,
+				IsReadOnly:      cfg.ReadOnly,
 				Documentation:   cfg.Documentation,
 				Synonyms:        innerEntries,
 			}
