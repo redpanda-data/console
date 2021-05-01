@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
@@ -38,7 +39,7 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 			Message: fmt.Sprintf("Failed to check consumer group state before proceeding: %v", err.Error()),
 		}
 	}
-	if describedGroup.State != "empty" {
+	if !strings.EqualFold(describedGroup.State, "empty") {
 		return &EditConsumerGroupOffsetsResponse{
 			Error:  fmt.Sprintf("Consumer group is still active and therefore can't be edited. Current Group State is: %v", describedGroup.State),
 			Topics: nil,
