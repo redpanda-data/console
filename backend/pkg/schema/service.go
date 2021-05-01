@@ -117,13 +117,7 @@ func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepo
 		schemasByPath[ref.Name] = refSchema.Schema
 	}
 
-	// 2. Parse files that are currently stored in our in-memory map (rather than files on the file system which
-	// would be more common) to file descriptors.
-	filePaths := make([]string, 0)
-	for path := range schemasByPath {
-		filePaths = append(filePaths, path)
-	}
-
+	// 2. Parse schema to descriptor file
 	errorReporter := func(err protoparse.ErrorWithPos) error {
 		position := err.GetPosition()
 		s.logger.Warn("failed to parse proto schema to descriptor",
