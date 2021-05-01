@@ -92,7 +92,7 @@ export type CompressionType = 'uncompressed' | 'gzip' | 'snappy' | 'lz4' | 'zstd
 export interface Payload {
     payload: any, // json obj
     encoding: MessageDataType, // actual format of the message (before the backend converted it to json)
-    avroSchemaId: number,
+    schemaId: number,
     size: number,
 }
 

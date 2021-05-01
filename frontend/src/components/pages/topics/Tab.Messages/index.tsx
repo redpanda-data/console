@@ -702,7 +702,7 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
             return {
                 payload: p.payload,
                 encoding: p.encoding,
-                avroSchemaId: p.avroSchemaId,
+                schemaId: p.schemaId,
             } as any as Payload;
         }
 
@@ -985,7 +985,7 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     const msg = props.msg;
     const data = {
         "Key": `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
-        "Value": `${titleCase(msg.value.encoding)} (${msg.value.encoding == 'avro' ? `${msg.value.avroSchemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
+        "Value": `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
         "Headers": msg.headers.length > 0 ? `${msg.headers.length}` : "No headers set",
         "Compression": msg.compression,
         "Transactional": msg.isTransactional ? 'true' : 'false',

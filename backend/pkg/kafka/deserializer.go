@@ -70,7 +70,7 @@ type deserializedPayload struct {
 	// Object is the parsed version of the payload. This will be passed to the JavaScript interpreter
 	Object             interface{}     `json:"-"`
 	RecognizedEncoding messageEncoding `json:"encoding"`
-	AvroSchemaID       uint32          `json:"avroSchemaId"`
+	SchemaID           uint32          `json:"schemaId"`
 	Size               int             `json:"size"` // number of 'raw' bytes
 }
 
@@ -168,7 +168,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 						},
 						Object:             native,
 						RecognizedEncoding: messageEncodingAvro,
-						AvroSchemaID:       schemaID,
+						SchemaID:           schemaID,
 						Size:               len(payload),
 					}
 				}
@@ -178,7 +178,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 
 	// 4. Test for Protobuf
 	if d.ProtoService != nil {
-		jsonBytes, err := d.ProtoService.UnmarshalPayload(payload, topicName, recordType)
+		jsonBytes, schemaID, err := d.ProtoService.UnmarshalPayload(payload, topicName, recordType)
 		if err == nil {
 			var native interface{}
 			err := json.Unmarshal(jsonBytes, &native)
@@ -190,6 +190,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 					},
 					Object:             native,
 					RecognizedEncoding: messageEncodingProtobuf,
+					SchemaID:           uint32(schemaID),
 					Size:               len(payload),
 				}
 			}
