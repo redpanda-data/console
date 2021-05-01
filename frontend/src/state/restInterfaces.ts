@@ -236,6 +236,7 @@ export interface EditConsumerGroupOffsetsTopic {
 }
 
 export interface EditConsumerGroupOffsetsResponse {
+    error: string | undefined;
     topics: EditConsumerGroupOffsetsResponseTopic[]
 }
 

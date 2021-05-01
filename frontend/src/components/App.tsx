@@ -29,6 +29,7 @@ import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react
 import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
+import { renderErrorModals } from './misc/ErrorModal';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -267,6 +268,7 @@ const AppContent = observer(() =>
         </Content>
 
         <UpdatePopup />
+        {renderErrorModals()}
 
     </Layout>
 );

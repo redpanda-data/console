@@ -27,7 +27,9 @@ import { IsDev } from "../../../utils/env";
 import { Message, scrollTo, scrollToTop } from "../../../utils/utils";
 import { ActiveReassignments } from "./components/ActiveReassignments";
 import { ReassignmentTracker } from "./logic/reassignmentTracker";
-import { ErrorModal } from "../../misc/ErrorModal";
+import { showErrorModal } from "../../misc/ErrorModal";
+
+
 const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
@@ -65,12 +67,6 @@ class ReassignPartitions extends PageComponent {
     @observable topicsWithThrottle: string[] = [];
 
     @observable requestInProgress = false;
-
-    @observable reassignError: {
-        modalTitle: () => JSX.Element,
-        errorTitle: () => JSX.Element,
-        content: () => JSX.Element,
-    } | null = null;
 
     autoScrollReactionDisposer: IReactionDisposer | null = null;
 
@@ -226,13 +222,6 @@ class ReassignPartitions extends PageComponent {
                         </div>
                     </div>
                 </Card>
-
-                {this.reassignError != null ? <ErrorModal
-                    modalTitle={this.reassignError.modalTitle()}
-                    errorTitle={this.reassignError.errorTitle()}
-                    content={this.reassignError.content()}
-                    onClose={() => this.reassignError = null}
-                /> : null}
 
             </motion.div>
         </>
@@ -474,10 +463,11 @@ class ReassignPartitions extends PageComponent {
         topicName: string;
         partitions: AlterPartitionReassignmentsPartitionResponse[];
     }[]) {
-        this.reassignError = {
-            modalTitle: () => <>Reassign Partitions</>,
-            errorTitle: () => <>Some partitions couldn't be reassigned</>,
-            content: () => <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+
+        showErrorModal(
+            "Reassign Partitions",
+            `Reassignment request returned errors for ${errors.sum(e => e.partitions.length)} / ${startedCount} partitions.`,
+            <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {errors.map((r, i) => <div key={i}>
                     <div>
                         <h4>Topic: "{r.topicName}"</h4>
@@ -491,7 +481,7 @@ class ReassignPartitions extends PageComponent {
                     </div>
                 </div>)}
             </div>
-        };
+        );
     }
 
     startRefreshingTopicConfigs() {

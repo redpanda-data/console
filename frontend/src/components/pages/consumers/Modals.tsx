@@ -14,10 +14,11 @@ import { AnimatePresence, AnimateSharedLayout, motion } from 'framer-motion';
 import ReactCSSTransitionReplace from 'react-css-transition-replace';
 import { sortField } from '../../misc/common';
 import moment from 'moment';
-import { clone } from '../../../utils/jsonUtils';
+import { clone, toJson } from '../../../utils/jsonUtils';
 import { api } from '../../../state/backendApi';
 import { WarningOutlined } from '@ant-design/icons';
 import { Message } from '../../../utils/utils';
+import { showErrorModal } from '../../misc/ErrorModal';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -253,7 +254,7 @@ export class EditOffsetsModal extends Component<{
                                 },
                                 {
                                     title: 'Offset After',
-                                    render: (_, r) => <ColAfter record={r} />
+                                    render: (_, r) => <ColAfter selectedTime={this.timestampUtcMs} record={r} />
                                 }
                             ]}
                         />
@@ -296,11 +297,8 @@ export class EditOffsetsModal extends Component<{
             } else if (op == 'time') {
                 // Time
                 // this.props.offsets.forEach(x => x.newOffset = new Date(this.timestampUtcMs));
-                this.props.offsets.forEach(x => x.newOffset = "..." as any);
-                const requiredTopicPartitions = this.props.offsets.groupInto(g => g.topicName).map(g => ({
-                    topicName: g.key,
-                    partitionIds: g.items.map(p => p.partitionId),
-                }));
+                this.props.offsets.forEach(x => x.newOffset = "fetching offsets..." as any);
+                const requiredTopics = this.props.offsets.map(x => x.topicName).distinct();
 
                 const propOffsets = this.props.offsets;
                 // Fetch offset for each partition
@@ -309,10 +307,14 @@ export class EditOffsetsModal extends Component<{
 
                     let offsetsForTimestamp: TopicOffset[];
                     try {
-                        offsetsForTimestamp = await api.getTopicOffsetsByTimestamp(this.timestampUtcMs, requiredTopicPartitions);
+                        offsetsForTimestamp = await api.getTopicOffsetsByTimestamp(requiredTopics, this.timestampUtcMs);
                         msg.setSuccess(undefined, ' - done');
                     } catch (err) {
-                        console.error('failed to fetch offsets for timestamp', { request: requiredTopicPartitions, error: err });
+                        showErrorModal(
+                            'Failed to fetch offsets for timestamp',
+                            <span>Could not lookup offsets for given timestamp <span className='codeBox'>{new Date(this.timestampUtcMs).toUTCString()}</span>.</span>,
+                            toJson({ errors: err, request: requiredTopics }, 4)
+                        );
                         msg.setError(undefined, ' - failed');
                         return;
                     }
@@ -366,7 +368,11 @@ export class EditOffsetsModal extends Component<{
                     }
                 }
                 else {
-                    message.error(`Could not find other consumer group "${this.selectedGroup}" to compute new offsets`);
+                    showErrorModal(
+                        'Consumer group not found',
+                        null,
+                        <span>Could not find a consumer group named <span className='codeBox'>{this.selectedGroup}</span> to compute new offsets.</span>,
+                    );
                 }
             }
         }
@@ -451,11 +457,8 @@ export class EditOffsetsModal extends Component<{
 
 
     @action async onApplyEdit() {
-        const { group, offsets } = this.props;
-        if (offsets == null) {
-            console.error('cannot apply offsets, "props.offsets" is null', { props: this.props });
-            return;
-        }
+        const group = this.props.group;
+        const offsets = this.props.offsets!;
 
         this.isApplyingEdit = true;
         const msg = new Message('Applying offsets', 'loading', '...');
@@ -467,18 +470,23 @@ export class EditOffsetsModal extends Component<{
                 partitions: t.partitions.filter(x => x.error),
             })).filter(t => t.partitions.length > 0);
             if (errors.length > 0) {
-                console.error('backend returned errors for editOffsets', { request: topics, errors: errors });
-                throw new Error();
+                console.error('apply offsets, backend errors', { errors: errors, request: topics });
+                throw { errors: errors, request: topics };
             }
 
             msg.setSuccess(undefined, ' - done');
         }
         catch (err) {
-            // todo: feedback dialog
-            // - close this dialog
-            // - open error dialog
-            console.error('failed to apply offset edit', { request: topics });
+            console.error('failed to apply offset edit', err);
             msg.setError(undefined, ' - failed');
+            showErrorModal(
+                'Apply editted offsets',
+                <span>
+                    Could not apply offsets for consumer
+                    group <span className='codeBox'>{group.groupId}</span>.
+                </span>,
+                toJson(err, 4),
+            );
         }
         finally {
             this.isApplyingEdit = false;
@@ -544,7 +552,10 @@ class GroupTimePicker extends Component<{
     }
 }
 
-@observer class ColAfter extends Component<{ record: GroupOffset }> {
+@observer class ColAfter extends Component<{
+    selectedTime?: number
+    record: GroupOffset
+}> {
 
     render() {
         const record = this.props.record;
@@ -572,17 +583,30 @@ class GroupTimePicker extends Component<{
                 </span>
 
                 // successful fetch
-                return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
-                    <span>{numberToThousandsString(val.offset)}</span>
-                    <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}
-                    >({new Date(val.timestamp).toLocaleString()})</span>
-                </div>
+                if (val.timestamp > 0)
+                    return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                        <span>{numberToThousandsString(val.offset)}</span>
+                        <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}
+                        >({new Date(val.timestamp).toLocaleString()})</span>
+                    </div>
 
                 // not found - no message after given timestamp
-                // return <div>
-                //     {val.offset > 0 && }
-                //     <span></span>
-                // </div>
+                // use 'latest'
+                const partition = api.topicPartitions.get(record.topicName)?.first(p => p.id == record.partitionId);
+                return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                    <InfoText tooltip={<div>
+                        There is no offset for this partition at or after the given timestamp (<code>{new Date(this.props.selectedTime ?? 0).toLocaleString()}</code>).
+                            As a fallback, the last offset in that partition will be used.
+                        </div>}
+                        icon={<WarningOutlined />}
+                        iconSize='18px'
+                        iconColor='orangered'
+                        maxWidth='350px'
+                    >
+                        <span>{numberToThousandsString(partition?.waterMarkHigh ?? -1)}</span>
+
+                    </InfoText>
+                </div>
             }
         }
 
@@ -603,6 +627,11 @@ class GroupTimePicker extends Component<{
                 <span>{typeof content.offset == 'number' ? numberToThousandsString(content.offset) : content.offset}</span>
                 <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}>({content.name})</span>
             </div>
+        }
+
+        // Loading placeholder
+        if (typeof val === 'string') {
+            return <span style={{ opacity: 0.66, fontStyle: 'italic' }}>{val}</span>
         }
 
         return `Unknown type in 'newOffset' type='${typeof val}' value='{v}'`;
@@ -720,11 +749,8 @@ export class DeleteOffsetsModal extends Component<{
 
 
     @action async onDeleteOffsets() {
-        const { group, offsets } = this.props;
-        if (offsets == null) {
-            console.error('cannot delete offsets, "props.offsets" is null', { props: this.props });
-            return;
-        }
+        const group = this.props.group;
+        const offsets = this.props.offsets!;
 
         const msg = new Message('Deleting offsets', 'loading', '...');
         const deleteRequest = createDeleteRequest(offsets);
@@ -736,17 +762,22 @@ export class DeleteOffsetsModal extends Component<{
             })).filter(t => t.partitions.length > 0);
             if (errors.length > 0) {
                 console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
-                throw new Error();
+                throw { request: deleteRequest, errors: errors };
             }
 
             msg.setSuccess(undefined, ' - done');
         }
         catch (err) {
-            // todo: feedback dialog
-            // - close this dialog
-            // - open error dialog
-            console.error('failed to delete offsets', { request: deleteRequest });
+            console.error(err);
             msg.setError(undefined, ' - failed');
+            showErrorModal(
+                'Delete offsets',
+                <span>
+                    Could not delete selected offsets
+                    in consumer group <span className='codeBox'>{group.groupId}</span>.
+                </span>,
+                toJson(err, 4)
+            );
         }
         finally {
             api.refreshConsumerGroup(this.props.group.groupId, true);

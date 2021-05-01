@@ -381,19 +381,13 @@ const apiStore = {
         return promise as Promise<void>;
     },
 
-    async getTopicOffsetsByTimestamp(timestampUnixMs: number, topics: GetTopicOffsetsByTimestampRequestTopic[]):
-        Promise<TopicOffset[]> {
-        const request: GetTopicOffsetsByTimestampRequest = {
-            topics: topics,
-            timestamp: timestampUnixMs,
-        };
-
-        const response = await fetch('./api/topics-offsets', {
+    async getTopicOffsetsByTimestamp(topicNames: string[], timestampUnixMs: number): Promise<TopicOffset[]> {
+        const query = `topicNames=${encodeURIComponent(topicNames.join(','))}&timestamp=${timestampUnixMs}`;
+        const response = await fetch('./api/topics-offsets?' + query, {
             method: 'GET',
             headers: [
                 ['Content-Type', 'application/json']
-            ],
-            body: toJson(request),
+            ]
         });
 
         if (!response.ok) {
@@ -618,6 +612,7 @@ const apiStore = {
 
         const str = await response.text();
         const data = (JSON.parse(str) as EditConsumerGroupOffsetsResponse);
+        if (data.error) throw data.error;
         return data.topics;
     },
 
@@ -638,14 +633,17 @@ const apiStore = {
 
         if (!response.ok) {
             const text = await response.text();
+            let errObj;
             try {
-                const errObj = JSON.parse(text) as ApiError;
+                errObj = JSON.parse(text) as ApiError;
                 if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
                     // if the shape matches, reformat it a bit
-                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                    errObj = new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
                 }
             }
             catch { } // not json
+
+            if (errObj) throw errObj;
 
             // use generic error text
             throw new Error(`${text} (${response.status} - ${response.statusText})`);

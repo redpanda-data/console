@@ -1540,6 +1540,7 @@ svg {
         display: flex;
         align-items: center;
         padding: 10px 20px;
+        padding-bottom: 16px;
         margin: 0;
         display: inline-block;
 
@@ -1553,6 +1554,10 @@ svg {
 
         &>span:nth-child(2) {
             display: contents;
+        }
+
+        &::after {
+            display: none !important;
         }
     }
 
@@ -1577,6 +1582,7 @@ svg {
         box-shadow: 0px 0px 2px 1px hsla(209deg, 100%, 55%, 0.66);
         z-index: 1;
     }
+
 }
 
 
