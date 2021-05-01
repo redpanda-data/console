@@ -159,8 +159,8 @@ export function renderErrorModals() {
 }
 
 
-showErrorModal(
-    'Consumer group not found',
-    <span>Could not find a consumer group named <span className='codeBox'>{"a9i6f8o4btroaw87"}</span> to compute new offsets.</span>,
-    null
-);
+// showErrorModal(
+//     'Consumer group not found',
+//     <span>Could not find a consumer group named <span className='codeBox'>{"a9i6f8o4btroaw87"}</span> to compute new offsets.</span>,
+//     null
+// );
