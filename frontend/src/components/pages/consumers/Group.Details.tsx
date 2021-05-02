@@ -21,6 +21,7 @@ import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '
 import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } from "./Modals";
 import { AnimatePresence, AnimateSharedLayout, motion } from "framer-motion";
 import ReactCSSTransitionReplace from 'react-css-transition-replace';
+import { ShortNum } from "../../misc/ShortNum";
 
 
 @observer
@@ -282,7 +283,7 @@ class GroupByTopics extends Component<{
                         },
                         { width: 120, title: 'Log End Offset', dataIndex: 'highWaterMark', render: v => numberToThousandsString(v), sorter: sortField('highWaterMark') },
                         { width: 120, title: 'Group Offset', dataIndex: 'groupOffset', render: v => numberToThousandsString(v), sorter: sortField('groupOffset') },
-                        { width: 80, title: 'Lag', dataIndex: 'lag', render: v => numberToThousandsString(v), sorter: sortField('lag') },
+                        { width: 80, title: 'Lag', dataIndex: 'lag', render: v => ShortNum({value: v, tooltip: true}), sorter: sortField('lag') },
                         {
                             width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                             // filters: [],

@@ -2,7 +2,10 @@ import React, { ReactNode, Component, CSSProperties } from "react";
 import { numberToThousandsString } from "../../utils/tsxUtils";
 
 export function ShortNum(p: { value: number, tooltip?: boolean, className?: string, style?: CSSProperties }) {
-    let { value, tooltip, className, style } = p;
+    let { value, tooltip, className } = p;
+    const style = p.style
+    if (value == null) return "";
+
     if (tooltip == null) tooltip = false;
     const originalValue = value;
 
