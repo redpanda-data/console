@@ -65,7 +65,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                 <Card>
                     <Row>
                         <Statistic title="Subject Name" value={this.props.subjectName}></Statistic>
-                        <Statistic title="Subject ID" value={schemaId}></Statistic>
+                        <Statistic title="Schema ID" value={schemaId}></Statistic>
                     </Row>
                 </Card>
                 <Card>
