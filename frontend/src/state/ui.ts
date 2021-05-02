@@ -187,7 +187,7 @@ export { uiSettings };
 // Settings save/load
 
 // Load settings
-let storedSettingsJson = localStorage.getItem(settingsName);
+const storedSettingsJson = localStorage.getItem(settingsName);
 if (storedSettingsJson) {
     const loadedSettings = JSON.parse(storedSettingsJson);
     assignDeep(uiSettings, loadedSettings); // overwrite defaults with loaded values

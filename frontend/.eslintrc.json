@@ -1,73 +1,67 @@
 {
-	"env": {
-		"browser": true,
-		"es6": true
-	},
-	"extends": [
-		"eslint:recommended",
-		"plugin:@typescript-eslint/eslint-recommended"
-	],
-	"globals": {
-		"Atomics": "readonly",
-		"SharedArrayBuffer": "readonly"
-	},
-	"parserOptions": {
-		"ecmaFeatures": {
-			"jsx": true
-		},
-		"ecmaVersion": 2019,
-		"sourceType": "module"
-	},
-	"plugins": [
-		"react",
-		"@typescript-eslint"
-	],
-	"settings": {
-		"import/extensions": [
-			".js",
-			".jsx",
-			".ts",
-			".tsx"
-		],
-		"import/resolver": {
-			"node": {
-				"extensions": [
-					".js",
-					".jsx",
-					".json",
-					".ts",
-					".tsx"
-				]
-			}
-		}
-	},
-	"rules": {
-		"no-const-assign": "warn",
-		"no-this-before-super": "warn",
-		"no-undef": "warn",
-		"no-unreachable": "warn",
-		"no-unused-vars": "warn",
-		"constructor-super": "warn",
-		"valid-typeof": "warn",
-		"react/jsx-filename-extension": [
-			"error",
-			{
-				"extensions": [
-					".jsx",
-					".tsx"
-				]
-			}
-		],
-		"import/extensions": [
-			"error",
-			"always",
-			{
-				"js": "never",
-				"jsx": "never",
-				"ts": "never",
-				"tsx": "never"
-			}
-		]
-	},
-	"parser": "@typescript-eslint/parser"
+    "root": true,
+    "env": {
+        "browser": true,
+        "es6": true
+    },
+    "extends": [
+        // "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+    },
+    "parserOptions": {
+        "ecmaFeatures": {
+            "jsx": true
+        },
+        "ecmaVersion": 2019,
+        "sourceType": "module"
+    },
+    "plugins": [
+        "react",
+        "@typescript-eslint"
+    ],
+    "settings": {
+        "import/extensions": [
+            ".js",
+            ".jsx",
+            ".ts",
+            ".tsx"
+        ],
+        "import/resolver": {
+            "node": {
+                "extensions": [
+                    ".js",
+                    ".jsx",
+                    ".json",
+                    ".ts",
+                    ".tsx"
+                ]
+            }
+        }
+    },
+    "rules": {
+        "@typescript-eslint/no-inferrable-types": "off", // extra type defs help to alert against updated apis
+        "no-constant-condition": "off", // while(true) { if(x)  break;  } is much clearer
+        "@typescript-eslint/ban-types": "off", // will be fixed later
+        "no-this-before-super": "warn",
+        "constructor-super": "warn",
+        "valid-typeof": "warn",
+        "@typescript-eslint/no-unused-vars": "off", // keep imports
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/no-non-null-assertion": "off", // override is sometimes needed
+        "react/jsx-filename-extension": [
+            "error",
+            {
+                "extensions": [
+                    ".jsx",
+                    ".tsx"
+                ]
+            }
+        ]
+    },
+    "parser": "@typescript-eslint/parser"
 }

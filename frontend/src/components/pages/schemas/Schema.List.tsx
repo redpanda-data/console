@@ -14,7 +14,7 @@ import { uiSettings } from '../../../state/ui';
 
 import './Schema.List.scss';
 import SearchBar from '../../misc/SearchBar';
-import { observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -60,6 +60,11 @@ class SchemaList extends PageComponent<{}> {
     paginationConfig = makePaginationConfig(uiSettings.schemaList.pageSize);
     @observable searchBar: RefObject<SearchBar<any>> = React.createRef();
     @observable filteredSchemaSubjects: { name: string }[];
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Schema Registry';

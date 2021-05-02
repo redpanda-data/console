@@ -8,7 +8,7 @@ import Icon, { UserOutlined } from '@ant-design/icons';
 import { IsBusiness } from '../../utils/env';
 import { ChevronDownIcon, ToolsIcon } from '@primer/octicons-v2-react';
 import { Label } from '../../utils/tsxUtils';
-import { observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 
 const { Option } = Select;
 type Action = () => void;
@@ -16,6 +16,11 @@ type Action = () => void;
 @observer
 export class UserPreferencesButton extends Component {
     @observable isOpen = false;
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     render() {
 
@@ -38,7 +43,10 @@ const settingsTabs: { name: string, component: () => ReactNode }[] = [
 @observer
 class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Action }> {
     @observable selectedTab: string = settingsTabs[0].name;
-
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
     render() {
         const { visible, onClose } = this.props;
         const tab = settingsTabs.first(t => t.name == this.selectedTab);
@@ -71,7 +79,7 @@ class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Actio
                 {/* Body */}
                 <div style={{ display: 'flex', flexGrow: 1 }}>
                     {/* Menu */}
-                    <Menu mode='vertical' style={{ width: '160px', height: '100%' }} selectedKeys={[this.selectedTab]} onClick={p => this.selectedTab = p.key}>
+                    <Menu mode='vertical' style={{ width: '160px', height: '100%' }} selectedKeys={[this.selectedTab]} onClick={p => this.selectedTab = p.key.toString()}>
                         {settingsTabs.map(t => <Menu.Item key={t.name} >{t.name}</Menu.Item>)}
                     </Menu>
 
@@ -88,6 +96,12 @@ class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Actio
 @observer
 class StatsBarTab extends Component {
     @observable visibility = 'visible';
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
     render() {
         return <div>
             <p>Controls on what pages kowl shows the statistics bar</p>
@@ -125,26 +139,15 @@ class StatsBarTab extends Component {
 
 
 @observer
-class MessageSearchTab extends Component {
-    render() {
-        return <>
-            <Label text='Max Results'>
-                <Input
-                    style={{ padding: '2px 8px' }}
-                    value={"abc 123"}
-                    onChange={e => { }}
-                    size='small' />
-            </Label>
-            <p>You can customize the available options in the </p>
-
-        </>
-    }
-}
-
-@observer
 class ImportExportTab extends Component {
     @observable importCode = '';
     @observable resetConfirm = '';
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
     render() {
         return <>
             <Label text='Import'>
@@ -152,7 +155,9 @@ class ImportExportTab extends Component {
                     style={{ padding: '2px 8px' }}
                     placeholder='paste exported preferences string here'
                     value={this.importCode}
-                    onChange={e => { }}
+                    onChange={e => {
+                        // todo
+                    }}
                     onPaste={p => console.log('onPaste event', p)}
                     onPasteCapture={p => console.log('onPasteCapture event', p)}
                     size='small' />

@@ -11,6 +11,11 @@ export function toJson(obj: any, space?: string | number | undefined): string {
                     }
                     seen.add(value);
                 }
+
+                if (value instanceof Error) {
+                    return value.toString();
+                }
+
                 return value;
             },
             space

@@ -121,7 +121,7 @@ export class Timer {
 
     /** Time (in ms) until done (or 0) */
     get timeLeft() {
-        let t = this.target - Date.now();
+        const t = this.target - Date.now();
         if (t < 0)
             return 0;
         return t;
@@ -187,12 +187,12 @@ export const alwaysChanging = () => refreshCounter = (refreshCounter + 1) % 1000
 
 
 export function assignDeep(target: any, source: any) {
-    for (let key in source) {
-        if (!source.hasOwnProperty(key)) continue;
+    for (const key in source) {
+        if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
         if (key === "__proto__" || key === "constructor") continue;
 
         const value = source[key];
-        const existing = target[key];
+        const existing = key in target ? target[key] : undefined;
 
         // if (existing === undefined && onlySetExisting) {
         // 	console.log('skipping key ' + key + ' because it doesnt exist in the target');
@@ -253,7 +253,7 @@ export function findElementDeep(obj: any, name: string, options: PropertySearchO
 }
 
 function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchResult {
-    for (let key in obj) {
+    for (const key in obj) {
 
         const value = obj[key];
 
@@ -304,7 +304,7 @@ export function findElementDeepEx(obj: any, isMatch: (propertyName: string, path
 }
 
 function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
-    for (let key in obj) {
+    for (const key in obj) {
 
         const value = obj[key];
 
@@ -381,7 +381,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
 
     const pathToHere = ctx.currentFullPath;
 
-    for (let key in obj) {
+    for (const key in obj) {
         const value = obj[key];
 
         ctx.currentPath.push(key);
@@ -441,7 +441,7 @@ export const cullText = (str: string, length: number) => str.length > length ? `
 export function groupConsecutive(ar: number[]): number[][] {
     const groups: number[][] = [];
 
-    for (let cur of ar) {
+    for (const cur of ar) {
         const group = groups.length > 0 ? groups[groups.length - 1] : undefined;
 
         if (group) {
@@ -575,7 +575,7 @@ export function bindObjectToUrl<
     for (const propName of Object.keys(queryNames) as [keyof TObservable]) {
         const queryName = queryNames[propName];
 
-        let value = query[queryName as string];
+        const value = query[queryName as string];
         if (value == null) continue;
 
         if (Array.isArray(value)) {
@@ -620,15 +620,20 @@ type NoticeType = 'info' | 'success' | 'error' | 'warning' | 'loading';
 export class Message {
     private key: string;
     private hideFunc: MessageType;
+    private duration: number | null;
 
-    constructor(private text: string, private type: NoticeType = 'loading', private duration: number | null = 0) {
+    constructor(private text: string, private type: NoticeType = 'loading', private suffix: string = "") {
         this.key = randomId();
+        if (type == 'loading')
+            this.duration = 0; // loading stays open until changed
+        else
+            this.duration = null; // others disappear automatically
         this.update();
     }
 
     private update() {
         this.hideFunc = message.open({
-            content: this.text,
+            content: this.text + this.suffix,
             key: this.key,
             type: this.type,
             duration: this.duration,
@@ -639,24 +644,27 @@ export class Message {
         this.hideFunc();
     }
 
-    setLoading(text?: string) {
+    setLoading(text?: string, suffix?: string) {
         if (text) this.text = text;
+        if (suffix) this.suffix = suffix;
         this.type = 'loading';
         this.duration = 0;
         this.update();
     }
 
-    setSuccess(text?: string) {
+    setSuccess(text?: string, suffix?: string) {
         if (text) this.text = text;
+        if (suffix) this.suffix = suffix;
         this.type = 'success';
-        this.duration = 3;
+        this.duration = 2.5;
         this.update();
     }
 
-    setError(text?: string) {
+    setError(text?: string, suffix?: string) {
         if (text) this.text = text;
+        if (suffix) this.suffix = suffix;
         this.type = 'error';
-        this.duration = 3;
+        this.duration = 2.5;
         this.update();
     }
 }

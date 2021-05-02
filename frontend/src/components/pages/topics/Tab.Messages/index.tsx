@@ -5,7 +5,7 @@ import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { AnimatePresence, motion } from "framer-motion";
-import { autorun, computed, IReactionDisposer, observable, transaction, untracked } from "mobx";
+import { autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
@@ -78,6 +78,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     constructor(props: { topic: Topic }) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
+        makeObservable(this);
     }
 
     componentDidMount() {
@@ -100,7 +101,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
                 const q = String(uiState.topicSettings.quickSearch);
-                query["q"] = q ? q : undefined;
+                query["q"] = q ? q : null;
             })
         }, { name: 'update query string' });
 
@@ -651,6 +652,11 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
 
     radioStyle = { display: 'block', lineHeight: '30px' };
 
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
     render() {
         const { messages, onClose } = this.props;
         const count = (messages?.length ?? 0);
@@ -738,27 +744,6 @@ const renderKey = (p: Payload, record: TopicMessage) => {
         return renderEmptyIcon("Empty Key");
 
     if (text.length > 45) {
-
-        const modal = () => Modal.info({
-            title: 'Key',
-            width: '80vw',
-            centered: true,
-            maskClosable: true,
-            content: (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div>
-                        Full view of the key<br />
-                        <b>todo: add different viewers here (plain, hex, ...)</b><br />
-                        <b>todo: fix layout</b><br />
-                    </div>
-                    <div className='codeBox' style={{ margin: '1em 0 0 0', padding: '1em', whiteSpace: 'normal', wordBreak: 'break-all', overflowY: 'scroll', maxHeight: '300px' }}>
-                        <code>{text}</code>
-                    </div>
-                </div>
-            ),
-            onOk() { },
-        });
-
         return <span className='cellDiv' style={{ minWidth: '120px' }}>
             <code style={{ fontSize: '95%' }}>{text.slice(0, 44)}&hellip;</code>
         </span>
@@ -803,12 +788,12 @@ class StartOffsetDateTimePicker extends Component {
             format={format}
             value={current}
             onChange={e => {
-                console.log('onChange', { value: e?.format() ?? 'null', isLocal: e?.isLocal(), unix: e?.valueOf() });
+                // console.log('onChange', { value: e?.format() ?? 'null', isLocal: e?.isLocal(), unix: e?.valueOf() });
                 searchParams.startTimestamp = e?.valueOf() ?? -1;
                 searchParams.startTimestampWasSetByUser = true;
             }}
             onOk={e => {
-                console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
+                // console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
                 searchParams.startTimestamp = e.valueOf();
             }}
         />
@@ -1047,8 +1032,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
                         ? <div className='codeBox' style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
                         : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />,
                 }}
-
-                rowKey={(r, i) => String(i)}
+                rowKey={r => r.key}
             />
             <br />
         </div>
@@ -1199,6 +1183,11 @@ class MessageSearchFilterBar extends Component {
     currentIsNew = false; // true: 'onCancel' must remove the filter again
 
     @observable hasChanges = false; // used by editor; shows "revert changes" when true
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     render() {
         const settings = uiState.topicSettings.searchParams;

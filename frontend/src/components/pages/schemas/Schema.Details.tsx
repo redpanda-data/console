@@ -38,7 +38,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
     }
 
     refreshData(force?: boolean) {
-        let version: number | 'latest' = this.props.query.version ?? 'latest';
+        const version: number | 'latest' = this.props.query.version ?? 'latest';
         api.refreshSchemaDetails(this.props.subjectName, version, force);
     }
 

@@ -16,6 +16,7 @@ import { DefaultSkeleton } from "../../../utils/tsxUtils";
 @observer
 export default class AdminPage extends PageComponent {
 
+
     initPage(p: PageInitHelper): void {
         p.title = 'Admin';
         p.addBreadcrumb('Admin', '/admin');

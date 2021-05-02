@@ -1,6 +1,6 @@
 import React, { CSSProperties } from "react";
 import { observer } from "mobx-react";
-import { observable } from "mobx";
+import { makeObservable, observable } from "mobx";
 import { toJson } from "../../utils/jsonUtils";
 import { Button, Layout, message, Space, Skeleton } from "antd";
 import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
@@ -43,6 +43,11 @@ export class ErrorBoundary extends React.Component {
     @observable decodingDone: boolean = false;
 
     @observable infoItems: InfoItem[] = [];
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     componentDidCatch(error: Error | null, errorInfo: object) {
         this.error = error;
@@ -200,6 +205,7 @@ function getStringFromInfo(info: InfoItem) {
 
 @observer
 export class InfoItemDisplay extends React.Component<{ data: InfoItem }> {
+
     render() {
         const title = this.props.data.name;
         const value = this.props.data.value;

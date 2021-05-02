@@ -5,7 +5,7 @@ import Item from "antd/lib/list/Item";
 import Paragraph from "antd/lib/typography/Paragraph";
 import arrayMove from "array-move";
 import { AnimatePresence, motion } from "framer-motion";
-import { computed, observable } from "mobx";
+import { computed, makeObservable, observable } from "mobx";
 import { observer } from "mobx-react";
 import React from "react";
 import { Component } from "react";
@@ -29,6 +29,12 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
         console.log("get all current keys: " + unused);
         return getAllMessageKeys(api.messages).map(p => p.propertyName).distinct();
     }
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
 
     render() {
         const currentKeys = this.props.getShowDialog() ? this.allCurrentKeys : [];
@@ -161,7 +167,7 @@ class SortItem extends Component<{ tag: PreviewTag, index: number, onRemove: () 
 
                 onChange={e => tag.text = e}
                 placeholder="Enter property name..."
-                filterOption={(inputValue, option) => option!.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
+                filterOption={(inputValue, option) => option?.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
                 // dropdownRender={(menu) => <span>asdf</span>}
                 notFoundContent="None"
             />
@@ -179,7 +185,7 @@ export function getPreviewTags(messageValue: any, tags: PreviewTag[]): React.Rea
 
     const onlyFirst = uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst';
 
-    for (let t of tags) {
+    for (const t of tags) {
         if (t.text.length == 0) continue;
         const searchPath = t.text.trim().split('.');
         const lastProp = searchPath[searchPath.length - 1];

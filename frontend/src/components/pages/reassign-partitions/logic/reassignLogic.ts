@@ -320,7 +320,7 @@ class ExBroker implements Broker {
                 selectedLeader += p.leader == this.brokerId ? 1 : 0;
 
                 // using 'first()' because each broker as exactly one logDirEntry (or maybe zero if broker is offline)
-                let logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId);
+                const logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId);
                 if (logDirEntry) {
                     // direct match
                     selectedSize += logDirEntry.size;

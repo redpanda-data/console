@@ -870,7 +870,7 @@ td .ant-table-cell {
 }
 
 tr.consumerGroupNoMemberAssigned {
-    color: rgba(0, 0, 0, 0.25);
+    color: rgba(0, 0, 0, 0.3);
 }
 
 .labelText {
@@ -1162,6 +1162,10 @@ svg {
     background: rgb(219, 219, 219);
     border-width: 0px;
 }
+
+// .ant-collapse-borderless {
+//     background-color: #f7fafc;
+// }
 
 .ant-collapse>.ant-collapse-item>.ant-collapse-header {
     padding: 6px;
@@ -1521,7 +1525,7 @@ svg {
 }
 
 .radioOptionGroup {
-    $borderRadius: 8px;
+    $borderRadius: 6px;
 
     width: 100%;
     display: flex;
@@ -1532,10 +1536,11 @@ svg {
 
     user-select: none;
 
-    .ant-radio-wrapper {
+    &>.ant-radio-wrapper {
         display: flex;
         align-items: center;
         padding: 10px 20px;
+        padding-bottom: 16px;
         margin: 0;
         display: inline-block;
 
@@ -1543,32 +1548,41 @@ svg {
         //     display: inline-block;
         // }
 
+        transition: background-color, border-color, box-shadow;
+        transition-duration: 200ms;
+        transition-timing-function: ease-out;
+
         &>span:nth-child(2) {
             display: contents;
         }
+
+        &::after {
+            display: none !important;
+        }
     }
 
-    .ant-radio-wrapper:first-child {
+    &>.ant-radio-wrapper:first-child {
         border-radius: $borderRadius $borderRadius 0px 0px;
     }
 
-    .ant-radio-wrapper:last-child {
+    &>.ant-radio-wrapper:last-child {
         border-radius: 0px 0px $borderRadius $borderRadius;
     }
 
-    .ant-radio-wrapper:not(:last-child) {
+    &>.ant-radio-wrapper:not(:last-child) {
         border-bottom: 1px solid hsl(0deg, 0%, 94%);
     }
 
-    .ant-radio-wrapper:hover:not(.ant-radio-wrapper-checked) {
+    &>.ant-radio-wrapper:hover:not(.ant-radio-wrapper-checked) {
         background: hsl(0deg, 0%, 99%);
     }
 
-    .ant-radio-wrapper-checked {
-        background: #e5f7ff;
-        box-shadow: 0px 0px 2px 1px #1890ff61;
+    &>.ant-radio-wrapper-checked {
+        background: hsl(198deg, 100%, 98%);
+        box-shadow: 0px 0px 2px 1px hsla(209deg, 100%, 55%, 0.66);
         z-index: 1;
     }
+
 }
 
 
@@ -2023,4 +2037,187 @@ tr.inprogress {
 .nbspSeparator {
     white-space: nowrap;
     font-size: 66%;
+}
+
+.ant-modal-content {
+    border-radius: 4px;
+
+    .ant-modal-header {
+        border-radius: 4px;
+    }
+
+    .ant-modal-footer {
+        button {
+            min-width: 8em;
+        }
+    }
+}
+
+
+tr .iconButton {
+    opacity: 0;
+}
+
+tr:hover .iconButton {
+    opacity: 1;
+}
+
+.groupDetails {
+    .iconButton {
+        display: inline-block;
+        color: #9EA6B2;
+        width: 23px;
+        height: 23px;
+        padding: 1px;
+
+        &:hover {
+            color: #6d727a;
+        }
+    }
+}
+
+
+$easeInQuad: cubic-bezier(0.550, 0.085, 0.680, 0.530);
+$easeInCubic: cubic-bezier(0.550, 0.055, 0.675, 0.190);
+$easeInSine: cubic-bezier(0.470, 0.000, 0.745, 0.715);
+$easeInExpo: cubic-bezier(0.950, 0.050, 0.795, 0.035);
+$easeInCirc: cubic-bezier(0.600, 0.040, 0.980, 0.335);
+
+$easeOutQuad: cubic-bezier(0.250, 0.460, 0.450, 0.940);
+$easeOutCubic: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+$easeOutSine: cubic-bezier(0.390, 0.575, 0.565, 1.000);
+$easeOutExpo: cubic-bezier(0.190, 1.000, 0.220, 1.000);
+$easeOutCirc: cubic-bezier(0.075, 0.820, 0.165, 1.000);
+
+$easeInOutQuad: cubic-bezier(0.455, 0.030, 0.515, 0.955);
+$easeInOutCubic: cubic-bezier(0.645, 0.045, 0.355, 1.000);
+$easeInOutSine: cubic-bezier(0.445, 0.050, 0.550, 0.950);
+$easeInOutExpo: cubic-bezier(1.000, 0.000, 0.000, 1.000);
+$easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
+
+.crossFade {
+    $fadeTimeIn: 400ms;
+    $fadeTimeOut: 400ms;
+    $fadeTimeHeight: 200ms;
+
+    outline: solid red 2px;
+
+    &-enter {
+        position: absolute;
+        opacity: 0;
+        transform: translateX(-20px) scale(1);
+    }
+
+
+    &-enter-active {
+        opacity: 1;
+
+        transition:
+            opacity $fadeTimeIn $easeOutCirc,
+            transform $fadeTimeIn $easeOutCirc;
+
+        transform: translateX(0) scale(1);
+    }
+
+    &-leave {
+        position: absolute;
+        opacity: 1;
+        transform: translateX(0em) scale(1);
+    }
+
+    &-leave-active {
+        opacity: 0;
+        transform: translateX(10px) scale(1);
+
+        transition:
+            opacity $fadeTimeOut $easeOutCirc,
+            transform $fadeTimeOut $easeOutCirc;
+    }
+
+
+    &-height {
+        transition:
+            height $fadeTimeHeight $easeOutCirc,
+            width $fadeTimeHeight $easeOutCirc;
+    }
+}
+
+
+// Reduce paddings for small table
+.ant-table.ant-table-small .ant-table-title,
+.ant-table.ant-table-small .ant-table-footer,
+.ant-table.ant-table-small .ant-table-thead>tr>th,
+.ant-table.ant-table-small .ant-table-tbody>tr>td,
+.ant-table.ant-table-small tfoot>tr>th,
+.ant-table.ant-table-small tfoot>tr>td {
+    padding: 6px 8px;
+}
+
+.consumerGroupModal {
+    &-edit {
+        // edit dialog
+    }
+
+    &-delete {
+        // delete dialog
+    }
+
+    .ant-collapse-content-box {
+        padding: 8px;
+    }
+
+    .ant-table.ant-table-small {
+
+        .ant-table-tbody,
+        .ant-table-thead {
+            &>tr {
+
+                &.unchanged {
+                    color: rgba(0, 0, 0, 0.3);
+                }
+
+                &>th.ant-table-cell {
+                    padding-left: 10px;
+                }
+
+                &>td {
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+
+                    &:first-child {
+                        padding-left: 16px;
+                    }
+                }
+
+            }
+        }
+
+
+    }
+
+    .ant-table-wrapper {
+        .ant-pagination {
+            // curent antd has a bug: pagination position 'none' has no effect, so we fix it in css
+            display: none;
+        }
+    }
+
+
+}
+
+.ant-table.ant-table-small .ant-table-title,
+.ant-table.ant-table-small .ant-table-footer,
+.ant-table.ant-table-small .ant-table-thead>tr>th,
+.ant-table.ant-table-small .ant-table-tbody>tr>td,
+.ant-table.ant-table-small tfoot>tr>th,
+.ant-table.ant-table-small tfoot>tr>td {
+    // color: red;
+}
+
+
+// when a some container containing a radio button is animated,
+// it sometimes causes the inner part (the "dot") of a radio button to become misaligned
+// adding a perspective transform fixes it (wtf chrome? just do it correctly like firefox...)
+.ant-radio-inner {
+    transform: perspective(1px);
 }

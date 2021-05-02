@@ -3,7 +3,12 @@
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions,
+    ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource,
+    SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
+    TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
+    PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
+    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, GetTopicOffsetsByTimestampRequestTopic, TopicOffset, GetTopicOffsetsByTimestampResponse, GetTopicOffsetsByTimestampRequest
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -112,24 +117,19 @@ class CacheEntry {
     setPromise<T>(promise: Promise<T>) {
         this.timeSinceRequestStarted.reset();
 
-        const self = this;
         this.isPending = true;
         this.promise = promise;
 
-        promise.then(
-            function onFulfilled(result: T) {
-                self.timeSinceLastResult.reset();
-                self.lastResult = result;
-            },
-            function onRejected(reason: any) {
-            }
-        ).finally(() => {
-            self.lastRequestTime = self.timeSinceRequestStarted.value;
+        promise.then(result => {
+            this.timeSinceLastResult.reset();
+            this.lastResult = result;
+        }).finally(() => {
+            this.lastRequestTime = this.timeSinceRequestStarted.value;
             const index = api.activeRequests.indexOf(this);
             if (index > -1) {
                 api.activeRequests.splice(index, 1);
             }
-            self.isPending = false;
+            this.isPending = false;
         });
 
         api.activeRequests.push(this);
@@ -205,7 +205,7 @@ const apiStore = {
 
     ACLs: undefined as AclResponse | undefined | null,
 
-    consumerGroups: null as (GroupDescription[] | null),
+    consumerGroups: new Map<string, GroupDescription>(),
 
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
@@ -302,7 +302,7 @@ const apiStore = {
                     break;
 
                 case 'message':
-                    let m = msg.message as TopicMessage;
+                    const m = msg.message as TopicMessage;
 
                     const keyData = m.key.payload;
                     if (keyData != null && keyData != undefined && keyData != "" && m.key.encoding == 'binary') {
@@ -379,6 +379,35 @@ const apiStore = {
         const promise = cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
             .then(v => this.topicConfig.set(topicName, v?.topicDescription ?? null), addError); // 403 -> null
         return promise as Promise<void>;
+    },
+
+    async getTopicOffsetsByTimestamp(topicNames: string[], timestampUnixMs: number): Promise<TopicOffset[]> {
+        const query = `topicNames=${encodeURIComponent(topicNames.join(','))}&timestamp=${timestampUnixMs}`;
+        const response = await fetch('./api/topics-offsets?' + query, {
+            method: 'GET',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as GetTopicOffsetsByTimestampResponse);
+        return data.topicOffsets;
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
@@ -531,15 +560,100 @@ const apiStore = {
             .then(v => this.clusterConfig = v.clusterConfig, addError);
     },
 
+
+    refreshConsumerGroup(groupId: string, force?: boolean) {
+        cachedApiRequest<GetConsumerGroupResponse>(`./api/consumer-groups/${groupId}`, force)
+            .then(v => this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup), addError);
+    },
+
     refreshConsumerGroups(force?: boolean) {
         cachedApiRequest<GetConsumerGroupsResponse>('./api/consumer-groups', force)
             .then(v => {
-                for (const g of v.consumerGroups) {
-                    g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
-                }
-                this.consumerGroups = v.consumerGroups;
+                for (const g of v.consumerGroups)
+                    g.lagSum = g.topicOffsets.sum(o => o.summedLag);
+
+                transaction(() => {
+                    this.consumerGroups.clear();
+                    for (const g of v.consumerGroups)
+                        this.consumerGroups.set(g.groupId, g);
+                });
             }, addError);
     },
+
+    async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]):
+        Promise<EditConsumerGroupOffsetsResponseTopic[]> {
+        const request: EditConsumerGroupOffsetsRequest = {
+            groupId: groupId,
+            topics: topics
+        };
+
+        const response = await fetch('./api/consumer-groups/' + encodeURIComponent(groupId), {
+            method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as EditConsumerGroupOffsetsResponse);
+        if (data.error) throw data.error;
+        return data.topics;
+    },
+
+    async deleteConsumerGroupOffsets(groupId: string, topics: DeleteConsumerGroupOffsetsTopic[]):
+        Promise<DeleteConsumerGroupOffsetsResponseTopic[]> {
+        const request: DeleteConsumerGroupOffsetsRequest = {
+            groupId: groupId,
+            topics: topics
+        };
+
+        const response = await fetch('./api/consumer-groups/' + encodeURIComponent(groupId), {
+            method: 'DELETE',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            let errObj;
+            try {
+                errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    errObj = new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            if (errObj) throw errObj;
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as DeleteConsumerGroupOffsetsResponse);
+        return data.topics;
+    },
+
 
     refreshAdminInfo(force?: boolean) {
         cachedApiRequest<AdminInfo | null>(`./api/admin`, force)

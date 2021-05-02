@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-// ListPartitions returns the partitionIDs for a given topic
+// ListPartitionIDs returns the partitionIDs for a given topic
 func (s *Service) ListPartitionIDs(ctx context.Context, topicName string) ([]int32, error) {
 	metadata, err := s.GetSingleMetadata(ctx, topicName)
 	if err != nil {

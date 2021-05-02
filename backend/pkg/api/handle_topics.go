@@ -3,7 +3,9 @@ package api
 import (
 	_ "context"
 	"fmt"
+	"go.uber.org/zap/zapcore"
 	"net/http"
+	"strconv"
 	"strings"
 	_ "time"
 
@@ -279,5 +281,89 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 			Consumers: consumers,
 		}
 		rest.SendResponse(w, r, logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
+	type response struct {
+		TopicOffsets []owl.TopicOffset `json:"topicOffsets"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse topic names and timestamp from URL. It's a list of topic names that is comma separated
+		requestedTopicNames := r.URL.Query().Get("topicNames")
+		if requestedTopicNames == "" {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("required parameter topicNames is missing"),
+				Status:   http.StatusBadRequest,
+				Message:  "Required parameter topicNames is missing",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		topicNames := strings.Split(requestedTopicNames, ",")
+
+		timestampStr := r.URL.Query().Get("timestamp")
+		if timestampStr == "" {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("required parameter timestamp is missing"),
+				Status:   http.StatusBadRequest,
+				Message:  "Required parameter timestamp is missing",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		timestamp, err := strconv.Atoi(timestampStr)
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("timestamp parameter must be a valid int"),
+				Status:   http.StatusBadRequest,
+				Message:  "Timestamp parameter must be a valid int",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 2. Check if logged in user is allowed list partitions (always true for Kowl, but not for Kowl Business)
+		for _, topic := range topicNames {
+			canView, restErr := api.Hooks.Owl.CanViewTopicPartitions(r.Context(), topic)
+			if restErr != nil {
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
+
+			if !canView {
+				restErr := &rest.Error{
+					Err:          fmt.Errorf("requester has no permissions to view partitions for the requested topic"),
+					Status:       http.StatusForbidden,
+					Message:      "You don't have permissions to view partitions for that topic",
+					IsSilent:     false,
+					InternalLogs: []zapcore.Field{zap.String("topic_name", topic)},
+				}
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
+		}
+
+		// 3. Request topic
+		topicOffsets, err := api.OwlSvc.ListOffsets(r.Context(), topicNames, int64(timestamp))
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("failed to list offsets: %w", err),
+				Status:   http.StatusForbidden,
+				Message:  fmt.Sprintf("Failed to list offsets from Kafka: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		res := response{
+			TopicOffsets: topicOffsets,
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }

@@ -5,9 +5,9 @@ import { ColumnProps } from "antd/lib/table";
 import { api } from "../../../state/backendApi";
 import { makePaginationConfig } from "../../misc/common";
 import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from "../../../state/restInterfaces";
-import { computed, observable } from "mobx";
+import { computed, makeObservable, observable } from "mobx";
 import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
-import { DefaultSkeleton, Label, TextInfoIcon } from "../../../utils/tsxUtils";
+import { DefaultSkeleton, Label, InfoText } from "../../../utils/tsxUtils";
 import { BrokerList } from "./components/BrokerList";
 import ReassignPartitions, { PartitionSelection, } from "./ReassignPartitions";
 import { clone } from "../../../utils/jsonUtils";
@@ -27,6 +27,11 @@ export class StepReview extends Component<{
     reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeReview, true);
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     render() {
         if (!api.topics)
@@ -49,11 +54,10 @@ export class StepReview extends Component<{
             },
             {
                 width: 100, title: (p) =>
-                    <TextInfoIcon
-                        text="Reassignments"
-                        info="The number of replicas that will be moved to a different broker."
+                    <InfoText
+                        tooltip="The number of replicas that will be moved to a different broker."
                         maxWidth='180px'
-                    />,
+                    >Reassignments</InfoText>,
                 render: (v, r) => r.selectedPartitions.sum(p => p.movedReplicas),
             },
             {
@@ -146,7 +150,6 @@ export class StepReview extends Component<{
 
                 let estimatedTimeSec = totalTraffic / potentialBandwidth;
                 if (estimatedTimeSec <= 0 || !Number.isFinite(estimatedTimeSec)) {
-                    console.warn('error calculating estimatedTimeSec', { topic: t.topicName, partition: p.id, senders, receivers, potentialBandwidth, maxReplicationTraffic: settings.maxReplicationTraffic, estimatedTimeSec, });
                     estimatedTimeSec = 0;
                 }
 

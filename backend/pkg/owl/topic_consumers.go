@@ -21,19 +21,19 @@ func (s *Service) ListTopicConsumers(ctx context.Context, topicName string) ([]*
 
 	groupIDs := groups.GetGroupIDs()
 
-	lags, err := s.getConsumerGroupLags(ctx, groupIDs)
+	offsetsByGroup, err := s.getConsumerGroupOffsets(ctx, groupIDs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get consumer group lags: %w", err)
+		return nil, fmt.Errorf("failed to get consumer group offsetsByGroup: %w", err)
 	}
 
-	response := make([]*TopicConsumerGroup, 0, len(lags))
-	for _, lag := range lags {
-		for _, topicLag := range lag.TopicLags {
+	response := make([]*TopicConsumerGroup, 0, len(offsetsByGroup))
+	for groupID, grpTopicOffsets := range offsetsByGroup {
+		for _, topicLag := range grpTopicOffsets {
 			if topicLag.Topic != topicName {
 				continue
 			}
 
-			cg := &TopicConsumerGroup{GroupID: lag.GroupID, SummedLag: topicLag.SummedLag}
+			cg := &TopicConsumerGroup{GroupID: groupID, SummedLag: topicLag.SummedLag}
 			response = append(response, cg)
 		}
 	}

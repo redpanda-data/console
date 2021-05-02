@@ -9,7 +9,7 @@ import { toJson } from "../utils/jsonUtils";
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { MotionDiv, MotionDivInvertedScale } from '../utils/animationProps';
+import { MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
@@ -24,16 +24,17 @@ import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined } from '@ant-design/icons';
-import { observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
 import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
+import { renderErrorModals } from './misc/ErrorModal';
 
 const { Content, Footer, Sider } = Layout;
 
 
-let siderCollapsedWidth = 80;
+const siderCollapsedWidth = 80;
 
 
 const DebugUserInfoBar = () => (
@@ -267,14 +268,13 @@ const AppContent = observer(() =>
         </Content>
 
         <UpdatePopup />
+        {renderErrorModals()}
 
     </Layout>
 );
 
-@observer
 export default class App extends Component {
-
-    render() {
+    render(): JSX.Element {
         setImmediate(() => {
             if (api.endpointCompatibility == null)
                 api.refreshSupportedEndpoints(true);
@@ -360,6 +360,7 @@ export default class App extends Component {
 
 @observer
 class FeatureErrorCheck extends Component {
+
     render() {
         if (featureErrors.length > 0) {
             const allErrors = featureErrors.join(" ");

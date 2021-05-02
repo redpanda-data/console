@@ -19,7 +19,7 @@ import { TopicConsumers } from "./Tab.Consumers";
 import { simpleUniqueId } from "../../../utils/utils";
 import { Label, ObjToKv, OptionGroup, DefaultSkeleton } from "../../../utils/tsxUtils";
 import { LockIcon, EyeClosedIcon } from "@primer/octicons-v2-react";
-import { computed, observable } from "mobx";
+import { computed, makeObservable, observable } from "mobx";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
 import { TopicDocumentation } from "./Tab.Docu";
 
@@ -99,6 +99,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', t => <TopicConfiguration topic={t} />),
             new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', t => <TopicDocumentation topic={t} />),
         ];
+        makeObservable(this);
     }
 
     initPage(p: PageInitHelper): void {

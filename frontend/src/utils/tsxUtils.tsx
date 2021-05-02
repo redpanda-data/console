@@ -1,16 +1,15 @@
-import React, { useState, Component, CSSProperties } from "react";
+import React, { useState, Component, CSSProperties, ReactNode } from "react";
 import { toJson } from "./jsonUtils";
 import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from "./utils";
-import { Radio, message, Progress, Skeleton, Popover, Tooltip } from 'antd';
+import { Radio, message, Progress, Skeleton, Tooltip } from 'antd';
 import { MessageType } from "antd/lib/message";
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 import { TimestampDisplayFormat } from "../state/ui";
 import { observer } from "mobx-react";
-import { motion } from "framer-motion";
-import { animProps } from "./animationProps";
+import { AnimatePresence, motion } from "framer-motion";
+import { animProps, animProps_radioOptionGroup, MotionDiv } from "./animationProps";
 import { SizeType } from "antd/lib/config-provider/SizeContext";
-import { api } from "../state/backendApi";
-import { observable } from "mobx";
+import { makeObservable, observable } from "mobx";
 import { InfoIcon } from "@primer/octicons-v2-react";
 import { TooltipPlacement } from "antd/lib/tooltip";
 
@@ -22,6 +21,8 @@ const decimalSeperator = (0.123).toLocaleString()[1];
 const nbsp = '\xA0'; // non breaking space
 
 export function numberToThousandsString(n: number): JSX.Element {
+    if (typeof n !== 'number') return <>{n}</>
+
     const parts = n.toLocaleString().split(thousandsSeperator);
     const separator = nbsp;
 
@@ -140,7 +141,7 @@ export function toSafeString(x: any): string {
 
 export function ObjToKv(obj: any): { key: string, value: any }[] {
     const ar = [] as { key: string, value: any }[];
-    for (let k in obj) {
+    for (const k in obj) {
         ar.push({ key: k, value: obj[k] })
     }
     return ar;
@@ -185,8 +186,20 @@ export function findPopupContainer(current: HTMLElement): HTMLElement {
     return current;
 }
 
-export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor?: string, tooltipOverText?: boolean, iconSize?: string, maxWidth?: string, placement?: TooltipPlacement }) => {
-    const overlay = p.maxWidth == null ? p.info : <div style={{ maxWidth: p.maxWidth }}>{p.info}</div>
+export const InfoText = (p: {
+    tooltip: React.ReactNode,
+    children?: React.ReactNode
+    tooltipOverText?: boolean,
+
+    iconColor?: string,
+    iconSize?: string,
+    icon?: React.ReactNode,
+
+    maxWidth?: string,
+    placement?: TooltipPlacement
+}) => {
+
+    const overlay = p.maxWidth == null ? p.tooltip : <div style={{ maxWidth: p.maxWidth }}>{p.tooltip}</div>
 
     const size = p.iconSize ?? '14px';
 
@@ -194,18 +207,18 @@ export const TextInfoIcon = (p: { text: string, info: React.ReactNode, iconColor
     const blue = 'hsl(209deg, 100%, 55%)';
     const color = p.iconColor ?? gray;
 
-    const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size }} ><InfoIcon /></span>
+    const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size, marginLeft: '4px', }} >{p.icon ?? <InfoIcon />}</span>
 
-    if (p.tooltipOverText == null || p.tooltipOverText === true)
+    if (p.tooltipOverText === true)
         return <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                {p.text}
+                {p.children}
                 {icon}
             </span>
         </Tooltip>
 
     return <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-        {p.text}
+        {p.children}
         <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
             {icon}
         </Tooltip>
@@ -244,9 +257,12 @@ export class RadioOptionGroup<T> extends Component<{
         key?: any,
         value: T,
         title: string,
-        text: string,
+        subTitle: string,
+        content?: ReactNode,
     }[],
     value: T, onChange: (value: T) => void,
+    showContent?: 'always' | 'onlyWhenSelected',
+    disabled?: boolean,
     children?: never
 }> {
 
@@ -256,9 +272,19 @@ export class RadioOptionGroup<T> extends Component<{
         const radioGroup = (
             <Radio.Group className='radioOptionGroup' value={p.value} onChange={e => p.onChange(e.target.value)}>
                 {p.options.map(kv =>
-                    <Radio key={kv.key ?? kv.value} value={kv.value}>
-                        <div style={{ fontWeight: 500, fontSize: '1.1em', display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
-                        <div style={{ marginLeft: '27px', color: '#BBB', whiteSpace: 'normal' }}>{kv.text}</div>
+                    <Radio key={kv.key ?? kv.value} value={kv.value} disabled={p.disabled}>
+                        <div style={{ fontWeight: 500, display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
+                        <div style={{ marginLeft: '27px', color: '#999', whiteSpace: 'normal' }}>{kv.subTitle}</div>
+                        <AnimatePresence>
+
+                            {kv.content && (p.showContent == 'always' || (p.value == kv.value)) &&
+
+                                <MotionDiv animProps={animProps_radioOptionGroup} key={String(kv.value)} style={{ marginLeft: '27px', marginTop: '12px' }}>
+                                    <div >{kv.content}</div>
+                                </MotionDiv>
+
+                            }
+                        </AnimatePresence>
                     </Radio>
                 )}
             </Radio.Group>
@@ -267,7 +293,6 @@ export class RadioOptionGroup<T> extends Component<{
         return radioGroup;
     }
 }
-
 
 interface StatusIndicatorProps {
     identityKey: string;
@@ -309,6 +334,8 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
                 this.showWaitingText = true;
             }
         }, 300);
+
+        makeObservable(this);
     }
 
     componentDidMount() {

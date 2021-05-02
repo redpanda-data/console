@@ -1,4 +1,4 @@
-import { observable, computed } from "mobx";
+import { observable, computed, makeObservable } from "mobx";
 import { PageDefinition } from "../components/routes";
 import { clone } from "../utils/jsonUtils";
 import { api } from "./backendApi";
@@ -13,6 +13,11 @@ export interface BreadcrumbEntry {
 
 
 class UIState {
+    constructor() {
+        makeObservable(this);
+    }
+
+
     @observable private _pageTitle: string = ' '
     @computed get pageTitle() { return this._pageTitle; }
     set pageTitle(title: string) { this._pageTitle = title; document.title = title + ' - Kowl'; }
