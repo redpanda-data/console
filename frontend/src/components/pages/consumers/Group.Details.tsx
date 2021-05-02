@@ -207,7 +207,8 @@ class GroupByTopics extends Component<{
                 return {
                     topicName: topicLag.topic,
                     partitionId: partLag.partitionId,
-                    offset: partLag.groupOffset,
+                    groupOffset: partLag.groupOffset,
+                    highWaterMark: partLag.highWaterMark,
                     lag: partLag.lag,
 
                     assignedMember: assignedMember?.member,
@@ -279,7 +280,8 @@ class GroupByTopics extends Component<{
                             render: (t, r) => (r.host ??
                                 <span style={{ opacity: 0.66, margin: '0 3px' }}><SkipIcon /></span>)
                         },
-                        { width: 120, title: 'Offset', dataIndex: 'offset', render: v => numberToThousandsString(v), sorter: sortField('offset') },
+                        { width: 120, title: 'Log End Offset', dataIndex: 'highWaterMark', render: v => numberToThousandsString(v), sorter: sortField('highWaterMark') },
+                        { width: 120, title: 'Group Offset', dataIndex: 'groupOffset', render: v => numberToThousandsString(v), sorter: sortField('groupOffset') },
                         { width: 80, title: 'Lag', dataIndex: 'lag', render: v => numberToThousandsString(v), sorter: sortField('lag') },
                         {
                             width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
