@@ -3,6 +3,7 @@
 ## Master / pending release
 - [FEATURE] Proto files can now be provided via the local file system as well
 - [FEATURE] Schema registry support for Protobuf
+- [FEATURE] Consumer group offsets can now be edited (copy offsets from other group, set to start/end/timestamp) or deleted
 
 ## 1.3.0 / 2021-04-13
 
