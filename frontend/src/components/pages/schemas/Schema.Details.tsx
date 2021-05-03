@@ -53,6 +53,8 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
 
         const {
             schemaId,
+            version,
+            compatibility,
             schema: { type, name, namespace, doc, fields },
         } = api.schemaDetails;
 
@@ -64,8 +66,10 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
             <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
                 <Card>
                     <Row>
-                        <Statistic title="Subject Name" value={this.props.subjectName}></Statistic>
+                        <Statistic title="Subject" value={this.props.subjectName}></Statistic>
                         <Statistic title="Schema ID" value={schemaId}></Statistic>
+                        <Statistic title="Version" value={version}></Statistic>
+                        <Statistic title="Compatibility" value={compatibility}></Statistic>
                     </Row>
                 </Card>
                 <Card>
