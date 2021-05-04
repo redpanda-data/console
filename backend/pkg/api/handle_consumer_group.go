@@ -143,16 +143,15 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 				}
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
-			} else {
-				restErr := &rest.Error{
-					Err:      err,
-					Status:   http.StatusInternalServerError,
-					Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
 			}
+
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusInternalServerError,
+				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
@@ -245,26 +244,25 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 				}
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
-			} else {
-				restErr := &rest.Error{
-					Err:      err,
-					Status:   http.StatusInternalServerError,
-					Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
 			}
+
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusInternalServerError,
+				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
-		// 2. Check if logged in user is allowed to edit Consumer Group (always true for Kowl, but not for Kowl Business)
-		canEdit, restErr := api.Hooks.Owl.CanEditConsumerGroup(r.Context(), req.GroupID)
+		// 2. Check if logged in user is allowed to delete Consumer Group (always true for Kowl, but not for Kowl Business)
+		canDelete, restErr := api.Hooks.Owl.CanDeleteConsumerGroup(r.Context(), req.GroupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
-		if !canEdit {
+		if !canDelete {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:          fmt.Errorf("requester has no permissions to edit consumer group"),
 				Status:       http.StatusForbidden,

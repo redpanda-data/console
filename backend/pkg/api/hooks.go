@@ -49,6 +49,7 @@ type OwlHooks interface {
 	// ConsumerGroup Hooks
 	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
 	CanEditConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
+	CanDeleteConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
 	AllowedConsumerGroupActions(ctx context.Context, groupName string) ([]string, *rest.Error)
 
 	// Operations Hooks
@@ -103,6 +104,9 @@ func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *re
 	return true, nil
 }
 func (*defaultHooks) CanEditConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanDeleteConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
 func (*defaultHooks) AllowedConsumerGroupActions(_ context.Context, _ string) ([]string, *rest.Error) {
