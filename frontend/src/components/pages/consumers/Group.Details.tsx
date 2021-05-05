@@ -518,7 +518,6 @@ const EditDisabledTooltip = (p: { group: GroupDescription, children: [editButton
     </>
 
     // Check if in use
-    const inUseMessage = ;
     if (group.isInUse) return <>
         {wrap(editButton, "Consumer groups with active members cannot be edited")}
         {wrap(deleteButton, "Consumer groups with active members cannot be deleted")}

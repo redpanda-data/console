@@ -1189,6 +1189,11 @@ svg {
     user-select: none;
 }
 
+// arrows are not centered by default (maybe it has something to do with the font size of the title, or other elements in there?)
+div.ant-collapse.ant-collapse-borderless>div>div>span {
+    padding: 9px 0 0;
+}
+
 .subjectListExpander {
     font-size: 85%;
     padding: 0;
