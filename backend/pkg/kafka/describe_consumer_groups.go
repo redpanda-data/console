@@ -69,6 +69,7 @@ func (s *Service) DescribeConsumerGroups(ctx context.Context, groups []string) (
 		if kresp.Err != nil {
 			result.RequestsFailed++
 			lastErr = kresp.Err
+			continue
 		}
 		res := kresp.Resp.(*kmsg.DescribeGroupsResponse)
 
