@@ -26,7 +26,7 @@ const { Text } = Typography;
 export class PreviewSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
     @computed.struct get allCurrentKeys() {
         const unused = api.messages.length;
-        console.log("get all current keys: " + unused);
+        // console.log("get all current keys: " + unused);
         return getAllMessageKeys(api.messages).map(p => p.propertyName).distinct();
     }
 

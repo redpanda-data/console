@@ -281,11 +281,11 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
         const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset + params.startTimestamp;
 
         if (this.currentSearchRun)
-            return console.log(`searchFunc: function already in progress (trigger:${source})`);
+            return console.warn(`searchFunc: function already in progress (trigger:${source})`);
 
         const phase = untracked(() => api.messageSearchPhase);
         if (phase)
-            return console.log(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
+            return console.warn(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
 
         try {
             this.currentSearchRun = searchParams;

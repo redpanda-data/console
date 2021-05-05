@@ -183,7 +183,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
         const noChange = (this.newThrottleValue === this.props.lastKnownMinThrottle)
             || (this.newThrottleValue == null);
 
-        console.log('nochange:', { noChange, newVal: this.newThrottleValue, lastKnown: this.props.lastKnownMinThrottle })
+        // console.log('nochange:', { noChange, newVal: this.newThrottleValue, lastKnown: this.props.lastKnownMinThrottle })
 
         return <Modal
             title="Throttle Settings"

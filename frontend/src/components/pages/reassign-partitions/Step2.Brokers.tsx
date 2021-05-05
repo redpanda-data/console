@@ -26,7 +26,7 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
 
     render() {
         if (!this.brokers || this.brokers.length == 0) {
-            console.log('brokers', { brokers: this.brokers, apiClusterInfo: api.clusterInfo });
+            console.error('brokers', { brokers: this.brokers, apiClusterInfo: api.clusterInfo });
             return <div>Error: no brokers available</div>;
         }
 

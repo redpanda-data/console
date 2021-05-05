@@ -293,7 +293,7 @@ class ReassignPartitions extends PageComponent {
                 }
                 catch (err) {
                     message.error('Error starting partition reassignment.\nSee console for more information.', 3);
-                    console.log("error starting partition reassignment", { error: err });
+                    console.error("error starting partition reassignment", { error: err });
                 }
                 finally {
                     this.requestInProgress = false;

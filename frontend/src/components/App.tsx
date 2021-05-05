@@ -292,12 +292,6 @@ export default class App extends Component {
                         <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
                             <AppSide />
                             <AppContent />
-
-                            {/* <Test /> */}
-                            <span>
-                                sus
-                            </span>
-
                         </Layout>
                     </Route>
                 </Switch>

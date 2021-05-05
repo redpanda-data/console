@@ -354,7 +354,7 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
         ctx.currentFullPath = "";
     }
 
-    console.log('getAllMessageKeys', ctx.results);
+    // console.log('getAllMessageKeys', ctx.results);
 
     return ctx.results;
 }
