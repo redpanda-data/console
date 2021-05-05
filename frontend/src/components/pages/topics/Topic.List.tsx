@@ -47,7 +47,7 @@ class TopicList extends PageComponent {
         this.quickSearchReaction = autorun(() => {
             editQuery((query) => {
                 const q = String(uiSettings.topicList.quickSearch);
-                query['q'] = q ? q : null;
+                if (q) query['q'] = q;
             });
         });
     }

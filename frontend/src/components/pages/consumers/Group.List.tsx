@@ -47,7 +47,7 @@ class GroupList extends PageComponent {
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
                 const q = String(uiSettings.consumerGroupList.quickSearch);
-                query["q"] = q ? q : null;
+                if (q) query["q"] = q;
             })
         });
     }
