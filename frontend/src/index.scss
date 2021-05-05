@@ -15,6 +15,19 @@ h2 {
     font-size: 1.4em;
 }
 
+@mixin tlrb {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+@mixin beforeAfter {
+    @include tlrb;
+    position: absolute;
+    content: ' ';
+}
+
 .scroll-on-hover-y {
     overflow-y: hidden;
     overflow-x: hidden;
@@ -25,11 +38,7 @@ h2 {
 }
 
 .cell {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    @include tlrb;
     box-sizing: border-box;
     display: block;
     width: 100%;
@@ -55,11 +64,8 @@ h2 {
     position: relative;
 
     &.fade::after {
-        content: ' ';
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
+        @include beforeAfter;
+        left: unset;
         width: 30px;
 
         background: linear-gradient(to right, transparent, white);
@@ -555,11 +561,7 @@ td.ant-table-column-sort {
     mix-blend-mode: hard-light;
     opacity: 35%;
     zoom: 80%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
+    @include tlrb;
     z-index: -1;
 }
 
@@ -632,11 +634,7 @@ td.ant-table-column-sort {
 }
 
 .ant-menu-dark .ant-menu-item a::before {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    @include tlrb;
     background-color: hsla(0deg, 0%, 0%, 0%);
     content: '';
 }
@@ -1387,11 +1385,8 @@ svg {
         overflow-x: hidden;
 
         &::after {
-            content: ' ';
-            position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
+            @include beforeAfter;
+            left: unset;
             width: 80px;
 
             background: linear-gradient(to right, transparent, white);
@@ -1614,12 +1609,7 @@ svg {
 }
 
 .waitingForMessagesBox::before {
-    content: ' ';
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    bottom: 0px;
-    left: 0px;
+    @include beforeAfter;
 
     border-radius: 4px;
     box-shadow: 0 0 8px 4px #3098e8;
@@ -1750,12 +1740,7 @@ svg {
             color: hsl(111deg, 100%, 34%);
 
             &::after {
-                content: ' ';
-                position: absolute;
-                top: 0px;
-                left: 0px;
-                right: 0px;
-                bottom: 0px;
+                @include beforeAfter;
 
                 border-radius: 3px;
 
@@ -1795,12 +1780,7 @@ svg {
             // box-shadow: inset #ff7054 0px 0px 2px 1px;
 
             &::after {
-                content: ' ';
-                position: absolute;
-                top: 0px;
-                left: 0px;
-                right: 0px;
-                bottom: 0px;
+                @include beforeAfter;
 
                 border-radius: 3px;
 
@@ -1855,24 +1835,6 @@ mark {
             // background: #f004;
         }
     }
-}
-
-// Partition reassignment: selection
-tr.inprogress {
-    // color: hsl(0deg, 0%, 70%);
-    // background: hsla(200deg, 100%, 50%, 0.06);
-
-    // position: relative;
-    // &::after {
-    //     content: ' ';
-    //     display: block;
-    //     position: absolute;
-    //     top: 0px;
-    //     right: 0px;
-    //     bottom: 0px;
-    //     left: 0px;
-    //     // background: #f004;
-    // }
 }
 
 
@@ -1976,6 +1938,7 @@ tr.inprogress {
 // Container for text that has the tooltip
 .tooltip {
     position: relative;
+    display: inline-block; // don't expand to fill the container
 
     // Text shown in the bubble
     .tooltiptext {
@@ -2054,26 +2017,54 @@ tr.inprogress {
 }
 
 
-tr .iconButton {
-    opacity: 0;
-}
-
-tr:hover .iconButton {
-    opacity: 1;
-}
-
 .groupDetails {
     .iconButton {
+        position: relative;
         display: inline-block;
         color: #9EA6B2;
-        width: 23px;
-        height: 23px;
-        padding: 1px;
+        width: 20px;
+        height: 20px;
 
-        &:hover {
-            color: #6d727a;
+        &::after {
+            @include beforeAfter;
+            border-radius: 2px;
+            background-color: transparent;
+            margin: -4px;
         }
+
+        // unless disabled...
+        &:not(.disabled) {
+
+            // darker color on hover
+            &:hover {
+                color: #6d727a;
+
+                &::after {
+                    background-color: #0001;
+                }
+            }
+
+            // slight background when pressed
+            &:active {
+                &::after {
+                    background-color: #0002;
+                }
+            }
+        }
+
+        cursor: pointer;
     }
+}
+
+// disabled iconButtons use 0.6 opacity
+.iconButton.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+// iconButton in a table row is invisible unless hovered
+tr:not(:hover) .iconButton {
+    opacity: 0;
 }
 
 

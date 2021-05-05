@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, CSSProperties } from "react";
 import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip, Popover, Empty, Modal, Select } from "antd";
 import { observer } from "mobx-react";
 
@@ -12,7 +12,7 @@ import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { TablePaginationConfig } from "antd/lib/table";
-import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString } from "../../../utils/tsxUtils";
+import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString, InfoText } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
 import { SkipIcon } from "@primer/octicons-v2-react";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
@@ -107,8 +107,14 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                             onChange={s => this.onlyShowPartitionsWithLag = s}
                         />
 
-                        <Button style={{ marginLeft: 'auto' }} onClick={() => this.editGroup()}>Edit Group</Button>
-                        <Button danger onClick={() => this.deleteGroup()}>Delete Group</Button>
+
+                        <span style={{ marginLeft: 'auto' }} />
+
+                        <EditDisabledTooltip group={group}>
+                            <Button onClick={() => this.editGroup()}>Edit Group</Button>
+                            <Button danger onClick={() => this.deleteGroup()}>Delete Group</Button>
+                        </EditDisabledTooltip>
+
                     </div>
 
                     {/* Main Content */}
@@ -241,8 +247,10 @@ class GroupByTopics extends Component<{
 
                         {/* EditButtons */}
                         <div style={{ width: '2px' }} />
-                        <div className="iconButton" onClick={e => { p.onEditOffsets(g.partitions); e.stopPropagation(); }} ><PencilIcon /></div>
-                        <div className="iconButton" onClick={e => { p.onDeleteOffsets(g.partitions, 'topic'); e.stopPropagation(); }} ><TrashIcon /></div>
+                        <EditDisabledTooltip group={p.group}>
+                            <div className="iconButton" onClick={e => { p.onEditOffsets(g.partitions); e.stopPropagation(); }} ><PencilIcon /></div>
+                            <div className="iconButton" onClick={e => { p.onDeleteOffsets(g.partitions, 'topic'); e.stopPropagation(); }} ><TrashIcon /></div>
+                        </EditDisabledTooltip>
 
                         {/* InfoTags */}
                         <Tooltip placement='top' title='Summed lag of all partitions of the topic' mouseEnterDelay={0}
@@ -283,7 +291,7 @@ class GroupByTopics extends Component<{
                         },
                         { width: 120, title: 'Log End Offset', dataIndex: 'highWaterMark', render: v => numberToThousandsString(v), sorter: sortField('highWaterMark') },
                         { width: 120, title: 'Group Offset', dataIndex: 'groupOffset', render: v => numberToThousandsString(v), sorter: sortField('groupOffset') },
-                        { width: 80, title: 'Lag', dataIndex: 'lag', render: v => ShortNum({value: v, tooltip: true}), sorter: sortField('lag') },
+                        { width: 80, title: 'Lag', dataIndex: 'lag', render: v => ShortNum({ value: v, tooltip: true }), sorter: sortField('lag') },
                         {
                             width: 1, title: ' ', key: 'action', className: 'msgTableActionColumn',
                             // filters: [],
@@ -295,8 +303,10 @@ class GroupByTopics extends Component<{
                             //     </Tooltip>
                             // },
                             render: (text, record) => <div style={{ paddingRight: '.5em', display: 'flex', gap: '4px' }}>
-                                <span className="iconButton" onClick={() => p.onEditOffsets([record])} ><PencilIcon /></span>
-                                <span className="iconButton" onClick={() => p.onDeleteOffsets([record], 'partition')} ><TrashIcon /></span>
+                                <EditDisabledTooltip group={p.group}>
+                                    <span className="iconButton" onClick={() => p.onEditOffsets([record])} ><PencilIcon /></span>
+                                    <span className="iconButton" onClick={() => p.onDeleteOffsets([record], 'partition')} ><TrashIcon /></span>
+                                </EditDisabledTooltip>
                             </div>,
                         },
                     ]}
@@ -482,6 +492,45 @@ const ProtocolType = (p: { group: GroupDescription }) => {
 
     return <Statistic title='Protocol' value={protocol} />
 }
+
+const EditDisabledTooltip = (p: { group: GroupDescription, children: [editButton: JSX.Element, deleteButton: JSX.Element] }): JSX.Element => {
+    const { group } = p;
+    const [editButton, deleteButton] = p.children;
+
+    const wrap = (button: JSX.Element, message: string) =>
+        <Tooltip
+            placement="top" trigger="hover" mouseLeaveDelay={0}
+            getPopupContainer={findPopupContainer}
+            overlay={message}
+        >
+            {React.cloneElement(button, {
+                disabled: true,
+                className: (button.props.className ?? '') + ' disabled',
+                onClick: undefined,
+            })}
+        </Tooltip>
+
+    // Check if feature is supported
+    const notSupportedMessage = "This cluster version does not support editting group offsets";
+    if (group.noEditSupport) return <>
+        {wrap(editButton, notSupportedMessage)}
+        {wrap(deleteButton, notSupportedMessage)}
+    </>
+
+    // Check if in use
+    const inUseMessage = "Only empty consumer groups can be editted";
+    if (group.isInUse) return <>
+        {wrap(editButton, inUseMessage)}
+        {wrap(deleteButton, inUseMessage)}
+    </>
+
+    // Wrap each button if the user doesn't have the corresponding permission
+    return <>
+        {group.noEditPerms ? wrap(editButton, "You don't have 'editConsumerGroup' permissions for this group") : editButton}
+        {group.noDeletePerms ? wrap(deleteButton, "You don't have 'deleteConsumerGroup' permissions for this group") : deleteButton}
+    </>
+}
+
 
 export default GroupDetails;
 

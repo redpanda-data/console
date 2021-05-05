@@ -19,6 +19,8 @@ import { api } from '../../../state/backendApi';
 import { WarningOutlined } from '@ant-design/icons';
 import { Message } from '../../../utils/utils';
 import { showErrorModal } from '../../misc/ErrorModal';
+import { basePathS } from '../../../utils/env';
+import { appGlobal } from '../../../state/appGlobal';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -780,8 +782,16 @@ export class DeleteOffsetsModal extends Component<{
             );
         }
         finally {
-            api.refreshConsumerGroup(this.props.group.groupId, true);
-            this.props.onClose();
+            api.refreshConsumerGroups(true);
+
+            const remainingOffsets = group.topicOffsets.sum(t => t.partitionOffsets.length) - offsets.length;
+            if (remainingOffsets == 0) {
+                // Group is fully deleted, go back to list
+                appGlobal.history.replace('/groups');
+            }
+            else {
+                this.props.onClose();
+            }
         }
     }
 

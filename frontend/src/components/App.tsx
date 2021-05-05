@@ -273,13 +273,9 @@ const AppContent = observer(() =>
     </Layout>
 );
 
+@observer
 export default class App extends Component {
     render(): JSX.Element {
-        setImmediate(() => {
-            if (api.endpointCompatibility == null)
-                api.refreshSupportedEndpoints(true);
-        });
-
         const r = this.loginHandling(); // Complete login, or fetch user if needed
         if (r) return r;
 
@@ -298,6 +294,9 @@ export default class App extends Component {
                             <AppContent />
 
                             {/* <Test /> */}
+                            <span>
+                                sus
+                            </span>
 
                         </Layout>
                     </Route>

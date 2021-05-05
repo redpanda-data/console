@@ -20,6 +20,7 @@ import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";
 import { notification } from "antd";
 import { ObjToKv } from "../utils/tsxUtils";
+import { Features } from "./supportedFeatures";
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -563,14 +564,17 @@ const apiStore = {
 
     refreshConsumerGroup(groupId: string, force?: boolean) {
         cachedApiRequest<GetConsumerGroupResponse>(`./api/consumer-groups/${groupId}`, force)
-            .then(v => this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup), addError);
+            .then(v => {
+                addFrontendFieldsForConsumerGroup(v.consumerGroup);
+                this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup);
+            }, addError);
     },
 
     refreshConsumerGroups(force?: boolean) {
         cachedApiRequest<GetConsumerGroupsResponse>('./api/consumer-groups', force)
             .then(v => {
                 for (const g of v.consumerGroups)
-                    g.lagSum = g.topicOffsets.sum(o => o.summedLag);
+                    addFrontendFieldsForConsumerGroup(g);
 
                 transaction(() => {
                     this.consumerGroups.clear();
@@ -866,6 +870,18 @@ const apiStore = {
     }
 }
 
+function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
+    g.lagSum = g.topicOffsets.sum(o => o.summedLag);
+
+    if (g.allowedActions) {
+        g.noEditPerms = !g.allowedActions?.includes('editConsumerGroup');
+        g.noDeletePerms = !g.allowedActions?.includes('deleteConsumerGroup');
+    }
+    g.isInUse = g.state.toLowerCase() != 'empty';
+
+    if (!Features.deleteGroup || !Features.patchGroup)
+        g.noEditSupport = true;
+}
 
 export const brokerMap = computed(() => {
     const brokers = api.clusterInfo?.brokers;

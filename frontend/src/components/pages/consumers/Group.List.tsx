@@ -61,7 +61,6 @@ class GroupList extends PageComponent {
 
     render() {
         if (!api.consumerGroups) return DefaultSkeleton;
-        if (api.consumerGroups.size == 0) return <Empty />
 
         const groups = Array.from(api.consumerGroups.values());
         const stateGroups = groups.groupInto(g => g.state);
@@ -118,7 +117,7 @@ class GroupList extends PageComponent {
                             { title: 'Coordinator', dataIndex: 'coordinatorId', width: 1, render: (x: number) => <BrokerList brokerIds={[x]} /> },
                             { title: 'Protocol', dataIndex: 'protocol', width: 1 },
                             { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length, defaultSortOrder: 'descend' },
-                            { title: 'Lag (Sum)', dataIndex: 'lagSum', render: v => ShortNum({value: v}), sorter: (a, b) => a.lagSum - b.lagSum },
+                            { title: 'Lag (Sum)', dataIndex: 'lagSum', render: v => ShortNum({ value: v }), sorter: (a, b) => a.lagSum - b.lagSum },
                         ]} />
                 </Card>
             </motion.div>

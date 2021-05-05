@@ -186,7 +186,7 @@ export interface GroupMemberDescription {
 }
 
 
-export const GroupActions = ['seeConsumerGroup'] as const;
+export const GroupActions = ['seeConsumerGroup', 'editConsumerGroup', 'deleteConsumerGroup'] as const;
 export type GroupAction = 'all' | typeof GroupActions[number];
 
 export interface GroupDescription {
@@ -197,10 +197,16 @@ export interface GroupDescription {
     members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     coordinatorId: number;
     topicOffsets: GroupTopicOffsets[];
-    allowedActions: GroupAction[];
+    allowedActions: GroupAction[] | null;
 
-    // Computed by frontend
-    lagSum: number;
+    // Added by frontend
+    lagSum: number; // sum of lag for all topic offsets
+
+    // reasons for why the group can't be editted
+    noEditSupport: boolean;
+    isInUse: boolean;
+    noEditPerms: boolean;
+    noDeletePerms: boolean;
 }
 
 export interface GroupTopicOffsets {
