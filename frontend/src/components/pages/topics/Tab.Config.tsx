@@ -6,7 +6,7 @@ import { uiSettings } from '../../../state/ui';
 import topicConfigInfo from '../../../assets/topicConfigInfo.json';
 import Paragraph from 'antd/lib/typography/Paragraph';
 import '../../../utils/arrayExtensions';
-import { EyeInvisibleTwoTone, HighlightTwoTone, InfoCircleFilled } from '@ant-design/icons';
+import { EyeInvisibleTwoTone, HighlightTwoTone, InfoCircleFilled, LockOutlined } from '@ant-design/icons';
 import { uiState } from '../../../state/uiState';
 import { DefaultSkeleton, findPopupContainer, OptionGroup } from '../../../utils/tsxUtils';
 import { api } from '../../../state/backendApi';
@@ -118,6 +118,7 @@ const ConfigList = observer(({ configEntries }: { configEntries: TopicConfigEntr
                     <>
                         {FormatConfigValue(record.name as string, record.value as string, valueDisplay)}
                         &nbsp;
+                        {record.isReadOnly ? <LockOutlined twoToneColor="#1890ff" style={{color: "#1890ff"}} /> : null}
                         {record.isSensitive ? <EyeInvisibleTwoTone twoToneColor="#1890ff" /> : null}
                     </>
                 );

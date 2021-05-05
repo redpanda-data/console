@@ -146,6 +146,7 @@ export interface TopicConfigEntry {
     isExplicitlySet: boolean,
     isDefaultValue: boolean,
     isSensitive: boolean,
+    isReadOnly: boolean,
     documentation: string,
     synonyms: TopicConfigEntrySynonym[]
 }
