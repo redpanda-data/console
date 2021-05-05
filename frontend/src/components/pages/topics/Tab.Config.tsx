@@ -1,20 +1,20 @@
 import React, { Component } from 'react';
-import { KafkaError, TopicConfigEntry, Topic } from '../../../state/restInterfaces';
-import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result, Table } from 'antd';
+import { KafkaError, ConfigEntry, Topic } from '../../../state/restInterfaces';
+import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import topicConfigInfo from '../../../assets/topicConfigInfo.json';
 import Paragraph from 'antd/lib/typography/Paragraph';
 import '../../../utils/arrayExtensions';
-import { EyeInvisibleTwoTone, HighlightTwoTone, InfoCircleFilled, LockOutlined } from '@ant-design/icons';
+import { HighlightTwoTone } from '@ant-design/icons';
 import { uiState } from '../../../state/uiState';
 import { DefaultSkeleton, findPopupContainer, OptionGroup } from '../../../utils/tsxUtils';
 import { api } from '../../../state/backendApi';
-import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
 import { toJson } from '../../../utils/jsonUtils';
 import { appGlobal } from '../../../state/appGlobal';
 import { computed } from 'mobx';
-import styles from './TabConfig.module.scss';
+import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
+import { ConfigList } from '../../misc/ConfigList';
 
 const { Text } = Typography;
 
@@ -31,12 +31,12 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         return (
             <>
                 <ConfigDisplaySettings />
-                <ConfigList configEntries={this.configEntries} />
+                <TopicConfigList configEntries={this.configEntries} />
             </>
         );
     }
 
-    @computed get configEntries(): TopicConfigEntry[] {
+    @computed get configEntries(): ConfigEntry[] {
         const config = api.topicConfig.get(this.props.topic.topicName);
         if (config == null) return [];
 
@@ -104,59 +104,11 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
     }
 }
 
-const ConfigList = observer(({ configEntries }: { configEntries: TopicConfigEntry[] }) => {
-    // this needs to be here, because when inlined in nested function, ConfigList won't react to changes of uiSettings.topicList.valueDisplay
-    const valueDisplay = uiSettings.topicList.valueDisplay
 
-    const columns = [
-        { title: 'Configuration', dataIndex: 'name', render: (text: string) => <span className={styles.name}>{text}</span> },
-        {
-            title: 'Value',
-            dataIndex: 'value',
-            render: (_: unknown, record: Partial<TopicConfigEntry>) => {
-                return (
-                    <>
-                        {FormatConfigValue(record.name as string, record.value as string, valueDisplay)}
-                        &nbsp;
-                        {record.isReadOnly ? <LockOutlined twoToneColor="#1890ff" style={{color: "#1890ff"}} /> : null}
-                        {record.isSensitive ? <EyeInvisibleTwoTone twoToneColor="#1890ff" /> : null}
-                    </>
-                );
-            },
-        },
-        { title: 'Type', dataIndex: 'type', render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span> },
-        {
-            title: (
-                <span className={styles.sourceHeader}>
-                    Source
-                    <Popover content={"Some text that describes what 'Source' is. Yet TBD."} title="Source" trigger="hover" placement="left">
-                        <InfoCircleFilled style={{ color: '#bbbbbb' }} />
-                    </Popover>
-                </span>
-            ),
-            dataIndex: 'source',
-            render: (text: string) =>
-                text
-                    .toLowerCase()
-                    .split('_')
-                    .map((s) => s.replace(/^\w/, (c) => c.toUpperCase()))
-                    .join(' '),
-        },
-    ];
-    return (
-        <Table
-            rowKey="name"
-            dataSource={configEntries.map(filterRedundantSynonyms)}
-            childrenColumnName="synonyms"
-            columns={columns}
-            rowClassName={(record) => (record.isExplicitlySet ? styles.overidden : styles.default)}
-            pagination={false}
-            size="middle"
-            className={styles.configEntryTable}
-            indentSize={20}
-        />
-    );
-});
+
+const TopicConfigList = observer(({ configEntries }: { configEntries: ConfigEntry[] }) => {
+    return <ConfigList configEntries={configEntries} valueDisplay={uiSettings.topicList.valueDisplay} />
+})
 
 const ConfigDisplaySettings = observer(() => (
     <div
@@ -194,7 +146,7 @@ const ConfigDisplaySettings = observer(() => (
 
 const markerIcon = <HighlightTwoTone twoToneColor="#1890ff" style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
 
-export const FavoritePopover = (configEntry: TopicConfigEntry, children: React.ReactNode) => {
+export const FavoritePopover = (configEntry: ConfigEntry, children: React.ReactNode) => {
     const name = configEntry.name;
     const favs = uiState.topicSettings.favConfigEntries;
     const isFav = favs.includes(name);
@@ -235,7 +187,7 @@ export const FavoritePopover = (configEntry: TopicConfigEntry, children: React.R
 };
 
 export function DataValue(name: string, value: string, isDefault: boolean, formatType: 'friendly' | 'raw' | 'both') {
-    value = FormatConfigValue(name, value, formatType);
+    value = formatConfigValue(name, value, formatType);
 
     if (isDefault) return <code>{value}</code>;
 
@@ -247,85 +199,4 @@ export function DataValue(name: string, value: string, isDefault: boolean, forma
             </div>
         </Tooltip>
     );
-}
-
-export function FormatConfigValue(name: string, value: string, formatType: 'friendly' | 'raw' | 'both'): string {
-    let suffix: string;
-
-    switch (formatType) {
-        case 'friendly':
-            suffix = '';
-            break;
-        case 'both':
-            suffix = ' (' + value + ')';
-            break;
-
-        case 'raw':
-        default:
-            return value;
-    }
-
-    //
-    // String
-    //
-    if (name == "advertised.listeners" || name == "listener.security.protocol.map" || name == "listeners") {
-        const listeners = value.split(',');
-        return listeners.length > 1
-            ? "\n" + listeners.join('\n')
-            : listeners.join('\n');
-    }
-
-
-    //
-    // Numeric
-    //
-    const num = Number(value);
-    if (value == null || value == "" || value == "0" || Number.isNaN(num))
-        return value;
-
-    // Special cases
-    if (name == 'flush.messages' && num > Math.pow(2, 60)) return 'Never' + suffix; // messages between each fsync
-
-    if (name.endsWith('.bytes.per.second')) {
-        if (num >= Number.MAX_SAFE_INTEGER) return 'Infinite' + suffix;
-        return prettyBytesOrNA(num) + '/s' + suffix;
-    }
-
-    // Time
-    const timeExtensions: [string, number][] = [
-        // name ending -> conversion to milliseconds
-        [".ms", 1],
-        [".seconds", 1000],
-        [".minutes", 60 * 1000],
-        [".hours", 60 * 60 * 1000],
-        [".days", 24 * 60 * 60 * 1000],
-    ]
-    for (const [ext, msFactor] of timeExtensions) {
-        if (!name.endsWith(ext)) continue;
-        if (num > Number.MAX_SAFE_INTEGER || num == -1) return "Infinite" + suffix;
-
-        const ms = num * msFactor;
-        return prettyMilliseconds(ms, { verbose: true }) + suffix;
-    }
-
-    // Bytes
-    if (name.endsWith('.bytes') || name.endsWith('.buffer.size') || name.endsWith('.replication.throttled.rate') || name.endsWith('.reassignment.throttled.rate')) {
-        if (num < 0 || num >= Number.MAX_VALUE) return 'Infinite' + suffix;
-        return prettyBytesOrNA(num) + suffix;
-    }
-
-    // Ratio
-    if (name.endsWith('.ratio')) {
-        return (num * 100).toLocaleString() + '%';
-    }
-
-    return value;
-}
-
-function filterRedundantSynonyms({ synonyms, ...rest }: TopicConfigEntry): Partial<TopicConfigEntry> {
-    if (synonyms?.length <= 1) {
-        return rest;
-    }
-
-    return { ...rest, synonyms: synonyms.slice(1)}
 }

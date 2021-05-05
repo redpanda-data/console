@@ -1,5 +1,5 @@
 import { observable, autorun } from "mobx";
-import { assignDeep, randomId, simpleUniqueId, uniqueId4 } from "../utils/utils";
+import { assignDeep, randomId } from "../utils/utils";
 import { touch, clone } from "../utils/jsonUtils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
@@ -7,6 +7,7 @@ import { AclRequest, AclRequestDefault } from "./restInterfaces";
 
 const settingsName = 'uiSettings-v3';
 
+export type ValueDisplay = 'friendly' | 'both' | 'raw'
 
 export interface PreviewTag {
     id: string;
@@ -146,7 +147,7 @@ const uiSettings = observable({
         pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
 
         // Topic Configuration
-        valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
+        valueDisplay: 'friendly' as ValueDisplay,
         propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
     },
 

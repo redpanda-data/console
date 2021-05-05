@@ -1,32 +1,11 @@
 import { Component, ReactNode } from "react";
 import React from "react";
-import { Topic, TopicConfigEntry, TopicMessage, Partition, UserDetails, RoleBinding, Subject } from "../../../state/restInterfaces";
-import { Table, Tooltip, Row, Statistic, Tabs, Descriptions, Popover, Skeleton, Radio, Checkbox, Button, Select, Input, Form, Divider, Typography, message, Tag, Drawer, Result, Alert, Empty, ConfigProvider, Collapse } from "antd";
+import { RoleBinding, Subject } from "../../../state/restInterfaces";
+import { Collapse } from "antd";
 import { observer } from "mobx-react";
 import { api, } from "../../../state/backendApi";
-import { uiSettings, PreviewTag } from "../../../state/ui";
-import ReactJson, { CollapsedFieldProps } from 'react-json-view'
-import { PageComponent, PageInitHelper } from "../Page";
-import topicConfigInfo from '../../../assets/topicConfigInfo.json'
-import { sortField, range, makePaginationConfig, Spacer } from "../../misc/common";
-import { motion, AnimatePresence } from "framer-motion";
-import { observable, computed, transaction } from "mobx";
-import { toJson } from "../../../utils/jsonUtils";
-import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
-import Paragraph from "antd/lib/typography/Paragraph";
-import { ColumnProps } from "antd/lib/table";
 import '../../../utils/arrayExtensions';
-import { uiState } from "../../../state/uiState";
-import { FilterableDataSource } from "../../../utils/filterableDataSource";
-import { numberToThousandsString, QuickTable, ObjToKv, DefaultSkeleton } from "../../../utils/tsxUtils";
-import Card from "../../misc/Card";
-import { RoleComponent } from "./Admin.Roles";
-import Icon from '@ant-design/icons';
-
-const { Text } = Typography;
-const { Option } = Select;
-const InputGroup = Input.Group;
-
+import { QuickTable, ObjToKv, DefaultSkeleton } from "../../../utils/tsxUtils";
 @observer
 export class AdminRoleBindings extends Component {
 

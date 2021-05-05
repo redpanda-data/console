@@ -1,5 +1,3 @@
-import SchemaList from "../components/pages/schemas/Schema.List";
-
 export interface ApiError {
     statusCode: number;
     message: string;
@@ -138,7 +136,7 @@ export interface KafkaError {
     description: string
 }
 
-export interface TopicConfigEntry {
+export interface ConfigEntry {
     name: string,
     value: string,
     source: string,
@@ -148,10 +146,10 @@ export interface TopicConfigEntry {
     isSensitive: boolean,
     isReadOnly: boolean,
     documentation: string,
-    synonyms: TopicConfigEntrySynonym[]
+    synonyms: ConfigEntrySynonym[]
 }
 
-interface TopicConfigEntrySynonym {
+interface ConfigEntrySynonym {
     type?: string;
     name: string,
     value: string,
@@ -160,7 +158,7 @@ interface TopicConfigEntrySynonym {
 
 export interface TopicDescription {
     topicName: string
-    configEntries: TopicConfigEntry[]
+    configEntries: ConfigEntry[]
     error: KafkaError | null
 }
 export interface TopicConfigResponse {
