@@ -88,24 +88,30 @@ const VersionInfo = () => {
 
 }
 const SideBar = observer(() =>
-    <Layout style={{ display: 'flex', flex: 1, height: '100vh', flexDirection: 'column', background: 'linear-gradient(180deg, hsla(206, 60%, 17%, 0.95) 0%, #08273ef5 94.27%) no-repeat' }}>
+    <Layout style={{
+        display: 'flex', flex: 1, flexDirection: 'column',
+        height: '100vh',
+        background: 'hsl(217deg, 27%, 20%)'
+    }}>
         <RenderTrap name='SideBarContent' />
 
         {/* Logo */}
         <div style={{ background: 'rgba(0,0,0, 0)', padding: '1px' }}>
-            {/* <div style={{ background: 'none', borderRadius: 4, display: 'flex', placeItems: 'center', placeContent: 'center' }}>
-                <span style={{ fontSize: '1.5em', color: 'white' }}>PLACEHOLDER</span>
-            </div> */}
+
             <div style={{ position: 'relative' }}>
+
+                {/* Logo Image */}
                 <img src={logo2} style={{
                     height: uiSettings.sideBarOpen ? '130px' : '65px',
                     transition: 'all 200ms',
                     width: 'auto', display: 'block', margin: 'auto', cursor: 'pointer',
-                    opacity: 0.5, mixBlendMode: 'overlay',
+                    opacity: 0.8, mixBlendMode: 'overlay',
                     marginTop: uiSettings.sideBarOpen ? '3em' : '.5em'
                 }}
                     onClick={() => { appGlobal.history.push('/'); }}
                 />
+
+                {/* Title Text */}
                 <div style={{
                     position: 'absolute',
                     transition: 'all 200ms',
@@ -120,11 +126,13 @@ const SideBar = observer(() =>
                     transform: 'translateX(4px)',
                     fontSize: '1.8rem',
                     textAlign: 'center',
-                    color: 'hsla(205, 47%, 36%, 1)',
+                    color: 'hsl(217deg, 26%, 38%)',
                 }}>
                     Kowl
                 </div>
-                <div style={{ position: 'relative', borderTop: '1px solid #fff3', margin: '.5em 1em', marginTop: '1em' }} />
+
+                {/* Separator Line */}
+                <div style={{ position: 'relative', borderTop: '1px solid hsla(0deg, 0%, 100%, 0.13)', margin: '.5em 1em', marginTop: '1em' }} />
             </div>
         </div>
 
@@ -135,26 +143,33 @@ const SideBar = observer(() =>
 
         {/* Version */}
         <div className='version'>
-            <div className='repo'><a title="Visit Kowl's GitHub repository" href="https://github.com/cloudhut/kowl">
+            <div className='repoImage'><a title="Visit Kowl's GitHub repository" href="https://github.com/cloudhut/kowl">
                 {/* <img src={gitHubLogo} /> */}
-                <GithubFilled style={{ fontSize: '36px', color: 'hsl(209, 100%, 92%)' }} />
+                <GithubFilled style={{ color: 'hsl(209, 100%, 92%)' }} />
             </a></div>
 
-            <VersionInfo />
+            <div className='versionText'>
+                <VersionInfo />
+            </div>
+
         </div>
 
         {/* Toggle */}
-        <Footer style={{
-            display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            height: '40px', padding: 0, background: 'rgba(0,0,0, 0.25)', cursor: 'pointer'
-        }} onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen }}>
-            {uiSettings.sideBarOpen ? <MenuFoldOutlined style={{ fontSize: '19px', color: '#1f6190' }} /> : <MenuUnfoldOutlined style={{ fontSize: '19px', color: '#1f6190' }} />}
+        <Footer className='sideBarToggle' onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen }}>
+            {uiSettings.sideBarOpen
+                ? <MenuFoldOutlined className='icon' />
+                : <MenuUnfoldOutlined className='icon' />}
         </Footer>
     </Layout>
 )
 
+const sideBarWidthDefault = '230px';
 const AppSide = observer(() => (
-    <Sider collapsible collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth} trigger={null} style={{ background: 'white', cursor: 'default' }}>
+    <Sider collapsible collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth}
+        trigger={null}
+        width={sideBarWidthDefault}
+        style={{ background: 'white', cursor: 'default' }}
+    >
         <SideBar />
     </Sider>
 ))

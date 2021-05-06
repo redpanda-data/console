@@ -405,47 +405,87 @@ td.ant-table-column-sort {
 }
 
 .version {
-    padding-bottom: .5em;
     display: flex;
-    flex-direction: column;
-    text-align: center;
+    flex-direction: row;
+    align-items: flex-end;
+
+    gap: 1em;
+    padding: 0 1.6em;
+    padding-bottom: 6px;
+
+
     font-family: "Open Sans";
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     line-height: normal;
-    opacity: 0.2;
-}
+    opacity: 0.3;
+    color: hsla(205, 60%, 85%, 1);
 
-.version,
-.version span[role=img] {
-    color: hsla(205, 60%, 75%, 1);
     transition: all 0.2s ease-out;
+
+    .repoImage {
+        font-size: 30px;
+    }
+
+    .versionText {
+        align-self: center;
+        white-space: nowrap;
+
+        .versionGitData {
+            font-family: monospace;
+        }
+
+        .versionDate {
+            opacity: 0;
+            font-size: 0px;
+            transition: all 0.2s ease-out 0.1s;
+        }
+    }
+
+
+
+    &:hover {
+        opacity: 0.9;
+
+        .versionDate {
+            opacity: 1;
+            font-size: inherit;
+        }
+    }
 }
 
-.version:hover,
-.version:hover span[role=img] {
-    color: hsla(205, 85%, 66%, 1);
-    opacity: 0.9;
+.ant-layout-sider-collapsed {
+    .version {
+        // place-content: center;
+        padding-left: 25px;
+
+        .versionText {
+            display: none;
+        }
+    }
 }
 
-.version .repo {
-    padding: 4px;
+.sideBarToggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+
+    .icon {
+        font-size: 19px;
+        color: hsl(217deg, 20%, 45%);
+        transition: color 100ms;
+    }
+
+    &:hover .icon {
+        color: hsl(217deg, 38%, 70%);
+    }
 }
 
-.versionGitData {
-    font-family: monospace;
-}
 
-.versionDate {
-    opacity: 0;
-    font-size: 0px;
-    transition: all 0.4s ease-out 0.2s;
-}
-
-.version:hover .versionDate {
-    opacity: 1;
-    font-size: inherit;
-}
 
 .versionTitle {}
 
@@ -619,45 +659,131 @@ td.ant-table-column-sort {
     transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
-.ant-menu-dark .ant-menu-item a {
-    color: hsla(205, 50%, 70%, 60%);
-}
 
-.ant-menu.ant-menu-dark .ant-menu-item-selected,
-.ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected {
-    background-color: hsla(209, 70%, 55%, 0.6);
-}
+ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline,
+ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 
-.ant-menu-item-disabled {
-    cursor: default;
-    user-select: none;
-}
+    width: auto;
 
-.ant-menu-dark .ant-menu-item a::before {
-    @include tlrb;
-    background-color: hsla(0deg, 0%, 0%, 0%);
-    content: '';
-}
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 
-.ant-menu-dark .ant-menu-item-disabled a {
-    color: hsl(205deg, 50%, 70%) !important;
-}
+    font-family: 'Poppins';
 
-.ant-menu-dark .ant-menu-item-disabled {
-    opacity: .5;
-}
+    li.ant-menu-item {
+        display: flex;
 
-.ant-menu.ant-menu-root.ant-menu-inline {
-    li {
+        padding: 0 10px !important; // no clue why antd sets padding-left:24px; as inline style...
+        border-radius: 5px;
+        margin: 0 8px;
+        width: auto;
+        overflow: visible; // allow hit-test element of the nested link to expand beyond the list item
+
+
+        transition:
+            width 2000ms,
+            color 100ms ease-out,
+            background-color 100ms ease;
+
         a {
-            // fix vertical alignment of menu items in sidebar
-            display: flex;
+            display: flex; // fix vertical alignment of menu items in sidebar
+            color: hsl(218deg, 16%, 66%);
+
+            gap: 10px;
+            transition: gap 500ms;
+
+            .anticon {
+                transition: none;
+            }
+
+            .menuIcon {
+                display: inline-flex;
+                width: 24px;
+                margin: 0;
+
+                transition:
+                    margin 200ms ease-out,
+                    margin-left 200ms ease-out;
+            }
+
+            &::before {
+                @include tlrb;
+                left: -20px;
+                right: -20px;
+                // background-color: red;
+                content: '';
+            }
+
+            &>span {
+                color: unset; // remove antd default
+            }
+
+            &:hover {
+                transition: color 0ms;
+                color: hsl(218deg, 16%, 90%);
+            }
+        }
+
+        &-selected {
+            background-color: hsl(220deg, 35%, 13%);
+
+            a,
+            .menuIcon {
+                color: hsl(216deg, 13%, 90%);
+            }
+        }
+
+        &-disabled {
+            cursor: default;
+            user-select: none;
+            opacity: .5;
+
+            a {
+                color: hsl(205deg, 50%, 70%) !important;
+            }
+        }
+
+    }
+
+    // we don't need a clearfix in our menu
+    &::before {
+        display: none;
+    }
+}
+
+ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
+    li.ant-menu-item {
+        // place-content: center;
+
+        a {
+            gap: 0px;
+
+            .menuIcon {
+                margin-left: 10px;
+            }
+
+            &::before {
+                display: none;
+            }
         }
     }
 }
 
+
+
+
 .menu-permission-tooltip {
     user-select: none;
+    box-shadow: 0 0 5px 1px #00000047;
+    min-width: 203px;
+
+    border-radius: 6px;
+
+    .ant-tooltip-content,
+    .ant-tooltip-inner {
+        border-radius: 6px !important;
+    }
 
     .ant-tooltip-arrow {
         display: none;
@@ -1931,15 +2057,6 @@ mark {
 }
 
 
-.ant-menu-dark .ant-menu-item-selected .menuIcon {
-    color: hsl(0deg, 0%, 100%);
-}
-
-.menuIcon {
-    display: inline-flex;
-    width: 20px;
-    margin-right: 10px;
-}
 
 
 

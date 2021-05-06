@@ -19,9 +19,8 @@ import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
 import { IsDev } from "../utils/env";
-import { AdjustmentsIcon, ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, PuzzleIcon, ShieldCheckIcon } from '@heroicons/react/outline'
+import { AdjustmentsIcon, ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, PuzzleIcon, ShieldCheckIcon, BeakerIcon } from '@heroicons/react/outline'
 import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
-import { PackageDependentsIcon } from "@primer/octicons-react";
 import { Feature, FeatureEntry, Features, isSupported } from "../state/supportedFeatures";
 import { UserPermissions } from "../state/restInterfaces";
 
@@ -91,7 +90,7 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
                     trigger={isDisabled ? 'hover' : 'none'}
                     mouseEnterDelay={0.05}
                 >
-                    <div style={{ display: isDisabled ? 'block' : 'contents' }}>
+                    <div style={{ display: isDisabled ? 'block' : 'contents', width: '100%' }}>
                         <Link to={entry.path} style={{ pointerEvents: isEnabled ? 'all' : 'none' }}>
                             {entry.icon}
                             <span>{entry.title}</span>
@@ -169,9 +168,9 @@ enum DisabledReasons {
 
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
     [DisabledReasons.noPermission]:
-        <span>You don't have premissions<br />to view this page</span>,
+        <span>You don't have premissions<br />to view this page.</span>,
     [DisabledReasons.notSupported]:
-        <span>The Kafka Cluster does not<br />support this feature</span>,
+        <span>The Kafka cluster does not<br />support this feature.</span>,
 } as const;
 
 interface MenuItemState {
@@ -258,19 +257,19 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/topics', TopicList, 'Topics', <span className='menuIcon anticon'><CollectionIcon /></span>),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
+    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span className='menuIcon anticon'><CubeTransparentIcon /></span>),
+    MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
+
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span className='menuIcon anticon'><FilterIcon /></span>, undefined,
         routeVisibility(true, [Feature.ConsumerGroups])
     ),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-    MakeRoute<{}>('/acls', AclList, 'ACLs', <span className='menuIcon anticon'><ShieldCheckIcon /></span>, true,
+    MakeRoute<{}>('/acls', AclList, 'Access Control List', <span className='menuIcon anticon'><ShieldCheckIcon /></span>, true,
         routeVisibility(true, [], ['canListAcls'])
     ),
 
-    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span className='menuIcon anticon'><CubeTransparentIcon /></span>),
-    MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
-
-    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className='menuIcon anticon'><AdjustmentsIcon /></span>, false,
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className='menuIcon anticon'><BeakerIcon /></span>, false,
         routeVisibility(true,
             [Feature.GetReassignments, Feature.PatchReassignments],
             ['canPatchConfigs', 'canReassignPartitions']
