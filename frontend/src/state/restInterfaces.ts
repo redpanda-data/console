@@ -265,8 +265,6 @@ export interface EndpointCompatibilityEntry {
     isSupported: boolean;
 }
 
-
-
 export interface ClusterInfo {
     brokers: Broker[];
     controllerId: number;
@@ -277,26 +275,15 @@ export interface ClusterInfoResponse {
     clusterInfo: ClusterInfo;
 }
 
-export interface ClusterConfigResponse {
-    clusterConfig: ClusterConfig;
-}
-
-export interface ClusterConfig {
-    brokerConfigs: BrokerConfig[];
-    requestErrors: {
-        brokerId: number;
-        errorMessage: string;
-    }[];
-}
-
 export type BrokerConfigEntry = ConfigEntry
 export interface BrokerConfigResponse {
     brokerConfigs: BrokerConfigEntry[]
 }
 
-export interface BrokerConfig {
+export interface BrokerConfig  {
     brokerId: number;
     configEntries: BrokerConfigEntry[];
+    error?: unknown;
 }
 
 // Current user

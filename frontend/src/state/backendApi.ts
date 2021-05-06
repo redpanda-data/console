@@ -1,16 +1,16 @@
 /*eslint block-scoped-var: "error"*/
 
-import {BrokerConfigEntry,
+import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
-    ConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, BrokerConfigResponse, BrokerConfig
+    ClusterInfo, TopicMessage, TopicConfigResponse,
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, TopicDocumentationResponse, AclRequest, AclResponse, SchemaOverview,SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, BrokerConfigResponse, BrokerConfig
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
-import { toJson, clone } from "../utils/jsonUtils";
-import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
+import { toJson } from "../utils/jsonUtils";
+import { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";
 import { notification } from "antd";
@@ -188,8 +188,6 @@ const apiStore = {
 
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
-
-    clusterConfig: null as (ClusterConfig | null | undefined),
 
     brokerConfigs: observable([]) as (Array<BrokerConfig>),
 
@@ -533,6 +531,12 @@ const apiStore = {
         cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force).then(v => this.brokerConfigs[brokerId] = {
             brokerId,
             configEntries: v.brokerConfigs
+        }).catch(e => {
+            this.brokerConfigs[brokerId] = {
+                brokerId,
+                configEntries: [],
+                error: e
+            }
         });
     },
 
