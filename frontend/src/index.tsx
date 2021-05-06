@@ -5,7 +5,6 @@ import {
     withRouter,
     RouteComponentProps
 } from "react-router-dom";
-import * as serviceWorker from "./serviceWorker";
 import { configure, when } from "mobx";
 
 import "antd/dist/antd.css";
@@ -47,5 +46,3 @@ ReactDOM.render(
     </BrowserRouter>,
     document.getElementById("root")
 );
-
-serviceWorker.unregister();
