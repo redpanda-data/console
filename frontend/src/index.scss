@@ -746,7 +746,8 @@ tr.tombstone {
 }
 
 .overflowYOverlay {
-    overflow-y: overlay;
+    overflow-y: auto; // set auto by default
+    overflow-y: overlay; // if possible, use 'overlay' (even though its deprecated)
 }
 
 /* tr td:nth-child(1) {
