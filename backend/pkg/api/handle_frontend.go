@@ -49,6 +49,7 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 		// For index.html we always set cache-control and etag
 		w.Header().Set("Cache-Control", "public, max-age=900, must-revalidate") // 900s = 15m
 		w.Header().Set("ETag", hash)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 		// Check if the client sent 'If-None-Match' potentially return "304" (not mofified / unchanged)
 		clientEtag := r.Header.Get("If-None-Match")
@@ -83,6 +84,14 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 			return
 		}
 		defer f.Close()
+
+		// Set correct content-type
+		switch filepath.Ext(r.URL.Path) {
+		case ".css":
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		case ".js":
+			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		}
 
 		// Set Cache-Control and ETag
 		hash, hashFound := fileHashes[r.URL.Path]
