@@ -132,7 +132,7 @@ const SideBar = observer(() =>
                 </div>
 
                 {/* Separator Line */}
-                <div style={{ position: 'relative', borderTop: '1px solid hsla(0deg, 0%, 100%, 0.13)', margin: '.5em 1em', marginTop: '1em' }} />
+                <div style={{ position: 'relative', borderTop: '0px solid hsla(0deg, 0%, 100%, 0.13)', margin: '.5em 1em', marginTop: '1em' }} />
             </div>
         </div>
 
