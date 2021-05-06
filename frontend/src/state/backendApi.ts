@@ -1,9 +1,9 @@
 /*eslint block-scoped-var: "error"*/
 
-import {
+import {BrokerConfigEntry,
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     ConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource, SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, BrokerConfigResponse, BrokerConfig
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -190,6 +190,9 @@ const apiStore = {
     clusterInfo: null as (ClusterInfo | null),
 
     clusterConfig: null as (ClusterConfig | null | undefined),
+
+    brokerConfigs: observable([]) as (Array<BrokerConfig>),
+
     adminInfo: undefined as (AdminInfo | undefined | null),
 
     schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
@@ -526,9 +529,15 @@ const apiStore = {
             }, addError);
     },
 
-    refreshClusterConfig(force?: boolean) {
-        cachedApiRequest<ClusterConfigResponse>(`./api/cluster/config`, force)
-            .then(v => this.clusterConfig = v.clusterConfig, addError);
+    refreshBrokerConfig(brokerId: number, force?: boolean) {
+        cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force).then(v => this.brokerConfigs[brokerId] = {
+            brokerId,
+            configEntries: v.brokerConfigs
+        });
+    },
+
+    refreshBrokerConfigs(force?: boolean) {
+        this.brokerConfigs.forEach(brokerConfig => this.refreshBrokerConfig(brokerConfig.brokerId, force));
     },
 
     refreshConsumerGroups(force?: boolean) {

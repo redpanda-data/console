@@ -110,7 +110,7 @@ class ReassignPartitions extends PageComponent {
 
     refreshData(force: boolean) {
         api.refreshCluster(force); // need to know brokers for reassignment calculation
-        api.refreshClusterConfig(force); // used to display throttle traffic limit
+        api.refreshBrokerConfigs(force); // used to display throttle traffic limit
         api.refreshTopics(force);
         api.refreshPartitions('all', force);
         api.refreshPartitionReassignments(force);
@@ -125,7 +125,6 @@ class ReassignPartitions extends PageComponent {
 
     render() {
         if (!api.clusterInfo) return DefaultSkeleton;
-        if (api.clusterConfig === undefined) return DefaultSkeleton;
         if (!api.topics) return DefaultSkeleton;
         if (api.topicPartitions.size < api.topics.length) return DefaultSkeleton;
         if (api.partitionReassignments === undefined) return DefaultSkeleton;

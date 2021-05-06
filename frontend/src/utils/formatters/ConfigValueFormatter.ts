@@ -19,7 +19,7 @@ export function formatConfigValue(name: string, value: string, formatType: 'frie
     //
     // String
     //
-    if (name == "advertised.listeners" || name == "listener.security.protocol.map" || name == "listeners") {
+    if (name == "advertised.listeners" || name == "listener.security.protocol.map" || name == "listeners" && value) {
         const listeners = value.split(',');
         return listeners.length > 1
             ? "\n" + listeners.join('\n')

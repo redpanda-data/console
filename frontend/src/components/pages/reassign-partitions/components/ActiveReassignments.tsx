@@ -29,7 +29,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
 
     constructor(p: any) {
         super(p);
-        api.refreshClusterConfig(true);
+        api.refreshBrokerConfigs(true);
     }
 
     render() {
@@ -139,10 +139,10 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
     }
 
     @computed get throttleSettings(): ({ followerThrottle: number | undefined, leaderThrottle: number | undefined }) {
-        const leaderThrottle = api.clusterConfig?.brokerConfigs
+        const leaderThrottle = api.brokerConfigs
             .flatMap(c => c.configEntries)
             .first(e => e.name == 'leader.replication.throttled.rate');
-        const followerThrottle = api.clusterConfig?.brokerConfigs
+        const followerThrottle = api.brokerConfigs
             .flatMap(c => c.configEntries)
             .first(e => e.name == 'follower.replication.throttled.rate');
 
@@ -245,7 +245,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
             setImmediate(() => {
                 // need to update actual value after changing
-                api.refreshClusterConfig(true);
+                api.refreshBrokerConfigs(true);
             });
 
             msg.setSuccess("Setting throttle rate... done");

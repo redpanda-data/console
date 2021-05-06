@@ -289,19 +289,15 @@ export interface ClusterConfig {
     }[];
 }
 
+export type BrokerConfigEntry = ConfigEntry
+export interface BrokerConfigResponse {
+    brokerConfigs: BrokerConfigEntry[]
+}
+
 export interface BrokerConfig {
     brokerId: number;
     configEntries: BrokerConfigEntry[];
 }
-
-export interface BrokerConfigEntry {
-    name: string;
-    value: string;
-    isDefault: boolean;
-}
-
-
-
 
 // Current user
 export interface User {
