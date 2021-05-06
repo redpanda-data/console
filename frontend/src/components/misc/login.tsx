@@ -63,7 +63,7 @@ class Login extends Component {
     render() {
         let ar = this.providersResponse ? this.providersResponse.providers : null;
         if (ar)
-            ar = ar.sort((a, b) => a.displayName.localeCompare(b.displayName));
+            ar = ar.slice().sort((a, b) => a.displayName.localeCompare(b.displayName));
 
         return <div className='login'>
 
