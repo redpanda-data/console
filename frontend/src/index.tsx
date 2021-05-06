@@ -6,14 +6,14 @@ import {
     RouteComponentProps
 } from "react-router-dom";
 import * as serviceWorker from "./serviceWorker";
-import { configure } from "mobx";
+import { configure, when } from "mobx";
 
 import "antd/dist/antd.css";
 import "./index.scss";
 
 import App from "./components/App";
 import { appGlobal } from "./state/appGlobal";
-import { basePathS } from "./utils/env";
+import { basePathS, IsBusiness } from "./utils/env";
 import { api } from "./state/backendApi";
 
 const HistorySetter = withRouter((p: RouteComponentProps) => {
@@ -21,16 +21,24 @@ const HistorySetter = withRouter((p: RouteComponentProps) => {
     return <></>;
 });
 
-
+// Configure MobX
 configure({
     enforceActions: 'never',
     safeDescriptors: true,
-})
+});
 
-// > A properly formatted basename should have a leading slash, but no trailing slash.
-// https://reactrouter.com/web/api/BrowserRouter
-
-api.refreshSupportedEndpoints(true);
+// Get supported endpoints / kafka cluster version
+// In the business version, that endpoint (like any other api endpoint) is
+// protected, so we need to delay the call until the user is logged in.
+if (!IsBusiness) {
+    api.refreshSupportedEndpoints(true);
+} else {
+    when(() => Boolean(api.userData), () => {
+        setImmediate(() => {
+            api.refreshSupportedEndpoints(true);
+        });
+    });
+}
 
 ReactDOM.render(
     <BrowserRouter basename={basePathS}>
