@@ -88,7 +88,7 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 		// Set correct content-type
 		switch filepath.Ext(r.URL.Path) {
 		case ".css":
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		case ".js":
 			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		}
