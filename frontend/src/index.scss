@@ -683,7 +683,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 
         transition:
             width 2000ms,
-            color 100ms ease-out,
+            color 0ms ease-out,
             background-color 100ms ease;
 
         a {
@@ -691,9 +691,11 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             color: hsl(218deg, 16%, 66%);
 
             gap: 10px;
-            transition: gap 500ms;
+            transition:
+                gap 500ms,
+                color 50ms ease-out;
 
-            .anticon {
+            .anticon+span {
                 transition: none;
             }
 
@@ -720,7 +722,6 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             }
 
             &:hover {
-                transition: color 0ms;
                 color: hsl(218deg, 16%, 90%);
             }
         }

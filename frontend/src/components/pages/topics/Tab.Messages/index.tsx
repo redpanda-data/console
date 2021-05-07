@@ -85,7 +85,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
         // unpack query parameters (if any)
         const searchParams = uiState.topicSettings.searchParams;
         const query = queryString.parse(window.location.search);
-        console.debug("parsing query: " + toJson(query));
+        // console.debug("parsing query: " + toJson(query));
         if (query.p != null) searchParams.partitionID = Number(query.p);
         if (query.s != null) searchParams.maxResults = Number(query.s);
         if (query.o != null) {
