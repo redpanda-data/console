@@ -25,7 +25,7 @@ type BrokerConfigEntry struct {
 	IsDefaultValue  bool                  `json:"isDefaultValue"`
 	IsReadOnly      bool                  `json:"isReadOnly"`
 	IsSensitive     bool                  `json:"isSensitive"`
-	Documentation   *string               `json:"documentation"` // Will be nil for Kafka <v2.6.0
+	Documentation   *string               `json:"-"` // Will be nil for Kafka <v2.6.0
 	Synonyms        []BrokerConfigSynonym `json:"synonyms"`
 }
 
