@@ -667,7 +667,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 
     font-family: 'Poppins', sans-serif;
 
@@ -679,6 +679,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
         margin: 0 8px;
         width: auto;
         overflow: visible; // allow hit-test element of the nested link to expand beyond the list item
+        font-size: 13px;
 
 
         transition:
@@ -701,7 +702,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 
             .menuIcon {
                 display: inline-flex;
-                width: 24px;
+                width: 22px;
                 margin: 0;
 
                 transition:
