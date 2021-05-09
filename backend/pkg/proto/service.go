@@ -131,14 +131,31 @@ func (s *Service) Start() error {
 	return nil
 }
 
-func (s *Service) UnmarshalPayload(p []byte, topicName string, property RecordPropertyType) ([]byte, error) {
-	messageDescriptor, payload, err := s.getMessageDescriptor(p, topicName, property)
+func (s *Service) unmarshalConfluentMessage(payload []byte, topicName string) ([]byte, int, error) {
+	// 1. If schema registry for protobuf is enabled, let's check if this message has been serialized utilizing
+	// Confluent's KafakProtobuf serialization format.
+	wrapper, err := s.decodeConfluentBinaryWrapper(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get message descriptor for payload: %w", err)
+		return nil, 0, fmt.Errorf("failed to decode confluent wrapper from payload: %w", err)
+	}
+	schemaID := int(wrapper.SchemaID)
+
+	md, cleanPayload, err := s.getMessageDescriptorFromConfluentMessage(wrapper, topicName)
+	if err != nil {
+		return nil, schemaID, err
 	}
 
-	msg := dynamic.NewMessage(messageDescriptor)
-	err = msg.Unmarshal(payload)
+	jsonBytes, err := s.deserializeProtobufMessageToJSON(cleanPayload, md)
+	if err != nil {
+		return nil, schemaID, err
+	}
+
+	return jsonBytes, schemaID, nil
+}
+
+func (s *Service) deserializeProtobufMessageToJSON(payload []byte, md *desc.MessageDescriptor) ([]byte, error) {
+	msg := dynamic.NewMessage(md)
+	err := msg.Unmarshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
 	}
@@ -151,16 +168,34 @@ func (s *Service) UnmarshalPayload(p []byte, topicName string, property RecordPr
 	return jsonBytes, nil
 }
 
+func (s *Service) UnmarshalPayload(payload []byte, topicName string, property RecordPropertyType) ([]byte, int, error) {
+	// 1. First let's try if we can deserialize this message with schema registry (if configured)
+	if s.cfg.SchemaRegistry.Enabled {
+		jsonBytes, schemaID, err := s.unmarshalConfluentMessage(payload, topicName)
+		if err == nil {
+			return jsonBytes, schemaID, err
+		}
+	}
+
+	// 2. Now let's check if we have static mappings
+	messageDescriptor, err := s.getMessageDescriptor(topicName, property)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get message descriptor for payload: %w", err)
+	}
+
+	jsonBytes, err := s.deserializeProtobufMessageToJSON(payload, messageDescriptor)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return jsonBytes, 0, nil
+}
+
 // getMessageDescriptorFromConfluentMessage try to find the right message descriptor of a message that has been serialized
 // according to Confluent's ProtobufSerializer. If successful it will return the found message descriptor along with
 // the protobuf payload (without the bytes that carry the metadata such as schema id), so that this can be used
 // for deserializing the content.
-func (s *Service) getMessageDescriptorFromConfluentMessage(payload []byte, topicName string) (*desc.MessageDescriptor, []byte, error) {
-	wrapper, err := s.decodeConfluentBinaryWrapper(payload)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to decode confluent wrapper from payload: %w", err)
-	}
-
+func (s *Service) getMessageDescriptorFromConfluentMessage(wrapper *confluentEnvelope, topicName string) (*desc.MessageDescriptor, []byte, error) {
 	fd, exists := s.getFileDescriptorBySchemaID(int(wrapper.SchemaID))
 	if !exists {
 		return nil, nil, fmt.Errorf("could not find a file descriptor that matches the decoded schema id '%v'", wrapper.SchemaID)
@@ -187,31 +222,22 @@ func (s *Service) getMessageDescriptorFromConfluentMessage(payload []byte, topic
 }
 
 // getMessageDescriptor tries to find the apr
-func (s *Service) getMessageDescriptor(payload []byte, topicName string, property RecordPropertyType) (*desc.MessageDescriptor, []byte, error) {
-	// 1. If schema registry for protobuf is enabled, let's check if this message has been serialized utilizing
-	// Confluent's KafakProtobuf serialization format.
-	if s.cfg.SchemaRegistry.Enabled {
-		md, p, err := s.getMessageDescriptorFromConfluentMessage(payload, topicName)
-		if err == nil {
-			return md, p, nil
-		}
-	}
-
-	// 2. Otherwise check if the user has configured a mapping to a local proto type for this topic and record type
+func (s *Service) getMessageDescriptor(topicName string, property RecordPropertyType) (*desc.MessageDescriptor, error) {
+	// 1. Otherwise check if the user has configured a mapping to a local proto type for this topic and record type
 	mapping, exists := s.mappingsByTopic[topicName]
 	if !exists {
-		return nil, payload, fmt.Errorf("no prototype found for the given topic. Check your configured protobuf mappings")
+		return nil, fmt.Errorf("no prototype found for the given topic. Check your configured protobuf mappings")
 	}
 
 	protoTypeUrl := ""
 	if property == RecordKey {
 		if mapping.KeyProtoType == "" {
-			return nil, payload, fmt.Errorf("no prototype mapping found for the record key of topic '%v'", topicName)
+			return nil, fmt.Errorf("no prototype mapping found for the record key of topic '%v'", topicName)
 		}
 		protoTypeUrl = mapping.KeyProtoType
 	} else {
 		if mapping.ValueProtoType == "" {
-			return nil, payload, fmt.Errorf("no prototype mapping found for the record value of topic '%v'", topicName)
+			return nil, fmt.Errorf("no prototype mapping found for the record value of topic '%v'", topicName)
 		}
 		protoTypeUrl = mapping.ValueProtoType
 	}
@@ -220,15 +246,15 @@ func (s *Service) getMessageDescriptor(payload []byte, topicName string, propert
 	defer s.registryMutex.RUnlock()
 	messageDescriptor, err := s.registry.FindMessageTypeByUrl(protoTypeUrl)
 	if err != nil {
-		return nil, payload, fmt.Errorf("failed to find the proto type in the proto registry: %w", err)
+		return nil, fmt.Errorf("failed to find the proto type in the proto registry: %w", err)
 	}
 	if messageDescriptor == nil {
 		// If this happens the user should already know that because we check the existence of all mapped types
 		// when we create the proto registry. A log message is printed if a mapping can't be find in the registry.
-		return nil, payload, fmt.Errorf("failed to find the proto type in the proto registry: message descriptor is nil")
+		return nil, fmt.Errorf("failed to find the proto type in the proto registry: message descriptor is nil")
 	}
 
-	return messageDescriptor, payload, nil
+	return messageDescriptor, nil
 }
 
 type confluentEnvelope struct {
@@ -327,9 +353,6 @@ func (s *Service) createProtoRegistry() error {
 			s.logger.Error("failed to get proto descriptors from schema registry", zap.Error(err))
 		}
 		s.setFileDescriptorsBySchemaID(descriptors)
-		for _, descriptor := range descriptors {
-			fileDescriptors = append(fileDescriptors, descriptor)
-		}
 		s.logger.Info("fetched proto schemas from schema registry", zap.Int("fetched_subjects", len(descriptors)))
 	}
 

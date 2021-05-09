@@ -8,7 +8,7 @@ import { makePaginationConfig, range, sortField } from "../../misc/common";
 import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig, AlterPartitionReassignmentsPartitionResponse } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
-import { observable, computed, autorun, IReactionDisposer, transaction, untracked } from "mobx";
+import { observable, computed, autorun, IReactionDisposer, transaction, untracked, makeObservable } from "mobx";
 import { clone, toJson } from "../../../utils/jsonUtils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
@@ -27,7 +27,9 @@ import { IsDev } from "../../../utils/env";
 import { Message, scrollTo, scrollToTop } from "../../../utils/utils";
 import { ActiveReassignments } from "./components/ActiveReassignments";
 import { ReassignmentTracker } from "./logic/reassignmentTracker";
-import { ErrorModal } from "../../misc/ErrorModal";
+import { showErrorModal } from "../../misc/ErrorModal";
+
+
 const { Step } = Steps;
 
 export interface PartitionSelection { // Which partitions are selected?
@@ -66,14 +68,13 @@ class ReassignPartitions extends PageComponent {
 
     @observable requestInProgress = false;
 
-    @observable reassignError: {
-        modalTitle: () => JSX.Element,
-        errorTitle: () => JSX.Element,
-        content: () => JSX.Element,
-    } | null = null;
-
     autoScrollReactionDisposer: IReactionDisposer | null = null;
 
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Reassign Partitions';
@@ -221,13 +222,6 @@ class ReassignPartitions extends PageComponent {
                     </div>
                 </Card>
 
-                {this.reassignError != null ? <ErrorModal
-                    modalTitle={this.reassignError.modalTitle()}
-                    errorTitle={this.reassignError.errorTitle()}
-                    content={this.reassignError.content()}
-                    onClose={() => this.reassignError = null}
-                /> : null}
-
             </motion.div>
         </>
     }
@@ -241,7 +235,7 @@ class ReassignPartitions extends PageComponent {
         if (this.currentStep == 1) {
             // Assign -> Review
             const topicPartitions: TopicPartitions[] = this.selectedTopicPartitions;
-            const targetBrokers = this.selectedBrokerIds.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)!);
+            const targetBrokers = this.selectedBrokerIds.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)).filterFalsy();
             if (targetBrokers.any(b => b == null))
                 throw new Error('one or more broker ids could not be mapped to broker entries');
 
@@ -298,7 +292,7 @@ class ReassignPartitions extends PageComponent {
                 }
                 catch (err) {
                     message.error('Error starting partition reassignment.\nSee console for more information.', 3);
-                    console.log("error starting partition reassignment", { error: err });
+                    console.error("error starting partition reassignment", { error: err });
                 }
                 finally {
                     this.requestInProgress = false;
@@ -468,10 +462,11 @@ class ReassignPartitions extends PageComponent {
         topicName: string;
         partitions: AlterPartitionReassignmentsPartitionResponse[];
     }[]) {
-        this.reassignError = {
-            modalTitle: () => <>Reassign Partitions</>,
-            errorTitle: () => <>Some partitions couldn't be reassigned</>,
-            content: () => <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+
+        showErrorModal(
+            "Reassign Partitions",
+            `Reassignment request returned errors for ${errors.sum(e => e.partitions.length)} / ${startedCount} partitions.`,
+            <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {errors.map((r, i) => <div key={i}>
                     <div>
                         <h4>Topic: "{r.topicName}"</h4>
@@ -485,7 +480,7 @@ class ReassignPartitions extends PageComponent {
                     </div>
                 </div>)}
             </div>
-        };
+        );
     }
 
     startRefreshingTopicConfigs() {
@@ -513,7 +508,7 @@ class ReassignPartitions extends PageComponent {
             // Only get the names of the topics that have throttles applied
             const newThrottledTopics = topicConfigs.topicDescriptions
                 .filter(t => t.configEntries.any(x => Boolean(x.value)))
-                .map(t => t.topicName).sort();;
+                .map(t => t.topicName).sort();
 
             // Filter topics that are still being reassigned
             const inProgress = this.topicPartitionsInProgress;

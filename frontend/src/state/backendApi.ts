@@ -3,7 +3,12 @@
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     ClusterInfo, TopicMessage, TopicConfigResponse,
-    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions, TopicDocumentationResponse, AclRequest, AclResponse, SchemaOverview,SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails, TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments, PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse, PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, BrokerConfigResponse, BrokerConfig
+    ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions,
+    TopicDocumentationResponse, AclRequest, AclResponse, AclResource,
+    SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
+    TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
+    PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
+    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, GetTopicOffsetsByTimestampRequestTopic, TopicOffset, GetTopicOffsetsByTimestampResponse, GetTopicOffsetsByTimestampRequest, BrokerConfig, BrokerConfigResponse
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -15,6 +20,7 @@ import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";
 import { notification } from "antd";
 import { ObjToKv } from "../utils/tsxUtils";
+import { Features } from "./supportedFeatures";
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -112,24 +118,19 @@ class CacheEntry {
     setPromise<T>(promise: Promise<T>) {
         this.timeSinceRequestStarted.reset();
 
-        const self = this;
         this.isPending = true;
         this.promise = promise;
 
-        promise.then(
-            function onFulfilled(result: T) {
-                self.timeSinceLastResult.reset();
-                self.lastResult = result;
-            },
-            function onRejected(reason: any) {
-            }
-        ).finally(() => {
-            self.lastRequestTime = self.timeSinceRequestStarted.value;
+        promise.then(result => {
+            this.timeSinceLastResult.reset();
+            this.lastResult = result;
+        }).finally(() => {
+            this.lastRequestTime = this.timeSinceRequestStarted.value;
             const index = api.activeRequests.indexOf(this);
             if (index > -1) {
                 api.activeRequests.splice(index, 1);
             }
-            self.isPending = false;
+            this.isPending = false;
         });
 
         api.activeRequests.push(this);
@@ -206,7 +207,7 @@ const apiStore = {
 
     ACLs: undefined as AclResponse | undefined | null,
 
-    consumerGroups: null as (GroupDescription[] | null),
+    consumerGroups: new Map<string, GroupDescription>(),
 
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
@@ -303,7 +304,7 @@ const apiStore = {
                     break;
 
                 case 'message':
-                    let m = msg.message as TopicMessage;
+                    const m = msg.message as TopicMessage;
 
                     const keyData = m.key.payload;
                     if (keyData != null && keyData != undefined && keyData != "" && m.key.encoding == 'binary') {
@@ -380,6 +381,35 @@ const apiStore = {
         const promise = cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
             .then(v => this.topicConfig.set(topicName, addSynonymTypes(v) ?? null), addError); // 403 -> null
         return promise as Promise<void>;
+    },
+
+    async getTopicOffsetsByTimestamp(topicNames: string[], timestampUnixMs: number): Promise<TopicOffset[]> {
+        const query = `topicNames=${encodeURIComponent(topicNames.join(','))}&timestamp=${timestampUnixMs}`;
+        const response = await fetch('./api/topics-offsets?' + query, {
+            method: 'GET',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as GetTopicOffsetsByTimestampResponse);
+        return data.topicOffsets;
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
@@ -544,15 +574,103 @@ const apiStore = {
         this.brokerConfigs.forEach(brokerConfig => this.refreshBrokerConfig(brokerConfig.brokerId, force));
     },
 
+
+    refreshConsumerGroup(groupId: string, force?: boolean) {
+        cachedApiRequest<GetConsumerGroupResponse>(`./api/consumer-groups/${groupId}`, force)
+            .then(v => {
+                addFrontendFieldsForConsumerGroup(v.consumerGroup);
+                this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup);
+            }, addError);
+    },
+
     refreshConsumerGroups(force?: boolean) {
         cachedApiRequest<GetConsumerGroupsResponse>('./api/consumer-groups', force)
             .then(v => {
-                for (const g of v.consumerGroups) {
-                    g.lagSum = g.lag.topicLags.sum(t => t.summedLag);
-                }
-                this.consumerGroups = v.consumerGroups;
+                for (const g of v.consumerGroups)
+                    addFrontendFieldsForConsumerGroup(g);
+
+                transaction(() => {
+                    this.consumerGroups.clear();
+                    for (const g of v.consumerGroups)
+                        this.consumerGroups.set(g.groupId, g);
+                });
             }, addError);
     },
+
+    async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]):
+        Promise<EditConsumerGroupOffsetsResponseTopic[]> {
+        const request: EditConsumerGroupOffsetsRequest = {
+            groupId: groupId,
+            topics: topics
+        };
+
+        const response = await fetch('./api/consumer-groups/' + encodeURIComponent(groupId), {
+            method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            try {
+                const errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as EditConsumerGroupOffsetsResponse);
+        if (data.error) throw data.error;
+        return data.topics;
+    },
+
+    async deleteConsumerGroupOffsets(groupId: string, topics: DeleteConsumerGroupOffsetsTopic[]):
+        Promise<DeleteConsumerGroupOffsetsResponseTopic[]> {
+        const request: DeleteConsumerGroupOffsetsRequest = {
+            groupId: groupId,
+            topics: topics
+        };
+
+        const response = await fetch('./api/consumer-groups/' + encodeURIComponent(groupId), {
+            method: 'DELETE',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            let errObj;
+            try {
+                errObj = JSON.parse(text) as ApiError;
+                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+                    // if the shape matches, reformat it a bit
+                    errObj = new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+                }
+            }
+            catch { } // not json
+
+            if (errObj) throw errObj;
+
+            // use generic error text
+            throw new Error(`${text} (${response.status} - ${response.statusText})`);
+        }
+
+        const str = await response.text();
+        const data = (JSON.parse(str) as DeleteConsumerGroupOffsetsResponse);
+        return data.topics;
+    },
+
 
     refreshAdminInfo(force?: boolean) {
         cachedApiRequest<AdminInfo | null>(`./api/admin`, force)
@@ -765,6 +883,18 @@ const apiStore = {
     }
 }
 
+function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
+    g.lagSum = g.topicOffsets.sum(o => o.summedLag);
+
+    if (g.allowedActions) {
+        g.noEditPerms = !g.allowedActions?.includes('editConsumerGroup');
+        g.noDeletePerms = !g.allowedActions?.includes('deleteConsumerGroup');
+    }
+    g.isInUse = g.state.toLowerCase() != 'empty';
+
+    if (!Features.deleteGroup || !Features.patchGroup)
+        g.noEditSupport = true;
+}
 
 export const brokerMap = computed(() => {
     const brokers = api.clusterInfo?.brokers;
@@ -850,66 +980,3 @@ autorun(r => {
     touch(api)
 }, { delay: 50, name: 'api observer' });
 */
-
-
-function debugModifyHeaders(m: TopicMessage) {
-    m.headers.splice(0);
-    m.headers.push({ key: 'DEBUG TEST LONG NAME HERE', value: { encoding: 'text', payload: { a: 1, b: 2, c: { x: 'asdas', y: '4545' } }, size: 92385469213587923958, avroSchemaId: 0 } })
-    m.headers.push({
-        key: 'long object', value: {
-            encoding: 'text', payload: {
-                a: {
-                    b: {
-                        c: {
-                            d: {
-                                text: `
-                        // DeserializePayload tries to deserialize a given byte array.
-                        // The payload's byte array may represent
-                        //  - an encoded message such as JSON, Avro or XML
-                        //  - UTF-8 Text
-                        //  - Binary content
-                        // Idea: Add encoding hint where user can suggest the backend to test this encoding first.
-                        func (d *deserializer) DeserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
-                            if len(payload) == 0 {
-                                return &deserializedPayload{Payload: normalizedPayload{
-                                    Payload:            payload,
-                                    RecognizedEncoding: messageEncodingNone,
-                                }, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(payload)}
-                            }
-                        `
-                            }
-                        }
-                    }
-                }
-            }, size: -1, avroSchemaId: 0
-        }
-    });
-    m.headers.push({
-        key: 'long text', value: {
-            encoding: 'text', payload: `
-                    // DeserializePayload tries to deserialize a given byte array.
-                    // The payload's byte array may represent
-                    //  - an encoded message such as JSON, Avro or XML
-                    //  - UTF-8 Text
-                    //  - Binary content
-                    // Idea: Add encoding hint where user can suggest the backend to test this encoding first.
-                    func (d *deserializer) DeserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
-                        if len(payload) == 0 {
-                            return &deserializedPayload{Payload: normalizedPayload{
-                                Payload:            payload,
-                                RecognizedEncoding: messageEncodingNone,
-                            }, Object: "", RecognizedEncoding: messageEncodingNone, Size: len(payload)}
-                        }
-                    `, size: Infinity, avroSchemaId: 0
-        }
-    });
-    m.headers.push({ key: '>null', value: { encoding: 'text', payload: null, size: Infinity, avroSchemaId: 0 } });
-    m.headers.push({ key: '>undefined', value: { encoding: 'text', payload: undefined, size: Infinity, avroSchemaId: 0 } });
-    m.headers.push({ key: '>NaN', value: { encoding: 'text', payload: NaN, size: Infinity, avroSchemaId: 0 } });
-    m.headers.push({ key: '>0', value: { encoding: 'text', payload: 0, size: Infinity, avroSchemaId: 0 } });
-    m.headers.push({ key: '>missing', value: { encoding: 'text', size: Infinity, avroSchemaId: 0 } as any });
-    m.headers.push({ key: '>{}', value: { encoding: 'text', payload: {}, size: 0, avroSchemaId: 0 } });
-    m.headers.push({ key: '>5', value: { encoding: 'text', payload: 5, size: NaN, avroSchemaId: 0 } });
-    m.headers.push({ key: '>object', value: { encoding: 'text', payload: { a: {} }, size: -1, avroSchemaId: 0 } });
-
-}

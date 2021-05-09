@@ -10,7 +10,7 @@ import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProp
 import '../../../utils/arrayExtensions';
 import { RoleComponent } from "./Admin.Roles";
 import { UserOutlined } from "@ant-design/icons";
-import { observable } from "mobx";
+import { makeObservable, observable } from "mobx";
 import { DefaultSkeleton } from "../../../utils/tsxUtils";
 
 const { Text } = Typography;
@@ -21,6 +21,12 @@ const InputGroup = Input.Group;
 export class AdminUsers extends Component<{}> {
 
     @observable quickSearch = '';
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
 
     render() {
         if (!api.adminInfo) return DefaultSkeleton;

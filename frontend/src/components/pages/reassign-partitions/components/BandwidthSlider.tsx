@@ -27,16 +27,16 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
                 3: "1kB", 6: "1MB", 9: "1GB", 12: "1TB",
             }}
             included={true}
-            tipFormatter={f => f < 3
-                ? 'No change'
-                : f > 12
-                    ? 'Unlimited'
-                    : prettyBytesOrNA(value) + '/s'}
+            tipFormatter={f => {
+                if (f == null) return null;
+                if (f < 3) return 'No change';
+                if (f > 12) return 'Unlimited';
+                const v = Math.round(Math.pow(10, f.clamp(3, 12)));
+                return prettyBytesOrNA(v) + '/s';
+            }}
 
             value={Math.log10(value)}
-            onChange={sv => {
-                let n = Number(sv.valueOf());
-
+            onChange={(n: number) => {
                 switch (true) {
                     case n < 2.5:
                         this.value = null; return;

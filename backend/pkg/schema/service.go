@@ -43,8 +43,8 @@ func (s *Service) CheckConnectivity() error {
 	return s.registryClient.CheckConnectivity()
 }
 
-// GetProtoDescriptors returns all file descriptors in a map where the key is the schema id. This is a rather complex
-// function, mostly because we have to do several things so that we can parse the schemas with the protoparser.
+// GetProtoDescriptors returns all file descriptors in a map where the key is the schema id.
+// The value is a set of file descriptors because each schema may references / imported proto schemas.
 func (s *Service) GetProtoDescriptors() (map[int]*desc.FileDescriptor, error) {
 	// Singleflight makes sure to not run the function body if there are concurrent requests. We use this to avoid
 	// duplicate requests against the schema registry
@@ -57,94 +57,39 @@ func (s *Service) GetProtoDescriptors() (map[int]*desc.FileDescriptor, error) {
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}
 
-		// 1. Index all returned schemas by their respective subject name as stored in the schema registry
-		schemasBySubject := make(map[string]SchemaVersionedResponse)
+		// 1. Index all returned schemas by their respective subject name and version as stored in the schema registry
+		schemasBySubjectAndVersion := make(map[string]map[int]SchemaVersionedResponse)
 		for _, schema := range schemasRes {
 			if schema.Type != "PROTOBUF" {
 				continue
 			}
-			schemasBySubject[schema.Subject] = schema
-		}
-
-		// 2. Because the subject name may be different than the import name as used in the proto schemas, we want
-		// to index all referenced schemas by their referenced name (e.g. /orders/address.proto instead of subject name)
-		referenceNameBySubject := make(map[string]string)
-		for _, schema := range schemasRes {
-			// If any of the existing schemas is used as reference we want to make sure that we only register it
-			// under that path so that it is loaded and parsed only once by the protoparser. We have to register it
-			// under the reference name (e.g. "customer.proto") rather than the subject name because only this way
-			// the import in proto schemas can be resolved.
-			for _, ref := range schema.References {
-				sc, exists := schemasBySubject[ref.Subject]
-				if !exists {
-					return nil, fmt.Errorf("the reference schema with subject '%v' does not exist in the registry", ref.Subject)
-				}
-				referenceNameBySubject[sc.Subject] = ref.Name
-			}
-		}
-
-		// 3. We want to construct a map of filename (key) -> proto schema (value) so that we can pass this to the proto
-		// parser. Because registering the same proto types twice causes errors, we have to make sure that referenced
-		// schemas do only appear once in this schema. Thus, all schemas that are referenced at least once by another
-		// schema, will only be registered under their reference name (e.g. "utils/city.proto" and not the subject name)
-		schemasByPath := make(map[string]string)
-		schemaIDByPath := make(map[string]int)
-		for _, schema := range schemasRes {
-			if schema.Type != "PROTOBUF" {
-				continue
-			}
-
-			if val, exists := referenceNameBySubject[schema.Subject]; exists {
-				schemasByPath[val] = schema.Schema
-				schemaIDByPath[val] = schema.SchemaID
-				continue
-			}
-			schemasByPath[schema.Subject] = schema.Schema
-			schemaIDByPath[schema.Subject] = schema.SchemaID
-		}
-
-		// 4. Parse files that are currently stored in our in-memory map (rather than files on the file system which
-		// would be more common) to file descriptors.
-		filePaths := make([]string, 0)
-		for path := range schemasByPath {
-			filePaths = append(filePaths, path)
-		}
-
-		errorReporter := func(err protoparse.ErrorWithPos) error {
-			position := err.GetPosition()
-			s.logger.Warn("failed to parse proto schema to descriptor",
-				zap.String("file", position.Filename),
-				zap.Int("line", position.Line),
-				zap.Error(err))
-			return nil
-		}
-
-		parser := protoparse.Parser{
-			Accessor:              protoparse.FileContentsFromMap(schemasByPath),
-			InferImportPaths:      true,
-			ValidateUnlinkedFiles: true,
-			IncludeSourceCodeInfo: true,
-			ErrorReporter:         errorReporter,
-		}
-		descriptors, err := parser.ParseFiles(filePaths...)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse proto files to descriptors: %w", err)
-		}
-
-		// 5. We want to return a map where the key is the schema id and the value is the file descriptor. This is
-		// necessary because this file descriptor may contain several message types. If a type other than the first
-		// root level message type is used, the serialized message contains an index that navigates us to the right
-		// message type. Thus the file descriptor for each schema id is required in the deserializer.
-		response := make(map[int]*desc.FileDescriptor)
-		for _, descriptor := range descriptors {
-			schemaID, exists := schemaIDByPath[descriptor.GetName()]
+			_, exists := schemasBySubjectAndVersion[schema.Subject]
 			if !exists {
-				return nil, fmt.Errorf("failed to map the given path to a schema id")
+				schemasBySubjectAndVersion[schema.Subject] = make(map[int]SchemaVersionedResponse)
 			}
-			response[schemaID] = descriptor
+			schemasBySubjectAndVersion[schema.Subject][schema.Version] = schema
 		}
 
-		return response, nil
+		// 2. Compile each subject with each of it's references into one or more filedescriptors so that they can be
+		// registered in their own proto registry.
+		fdBySchemaID := make(map[int]*desc.FileDescriptor)
+		for _, schema := range schemasRes {
+			if schema.Type != "PROTOBUF" {
+				continue
+			}
+
+			fd, err := s.compileProtoSchemas(schema, schemasBySubjectAndVersion)
+			if err != nil {
+				s.logger.Warn("failed to compile proto schema",
+					zap.String("subject", schema.Subject),
+					zap.Int("schema_id", schema.SchemaID),
+					zap.Error(err))
+				continue
+			}
+			fdBySchemaID[schema.SchemaID] = fd
+		}
+
+		return fdBySchemaID, nil
 	})
 	if err != nil {
 		return nil, err
@@ -153,6 +98,47 @@ func (s *Service) GetProtoDescriptors() (map[int]*desc.FileDescriptor, error) {
 	descriptors := v.(map[int]*desc.FileDescriptor)
 
 	return descriptors, nil
+}
+
+func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepository map[string]map[int]SchemaVersionedResponse) (*desc.FileDescriptor, error) {
+	// 1. Let's find the references for each schema and put the references' schemas into our in memory filesystem.
+	schemasByPath := make(map[string]string)
+	schemasByPath[schema.Subject] = schema.Schema
+	for _, ref := range schema.References {
+		refSubject, exists := schemaRepository[ref.Subject]
+		if !exists {
+			return nil, fmt.Errorf("failed to resolve reference. Reference with subject '%' does not exist", ref.Subject)
+		}
+		refSchema, exists := refSubject[ref.Version]
+		if !exists {
+			return nil, fmt.Errorf("failed to resolve reference. Reference with subject '%', version '%d' does not exist", ref.Subject, ref.Version)
+		}
+		// The reference name is the name that has been used for the import in the proto schema (e.g. 'customer.proto')
+		schemasByPath[ref.Name] = refSchema.Schema
+	}
+
+	// 2. Parse schema to descriptor file
+	errorReporter := func(err protoparse.ErrorWithPos) error {
+		position := err.GetPosition()
+		s.logger.Warn("failed to parse proto schema to descriptor",
+			zap.String("file", position.Filename),
+			zap.Int("line", position.Line),
+			zap.Error(err))
+		return nil
+	}
+
+	parser := protoparse.Parser{
+		Accessor:              protoparse.FileContentsFromMap(schemasByPath),
+		InferImportPaths:      true,
+		ValidateUnlinkedFiles: true,
+		IncludeSourceCodeInfo: true,
+		ErrorReporter:         errorReporter,
+	}
+	descriptors, err := parser.ParseFiles(schema.Subject)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse proto files to descriptors: %w", err)
+	}
+	return descriptors[0], nil
 }
 
 func (s *Service) GetAvroSchemaByID(schemaID uint32) (*goavro.Codec, error) {

@@ -12,9 +12,10 @@ import { DefaultSkeleton, findPopupContainer, OptionGroup } from '../../../utils
 import { api } from '../../../state/backendApi';
 import { toJson } from '../../../utils/jsonUtils';
 import { appGlobal } from '../../../state/appGlobal';
-import { computed } from 'mobx';
+import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { ConfigList } from '../../misc/ConfigList';
+import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
 
 const { Text } = Typography;
 
@@ -24,6 +25,13 @@ const { Text } = Typography;
 // Full topic configuration
 @observer
 export class TopicConfiguration extends Component<{ topic: Topic }> {
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
+
     render() {
         const renderedError = this.handleError();
         if (renderedError) return renderedError;
@@ -41,7 +49,7 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         if (config == null) return [];
 
         return config.configEntries
-            .sort((a, b) => {
+            .slice().sort((a, b) => {
                 switch (uiSettings.topicList.propsOrder) {
                     case 'default':
                         return 0;
@@ -131,7 +139,7 @@ const ConfigDisplaySettings = observer(() => (
             onChange={(s) => (uiSettings.topicList.valueDisplay = s)}
         />
 
-       <OptionGroup
+        <OptionGroup
             label="Sort"
             options={{
                 None: 'default',

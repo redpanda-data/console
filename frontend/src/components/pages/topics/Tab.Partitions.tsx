@@ -8,7 +8,7 @@ import { sortField, makePaginationConfig } from "../../misc/common";
 import { MotionAlways } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
-import { numberToThousandsString, DefaultSkeleton, TextInfoIcon } from "../../../utils/tsxUtils";
+import { numberToThousandsString, DefaultSkeleton, InfoText } from "../../../utils/tsxUtils";
 import { BrokerList } from "../reassign-partitions/components/BrokerList";
 
 
@@ -41,11 +41,11 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
             columns={[
                 { title: 'Partition ID', dataIndex: 'id', sorter: sortField('id'), defaultSortOrder: 'ascend' },
                 {
-                    title: <TextInfoIcon text="Low" info="Low Water Mark" tooltipOverText />,
+                    title: <InfoText tooltip="Low Water Mark" tooltipOverText>Low</InfoText>,
                     dataIndex: 'waterMarkLow', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkLow')
                 },
                 {
-                    title: <TextInfoIcon text="High" info="High Water Mark" tooltipOverText />,
+                    title: <InfoText tooltip="High Water Mark" tooltipOverText>High</InfoText>,
                     dataIndex: 'waterMarkHigh', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkHigh')
                 },
                 {
@@ -55,9 +55,9 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
                 { title: 'Brokers', render: (v, r) => <BrokerList brokerIds={r.replicas} /> }
             ]} />
 
-        return <MotionAlways>
+        return <>
             {warning}
             {table}
-        </MotionAlways>
+        </>
     }
 }

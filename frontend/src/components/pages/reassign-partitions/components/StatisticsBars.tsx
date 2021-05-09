@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { observer } from "mobx-react";
 import { api } from "../../../../state/backendApi";
 import { Broker, Partition } from "../../../../state/restInterfaces";
-import { computed } from "mobx";
+import { computed, makeObservable } from "mobx";
 import { PartitionSelection } from "../ReassignPartitions";
 import { prettyBytesOrNA } from "../../../../utils/utils";
 import { TopicWithMoves } from "../Step3.Review";
@@ -10,6 +10,11 @@ import { TopicWithMoves } from "../Step3.Review";
 
 @observer
 export class SelectionInfoBar extends Component<{ partitionSelection: PartitionSelection, margin?: string }> {
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     render() {
         if (api.topicPartitions == null)

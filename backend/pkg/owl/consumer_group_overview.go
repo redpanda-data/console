@@ -3,24 +3,29 @@ package owl
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"sort"
+
+	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"sort"
 
 	"go.uber.org/zap"
 )
 
 // ConsumerGroupOverview for a Kafka Consumer Group
 type ConsumerGroupOverview struct {
-	GroupID        string                   `json:"groupId"`
-	State          string                   `json:"state"`
-	ProtocolType   string                   `json:"protocolType"`
-	Protocol       string                   `json:"protocol"`
-	Members        []GroupMemberDescription `json:"members"`
-	CoordinatorID  int32                    `json:"coordinatorId"`
-	Lags           *ConsumerGroupLag        `json:"lag"`
-	AllowedActions []string                 `json:"allowedActions"`
+	GroupID       string                   `json:"groupId"`
+	State         string                   `json:"state"`
+	ProtocolType  string                   `json:"protocolType"`
+	Protocol      string                   `json:"protocol"`
+	Members       []GroupMemberDescription `json:"members"`
+	CoordinatorID int32                    `json:"coordinatorId"`
+	TopicOffsets  []GroupTopicOffsets      `json:"topicOffsets"`
+
+	// AllowedActions define the Kowl Business permissions on this specific group
+	AllowedActions []string `json:"allowedActions"`
 }
 
 // GroupMemberDescription is a member (e. g. connected host) of a Consumer Group
@@ -38,20 +43,54 @@ type GroupMemberAssignment struct {
 }
 
 // GetConsumerGroupsOverview returns a ConsumerGroupOverview for all available consumer groups
-func (s *Service) GetConsumerGroupsOverview(ctx context.Context) ([]ConsumerGroupOverview, error) {
+// Pass nil for groupIDs if you want to fetch all available groups.
+func (s *Service) GetConsumerGroupsOverview(ctx context.Context, groupIDs []string) ([]ConsumerGroupOverview, *rest.Error) {
 	groups, err := s.kafkaSvc.ListConsumerGroups(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list consumer groups: %w", err)
+		return nil, &rest.Error{
+			Err:      fmt.Errorf("failed to list consumer groups: %w", err),
+			Status:   http.StatusInternalServerError,
+			Message:  "Failed to list consumer groups",
+			IsSilent: false,
+		}
 	}
 
-	describedGroupsSharded, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groups.GetGroupIDs())
-	if err != nil {
-		return nil, fmt.Errorf("failed to describe consumer groups: %w", err)
+	if groupIDs == nil {
+		groupIDs = groups.GetGroupIDs()
+	} else {
+		// Not existent consumer groups will be reported as "dead" by Kafka. We would like to report them as 404 instead.
+		// Hence we'll check if the passed group IDs exist in the response
+		for _, id := range groupIDs {
+			_, exists := find(groups.GetGroupIDs(), id)
+			if !exists {
+				return nil, &rest.Error{
+					Err:      fmt.Errorf("requested group id '%v' does not exist in Kafka cluster", id),
+					Status:   http.StatusNotFound,
+					Message:  fmt.Sprintf("Requested group id '%v' does not exist in Kafka cluster", id),
+					IsSilent: false,
+				}
+			}
+		}
 	}
 
-	groupLags, err := s.getConsumerGroupLags(ctx, describedGroupsSharded.GetGroupIDs())
+	describedGroupsSharded, err := s.kafkaSvc.DescribeConsumerGroups(ctx, groupIDs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get consumer group lags: %w", err)
+		return nil, &rest.Error{
+			Err:      fmt.Errorf("failed to describe consumer groups: %w", err),
+			Status:   http.StatusNotFound,
+			Message:  fmt.Sprintf("Failed to describe consumer groups: %v", err.Error()),
+			IsSilent: false,
+		}
+	}
+
+	groupLags, err := s.getConsumerGroupOffsets(ctx, describedGroupsSharded.GetGroupIDs())
+	if err != nil {
+		return nil, &rest.Error{
+			Err:      fmt.Errorf("failed to get consumer group lags: %w", err),
+			Status:   http.StatusNotFound,
+			Message:  fmt.Sprintf("Failed to get consumer group lags: %v", err.Error()),
+			IsSilent: false,
+		}
 	}
 
 	res := s.convertKgoGroupDescriptions(describedGroupsSharded, groupLags)
@@ -60,7 +99,7 @@ func (s *Service) GetConsumerGroupsOverview(ctx context.Context) ([]ConsumerGrou
 	return res, nil
 }
 
-func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeConsumerGroupsResponseSharded, lags map[string]*ConsumerGroupLag) []ConsumerGroupOverview {
+func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeConsumerGroupsResponseSharded, offsets map[string][]GroupTopicOffsets) []ConsumerGroupOverview {
 	result := make([]ConsumerGroupOverview, 0)
 	for _, response := range describedGroups.Groups {
 		if response.Error != nil {
@@ -97,7 +136,7 @@ func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeCon
 				Protocol:      d.Protocol,
 				Members:       members,
 				CoordinatorID: coordinatorID,
-				Lags:          lags[d.Group],
+				TopicOffsets:  offsets[d.Group],
 			})
 		}
 	}

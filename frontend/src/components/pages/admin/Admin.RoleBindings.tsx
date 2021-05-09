@@ -2,68 +2,8 @@ import { Component, ReactNode } from "react";
 import React from "react";
 import { RoleBinding, Subject } from "../../../state/restInterfaces";
 import { Collapse } from "antd";
-import { observer } from "mobx-react";
-import { api, } from "../../../state/backendApi";
 import '../../../utils/arrayExtensions';
-import { QuickTable, ObjToKv, DefaultSkeleton } from "../../../utils/tsxUtils";
-@observer
-export class AdminRoleBindings extends Component {
-
-    render() {
-        if (!api.adminInfo) return DefaultSkeleton;
-        const roleBindings = api.adminInfo.roleBindings;
-
-        return "bindings, along with a listing of all members in each subject group will be added later"
-
-        // const groupMap = api.AdminInfo.groups.toMap(x => x.name, x => x);
-
-        // const table = <Table
-        //     size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
-        //     showSorterTooltip={false}
-        //     dataSource={roleBindings}
-        //     rowClassName={() => 'hoverLink'}
-        //     rowKey={(x, i) => x.roleName}
-        //     columns={[
-        //         { title: 'Metadata', dataIndex: 'metadata', render: (t, r) => <code>{ToJson(r.metadata)}</code> },
-        //         { width: 2, title: 'Role', dataIndex: 'roleName', sorter: sortField('roleName') },
-        //         { width: 1, title: 'Subjects', dataIndex: 'subjects', render: (t, r) => r.subjects?.length ?? 0, sorter: (a, b) => (a.subjects?.length - b.subjects?.length) ?? 0 },
-        //     ]}
-        //     // expandIconAsCell={false} broken after upgrade to antd4
-        //     expandIconColumnIndex={0}
-        //     expandRowByClick={true}
-        //     expandedRowRender={(rb: RoleBinding) => {
-        //         return rb.subjects.map(s => <SubjectComponent key={rb.roleName} subject={s} group={s.kind === 'group' ? groupMap.get(s.name) : undefined} />)
-        //     }}
-        // />
-
-        /*
-        const groupMap = api.AdminInfo.groups.toMap(x => x.name, x => x);
-
-        const table = <Table
-            size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
-            showSorterTooltip={false}
-            dataSource={roleBindings}
-            rowClassName={() => 'hoverLink'}
-            rowKey={(x, i) => x.roleName}
-            columns={[
-                { title: 'Metadata', dataIndex: 'metadata', render: (t, r) => <code>{ToJson(r.metadata)}</code> },
-                { width: 2, title: 'Role', dataIndex: 'roleName', sorter: sortField('roleName') },
-                { width: 1, title: 'Subjects', dataIndex: 'subjects', render: (t, r) => r.subjects?.length ?? 0, sorter: (a, b) => (a.subjects?.length - b.subjects?.length) ?? 0 },
-            ]}
-            // expandIconAsCell={false} broken after upgrade to antd4
-            expandIconColumnIndex={0}
-            expandRowByClick={true}
-            expandedRowRender={(rb: RoleBinding) => {
-                return rb.subjects.map(s => <SubjectComponent key={rb.roleName} subject={s} group={s.kind === 'group' ? groupMap.get(s.name) : undefined} />)
-            }}
-        />
-        */
-
-        // return <MotionAlways>
-        //     {table}
-        // </MotionAlways>
-    }
-}
+import { QuickTable, ObjToKv } from "../../../utils/tsxUtils";
 
 export class RoleBindingComponent extends Component<{ binding: RoleBinding }>{
     render() {

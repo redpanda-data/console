@@ -1,4 +1,4 @@
-import { observable, autorun, IReactionDisposer, computed, transaction, action } from "mobx";
+import { observable, autorun, IReactionDisposer, computed, transaction, action, makeObservable } from "mobx";
 
 /*
     Intended use:
@@ -22,8 +22,10 @@ export class FilterableDataSource<T> {
         private filter: (filterText: string, item: T) => boolean,
         debounceMilliseconds?: number
     ) {
-        if (!debounceMilliseconds) debounceMilliseconds = 50;
+        if (!debounceMilliseconds) debounceMilliseconds = 100;
         this.reactionDisposer = autorun(this.update.bind(this), { delay: debounceMilliseconds, name: 'FilterableDataSource' });
+
+        makeObservable(this);
     }
 
     private update() {

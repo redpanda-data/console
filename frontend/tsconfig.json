@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "experimentalDecorators": true,
+        "useDefineForClassFields": true,
         "target": "es2019",
         "lib": [
             "dom",
@@ -18,8 +19,9 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noEmit": true,
-        "jsx": "react",
-        "strictPropertyInitialization": false
+        "jsx": "react-jsx",
+        "strictPropertyInitialization": false,
+        "noFallthroughCasesInSwitch": true,
     },
     "include": [
         "src"

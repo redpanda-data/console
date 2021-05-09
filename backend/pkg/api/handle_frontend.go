@@ -49,6 +49,7 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 		// For index.html we always set cache-control and etag
 		w.Header().Set("Cache-Control", "public, max-age=900, must-revalidate") // 900s = 15m
 		w.Header().Set("ETag", hash)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 		// Check if the client sent 'If-None-Match' potentially return "304" (not mofified / unchanged)
 		clientEtag := r.Header.Get("If-None-Match")
@@ -74,32 +75,35 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 	fileHashes := hashFilesInDirectory(frontendDir)
 
 	handleFrontendResources = func(w http.ResponseWriter, r *http.Request) {
-		f, err := root.Open(r.RequestURI)
-		if os.IsNotExist(err) {
-			api.Logger.Debug("requested file not found", zap.String("file", r.RequestURI))
+		f, err := root.Open(r.URL.Path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				api.Logger.Debug("requested file not found", zap.String("requestURI", r.RequestURI), zap.String("path", r.URL.Path))
+			}
 			handleIndex(w, r) // everything else goes to index as well
 			return
 		}
 		defer f.Close()
 
+		// Set correct content-type
+		switch filepath.Ext(r.URL.Path) {
+		case ".css":
+			w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		case ".js":
+			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		}
+
 		// Set Cache-Control and ETag
-		hash, hashFound := fileHashes[r.RequestURI]
+		hash, hashFound := fileHashes[r.URL.Path]
 		w.Header().Set("Cache-Control", "public, max-age=900, must-revalidate") // 900s = 15min
 		if hashFound {
-
-			// api.Logger.Warn("hash for requested file", zap.String("hash", hash), zap.String("requestURI", r.RequestURI))
-
 			w.Header().Set("ETag", hash)
 			clientEtag := r.Header.Get("If-None-Match")
 			if len(clientEtag) > 0 && hash == clientEtag {
 				// Client already has the latest version of the file
-				// api.Logger.Warn("client etag matches, will return 304", zap.String("requestURI", r.RequestURI))
-
 				w.WriteHeader(http.StatusNotModified)
 				return
 			}
-		} else {
-			// api.Logger.Warn("no hash found for requested file", zap.String("requestURI", r.RequestURI))
 		}
 
 		fs.ServeHTTP(w, r)

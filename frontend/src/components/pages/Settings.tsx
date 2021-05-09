@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { animProps, MotionDiv } from "../../utils/animationProps";
 import { observer } from "mobx-react";
 import { Checkbox, Alert, Button, Modal, Typography, Select, Row, Col } from "antd";
-import { observable } from "mobx";
+import { makeObservable, observable } from "mobx";
 import { appGlobal } from "../../state/appGlobal";
 import { uiSettings } from "../../state/ui";
 
@@ -18,6 +18,10 @@ const styleColR = { display: 'table-cell', padding: '0.5em 0', paddingLeft: '1em
 
 @observer
 export class SettingsPage extends PageComponent {
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     @observable test: boolean = true;
 

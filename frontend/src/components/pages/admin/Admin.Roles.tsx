@@ -26,7 +26,7 @@ export class AdminRoles extends Component<{}> {
             showSorterTooltip={false}
             dataSource={roles}
             rowClassName={() => 'hoverLink'}
-            rowKey={(x, i) => x.name}
+            rowKey={x => x.name}
             columns={[
                 { width: 1, title: 'Role Name', dataIndex: 'name', sorter: sortField('name') },
                 { title: '', render: r => (<span></span>) },

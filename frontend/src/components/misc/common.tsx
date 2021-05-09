@@ -10,7 +10,7 @@ import { uiState } from "../../state/uiState";
 import { hoursToMilliseconds, prettyBytesOrNA, prettyMilliseconds } from "../../utils/utils";
 import env, { IsBusiness, IsDev } from "../../utils/env";
 import { LayoutBypass, QuickTable } from "../../utils/tsxUtils";
-import { toJson } from "../../utils/jsonUtils";
+import { clone, toJson } from "../../utils/jsonUtils";
 import { TopicLogDirSummary } from "../../state/restInterfaces";
 import { AlertIcon } from "@primer/octicons-v2-react";
 
@@ -97,6 +97,11 @@ export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE,
 
 export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
     return (a: T, b: T, _) => {
+
+        if (a[field] == null && b[field] == null) return 0;
+        if (a[field] != null && b[field] == null) return -1;
+        if (a[field] == null && b[field] != null) return 1;
+
         if (typeof a[field] === 'string') {
             const left = String(a[field]);
             const right = String(b[field]);
@@ -106,18 +111,6 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
             const left = +a[field];
             const right = +b[field];
             return left - right;
-        }
-
-        if ((typeof a[field] === 'undefined' || a[field] === null) && (typeof b[field] !== 'undefined' && b[field] !== null)) {
-            const left = '';
-            const right = String(b[field]);
-            return left.localeCompare(right);
-        }
-
-        if ((typeof a[field] !== 'undefined' && a[field] !== null) && (typeof b[field] === 'undefined' || b[field] === null)) {
-            const left = String(a[field]);
-            const right = '';
-            return left.localeCompare(right);
         }
 
         throw Error(`Table 'sortField()' can't handle '${field}', it's type is '${typeof a[field]}'`)
@@ -163,10 +156,10 @@ export class UpdatePopup extends Component {
         console.log('frontend update available', {
             serverTimestamp: serverTimestamp,
             serverDate: new Date(serverTimestamp * 1000),
-            serverVersionInfo: serverVersion,
+            serverVersionInfo: clone(serverVersion),
             localTimestamp: curTimestamp,
             localDate: new Date(curTimestamp * 1000),
-            localVersion: env,
+            localVersion: clone(env),
         });
 
         updateDialogOpen = true;

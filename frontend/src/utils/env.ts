@@ -24,7 +24,7 @@ const envNames = [
 type Environment = { [key in typeof envNames[number]]: string };
 
 const env = {} as Environment;
-for (let k of envNames)
+for (const k of envNames)
     env[k] = process.env[k] || '';
 
 export default env;

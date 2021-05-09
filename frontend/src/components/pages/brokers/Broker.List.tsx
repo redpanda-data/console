@@ -9,7 +9,7 @@ import { makePaginationConfig, sortField } from "../../misc/common";
 import { Broker, BrokerConfigEntry } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
-import { observable, computed } from "mobx";
+import { observable, computed, makeObservable } from "mobx";
 import { prettyBytesOrNA } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
@@ -26,6 +26,11 @@ class BrokerList extends PageComponent {
 
     @observable filteredBrokers: Broker[];
     @computed get hasRack() { return api.clusterInfo?.brokers?.sum(b => b.rack ? 1 : 0) }
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Brokers';
@@ -128,7 +133,7 @@ const BrokerDetails = observer(
         // Normal Display
         if (!brokerConfig.error) return <BrokerConfigView entries={brokerConfig.configEntries} />;
 
-        
+
         // Mising Entry??
         return (
             <div className="error">
@@ -145,6 +150,7 @@ const BrokerDetails = observer(
 class BrokerConfigView extends Component<{ entries: BrokerConfigEntry[] }> {
     render() {
         const entries = this.props.entries
+            .slice()
             .sort((a, b) => {
                 switch (uiSettings.brokerList.propsOrder) {
                     case 'default':

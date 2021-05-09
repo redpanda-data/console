@@ -18,6 +18,7 @@ import { editQuery } from "../../../utils/queryHelper";
 import { uiState } from "../../../state/uiState";
 import { DefaultSkeleton, Label, OptionGroup } from "../../../utils/tsxUtils";
 import { BrokerList } from "../reassign-partitions/components/BrokerList";
+import { ShortNum } from "../../misc/ShortNum";
 
 
 @observer
@@ -46,7 +47,7 @@ class GroupList extends PageComponent {
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
                 const q = String(uiSettings.consumerGroupList.quickSearch);
-                query["q"] = q ? q : undefined;
+                if (q) query["q"] = q;
             })
         });
     }
@@ -61,7 +62,7 @@ class GroupList extends PageComponent {
     render() {
         if (!api.consumerGroups) return DefaultSkeleton;
 
-        const groups = api.consumerGroups;
+        const groups = Array.from(api.consumerGroups.values());
         const stateGroups = groups.groupInto(g => g.state);
 
         return <>
@@ -113,10 +114,10 @@ class GroupList extends PageComponent {
                                 onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
                                 render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
                             },
-                            { title: 'Coordinator', dataIndex: 'coordinatorId', width: 1, render: (x: number) => <BrokerList brokerIds={[x]} />},
-                            { title: 'Protocol', dataIndex: 'protocol', width: 1},
+                            { title: 'Coordinator', dataIndex: 'coordinatorId', width: 1, render: (x: number) => <BrokerList brokerIds={[x]} /> },
+                            { title: 'Protocol', dataIndex: 'protocol', width: 1 },
                             { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length, defaultSortOrder: 'descend' },
-                            { title: 'Lag (Sum)', dataIndex: 'lagSum', sorter: (a, b) => a.lagSum - b.lagSum },
+                            { title: 'Lag (Sum)', dataIndex: 'lagSum', render: v => ShortNum({ value: v }), sorter: (a, b) => a.lagSum - b.lagSum },
                         ]} />
                 </Card>
             </motion.div>

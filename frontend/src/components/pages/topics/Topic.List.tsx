@@ -1,7 +1,7 @@
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
 import { Checkbox, Col, Empty, Popover, Row, Statistic, Table } from 'antd';
 import { motion } from 'framer-motion';
-import { autorun, IReactionDisposer, observable } from 'mobx';
+import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { RefObject } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -9,6 +9,7 @@ import { api } from '../../../state/backendApi';
 import { TopicActions, Topic } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
+import { clone } from '../../../utils/jsonUtils';
 import { editQuery } from '../../../utils/queryHelper';
 import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA } from '../../../utils/utils';
@@ -22,6 +23,11 @@ class TopicList extends PageComponent {
     pageConfig = makePaginationConfig(uiSettings.topicList.pageSize);
     quickSearchReaction: IReactionDisposer;
     @observable filteredTopics: Topic[];
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Topics';
@@ -41,7 +47,7 @@ class TopicList extends PageComponent {
         this.quickSearchReaction = autorun(() => {
             editQuery((query) => {
                 const q = String(uiSettings.topicList.quickSearch);
-                query['q'] = q ? q : undefined;
+                if (q) query['q'] = q;
             });
         });
     }
@@ -105,7 +111,10 @@ class TopicList extends PageComponent {
                                 isFilterMatch={this.isFilterMatch}
                                 filterText={uiSettings.topicList.quickSearch}
                                 onQueryChanged={(filterText) => (uiSettings.topicList.quickSearch = filterText)}
-                                onFilteredDataChanged={data => this.filteredTopics = data}
+                                onFilteredDataChanged={data => {
+
+                                    this.filteredTopics = data;
+                                }}
                             />
                         </Col>
                         <Col>
@@ -129,7 +138,7 @@ class TopicList extends PageComponent {
                         }}
                         rowClassName={() => 'hoverLink'}
                         dataSource={this.filteredTopics ?? []}
-                        rowKey={(x) => x.topicName}
+                        rowKey={x => x.topicName}
                         showSorterTooltip={false}
                         columns={[
                             { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', defaultSortOrder: 'ascend' },

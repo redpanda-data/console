@@ -5,7 +5,7 @@ import { uiState } from './uiState';
 
 class AppGlobal {
     private _history = (null as unknown as History<any>);
-    get history() { return this._history };
+    get history() { return this._history }
 
     set history(h: History<any>) {
         if (this._history === h || !h) return;
@@ -18,8 +18,10 @@ class AppGlobal {
             uiState.pathName = location.pathname;
         });
         uiState.pathName = h.location.pathname;
-    };
+    }
 
-    onRefresh: (() => void) = () => { };
+    onRefresh: (() => void) = () => {
+        // intended for pages to set
+    }
 }
 export const appGlobal = new AppGlobal();

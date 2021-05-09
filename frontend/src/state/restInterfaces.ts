@@ -90,7 +90,7 @@ export type CompressionType = 'uncompressed' | 'gzip' | 'snappy' | 'lz4' | 'zstd
 export interface Payload {
     payload: any, // json obj
     encoding: MessageDataType, // actual format of the message (before the backend converted it to json)
-    avroSchemaId: number,
+    schemaId: number,
     size: number,
 }
 
@@ -199,7 +199,7 @@ export interface GroupMemberDescription {
 }
 
 
-export const GroupActions = ['seeConsumerGroup'] as const;
+export const GroupActions = ['seeConsumerGroup', 'editConsumerGroup', 'deleteConsumerGroup'] as const;
 export type GroupAction = 'all' | typeof GroupActions[number];
 
 export interface GroupDescription {
@@ -209,17 +209,123 @@ export interface GroupDescription {
     protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
     members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
     coordinatorId: number;
-    lag: GroupLagDescription;
-    allowedActions: GroupAction[];
+    topicOffsets: GroupTopicOffsets[];
+    allowedActions: GroupAction[] | null;
 
-    // Computed by frontend
-    lagSum: number;
+    // Added by frontend
+    lagSum: number; // sum of lag for all topic offsets
+
+    // reasons for why the group can't be editted
+    noEditSupport: boolean;
+    isInUse: boolean;
+    noEditPerms: boolean;
+    noDeletePerms: boolean;
 }
 
-export interface GroupLagDescription {
+export interface GroupTopicOffsets {
+    topic: string;
+    summedLag: number; // summed lag of all partitions (non consumed partitions are not considered)
+    partitionCount: number;
+    partitionsWithOffset: number; // number of partitions that have an active group offset
+    partitionOffsets: GroupPartitionOffset[];
+}
+
+// PartitionOffset describes the kafka lag for a partition for a single consumer group
+export interface GroupPartitionOffset {
+    partitionId: number;
+    groupOffset: number;
+
+    error: string | undefined; // Error will be set when the high water mark could not be fetched
+    highWaterMark: number;
+    lag: number;
+}
+
+
+export interface EditConsumerGroupOffsetsRequest {
     groupId: string;
-    topicLags: TopicLag[];
+    topics: EditConsumerGroupOffsetsTopic[];
 }
+
+export interface EditConsumerGroupOffsetsTopic {
+    topicName: string;
+    partitions: {
+        partitionId: number;
+        offset: number; // -1 latest, -2 earliest
+    }[];
+}
+
+export interface EditConsumerGroupOffsetsResponse {
+    error: string | undefined;
+    topics: EditConsumerGroupOffsetsResponseTopic[]
+}
+
+export interface EditConsumerGroupOffsetsResponseTopic {
+    topicName: string,
+    partitions: {
+        partitionID: number,
+        error: string,
+    }[],
+}
+
+
+
+
+export interface DeleteConsumerGroupOffsetsRequest {
+    groupId: string;
+    topics: DeleteConsumerGroupOffsetsTopic[];
+}
+export interface DeleteConsumerGroupOffsetsTopic {
+    topicName: string;
+    partitions: {
+        partitionId: number;
+    }[];
+}
+
+export interface DeleteConsumerGroupOffsetsResponse {
+    topics: DeleteConsumerGroupOffsetsResponseTopic[]
+}
+
+export interface DeleteConsumerGroupOffsetsResponseTopic {
+    topicName: string,
+    partitions: {
+        partitionID: number,
+        error: string | undefined,
+    }[],
+}
+
+
+export interface GetTopicOffsetsByTimestampRequest {
+    topics: GetTopicOffsetsByTimestampRequestTopic[];
+    timestamp: number; // unix ms
+}
+export interface GetTopicOffsetsByTimestampRequestTopic {
+    topicName: string;
+    partitionIds: number[];
+}
+
+export interface GetTopicOffsetsByTimestampResponse {
+    topicOffsets: TopicOffset[];
+}
+export interface TopicOffset {
+    topicName: string;
+    partitions: PartitionOffset[];
+}
+
+export interface PartitionOffset {
+    error: string | undefined;
+    partitionId: number;
+
+    // will return the first message after the given timestamp
+    // if there is no message at or after this timestamp, the offset will be -1
+    offset: number;
+
+    // unix ms
+    // if offset is not -1, this will tell us the timestamp of that message
+    timestamp: number;
+}
+
+
+
 
 export interface TopicLag {
     topic: string; // name
@@ -229,13 +335,21 @@ export interface TopicLag {
     partitionsWithOffset: number; // number of partitions that have an active offset in this group
 
     // only lists partitions that have a commited offset (independent of whether or not a member is currently assigned to it)
-    partitionLags: { lag: number, partitionId: number }[]
+    partitionLags: PartitionLag[]
+}
+
+export interface PartitionLag {
+    partitionId: number;
+    offset: number;
+    lag: number;
 }
 
 export interface GetConsumerGroupsResponse {
     consumerGroups: GroupDescription[];
 }
-
+export interface GetConsumerGroupResponse {
+    consumerGroup: GroupDescription;
+}
 
 
 
@@ -523,9 +637,9 @@ export interface Schema {
 
 export interface SchemaField {
     name: string;
-    type: string | object | null | undefined;
+    type: string | Record<string, unknown> | null | undefined;
     doc?: string | null | undefined;
-    default?: string | object | null | undefined;
+    default?: string | Record<string, unknown> | null | undefined;
 }
 
 

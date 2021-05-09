@@ -13,38 +13,23 @@ import (
 
 type partitionOffsets map[int32]int64
 
-// ConsumerGroupLag describes the kafka lag for all topics/partitions for a single consumer group
-type ConsumerGroupLag struct {
-	GroupID   string      `json:"groupId"`
-	TopicLags []*TopicLag `json:"topicLags"`
+// GroupTopicOffsets describes the kafka lag for a single topic and it's partitions for a single consumer group
+type GroupTopicOffsets struct {
+	Topic                string             `json:"topic"`
+	SummedLag            int64              `json:"summedLag"` // Sums all partition lags (non consumed partitions are not considered)
+	PartitionCount       int                `json:"partitionCount"`
+	PartitionsWithOffset int                `json:"partitionsWithOffset"` // Number of partitions which have an active group offset
+	PartitionOffsets     []PartitionOffsets `json:"partitionOffsets"`
 }
 
-// GetTopicLag returns the group's topic lag or nil if the group has no group offsets on that topic
-func (c *ConsumerGroupLag) GetTopicLag(topicName string) *TopicLag {
-	for _, lag := range c.TopicLags {
-		if lag.Topic == topicName {
-			return lag
-		}
-	}
-
-	return nil
-}
-
-// TopicLag describes the kafka lag for a single topic and it's partitions for a single consumer group
-type TopicLag struct {
-	Topic                string         `json:"topic"`
-	SummedLag            int64          `json:"summedLag"` // Sums all partition lags (non consumed partitions are not considered)
-	PartitionCount       int            `json:"partitionCount"`
-	PartitionsWithOffset int            `json:"partitionsWithOffset"` // Number of partitions which have an active group offset
-	PartitionLags        []PartitionLag `json:"partitionLags"`
-}
-
-// PartitionLag describes the kafka lag for a partition for a single consumer group
-type PartitionLag struct {
+// PartitionOffsets describes the kafka lag for a partition for a single consumer group
+type PartitionOffsets struct {
 	// Error will be set when the high water mark could not be fetched
-	Error       string `json:"error,omitempty"`
-	PartitionID int32  `json:"partitionId"`
-	Lag         int64  `json:"lag"`
+	Error         string `json:"error,omitempty"`
+	PartitionID   int32  `json:"partitionId"`
+	GroupOffset   int64  `json:"groupOffset"`
+	HighWaterMark int64  `json:"highWaterMark"`
+	Lag           int64  `json:"lag"`
 }
 
 // convertOffsets returns a map where the key is the topic name
@@ -62,8 +47,8 @@ func convertOffsets(offsets *kmsg.OffsetFetchResponse) map[string]partitionOffse
 	return res
 }
 
-// getConsumerGroupLags returns a nested map where the group id is the key
-func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (map[string]*ConsumerGroupLag, error) {
+// getConsumerGroupOffsets returns a nested map where the group id is the key
+func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) (map[string][]GroupTopicOffsets, error) {
 	// 1. Fetch all Consumer Group Offsets for each Topic
 	offsets, err := s.kafkaSvc.ListConsumerGroupOffsetsBulk(ctx, groups)
 	if err != nil {
@@ -133,9 +118,9 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 	}
 
 	// 4. Now that we've got all partition high water marks as well as the consumer group offsets we can calculate the lags
-	res := make(map[string]*ConsumerGroupLag, len(groups))
+	res := make(map[string][]GroupTopicOffsets, len(groups))
 	for _, group := range groups {
-		topicLags := make([]*TopicLag, 0)
+		topicLags := make([]GroupTopicOffsets, 0)
 		for topic, partitionOffsets := range offsetsByGroup[group] {
 			// In this scope we iterate on a single group's, single topic's offset
 			childLogger := s.logger.With(zap.String("group", group), zap.String("topic", topic))
@@ -148,19 +133,16 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 
 			// Take note, it's possible that a consumer group does not have active offsets for all partitions, let's make that transparent!
 			// For this reason we rather iterate on the partition water marks rather than the group partition offsets.
-			t := TopicLag{
+			t := GroupTopicOffsets{
 				Topic:                topic,
 				SummedLag:            0,
 				PartitionCount:       len(highWaterMarks),
 				PartitionsWithOffset: 0,
-				PartitionLags:        make([]PartitionLag, 0),
+				PartitionOffsets:     make([]PartitionOffsets, 0),
 			}
 			for pID, watermark := range highWaterMarks {
 				if watermark.Error != "" {
-					t.PartitionLags = append(t.PartitionLags, PartitionLag{
-						Error:       watermark.Error,
-						PartitionID: pID,
-						Lag:         -1})
+					t.PartitionOffsets = append(t.PartitionOffsets, PartitionOffsets{Error: watermark.Error, PartitionID: pID})
 					continue
 				}
 
@@ -176,15 +158,16 @@ func (s *Service) getConsumerGroupLags(ctx context.Context, groups []string) (ma
 					lag = 0
 				}
 				t.SummedLag += lag
-				t.PartitionLags = append(t.PartitionLags, PartitionLag{PartitionID: pID, Lag: lag})
+				t.PartitionOffsets = append(t.PartitionOffsets, PartitionOffsets{
+					PartitionID:   pID,
+					GroupOffset:   groupOffset,
+					HighWaterMark: watermark.Offset,
+					Lag:           lag})
 			}
-			topicLags = append(topicLags, &t)
+			topicLags = append(topicLags, t)
 		}
 
-		res[group] = &ConsumerGroupLag{
-			GroupID:   group,
-			TopicLags: topicLags,
-		}
+		res[group] = topicLags
 	}
 
 	return res, nil

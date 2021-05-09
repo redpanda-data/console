@@ -21,9 +21,7 @@ export function formatConfigValue(name: string, value: string, formatType: 'frie
     //
     if (name == "advertised.listeners" || name == "listener.security.protocol.map" || name == "listeners" && value) {
         const listeners = value.split(',');
-        return listeners.length > 1
-            ? "\n" + listeners.join('\n')
-            : listeners.join('\n');
+        return listeners.join('\n');
     }
 
 

@@ -9,7 +9,7 @@ import { toJson } from "../utils/jsonUtils";
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { MotionDiv, MotionDivInvertedScale } from '../utils/animationProps';
+import { MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
@@ -24,16 +24,17 @@ import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined } from '@ant-design/icons';
-import { observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
 import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
+import { renderErrorModals } from './misc/ErrorModal';
 
 const { Content, Footer, Sider } = Layout;
 
 
-let siderCollapsedWidth = 80;
+const siderCollapsedWidth = 80;
 
 
 const DebugUserInfoBar = () => (
@@ -87,24 +88,30 @@ const VersionInfo = () => {
 
 }
 const SideBar = observer(() =>
-    <Layout style={{ display: 'flex', flex: 1, height: '100vh', flexDirection: 'column', background: 'linear-gradient(180deg, hsla(206, 60%, 17%, 0.95) 0%, #08273ef5 94.27%) no-repeat' }}>
+    <Layout style={{
+        display: 'flex', flex: 1, flexDirection: 'column',
+        height: '100vh',
+        background: 'hsl(217deg, 27%, 20%)'
+    }}>
         <RenderTrap name='SideBarContent' />
 
         {/* Logo */}
         <div style={{ background: 'rgba(0,0,0, 0)', padding: '1px' }}>
-            {/* <div style={{ background: 'none', borderRadius: 4, display: 'flex', placeItems: 'center', placeContent: 'center' }}>
-                <span style={{ fontSize: '1.5em', color: 'white' }}>PLACEHOLDER</span>
-            </div> */}
+
             <div style={{ position: 'relative' }}>
+
+                {/* Logo Image */}
                 <img src={logo2} style={{
                     height: uiSettings.sideBarOpen ? '130px' : '65px',
                     transition: 'all 200ms',
                     width: 'auto', display: 'block', margin: 'auto', cursor: 'pointer',
-                    opacity: 0.5, mixBlendMode: 'overlay',
+                    opacity: 0.8, mixBlendMode: 'overlay',
                     marginTop: uiSettings.sideBarOpen ? '3em' : '.5em'
                 }}
                     onClick={() => { appGlobal.history.push('/'); }}
                 />
+
+                {/* Title Text */}
                 <div style={{
                     position: 'absolute',
                     transition: 'all 200ms',
@@ -119,11 +126,13 @@ const SideBar = observer(() =>
                     transform: 'translateX(4px)',
                     fontSize: '1.8rem',
                     textAlign: 'center',
-                    color: 'hsla(205, 47%, 36%, 1)',
+                    color: 'hsl(217deg, 26%, 38%)',
                 }}>
                     Kowl
                 </div>
-                <div style={{ position: 'relative', borderTop: '1px solid #fff3', margin: '.5em 1em', marginTop: '1em' }} />
+
+                {/* Separator Line */}
+                <div style={{ position: 'relative', borderTop: '0px solid hsla(0deg, 0%, 100%, 0.13)', margin: '.5em 1em', marginTop: '1em' }} />
             </div>
         </div>
 
@@ -134,26 +143,33 @@ const SideBar = observer(() =>
 
         {/* Version */}
         <div className='version'>
-            <div className='repo'><a title="Visit Kowl's GitHub repository" href="https://github.com/cloudhut/kowl">
+            <div className='repoImage'><a title="Visit Kowl's GitHub repository" href="https://github.com/cloudhut/kowl">
                 {/* <img src={gitHubLogo} /> */}
-                <GithubFilled style={{ fontSize: '36px', color: 'hsl(209, 100%, 92%)' }} />
+                <GithubFilled style={{ color: 'hsl(209, 100%, 92%)' }} />
             </a></div>
 
-            <VersionInfo />
+            <div className='versionText'>
+                <VersionInfo />
+            </div>
+
         </div>
 
         {/* Toggle */}
-        <Footer style={{
-            display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            height: '40px', padding: 0, background: 'rgba(0,0,0, 0.25)', cursor: 'pointer'
-        }} onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen }}>
-            {uiSettings.sideBarOpen ? <MenuFoldOutlined style={{ fontSize: '19px', color: '#1f6190' }} /> : <MenuUnfoldOutlined style={{ fontSize: '19px', color: '#1f6190' }} />}
+        <Footer className='sideBarToggle' onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen }}>
+            {uiSettings.sideBarOpen
+                ? <MenuFoldOutlined className='icon' />
+                : <MenuUnfoldOutlined className='icon' />}
         </Footer>
     </Layout>
 )
 
+const sideBarWidthDefault = '230px';
 const AppSide = observer(() => (
-    <Sider collapsible collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth} trigger={null} style={{ background: 'white', cursor: 'default' }}>
+    <Sider collapsible collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth}
+        trigger={null}
+        width={sideBarWidthDefault}
+        style={{ background: 'white', cursor: 'default' }}
+    >
         <SideBar />
     </Sider>
 ))
@@ -267,19 +283,14 @@ const AppContent = observer(() =>
         </Content>
 
         <UpdatePopup />
+        {renderErrorModals()}
 
     </Layout>
 );
 
 @observer
 export default class App extends Component {
-
-    render() {
-        setImmediate(() => {
-            if (api.endpointCompatibility == null)
-                api.refreshSupportedEndpoints(true);
-        });
-
+    render(): JSX.Element {
         const r = this.loginHandling(); // Complete login, or fetch user if needed
         if (r) return r;
 
@@ -296,9 +307,6 @@ export default class App extends Component {
                         <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
                             <AppSide />
                             <AppContent />
-
-                            {/* <Test /> */}
-
                         </Layout>
                     </Route>
                 </Switch>
@@ -360,6 +368,7 @@ export default class App extends Component {
 
 @observer
 class FeatureErrorCheck extends Component {
+
     render() {
         if (featureErrors.length > 0) {
             const allErrors = featureErrors.join(" ");
