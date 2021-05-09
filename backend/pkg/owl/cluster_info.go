@@ -22,10 +22,11 @@ type ClusterInfo struct {
 
 // Broker described by some basic broker properties
 type Broker struct {
-	BrokerID   int32   `json:"brokerId"`
-	LogDirSize int64   `json:"logDirSize"`
-	Address    string  `json:"address"`
-	Rack       *string `json:"rack"`
+	BrokerID   int32               `json:"brokerId"`
+	LogDirSize int64               `json:"logDirSize"`
+	Address    string              `json:"address"`
+	Rack       *string             `json:"rack"`
+	Configs    []BrokerConfigEntry `json:"configs"`
 }
 
 // GetClusterInfo returns generic information about all brokers in a Kafka cluster and returns them
@@ -34,6 +35,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	var logDirsByBroker map[int32]LogDirsByBroker
 	var metadata *kmsg.MetadataResponse
+	var configsByBrokerID map[int32][]BrokerConfigEntry
 	kafkaVersion := "unknown"
 
 	// We use a child context with a shorter timeout because otherwise we'll potentially have very long response
@@ -67,6 +69,15 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 		}
 		return nil
 	})
+
+	eg.Go(func() error {
+		var err error
+		configsByBrokerID, err = s.GetAllBrokerConfigs(childCtx)
+		if err != nil {
+			s.logger.Warn("failed to request broker configs", zap.Error(err))
+		}
+		return nil
+	})
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
@@ -78,11 +89,17 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 			size = value.TotalSizeBytes
 		}
 
+		var brokerCfgs []BrokerConfigEntry
+		if value, ok := configsByBrokerID[broker.NodeID]; ok {
+			brokerCfgs = value
+		}
+
 		brokers[i] = &Broker{
 			BrokerID:   broker.NodeID,
 			LogDirSize: size,
 			Address:    broker.Host,
 			Rack:       broker.Rack,
+			Configs:    brokerCfgs,
 		}
 	}
 	sort.Slice(brokers, func(i, j int) bool {

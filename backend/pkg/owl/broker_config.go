@@ -6,6 +6,7 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -24,7 +25,7 @@ type BrokerConfigEntry struct {
 	IsDefaultValue  bool                  `json:"isDefaultValue"`
 	IsReadOnly      bool                  `json:"isReadOnly"`
 	IsSensitive     bool                  `json:"isSensitive"`
-	Documentation   *string               `json:"documentation"` // Will be nil for Kafka <v2.6.0
+	Documentation   *string               `json:"-"` // Will be nil for Kafka <v2.6.0
 	Synonyms        []BrokerConfigSynonym `json:"synonyms"`
 }
 
@@ -32,6 +33,45 @@ type BrokerConfigSynonym struct {
 	Name   string  `json:"name"`
 	Value  *string `json:"value"`
 	Source string  `json:"source"`
+}
+
+func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32][]BrokerConfigEntry, error) {
+	metadata, err := s.kafkaSvc.GetMetadata(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get broker ids: %w", err)
+	}
+
+	// Send one broker config request for each broker concurrently
+	type chResponse struct {
+		brokerID int32
+		config   []BrokerConfigEntry
+		err      *rest.Error
+	}
+	resCh := make(chan chResponse, len(metadata.Brokers))
+
+	for _, broker := range metadata.Brokers {
+		go func(bID int32) {
+			cfg, restErr := s.GetBrokerConfig(ctx, bID)
+			resCh <- chResponse{
+				brokerID: bID,
+				config:   cfg,
+				err:      restErr,
+			}
+		}(broker.NodeID)
+	}
+
+	configsByBrokerID := make(map[int32][]BrokerConfigEntry)
+	for i := 0; i < cap(resCh); i++ {
+		res := <-resCh
+		if res.err != nil {
+			configsByBrokerID[res.brokerID] = nil
+			s.logger.Warn("failed to describe broker config", zap.Int32("broker_id", res.brokerID), zap.Error(res.err.Err))
+			continue
+		}
+		configsByBrokerID[res.brokerID] = res.config
+	}
+
+	return configsByBrokerID, nil
 }
 
 func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]BrokerConfigEntry, *rest.Error) {
