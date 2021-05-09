@@ -404,66 +404,7 @@ td.ant-table-column-sort {
     width: 100%;
 }
 
-.version {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-end;
 
-    gap: 1em;
-    padding: 0 1.6em;
-    padding-bottom: 6px;
-
-
-    font-family: "Open Sans";
-    font-size: 12px;
-    font-weight: 600;
-    line-height: normal;
-    opacity: 0.3;
-    color: hsla(205, 60%, 85%, 1);
-
-    transition: all 0.2s ease-out;
-
-    .repoImage {
-        font-size: 30px;
-    }
-
-    .versionText {
-        align-self: center;
-        white-space: nowrap;
-
-        .versionGitData {
-            font-family: monospace;
-        }
-
-        .versionDate {
-            opacity: 0;
-            font-size: 0px;
-            transition: all 0.2s ease-out 0.1s;
-        }
-    }
-
-
-
-    &:hover {
-        opacity: 0.9;
-
-        .versionDate {
-            opacity: 1;
-            font-size: inherit;
-        }
-    }
-}
-
-.ant-layout-sider-collapsed {
-    .version {
-        // place-content: center;
-        padding-left: 25px;
-
-        .versionText {
-            display: none;
-        }
-    }
-}
 
 .sideBarToggle {
     display: flex;
@@ -2337,4 +2278,94 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 // adding a perspective transform fixes it (wtf chrome? just do it correctly like firefox...)
 .ant-radio-inner {
     transform: perspective(1px);
+}
+
+.footer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: 8px;
+    padding: 0;
+    padding-top: 3em;
+    padding-bottom: 1em;
+    margin-top: auto;
+
+    color: hsl(216deg, 11%, 66%);
+
+    .links {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 1em;
+        font-size: 20px;
+
+        .anticon {
+            padding: 6px;
+            cursor: pointer;
+
+            color: hsl(216deg, 11%, 66%);
+
+            &:hover {
+                color: hsl(216deg, 11%, 50%);
+            }
+        }
+    }
+
+    .versionText {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 2.5em;
+
+        white-space: nowrap;
+
+        .versionGitData {
+            font-family: monospace;
+        }
+
+        font-family: "Open Sans";
+        font-size: 12px;
+        font-weight: 600;
+        line-height: normal;
+    }
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    height: 62px;
+
+    padding: 0 18px;
+    gap: 11px;
+
+    font-family: 'Poppins', sans-serif;
+    background: #364152;
+
+
+    .avatar {
+        border-radius: 200px;
+        height: 34px;
+        overflow: hidden;
+
+        img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: scale-down;
+        }
+    }
+
+    .userName {
+        font-size: 12.5px;
+        font-weight: 300;
+        color: #fff;
+        padding-bottom: 1px;
+    }
+
+    .prefText {
+        font-size: 11.5px;
+        font-weight: 300;
+        color: #9FA6B2;
+    }
 }
