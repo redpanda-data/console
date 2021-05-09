@@ -39,7 +39,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
             .map(favName => configEntries!.find(e => e.name === favName))
             .filter(e => e != null)
             .map(configEntry =>
-                FavoritePopover(configEntry!, <Statistic key={(configEntry!.name)} title={(configEntry!.name)} value={formatConfigValue(configEntry!.name, configEntry!.value, uiSettings.topicList.valueDisplay)} />)
+                FavoritePopover(configEntry!, <Statistic key={(configEntry!.name)} title={(configEntry!.name)} value={formatConfigValue(configEntry!.name, configEntry?.value, uiSettings.topicList.valueDisplay)} />)
             );
 
         if (configStats.length > 0)
@@ -57,7 +57,7 @@ function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntr
     const newConfig: ConfigEntry[] = [];
     for (const e of config) newConfig.push(e);
 
-    if (config.find(e => e.name == 'cleanup.policy' && e.value.includes('compact'))) {
+    if (config.find(e => e.name == 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
         // this is a compacted topic, 'retention.bytes', 'retention.ms' don't apply, so hide them
         newConfig.removeAll(e => e.name == 'retention.bytes' || e.name == 'retention.ms');
     }

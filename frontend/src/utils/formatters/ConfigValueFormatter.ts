@@ -1,7 +1,9 @@
 import { prettyBytesOrNA, prettyMilliseconds } from "../utils";
 
-export function formatConfigValue(name: string, value: string, formatType: 'friendly' | 'raw' | 'both'): string {
+export function formatConfigValue(name: string, value: string | null | undefined, formatType: 'friendly' | 'raw' | 'both'): string {
     let suffix: string;
+
+    if (value == null) return "";
 
     switch (formatType) {
         case 'friendly':

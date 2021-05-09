@@ -45,7 +45,6 @@ class BrokerList extends PageComponent {
 
     refreshData(force: boolean) {
         api.refreshCluster(force);
-        api.refreshBrokerConfigs(force);
     }
 
     render() {
@@ -118,32 +117,30 @@ class BrokerList extends PageComponent {
 
 export default BrokerList;
 
-const BrokerDetails = observer(
-    ({ brokerId }: { brokerId: number }): JSX.Element => {
+const BrokerDetails = observer(({ brokerId }: { brokerId: number }): JSX.Element => {
+    const id = brokerId;
 
-        const id = brokerId;
-
-        if (api.brokerConfigs.length <= 0 || api.brokerConfigs[id] === undefined) {
-            api.refreshBrokerConfig(id)
-            return DefaultSkeleton;
-        }
-
-        const brokerConfig = api.brokerConfigs[id];
-
-        // Normal Display
-        if (!brokerConfig.error) return <BrokerConfigView entries={brokerConfig.configEntries} />;
-
-
-        // Mising Entry??
-        return (
-            <div className="error">
-                <h3>Error</h3>
-                <div>
-                    <p>{String(brokerConfig.error)}</p>
-                </div>
-            </div>
-        );
+    if (api.brokerConfigs.length <= 0 || api.brokerConfigs[id] === undefined) {
+        api.refreshBrokerConfig(id);
+        return DefaultSkeleton;
     }
+
+    const brokerConfig = api.brokerConfigs[id];
+
+    // Normal Display
+    if (!brokerConfig.error) return <BrokerConfigView entries={brokerConfig.configEntries} />;
+
+
+    // Mising Entry??
+    return (
+        <div className="error">
+            <h3>Error</h3>
+            <div>
+                <p>{String(brokerConfig.error)}</p>
+            </div>
+        </div>
+    );
+}
 );
 
 @observer

@@ -71,6 +71,11 @@
 
     }
 
+    :global(.ant-popover-inner-content) {
+        padding: 6px 12px;
+        font-family: monospace;
+    }
+
     // antd default margin makes no sense
     :global(.ant-table-cell button.ant-table-row-expand-icon) {
         margin-left: 0;

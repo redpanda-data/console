@@ -138,22 +138,24 @@ export interface KafkaError {
 
 export interface ConfigEntry {
     name: string,
-    value: string,
+    value: string | null,
     source: string,
     type: string,
     isExplicitlySet: boolean,
     isDefaultValue: boolean,
-    isSensitive: boolean,
     isReadOnly: boolean,
-    documentation: string,
+    isSensitive: boolean,
+    // documentation: string, // remvoed for now, we have documentation locally in the frontend
     synonyms: ConfigEntrySynonym[]
 }
 
 interface ConfigEntrySynonym {
-    type?: string;
     name: string,
-    value: string,
-    source: string
+    value: string | null,
+    source: string,
+
+    // added by frontend
+    type: string | null,
 }
 
 export interface TopicDescription {
@@ -353,15 +355,22 @@ export interface GetConsumerGroupResponse {
 
 
 
-
-
-
+export interface ClusterInfoResponse {
+    clusterInfo: ClusterInfo;
+}
+export interface ClusterInfo {
+    controllerId: number;
+    brokers: Broker[];
+    kafkaVersion: string;
+}
 export interface Broker {
     brokerId: number;
     logDirSize: number; // bytes of the whole directory
     address: string;
     rack: string | null;
+    configs: ConfigEntry[];
 }
+
 
 
 export interface EndpointCompatibilityResponse {
@@ -379,22 +388,14 @@ export interface EndpointCompatibilityEntry {
     isSupported: boolean;
 }
 
-export interface ClusterInfo {
-    brokers: Broker[];
-    controllerId: number;
-    kafkaVersion: string;
-}
 
-export interface ClusterInfoResponse {
-    clusterInfo: ClusterInfo;
-}
 
 export type BrokerConfigEntry = ConfigEntry
 export interface BrokerConfigResponse {
     brokerConfigs: BrokerConfigEntry[]
 }
 
-export interface BrokerConfig  {
+export interface BrokerConfig {
     brokerId: number;
     configEntries: BrokerConfigEntry[];
     error?: unknown;

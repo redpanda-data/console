@@ -110,8 +110,7 @@ class ReassignPartitions extends PageComponent {
     }
 
     refreshData(force: boolean) {
-        api.refreshCluster(force); // need to know brokers for reassignment calculation
-        api.refreshBrokerConfigs(force); // used to display throttle traffic limit
+        api.refreshCluster(force); // need to know brokers for reassignment calculation, will also refresh config
         api.refreshTopics(force);
         api.refreshPartitions('all', force);
         api.refreshPartitionReassignments(force);

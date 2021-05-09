@@ -553,7 +553,14 @@ const apiStore = {
                 // we'd re-trigger all observers!
                 if (comparer.structural(this.clusterInfo, v.clusterInfo)) return;
 
-                this.clusterInfo = v.clusterInfo;
+                transaction(() => {
+                    this.clusterInfo = v.clusterInfo;
+                    this.brokerConfigs = v.clusterInfo.brokers.map(b => ({
+                        brokerId: b.brokerId,
+                        configEntries: b.configs,
+                    }));
+                });
+
             }, addError);
     },
 
@@ -569,11 +576,6 @@ const apiStore = {
             }
         });
     },
-
-    refreshBrokerConfigs(force?: boolean) {
-        this.brokerConfigs.forEach(brokerConfig => this.refreshBrokerConfig(brokerConfig.brokerId, force));
-    },
-
 
     refreshConsumerGroup(groupId: string, force?: boolean) {
         cachedApiRequest<GetConsumerGroupResponse>(`./api/consumer-groups/${groupId}`, force)

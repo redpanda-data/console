@@ -29,7 +29,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
 
     constructor(p: any) {
         super(p);
-        api.refreshBrokerConfigs(true);
+        api.refreshCluster(true);
         makeObservable(this);
     }
 
@@ -247,7 +247,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
             setImmediate(() => {
                 // need to update actual value after changing
-                api.refreshBrokerConfigs(true);
+                api.refreshCluster(true);
             });
 
             msg.setSuccess("Setting throttle rate... done");
@@ -366,7 +366,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         // partitionId:brokerId, ...
         const leaderThrottleValue = config.configEntries.first(e => e.name == 'leader.replication.throttled.replicas');
-        const leaderThrottleEntries = leaderThrottleValue?.value.split(',').map(e => {
+        const leaderThrottleEntries = leaderThrottleValue?.value?.split(',').map(e => {
             const ar = e.split(':');
             if (ar.length != 2) return null;
             return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
@@ -388,7 +388,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         // partitionId:brokerId, ...
         const followerThrottleValue = config.configEntries.first(e => e.name == 'follower.replication.throttled.replicas');
-        const followerThrottleEntries = followerThrottleValue?.value.split(',').map(e => {
+        const followerThrottleEntries = followerThrottleValue?.value?.split(',').map(e => {
             const ar = e.split(':');
             if (ar.length != 2) return null;
             return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
