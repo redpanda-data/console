@@ -146,8 +146,8 @@ const SideBar = observer(() =>
             <div className="avatar">
                 <img src="https://cdn.discordapp.com/avatars/372161181080748038/ca238aec10ac4835bccee89e37793701.png?size=128" />
             </div>
-            <div>
-                <div className="userName">Martínez de Schneppí</div>
+            <div className="text">
+                <div className="userName">Martínez de Schneppí aaaaaaaaaaa aaaaaaa</div>
                 <div className="prefText">Preferences</div>
             </div>
         </div>

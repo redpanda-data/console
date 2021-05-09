@@ -2317,7 +2317,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         display: flex;
         flex-direction: row;
         align-items: center;
-        gap: 2.5em;
+        gap: 2em;
 
         white-space: nowrap;
 
@@ -2325,9 +2325,10 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
             font-family: monospace;
         }
 
-        font-family: "Open Sans";
-        font-size: 12px;
-        font-weight: 600;
+        font-family: "Poppins",
+        sans-serif;
+        font-size: 14px;
+        // font-weight: 600;
         line-height: normal;
     }
 }
@@ -2343,29 +2344,73 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     font-family: 'Poppins', sans-serif;
     background: #364152;
 
+    transition: all 250ms;
+
+    $avatarSize: 34px;
 
     .avatar {
+
         border-radius: 200px;
-        height: 34px;
         overflow: hidden;
+
+        min-width: $avatarSize;
+        width: $avatarSize;
+        max-width: $avatarSize;
+
+        image-rendering: crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
+
+        transition: all 200ms;
 
         img {
             max-height: 100%;
             max-width: 100%;
             object-fit: scale-down;
         }
+
     }
 
-    .userName {
-        font-size: 12.5px;
+
+    .text {
         font-weight: 300;
-        color: #fff;
-        padding-bottom: 1px;
+        white-space: nowrap;
+        max-width: 100%;
+
+        overflow: hidden;
+
+        transition:
+            max-width 200ms,
+            opacity 300ms;
+
+        .userName {
+            max-width: 100%;
+            font-size: 12.5px;
+            color: #fff;
+            padding-bottom: 1px;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .prefText {
+            max-width: 100%;
+            font-size: 11.5px;
+            color: #9FA6B2;
+        }
     }
 
-    .prefText {
-        font-size: 11.5px;
-        font-weight: 300;
-        color: #9FA6B2;
+    @at-root .ant-layout-sider-collapsed & {
+
+        background-color: transparent;
+
+        .avatar {
+            margin-left: 6px;
+        }
+
+        .text {
+            // display: none;
+            max-width: 0px;
+            opacity: 0;
+        }
     }
 }
