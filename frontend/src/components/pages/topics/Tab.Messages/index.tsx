@@ -1340,8 +1340,6 @@ class MessageSearchFilterBar extends Component {
         </div>
     }
 
-
-
     revertChanges() {
         if (this.currentFilter && this.currentFilterBackup) {
             const restored = JSON.parse(this.currentFilterBackup);
