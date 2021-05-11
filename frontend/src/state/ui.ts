@@ -1,5 +1,5 @@
-import { observable, autorun } from "mobx";
-import { assignDeep, randomId, simpleUniqueId, uniqueId4 } from "../utils/utils";
+import { observable, autorun, makeObservable } from "mobx";
+import { assignDeep, randomId } from "../utils/utils";
 import { touch, clone } from "../utils/jsonUtils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
@@ -35,7 +35,12 @@ export const FilterOperators = [
     },
 ] as const;
 export type FilterOperator = (typeof FilterOperators[number])['name']
+
 export class FilterEntry {
+    constructor() {
+        makeObservable(this);
+    }
+
     id = randomId() + randomId(); // used as react key
     @observable filterType: FilterType = 'code';
 
@@ -67,6 +72,10 @@ export enum TopicOffsetOrigin { EndMinusResults = -1, Start = -2, End = -3, Time
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams']
 // Settings for an individual topic
 export class TopicDetailsSettings {
+    constructor() {
+        makeObservable(this);
+    }
+
     topicName: string;
 
     @observable searchParams = {
