@@ -11,7 +11,7 @@ export function KowlJsonView(props: ReactJsonViewProps) {
             displayObjectSize={true}
             enableClipboard={false}
             name={null}
-            collapseStringsAfterLength={40}
+            collapseStringsAfterLength={200}
             groupArraysAfterLength={100}
             indentWidth={5}
             iconStyle="triangle"
