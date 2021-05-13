@@ -1,0 +1,20 @@
+.copyHint {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    padding: .4em 1em;
+
+    background: rgba(0, 0, 0, 0.66);
+    border-radius: 3px;
+
+    color: #fff;
+    font-family: 'Open Sans';
+    font-size: 12px;
+
+    cursor: default;
+    user-select: none;
+}
+
+.tooltipTransformFix {
+    transform-origin: center center !important;
+}

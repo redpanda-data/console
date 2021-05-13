@@ -72,48 +72,50 @@ h2 {
     }
 }
 
+
 /*
-	Fixes for react-json-view
+    Fixes for react-json-view
 */
-/* remove the unneccesary fold-button at the root */
-/* .react-json-view>div>div>div>span:first-of-type {
-	display: none;
-}
+.react-json-view {
+    padding-left: 1em;
 
-.react-json-view>div>div>div>span:last-of-type {
-	display: none;
-} */
-/* - Last two selectors fix the faulty indenting when there's a fold-button */
-.icon-container {
-    position: absolute;
-    width: auto;
-    transform: translateX(-80%) translateY(-1px);
+    .icon-container {
+        position: absolute;
+        width: auto;
+        transform: translateX(-80%) translateY(-1px);
 
-    .expanded-icon {
-        display: inline-block;
-        transform: translateX(-2px);
+        .expanded-icon {
+            display: inline-block;
+            transform: translateX(-1px);
+        }
+
+        .collapsed-icon {
+            display: inline-block;
+            transform: translateX(1px);
+        }
+    }
+
+    span>.icon-container~span {
+        display: inline !important;
+    }
+
+    .node-ellipsis {
+        line-height: 0px !important;
+    }
+
+    .object-meta-data {
+        user-select: none;
+    }
+
+    .variable-value,
+    .string-value {
+        cursor: pointer !important;
     }
 }
 
-span>.icon-container~span {
-    display: inline !important;
-}
-
-.node-ellipsis {
-    line-height: 0px !important;
-}
-
-.object-meta-data {
-    user-select: none;
-}
-
-/* - fix root indenting */
-/* .react-json-view>div>div>div>div>div>div {
-	padding-left: 1em !important;
-	border-left: 0 !important;
-} */
-.react-json-view {
-    padding-left: 1em;
+// allow copy tooltip to attach to this
+.ant-tabs-tabpane {
+    position: relative;
 }
 
 .hoverButton {
@@ -782,10 +784,6 @@ tr.tombstone {
     background: #fff;
     border-radius: 2px;
     box-shadow: 0px 3px 3px 1px rgba(0, 0, 0, 0.05);
-}
-
-.avatarMenu {
-    min-width: 150px;
 }
 
 .ant-tabs-nav {
@@ -2342,8 +2340,10 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     padding: 0 18px;
     gap: 11px;
 
+    background: hsl(216deg, 21%, 24%);
     font-family: 'Poppins', sans-serif;
-    background: #364152;
+    cursor: pointer;
+    user-select: none;
 
     transition: all 250ms;
 
@@ -2400,6 +2400,10 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         }
     }
 
+    &:hover {
+        background: hsl(216deg, 21%, 27%);
+    }
+
     @at-root .ant-layout-sider-collapsed & {
 
         background-color: transparent;
@@ -2412,6 +2416,30 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
             // display: none;
             max-width: 0px;
             opacity: 0;
+        }
+    }
+
+}
+
+.ant-dropdown.avatarDropdown {
+    animation-duration: 100ms;
+
+    .ant-dropdown-menu.avatarMenu {
+        min-width: 150px;
+
+        font-family: 'Poppins', sans-serif;
+        font-weight: 400;
+
+        .ant-dropdown-menu-item {
+
+            font-size: 13px;
+            font-weight: 400;
+            color: hsl(0, 0%, 25%);
+            transition-duration: 0ms;
+
+            &:hover {
+                background-color: hsl(215deg, 21%, 86%);
+            }
         }
     }
 }
