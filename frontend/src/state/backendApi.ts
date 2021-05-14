@@ -2,20 +2,20 @@
 
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
-    TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
+    ClusterInfo, TopicMessage, TopicConfigResponse,
     ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions,
-    ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource,
+    TopicDocumentationResponse, AclRequest, AclResponse, AclResource,
     SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
     TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
     PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
-    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, GetTopicOffsetsByTimestampRequestTopic, TopicOffset, GetTopicOffsetsByTimestampResponse, GetTopicOffsetsByTimestampRequest
+    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, GetTopicOffsetsByTimestampRequestTopic, TopicOffset, GetTopicOffsetsByTimestampResponse, GetTopicOffsetsByTimestampRequest, BrokerConfig, BrokerConfigResponse
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
-import { toJson, clone } from "../utils/jsonUtils";
-import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
+import { toJson } from "../utils/jsonUtils";
+import { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";
 import { notification } from "antd";
@@ -190,7 +190,8 @@ const apiStore = {
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
 
-    clusterConfig: null as (ClusterConfig | null | undefined),
+    brokerConfigs: observable([]) as (Array<BrokerConfig>),
+
     adminInfo: undefined as (AdminInfo | undefined | null),
 
     schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
@@ -378,7 +379,7 @@ const apiStore = {
 
     async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
         const promise = cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
-            .then(v => this.topicConfig.set(topicName, v?.topicDescription ?? null), addError); // 403 -> null
+            .then(v => this.topicConfig.set(topicName, addSynonymTypes(v) ?? null), addError); // 403 -> null
         return promise as Promise<void>;
     },
 
@@ -552,15 +553,29 @@ const apiStore = {
                 // we'd re-trigger all observers!
                 if (comparer.structural(this.clusterInfo, v.clusterInfo)) return;
 
-                this.clusterInfo = v.clusterInfo;
+                transaction(() => {
+                    this.clusterInfo = v.clusterInfo;
+                    this.brokerConfigs = v.clusterInfo.brokers.map(b => ({
+                        brokerId: b.brokerId,
+                        configEntries: b.configs,
+                    }));
+                });
+
             }, addError);
     },
 
-    refreshClusterConfig(force?: boolean) {
-        cachedApiRequest<ClusterConfigResponse>(`./api/cluster/config`, force)
-            .then(v => this.clusterConfig = v.clusterConfig, addError);
+    refreshBrokerConfig(brokerId: number, force?: boolean) {
+        cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force).then(v => this.brokerConfigs[brokerId] = {
+            brokerId,
+            configEntries: v.brokerConfigs
+        }).catch(e => {
+            this.brokerConfigs[brokerId] = {
+                brokerId,
+                configEntries: [],
+                error: e
+            }
+        });
     },
-
 
     refreshConsumerGroup(groupId: string, force?: boolean) {
         cachedApiRequest<GetConsumerGroupResponse>(`./api/consumer-groups/${groupId}`, force)
@@ -894,6 +909,15 @@ export const brokerMap = computed(() => {
     return map;
 }, { name: 'brokerMap', equals: comparer.structural });
 
+
+function addSynonymTypes(topicConfigResponse: TopicConfigResponse | null): TopicDescription | null {
+    topicConfigResponse?.topicDescription.configEntries.forEach(configEntry => {
+        configEntry.synonyms.forEach(synonym => {
+            synonym.type = configEntry.type
+        })
+    })
+    return topicConfigResponse?.topicDescription ?? null;
+}
 
 export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);

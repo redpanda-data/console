@@ -7,6 +7,7 @@ import { AclRequest, AclRequestDefault } from "./restInterfaces";
 
 const settingsName = 'uiSettings-v3';
 
+export type ValueDisplay = 'friendly' | 'both' | 'raw'
 
 export interface PreviewTag {
     id: string;
@@ -155,10 +156,8 @@ const uiSettings = observable({
         pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
 
         // Topic Configuration
-        valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
-        propsFilter: 'all' as 'all' | 'onlyChanged',
+        valueDisplay: 'friendly' as ValueDisplay,
         propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
-        configColumns: 2 as 1 | 2,
     },
 
     consumerGroupList: {

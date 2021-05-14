@@ -1,5 +1,5 @@
-import React, { Component, CSSProperties, useState } from "react";
-import { Row, Tabs, Skeleton, Radio, Checkbox, Button, Select, Input, Typography, Result, Space, Popover, Tooltip } from "antd";
+import React from "react";
+import { Tabs, Button, Typography, Result, Popover } from "antd";
 import { observer } from "mobx-react";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
@@ -13,7 +13,7 @@ import { TopicConfiguration } from "./Tab.Config";
 import { TopicMessageView } from "./Tab.Messages";
 import { appGlobal } from "../../../state/appGlobal";
 import { TopicPartitions } from "./Tab.Partitions";
-import { TopicConfigEntry, Topic, TopicAction } from "../../../state/restInterfaces";
+import { ConfigEntry, Topic, TopicAction } from "../../../state/restInterfaces";
 import Card from "../../misc/Card";
 import { TopicConsumers } from "./Tab.Consumers";
 import { simpleUniqueId } from "../../../utils/utils";
@@ -148,7 +148,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         if (!topic) return null;
         return topic;
     }
-    @computed get topicConfig(): undefined | TopicConfigEntry[] | null {
+    @computed get topicConfig(): undefined | ConfigEntry[] | null {
         const config = api.topicConfig.get(this.props.topicName);
         if (config === undefined) return undefined;
         if (config === null || config.error != null) return null;
@@ -230,7 +230,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
     // depending on the cleanupPolicy we want to show specific config settings at the top
-    addBaseFavs(topicConfig: TopicConfigEntry[]): void {
+    addBaseFavs(topicConfig: ConfigEntry[]): void {
         const cleanupPolicy = topicConfig.find(e => e.name === 'cleanup.policy')?.value;
         const favs = uiState.topicSettings.favConfigEntries;
 

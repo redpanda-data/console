@@ -2,29 +2,24 @@ package kafka
 
 import (
 	"context"
-	"fmt"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"strconv"
 )
 
 // DescribeBrokerConfig fetches config entries which apply at the Broker Scope (e.g. offset.retention.minutes).
 // Use nil for configNames in order to get all config entries.
-func (s *Service) DescribeBrokerConfig(ctx context.Context, brokerID string, configNames []string) ([]kmsg.DescribeConfigsResponseResource, error) {
-	brokerConfigsRequest := kmsg.DescribeConfigsRequestResource{
-		ResourceType: 4,           // Broker
-		ResourceName: brokerID,    // Empty string for all brokers (only works for dynamic broker configs)
-		ConfigNames:  configNames, // Nil requests all
-	}
-	req := kmsg.DescribeConfigsRequest{
-		Resources: []kmsg.DescribeConfigsRequestResource{
-			brokerConfigsRequest,
-		},
-		IncludeSynonyms:      true,
-		IncludeDocumentation: true,
-	}
-	res, err := req.RequestWith(ctx, s.KafkaClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to request broker config: %w", err)
-	}
+func (s *Service) DescribeBrokerConfig(ctx context.Context, brokerID int32, configNames []string) (*kmsg.DescribeConfigsResponse, error) {
+	resourceReq := kmsg.NewDescribeConfigsRequestResource()
+	resourceReq.ResourceType = kmsg.ConfigResourceTypeBroker
+	resourceReq.ResourceName = strconv.Itoa(int(brokerID)) // Empty string for all brokers (only works for dynamic broker configs)
+	resourceReq.ConfigNames = configNames                  // Nil requests all
 
-	return res.Resources, nil
+	req := kmsg.NewDescribeConfigsRequest()
+	req.Resources = []kmsg.DescribeConfigsRequestResource{
+		resourceReq,
+	}
+	req.IncludeSynonyms = true
+	req.IncludeDocumentation = true
+
+	return req.RequestWith(ctx, s.KafkaClient)
 }

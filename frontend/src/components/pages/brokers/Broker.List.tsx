@@ -1,6 +1,6 @@
-import React, { ReactNode, Component } from "react";
+import React, { Component } from "react";
 import { observer } from "mobx-react";
-import { Empty, Table, Statistic, Row, Skeleton, Checkbox, Tooltip, Space, Descriptions } from "antd";
+import { Empty, Table, Statistic, Row, Tooltip, Space } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
@@ -13,9 +13,9 @@ import { observable, computed, makeObservable } from "mobx";
 import { prettyBytesOrNA } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
-import Icon, { CrownOutlined } from '@ant-design/icons';
+import { CrownOutlined } from '@ant-design/icons';
 import { DefaultSkeleton, findPopupContainer, OptionGroup } from "../../../utils/tsxUtils";
-import { DataValue } from "../topics/Tab.Config";
+import { ConfigList } from "../../misc/ConfigList";
 
 
 
@@ -45,7 +45,6 @@ class BrokerList extends PageComponent {
 
     refreshData(force: boolean) {
         api.refreshCluster(force);
-        api.refreshClusterConfig(force);
     }
 
     render() {
@@ -94,8 +93,7 @@ class BrokerList extends PageComponent {
                         columns={columns}
                         expandable={{
                             expandIconColumnIndex: 1,
-                            expandedRowRender: record => <BrokerDetails brokerId={record.brokerId} />,
-                            expandedRowClassName: r => 'noPadding',
+                            expandedRowRender: record => <BrokerDetails brokerId={record.brokerId} />
                         }}
                     />
                 </Card>
@@ -119,77 +117,57 @@ class BrokerList extends PageComponent {
 
 export default BrokerList;
 
-@observer
-class BrokerDetails extends Component<{ brokerId: number }>{
-    render() {
-        if (!api.clusterConfig) return DefaultSkeleton;
-        const id = this.props.brokerId;
+const BrokerDetails = observer(({ brokerId }: { brokerId: number }): JSX.Element => {
+    const id = brokerId;
 
-        //
-        // Normal Display
-        const configEntries = api.clusterConfig.brokerConfigs.first(e => e.brokerId == id)?.configEntries;
-        if (configEntries) return <BrokerConfigView entries={configEntries} />
-
-        //
-        // Error
-        const error = api.clusterConfig.requestErrors.first(e => e.brokerId == id);
-        if (error) return <>
-            <div className='error'>
-                <h3>Error</h3>
-                <div>
-                    <p>
-                        The backend encountered an error reading the configuration for this broker.<br />
-                    Click the blue reload button at the top of the page to try again.
-                </p>
-                </div>
-                <div className='codeBox'>
-                    {error?.errorMessage ?? '(no error message was set)'}
-                </div>
-            </div>
-        </>
-
-        //
-        // Mising Entry??
-        return <div className='error'>
-            <h3>Error</h3>
-            <div>
-                <p>The backend did not return a response for this broker</p>
-            </div>
-        </div>
+    if (api.brokerConfigs.length <= 0 || api.brokerConfigs[id] === undefined) {
+        api.refreshBrokerConfig(id);
+        return DefaultSkeleton;
     }
 
+    const brokerConfig = api.brokerConfigs[id];
+
+    // Normal Display
+    if (!brokerConfig.error) return <BrokerConfigView entries={brokerConfig.configEntries} />;
+
+
+    // Mising Entry??
+    return (
+        <div className="error">
+            <h3>Error</h3>
+            <div>
+                <p>{String(brokerConfig.error)}</p>
+            </div>
+        </div>
+    );
 }
+);
 
 @observer
 class BrokerConfigView extends Component<{ entries: BrokerConfigEntry[] }> {
     render() {
-        const entries = this.props.entries;
-        return <div className='brokerConfigView'>
-            <DetailsDisplaySettings />
-            <Descriptions
-                bordered
-                size="small"
-                colon={true}
-                layout="horizontal"
-                column={1}
-                style={{ display: "inline-block" }}
-            >
-                {entries.filter(e => uiSettings.brokerList.propsFilter == 'onlyChanged' ? !e.isDefault : true)
-                    .sort((a, b) => {
-                        if (uiSettings.brokerList.propsOrder == 'default') return 0;
-                        if (uiSettings.brokerList.propsOrder == 'alphabetical') return a.name.localeCompare(b.name);
-                        const v1 = a.isDefault ? 1 : 0;
-                        const v2 = b.isDefault ? 1 : 0;
-                        return v1 - v2;
-                    })
-                    .map(e => (
-                        <Descriptions.Item key={e.name} label={e.name}>
-                            {DataValue(e.name, e.value, e.isDefault, uiSettings.brokerList.valueDisplay)}
-                        </Descriptions.Item>
-                    ))}
-            </Descriptions>
+        const entries = this.props.entries
+            .slice()
+            .sort((a, b) => {
+                switch (uiSettings.brokerList.propsOrder) {
+                    case 'default':
+                        return 0;
+                    case 'alphabetical':
+                        return a.name.localeCompare(b.name);
+                    case 'changedFirst':
+                        if (uiSettings.brokerList.propsOrder != 'changedFirst') return 0;
+                        const v1 = a.isExplicitlySet ? 1 : 0;
+                        const v2 = b.isExplicitlySet ? 1 : 0;
+                        return v2 - v1;
+                }
+            });
 
-        </div>
+        return (
+            <div className="brokerConfigView">
+                <DetailsDisplaySettings />
+                <ConfigList configEntries={entries} valueDisplay={uiSettings.brokerList.valueDisplay} />
+            </div>
+        );
     }
 }
 
@@ -206,15 +184,6 @@ const DetailsDisplaySettings = observer(() =>
                     }}
                     value={uiSettings.brokerList.valueDisplay}
                     onChange={s => uiSettings.brokerList.valueDisplay = s}
-                />
-
-                <OptionGroup label='Filter'
-                    options={{
-                        "Show All": 'all',
-                        "Only Changed": 'onlyChanged'
-                    }}
-                    value={uiSettings.brokerList.propsFilter}
-                    onChange={s => uiSettings.brokerList.propsFilter = s}
                 />
 
                 <OptionGroup label='Sort'
