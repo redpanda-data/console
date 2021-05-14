@@ -56,8 +56,6 @@ export const KowlJsonView = (props: ReactJsonViewProps) => {
                 clickPos.x = e.clientX - parentPos.x;
                 clickPos.y = e.clientY - parentPos.y;
 
-                console.log('showing tooltip for', { x: clickPos.x, y: clickPos.y, target: target });
-
                 setVisible(false);
                 setOrRefreshTimeout(1000, () => {
                     setVisible(false);

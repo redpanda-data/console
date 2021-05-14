@@ -17,7 +17,7 @@ import { appGlobal } from '../state/appGlobal';
 import logo2 from '../assets/logo2.png';
 import { ErrorBoundary } from './misc/ErrorBoundary';
 import { IsDev, AppName, IsBusiness, basePathS } from '../utils/env';
-import { UserButton } from './misc/UserButton';
+import { UserProfile } from './misc/UserButton';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
@@ -142,16 +142,7 @@ const SideBar = observer(() =>
         </Content>
 
         {/* Profile */}
-        <div className="profile">
-            <div className="avatar">
-                <img src="https://cdn.discordapp.com/avatars/372161181080748038/ca238aec10ac4835bccee89e37793701.png?size=128" />
-            </div>
-            <div className="text">
-                <div className="userName">Martínez de Schneppí aaaaaaaaaaa aaaaaaa</div>
-                <div className="prefText">Preferences</div>
-            </div>
-        </div>
-
+        <UserProfile />
 
         {/* Toggle */}
         <Footer className='sideBarToggle' onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen }}>
@@ -259,7 +250,6 @@ const AppPageHeader = observer(() => {
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UserPreferencesButton />
-            <UserButton />
         </div>
     </MotionDiv>
 });

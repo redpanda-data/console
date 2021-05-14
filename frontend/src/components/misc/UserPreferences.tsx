@@ -41,7 +41,7 @@ const settingsTabs: { name: string, component: () => ReactNode }[] = [
 ];
 
 @observer
-class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Action }> {
+export class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Action }> {
     @observable selectedTab: string = settingsTabs[0].name;
     constructor(p: any) {
         super(p);
