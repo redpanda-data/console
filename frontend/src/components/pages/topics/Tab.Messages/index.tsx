@@ -53,8 +53,6 @@ const InputGroup = Input.Group;
 
 @observer
 export class TopicMessageView extends Component<{ topic: Topic }> {
-
-    @observable showPreviewSettings = false;
     @observable previewDisplay: string[] = [];
     // @observable allCurrentKeys: string[];
 
@@ -336,18 +334,11 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
     MessageTable = observer(() => {
 
-        // debug...
-        // let i = 0;
-        // for (const x of this.messageSource.data) {
-        //     let s = '';
-        //     for (let j = 0; j < i; j++) s += simpleUniqueId(i.toString());
-        //     x.key = s;
-        //     i += 1;
-        // }
+        const [showPreviewSettings, setShowPreviewSettings] = React.useState(false);
 
         const previewButton = <>
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button shape='round' className='hoverBorder' onClick={() => this.showPreviewSettings = true} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
+                <Button shape='round' className='hoverBorder' onClick={() => setShowPreviewSettings(true)} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
                     <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                     <span style={{ marginLeft: '.3em', fontSize: '85%' }}>Preview</span>
                     {(() => {
@@ -480,7 +471,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
                 {
                     (this.messageSource?.data?.length > 0) &&
-                    <PreviewSettings getShowDialog={() => this.showPreviewSettings} setShowDialog={s => this.showPreviewSettings = s} />
+                    <PreviewSettings getShowDialog={() => showPreviewSettings} setShowDialog={s => setShowPreviewSettings(s)} />
                 }
 
                 <ColumnSettings getShowDialog={() => this.showColumnSettings} setShowDialog={s => this.showColumnSettings = s} />
@@ -857,26 +848,12 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 
                     const tags = getPreviewTags(value, previewTags);
                     text = <span className='cellDiv fade' style={{ fontSize: '95%' }}>
-                        <div style={{ display: 'inline-flex', gap: '16px' }}>
+                        <div className={"previewTags previewTags-" + uiState.topicSettings.previewDisplayMode}>
                             {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
                         </div>
                     </span>
                     return text;
 
-                    // for (let f of previewTags) {
-                    //     const results = findElementDeep(value, f, searchOptions);
-
-                    //     if (results.length > 0) {
-                    //         const propName = (!searchOptions.returnFirstResult && uiState.topicSettings.previewShowResultCount)
-                    //             ? `${results[0].propertyName}(${results.length})`
-                    //             : results[0].propertyName;
-
-                    //         if (results.length == 1 || searchOptions.returnFirstResult)
-                    //             previewObj[propName] = results[0].value; // show only first value
-                    //         else
-                    //             previewObj[propName] = results.map(r => r.value); // show array of all found values
-                    //     }
-                    // }
                 }
                 else {
                     // Normal display (json, no filters). Just stringify the whole object

@@ -13,6 +13,8 @@ export interface PreviewTag {
     id: string;
     isActive: boolean;
     text: string;
+
+    customName?: string;
 }
 
 export interface ColumnList {
@@ -98,7 +100,8 @@ export class TopicDetailsSettings {
     @observable previewTagsCaseSensitive = false;
 
     @observable previewMultiResultMode = 'showAll' as 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
-    @observable previewShowResultCount = false;
+    @observable previewDisplayMode = 'wrap' as 'single' | 'wrap' | 'rows'; // only one line / wrap / seperate line for each result
+
     // @observable previewResultLimit: 3; // todo
     @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
     @observable showMessageMetadata = true;

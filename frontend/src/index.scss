@@ -2484,3 +2484,101 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         padding: 8px 14px;
     }
 }
+
+// The inline view thing in the Messages table (value column), that contains all the 'preview results'
+.previewTags {
+    display: inline-flex;
+    column-gap: 12px;
+    row-gap: 2px;
+
+    .previewTag {
+        display: inline-flex;
+        place-items: center;
+        gap: 4px;
+
+        .path {
+            font-family: monospace;
+            font-size: x-small;
+            padding: 3px 6px;
+            margin-top: 2px;
+
+            border-radius: 10px;
+            background: hsl(0deg, 0%, 90%);
+            color: hsl(0deg, 0%, 30%);
+        }
+
+    }
+
+    &-single {
+        // one row for all results, overflow is just hidden
+    }
+
+    &-wrap {
+        // simple wrapping
+        flex-wrap: wrap;
+    }
+
+    &-rows {
+        // new row for each result
+        flex-direction: column;
+    }
+}
+
+.previewTagsList {
+    padding: .5em;
+    border-radius: 4px;
+    background: rgba(200, 205, 210, 0.16);
+
+    max-height: 300px;
+    overflow: hidden;
+    overflow-y: auto;
+
+    .moveHandle {
+        display: inline-flex;
+        align-self: stretch;
+        place-items: center;
+        width: 28px;
+        margin-left: 2px;
+        padding-top: 1px;
+
+        color: hsl(0deg, 0%, 58%);
+    }
+
+    .description {
+        padding-left: 8px;
+        font-size: 12px;
+        color: hsl(0deg, 0%, 40%);
+    }
+
+    input.ant-select-selection-search-input {
+        height: 21px;
+    }
+
+    .removeButton {
+        display: inline-flex;
+        align-self: stretch;
+        place-items: center;
+        width: 26px;
+
+        color: hsl(0deg, 0%, 58%);
+        cursor: pointer;
+    }
+}
+
+.previewTagsSettings {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 16px;
+    row-gap: 8px;
+
+    .ant-radio-group {
+        .ant-radio-button-wrapper {
+            padding: 0 12px;
+            height: 26px;
+
+            line-height: 24px;
+        }
+    }
+
+
+}
