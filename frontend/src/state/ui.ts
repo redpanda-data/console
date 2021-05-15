@@ -123,6 +123,11 @@ const uiSettings = observable({
     topicDetailsActiveTabKey: undefined as TopicTabId | undefined,
 
     topicDetailsShowStatisticsBar: true, // for now: global for all topic details
+    jsonViewer: {
+        fontSize: '12px',
+        lineHeight: '1em',
+        maxStringLength: 200,
+    },
 
     // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
     brokerList: {

@@ -78,6 +78,7 @@ h2 {
 */
 .react-json-view {
     padding-left: 1em;
+    font-size: 22px;
 
     .icon-container {
         position: absolute;
@@ -1383,7 +1384,8 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
 
 .ant-modal.preferencesDialog {
     width: 75% !important;
-    height: 100%;
+    max-width: 700px;
+    height: auto;
     max-height: 85%;
     display: inline-flex;
     justify-content: center;
@@ -1413,6 +1415,17 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     .ant-menu-vertical .ant-menu-item:not(:last-child) {
         margin-bottom: 2px;
     }
+
+    input.ant-input,
+    .ant-input-number-input {
+        padding: 3px 8px;
+    }
+
+    .ant-input-number {
+        width: auto;
+        height: 30px;
+    }
+
 }
 
 .smallText {

@@ -1,6 +1,8 @@
 import { message, Tooltip } from 'antd';
+import { observer } from 'mobx-react';
 import React, { useState } from 'react';
 import JsonView, { ReactJsonViewProps } from 'react-json-view';
+import { uiSettings } from '../../state/ui';
 import { findPopupContainer } from '../../utils/tsxUtils';
 import styles from './KowlJsonView.module.scss';
 const { setTimeout } = window;
@@ -22,12 +24,15 @@ const setOrRefreshTimeout = (duration: number, action: () => void) => {
     }, duration);
 }
 
-export const KowlJsonView = (props: ReactJsonViewProps) => {
+export const KowlJsonView = observer((props: ReactJsonViewProps) => {
     const { style, ...restProps } = props;
-    const mergedStyles = Object.assign({ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }, style);
+
+    const settings = uiSettings.jsonViewer;
+    const mergedStyles = Object.assign({ fontSize: settings.fontSize, lineHeight: settings.lineHeight, whiteSpace: 'normal' }, style);
 
     const [visible, setVisible] = useState(false);
     const containerRef = React.useRef<HTMLDivElement>(null);
+
 
     return (
         <div className="copyHintContainer" ref={containerRef}
@@ -79,7 +84,7 @@ export const KowlJsonView = (props: ReactJsonViewProps) => {
                     displayObjectSize={true}
                     enableClipboard={false}
                     name={null}
-                    collapseStringsAfterLength={200}
+                    collapseStringsAfterLength={settings.maxStringLength}
                     groupArraysAfterLength={100}
                     indentWidth={5}
                     iconStyle="triangle"
@@ -97,4 +102,4 @@ export const KowlJsonView = (props: ReactJsonViewProps) => {
             </Tooltip>
         </div>
     );
-}
+})
