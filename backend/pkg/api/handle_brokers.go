@@ -27,7 +27,7 @@ func (api *API) handleBrokerConfig() http.HandlerFunc {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
-		brokerID, err := strconv.Atoi(brokerIDStr)
+		brokerID, err := strconv.ParseInt(brokerIDStr, 10, 32)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("broker id in URL not set"),
