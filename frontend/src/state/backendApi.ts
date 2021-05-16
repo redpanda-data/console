@@ -8,7 +8,7 @@ import {
     SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
     TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
     PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
-    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, GetTopicOffsetsByTimestampRequestTopic, TopicOffset, GetTopicOffsetsByTimestampResponse, GetTopicOffsetsByTimestampRequest, BrokerConfig, BrokerConfigResponse
+    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, GetTopicOffsetsByTimestampRequestTopic, TopicOffset, GetTopicOffsetsByTimestampResponse, GetTopicOffsetsByTimestampRequest, BrokerConfig, BrokerConfigResponse, ConfigEntry
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -190,7 +190,7 @@ const apiStore = {
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
 
-    brokerConfigs: observable([]) as (Array<BrokerConfig>),
+    brokerConfigs: new Map<number, ConfigEntry[]>(),
 
     adminInfo: undefined as (AdminInfo | undefined | null),
 
@@ -548,33 +548,23 @@ const apiStore = {
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
             .then(v => {
-
-                // don't assign if the value didn't change
-                // we'd re-trigger all observers!
-                if (comparer.structural(this.clusterInfo, v.clusterInfo)) return;
-
                 transaction(() => {
-                    this.clusterInfo = v.clusterInfo;
-                    this.brokerConfigs = v.clusterInfo.brokers.map(b => ({
-                        brokerId: b.brokerId,
-                        configEntries: b.configs,
-                    }));
+                    // don't assign if the value didn't change
+                    // we'd re-trigger all observers!
+                    if (!comparer.structural(this.clusterInfo, v.clusterInfo))
+                        this.clusterInfo = v.clusterInfo;
+
+                    for (const b of v.clusterInfo.brokers)
+                        this.brokerConfigs.set(b.brokerId, b.configs);
                 });
 
             }, addError);
     },
 
     refreshBrokerConfig(brokerId: number, force?: boolean) {
-        cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force).then(v => this.brokerConfigs[brokerId] = {
-            brokerId,
-            configEntries: v.brokerConfigs
-        }).catch(e => {
-            this.brokerConfigs[brokerId] = {
-                brokerId,
-                configEntries: [],
-                error: e
-            }
-        });
+        cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force).then(v => {
+            this.brokerConfigs.set(brokerId, v.brokerConfigs);
+        }).catch(addError);
     },
 
     refreshConsumerGroup(groupId: string, force?: boolean) {

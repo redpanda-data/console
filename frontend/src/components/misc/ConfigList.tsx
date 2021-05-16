@@ -1,5 +1,5 @@
 import { EyeInvisibleTwoTone, InfoCircleFilled, LockOutlined } from '@ant-design/icons';
-import { Popover, Table } from 'antd';
+import { Popover, Table, Tooltip } from 'antd';
 import React, { useState } from 'react';
 import { ConfigEntry } from '../../state/restInterfaces';
 import { ValueDisplay } from '../../state/ui';
@@ -30,8 +30,12 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
                         </span>
                     </Popover>
                     <span className={styles.configFlags}>
-                        {record.isSensitive && <EyeInvisibleTwoTone twoToneColor="#1890ff" />}
-                        {record.isReadOnly && <LockOutlined twoToneColor="#1890ff" style={{ color: '#1890ff' }} />}
+                        <Tooltip overlay="Value has been redacted because it's sensitive">
+                            {record.isSensitive && <EyeInvisibleTwoTone twoToneColor="#1890ff" />}
+                        </Tooltip>
+
+                        {/* value reported by kafka seems to be wrong (?) so we'll not display the value */}
+                        {/* {record.isReadOnly && <LockOutlined twoToneColor="#1890ff" style={{ color: '#1890ff' }} />} */}
                     </span>
                 </div>
             )

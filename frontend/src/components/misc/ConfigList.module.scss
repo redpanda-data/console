@@ -10,6 +10,7 @@
 .name {
     display: flex;
     align-items: center;
+    gap: 8px;
 
     .nameText {
         display: inline-block;
@@ -94,8 +95,8 @@
             white-space: nowrap;
         }
 
-        .name {
-            background-color: #ececec;
-        }
+        // .name {
+        //     background-color: #ececec;
+        // }
     }
 }

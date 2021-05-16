@@ -120,28 +120,26 @@ export default BrokerList;
 const BrokerDetails = observer(({ brokerId }: { brokerId: number }): JSX.Element => {
     const id = brokerId;
 
-    if (api.brokerConfigs.length <= 0 || api.brokerConfigs[id] === undefined) {
+    const brokerConfigs = api.brokerConfigs.get(id);
+    if (brokerConfigs === undefined || brokerConfigs.length == 0) {
         api.refreshBrokerConfig(id);
         return DefaultSkeleton;
     }
 
-    const brokerConfig = api.brokerConfigs[id];
-
     // Normal Display
-    if (!brokerConfig.error) return <BrokerConfigView entries={brokerConfig.configEntries} />;
+    return <BrokerConfigView entries={brokerConfigs} />;
 
 
     // Mising Entry??
-    return (
-        <div className="error">
-            <h3>Error</h3>
-            <div>
-                <p>{String(brokerConfig.error)}</p>
-            </div>
-        </div>
-    );
-}
-);
+    // return (
+    //     <div className="error">
+    //         <h3>Error</h3>
+    //         <div>
+    //             <p>{String(brokerConfig.error)}</p>
+    //         </div>
+    //     </div>
+    // );
+});
 
 @observer
 class BrokerConfigView extends Component<{ entries: BrokerConfigEntry[] }> {
