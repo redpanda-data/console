@@ -187,8 +187,10 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
         return <Modal
             title="Throttle Settings"
-            visible={this.props.visible} maskClosable={true}
+            visible={this.props.visible} maskClosable={true} closeIcon={<></>}
             width="700px"
+
+            onCancel={this.props.onClose}
 
             footer={<div style={{ display: 'flex' }}>
                 <Button
