@@ -58,7 +58,8 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
             title: (
                 <span className={styles.sourceHeader}>
                     Source
-                    <Popover content={"Some text that describes what 'Source' is. Yet TBD."} title="Source" trigger="hover" placement="left" getPopupContainer={findPopupContainer}>
+                    <Popover content={<div style={{ width: '300px' }}><p>Resources can be configured at different levels. Example: A topic config may be inherited from the static broker config.</p><p>Valid sources are: Dynamic Topic, Dynamic Broker, Default Broker, Static Broker, Dynamic Broker Logger and Default config.</p></div>}
+                        title="Source" trigger="hover" placement="left" getPopupContainer={findPopupContainer}>
                         <InfoCircleFilled style={{ color: '#bbbbbb' }} />
                     </Popover>
                 </span>
