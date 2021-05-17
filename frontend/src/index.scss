@@ -1254,10 +1254,6 @@ svg {
     }
 }
 
-.ant-collapse-header {
-    user-select: none;
-}
-
 // arrows are not centered by default (maybe it has something to do with the font size of the title, or other elements in there?)
 div.ant-collapse.ant-collapse-borderless>div>div>span {
     padding: 9px 0 0 !important;
@@ -2349,6 +2345,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     display: flex;
     align-items: center;
     height: 62px;
+    flex-shrink: 0;
 
     padding: 0 18px;
     gap: 11px;
