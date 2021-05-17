@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/cloudhut/common/flagext"
+	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
@@ -26,10 +27,11 @@ type Config struct {
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 	FrontendPath     string `yaml:"frontendPath"`  // path to frontend files (index.html), set to './build' by default
 
-	Owl    owl.Config     `yaml:"owl"`
-	REST   rest.Config    `yaml:"server"`
-	Kafka  kafka.Config   `yaml:"kafka"`
-	Logger logging.Config `yaml:"logger"`
+	Owl     owl.Config     `yaml:"owl"`
+	Connect connect.Config `yaml:"connect"`
+	REST    rest.Config    `yaml:"server"`
+	Kafka   kafka.Config   `yaml:"kafka"`
+	Logger  logging.Config `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs

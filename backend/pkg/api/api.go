@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
@@ -13,10 +14,11 @@ import (
 type API struct {
 	Cfg *Config
 
-	Logger   *zap.Logger
-	KafkaSvc *kafka.Service
-	OwlSvc   *owl.Service
-	GitSvc   *git.Service
+	Logger     *zap.Logger
+	KafkaSvc   *kafka.Service
+	OwlSvc     *owl.Service
+	ConnectSvc *connect.Service
+	GitSvc     *git.Service
 
 	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
 
@@ -56,13 +58,19 @@ func New(cfg *Config) *API {
 		logger.Fatal("failed to create owl service", zap.Error(err))
 	}
 
+	connectSvc, err := connect.NewService(cfg.Connect, logger)
+	if err != nil {
+		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
+	}
+
 	return &API{
-		Cfg:      cfg,
-		Logger:   logger,
-		KafkaSvc: kafkaSvc,
-		OwlSvc:   owlSvc,
-		Hooks:    newDefaultHooks(),
-		version:  version,
+		Cfg:        cfg,
+		Logger:     logger,
+		KafkaSvc:   kafkaSvc,
+		OwlSvc:     owlSvc,
+		ConnectSvc: connectSvc,
+		Hooks:      newDefaultHooks(),
+		version:    version,
 	}
 }
 
