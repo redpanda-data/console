@@ -3,7 +3,11 @@
 }
 
 .overidden {
-    font-weight: 700;
+    color: #696969;
+
+    .type {
+        font-weight: 600;
+    }
 }
 
 
@@ -21,7 +25,6 @@
         background-color: #f5f5f5;
 
         font-family: monospace;
-        color: #696969;
 
         max-width: 360px;
         text-overflow: ellipsis;
