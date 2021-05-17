@@ -407,56 +407,6 @@ class ReassignPartitions extends PageComponent {
         }
     }
 
-    async resetTrafficLimit(topicNames: string[], brokerIds: number[]): Promise<boolean> {
-        const configRequest: PatchConfigsRequest = { resources: [] };
-
-        for (const b of brokerIds) {
-            configRequest.resources.push({
-                resourceType: ConfigResourceType.Broker,
-                resourceName: String(b),
-                configs: [
-                    { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                    { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
-                ]
-            });
-        }
-
-        // reset throttled replicas for those topics
-        for (const t of topicNames) {
-            configRequest.resources.push({
-                resourceType: ConfigResourceType.Topic,
-                resourceName: t,
-                configs: [
-                    { name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Delete },
-                    { name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Delete }
-                ],
-            });
-        }
-
-        const msg = new Message("Resetting bandwidth throttle... 1/2");
-        try {
-
-            let response = await api.resetThrottledReplicas(topicNames);
-            let errors = response.patchedConfigs.filter(c => c.error);
-            if (errors.length > 0)
-                throw new Error(toJson(errors));
-
-            msg.setLoading("Resetting bandwidth throttle... 2/2");
-
-            response = await api.resetReplicationThrottleRate(brokerIds);
-            errors = response.patchedConfigs.filter(c => c.error);
-            if (errors.length > 0)
-                throw new Error(toJson(errors));
-
-            msg.setSuccess("Resetting bandwidth throttle... done");
-            return true;
-        } catch (err) {
-            msg.hide();
-            console.error("error resetting throttle", err);
-            return false;
-        }
-    }
-
     setReassignError(startedCount: number, errors: {
         topicName: string;
         partitions: AlterPartitionReassignmentsPartitionResponse[];

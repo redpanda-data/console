@@ -711,10 +711,10 @@ export enum ConfigResourceType {
 // }
 
 export enum AlterConfigOperation {
-    Set = 0,
-    Delete = 1,
-    Append = 2,
-    Subtract = 3,
+    Set = 0, // set a config key
+    Delete = 1, // remove/unset a config key
+    Append = 2, // add a value to a list
+    Subtract = 3, // remove a value from a list
 }
 
 export interface IncrementalAlterConfigsRequestResourceConfig {

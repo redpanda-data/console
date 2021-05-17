@@ -831,6 +831,20 @@ const apiStore = {
 
         const configRequest: PatchConfigsRequest = { resources: [] };
 
+        // We currently only set replication throttle on each broker, instead of cluster-wide (same effect, but different kind of 'ConfigSource')
+        // So we don't remove the cluster-wide setting, only the ones we've set (the per-broker) settings
+
+        // remove throttle configs from all brokers (DYNAMIC_DEFAULT_BROKER_CONFIG)
+        // configRequest.resources.push({
+        //     resourceType: ConfigResourceType.Broker,
+        //     resourceName: "", // empty = all brokers
+        //     configs: [
+        //         { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
+        //         { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+        //     ]
+        // });
+
+        // remove throttle configs from each broker individually (DYNAMIC_BROKER_CONFIG)
         for (const b of brokerIds) {
             configRequest.resources.push({
                 resourceType: ConfigResourceType.Broker,
