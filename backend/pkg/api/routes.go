@@ -63,25 +63,33 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/api-versions", api.handleGetAPIVersions())
 				r.Get("/cluster/config", api.handleClusterConfig())
 				r.Get("/cluster", api.handleDescribeCluster())
-				r.Get("/topics", api.handleGetTopics())
 				r.Get("/acls", api.handleGetACLsOverview())
+
 				r.Get("/topics-configs", api.handleGetTopicsConfigs())
 				r.Get("/topics-offsets", api.handleGetTopicsOffsets())
+				r.Get("/topics", api.handleGetTopics())
 				r.Get("/topics/{topicName}/partitions", api.handleGetPartitions())
 				r.Get("/topics/{topicName}/configuration", api.handleGetTopicConfig())
 				r.Get("/topics/{topicName}/consumers", api.handleGetTopicConsumers())
 				r.Get("/topics/{topicName}/documentation", api.handleGetTopicDocumentation())
+
+				r.Get("/consumer-groups", api.handleGetConsumerGroups())
 				r.Get("/consumer-groups/{groupId}", api.handleGetConsumerGroup())
 				r.Patch("/consumer-groups/{groupId}", api.handlePatchConsumerGroup())
 				r.Delete("/consumer-groups/{groupId}", api.handleDeleteConsumerGroupOffsets())
+
 				r.Get("/operations/topic-details", api.handleGetAllTopicDetails())
 				r.Get("/operations/reassign-partitions", api.handleGetPartitionReassignments())
 				r.Patch("/operations/reassign-partitions", api.handlePatchPartitionAssignments())
 				r.Patch("/operations/configs", api.handlePatchConfigs())
-				r.Get("/consumer-groups", api.handleGetConsumerGroups())
-				r.Get("/kowl/endpoints", api.handleGetEndpoints())
+
 				r.Get("/schemas", api.handleGetSchemaOverview())
 				r.Get("/schemas/subjects/{subject}/versions/{version}", api.handleGetSchemaDetails())
+
+				r.Get("/kafka-connect/connectors", api.handleGetConnectors())
+				r.Get("/kafka-connect/clusters/{clusterName}/connectors/{connector}", api.handleGetConnector())
+
+				r.Get("/kowl/endpoints", api.handleGetEndpoints())
 			})
 		})
 

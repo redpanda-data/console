@@ -3,7 +3,11 @@ package connect
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
+	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,14 +16,19 @@ import (
 type Service struct {
 	Cfg              Config
 	Logger           *zap.Logger
-	ClientsByCluster map[ConfigCluster]*Client
+	ClientsByCluster map[ /*ClusterName*/ string]*ClientWithConfig
+}
+
+type ClientWithConfig struct {
+	Client *Client
+	Cfg    ConfigCluster
 }
 
 func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 	logger.Info("creating Kafka connect HTTP clients and testing connectivity to all clusters")
 
 	// 1. Create a client for each configured Connect cluster
-	clientsByCluster := make(map[ConfigCluster]*Client)
+	clientsByCluster := make(map[string]*ClientWithConfig)
 	for _, clusterCfg := range cfg.Clusters {
 		// Create dedicated Connect HTTP Client for each cluster
 		childLogger := logger.With(
@@ -49,7 +58,10 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 
 		// Create client
 		client := NewClient(opts...)
-		clientsByCluster[clusterCfg] = client
+		clientsByCluster[clusterCfg.Name] = &ClientWithConfig{
+			Client: client,
+			Cfg:    clusterCfg,
+		}
 	}
 	svc := &Service{
 		Cfg:              cfg,
@@ -71,12 +83,96 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 	}, nil
 }
 
+type GetConnectorsShard struct {
+	ClusterName    string                         `json:"clusterName"`
+	ClusterAddress string                         `json:"clusterAddress"`
+	Connectors     ListConnectorsResponseExpanded `json:"connectors"`
+	Error          string                         `json:"error,omitempty"`
+}
+
+// GetConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
+// sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
+// for too long.
+func (s *Service) GetConnectors(ctx context.Context) []GetConnectorsShard {
+	ch := make(chan GetConnectorsShard, len(s.ClientsByCluster))
+	for _, cluster := range s.ClientsByCluster {
+		go func(cfg ConfigCluster, c *Client) {
+			connectors, err := c.ListConnectorsExpanded(ctx, ListConnectorsOptions{ExpandInfo: true, ExpandStatus: true})
+			errMsg := ""
+			if err != nil {
+				s.Logger.Warn("failed to list connectors from Kafka connect cluster",
+					zap.String("cluster_name", cfg.Name), zap.String("cluster_address", cfg.URL), zap.Error(err))
+				errMsg = err.Error()
+			}
+			ch <- GetConnectorsShard{
+				ClusterName:    cfg.Name,
+				ClusterAddress: cfg.URL,
+				Connectors:     connectors,
+				Error:          errMsg,
+			}
+		}(cluster.Cfg, cluster.Client)
+	}
+
+	shards := make([]GetConnectorsShard, cap(ch))
+	for i := 0; i < cap(ch); i++ {
+		shards[i] = <-ch
+	}
+	return shards
+}
+
+type ConnectorInfoWithStatus struct {
+	ConnectorStateInfo
+	Config map[string]string `json:"config"`
+}
+
+// GetConnector requests the connector info as well as the status info and merges both information together. If either
+// request fails an error will be returned.
+func (s *Service) GetConnector(ctx context.Context, clusterName string, connector string) (ConnectorInfoWithStatus, *rest.Error) {
+	c, exists := s.ClientsByCluster[clusterName]
+	if !exists {
+		return ConnectorInfoWithStatus{}, &rest.Error{
+			Err:          fmt.Errorf("a client for the given cluster name does not exist"),
+			Status:       http.StatusNotFound,
+			Message:      "There's no configured cluster with the given connect cluster name",
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	cInfo, err := c.Client.GetConnector(ctx, connector)
+	if err != nil {
+		return ConnectorInfoWithStatus{}, &rest.Error{
+			Err:          err,
+			Status:       http.StatusServiceUnavailable,
+			Message:      fmt.Sprintf("Kafka connect cluster failed to respond: %v", err.Error()),
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	stateInfo, err := c.Client.GetConnectorStatus(ctx, connector)
+	if err != nil {
+		return ConnectorInfoWithStatus{}, &rest.Error{
+			Err:          err,
+			Status:       http.StatusServiceUnavailable,
+			Message:      fmt.Sprintf("Kafka connect cluster failed to respond: %v", err.Error()),
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	return ConnectorInfoWithStatus{
+		ConnectorStateInfo: stateInfo,
+		Config:             cInfo.Config,
+	}, nil
+}
+
 // TestConnectivity will send to each Kafka connect client a request to check if it is reachable. If a cluster is not
 // reachable an error log message will be printed.
 func (s *Service) TestConnectivity(ctx context.Context) {
 	var successfulChecks uint32
 	wg := sync.WaitGroup{}
-	for cfg, client := range s.ClientsByCluster {
+	for _, clientInfo := range s.ClientsByCluster {
 		wg.Add(1)
 		go func(cfg ConfigCluster, c *Client) {
 			defer wg.Done()
@@ -89,7 +185,7 @@ func (s *Service) TestConnectivity(ctx context.Context) {
 				return
 			}
 			atomic.AddUint32(&successfulChecks, 1)
-		}(cfg, client)
+		}(clientInfo.Cfg, clientInfo.Client)
 	}
 	wg.Wait()
 	s.Logger.Info("tested Kafka connect cluster connectivity",
