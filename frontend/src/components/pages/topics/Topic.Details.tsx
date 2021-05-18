@@ -1,31 +1,31 @@
-import React, { Component, CSSProperties, useState } from "react";
-import { Row, Tabs, Skeleton, Radio, Checkbox, Button, Select, Input, Typography, Result, Space, Popover, Tooltip } from "antd";
-import { observer } from "mobx-react";
-import { api } from "../../../state/backendApi";
-import { uiSettings } from "../../../state/ui";
-import { PageComponent, PageInitHelper } from "../Page";
+import { LockIcon } from "@primer/octicons-v2-react";
+import { Button, Popover, Result, Tabs, Typography } from "antd";
 import { motion } from "framer-motion";
+import { computed, makeObservable } from "mobx";
+import { observer } from "mobx-react";
+import React from "react";
+import { appGlobal } from "../../../state/appGlobal";
+import { api } from "../../../state/backendApi";
+import { Topic, TopicAction, TopicConfigEntry } from "../../../state/restInterfaces";
+import { uiSettings } from "../../../state/ui";
+import { uiState } from "../../../state/uiState";
 import { animProps } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
-import { uiState } from "../../../state/uiState";
-import { TopicQuickInfoStatistic } from "./QuickInfo";
-import { TopicConfiguration } from "./Tab.Config";
-import { TopicMessageView } from "./Tab.Messages";
-import { appGlobal } from "../../../state/appGlobal";
-import { TopicPartitions } from "./Tab.Partitions";
-import { TopicConfigEntry, Topic, TopicAction } from "../../../state/restInterfaces";
+import { DefaultSkeleton } from "../../../utils/tsxUtils";
 import Card from "../../misc/Card";
-import { TopicConsumers } from "./Tab.Consumers";
-import { simpleUniqueId } from "../../../utils/utils";
-import { Label, ObjToKv, OptionGroup, DefaultSkeleton } from "../../../utils/tsxUtils";
-import { LockIcon, EyeClosedIcon } from "@primer/octicons-v2-react";
-import { computed, makeObservable, observable } from "mobx";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
+import { PageComponent, PageInitHelper } from "../Page";
+import { TopicQuickInfoStatistic } from "./QuickInfo";
+import TopicAclList from "./Tab.Acl/TopicAclList";
+import { TopicConfiguration } from "./Tab.Config";
+import { TopicConsumers } from "./Tab.Consumers";
 import { TopicDocumentation } from "./Tab.Docu";
+import { TopicMessageView } from "./Tab.Messages";
+import { TopicPartitions } from "./Tab.Partitions";
 
 const { Text } = Typography;
 
-const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation'] as const;
+const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = typeof TopicTabIds[number];
 
 // A tab (specifying title+content) that disable/lock itself if the user doesn't have some required permissions.
@@ -98,6 +98,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', t => <TopicPartitions topic={t} />),
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', t => <TopicConfiguration topic={t} />),
             new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', t => <TopicDocumentation topic={t} />),
+            new TopicTab(topic, 'topicacl', 'all', 'ACL', t => <TopicAclList topicAcls={api.topicAcls.get(t.topicName)} />)
         ];
         makeObservable(this);
     }
@@ -139,6 +140,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         // documentation can be lazy loaded
         if (uiSettings.topicDetailsActiveTabKey == 'documentation')
             api.refreshTopicDocumentation(this.props.topicName, force);
+
+        // ACL can be lazy loaded
+        if (uiSettings.topicDetailsActiveTabKey == 'topicacl')
+        api.refreshTopicAcls(this.props.topicName, force);
     }
 
 
