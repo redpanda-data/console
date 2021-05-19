@@ -373,7 +373,7 @@ export interface Broker {
 }
 export interface BrokerConfig {
     configs: ConfigEntry[];
-    error: ApiError | undefined;
+    error: string | undefined;
 }
 
 
