@@ -19,6 +19,7 @@ import { uiState } from "../../../state/uiState";
 import { DefaultSkeleton, Label, OptionGroup } from "../../../utils/tsxUtils";
 import { BrokerList } from "../reassign-partitions/components/BrokerList";
 import { ShortNum } from "../../misc/ShortNum";
+import { KowlTable } from "../../misc/KowlTable";
 
 
 @observer
@@ -89,6 +90,32 @@ class GroupList extends PageComponent {
                     </div>
 
                     {/* Content */}
+                    <KowlTable
+                        dataSource={groups}
+                        columns={[
+                            { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
+                            {
+                                title: 'ID', dataIndex: 'groupId',
+                                sorter: sortField('groupId'),
+                                filteredValue: [uiSettings.consumerGroupList.quickSearch],
+                                onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
+                                render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
+                            },
+                            { title: 'Coordinator', dataIndex: 'coordinatorId', width: 1, render: (x: number) => <BrokerList brokerIds={[x]} /> },
+                            { title: 'Protocol', dataIndex: 'protocol', width: 1 },
+                            { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length, defaultSortOrder: 'descend' },
+                            { title: 'Lag (Sum)', dataIndex: 'lagSum', render: v => ShortNum({ value: v }), sorter: (a, b) => a.lagSum - b.lagSum },
+                        ]}
+
+                        rowKey={x => x.groupId}
+                        rowClassName="hoverLink"
+                        onRow={(record) =>
+                        ({
+                            onClick: () => appGlobal.history.push('/groups/' + record.groupId),
+                        })}
+                    />
+                    <div style={{ height: '40px' }} />
+
                     <Table
                         style={{ margin: '0', padding: '0' }} size={'middle'}
                         onRow={(record) =>

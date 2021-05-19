@@ -1,0 +1,20 @@
+.kowlTable {
+
+    th.ant-table-cell {
+        cursor: default;
+    }
+
+    :global(.ant-table-footer) {
+        padding: 0 !important;
+        background: unset !important;
+
+        display: flex;
+        justify-content: flex-end;
+        margin: 16px 1px 4px 1px;
+
+        :global(.ant-pagination-total-text) {
+            // font-family: 'Open Sans';
+            font-size: 12px;
+        }
+    }
+}
