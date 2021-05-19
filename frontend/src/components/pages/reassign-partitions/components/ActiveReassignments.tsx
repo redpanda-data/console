@@ -1,7 +1,7 @@
 import React, { Component, useState } from "react";
 import { Tag, Popover, Tooltip, ConfigProvider, Table, Progress, Button, Modal, Slider, Popconfirm, Checkbox, Skeleton, message } from "antd";
 import { LazyMap } from "../../../../utils/LazyMap";
-import { Broker, Partition, PartitionReassignmentsPartition } from "../../../../state/restInterfaces";
+import { Broker, ConfigEntry, Partition, PartitionReassignmentsPartition } from "../../../../state/restInterfaces";
 import { api, brokerMap } from "../../../../state/backendApi";
 import { computed, makeObservable, observable } from "mobx";
 import { DefaultSkeleton, findPopupContainer, QuickTable } from "../../../../utils/tsxUtils";
@@ -141,10 +141,12 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
 
     @computed get throttleSettings(): ({ followerThrottle: number | undefined, leaderThrottle: number | undefined }) {
         const leaderThrottle = [...api.brokerConfigs.values()]
-            .flatMap(c => c)
+            .filter(c => typeof c != 'string')
+            .flatMap(c => c as ConfigEntry[])
             .first(e => e.name == 'leader.replication.throttled.rate');
         const followerThrottle = [...api.brokerConfigs.values()]
-            .flatMap(c => c)
+            .filter(c => typeof c != 'string')
+            .flatMap(c => c as ConfigEntry[])
             .first(e => e.name == 'follower.replication.throttled.rate');
 
         const result = {

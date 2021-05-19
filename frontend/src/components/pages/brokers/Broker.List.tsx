@@ -126,21 +126,18 @@ const BrokerDetails = observer(({ brokerId }: { brokerId: number }): JSX.Element
         return DefaultSkeleton;
     }
 
-
+    // Handle error while getting config
+    if (typeof brokerConfigs == 'string') return (
+        <div className="error">
+            <h3>Error</h3>
+            <div>
+                <p>{brokerConfigs}</p>
+            </div>
+        </div>
+    );
 
     // Normal Display
     return <BrokerConfigView entries={brokerConfigs} />;
-
-
-    // Mising Entry??
-    // return (
-    //     <div className="error">
-    //         <h3>Error</h3>
-    //         <div>
-    //             <p>{String(brokerConfig.error)}</p>
-    //         </div>
-    //     </div>
-    // );
 });
 
 @observer

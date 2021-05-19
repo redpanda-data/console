@@ -838,14 +838,6 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
                 const previewTags = this.props.previewFields();
                 if (previewTags.length > 0) {
-                    // Json!
-                    // Construct our preview object
-                    const previewObj: any = {};
-                    const searchOptions = {
-                        caseSensitive: uiState.topicSettings.previewTagsCaseSensitive,
-                        returnFirstResult: uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst'
-                    };
-
                     const tags = getPreviewTags(value, previewTags);
                     text = <span className='cellDiv fade' style={{ fontSize: '95%' }}>
                         <div className={"previewTags previewTags-" + uiState.topicSettings.previewDisplayMode}>
