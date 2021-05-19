@@ -144,7 +144,7 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 		return ConnectorInfoWithStatus{}, &rest.Error{
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
-			Message:      fmt.Sprintf("Kafka connect cluster failed to respond: %v", err.Error()),
+			Message:      fmt.Sprintf("Failed to get connector info: %v", err.Error()),
 			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
 			IsSilent:     false,
 		}
@@ -155,7 +155,7 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 		return ConnectorInfoWithStatus{}, &rest.Error{
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
-			Message:      fmt.Sprintf("Kafka connect cluster failed to respond: %v", err.Error()),
+			Message:      fmt.Sprintf("Failed to get connector state: %v", err.Error()),
 			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
 			IsSilent:     false,
 		}
@@ -165,6 +165,34 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 		ConnectorStateInfo: stateInfo,
 		Config:             cInfo.Config,
 	}, nil
+}
+
+// DeleteConnector deletes a connector, halting all tasks and deleting its configuration.
+// Returns 409 (Conflict) if a rebalance is in process.
+func (s *Service) DeleteConnector(ctx context.Context, clusterName string, connector string) *rest.Error {
+	c, exists := s.ClientsByCluster[clusterName]
+	if !exists {
+		return &rest.Error{
+			Err:          fmt.Errorf("a client for the given cluster name does not exist"),
+			Status:       http.StatusNotFound,
+			Message:      "There's no configured cluster with the given connect cluster name",
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	err := c.Client.DeleteConnector(ctx, connector)
+	if err != nil {
+		return &rest.Error{
+			Err:          err,
+			Status:       http.StatusServiceUnavailable,
+			Message:      fmt.Sprintf("Failed to delete connector: %v", err.Error()),
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	return nil
 }
 
 // TestConnectivity will send to each Kafka connect client a request to check if it is reachable. If a cluster is not

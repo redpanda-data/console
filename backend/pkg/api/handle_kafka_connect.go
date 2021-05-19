@@ -14,6 +14,7 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
+		// TODO: Add Hook
 		connectors := api.ConnectSvc.GetConnectors(ctx)
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, connectors)
@@ -28,6 +29,7 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
+		// TODO: Add hook
 		connectors, restErr := api.ConnectSvc.GetConnector(ctx, clusterName, connector)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -35,5 +37,24 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 		}
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, connectors)
+	}
+}
+
+func (api *API) handleDeleteConnector() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clusterName := chi.URLParam(r, "clusterName")
+		connector := chi.URLParam(r, "connector")
+
+		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		defer cancel()
+
+		// TODO: Add hook
+		restErr := api.ConnectSvc.DeleteConnector(ctx, clusterName, connector)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, nil)
 	}
 }
