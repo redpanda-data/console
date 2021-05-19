@@ -1,5 +1,5 @@
 import { untracked } from "mobx";
-import { Topic, Partition, Broker, ConfigEntry } from "../../../../state/restInterfaces";
+import { Topic, Partition, Broker, ConfigEntry, BrokerConfig } from "../../../../state/restInterfaces";
 import { toJson } from "../../../../utils/jsonUtils";
 
 // Requirements:
@@ -251,7 +251,7 @@ class ExBroker implements Broker {
     logDirSize: number;
     address: string;
     rack: string;
-    configs: ConfigEntry[];
+    config: BrokerConfig;
 
     // Values as they actually are currently in the cluster
     actualReplicas: number = 0; // number of all replicas (no matter from which topic) assigned to this broker

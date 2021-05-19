@@ -3,12 +3,13 @@ package owl
 import (
 	"context"
 	"fmt"
+	"sort"
+	"time"
+
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
 	"go.uber.org/zap"
-	"sort"
-	"time"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -22,11 +23,11 @@ type ClusterInfo struct {
 
 // Broker described by some basic broker properties
 type Broker struct {
-	BrokerID   int32               `json:"brokerId"`
-	LogDirSize int64               `json:"logDirSize"`
-	Address    string              `json:"address"`
-	Rack       *string             `json:"rack"`
-	Configs    []BrokerConfigEntry `json:"configs"`
+	BrokerID   int32        `json:"brokerId"`
+	LogDirSize int64        `json:"logDirSize"`
+	Address    string       `json:"address"`
+	Rack       *string      `json:"rack"`
+	Config     BrokerConfig `json:"config"`
 }
 
 // GetClusterInfo returns generic information about all brokers in a Kafka cluster and returns them
@@ -35,7 +36,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	var logDirsByBroker map[int32]LogDirsByBroker
 	var metadata *kmsg.MetadataResponse
-	var configsByBrokerID map[int32][]BrokerConfigEntry
+	var configsByBrokerID map[int32]BrokerConfig
 	kafkaVersion := "unknown"
 
 	// We use a child context with a shorter timeout because otherwise we'll potentially have very long response
@@ -89,9 +90,9 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 			size = value.TotalSizeBytes
 		}
 
-		var brokerCfgs []BrokerConfigEntry
+		var brokerCfg BrokerConfig
 		if value, ok := configsByBrokerID[broker.NodeID]; ok {
-			brokerCfgs = value
+			brokerCfg = value
 		}
 
 		brokers[i] = &Broker{
@@ -99,7 +100,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 			LogDirSize: size,
 			Address:    broker.Host,
 			Rack:       broker.Rack,
-			Configs:    brokerCfgs,
+			Config:     brokerCfg,
 		}
 	}
 	sort.Slice(brokers, func(i, j int) bool {

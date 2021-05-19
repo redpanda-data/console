@@ -3,16 +3,19 @@ package owl
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
-	"net/http"
 )
 
-type BrokerConfigs struct {
-	BrokerID int32               `json:"brokerId"`
-	Configs  []BrokerConfigEntry `json:"configs"`
+type BrokerConfig struct {
+	brokerID int32 `json:"-"`
+
+	Configs []BrokerConfigEntry `json:"configs"`
+	Error   *rest.Error         `json:"error,omitempty"`
 }
 
 type BrokerConfigEntry struct {
@@ -35,40 +38,35 @@ type BrokerConfigSynonym struct {
 	Source string  `json:"source"`
 }
 
-func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32][]BrokerConfigEntry, error) {
+func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConfig, error) {
 	metadata, err := s.kafkaSvc.GetMetadata(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get broker ids: %w", err)
 	}
 
 	// Send one broker config request for each broker concurrently
-	type chResponse struct {
-		brokerID int32
-		config   []BrokerConfigEntry
-		err      *rest.Error
-	}
-	resCh := make(chan chResponse, len(metadata.Brokers))
+	resCh := make(chan BrokerConfig, len(metadata.Brokers))
 
 	for _, broker := range metadata.Brokers {
 		go func(bID int32) {
 			cfg, restErr := s.GetBrokerConfig(ctx, bID)
-			resCh <- chResponse{
+			resCh <- BrokerConfig{
 				brokerID: bID,
-				config:   cfg,
-				err:      restErr,
+				Configs:  cfg,
+				Error:    restErr,
 			}
 		}(broker.NodeID)
 	}
 
-	configsByBrokerID := make(map[int32][]BrokerConfigEntry)
+	configsByBrokerID := make(map[int32]BrokerConfig)
 	for i := 0; i < cap(resCh); i++ {
 		res := <-resCh
-		if res.err != nil {
-			configsByBrokerID[res.brokerID] = nil
-			s.logger.Warn("failed to describe broker config", zap.Int32("broker_id", res.brokerID), zap.Error(res.err.Err))
+		if res.Error != nil {
+			res.Configs = nil
+			s.logger.Warn("failed to describe broker config", zap.Int32("broker_id", res.brokerID), zap.Error(res.Error.Err))
 			continue
 		}
-		configsByBrokerID[res.brokerID] = res.config
+		configsByBrokerID[res.brokerID] = res
 	}
 
 	return configsByBrokerID, nil

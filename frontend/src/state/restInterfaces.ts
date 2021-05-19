@@ -368,7 +368,12 @@ export interface Broker {
     logDirSize: number; // bytes of the whole directory
     address: string;
     rack: string | null;
+
+    config: BrokerConfig;
+}
+export interface BrokerConfig {
     configs: ConfigEntry[];
+    error: ApiError | undefined;
 }
 
 
@@ -388,18 +393,11 @@ export interface EndpointCompatibilityEntry {
     isSupported: boolean;
 }
 
-
-
-export type BrokerConfigEntry = ConfigEntry
-export interface BrokerConfigResponse {
-    brokerConfigs: BrokerConfigEntry[]
+// Response when requesting configuration of a single broker
+export interface BrokerConfigResponse { // | ApiError
+    brokerConfigs: ConfigEntry[];
 }
 
-export interface BrokerConfig {
-    brokerId: number;
-    configEntries: BrokerConfigEntry[];
-    error?: unknown;
-}
 
 // Current user
 export interface User {

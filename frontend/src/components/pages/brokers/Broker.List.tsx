@@ -6,7 +6,7 @@ import { PageComponent, PageInitHelper } from "../Page";
 import { api } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
 import { makePaginationConfig, sortField } from "../../misc/common";
-import { Broker, BrokerConfigEntry } from "../../../state/restInterfaces";
+import { Broker, ConfigEntry } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
 import { observable, computed, makeObservable } from "mobx";
@@ -126,6 +126,8 @@ const BrokerDetails = observer(({ brokerId }: { brokerId: number }): JSX.Element
         return DefaultSkeleton;
     }
 
+
+
     // Normal Display
     return <BrokerConfigView entries={brokerConfigs} />;
 
@@ -142,7 +144,7 @@ const BrokerDetails = observer(({ brokerId }: { brokerId: number }): JSX.Element
 });
 
 @observer
-class BrokerConfigView extends Component<{ entries: BrokerConfigEntry[] }> {
+class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
     render() {
         const entries = this.props.entries
             .slice()

@@ -4,11 +4,10 @@ import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
     ClusterInfo, TopicMessage, TopicConfigResponse,
     ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions,
-    TopicDocumentationResponse, AclRequest, AclResponse, AclResource,
-    SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
+    TopicDocumentationResponse, AclRequest, AclResponse, SchemaOverview, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
     TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
     PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
-    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, GetTopicOffsetsByTimestampRequestTopic, TopicOffset, GetTopicOffsetsByTimestampResponse, GetTopicOffsetsByTimestampRequest, BrokerConfig, BrokerConfigResponse, ConfigEntry
+    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset, GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -555,7 +554,12 @@ const apiStore = {
                         this.clusterInfo = v.clusterInfo;
 
                     for (const b of v.clusterInfo.brokers)
-                        this.brokerConfigs.set(b.brokerId, b.configs);
+                        if (b.config.error) {
+                            console.error("unable to refresh broker config", { brokerId: b.brokerId, config: b.config });
+                        }
+                        else {
+                            this.brokerConfigs.set(b.brokerId, b.config.configs);
+                        }
                 });
 
             }, addError);
@@ -563,7 +567,8 @@ const apiStore = {
 
     refreshBrokerConfig(brokerId: number, force?: boolean) {
         cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force).then(v => {
-            this.brokerConfigs.set(brokerId, v.brokerConfigs);
+            if (v?.brokerConfigs)
+                this.brokerConfigs.set(brokerId, v.brokerConfigs);
         }).catch(addError);
     },
 
