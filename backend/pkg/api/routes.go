@@ -60,11 +60,13 @@ func (api *API) routes() *chi.Mux {
 			api.Hooks.Route.ConfigAPIRouter(r)
 
 			r.Route("/api", func(r chi.Router) {
+				// Cluster
 				r.Get("/api-versions", api.handleGetAPIVersions())
 				r.Get("/cluster/config", api.handleClusterConfig())
 				r.Get("/cluster", api.handleDescribeCluster())
 				r.Get("/acls", api.handleGetACLsOverview())
 
+				// Topics
 				r.Get("/topics-configs", api.handleGetTopicsConfigs())
 				r.Get("/topics-offsets", api.handleGetTopicsOffsets())
 				r.Get("/topics", api.handleGetTopics())
@@ -73,23 +75,31 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/topics/{topicName}/consumers", api.handleGetTopicConsumers())
 				r.Get("/topics/{topicName}/documentation", api.handleGetTopicDocumentation())
 
+				// Consumer Groups
 				r.Get("/consumer-groups", api.handleGetConsumerGroups())
 				r.Get("/consumer-groups/{groupId}", api.handleGetConsumerGroup())
 				r.Patch("/consumer-groups/{groupId}", api.handlePatchConsumerGroup())
 				r.Delete("/consumer-groups/{groupId}", api.handleDeleteConsumerGroupOffsets())
 
+				// Operations
 				r.Get("/operations/topic-details", api.handleGetAllTopicDetails())
 				r.Get("/operations/reassign-partitions", api.handleGetPartitionReassignments())
 				r.Patch("/operations/reassign-partitions", api.handlePatchPartitionAssignments())
 				r.Patch("/operations/configs", api.handlePatchConfigs())
 
+				// Schema Registry
 				r.Get("/schemas", api.handleGetSchemaOverview())
 				r.Get("/schemas/subjects/{subject}/versions/{version}", api.handleGetSchemaDetails())
 
+				// Kafka Connect
 				r.Get("/kafka-connect/connectors", api.handleGetConnectors())
 				r.Get("/kafka-connect/clusters/{clusterName}/connectors/{connector}", api.handleGetConnector())
 				r.Delete("/kafka-connect/clusters/{clusterName}/connectors/{connector}", api.handleDeleteConnector())
+				r.Put("/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause", api.handlePauseConnector())
+				r.Put("/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume", api.handleResumeConnector())
+				r.Post("/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart", api.handleRestartConnector())
 
+				// Kowl
 				r.Get("/kowl/endpoints", api.handleGetEndpoints())
 			})
 		})

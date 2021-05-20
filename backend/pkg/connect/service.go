@@ -167,6 +167,90 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 	}, nil
 }
 
+// PauseConnector pauses the connector and its tasks, which stops message processing until the connector is resumed.
+// This call asynchronous and the tasks will not transition to PAUSED state at the same time.
+func (s *Service) PauseConnector(ctx context.Context, clusterName string, connector string) *rest.Error {
+	c, exists := s.ClientsByCluster[clusterName]
+	if !exists {
+		return &rest.Error{
+			Err:          fmt.Errorf("a client for the given cluster name does not exist"),
+			Status:       http.StatusNotFound,
+			Message:      "There's no configured cluster with the given connect cluster name",
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	err := c.Client.PauseConnector(ctx, connector)
+	if err != nil {
+		return &rest.Error{
+			Err:          err,
+			Status:       http.StatusServiceUnavailable,
+			Message:      fmt.Sprintf("Failed to pause connector: %v", err.Error()),
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	return nil
+}
+
+// ResumeConnector resumes a paused connector or do nothing if the connector is not paused.
+// This call asynchronous and the tasks will not transition to RUNNING state at the same time.
+func (s *Service) ResumeConnector(ctx context.Context, clusterName string, connector string) *rest.Error {
+	c, exists := s.ClientsByCluster[clusterName]
+	if !exists {
+		return &rest.Error{
+			Err:          fmt.Errorf("a client for the given cluster name does not exist"),
+			Status:       http.StatusNotFound,
+			Message:      "There's no configured cluster with the given connect cluster name",
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	err := c.Client.ResumeConnector(ctx, connector)
+	if err != nil {
+		return &rest.Error{
+			Err:          err,
+			Status:       http.StatusServiceUnavailable,
+			Message:      fmt.Sprintf("Failed to pause connector: %v", err.Error()),
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	return nil
+}
+
+// RestartConnector restarts the connector. Return 409 (Conflict) if rebalance is in process.
+// No tasks are restarted as a result of a call to this endpoint. To restart tasks, see restart task.
+func (s *Service) RestartConnector(ctx context.Context, clusterName string, connector string) *rest.Error {
+	c, exists := s.ClientsByCluster[clusterName]
+	if !exists {
+		return &rest.Error{
+			Err:          fmt.Errorf("a client for the given cluster name does not exist"),
+			Status:       http.StatusNotFound,
+			Message:      "There's no configured cluster with the given connect cluster name",
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	err := c.Client.RestartConnector(ctx, connector)
+	if err != nil {
+		return &rest.Error{
+			Err:          err,
+			Status:       http.StatusServiceUnavailable,
+			Message:      fmt.Sprintf("Failed to pause connector: %v", err.Error()),
+			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
+			IsSilent:     false,
+		}
+	}
+
+	return nil
+}
+
 // DeleteConnector deletes a connector, halting all tasks and deleting its configuration.
 // Returns 409 (Conflict) if a rebalance is in process.
 func (s *Service) DeleteConnector(ctx context.Context, clusterName string, connector string) *rest.Error {
