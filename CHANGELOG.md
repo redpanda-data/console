@@ -1,9 +1,18 @@
 # Changelog
 
 ## Master / pending release
+
 - [FEATURE] Proto files can now be provided via the local file system as well
 - [FEATURE] Schema registry support for Protobuf
 - [FEATURE] Consumer group offsets can now be edited (copy offsets from other group, set to start/end/timestamp) or deleted
+- [ENHANCEMENT] Preview tags in the message viewer can now be named
+- [ENHANCEMENT] Maximum string length in JSON viewer has been increased from 40 to 200 characters
+- [ENHANCEMENT] CTRL + Click on values in JSON viewer will copy the value into the clipboard
+- [ENHANCEMENT] Menu redesigned (profile info for Kowl Business moved to menu bar)
+- [ENHANCEMENT] Rework broker & topic config pages; Shows config sources and all inherited config settings with their value
+- [ENHANCEMENT] Custom TLS config for schema registry
+- [ENHANCEMENT] Estimate topic log dir size if partition replicas are down (if size is estimated a warning is shown in the frontend)
+- [BUGFIX] Topicname is now selectable in consumer group details page
 
 ## 1.3.0 / 2021-04-13
 
