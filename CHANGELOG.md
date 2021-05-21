@@ -3,7 +3,7 @@
 ## Master / pending release
 
 - [FEATURE] Proto files can now be provided via the local file system as well
-- [FEATURE] Schema registry support for Protobuf
+- [FEATURE] Schema registry support for Protobuf (including auto deserialization)
 - [FEATURE] Consumer group offsets can now be edited (copy offsets from other group, set to start/end/timestamp) or deleted
 - [ENHANCEMENT] Preview tags in the message viewer can now be named
 - [ENHANCEMENT] Maximum string length in JSON viewer has been increased from 40 to 200 characters
