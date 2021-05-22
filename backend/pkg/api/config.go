@@ -60,6 +60,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Owl config: %w", err)
 	}
 
+	err = c.Connect.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate Connect config: %w", err)
+	}
+
 	return nil
 }
 
