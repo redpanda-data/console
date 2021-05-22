@@ -1,8 +1,7 @@
-import React, { memo, ReactNode, PureComponent, FunctionComponent, ReactElement, Component, Fragment, ReactNodeArray } from "react";
-import { autorun, IReactionDisposer, observable } from "mobx";
+import React, { Component, } from "react";
+import { autorun, IReactionDisposer, makeObservable, observable } from "mobx";
 import prettyBytesOriginal from "pretty-bytes";
 import prettyMillisecondsOriginal from 'pretty-ms';
-import url from "url";
 import queryString from 'query-string';
 import { editQuery } from "./queryHelper";
 import { message } from "antd";
@@ -165,6 +164,7 @@ export class DebugTimerStore {
 
         this.increaseFrame = this.increaseFrame.bind(this);
         //setInterval(this.increaseFrame, 30);
+        makeObservable(this);
     }
 
     private increaseSec() { this.secondCounter++; }
