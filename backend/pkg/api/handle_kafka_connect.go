@@ -2,7 +2,11 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/go-chi/chi"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"net/http"
 	"time"
 
@@ -10,14 +14,46 @@ import (
 )
 
 func (api *API) handleGetConnectors() http.HandlerFunc {
+	type responseFilterStats struct {
+		ClusterCount   int `json:"clusterCount"`
+		ConnectorCount int `json:"connectorCount"`
+	}
+	type response struct {
+		ConnectorShards []connect.GetConnectorsShard `json:"connectorShards"`
+		// Filtered describes the number of filtered clusters or connectors due to missing Kowl Business permissions
+		Filtered responseFilterStats `json:"filtered"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
-		// TODO: Add Hook
+		filteredShards := make([]connect.GetConnectorsShard, 0)
+		filteredClusters := 0
+		filteredConnectors := 0
 		connectors := api.ConnectSvc.GetConnectors(ctx)
+		for _, connector := range connectors {
+			clusterName := connector.ClusterName
+			canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
+			if restErr != nil {
+				api.Logger.Error("failed to check view connect cluster permissions", zap.Error(restErr.Err))
+			}
+			if !canSee {
+				filteredClusters += 1
+				filteredConnectors += len(connector.Connectors)
+				continue
+			}
+			filteredShards = append(filteredShards, connector)
+		}
 
-		rest.SendResponse(w, r, api.Logger, http.StatusOK, connectors)
+		res := response{
+			ConnectorShards: filteredShards,
+			Filtered: responseFilterStats{
+				ClusterCount:   filteredClusters,
+				ConnectorCount: filteredConnectors,
+			},
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
 
@@ -29,7 +65,22 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
-		// TODO: Add hook
+		canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canSee {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to view this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to view connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
 		connectors, restErr := api.ConnectSvc.GetConnector(ctx, clusterName, connector)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -48,8 +99,23 @@ func (api *API) handleDeleteConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
-		// TODO: Add hook
-		restErr := api.ConnectSvc.DeleteConnector(ctx, clusterName, connector)
+		canDelete, restErr := api.Hooks.Owl.CanDeleteConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canDelete {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to delete in this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to delete connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		restErr = api.ConnectSvc.DeleteConnector(ctx, clusterName, connector)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -67,8 +133,23 @@ func (api *API) handlePauseConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
-		// TODO: Add hook
-		restErr := api.ConnectSvc.PauseConnector(ctx, clusterName, connector)
+		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canEdit {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to edit connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		restErr = api.ConnectSvc.PauseConnector(ctx, clusterName, connector)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -86,8 +167,23 @@ func (api *API) handleResumeConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
-		// TODO: Add hook
-		restErr := api.ConnectSvc.ResumeConnector(ctx, clusterName, connector)
+		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canEdit {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to edit connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		restErr = api.ConnectSvc.ResumeConnector(ctx, clusterName, connector)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -105,8 +201,23 @@ func (api *API) handleRestartConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
-		// TODO: Add hook
-		restErr := api.ConnectSvc.RestartConnector(ctx, clusterName, connector)
+		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canEdit {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to edit connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		restErr = api.ConnectSvc.RestartConnector(ctx, clusterName, connector)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

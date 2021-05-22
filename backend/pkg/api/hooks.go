@@ -55,6 +55,11 @@ type OwlHooks interface {
 	// Operations Hooks
 	CanPatchPartitionReassignments(ctx context.Context) (bool, *rest.Error)
 	CanPatchConfigs(ctx context.Context) (bool, *rest.Error)
+
+	// Kafka Connect Hooks
+	CanViewConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
+	CanEditConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
+	CanDeleteConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -117,5 +122,14 @@ func (*defaultHooks) CanPatchPartitionReassignments(_ context.Context) (bool, *r
 	return true, nil
 }
 func (*defaultHooks) CanPatchConfigs(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanViewConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanEditConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanDeleteConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
