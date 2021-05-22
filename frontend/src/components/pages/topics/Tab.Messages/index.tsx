@@ -5,7 +5,7 @@ import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { AnimatePresence, motion } from "framer-motion";
-import { autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from "mobx";
+import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
@@ -56,8 +56,6 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     @observable previewDisplay: string[] = [];
     // @observable allCurrentKeys: string[];
 
-
-
     @observable showColumnSettings = false;
 
     @observable fetchError = null as Error | null;
@@ -71,6 +69,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     currentSearchRun: string | null = null;
 
     @observable downloadMessages: TopicMessage[] | null;
+    @observable expandedKeys: React.Key[] = [];
 
 
     constructor(props: { topic: Topic }) {
@@ -449,12 +448,28 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
                     rowClassName={(r: TopicMessage) => (r.isValueNull && showTombstones) ? 'tombstone' : ''}
+                    onRow={r => {
+                        return {
+                            onDoubleClick: e => {
+                                // Double clicking a row should expand/collapse it
+                                // But not when the user double-clicks the expand/collapse button
+                                if (e.target instanceof HTMLElement)
+                                    if (e.target.classList.contains("ant-table-row-expand-icon"))
+                                        return;
+                                this.toggleRecordExpand(r);
+                            },
+                        }
+                    }}
 
                     expandable={{
                         expandRowByClick: false,
                         expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'value'),
                         rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
                         expandedRowRender: record => renderExpandedMessage(record),
+                        expandedRowKeys: this.expandedKeys.slice(),
+                        onExpand: (p, r) => {
+                            this.toggleRecordExpand(r);
+                        }
                     }}
 
                     columns={filteredColumns}
@@ -480,6 +495,15 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
             </ConfigProvider>
         </>
     })
+
+
+    @action toggleRecordExpand(r: TopicMessage) {
+        const key = r.offset + ' ' + r.partitionID + r.timestamp;
+        // try collapsing it, removeAll returns the number of matches
+        const removed = this.expandedKeys.removeAll(x => x == key);
+        if (removed == 0) // wasn't expanded, so expand it now
+            this.expandedKeys.push(key);
+    }
 
     keySorter(a: TopicMessage, b: TopicMessage, sortOrder?: SortOrder): number {
         const ta = String(a.key) ?? "";

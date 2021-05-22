@@ -12,7 +12,9 @@
 - [ENHANCEMENT] Rework broker & topic config pages; Shows config sources and all inherited config settings with their value
 - [ENHANCEMENT] Custom TLS config for schema registry
 - [ENHANCEMENT] Estimate topic log dir size if partition replicas are down (if size is estimated a warning is shown in the frontend)
+- [ENHANCEMENT] Messages can now be expanded/collapsed by double-clicking a row
 - [BUGFIX] Topicname is now selectable in consumer group details page
+- [BUGFIX] Relative timestamp now updates live in message table
 
 ## 1.3.0 / 2021-04-13
 
