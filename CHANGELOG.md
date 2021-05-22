@@ -13,6 +13,7 @@
 - [ENHANCEMENT] Custom TLS config for schema registry
 - [ENHANCEMENT] Estimate topic log dir size if partition replicas are down (if size is estimated a warning is shown in the frontend)
 - [ENHANCEMENT] Messages can now be expanded/collapsed by double-clicking a row
+- [ENHANCEMENT] Group details page: 'Topics' view now has a 'View Topic' button, and the topic names in the 'Members' view are now clickable (both navigate to the topic details page)
 - [BUGFIX] Topicname is now selectable in consumer group details page
 - [BUGFIX] Relative timestamp now updates live in message table
 
