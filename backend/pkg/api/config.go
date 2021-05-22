@@ -41,6 +41,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
 	c.Owl.RegisterFlags(f)
+	c.Connect.RegisterFlags(f)
 }
 
 // Validate all root and child config structs
@@ -78,6 +79,7 @@ func (c *Config) SetDefaults() {
 	c.REST.SetDefaults()
 	c.Kafka.SetDefaults()
 	c.Owl.SetDefaults()
+	c.Connect.SetDefaults()
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.

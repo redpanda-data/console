@@ -1,10 +1,27 @@
 package connect
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+)
 
 type Config struct {
 	Enabled  bool            `yaml:"enabled"`
 	Clusters []ConfigCluster `yaml:"clusters"`
+}
+
+func (c *Config) SetDefaults() {
+	for _, cluster := range c.Clusters {
+		cluster.SetDefaults()
+	}
+}
+
+// RegisterFlags registers all nested config flags.
+func (c *Config) RegisterFlags(f *flag.FlagSet) {
+	for i, cluster := range c.Clusters {
+		flagNamePrefix := fmt.Sprintf("connect.clusters.%d.", i)
+		cluster.RegisterFlagsWithPrefix(f, flagNamePrefix)
+	}
 }
 
 func (c *Config) Validate() error {

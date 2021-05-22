@@ -1,6 +1,9 @@
 package connect
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+)
 
 type ConfigCluster struct {
 	// Name will be shown in the Frontend to identify a connect cluster
@@ -14,6 +17,16 @@ type ConfigCluster struct {
 	Username string           `yaml:"username"`
 	Password string           `yaml:"password"`
 	Token    string           `yaml:"token"`
+}
+
+// RegisterFlagsWithPrefix registers all nested config flags.
+func (c *ConfigCluster) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
+	f.StringVar(&c.Password, prefix+"password", "", "Basic auth password for connect cluster authentication")
+	f.StringVar(&c.Token, prefix+"token", "", "Bearer token for connect cluster authentication")
+}
+
+func (c *ConfigCluster) SetDefaults() {
+	c.TLS.SetDefaults()
 }
 
 func (c *ConfigCluster) Validate() error {
