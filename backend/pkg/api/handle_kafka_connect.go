@@ -13,6 +13,41 @@ import (
 	"github.com/cloudhut/common/rest"
 )
 
+func (api *API) handleGetClusters() http.HandlerFunc {
+	type response struct {
+		ClusterShards []connect.GetClusterShard `json:"clusterShards"`
+		// Filtered describes the number of filtered clusters due to missing Kowl Business permissions
+		FilteredClusters int `json:"filtered"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		defer cancel()
+
+		filteredShards := make([]connect.GetClusterShard, 0)
+		filteredClusters := 0
+		clusters := api.ConnectSvc.GetClusters(ctx)
+		for _, cluster := range clusters {
+			clusterName := cluster.ClusterName
+			canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
+			if restErr != nil {
+				api.Logger.Error("failed to check view connect cluster permissions", zap.Error(restErr.Err))
+			}
+			if !canSee {
+				filteredClusters += 1
+				continue
+			}
+			filteredShards = append(filteredShards, cluster)
+		}
+
+		res := response{
+			ClusterShards:    filteredShards,
+			FilteredClusters: filteredClusters,
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
 func (api *API) handleGetConnectors() http.HandlerFunc {
 	type responseFilterStats struct {
 		ClusterCount   int `json:"clusterCount"`
@@ -57,7 +92,7 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 	}
 }
 
-func (api *API) handleGetConnector() http.HandlerFunc {
+func (api *API) handleGetClusterConnectors() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clusterName := chi.URLParam(r, "clusterName")
 		connector := chi.URLParam(r, "connector")
@@ -88,6 +123,40 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 		}
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, connectors)
+	}
+}
+
+func (api *API) handleGetConnector() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clusterName := chi.URLParam(r, "clusterName")
+		connector := chi.URLParam(r, "connector")
+
+		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		defer cancel()
+
+		canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canSee {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to view this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to view connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		connectorInfo, restErr := api.ConnectSvc.GetConnector(ctx, clusterName, connector)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, connectorInfo)
 	}
 }
 

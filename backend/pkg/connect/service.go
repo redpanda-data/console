@@ -83,6 +83,43 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 	}, nil
 }
 
+type GetClusterShard struct {
+	ClusterName    string       `json:"clusterName"`
+	ClusterAddress string       `json:"clusterAddress"`
+	ClusterInfo    RootResource `json:"clusterInfo"`
+	Error          string       `json:"error,omitempty"`
+}
+
+// GetClusters returns the merged root responses across all configured Connect clusters. Requests will be
+// sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
+// for too long.
+func (s *Service) GetClusters(ctx context.Context) []GetClusterShard {
+	ch := make(chan GetClusterShard, len(s.ClientsByCluster))
+	for _, cluster := range s.ClientsByCluster {
+		go func(cfg ConfigCluster, c *Client) {
+			clusterInfo, err := c.GetRoot(ctx)
+			errMsg := ""
+			if err != nil {
+				s.Logger.Warn("failed to get cluster info from Kafka connect cluster",
+					zap.String("cluster_name", cfg.Name), zap.String("cluster_address", cfg.URL), zap.Error(err))
+				errMsg = err.Error()
+			}
+			ch <- GetClusterShard{
+				ClusterName:    cfg.Name,
+				ClusterAddress: cfg.URL,
+				ClusterInfo:    clusterInfo,
+				Error:          errMsg,
+			}
+		}(cluster.Cfg, cluster.Client)
+	}
+
+	shards := make([]GetClusterShard, cap(ch))
+	for i := 0; i < cap(ch); i++ {
+		shards[i] = <-ch
+	}
+	return shards
+}
+
 type GetConnectorsShard struct {
 	ClusterName    string                         `json:"clusterName"`
 	ClusterAddress string                         `json:"clusterAddress"`
