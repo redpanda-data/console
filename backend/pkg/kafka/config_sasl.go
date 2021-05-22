@@ -36,8 +36,13 @@ func (c *SASLConfig) SetDefaults() {
 // Validate SASL config input
 func (c *SASLConfig) Validate() error {
 	switch c.Mechanism {
-	case SASLMechanismPlain, SASLMechanismScramSHA256, SASLMechanismScramSHA512, SASLMechanismGSSAPI:
+	case SASLMechanismPlain, SASLMechanismScramSHA256, SASLMechanismScramSHA512:
 		// Valid and supported
+	case SASLMechanismGSSAPI:
+		err := c.GSSAPIConfig.Validate()
+		if err != nil {
+			return fmt.Errorf("failed to validate gssapi config: %w", err)
+		}
 	case SASLMechanismOAuthBearer:
 		return fmt.Errorf("sasl mechanism '%v' is valid but not yet supported. Please submit an issue if you need it", c.Mechanism)
 	default:

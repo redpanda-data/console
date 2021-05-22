@@ -87,7 +87,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 			}
 			var krbClient *client.Client
 			switch cfg.SASL.GSSAPIConfig.AuthType {
-			case "USER_AUTH:":
+			case "USER_AUTH":
 				krbClient = client.NewWithPassword(
 					cfg.SASL.GSSAPIConfig.Username,
 					cfg.SASL.GSSAPIConfig.Realm,

@@ -2,20 +2,19 @@
 
 import {
     GetTopicsResponse, Topic, GetConsumerGroupsResponse, GroupDescription, UserData,
-    TopicConfigEntry, ClusterInfo, TopicMessage, TopicConfigResponse,
+    ClusterInfo, TopicMessage, TopicConfigResponse,
     ClusterInfoResponse, GetPartitionsResponse, Partition, GetTopicConsumersResponse, TopicConsumer, AdminInfo, TopicPermissions,
-    ClusterConfigResponse, ClusterConfig, TopicDocumentationResponse, AclRequest, AclResponse, AclResource,
-    SchemaOverview, SchemaOverviewRequestError, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
+    TopicDocumentationResponse, AclRequest, AclResponse, SchemaOverview, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
     TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
     PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
-    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, GetTopicOffsetsByTimestampRequestTopic, TopicOffset, GetTopicOffsetsByTimestampResponse, GetTopicOffsetsByTimestampRequest
+    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset, GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
-import { toJson, clone } from "../utils/jsonUtils";
-import env, { IsDev, IsBusiness, basePathS } from "../utils/env";
+import { toJson } from "../utils/jsonUtils";
+import { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";
 import { notification } from "antd";
@@ -190,7 +189,8 @@ const apiStore = {
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
 
-    clusterConfig: null as (ClusterConfig | null | undefined),
+    brokerConfigs: new Map<number, ConfigEntry[]>(),
+
     adminInfo: undefined as (AdminInfo | undefined | null),
 
     schemaOverview: undefined as (SchemaOverview | null | undefined), // undefined = request not yet complete; null = server responded with 'there is no data'
@@ -378,7 +378,7 @@ const apiStore = {
 
     async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
         const promise = cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
-            .then(v => this.topicConfig.set(topicName, v?.topicDescription ?? null), addError); // 403 -> null
+            .then(v => this.topicConfig.set(topicName, addSynonymTypes(v) ?? null), addError); // 403 -> null
         return promise as Promise<void>;
     },
 
@@ -547,20 +547,30 @@ const apiStore = {
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
             .then(v => {
+                transaction(() => {
+                    // don't assign if the value didn't change
+                    // we'd re-trigger all observers!
+                    if (!comparer.structural(this.clusterInfo, v.clusterInfo))
+                        this.clusterInfo = v.clusterInfo;
 
-                // don't assign if the value didn't change
-                // we'd re-trigger all observers!
-                if (comparer.structural(this.clusterInfo, v.clusterInfo)) return;
+                    for (const b of v.clusterInfo.brokers)
+                        if (b.config.error) {
+                            console.error("unable to refresh broker config", { brokerId: b.brokerId, config: b.config });
+                        }
+                        else {
+                            this.brokerConfigs.set(b.brokerId, b.config.configs);
+                        }
+                });
 
-                this.clusterInfo = v.clusterInfo;
             }, addError);
     },
 
-    refreshClusterConfig(force?: boolean) {
-        cachedApiRequest<ClusterConfigResponse>(`./api/cluster/config`, force)
-            .then(v => this.clusterConfig = v.clusterConfig, addError);
+    refreshBrokerConfig(brokerId: number, force?: boolean) {
+        cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force).then(v => {
+            if (v?.brokerConfigs)
+                this.brokerConfigs.set(brokerId, v.brokerConfigs);
+        }).catch(addError);
     },
-
 
     refreshConsumerGroup(groupId: string, force?: boolean) {
         cachedApiRequest<GetConsumerGroupResponse>(`./api/consumer-groups/${groupId}`, force)
@@ -826,6 +836,20 @@ const apiStore = {
 
         const configRequest: PatchConfigsRequest = { resources: [] };
 
+        // We currently only set replication throttle on each broker, instead of cluster-wide (same effect, but different kind of 'ConfigSource')
+        // So we don't remove the cluster-wide setting, only the ones we've set (the per-broker) settings
+
+        // remove throttle configs from all brokers (DYNAMIC_DEFAULT_BROKER_CONFIG)
+        // configRequest.resources.push({
+        //     resourceType: ConfigResourceType.Broker,
+        //     resourceName: "", // empty = all brokers
+        //     configs: [
+        //         { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
+        //         { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
+        //     ]
+        // });
+
+        // remove throttle configs from each broker individually (DYNAMIC_BROKER_CONFIG)
         for (const b of brokerIds) {
             configRequest.resources.push({
                 resourceType: ConfigResourceType.Broker,
@@ -894,6 +918,15 @@ export const brokerMap = computed(() => {
     return map;
 }, { name: 'brokerMap', equals: comparer.structural });
 
+
+function addSynonymTypes(topicConfigResponse: TopicConfigResponse | null): TopicDescription | null {
+    topicConfigResponse?.topicDescription.configEntries.forEach(configEntry => {
+        configEntry.synonyms.forEach(synonym => {
+            synonym.type = configEntry.type
+        })
+    })
+    return topicConfigResponse?.topicDescription ?? null;
+}
 
 export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);

@@ -1,4 +1,5 @@
 import { Component, ReactNode } from "react";
+import React from "react";
 import { RoleBinding, Subject } from "../../../state/restInterfaces";
 import { Collapse } from "antd";
 import '../../../utils/arrayExtensions';

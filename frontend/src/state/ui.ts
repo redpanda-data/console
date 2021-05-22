@@ -7,11 +7,14 @@ import { AclRequest, AclRequestDefault } from "./restInterfaces";
 
 const settingsName = 'uiSettings-v3';
 
+export type ValueDisplay = 'friendly' | 'both' | 'raw'
 
 export interface PreviewTag {
     id: string;
     isActive: boolean;
     text: string;
+
+    customName?: string;
 }
 
 export interface ColumnList {
@@ -97,7 +100,8 @@ export class TopicDetailsSettings {
     @observable previewTagsCaseSensitive = false;
 
     @observable previewMultiResultMode = 'showAll' as 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
-    @observable previewShowResultCount = false;
+    @observable previewDisplayMode = 'wrap' as 'single' | 'wrap' | 'rows'; // only one line / wrap / seperate line for each result
+
     // @observable previewResultLimit: 3; // todo
     @observable previewShowEmptyMessages = true; // todo: filter out messages that don't match
     @observable showMessageMetadata = true;
@@ -122,6 +126,11 @@ const uiSettings = observable({
     topicDetailsActiveTabKey: undefined as TopicTabId | undefined,
 
     topicDetailsShowStatisticsBar: true, // for now: global for all topic details
+    jsonViewer: {
+        fontSize: '12px',
+        lineHeight: '1em',
+        maxStringLength: 200,
+    },
 
     // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
     brokerList: {
@@ -155,10 +164,8 @@ const uiSettings = observable({
         pageSize: DEFAULT_TABLE_PAGE_SIZE, // number of topics to show
 
         // Topic Configuration
-        valueDisplay: 'friendly' as 'friendly' | 'both' | 'raw',
-        propsFilter: 'all' as 'all' | 'onlyChanged',
+        valueDisplay: 'friendly' as ValueDisplay,
         propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
-        configColumns: 2 as 1 | 2,
     },
 
     consumerGroupList: {

@@ -16,7 +16,7 @@ import { uiState } from "../../../../state/uiState";
 import { MotionDiv } from "../../../../utils/animationProps";
 import { clone, toJson } from "../../../../utils/jsonUtils";
 import { OptionGroup, toSafeString } from "../../../../utils/tsxUtils";
-import { findElementDeep, findElementDeepEx, getAllMessageKeys } from "../../../../utils/utils";
+import { findElementDeep, findElementDeepEx, getAllMessageKeys, randomId } from "../../../../utils/utils";
 
 const { Text } = Typography;
 
@@ -58,14 +58,11 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
             <Paragraph>
                 <Text>
                     When viewing large messages we're often only interested in a few specific fields.
-                            To make the preview more helpful, add all the json keys you want to see.<br />
-                            Click on an existing tag to toggle it on/off, or <b>x</b> to remove it.<br />
+                    Add json keys to this list to show them as previews.<br />
                 </Text>
             </Paragraph>
 
-            <div style={{
-                padding: '.5em', background: 'rgba(200, 205, 210, 0.16)', borderRadius: '4px'
-            }}>
+            <div className="previewTagsList">
                 <DragDropContext onDragEnd={onDragEnd} >
                     <Droppable droppableId="droppable">
                         {(droppableProvided, droppableSnapshot) => (
@@ -101,8 +98,8 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
 
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
-                <Space size='large'>
-                    <OptionGroup label='Matching' options={{ 'Ignore Case': false, 'Case Sensitive': true }}
+                <div className="previewTagsSettings" >
+                    <OptionGroup label='Matching' options={{ 'Ignore Case': false, 'Case Sensitive': true }} size='small'
                         value={uiState.topicSettings.previewTagsCaseSensitive}
                         onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
                     />
@@ -110,24 +107,30 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                         value={uiState.topicSettings.previewMultiResultMode}
                         onChange={e => uiState.topicSettings.previewMultiResultMode = e}
                     />
-                    {uiState.topicSettings.previewMultiResultMode == 'showAll' &&
-                        <OptionGroup label='Result Count' options={{ 'Hide': false, 'As part of name': true }}
-                            value={uiState.topicSettings.previewShowResultCount}
-                            onChange={e => uiState.topicSettings.previewShowResultCount = e}
-                        />
-                    }
-                </Space>
+
+                    <OptionGroup label='Wrapping' options={{ 'Single Line': 'single', 'Wrap': 'wrap', 'Rows': 'rows' }}
+                        value={uiState.topicSettings.previewDisplayMode}
+                        onChange={e => uiState.topicSettings.previewDisplayMode = e}
+                    />
+                </div>
             </div>
         </>
 
         return <Modal
             title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
             visible={this.props.getShowDialog()}
-            onOk={() => this.props.setShowDialog(false)}
-            onCancel={() => this.props.setShowDialog(false)}
-            width={750} centered
+
+            style={{ minWidth: '750px', maxWidth: '1000px', top: '26px' }}
+            width={'auto'}
+            bodyStyle={{ paddingTop: '12px' }}
+            centered={false}
+
+
             okText='Close'
             cancelButtonProps={{ style: { display: 'none' } }}
+            onOk={() => this.props.setShowDialog(false)}
+            onCancel={() => this.props.setShowDialog(false)}
+
             closable={false}
             maskClosable={true}
         >
@@ -146,19 +149,19 @@ class SortItem extends Component<{ tag: PreviewTag, index: number, onRemove: () 
             background: 'hsl(0deg, 0%, 91%)', padding: '4px', borderRadius: '4px',
             marginBottom: '6px'
         }}>
-            <span style={{
-                display: 'inline-flex', alignSelf: 'stretch', placeItems: 'center',
-                width: '34px', color: 'hsl(0deg, 0%, 58%)', marginLeft: '2px', paddingTop: '1px'
-            }}>
-                <ThreeBarsIcon />
-            </span>
 
+            {/* Move Handle */}
+            <span className="moveHandle"><ThreeBarsIcon /></span>
+
+            {/* Enabled */}
             <Checkbox checked={tag.isActive} onChange={e => tag.isActive = e.target.checked} />
 
+            {/* Pattern */}
+            {/* <span className="description">Pattern</span> */}
             <AutoComplete options={allCurrentKeys.map(t => ({ label: t, value: t }))}
                 size="small"
-                style={{ width: '300px', lineHeight: '1.25', flexGrow: 1 }}
-                // backfill={true}
+                style={{ flexGrow: 1, flexBasis: '400px' }}
+
                 defaultActiveFirstOption={true}
                 onSearch={(value) => {
                     // console.log('onSearch ', value);
@@ -166,16 +169,26 @@ class SortItem extends Component<{ tag: PreviewTag, index: number, onRemove: () 
                 value={tag.text}
 
                 onChange={e => tag.text = e}
-                placeholder="Enter property name..."
+                placeholder="Pattern..."
                 filterOption={(inputValue, option) => option?.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
-                // dropdownRender={(menu) => <span>asdf</span>}
+
                 notFoundContent="None"
+
+                {...{ spellCheck: "false" }}
             />
 
-            <span style={{
-                display: 'inline-flex', alignSelf: 'stretch', placeItems: 'center',
-                width: '34px', color: 'hsl(0deg, 0%, 58%)', cursor: 'pointer'
-            }} onClick={onRemove} ><XIcon /></span>
+            {/* Name */}
+            {/* <span className="description">Display Name</span> */}
+            <Input size='small' style={{ flexGrow: 1, flexBasis: '50px' }}
+                value={tag.customName}
+                onChange={e => tag.customName = e.target.value}
+                autoComplete={randomId()}
+                spellCheck={false}
+                placeholder="Display Name..."
+            />
+
+            {/* Remove */}
+            <span className="removeButton" onClick={onRemove} ><XIcon /></span>
         </div>
     }
 }
@@ -222,20 +235,13 @@ export function getPreviewTags(messageValue: any, tags: PreviewTag[]): React.Rea
         // found some properties, create JSX for them
         for (const r of results) {
             r.path.push(r.propertyName);
-            const fullPath = r.path.join('.');
 
-            ar.push(<span style={{
-                display: 'inline-flex', placeItems: 'center', gap: '4px',
-            }}>
-                <span style={{
-                    fontSize: 'x-small',
-                    color: 'hsl(0deg, 0%, 30%)',
-                    fontFamily: 'monospace',
-                    background: 'hsl(0deg, 0%, 90%)',
-                    borderRadius: '10px',
-                    padding: '3px 6px',
-                    marginTop: '2px',
-                }}>{fullPath}</span>
+            const displayName = t.customName && t.customName.length > 0
+                ? t.customName
+                : r.path.join('.');
+
+            ar.push(<span className='previewTag'>
+                <span className='path'>{displayName}</span>
                 <span>{toSafeString(r.value)}</span>
             </span >)
         }
