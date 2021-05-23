@@ -49,7 +49,7 @@ const VersionInfo = () => {
     //   Kowl - DEV
     if (IsDev) return <>
         <div className='versionTitle'>{AppName} DEV</div>
-        <div className='versionDate'>(built Tue Dez 01 0000)</div>
+        <div className='versionDate'>Built {new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}</div>
         <div className='versionGitData'>{"abcdef0"}/{"0fedcba"}</div>
     </>
 
@@ -64,7 +64,7 @@ const VersionInfo = () => {
         </div>
 
         <div className='versionDate'>
-            (built {getBuildDate()?.toDateString()})
+            (built {getBuildDate()?.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })})
         </div>
 
         {IsBusiness && <div className='versionGitData'>
