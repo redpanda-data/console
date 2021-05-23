@@ -1,6 +1,6 @@
 import { FilterOutlined, PlusOutlined } from "@ant-design/icons";
 import { ThreeBarsIcon, XIcon } from "@primer/octicons-v2-react";
-import { AutoComplete, Button, Checkbox, Input, Modal, Space, Typography } from "antd";
+import { AutoComplete, Button, Checkbox, Input, message, Modal, Space, Typography } from "antd";
 import Item from "antd/lib/list/Item";
 import Paragraph from "antd/lib/typography/Paragraph";
 import arrayMove from "array-move";
@@ -14,9 +14,10 @@ import { api } from "../../../../state/backendApi";
 import { PreviewTag } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { MotionDiv } from "../../../../utils/animationProps";
+import { IsDev } from "../../../../utils/env";
 import { clone, toJson } from "../../../../utils/jsonUtils";
 import { OptionGroup, toSafeString } from "../../../../utils/tsxUtils";
-import { findElementDeep, findElementDeepEx, getAllMessageKeys, randomId } from "../../../../utils/utils";
+import { findElementDeep, collectElements, getAllMessageKeys, randomId, collectElements2, CollectedProperty } from "../../../../utils/utils";
 
 const { Text } = Typography;
 
@@ -58,7 +59,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
             <Paragraph>
                 <Text>
                     When viewing large messages we're often only interested in a few specific fields.
-                    Add json keys to this list to show them as previews.<br />
+                    Add patterns to this list to show found values as previews.
                 </Text>
             </Paragraph>
 
@@ -78,7 +79,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                                                 {...draggableProvided.draggableProps}
                                                 {...draggableProvided.dragHandleProps}
                                             >
-                                                <SortItem tag={tag} index={index}
+                                                <PreviewTagSettings tag={tag} index={index}
                                                     onRemove={() => tags.removeAll(t => t.id == tag.id)}
                                                     allCurrentKeys={currentKeys}
                                                 />
@@ -140,7 +141,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
 }
 
 @observer
-class SortItem extends Component<{ tag: PreviewTag, index: number, onRemove: () => void, allCurrentKeys: string[] }>{
+class PreviewTagSettings extends Component<{ tag: PreviewTag, index: number, onRemove: () => void, allCurrentKeys: string[] }>{
     render() {
         const { tag, index, onRemove, allCurrentKeys } = this.props;
 
@@ -193,71 +194,258 @@ class SortItem extends Component<{ tag: PreviewTag, index: number, onRemove: () 
     }
 }
 
+/*
+todo:
+- support regex patterns as path elements
+    - `data./pattern/.email`
+    - in order to match `/pattern/` our 'parseJsonPath' must support escaping forward slashes: "\/"
+
+*/
 export function getPreviewTags(messageValue: any, tags: PreviewTag[]): React.ReactNode[] {
     const ar: React.ReactNode[] = [];
 
-    const onlyFirst = uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst';
+    const results: { prop: CollectedProperty, tag: PreviewTag, fullPath: string }[] = [];
+    // const onlyFirst = uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst';
 
     for (const t of tags) {
         if (t.text.length == 0) continue;
-        const searchPath = t.text.trim().split('.');
-        const lastProp = searchPath[searchPath.length - 1];
 
-        const results = findElementDeepEx(messageValue, (prop, path, value) => {
-            if (prop != lastProp) return false;
+        const trimmed = t.text.trim();
+        const searchPath = parseJsonPath(trimmed);
+        if (searchPath == null) continue;
+        if (typeof searchPath == 'string') continue; // todo: show error to user
 
-            // check if the path can potentially match
-            if ((path.length + 1) < searchPath.length)
-                return false; // our search requires more tags than are available
-
-            // check if parent path matches
-            let searchIndex = searchPath.length - 2;
-            let pathIndex = path.length - 1;
-
-            while (searchIndex >= 0 && pathIndex >= 0) {
-                // is it a match?
-                if (searchPath[searchIndex] != path[pathIndex])
-                    return false;
-
-                searchIndex--;
-                pathIndex--;
+        const foundProperties = collectElements2(messageValue, searchPath, (pathElement, propertyName, value) => {
+            // We'll never get called for '*' or '**' patterns
+            // So we can be sure that the pattern is not just '*'
+            if (pathElement.includes("*")) {
+                const segment = wildcardToRegex(pathElement);
+                return segment.test(propertyName);
             }
+            if (pathElement == propertyName)
+                return true;
 
-            // if we didn't reach the end of our search, that means the search query is longer than any checked path
-            if (searchIndex > 0) return false;
+            return false;
+        });
 
-            return true;
-
-        }, onlyFirst);
-
-
-
-        // found some properties, create JSX for them
-        for (const r of results) {
-            r.path.push(r.propertyName);
-
-            const displayName = t.customName && t.customName.length > 0
-                ? t.customName
-                : r.path.join('.');
-
-            ar.push(<span className='previewTag'>
-                <span className='path'>{displayName}</span>
-                <span>{toSafeString(r.value)}</span>
-            </span >)
-        }
-
-        // if (results.length > 0) {
-        //     const propName = (!searchOptions.returnFirstResult && uiState.topicSettings.previewShowResultCount)
-        //         ? `${results[0].propertyName}(${results.length})`
-        //         : results[0].propertyName;
-
-        //     if (results.length == 1 || searchOptions.returnFirstResult)
-        //         previewObj[propName] = results[0].value; // show only first value
-        //     else
-        //         previewObj[propName] = results.map(r => r.value); // show array of all found values
-        // }
+        for (const p of foundProperties)
+            results.push({
+                tag: t,
+                prop: p,
+                fullPath: p.path.join('.'),
+            });
     }
 
+    // order results by their path
+    results.sort((a, b) => {
+        const pathA = a.fullPath;
+        const pathB = b.fullPath;
+        return pathA.localeCompare(pathB,
+            undefined, // no locales
+            {
+                numeric: true,
+                ignorePunctuation: false,
+                sensitivity: 'base',
+            });
+    });
+
+    // found some properties, create JSX for them
+    for (const r of results) {
+        const tag = r.tag;
+
+        const displayName = tag.customName && tag.customName.length > 0
+            ? tag.customName
+            : r.fullPath;
+
+        ar.push(<span className='previewTag'>
+            <span className='path'>{displayName}</span>
+            <span>{toSafeString(r.prop.value)}</span>
+        </span >)
+    }
 
     return ar;
+}
+
+const splitChars = ["'", "\"", "."];
+// Splits a given path into its path segments.
+// Path segments are seperated by the dot-character.
+// This function also supports quotes, so that the dot can still be used (the path segment just needs to be wrapped in quotes then).
+// Returns:
+// - String array when the path was parsed correctly
+// - Single string as error reason why the path couldn't be parsed
+function parseJsonPath(str: string): string[] | string {
+    // Collect symbols until we find a dot, single-quote, or double-quote
+    const result: string[] = [];
+
+    let pos = 0;
+    while (pos < str.length) {
+        let c = str[pos];
+        let start: number;
+        let end: number;
+        let match: string;
+        switch (c) {
+            case "'":
+            case "\"":
+                // A quote is opened
+                // Find the closing quote and collect everything in-between
+
+                start = pos + 1; // start just after the quote
+                end = str.indexOf(c, start); // and collect until the closing quote
+
+                if (end == -1) return "missing closing quote, quote was opened at index " + (start - 1);
+                match = str.slice(start, end);
+
+                if (match.length > 0)
+                    result.push(match);
+
+                pos = end == -1 ? str.length : end + 1; // continue after the end of our string and the closing quote
+                break;
+
+            case ".":
+                // A dot, skip over it
+
+                if (pos == 0) return "pattern cannot start with a dot";
+                pos++;
+                if (pos >= str.length) return "pattern can not end with a dot";
+                c = str[pos];
+                if (c == '.') return "pattern cannot contain more than one dot in a row";
+                break;
+
+            default:
+                // We're at a simple character, just collect everything until the next dot or quote
+                start = pos; // start here
+                end = indexOfMany(str, splitChars, pos); // collect until dot or quote
+
+                match = end >= 0
+                    ? str.slice(start, end)
+                    : str.slice(start, str.length);
+
+                if (match.length > 0)
+                    result.push(match);
+
+                pos = end == -1 ? str.length : end; // continue after the end
+                break;
+        }
+    }
+
+    // While we do support the '**' pattern, it must always appear alone.
+    // In other words, a path segment is valid if it is exactly equal to '**',
+    // but it is invalid if it contains '**'
+    //
+    // Valid example paths: can appear anywhere as long as it is
+    //    **.a.b.c
+    //    a.b.**.c.**
+    //    a.b.**
+    //
+    // Invalid example paths:
+    //    b**c.d
+    //    a.b**
+    //    a.**b
+    //
+
+    for (const segment of result) {
+        if (segment != "**" && segment.includes("**"))
+            return "path segment '**' must not have anything before or after it (except for dots of course)";
+    }
+
+    return result;
+}
+
+function indexOfMany(str: string, matches: string[], position: number): number {
+
+    const indices: number[] = matches.map(_ => -1);
+    // for every string we want to find, record the index of its first occurance
+    for (let i = 0; i < matches.length; i++)
+        indices[i] = str.indexOf(matches[i], position);
+
+    // find the first match (smallest value in our results)
+    // but skip over -1, because that means the string didn't contain that match
+    let smallest = -1;
+    for (const i of indices) {
+        if (smallest == -1 || i < smallest)
+            smallest = i;
+    }
+
+    return smallest;
+}
+
+if (IsDev) {
+    const tests = [
+        // simple case
+        { input: `abc`, output: [`abc`] },
+
+        // single quotes, double quotes
+        { input: `"xx"."yy"`, output: [`xx`, `yy`] },
+        { input: `'xx'.'yy'`, output: [`xx`, `yy`] },
+        { input: `".".'.'`, output: [`.`, `.`] },
+
+        // keys with split-characters inside them
+        { input: `"'a.'b".asdf`, output: [`'a.'b`, `asdf`] },
+        { input: `"x.y.z".firstName`, output: [`x.y.z`, `firstName`] },
+        { input: `a.".b"`, output: [`a`, `.b`] },
+        { input: `a.'.b'`, output: [`a`, `.b`] },
+        { input: `a.'""".b"'`, output: [`a`, `""".b"`] },
+        { input: `a.'""".b'`, output: [`a`, `""".b`] },
+
+        // empty
+        { input: ``, output: [] },
+        { input: `''`, output: [] },
+        { input: `""`, output: [] },
+
+        // invalid inputs
+        // missing closing quotes
+        { input: `"`, output: null },
+        { input: `."`, output: null },
+        { input: `".`, output: null },
+        { input: `'`, output: null },
+        { input: `.'`, output: null },
+        { input: `'.`, output: null },
+
+        // dots at the wrong location
+        { input: `.`, output: null },
+        { input: `'a'.`, output: null },
+        { input: `.a`, output: null },
+        { input: `.'a'`, output: null },
+        { input: `a..b`, output: null },
+    ]
+
+    for (const test of tests) {
+        const expected = test.output;
+        let result = parseJsonPath(test.input);
+
+        if (typeof result == 'string') result = null as unknown as string[]; // string means error message
+
+        if (result === null && expected === null)
+            continue;
+
+        let hasError = false;
+        if (result === null && expected !== null)
+            hasError = true; // didn't match when it should have
+        if (result !== null && expected === null)
+            hasError = true; // matched something we don't want
+
+        if (!hasError && result && expected) {
+
+            if (result.length != expected.length)
+                hasError = true; // wrong length
+
+            for (let i = 0; i < result.length && !hasError; i++)
+                if (result[i] != expected[i])
+                    hasError = true; // wrong array entry
+        }
+
+        if (hasError)
+            throw new Error(`Error in parseJsonPath test:\nTest: ${JSON.stringify(test)}\nActual Result: ${JSON.stringify(result)}`);
+    }
+}
+
+function wildcardToRegex(pattern: string): RegExp {
+    const components = pattern.split('*'); // split by '*' symbol
+    const escapedComponents = components.map(regexEscape); // ensure the components don't contain regex special characters
+    const joined = escapedComponents.join('.*'); // join components, adding back the wildcard
+    return new RegExp('^' + joined + '$');
+}
+
+function regexEscape(regexPattern: string): string {
+    return regexPattern.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }

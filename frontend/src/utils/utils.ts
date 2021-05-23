@@ -292,18 +292,18 @@ type PropertySearchExContext = {
     returnFirstResult: boolean
 }
 
-export function findElementDeepEx(obj: any, isMatch: (propertyName: string, path: string[], value: any) => boolean, returnFirstMatch: boolean): FoundProperty[] {
+export function collectElements(obj: any, isMatch: (propertyName: string, path: string[], value: any) => boolean, returnFirstMatch: boolean): FoundProperty[] {
     const ctx: PropertySearchExContext = {
         isMatch: isMatch,
         currentPath: [],
         results: [],
         returnFirstResult: returnFirstMatch,
     };
-    findElementDeepEx2(ctx, obj);
+    collectElementsRecursive(ctx, obj);
     return ctx.results;
 }
 
-function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
+function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
     for (const key in obj) {
 
         const value = obj[key];
@@ -321,7 +321,7 @@ function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySea
         // descend into object
         if (typeof value === 'object') {
             ctx.currentPath.push(key);
-            const childResult = findElementDeepEx2(ctx, value);
+            const childResult = collectElementsRecursive(ctx, value);
             ctx.currentPath.pop();
 
             if (childResult == 'abort')
@@ -331,6 +331,96 @@ function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySea
 
     return 'continue';
 }
+
+
+
+type IsMatchFunc = (pathElement: string, propertyName: string, value: any) => boolean;
+type CollectElementsContext = {
+    isMatch: IsMatchFunc,
+    currentPath: string[],
+    results: CollectedProperty[],
+    returnFirstResult: boolean
+}
+
+export type CollectedProperty = { path: string[], value: any }
+
+export function collectElements2(
+    targetObject: any,
+
+    // "**" collectes all current and nested properties
+    // "*" collects all current properties
+    // anything else is passed to "isMatch"
+    path: string[],
+    isMatch: IsMatchFunc
+): CollectedProperty[] {
+
+    // Explore set
+    let currentExplore: CollectedProperty[] = [
+        { path: [], value: targetObject },
+    ];
+    let nextExplore: CollectedProperty[] = [];
+    const results: CollectedProperty[] = [];
+
+    for (let i = 0; i < path.length; i++) {
+        const segment = path[i];
+        const isLast = i == (path.length - 1);
+        const targetList = isLast ? results : nextExplore;
+
+        for (const foundProp of currentExplore) {
+            const obj = foundProp.value;
+
+            if (segment == "**") {
+                // All properties, and all their nested objects are a result
+                const allNested = collectElements(obj, (key, path, value) => {
+                    return typeof value == 'object';
+                }, false);
+
+                for (const n of allNested) {
+                    targetList.push({
+                        path: [...foundProp.path, ...n.path, n.propertyName],
+                        value: n.value
+                    });
+                }
+            }
+            else if (segment == "*") {
+                // Explore all properties
+                for (const key in obj) {
+                    const value = obj[key];
+                    if (value == null || typeof value == 'function') continue;
+
+                    targetList.push({
+                        path: [...foundProp.path, key],
+                        value: value,
+                    });
+                }
+
+            }
+            else {
+                // Some user defined string
+                for (const key in obj) {
+                    const value = obj[key];
+                    if (value == null || typeof value == 'function') continue;
+
+                    const match = isMatch(segment, key, value);
+                    if (match) {
+                        targetList.push({
+                            path: [...foundProp.path, key],
+                            value: value,
+                        });
+                    }
+                }
+            }
+        }
+
+        // use the next array as the current one
+        currentExplore = nextExplore;
+        nextExplore = [];
+    }
+
+    return results;
+}
+
+
 
 
 

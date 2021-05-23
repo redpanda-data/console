@@ -11,10 +11,22 @@ export type ValueDisplay = 'friendly' | 'both' | 'raw'
 
 export interface PreviewTag {
     id: string;
+
     isActive: boolean;
     text: string;
-
     customName?: string;
+
+    //
+    // new props
+    /*
+    pattern: string; // pattern, upgrade from old "text" prop
+
+    searchInMessageHeaders: boolean;
+    searchInMessageKey: boolean;
+    searchInMessageValue: boolean;
+
+    maxResults: number; // max number of results for this tag (less or equal 0 means no limit)
+    */
 }
 
 export interface ColumnList {
