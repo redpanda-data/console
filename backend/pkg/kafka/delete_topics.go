@@ -9,6 +9,7 @@ import (
 func (s *Service) DeleteTopics(ctx context.Context, topicNames []string) (*kmsg.DeleteTopicsResponse, error) {
 	req := kmsg.NewDeleteTopicsRequest()
 	req.TopicNames = topicNames
+	req.TimeoutMillis = 30 * 1000 // 30s
 
 	res, err := req.RequestWith(ctx, s.KafkaClient)
 	if err != nil {
