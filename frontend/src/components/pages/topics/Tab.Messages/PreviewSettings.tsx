@@ -1,6 +1,6 @@
 import { FilterOutlined, PlusOutlined } from "@ant-design/icons";
-import { ThreeBarsIcon, XIcon } from "@primer/octicons-v2-react";
-import { AutoComplete, Button, Checkbox, Input, message, Modal, Space, Typography } from "antd";
+import { ThreeBarsIcon, XIcon, GearIcon } from "@primer/octicons-v2-react";
+import { AutoComplete, Button, Checkbox, Input, message, Modal, Popover, Space, Typography } from "antd";
 import Item from "antd/lib/list/Item";
 import Paragraph from "antd/lib/typography/Paragraph";
 import arrayMove from "array-move";
@@ -11,12 +11,12 @@ import React from "react";
 import { Component } from "react";
 import { DragDropContext, Draggable, DragUpdate, Droppable, DroppableProvided, DropResult, ResponderProvided } from "react-beautiful-dnd";
 import { api } from "../../../../state/backendApi";
-import { PreviewTag } from "../../../../state/ui";
+import { PreviewTagV2 } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { MotionDiv } from "../../../../utils/animationProps";
 import { IsDev } from "../../../../utils/env";
 import { clone, toJson } from "../../../../utils/jsonUtils";
-import { OptionGroup, toSafeString } from "../../../../utils/tsxUtils";
+import { Label, OptionGroup, toSafeString } from "../../../../utils/tsxUtils";
 import { findElementDeep, collectElements, getAllMessageKeys, randomId, collectElements2, CollectedProperty } from "../../../../utils/utils";
 
 const { Text } = Typography;
@@ -88,7 +88,17 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                                     </Draggable>
                                 ))}
                                 {droppableProvided.placeholder}
-                                <Button onClick={() => tags.push({ id: getFreeId(), isActive: true, text: '' })}>Add entry...</Button>
+                                <Button onClick={() => {
+                                    const newTag: PreviewTagV2 = {
+                                        id: getFreeId(),
+                                        isActive: true,
+                                        pattern: '',
+                                        searchInMessageHeaders: false,
+                                        searchInMessageKey: false,
+                                        searchInMessageValue: true,
+                                    };
+                                    tags.push(newTag);
+                                }}>Add entry...</Button>
                             </div>
                         )}
                     </Droppable>
@@ -140,8 +150,14 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
     }
 }
 
+/*
+todo:
+- mark patterns red when they are invalid
+- better auto-complete: get suggestions from current pattern (except for last segment)
+-
+ */
 @observer
-class PreviewTagSettings extends Component<{ tag: PreviewTag, index: number, onRemove: () => void, allCurrentKeys: string[] }>{
+class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, onRemove: () => void, allCurrentKeys: string[] }>{
     render() {
         const { tag, index, onRemove, allCurrentKeys } = this.props;
 
@@ -157,8 +173,30 @@ class PreviewTagSettings extends Component<{ tag: PreviewTag, index: number, onR
             {/* Enabled */}
             <Checkbox checked={tag.isActive} onChange={e => tag.isActive = e.target.checked} />
 
+            {/* Settings */}
+            <Popover
+                trigger={['click']}
+                placement='bottomLeft'
+                arrowPointAtCenter={true}
+                content={<div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }} >
+
+                    <Label text="Display Name" style={{ marginBottom: '.5em' }}>
+                        <Input size='small' style={{ flexGrow: 1, flexBasis: '50px' }}
+                            value={tag.customName}
+                            onChange={e => tag.customName = e.target.value}
+                            autoComplete={randomId()}
+                            spellCheck={false}
+                            placeholder="Enter a display name..."
+                        />
+                    </Label>
+
+                    <span><Checkbox checked={tag.searchInMessageKey} onChange={e => tag.searchInMessageKey = e.target.checked}>Search in message key</Checkbox></span>
+                    <span><Checkbox checked={tag.searchInMessageValue} onChange={e => tag.searchInMessageValue = e.target.checked}>Search in message value</Checkbox></span>
+                </div>}>
+                <span className="inlineButton" ><GearIcon /></span>
+            </Popover>
+
             {/* Pattern */}
-            {/* <span className="description">Pattern</span> */}
             <AutoComplete options={allCurrentKeys.map(t => ({ label: t, value: t }))}
                 size="small"
                 style={{ flexGrow: 1, flexBasis: '400px' }}
@@ -167,9 +205,9 @@ class PreviewTagSettings extends Component<{ tag: PreviewTag, index: number, onR
                 onSearch={(value) => {
                     // console.log('onSearch ', value);
                 }}
-                value={tag.text}
+                value={tag.pattern}
 
-                onChange={e => tag.text = e}
+                onChange={e => tag.pattern = e}
                 placeholder="Pattern..."
                 filterOption={(inputValue, option) => option?.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
 
@@ -178,18 +216,8 @@ class PreviewTagSettings extends Component<{ tag: PreviewTag, index: number, onR
                 {...{ spellCheck: "false" }}
             />
 
-            {/* Name */}
-            {/* <span className="description">Display Name</span> */}
-            <Input size='small' style={{ flexGrow: 1, flexBasis: '50px' }}
-                value={tag.customName}
-                onChange={e => tag.customName = e.target.value}
-                autoComplete={randomId()}
-                spellCheck={false}
-                placeholder="Display Name..."
-            />
-
             {/* Remove */}
-            <span className="removeButton" onClick={onRemove} ><XIcon /></span>
+            <span className="inlineButton" onClick={onRemove} ><XIcon /></span>
         </div>
     }
 }
@@ -201,31 +229,27 @@ todo:
     - in order to match `/pattern/` our 'parseJsonPath' must support escaping forward slashes: "\/"
 
 */
-export function getPreviewTags(messageValue: any, tags: PreviewTag[]): React.ReactNode[] {
+export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.ReactNode[] {
     const ar: React.ReactNode[] = [];
 
-    const results: { prop: CollectedProperty, tag: PreviewTag, fullPath: string }[] = [];
-    // const onlyFirst = uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst';
+    const results: { prop: CollectedProperty, tag: PreviewTagV2, fullPath: string }[] = [];
+    const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive;
 
     for (const t of tags) {
-        if (t.text.length == 0) continue;
+        if (t.pattern.length == 0) continue;
 
-        const trimmed = t.text.trim();
+        const trimmed = t.pattern.trim();
         const searchPath = parseJsonPath(trimmed);
         if (searchPath == null) continue;
         if (typeof searchPath == 'string') continue; // todo: show error to user
 
-        const foundProperties = collectElements2(messageValue, searchPath, (pathElement, propertyName, value) => {
+        const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName, value) => {
             // We'll never get called for '*' or '**' patterns
             // So we can be sure that the pattern is not just '*'
-            if (pathElement.includes("*")) {
-                const segment = wildcardToRegex(pathElement);
-                return segment.test(propertyName);
-            }
-            if (pathElement == propertyName)
-                return true;
-
-            return false;
+            const segmentRegex = caseSensitive
+                ? wildcardToRegex(pathElement)
+                : new RegExp(wildcardToRegex(pathElement), 'i');
+            return segmentRegex.test(propertyName);
         });
 
         for (const p of foundProperties)

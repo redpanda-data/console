@@ -19,7 +19,7 @@ import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
 import { api } from "../../../../state/backendApi";
 import { Payload, Topic, TopicMessage } from "../../../../state/restInterfaces";
-import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
+import { ColumnList, FilterEntry, PreviewTagV2, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
 import '../../../../utils/arrayExtensions';
@@ -327,7 +327,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     }
 
     @computed
-    get activePreviewTags(): PreviewTag[] {
+    get activePreviewTags(): PreviewTagV2[] {
         return uiState.topicSettings.previewTags.filter(t => t.isActive);
     }
 
@@ -373,7 +373,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
-            { width: 2, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
+            { width: 2, title: 'Key', dataIndex: 'key', render: (_, r) => <MessageKeyPreview msg={r} previewFields={() => this.activePreviewTags} />, sorter: this.keySorter },
             {
                 dataIndex: 'value',
                 width: 'auto',
@@ -751,23 +751,41 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
     }
 }
 
-const renderKey = (p: Payload, record: TopicMessage) => {
-    const value = p.payload;
-    const text = typeof value === 'string' ? value : toJson(value);
 
-    if (value == undefined || value == null || text.length == 0 || text == '{}')
-        return renderEmptyIcon("Empty Key");
+@observer
+class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[] }> {
+    render() {
+        const value = this.props.msg.key.payload;
+        const text = typeof value === 'string' ? value : toJson(value);
 
-    if (text.length > 45) {
-        return <span className='cellDiv' style={{ minWidth: '120px' }}>
-            <code style={{ fontSize: '95%' }}>{text.slice(0, 44)}&hellip;</code>
-        </span>
+        if (value == undefined || value == null || text.length == 0 || text == '{}')
+            return renderEmptyIcon("Empty Key");
+
+        if (typeof value == 'object') {
+            const previewTags = this.props.previewFields().filter(t => t.searchInMessageKey);
+            if (previewTags.length > 0) {
+                const tags = getPreviewTags(value, previewTags);
+                return <span className='cellDiv fade' style={{ fontSize: '95%' }}>
+                    <div className={"previewTags previewTags-" + uiState.topicSettings.previewDisplayMode}>
+                        {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
+                    </div>
+                </span>
+            }
+        }
+
+
+        if (text.length > 300) {
+            return <span className='cellDiv' style={{ minWidth: '120px' }}>
+                <code style={{ fontSize: '95%' }}>{text.slice(0, 300)}&hellip;</code>
+            </span>
+        }
+
+        return <span className='cellDiv' style={{ width: 'auto' }}>
+            <code style={{ fontSize: '95%' }}>{text}</code>
+        </span>;
     }
+}
 
-    return <span className='cellDiv' style={{ width: 'auto' }}>
-        <code style={{ fontSize: '95%' }}>{text}</code>
-    </span>;
-};
 
 @observer
 class StartOffsetDateTimePicker extends Component {
@@ -832,7 +850,7 @@ class DateTimePickerExtraFooter extends Component {
 
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTag[] }> {
+class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[] }> {
     render() {
         const msg = this.props.msg;
         const value = msg.value.payload;
@@ -860,7 +878,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             else {
                 // Only thing left is 'object'
                 // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-                const previewTags = this.props.previewFields();
+                const previewTags = this.props.previewFields().filter(t => t.searchInMessageValue);
                 if (previewTags.length > 0) {
                     const tags = getPreviewTags(value, previewTags);
                     text = <span className='cellDiv fade' style={{ fontSize: '95%' }}>
@@ -892,7 +910,7 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
 
         {/* .ant-tabs-nav { width: ??; } */}
         <Tabs animated={false} defaultActiveKey='value'>
-            <Tabs.TabPane key='key' tab='Key'>
+            <Tabs.TabPane key='key' tab='Key' disabled={msg.key == null || msg.key.size == 0}>
                 {renderPayload(msg.key, shouldExpand)}
             </Tabs.TabPane>
             <Tabs.TabPane key='value' tab='Value'>

@@ -317,6 +317,12 @@ const apiStore = {
 
                     m.keyJson = JSON.stringify(m.key.payload);
 
+                    if (m.value.payload.customer) {
+                        const c = m.value.payload.customer;
+                        delete m.value.payload.customer;
+                        m.value.payload['x.y.z'] = c;
+                    }
+
                     m.valueJson = JSON.stringify(m.value.payload);
 
                     if (m.value.encoding == 'binary') {
