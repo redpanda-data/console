@@ -155,6 +155,25 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 	}
 }
 
+func (api *API) handleDeleteTopic() http.HandlerFunc {
+	type response struct {
+		Status string `json:"status"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		topicName := chi.URLParam(r, "topicName")
+
+		// TODO: Add Hook
+		restErr := api.OwlSvc.DeleteTopic(r.Context(), topicName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, response{Status: "Success"})
+	}
+}
+
 // handleGetTopicsConfigs returns all set configuration options for one or more topics
 func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 	type response struct {
