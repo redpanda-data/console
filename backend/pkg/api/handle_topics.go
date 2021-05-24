@@ -163,8 +163,24 @@ func (api *API) handleDeleteTopic() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := chi.URLParam(r, "topicName")
 
-		// TODO: Add Hook
-		restErr := api.OwlSvc.DeleteTopic(r.Context(), topicName)
+		// Check if logged in user is allowed to view partitions for the given topic
+		canDelete, restErr := api.Hooks.Owl.CanDeleteTopic(r.Context(), topicName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canDelete {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("requester has no permissions to delete this topic"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to delete this topic",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		restErr = api.OwlSvc.DeleteTopic(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
