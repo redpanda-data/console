@@ -369,14 +369,17 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
+        const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
+        const hasValueTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageValue) > 0;
+
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
-            { width: 2, title: 'Key', dataIndex: 'key', render: (_, r) => <MessageKeyPreview msg={r} previewFields={() => this.activePreviewTags} />, sorter: this.keySorter },
+            { width: hasKeyTags ? '50%' : '25%', title: 'Key', dataIndex: 'key', render: (_, r) => <MessageKeyPreview msg={r} previewFields={() => this.activePreviewTags} />, sorter: this.keySorter },
             {
                 dataIndex: 'value',
-                width: 'auto',
+                width: hasValueTags ? '50%' : 'auto',
                 title: <span>Value {previewButton}</span>,
                 render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
                 //filteredValue: ['?'],
@@ -780,7 +783,7 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: ()
             </span>
         }
 
-        return <span className='cellDiv' style={{ width: 'auto' }}>
+        return <span className='cellDiv' >
             <code style={{ fontSize: '95%' }}>{text}</code>
         </span>;
     }
