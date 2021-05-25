@@ -1,3 +1,5 @@
+import '@testing-library/jest-dom/extend-expect';
+
 Object.defineProperty(global, 'matchMedia', {
     writable: true,
     value: (query) => ({
