@@ -4,28 +4,6 @@ import TopicAclList from './TopicAclList';
 import { observable } from 'mobx';
 import { ResourcePatternType } from '../../../../state/restInterfaces';
 
-// interface AclResponse {
-//     aclResources: AclResource[];
-//     isAuthorizerEnabled: boolean;
-// }
-//
-// enum ResourcePatternType {
-//     'UNKNOWN', 'MATCH', 'LITERAL', 'PREFIXED'
-// }
-// interface AclResource {
-//     resourceType: string;
-//     resourceName: string;
-//     resourcePatternType: ResourcePatternType;
-//     acls: AclRule[];
-// }
-
-// interface AclRule {
-//     principal: string;
-//     host: string;
-//     operation: string;
-//     permissionType: string;
-// }
-
 it('renders an empty table when no data is present', () => {
     const store = observable({
         isAuthorizerEnabled: true,
