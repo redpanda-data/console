@@ -2,7 +2,9 @@ package api
 
 import (
 	_ "context"
+	"errors"
 	"fmt"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap/zapcore"
 	"net/http"
 	"strconv"
@@ -187,6 +189,104 @@ func (api *API) handleDeleteTopic() http.HandlerFunc {
 		}
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response{Status: "Success"})
+	}
+}
+
+type deleteTopicRecordsRequest struct {
+	// Partitions contains partitions to delete records from.
+	Partitions []struct {
+		// Partition is a partition to delete records from.
+		Partition int32 `json:"partitionId"`
+
+		// Offset is the offset to set the partition's low watermark (start
+		// offset) to. After a successful response, all records before this
+		// offset are considered deleted and are no longer readable.
+		//
+		// To delete all records, use -1, which is mapped to the partition's
+		// current high watermark.
+		Offset int64 `json:"offset"`
+	} `json:"partitions"`
+}
+
+func (d *deleteTopicRecordsRequest) OK() error {
+	if len(d.Partitions) == 0 {
+		return fmt.Errorf("at least one partition must be specified")
+	}
+
+	for _, partition := range d.Partitions {
+		if partition.Offset < -1 {
+			return fmt.Errorf("partition offset must be greater than -1")
+		}
+	}
+
+	return nil
+}
+
+func (api *API) handleDeleteTopicRecords() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		topicName := chi.URLParam(r, "topicName")
+
+		// 1. Parse and validate request
+		var req deleteTopicRecordsRequest
+		err := rest.Decode(w, r, &req)
+		if err != nil {
+			var mr *rest.MalformedRequest
+			if errors.As(err, &mr) {
+				restErr := &rest.Error{
+					Err:      fmt.Errorf(mr.Error()),
+					Status:   mr.Status,
+					Message:  mr.Message,
+					IsSilent: false,
+				}
+				rest.SendRESTError(w, r, api.Logger, restErr)
+				return
+			}
+
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusInternalServerError,
+				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 2. Check if logged in user is allowed to view partitions for the given topic
+		canDelete, restErr := api.Hooks.Owl.CanDeleteTopicRecords(r.Context(), topicName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canDelete {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("requester has no permissions to delete records in this topic"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to delete this topic",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 3. Submit delete topic records request
+		deleteReq := kmsg.NewDeleteRecordsRequestTopic()
+		deleteReq.Topic = topicName
+		deleteReq.Partitions = make([]kmsg.DeleteRecordsRequestTopicPartition, len(req.Partitions))
+		for i, partition := range req.Partitions {
+			pReq := kmsg.NewDeleteRecordsRequestTopicPartition()
+			pReq.Partition = partition.Partition
+			pReq.Offset = partition.Offset
+			deleteReq.Partitions[i] = pReq
+		}
+
+		deleteRes, restErr := api.OwlSvc.DeleteTopicRecords(r.Context(), deleteReq)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, deleteRes)
 	}
 }
 
