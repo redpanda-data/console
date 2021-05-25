@@ -109,6 +109,7 @@ export class TopicDetailsSettings {
 
     @observable consumerPageSize = 20;
     @observable partitionPageSize = 20;
+    @observable aclPageSize = 20;
 
 
     @observable quickSearch = '';

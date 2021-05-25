@@ -1,10 +1,11 @@
 import React from 'react';
 import { observer } from 'mobx-react';
 import { AclResponse } from '../../../../state/restInterfaces';
-import { sortField } from '../../../misc/common';
+import { makePaginationConfig, sortField } from '../../../misc/common';
 import Table, { ColumnProps } from 'antd/lib/table';
 import { toJson } from '../../../../utils/jsonUtils';
 import { Alert } from 'antd';
+import { uiState } from '../../../../state/uiState';
 
 type TopicAcls = AclResponse | null | undefined;
 
@@ -21,6 +22,8 @@ function flatResourceList(store: TopicAcls) {
         .map((x) => ({ ...x, eqKey: toJson(x) }));
     return flatResources;
 }
+
+const paginationConfig = makePaginationConfig()
 
 export default observer(function ({ topicAcls: topicAcl }: TopicAclListProps) {
     const resources = flatResourceList(topicAcl);
@@ -41,12 +44,12 @@ export default observer(function ({ topicAcls: topicAcl }: TopicAclListProps) {
             <Table
                 style={{ margin: '0', padding: '0' }}
                 size={'middle'}
-                // pagination={this.pageConfig}
-                // onChange={(x) => {
-                //     if (x.pageSize) {
-                //         this.pageConfig.pageSize = uiSettings.brokerList.pageSize = x.pageSize;
-                //     }
-                // }}
+                pagination={paginationConfig}
+                onChange={(pagination) => {
+                    if (pagination.pageSize) uiState.topicSettings.aclPageSize = pagination.pageSize;
+                    paginationConfig.current = pagination.current;
+                    paginationConfig.pageSize = pagination.pageSize;
+                }}
                 dataSource={resources}
                 rowKey={(x) => x.eqKey}
                 rowClassName={() => 'pureDisplayRow'}
