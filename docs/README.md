@@ -23,7 +23,7 @@ If there are still open questions after reading this documentation please don't 
       - [Roles](./authorization/roles.md)
       - [RoleBindings](./authorization/role-bindings.md)
 - Reference Configs
-    - [kowl.yaml](./config/kowl.yaml)
-    - [kowl-business.yaml](./config/kowl-business.yaml)
-    - [kowl-business-role-bindings.yaml](./config/kowl-business-role-bindings.yaml)
-    - [kowl-business-roles.yaml](./config/kowl-business-roles.yaml)
+    - [kowl.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml)
+    - [kowl-business.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business.yaml)
+    - [kowl-business-role-bindings.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business-role-bindings.yaml)
+    - [kowl-business-roles.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl-business-roles.yaml)
