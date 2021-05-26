@@ -35,7 +35,7 @@ kafka:
   #   enabled: false
   #   username:
   #   password: # This can be set via the --kafka.sasl.password flag as well
-  #   mechanism: PLAIN # PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, GSSAPI, OAUTHBEARER and AWS-MSK-IAM are supported
+  #   mechanism: PLAIN # PLAIN, SCRAM-SHA-256, SCRAM-SHA-512, GSSAPI, OAUTHBEARER and AWS_MSK_IAM are supported
   #   gssapi:
   #     authType:
   #     keyTabPath:

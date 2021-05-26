@@ -11,7 +11,7 @@ const (
 	SASLMechanismScramSHA512            = "SCRAM-SHA-512"
 	SASLMechanismGSSAPI                 = "GSSAPI"
 	SASLMechanismOAuthBearer            = "OAUTHBEARER"
-	SASLMechanismAWSManagedStreamingIAM = "AWS-MSK-IAM"
+	SASLMechanismAWSManagedStreamingIAM = "AWS_MSK_IAM"
 )
 
 // SASLConfig for Kafka client
