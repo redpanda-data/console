@@ -23,7 +23,7 @@ import { AnimatePresence, AnimateSharedLayout, motion } from "framer-motion";
 import ReactCSSTransitionReplace from 'react-css-transition-replace';
 import { ShortNum } from "../../misc/ShortNum";
 import Tabs from "../../misc/tabs/Tabs";
-import TopicAclList from "../topics/Tab.Acl/TopicAclList";
+import AclList from "../topics/Tab.Acl/AclList";
 
 
 @observer
@@ -150,7 +150,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                         },{
                             key: "acl",
                             title: "ACL",
-                            content: <TopicAclList topicAcls={api.consumerGroupAcls.get(group.groupId)} />
+                            content: <AclList acl={api.consumerGroupAcls.get(group.groupId)} />
                         }]}
                     />
                 </Card>

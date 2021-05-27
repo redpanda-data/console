@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import TopicAclList from './TopicAclList';
+import AclList from './AclList';
 import { observable } from 'mobx';
 import { ResourcePatternType } from '../../../../state/restInterfaces';
 
@@ -10,7 +10,7 @@ it('renders an empty table when no data is present', () => {
         aclResources: [],
     });
 
-    const { getByText } = render(<TopicAclList topicAcls={store} />);
+    const { getByText } = render(<AclList acl={store} />);
     expect(getByText('No Data')).toBeInTheDocument();
 });
 
@@ -34,7 +34,7 @@ it('a table with one entry', () => {
         ],
     });
 
-    const { getByText } = render(<TopicAclList topicAcls={store} />);
+    const { getByText } = render(<AclList acl={store} />);
 
     expect(getByText('Topic')).toBeInTheDocument();
     expect(getByText('Test Topic')).toBeInTheDocument();
@@ -46,7 +46,7 @@ it('a table with one entry', () => {
 });
 
 it('informs user about missing permission to view ACLs', () => {
-    const { getByText } = render(<TopicAclList topicAcls={null} />);
+    const { getByText } = render(<AclList acl={null} />);
     expect(getByText('You do not have the necessary permissions to view ACLs')).toBeInTheDocument();
 });
 
@@ -56,6 +56,6 @@ it('informs user about missing authorizer config in Kafka cluster', () => {
         aclResources: [],
     });
 
-    const { getByText } = render(<TopicAclList topicAcls={store} />);
+    const { getByText } = render(<AclList acl={store} />);
     expect(getByText("There's no authorizer configured in your Kafka cluster")).toBeInTheDocument();
 });

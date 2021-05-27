@@ -1,19 +1,22 @@
 import React from 'react';
 import { observer } from 'mobx-react';
-import { AclResponse } from '../../../../state/restInterfaces';
 import { makePaginationConfig, sortField } from '../../../misc/common';
-import Table, { ColumnProps } from 'antd/lib/table';
+import Table, { ColumnProps, TablePaginationConfig } from 'antd/lib/table';
 import { toJson } from '../../../../utils/jsonUtils';
 import { Alert } from 'antd';
 import { uiState } from '../../../../state/uiState';
 
-type TopicAcls = AclResponse | null | undefined;
+import type { AclResponse } from '../../../../state/restInterfaces';
 
-interface TopicAclListProps {
-    topicAcls: TopicAcls;
+type Acls = AclResponse | null | undefined;
+
+interface AclListProps {
+    acl: Acls;
+    onChange?: (config: TablePaginationConfig) => void
+    paginationConfig?: TablePaginationConfig
 }
 
-function flatResourceList(store: TopicAcls) {
+function flatResourceList(store: Acls) {
     const acls = store;
     if (acls?.aclResources == null) return [];
     const flatResources = acls.aclResources
@@ -23,10 +26,8 @@ function flatResourceList(store: TopicAcls) {
     return flatResources;
 }
 
-const paginationConfig = makePaginationConfig()
-
-export default observer(function ({ topicAcls: topicAcl }: TopicAclListProps) {
-    const resources = flatResourceList(topicAcl);
+export default observer(function ({ acl, onChange, paginationConfig }: AclListProps) {
+    const resources = flatResourceList(acl);
     const columns: ColumnProps<typeof resources[0]>[] = [
         { width: '120px', title: 'Resource', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
         { width: '120px', title: 'Permission', dataIndex: 'permissionType', sorter: sortField('permissionType') },
@@ -39,17 +40,13 @@ export default observer(function ({ topicAcls: topicAcl }: TopicAclListProps) {
 
     return (
         <>
-            {topicAcl == null ? <Alert type="warning" message="You do not have the necessary permissions to view ACLs" showIcon style={{ marginBottom: '1em' }} /> : null}
-            {!topicAcl?.isAuthorizerEnabled ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} /> : null}
+            {acl == null ? <Alert type="warning" message="You do not have the necessary permissions to view ACLs" showIcon style={{ marginBottom: '1em' }} /> : null}
+            {!acl?.isAuthorizerEnabled ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} /> : null}
             <Table
                 style={{ margin: '0', padding: '0' }}
                 size={'middle'}
                 pagination={paginationConfig}
-                onChange={(pagination) => {
-                    if (pagination.pageSize) uiState.topicSettings.aclPageSize = pagination.pageSize;
-                    paginationConfig.current = pagination.current;
-                    paginationConfig.pageSize = pagination.pageSize;
-                }}
+                onChange={onChange}
                 dataSource={resources}
                 rowKey={(x) => x.eqKey}
                 rowClassName={() => 'pureDisplayRow'}
