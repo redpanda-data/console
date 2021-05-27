@@ -1,6 +1,6 @@
 # Changelog
 
-## Master / pending release
+## 1.4.0 / 2021-05-27
 
 - [FEATURE] Proto files can now be provided via the local file system as well
 - [FEATURE] Schema registry support for Protobuf (including auto deserialization)
