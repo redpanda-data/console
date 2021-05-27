@@ -208,6 +208,7 @@ const apiStore = {
     ACLs: undefined as AclResponse | undefined | null,
 
     consumerGroups: new Map<string, GroupDescription>(),
+    consumerGroupAcls: new Map<string, AclResponse | null>(),
 
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
@@ -589,6 +590,12 @@ const apiStore = {
                         this.consumerGroups.set(g.groupId, g);
                 });
             }, addError);
+    },
+
+    refreshConsumerGroupAcls(groupName: string, force?: boolean) {
+        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName})
+        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+            .then(v => this.consumerGroupAcls.set(groupName, v))
     },
 
     async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]):
