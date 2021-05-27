@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import styles from './Tabs.module.scss'
 
 export interface Tab {
     key: string;
@@ -20,11 +21,12 @@ export default function Tabs(props: TabsProps) {
     return (
         <div>
             <nav>
-                <ul>
+                <ul className={styles.navigationList}>
                     {tabs.map((tab) => (
                         <li key={tab.key}>
                             <a
                                 href={`#${encodeURIComponent(tab.key)}`}
+                                className={(selectedTab === tab.key) ? styles.active : ''}
                                 onClick={(e) => {
                                     e.preventDefault();
                                     if (disabledTabKeys.find((key) => key === tab.key) != undefined) {

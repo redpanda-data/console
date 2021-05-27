@@ -1,0 +1,31 @@
+.navigationList {
+    list-style: none;
+    display: flex;
+    margin: 0 0 1.75rem;
+    padding: 0;
+    border-bottom: solid thin #f0f0f0;
+
+    li {
+        flex: 1;
+    }
+
+    a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-bottom: solid 2px transparent;
+        transform: translateY(1px);
+        padding: 11px;
+        color: rgba(0, 0, 0, 0.85);
+    }
+
+    a:hover {
+        color: rgb(64, 169, 255);
+    }
+
+    a.active {
+        color: rgb(24, 144, 255);
+        background-color: rgba(0, 185, 255, 0.09);
+        border-bottom-color: rgb(48, 152, 232);
+    }
+}
