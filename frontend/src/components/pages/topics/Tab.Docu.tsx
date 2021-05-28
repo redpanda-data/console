@@ -3,7 +3,8 @@ import { Topic } from "../../../state/restInterfaces";
 import "../../../utils/arrayExtensions";
 import { api } from "../../../state/backendApi";
 import ReactMarkdown from 'react-markdown';
-import gfm from 'remark-gfm'
+import gfm from 'remark-gfm';
+import remarkemoji from 'remark-emoji';
 import { uriTransformer as baseUriTransformer } from 'react-markdown';
 import { DefaultSkeleton } from "../../../utils/tsxUtils";
 import { motion } from "framer-motion";
@@ -56,7 +57,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
             return errorEmpty;
 
         return <div className='topicDocumentation'>
-            <ReactMarkdown remarkPlugins={[gfm]} children={markdown} skipHtml={false} transformLinkUri={sanitizeUrl} />
+            <ReactMarkdown remarkPlugins={[gfm, remarkemoji]} children={markdown} skipHtml={false} transformLinkUri={sanitizeUrl} />
         </div>
     }
 }
