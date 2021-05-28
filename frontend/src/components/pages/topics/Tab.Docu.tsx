@@ -1,16 +1,14 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Topic } from "../../../state/restInterfaces";
 import "../../../utils/arrayExtensions";
 import { api } from "../../../state/backendApi";
 import ReactMarkdown from 'react-markdown';
-import { url } from "inspector";
+import gfm from 'remark-gfm'
 import { uriTransformer as baseUriTransformer } from 'react-markdown';
 import { DefaultSkeleton } from "../../../utils/tsxUtils";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
-import Card from "../../misc/Card";
 import { Button, Empty } from "antd";
-import { clone } from "../../../utils/jsonUtils";
 import { observer } from "mobx-react";
 
 
@@ -58,7 +56,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
             return errorEmpty;
 
         return <div className='topicDocumentation'>
-            <ReactMarkdown children={markdown} skipHtml={false} transformLinkUri={sanitizeUrl} />
+            <ReactMarkdown remarkPlugins={[gfm]} children={markdown} skipHtml={false} transformLinkUri={sanitizeUrl} />
         </div>
     }
 }
