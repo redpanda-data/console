@@ -376,10 +376,10 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
-            { width: hasKeyTags ? '50%' : '25%', title: 'Key', dataIndex: 'key', render: (_, r) => <MessageKeyPreview msg={r} previewFields={() => this.activePreviewTags} />, sorter: this.keySorter },
+            { width: hasKeyTags ? '30%' : 2, title: 'Key', dataIndex: 'key', render: (_, r) => <MessageKeyPreview msg={r} previewFields={() => this.activePreviewTags} />, sorter: this.keySorter },
             {
                 dataIndex: 'value',
-                width: hasValueTags ? '50%' : 'auto',
+                width: 'auto',
                 title: <span>Value {previewButton}</span>,
                 render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
                 //filteredValue: ['?'],
@@ -778,13 +778,13 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: ()
 
 
         if (text.length > 300) {
-            return <span className='cellDiv' style={{ minWidth: '120px' }}>
+            return <span className='cellDiv' style={{ minWidth: '200px' }}>
                 <code style={{ fontSize: '95%' }}>{text.slice(0, 300)}&hellip;</code>
             </span>
         }
 
-        return <span className='cellDiv' >
-            <code style={{ fontSize: '95%' }}>{text}</code>
+        return <span className='cellDiv' style={{ width: 'auto' }}>
+            <code style={{ fontSize: '95%', width: 'auto' }}>{text}</code>
         </span>;
     }
 }
