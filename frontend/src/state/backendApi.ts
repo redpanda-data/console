@@ -189,7 +189,7 @@ const apiStore = {
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
 
-    brokerConfigs: new Map<number, ConfigEntry[]>(),
+    brokerConfigs: new Map<number, ConfigEntry[] | string>(), // config entries, or error string
 
     adminInfo: undefined as (AdminInfo | undefined | null),
 
@@ -316,7 +316,6 @@ const apiStore = {
                     }
 
                     m.keyJson = JSON.stringify(m.key.payload);
-
                     m.valueJson = JSON.stringify(m.value.payload);
 
                     if (m.value.encoding == 'binary') {
@@ -422,6 +421,7 @@ const apiStore = {
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
         if (!IsBusiness) return; // permissions endpoint only exists in kowl-business
+        if (this.userData?.user?.providerID == -1) return; // debug user
         cachedApiRequest<TopicPermissions | null>(`./api/permissions/topics/${topicName}`, force)
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
@@ -554,21 +554,22 @@ const apiStore = {
                         this.clusterInfo = v.clusterInfo;
 
                     for (const b of v.clusterInfo.brokers)
-                        if (b.config.error) {
-                            console.error("unable to refresh broker config", { brokerId: b.brokerId, config: b.config });
-                        }
-                        else {
+                        if (b.config.error)
+                            this.brokerConfigs.set(b.brokerId, b.config.error)
+                        else
                             this.brokerConfigs.set(b.brokerId, b.config.configs);
-                        }
                 });
 
             }, addError);
     },
 
     refreshBrokerConfig(brokerId: number, force?: boolean) {
-        cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force).then(v => {
-            if (v?.brokerConfigs)
+        cachedApiRequest<BrokerConfigResponse | ApiError>(`./api/brokers/${brokerId}/config`, force).then(v => {
+            if ('message' in v) {
+                this.brokerConfigs.set(brokerId, v.message); // error
+            } else {
                 this.brokerConfigs.set(brokerId, v.brokerConfigs);
+            }
         }).catch(addError);
     },
 

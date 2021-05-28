@@ -3,19 +3,19 @@ package owl
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap"
 )
 
 type BrokerConfig struct {
 	brokerID int32 `json:"-"`
 
 	Configs []BrokerConfigEntry `json:"configs"`
-	Error   *rest.Error         `json:"error,omitempty"`
+	Error   string              `json:"error,omitempty"`
 }
 
 type BrokerConfigEntry struct {
@@ -50,10 +50,15 @@ func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConf
 	for _, broker := range metadata.Brokers {
 		go func(bID int32) {
 			cfg, restErr := s.GetBrokerConfig(ctx, bID)
+			errMsg := ""
+			if restErr != nil {
+				s.logger.Warn("failed to describe broker config", zap.Int32("broker_id", bID), zap.Error(restErr.Err))
+				errMsg = restErr.Err.Error()
+			}
 			resCh <- BrokerConfig{
 				brokerID: bID,
 				Configs:  cfg,
-				Error:    restErr,
+				Error:    errMsg,
 			}
 		}(broker.NodeID)
 	}
@@ -61,9 +66,8 @@ func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConf
 	configsByBrokerID := make(map[int32]BrokerConfig)
 	for i := 0; i < cap(resCh); i++ {
 		res := <-resCh
-		if res.Error != nil {
+		if res.Error != "" {
 			res.Configs = nil
-			s.logger.Warn("failed to describe broker config", zap.Int32("broker_id", res.brokerID), zap.Error(res.Error.Err))
 			continue
 		}
 		configsByBrokerID[res.brokerID] = res

@@ -11,10 +11,23 @@ export type ValueDisplay = 'friendly' | 'both' | 'raw'
 
 export interface PreviewTag {
     id: string;
+
     isActive: boolean;
     text: string;
-
     customName?: string;
+}
+
+export interface PreviewTagV2 {
+    id: string;
+
+    isActive: boolean;
+
+    pattern: string; // pattern, upgrade from old "text" prop
+    customName?: string;
+
+    searchInMessageHeaders: boolean;
+    searchInMessageKey: boolean;
+    searchInMessageValue: boolean;
 }
 
 export interface ColumnList {
@@ -96,7 +109,7 @@ export class TopicDetailsSettings {
     @observable messagesPageSize = 20;
     @observable favConfigEntries: string[] = ['cleanup.policy', 'segment.bytes', 'segment.ms'];
 
-    @observable previewTags = [] as PreviewTag[];
+    @observable previewTags = [] as PreviewTagV2[];
     @observable previewTagsCaseSensitive = false;
 
     @observable previewMultiResultMode = 'showAll' as 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
@@ -215,7 +228,34 @@ if (storedSettingsJson) {
         ts.previewColumnFields = ts.previewColumnFields ?? [];
         ts.previewTimestamps = ts.previewTimestamps ?? 'default';
     }
+
+    // Upgrade: PreviewTag to PreviewTagV2
+    for (const ts of uiSettings.perTopicSettings) {
+        for (let i = 0; i < ts.previewTags.length; i++) {
+            const tag = ts.previewTags[i];
+            if (isPreviewTagV1(tag)) {
+                // upgrade by constructing a new tag from the old data
+                const newTag: PreviewTagV2 = {
+                    id: tag.id,
+                    isActive: tag.isActive,
+                    pattern: '**.' + tag.text,
+                    customName: tag.customName,
+                    searchInMessageHeaders: false,
+                    searchInMessageKey: false,
+                    searchInMessageValue: true,
+                };
+
+                // replace old tag
+                ts.previewTags[i] = newTag;
+            }
+        }
+    }
 }
+
+function isPreviewTagV1(tag: PreviewTag | PreviewTagV2): tag is PreviewTag {
+    return (tag as PreviewTag).text !== undefined;
+}
+
 
 // Auto save (timed)
 autorun(() => {

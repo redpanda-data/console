@@ -5,7 +5,7 @@ import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { AnimatePresence, motion } from "framer-motion";
-import { autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from "mobx";
+import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
@@ -19,7 +19,7 @@ import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
 import { api } from "../../../../state/backendApi";
 import { Payload, Topic, TopicMessage } from "../../../../state/restInterfaces";
-import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
+import { ColumnList, FilterEntry, PreviewTagV2, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
 import '../../../../utils/arrayExtensions';
@@ -56,8 +56,6 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     @observable previewDisplay: string[] = [];
     // @observable allCurrentKeys: string[];
 
-
-
     @observable showColumnSettings = false;
 
     @observable fetchError = null as Error | null;
@@ -71,6 +69,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     currentSearchRun: string | null = null;
 
     @observable downloadMessages: TopicMessage[] | null;
+    @observable expandedKeys: React.Key[] = [];
 
 
     constructor(props: { topic: Topic }) {
@@ -328,7 +327,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     }
 
     @computed
-    get activePreviewTags(): PreviewTag[] {
+    get activePreviewTags(): PreviewTagV2[] {
         return uiState.topicSettings.previewTags.filter(t => t.isActive);
     }
 
@@ -370,14 +369,17 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
+        const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
+        const hasValueTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageValue) > 0;
+
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
-            { width: 2, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
+            { width: hasKeyTags ? '50%' : '25%', title: 'Key', dataIndex: 'key', render: (_, r) => <MessageKeyPreview msg={r} previewFields={() => this.activePreviewTags} />, sorter: this.keySorter },
             {
                 dataIndex: 'value',
-                width: 'auto',
+                width: hasValueTags ? '50%' : 'auto',
                 title: <span>Value {previewButton}</span>,
                 render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
                 //filteredValue: ['?'],
@@ -449,12 +451,28 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
                     rowClassName={(r: TopicMessage) => (r.isValueNull && showTombstones) ? 'tombstone' : ''}
+                    onRow={r => {
+                        return {
+                            onDoubleClick: e => {
+                                // Double clicking a row should expand/collapse it
+                                // But not when the user double-clicks the expand/collapse button
+                                if (e.target instanceof HTMLElement)
+                                    if (e.target.classList.contains("ant-table-row-expand-icon"))
+                                        return;
+                                this.toggleRecordExpand(r);
+                            },
+                        }
+                    }}
 
                     expandable={{
                         expandRowByClick: false,
                         expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'value'),
                         rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
                         expandedRowRender: record => renderExpandedMessage(record),
+                        expandedRowKeys: this.expandedKeys.slice(),
+                        onExpand: (p, r) => {
+                            this.toggleRecordExpand(r);
+                        }
                     }}
 
                     columns={filteredColumns}
@@ -480,6 +498,15 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
             </ConfigProvider>
         </>
     })
+
+
+    @action toggleRecordExpand(r: TopicMessage) {
+        const key = r.offset + ' ' + r.partitionID + r.timestamp;
+        // try collapsing it, removeAll returns the number of matches
+        const removed = this.expandedKeys.removeAll(x => x == key);
+        if (removed == 0) // wasn't expanded, so expand it now
+            this.expandedKeys.push(key);
+    }
 
     keySorter(a: TopicMessage, b: TopicMessage, sortOrder?: SortOrder): number {
         const ta = String(a.key) ?? "";
@@ -727,23 +754,41 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
     }
 }
 
-const renderKey = (p: Payload, record: TopicMessage) => {
-    const value = p.payload;
-    const text = typeof value === 'string' ? value : toJson(value);
 
-    if (value == undefined || value == null || text.length == 0 || text == '{}')
-        return renderEmptyIcon("Empty Key");
+@observer
+class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[] }> {
+    render() {
+        const value = this.props.msg.key.payload;
+        const text = typeof value === 'string' ? value : toJson(value);
 
-    if (text.length > 45) {
-        return <span className='cellDiv' style={{ minWidth: '120px' }}>
-            <code style={{ fontSize: '95%' }}>{text.slice(0, 44)}&hellip;</code>
-        </span>
+        if (value == undefined || value == null || text.length == 0 || text == '{}')
+            return renderEmptyIcon("Empty Key");
+
+        if (typeof value == 'object') {
+            const previewTags = this.props.previewFields().filter(t => t.searchInMessageKey);
+            if (previewTags.length > 0) {
+                const tags = getPreviewTags(value, previewTags);
+                return <span className='cellDiv fade' style={{ fontSize: '95%' }}>
+                    <div className={"previewTags previewTags-" + uiState.topicSettings.previewDisplayMode}>
+                        {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
+                    </div>
+                </span>
+            }
+        }
+
+
+        if (text.length > 300) {
+            return <span className='cellDiv' style={{ minWidth: '120px' }}>
+                <code style={{ fontSize: '95%' }}>{text.slice(0, 300)}&hellip;</code>
+            </span>
+        }
+
+        return <span className='cellDiv' >
+            <code style={{ fontSize: '95%' }}>{text}</code>
+        </span>;
     }
+}
 
-    return <span className='cellDiv' style={{ width: 'auto' }}>
-        <code style={{ fontSize: '95%' }}>{text}</code>
-    </span>;
-};
 
 @observer
 class StartOffsetDateTimePicker extends Component {
@@ -808,7 +853,7 @@ class DateTimePickerExtraFooter extends Component {
 
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTag[] }> {
+class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[] }> {
     render() {
         const msg = this.props.msg;
         const value = msg.value.payload;
@@ -836,16 +881,8 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             else {
                 // Only thing left is 'object'
                 // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-                const previewTags = this.props.previewFields();
+                const previewTags = this.props.previewFields().filter(t => t.searchInMessageValue);
                 if (previewTags.length > 0) {
-                    // Json!
-                    // Construct our preview object
-                    const previewObj: any = {};
-                    const searchOptions = {
-                        caseSensitive: uiState.topicSettings.previewTagsCaseSensitive,
-                        returnFirstResult: uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst'
-                    };
-
                     const tags = getPreviewTags(value, previewTags);
                     text = <span className='cellDiv fade' style={{ fontSize: '95%' }}>
                         <div className={"previewTags previewTags-" + uiState.topicSettings.previewDisplayMode}>
@@ -876,7 +913,7 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
 
         {/* .ant-tabs-nav { width: ??; } */}
         <Tabs animated={false} defaultActiveKey='value'>
-            <Tabs.TabPane key='key' tab='Key'>
+            <Tabs.TabPane key='key' tab='Key' disabled={msg.key == null || msg.key.size == 0}>
                 {renderPayload(msg.key, shouldExpand)}
             </Tabs.TabPane>
             <Tabs.TabPane key='value' tab='Value'>
