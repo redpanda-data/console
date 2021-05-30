@@ -1,6 +1,6 @@
-import { FilterOutlined, PlusOutlined } from "@ant-design/icons";
-import { ThreeBarsIcon, XIcon, GearIcon } from "@primer/octicons-v2-react";
-import { AutoComplete, Button, Checkbox, Input, message, Modal, Popover, Space, Typography } from "antd";
+import { FilterOutlined } from "@ant-design/icons";
+import { ThreeBarsIcon, XIcon, GearIcon, InfoIcon } from "@primer/octicons-v2-react";
+import { AutoComplete, Button, Checkbox, Input, Modal, Popover, Typography } from "antd";
 import Item from "antd/lib/list/Item";
 import Paragraph from "antd/lib/typography/Paragraph";
 import arrayMove from "array-move";
@@ -9,19 +9,97 @@ import { computed, makeObservable, observable } from "mobx";
 import { observer } from "mobx-react";
 import React from "react";
 import { Component } from "react";
-import { DragDropContext, Draggable, DragUpdate, Droppable, DroppableProvided, DropResult, ResponderProvided } from "react-beautiful-dnd";
+import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } from "react-beautiful-dnd";
 import { api } from "../../../../state/backendApi";
 import { PreviewTagV2 } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { MotionDiv } from "../../../../utils/animationProps";
 import { IsDev } from "../../../../utils/env";
 import { clone, toJson } from "../../../../utils/jsonUtils";
-import { Label, OptionGroup, toSafeString } from "../../../../utils/tsxUtils";
-import { findElementDeep, collectElements, getAllMessageKeys, randomId, collectElements2, CollectedProperty } from "../../../../utils/utils";
+import { Code, Label, OptionGroup, QuickTable, toSafeString } from "../../../../utils/tsxUtils";
+import { getAllMessageKeys, randomId, collectElements2, CollectedProperty } from "../../../../utils/utils";
+import globExampleImg from '../../../../assets/globExample.png';
 
 const { Text } = Typography;
 
+const globHelp = <div>
+    {/* Examples + Image */}
+    <div style={{ display: 'flex', gap: '2em', minWidth: '900px' }}>
+        <div style={{ flexGrow: 1 }}>
+            <h3>Glob Pattern Examples</h3>
+            <div className="globHelpGrid">
+                <div className='h'>Pattern</div>
+                <div className='h'>Result</div>
+                <div className='h'>Reason / Explanation</div>
 
+                <div className='titleRowSeparator' />
+
+                {/* Example */}
+                <div className="c1"><Code>id</Code></div>
+                <div className="c2">id: 1111</div>
+                <div className="c3">There is only one 'id' property at the root of the object</div>
+                <div className='rowSeparator' />
+
+                {/* Example */}
+                <div className="c1 "><Code>*.id</Code></div>
+                <div className="c2">
+                    <div>customer.id: 2222</div>
+                    <div>key.with.dots.id: 3333</div>
+                </div >
+                <div className="c3">Star only seraches in direct children. Here, only 2 children contain an 'id' prop</div>
+                <div className='rowSeparator' />
+
+                {/* Example */}
+                <div className="c1"><Code>**.id</Code></div>
+                <div className="c2">
+                    (all ID properties)
+            </div >
+                <div className="c3">Double-star searches everywhere</div>
+                <div className='rowSeparator' />
+
+                {/* Example */}
+                <div className="c1"><Code>customer.*Na*</Code></div>
+                <div className="c2">
+                    <div>customer.firstName: John</div>
+                    <div>customer.lastName: Example</div>
+                </div >
+                <div className="c3">In the direct child named 'customer', find all properties that contain 'Na'</div>
+                <div className='rowSeparator' />
+
+                {/* Example */}
+                <div className="c1"><Code>key.with.dots.id</Code></div>
+                <div className="c2">(no results!)</div>
+                <div className="c3">There is no property named 'key'!</div>
+                <div className='rowSeparator' />
+
+                {/* Example */}
+                <div className="c1"><Code>"key.with.dots".id</Code></div>
+                <div className="c2">key.with.dots.id: 3333</div>
+                <div className="c3">To find properties with special characters in their name, use single or double-quotes</div>
+                <div className='rowSeparator' />
+
+            </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+            <div style={{ opacity: 0.5, fontSize: 'smaller', textAlign: 'center' }}>Example Data</div>
+            <img src={globExampleImg} />
+        </div>
+    </div>
+
+    {/* Details */}
+    <div>
+        <h3>Details</h3>
+        <div>
+            A glob pattern is just a list of property names seperated by dots. In addition to simple property names you can use:
+        </div>
+        <ul style={{ paddingLeft: '2em', marginTop: '.5em' }}>
+            <li><Code>*</Code> Star to match all current properties</li>
+            <li><Code>**</Code> Double-Star to matches all current and nested properties</li>
+            <li><Code>"</Code>/<Code>'</Code> Quotes for when a property-name contains dots</li>
+            <li><Code>abc*</Code> One or more stars within a name. Depending on where you place the star, you can check if a name starts with, ends with, or contains some string.</li>
+        </ul>
+    </div>
+</div>
 
 @observer
 export class PreviewSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
@@ -56,12 +134,18 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
         }
 
         const content = <>
-            <Paragraph>
-                <Text>
+            <div>
+                <span style={{ display: 'inline-flex' }}>
                     When viewing large messages we're often only interested in a few specific fields.
-                    Add patterns to this list to show found values as previews.
-                </Text>
-            </Paragraph>
+                    Add <Popover trigger={['click']} placement='bottom' content={globHelp}>
+                        <span style={{
+                            display: 'inline-flex', gap: '2px', margin: '0 0.6ch',
+                            color: 'hsl(205deg, 100%, 50%)',
+                            textDecoration: 'underline dotted', cursor: 'pointer'
+                        }}><InfoIcon size={15} />glob patterns</span>
+                    </Popover> to this list to show found values as previews.
+                </span>
+            </div>
 
             <div className="previewTagsList">
                 <DragDropContext onDragEnd={onDragEnd} >
@@ -262,6 +346,11 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
 
     // order results by their path
     results.sort((a, b) => {
+        // first sort by path length
+        const pathLengthDiff = a.prop.path.length - b.prop.path.length;
+        if (pathLengthDiff != 0) return pathLengthDiff;
+
+        // then alphabetically
         const pathA = a.fullPath;
         const pathB = b.fullPath;
         return pathA.localeCompare(pathB,
