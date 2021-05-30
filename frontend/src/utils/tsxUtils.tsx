@@ -466,3 +466,8 @@ const ellipsisSpanStyle: CSSProperties = {
 export const Ellipsis = (p: { children?: React.ReactNode, className?: string }) => {
     return <span className={p.className} style={ellipsisSpanStyle}>{p.children}</span>
 }
+
+export const Code = (p: { children?: React.ReactNode }) => {
+    return <span className="codeBox">{p.children}</span>
+}
+

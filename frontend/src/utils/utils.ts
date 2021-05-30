@@ -237,52 +237,7 @@ export function compareIgnoreCase(a: string, b: string) {
 }
 
 type FoundProperty = { propertyName: string, path: string[], value: any }
-type PropertySearchOptions = { caseSensitive: boolean, returnFirstResult: boolean; }
 type PropertySearchResult = 'continue' | 'abort';
-type PropertySearchContext = { targetPropertyName: string, currentPath: string[], results: FoundProperty[], options: PropertySearchOptions }
-
-export function findElementDeep(obj: any, name: string, options: PropertySearchOptions): FoundProperty[] {
-    const ctx: PropertySearchContext = {
-        targetPropertyName: name,
-        currentPath: [],
-        results: [],
-        options: options,
-    };
-    findElementDeep2(ctx, obj);
-    return ctx.results;
-}
-
-function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchResult {
-    for (const key in obj) {
-
-        const value = obj[key];
-
-        // property match?
-        const isMatch = ctx.options.caseSensitive
-            ? key === ctx.targetPropertyName
-            : compareIgnoreCase(ctx.targetPropertyName, key) === 0;
-
-        if (isMatch) {
-            const clonedPath = Object.assign([], ctx.currentPath);
-            ctx.results.push({ propertyName: key, path: clonedPath, value: value });
-
-            if (ctx.options.returnFirstResult) return 'abort';
-        }
-
-        // descend into object
-        if (typeof value === 'object') {
-            ctx.currentPath.push(key);
-            const childResult = findElementDeep2(ctx, value);
-            ctx.currentPath.pop();
-
-            if (childResult == 'abort')
-                return 'abort';
-        }
-    }
-
-    return 'continue';
-}
-
 
 
 type PropertySearchExContext = {
@@ -335,13 +290,6 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): Prope
 
 
 type IsMatchFunc = (pathElement: string, propertyName: string, value: any) => boolean;
-type CollectElementsContext = {
-    isMatch: IsMatchFunc,
-    currentPath: string[],
-    results: CollectedProperty[],
-    returnFirstResult: boolean
-}
-
 export type CollectedProperty = { path: string[], value: any }
 
 export function collectElements2(
@@ -367,48 +315,58 @@ export function collectElements2(
         const targetList = isLast ? results : nextExplore;
 
         for (const foundProp of currentExplore) {
-            const obj = foundProp.value;
+            const currentObj = foundProp.value;
 
-            if (segment == "**") {
-                // All properties, and all their nested objects are a result
-                const allNested = collectElements(obj, (key, path, value) => {
-                    return typeof value == 'object';
-                }, false);
+            switch (segment) {
+                case "**":
+                    // And all their nested objects are a result
+                    const allNested = collectElements(currentObj, (key, path, value) => {
+                        return typeof value == 'object';
+                    }, false);
 
-                for (const n of allNested) {
+                    for (const n of allNested) {
+                        targetList.push({
+                            path: [...foundProp.path, ...n.path, n.propertyName],
+                            value: n.value
+                        });
+                    }
+
+                    // Also explore this object again as well (because '**' also includes the current props)
                     targetList.push({
-                        path: [...foundProp.path, ...n.path, n.propertyName],
-                        value: n.value
+                        path: [...foundProp.path],
+                        value: currentObj,
                     });
-                }
-            }
-            else if (segment == "*") {
-                // Explore all properties
-                for (const key in obj) {
-                    const value = obj[key];
-                    if (value == null || typeof value == 'function') continue;
 
-                    targetList.push({
-                        path: [...foundProp.path, key],
-                        value: value,
-                    });
-                }
+                    break;
 
-            }
-            else {
-                // Some user defined string
-                for (const key in obj) {
-                    const value = obj[key];
-                    if (value == null || typeof value == 'function') continue;
+                case "*":
+                    // Explore all properties
+                    for (const key in currentObj) {
+                        const value = currentObj[key];
+                        if (value == null || typeof value == 'function') continue;
 
-                    const match = isMatch(segment, key, value);
-                    if (match) {
                         targetList.push({
                             path: [...foundProp.path, key],
                             value: value,
                         });
                     }
-                }
+                    break;
+
+                default:
+                    // Some user defined string
+                    for (const key in currentObj) {
+                        const value = currentObj[key];
+                        if (value == null || typeof value == 'function') continue;
+
+                        const match = isMatch(segment, key, value);
+                        if (match) {
+                            targetList.push({
+                                path: [...foundProp.path, key],
+                                value: value,
+                            });
+                        }
+                    }
+                    break;
             }
         }
 
@@ -419,12 +377,6 @@ export function collectElements2(
 
     return results;
 }
-
-
-
-
-
-
 
 
 export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
