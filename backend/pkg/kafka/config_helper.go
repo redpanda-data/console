@@ -123,7 +123,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		}
 
 		// AWS MSK IAM
-		if cfg.SASL.Mechanism == SASLMechanismOAuthBearer {
+		if cfg.SASL.Mechanism == SASLMechanismAWSManagedStreamingIAM {
 			mechanism := aws.Auth{
 				AccessKey:    cfg.SASL.AWSMskIam.AccessKey,
 				SecretKey:    cfg.SASL.AWSMskIam.SecretKey,
