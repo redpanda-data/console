@@ -1,12 +1,13 @@
+import React from 'react';
+
 import { LockIcon } from '@primer/octicons-v2-react';
 import { Button, Popover, Result, Typography } from 'antd';
 import { motion } from 'framer-motion';
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
-import React from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { Topic, TopicAction, TopicConfigEntry } from '../../../state/restInterfaces';
+import { ConfigEntry, Topic, TopicAction } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/uiState';
 import { animProps } from '../../../utils/animationProps';
@@ -163,7 +164,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         if (!topic) return null;
         return topic;
     }
-    @computed get topicConfig(): undefined | TopicConfigEntry[] | null {
+    @computed get topicConfig(): undefined | ConfigEntry[] | null {
         const config = api.topicConfig.get(this.props.topicName);
         if (config === undefined) return undefined;
         if (config === null || config.error != null) return null;
@@ -243,8 +244,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     }
 
     // depending on the cleanupPolicy we want to show specific config settings at the top
-    addBaseFavs(topicConfig: TopicConfigEntry[]): void {
-        const cleanupPolicy = topicConfig.find((e) => e.name === 'cleanup.policy')?.value;
+    addBaseFavs(topicConfig: ConfigEntry[]): void {
+        const cleanupPolicy = topicConfig.find(e => e.name === 'cleanup.policy')?.value;
         const favs = uiState.topicSettings.favConfigEntries;
 
         switch (cleanupPolicy) {

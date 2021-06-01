@@ -276,6 +276,11 @@ class GroupByTopics extends Component<{
                             getPopupContainer={findPopupContainer}>
                             <Tag color='blue'>assigned partitions: {partitionsAssigned}</Tag>
                         </Tooltip>
+                        <Button
+                            size='small'
+                            style={{ marginLeft: 'auto' }}
+                            onClick={() => appGlobal.history.push('/topics/' + g.topicName)}
+                        >View Topic</Button>
                     </div>
                 }>
 
@@ -416,7 +421,14 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                         dataSource={assignmentsFlat}
                         rowKey={r => r.topicName + r.partitionId}
                         columns={[
-                            { width: 130, title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName') },
+                            {
+                                width: 130, title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'),
+                                render: (_, record) => <div
+                                    className='hoverLink'
+                                    onClick={() => appGlobal.history.push('/topics/' + record.topicName)}>
+                                    {record.topicName}
+                                </div>
+                            },
                             { title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId') },
                             { title: 'Lag', dataIndex: 'partitionLag', render: v => numberToThousandsString(v), sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
                         ]}

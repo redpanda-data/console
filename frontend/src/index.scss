@@ -28,6 +28,14 @@ h2 {
     content: ' ';
 }
 
+// linear interpolation (color)
+// returns a value between $a and $b, depending on $t
+// $t=0 returns $a
+// $t=1 returns $b
+@function lerp($a, $b, $t) {
+    @return mix($b, $a, $t * 100);
+}
+
 .scroll-on-hover-y {
     overflow-y: hidden;
     overflow-x: hidden;
@@ -72,48 +80,51 @@ h2 {
     }
 }
 
+
 /*
-	Fixes for react-json-view
+    Fixes for react-json-view
 */
-/* remove the unneccesary fold-button at the root */
-/* .react-json-view>div>div>div>span:first-of-type {
-	display: none;
-}
+.react-json-view {
+    padding-left: 1em;
+    font-size: 22px;
 
-.react-json-view>div>div>div>span:last-of-type {
-	display: none;
-} */
-/* - Last two selectors fix the faulty indenting when there's a fold-button */
-.icon-container {
-    position: absolute;
-    width: auto;
-    transform: translateX(-80%) translateY(-1px);
+    .icon-container {
+        position: absolute;
+        width: auto;
+        transform: translateX(-80%) translateY(-1px);
 
-    .expanded-icon {
-        display: inline-block;
-        transform: translateX(-2px);
+        .expanded-icon {
+            display: inline-block;
+            transform: translateX(-1px);
+        }
+
+        .collapsed-icon {
+            display: inline-block;
+            transform: translateX(1px);
+        }
+    }
+
+    span>.icon-container~span {
+        display: inline !important;
+    }
+
+    .node-ellipsis {
+        line-height: 0px !important;
+    }
+
+    .object-meta-data {
+        user-select: none;
+    }
+
+    .variable-value,
+    .string-value {
+        cursor: pointer !important;
     }
 }
 
-span>.icon-container~span {
-    display: inline !important;
-}
-
-.node-ellipsis {
-    line-height: 0px !important;
-}
-
-.object-meta-data {
-    user-select: none;
-}
-
-/* - fix root indenting */
-/* .react-json-view>div>div>div>div>div>div {
-	padding-left: 1em !important;
-	border-left: 0 !important;
-} */
-.react-json-view {
-    padding-left: 1em;
+// allow copy tooltip to attach to this
+.ant-tabs-tabpane {
+    position: relative;
 }
 
 .hoverButton {
@@ -404,66 +415,7 @@ td.ant-table-column-sort {
     width: 100%;
 }
 
-.version {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-end;
 
-    gap: 1em;
-    padding: 0 1.6em;
-    padding-bottom: 6px;
-
-
-    font-family: "Open Sans";
-    font-size: 12px;
-    font-weight: 600;
-    line-height: normal;
-    opacity: 0.3;
-    color: hsla(205, 60%, 85%, 1);
-
-    transition: all 0.2s ease-out;
-
-    .repoImage {
-        font-size: 30px;
-    }
-
-    .versionText {
-        align-self: center;
-        white-space: nowrap;
-
-        .versionGitData {
-            font-family: monospace;
-        }
-
-        .versionDate {
-            opacity: 0;
-            font-size: 0px;
-            transition: all 0.2s ease-out 0.1s;
-        }
-    }
-
-
-
-    &:hover {
-        opacity: 0.9;
-
-        .versionDate {
-            opacity: 1;
-            font-size: inherit;
-        }
-    }
-}
-
-.ant-layout-sider-collapsed {
-    .version {
-        // place-content: center;
-        padding-left: 25px;
-
-        .versionText {
-            display: none;
-        }
-    }
-}
 
 .sideBarToggle {
     display: flex;
@@ -841,10 +793,6 @@ tr.tombstone {
     background: #fff;
     border-radius: 2px;
     box-shadow: 0px 3px 3px 1px rgba(0, 0, 0, 0.05);
-}
-
-.avatarMenu {
-    min-width: 150px;
 }
 
 .ant-tabs-nav {
@@ -1314,10 +1262,6 @@ svg {
     }
 }
 
-.ant-collapse-header {
-    user-select: none;
-}
-
 // arrows are not centered by default (maybe it has something to do with the font size of the title, or other elements in there?)
 div.ant-collapse.ant-collapse-borderless>div>div>span {
     padding: 9px 0 0 !important;
@@ -1444,7 +1388,8 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
 
 .ant-modal.preferencesDialog {
     width: 75% !important;
-    height: 100%;
+    max-width: 700px;
+    height: auto;
     max-height: 85%;
     display: inline-flex;
     justify-content: center;
@@ -1474,6 +1419,17 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     .ant-menu-vertical .ant-menu-item:not(:last-child) {
         margin-bottom: 2px;
     }
+
+    input.ant-input,
+    .ant-input-number-input {
+        padding: 3px 8px;
+    }
+
+    .ant-input-number {
+        width: auto;
+        height: 30px;
+    }
+
 }
 
 .smallText {
@@ -2338,4 +2294,359 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 // adding a perspective transform fixes it (wtf chrome? just do it correctly like firefox...)
 .ant-radio-inner {
     transform: perspective(1px);
+}
+
+.footer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: 8px;
+    padding: 0;
+    padding-top: 3em;
+    padding-bottom: 1em;
+    margin-top: auto;
+
+    color: hsl(216deg, 11%, 66%);
+
+    .links {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 1em;
+        font-size: 20px;
+
+        .anticon {
+            padding: 6px;
+            cursor: pointer;
+
+            color: hsl(216deg, 11%, 66%);
+
+            &:hover {
+                color: hsl(216deg, 11%, 50%);
+            }
+        }
+    }
+
+    .versionText {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 2em;
+
+        white-space: nowrap;
+
+        .versionGitData {
+            font-family: monospace;
+        }
+
+        font-family: "Poppins",
+        sans-serif;
+        font-size: 12px;
+        // font-weight: 600;
+        line-height: normal;
+    }
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    height: 62px;
+    flex-shrink: 0;
+
+    padding: 0 18px;
+    gap: 11px;
+
+    background: hsl(216deg, 21%, 24%);
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    user-select: none;
+
+    transition: all 250ms;
+
+    $avatarSize: 34px;
+
+    .avatar {
+
+        border-radius: 200px;
+        overflow: hidden;
+
+        min-width: $avatarSize;
+        width: $avatarSize;
+        max-width: $avatarSize;
+
+        image-rendering: crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
+
+        transition: all 200ms;
+
+        img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: scale-down;
+        }
+
+    }
+
+
+    .text {
+        font-weight: 300;
+        white-space: nowrap;
+        max-width: 100%;
+
+        overflow: hidden;
+
+        transition:
+            max-width 200ms,
+            opacity 300ms;
+
+        .userName {
+            max-width: 100%;
+            font-size: 12.5px;
+            color: #fff;
+            padding-bottom: 1px;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .prefText {
+            max-width: 100%;
+            font-size: 11.5px;
+            color: #9FA6B2;
+        }
+    }
+
+    &:hover {
+        background: hsl(216deg, 21%, 27%);
+    }
+
+    @at-root .ant-layout-sider-collapsed & {
+
+        background-color: transparent;
+
+        .avatar {
+            margin-left: 6px;
+        }
+
+        .text {
+            // display: none;
+            max-width: 0px;
+            opacity: 0;
+        }
+    }
+
+}
+
+.avatarDropdown {
+    animation-duration: 100ms;
+}
+
+.userMenu {
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+
+    padding-bottom: 3px;
+    padding-top: 3px;
+
+    background-color: #fff;
+    border-radius: 2px;
+
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+
+    box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.26);
+
+    .divider {
+        height: 1px;
+        width: 100%;
+        margin: 3px 0px;
+        background-color: hsl(215deg, 21%, 93%);
+
+        pointer-events: none;
+        cursor: default;
+    }
+
+    .menuItem {
+        padding: 6px 14px;
+
+        font-size: 13px;
+        font-weight: 400;
+        color: hsl(0, 0%, 25%);
+
+        cursor: pointer;
+        transition: background-color 100ms ease;
+
+        &:hover {
+            background-color: hsl(215deg, 21%, 90%);
+        }
+    }
+
+    .header {
+        pointer-events: none;
+        padding: 8px 14px;
+    }
+}
+
+// The inline view thing in the Messages table (value column), that contains all the 'preview results'
+.previewTags {
+    display: inline-flex;
+    column-gap: 12px;
+    row-gap: 2px;
+
+    .previewTag {
+        display: inline-flex;
+        place-items: center;
+        gap: 4px;
+
+        .path {
+            font-family: monospace;
+            font-size: x-small;
+            padding: 3px 6px;
+            margin-top: 2px;
+
+            border-radius: 10px;
+            background: hsl(0deg, 0%, 90%);
+            color: hsl(0deg, 0%, 30%);
+        }
+
+    }
+
+    &-single {
+        // one row for all results, overflow is just hidden
+    }
+
+    &-wrap {
+        // simple wrapping
+        flex-wrap: wrap;
+    }
+
+    &-rows {
+        // new row for each result
+        flex-direction: column;
+    }
+}
+
+.previewTagsList {
+    padding: .5em;
+    border-radius: 4px;
+    background: rgba(200, 205, 210, 0.16);
+
+    max-height: 300px;
+    overflow: hidden;
+    overflow-y: auto;
+
+    .moveHandle {
+        display: inline-flex;
+        align-self: stretch;
+        place-items: center;
+        width: 28px;
+        margin-left: 2px;
+        padding-top: 1px;
+
+        color: hsl(0deg, 0%, 58%);
+    }
+
+    .description {
+        padding-left: 8px;
+        font-size: 12px;
+        color: hsl(0deg, 0%, 40%);
+    }
+
+    input.ant-select-selection-search-input {
+        height: 21px;
+    }
+
+    .inlineButton {
+        display: inline-flex;
+        align-self: stretch;
+        place-items: center;
+        width: 26px;
+
+        color: hsl(0deg, 0%, 58%);
+        cursor: pointer;
+    }
+}
+
+.previewTagsSettings {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 16px;
+    row-gap: 8px;
+
+    .ant-radio-group {
+        .ant-radio-button-wrapper {
+            padding: 0 12px;
+            height: 26px;
+
+            line-height: 24px;
+        }
+    }
+}
+
+.globHelpGrid {
+    display: grid;
+    grid-auto-rows: auto;
+    grid-template-columns: auto auto auto;
+    gap: 2px 18px;
+
+    align-items: center;
+    margin-top: 1em;
+    margin-bottom: .2em;
+
+    // Title Bold
+    .h {
+        font-weight: 500;
+    }
+
+    // Pattern
+    .c1 {}
+
+    // Example results fade out
+    .c2 {
+        position: relative;
+        max-width: 220px;
+
+        font-family: monospace;
+        font-size: small;
+
+        overflow: hidden;
+        text-overflow: clip;
+        white-space: nowrap;
+
+        $maskImg: linear-gradient(to left,
+                transparent,
+                white 40px,
+                white);
+        mask-image: $maskImg;
+        -webkit-mask-image: $maskImg;
+
+        mask-repeat: no-repeat;
+        mask-position: right;
+    }
+
+    .c3 {
+        max-width: 300px;
+
+        font-size: 12px;
+    }
+
+    // First and last columns get padding
+    .h:first-of-type,
+    .c1 {
+        padding-left: 8px;
+    }
+
+    .rowSeparator {
+        height: 1px;
+        background: hsl(0deg, 0%, 92%);
+        grid-column-end: span 3;
+    }
+
+    .titleRowSeparator {
+        @extend .rowSeparator;
+        margin-top: 2px;
+    }
 }

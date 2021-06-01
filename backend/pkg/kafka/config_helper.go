@@ -5,6 +5,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/twmb/franz-go/pkg/sasl/aws"
+	"github.com/twmb/franz-go/pkg/sasl/oauth"
 	"io/ioutil"
 	"net"
 	"time"
@@ -78,6 +80,14 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 			opts = append(opts, kgo.SASL(mechanism))
 		}
 
+		// OAuth Bearer
+		if cfg.SASL.Mechanism == SASLMechanismOAuthBearer {
+			mechanism := oauth.Auth{
+				Token: cfg.SASL.OAUth.Token,
+			}.AsMechanism()
+			opts = append(opts, kgo.SASL(mechanism))
+		}
+
 		// Kerberos
 		if cfg.SASL.Mechanism == SASLMechanismGSSAPI {
 			logger.Debug("configuring GSSAPI mechanism")
@@ -87,7 +97,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 			}
 			var krbClient *client.Client
 			switch cfg.SASL.GSSAPIConfig.AuthType {
-			case "USER_AUTH:":
+			case "USER_AUTH":
 				krbClient = client.NewWithPassword(
 					cfg.SASL.GSSAPIConfig.Username,
 					cfg.SASL.GSSAPIConfig.Realm,
@@ -110,6 +120,17 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 				PersistAfterAuth: true,
 			}.AsMechanism()
 			opts = append(opts, kgo.SASL(kerberosMechanism))
+		}
+
+		// AWS MSK IAM
+		if cfg.SASL.Mechanism == SASLMechanismAWSManagedStreamingIAM {
+			mechanism := aws.Auth{
+				AccessKey:    cfg.SASL.AWSMskIam.AccessKey,
+				SecretKey:    cfg.SASL.AWSMskIam.SecretKey,
+				SessionToken: cfg.SASL.AWSMskIam.SessionToken,
+				UserAgent:    cfg.SASL.AWSMskIam.UserAgent,
+			}.AsManagedStreamingIAMMechanism()
+			opts = append(opts, kgo.SASL(mechanism))
 		}
 	}
 

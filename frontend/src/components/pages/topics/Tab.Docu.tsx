@@ -2,15 +2,16 @@ import React, { Component } from "react";
 import { Topic } from "../../../state/restInterfaces";
 import "../../../utils/arrayExtensions";
 import { api } from "../../../state/backendApi";
+import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
+import {vs} from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ReactMarkdown from 'react-markdown';
-import { url } from "inspector";
+import remarkGfm from 'remark-gfm';
+import remarkEmoji from 'remark-emoji';
 import { uriTransformer as baseUriTransformer } from 'react-markdown';
 import { DefaultSkeleton } from "../../../utils/tsxUtils";
 import { motion } from "framer-motion";
 import { animProps } from "../../../utils/animationProps";
-import Card from "../../misc/Card";
 import { Button, Empty } from "antd";
-import { clone } from "../../../utils/jsonUtils";
 import { observer } from "mobx-react";
 
 
@@ -44,6 +45,25 @@ function sanitizeUrl(uri: string, children?: any, title?: string | null): string
 @observer
 export class TopicDocumentation extends Component<{ topic: Topic }> {
 
+    private components = {
+        code({node, inline, className, children, ...props}:any) {
+          const match = /language-(\w+)/.exec(className || '')
+          return !inline && match ? (
+            <SyntaxHighlighter style={vs}
+            customStyle={{
+                "background-color": null,
+                border: null,
+                margin: null,
+                padding: null,
+            }}
+            language={match[1]}
+            children={String(children).replace(/\n$/, '')} {...props} />
+          ) : (
+            <code className={className} {...props} />
+          )
+        }
+      }
+
     render() {
         const docu = api.topicDocumentation.get(this.props.topic.topicName);
         if (docu === undefined) return DefaultSkeleton; // not yet loaded
@@ -58,7 +78,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
             return errorEmpty;
 
         return <div className='topicDocumentation'>
-            <ReactMarkdown children={markdown} skipHtml={false} transformLinkUri={sanitizeUrl} />
+            <ReactMarkdown components={this.components} remarkPlugins={[remarkGfm, remarkEmoji]} children={markdown} skipHtml={false} transformLinkUri={sanitizeUrl} />
         </div>
     }
 }

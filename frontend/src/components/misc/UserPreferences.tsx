@@ -1,6 +1,6 @@
 import React, { Component, ReactNode } from 'react';
 import { observer } from "mobx-react"
-import { Menu, Select, Avatar, Popconfirm, Dropdown, Button, Modal, Input, message, Checkbox } from 'antd';
+import { Menu, Select, Avatar, Popconfirm, Dropdown, Button, Modal, Input, message, Checkbox, InputNumber } from 'antd';
 import { uiSettings } from '../../state/ui';
 import { RenderTrap, Spacer } from './common';
 import { api } from '../../state/backendApi';
@@ -33,15 +33,8 @@ export class UserPreferencesButton extends Component {
     }
 }
 
-const settingsTabs: { name: string, component: () => ReactNode }[] = [
-    { name: "Statistics Bar", component: () => <StatsBarTab /> },
-    // pagination position
-    // { name: "Message Search", component: () => <MessageSearchTab /> },
-    // { name: "Import/Export", component: () => <ImportExportTab /> },
-];
-
 @observer
-class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Action }> {
+export class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Action }> {
     @observable selectedTab: string = settingsTabs[0].name;
     constructor(p: any) {
         super(p);
@@ -84,7 +77,10 @@ class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Actio
                     </Menu>
 
                     {/* Content */}
-                    <div style={{ flexGrow: 1, padding: '0 20px', display: 'flex', gap: '16px', flexDirection: 'column' }}>
+                    <div style={{
+                        display: 'flex', flexGrow: 1, gap: '16px', flexDirection: 'column',
+                        padding: '0 20px', paddingBottom: '40px',
+                    }}>
                         <div className='h3' style={{ marginTop: '16px', marginBottom: '8px' }}>{tab?.name}</div>
                         {tab?.component()}
                     </div>
@@ -93,50 +89,54 @@ class UserPreferencesDialog extends Component<{ visible: boolean, onClose: Actio
     }
 }
 
+const settingsTabs: { name: string, component: () => ReactNode }[] = [
+    { name: "Statistics Bar", component: () => <StatsBarTab /> },
+    { name: "Json Viewer", component: () => <JsonViewerTab /> },
+
+    // pagination position
+    // { name: "Message Search", component: () => <MessageSearchTab /> },
+    // { name: "Import/Export", component: () => <ImportExportTab /> },
+];
+
 @observer
 class StatsBarTab extends Component {
-    @observable visibility = 'visible';
-
-    constructor(p: any) {
-        super(p);
-        makeObservable(this);
-    }
-
     render() {
         return <div>
             <p>Controls on what pages kowl shows the statistics bar</p>
-
             <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
-
-                {/* <Label text='Brokers' style={{ gridColumn: 1 }}>
-                    <Checkbox children='Enabled' checked={uiSettings.brokerList.showStatisticsBar} onChange={e => uiSettings.brokerList.showStatisticsBar = e.target.checked} />
-                </Label> */}
-
-                {/* <Label text='Topic List' style={{ gridColumn: 1 }}>
-                    <Checkbox children='Enabled' checked={uiSettings.topicList.showStatisticsBar} onChange={e => uiSettings.topicList.showStatisticsBar = e.target.checked} />
-                </Label> */}
-                <Label text='Topic Details' style={{ gridColumn: 1 }}>
+                <Label text='Topic Details' >
                     <Checkbox children='Enabled' checked={uiSettings.topicDetailsShowStatisticsBar} onChange={e => uiSettings.topicDetailsShowStatisticsBar = e.target.checked} />
                 </Label>
-
-                {/* <Label text='Consumer Group List' style={{ gridColumn: 1 }}>
-                    <Checkbox children='Enabled' checked={uiSettings.consumerGroupList.showStatisticsBar} onChange={e => uiSettings.consumerGroupList.showStatisticsBar = e.target.checked} />
-                </Label> */}
-                <Label text='Consumer Group Details' style={{ gridColumn: 1 }}>
+                <Label text='Consumer Group Details' >
                     <Checkbox children='Enabled' checked={uiSettings.consumerGroupDetails.showStatisticsBar} onChange={e => uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked} />
                 </Label>
             </div>
-            {/* <Label text='Brokers'>
-                <Select value={state.visibility} onChange={v => this.visibility = v}>
-                    <Select.Option value='visible'>Show (default)</Select.Option>
-                    <Select.Option value='hidden'>Hide</Select.Option>
-                    <Select.Option value='perTopic' disabled>Per Topic (not yet implemented)</Select.Option>
-                </Select>
-            </Label> */}
         </div>
     }
 }
 
+@observer
+class JsonViewerTab extends Component {
+    render() {
+        const settings = uiSettings.jsonViewer;
+
+        return <div>
+            <p>Settings for the JsonViewer</p>
+
+            <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
+                <Label text='Font Size'>
+                    <Input value={settings.fontSize} onChange={e => settings.fontSize = e.target.value} style={{ maxWidth: '150px' }} />
+                </Label>
+                <Label text='Line Height'>
+                    <Input value={settings.lineHeight} onChange={e => settings.lineHeight = e.target.value} style={{ maxWidth: '150px' }} />
+                </Label>
+                <Label text='Maximum string length before collapsing'>
+                    <InputNumber value={settings.maxStringLength} onChange={e => settings.maxStringLength = e} min={0} max={10000} style={{ maxWidth: '150px' }} />
+                </Label>
+            </div>
+        </div>
+    }
+}
 
 @observer
 class ImportExportTab extends Component {

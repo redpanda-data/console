@@ -1,5 +1,3 @@
-import SchemaList from "../components/pages/schemas/Schema.List";
-
 export interface ApiError {
     statusCode: number;
     message: string;
@@ -138,14 +136,31 @@ export interface KafkaError {
     description: string
 }
 
-export interface TopicConfigEntry {
+export interface ConfigEntry {
     name: string,
-    value: string,
-    isDefault: boolean,
+    value: string | null,
+    source: string,
+    type: string,
+    isExplicitlySet: boolean,
+    isDefaultValue: boolean,
+    isReadOnly: boolean,
+    isSensitive: boolean,
+    // documentation: string, // remvoed for now, we have documentation locally in the frontend
+    synonyms: ConfigEntrySynonym[]
 }
+
+interface ConfigEntrySynonym {
+    name: string,
+    value: string | null,
+    source: string,
+
+    // added by frontend
+    type: string | null,
+}
+
 export interface TopicDescription {
     topicName: string
-    configEntries: TopicConfigEntry[]
+    configEntries: ConfigEntry[]
     error: KafkaError | null
 }
 export interface TopicConfigResponse {
@@ -340,15 +355,27 @@ export interface GetConsumerGroupResponse {
 
 
 
-
-
-
+export interface ClusterInfoResponse {
+    clusterInfo: ClusterInfo;
+}
+export interface ClusterInfo {
+    controllerId: number;
+    brokers: Broker[];
+    kafkaVersion: string;
+}
 export interface Broker {
     brokerId: number;
     logDirSize: number; // bytes of the whole directory
     address: string;
     rack: string | null;
+
+    config: BrokerConfig;
 }
+export interface BrokerConfig {
+    configs: ConfigEntry[];
+    error: string | undefined;
+}
+
 
 
 export interface EndpointCompatibilityResponse {
@@ -366,42 +393,10 @@ export interface EndpointCompatibilityEntry {
     isSupported: boolean;
 }
 
-
-
-export interface ClusterInfo {
-    brokers: Broker[];
-    controllerId: number;
-    kafkaVersion: string;
+// Response when requesting configuration of a single broker
+export interface BrokerConfigResponse { // | ApiError
+    brokerConfigs: ConfigEntry[];
 }
-
-export interface ClusterInfoResponse {
-    clusterInfo: ClusterInfo;
-}
-
-export interface ClusterConfigResponse {
-    clusterConfig: ClusterConfig;
-}
-
-export interface ClusterConfig {
-    brokerConfigs: BrokerConfig[];
-    requestErrors: {
-        brokerId: number;
-        errorMessage: string;
-    }[];
-}
-
-export interface BrokerConfig {
-    brokerId: number;
-    configEntries: BrokerConfigEntry[];
-}
-
-export interface BrokerConfigEntry {
-    name: string;
-    value: string;
-    isDefault: boolean;
-}
-
-
 
 
 // Current user
@@ -714,10 +709,10 @@ export enum ConfigResourceType {
 // }
 
 export enum AlterConfigOperation {
-    Set = 0,
-    Delete = 1,
-    Append = 2,
-    Subtract = 3,
+    Set = 0, // set a config key
+    Delete = 1, // remove/unset a config key
+    Append = 2, // add a value to a list
+    Subtract = 3, // remove a value from a list
 }
 
 export interface IncrementalAlterConfigsRequestResourceConfig {

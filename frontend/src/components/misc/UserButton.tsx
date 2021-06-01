@@ -1,52 +1,85 @@
-import React from 'react';
+import { Component } from 'react';
 import { observer } from "mobx-react"
-import { Menu, Select, Avatar, Popconfirm, Dropdown } from 'antd';
-import { uiSettings } from '../../state/ui';
-import { RenderTrap, Spacer } from './common';
+import { Select, Avatar, Dropdown } from 'antd';
 import { api } from '../../state/backendApi';
-import Icon, { UserOutlined } from '@ant-design/icons';
+import { UserOutlined } from '@ant-design/icons';
 import { IsBusiness } from '../../utils/env';
-import { ChevronDownIcon } from '@primer/octicons-v2-react';
+import { makeObservable, observable } from 'mobx';
+import { UserPreferencesDialog } from './UserPreferences';
 
-const { Option } = Select;
+@observer
+export class UserProfile extends Component {
+    @observable menuOpen = false;
+    @observable preferencesOpen = false;
 
-export const UserButton = observer(() => {
-    if (!IsBusiness) return null;
-    if (!api.userData || !api.userData.user || !api.userData.user.meta.name) return null;
-    const user = api.userData.user;
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
-    const userMenu = <Menu className="avatarMenu">
-        <Menu.Item style={{ pointerEvents: 'none' }}>
-            Signed in as<br />
-            <span style={{ fontWeight: 'bold' }}>{user.meta.name}</span>
-        </Menu.Item>
-        <Menu.Divider />
-        <Menu.Item key="0" onClick={() => { api.logout(); window.location.reload(); }}>Logout</Menu.Item>
-    </Menu>
+    render() {
+        if (!IsBusiness) return null;
+        if (!api.userData || !api.userData.user || !api.userData.user.meta.name) return null;
+        const user = api.userData.user;
 
-    return <Dropdown overlay={userMenu} trigger={['click']}>
-        <div style={{ cursor: 'pointer' }}>
-            <span style={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar shape="square" size='large' src={user.meta.avatarUrl} style={{ marginRight: '.3em' }} />
-                {/* <ChevronDownIcon /> */}
-            </span>
-        </div>
-    </Dropdown>
-    // <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}> {/* user column */}
-    // </div>
-});
+        // rc-dropdown supports this property, but the antd wrapper doesn't specify it.
+        // luckily antd passes many props to rc-dropdown using the spread operator
+        const noExpand = { minOverlayWidthMatchTrigger: false };
 
+        return <>
+            <Dropdown overlayClassName="avatarDropdown"
+                overlay={() => <UserMenu onOpenPreferences={() => {
+                    this.preferencesOpen = true;
+                    this.menuOpen = false;
+                }} />}
+                trigger={['click']}
+                arrow={false}
+                placement="topCenter"
+                visible={this.menuOpen}
+                onVisibleChange={e => this.menuOpen = e}
+                {...noExpand}
+            >
+                <div className="profile">
+                    <div className="avatar">
+                        <Avatar src={user.meta.avatarUrl} alt={user.meta.name} >
+                            <UserOutlined />
+                        </Avatar>
+                    </div>
+                    <div className="text">
+                        <div className="userName">{user.meta.name}</div>
+                        <div className="prefText">Preferences</div>
+                    </div>
+                </div>
+            </Dropdown>
 
+            <UserPreferencesDialog visible={this.preferencesOpen} onClose={() => this.preferencesOpen = false} />
+        </>
+    }
+}
 
-const ClusterSelect = observer(() =>
-    <Select<number>
-        value={uiSettings.selectedClusterIndex >= 0 ? uiSettings.selectedClusterIndex : undefined}
-        placeholder='Select Cluster'
-        style={{ width: 200 }}
-        onChange={(v) => { uiSettings.selectedClusterIndex = v }}
-    >
-        {api.clusters.map((v, i) =>
-            <Option key={v} value={i}>{v}</Option>
-        )}
-    </Select>
-)
+@observer
+export class UserMenu extends Component<{ onOpenPreferences: () => void }> {
+    render() {
+        const userName = api.userData?.user?.meta?.name ?? 'null';
+
+        return (
+            <div className='userMenu'>
+                <div className='menuItem header'>
+                    Signed in as<br />
+                    <span style={{ fontWeight: 'bold' }}>{userName}</span>
+                </div>
+
+                <div className='divider' />
+
+                <div className='menuItem' onClick={() => this.props.onOpenPreferences()}>
+                    Preferences
+                </div>
+
+                <div className='menuItem' onClick={() => { api.logout(); window.location.reload(); }}>
+                    Logout
+                </div>
+            </div>
+        )
+    }
+}
+
