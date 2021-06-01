@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
-import styles from './Tabs.module.scss'
+import styles from './Tabs.module.scss';
 
 export interface Tab {
     key: string;
-    title: JSX.Element | string;
-    content: JSX.Element | string;
+    title: React.ReactNode;
+    content: React.ReactNode;
+    disabled?: boolean;
 }
 
 interface TabsProps {
     tabs: Array<Tab>;
-    disabledTabKeys?: Array<string>;
     selectedTabKey?: string;
+    onChange?: (selectedTabKey: string) => void;
 }
 
 export default function Tabs(props: TabsProps) {
-    const { tabs, selectedTabKey, disabledTabKeys = [] } = props;
+    const { tabs, selectedTabKey, onChange = () => undefined } = props;
 
     const [selectedTab, setSelectedTab] = useState(selectedTabKey || props.tabs[0].key);
 
@@ -26,13 +27,12 @@ export default function Tabs(props: TabsProps) {
                         <li key={tab.key}>
                             <a
                                 href={`#${encodeURIComponent(tab.key)}`}
-                                className={(selectedTab === tab.key) ? styles.active : ''}
+                                className={`${selectedTab === tab.key ? styles.active : ''} ${tab.disabled ? styles.disabled : ''}`}
                                 onClick={(e) => {
                                     e.preventDefault();
-                                    if (disabledTabKeys.find((key) => key === tab.key) != undefined) {
-                                        return;
-                                    }
+                                    if (tab.disabled) return;
                                     setSelectedTab(tab.key);
+                                    onChange(tab.key);
                                 }}
                             >
                                 {tab.title}

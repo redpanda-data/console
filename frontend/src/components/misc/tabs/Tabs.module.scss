@@ -23,7 +23,12 @@
         color: rgb(64, 169, 255);
     }
 
-    a.active {
+    a.disabled, a.disabled:hover {
+        color: rgba(0, 0, 0, 0.25);
+        cursor: not-allowed;
+    }
+
+    a.active, a.active:hover {
         color: rgb(24, 144, 255);
         background-color: rgba(0, 185, 255, 0.09);
         border-bottom-color: rgb(48, 152, 232);

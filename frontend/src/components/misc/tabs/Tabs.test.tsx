@@ -13,6 +13,12 @@ const testTabs: Array<Tab> = [
         title: 'test title 2',
         content: 'test content 2',
     },
+    {
+        key: 'test3',
+        title: 'test title 3',
+        content: 'test content 3',
+        disabled: true
+    },
 ];
 
 it('renders a single tab with string title and content', () => {
@@ -47,10 +53,20 @@ it('renders the wanted tab after switching to it', () => {
 });
 
 it('does not switch tabs when wanted key is disabled', () => {
-    const { getByText, queryByText } = render(<Tabs tabs={testTabs.slice(0, 2)} disabledTabKeys={["test2"]} />)
+    const { getByText, queryByText } = render(<Tabs tabs={testTabs.slice(0, 3)} />)
+
+    fireEvent.click(getByText('test title 3'));
+
+    expect(queryByText('test content 3')).not.toBeInTheDocument()
+    expect(getByText('test content 1')).toBeInTheDocument();
+})
+
+it('executes onChange callback when active tab changes', () => {
+    const onChange = jest.fn();
+
+    const { getByText } = render(<Tabs tabs={testTabs.slice(0,2)} onChange={onChange} />)
 
     fireEvent.click(getByText('test title 2'));
 
-    expect(queryByText('test content 2')).not.toBeInTheDocument()
-    expect(getByText('test content 1')).toBeInTheDocument();
+    expect(onChange).toHaveBeenCalled();
 })
