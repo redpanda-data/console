@@ -1,28 +1,29 @@
-import { LockIcon } from "@primer/octicons-v2-react";
-import { Button, Popover, Result, Tabs, Typography } from "antd";
-import { motion } from "framer-motion";
-import { computed, makeObservable } from "mobx";
-import { observer } from "mobx-react";
-import React from "react";
-import { appGlobal } from "../../../state/appGlobal";
-import { api } from "../../../state/backendApi";
-import { Topic, TopicAction, TopicConfigEntry } from "../../../state/restInterfaces";
-import { uiSettings } from "../../../state/ui";
-import { uiState } from "../../../state/uiState";
-import { animProps } from "../../../utils/animationProps";
+import { LockIcon } from '@primer/octicons-v2-react';
+import { Button, Popover, Result, Typography } from 'antd';
+import { motion } from 'framer-motion';
+import { computed, makeObservable } from 'mobx';
+import { observer } from 'mobx-react';
+import React from 'react';
+import { appGlobal } from '../../../state/appGlobal';
+import { api } from '../../../state/backendApi';
+import { Topic, TopicAction, TopicConfigEntry } from '../../../state/restInterfaces';
+import { uiSettings } from '../../../state/ui';
+import { uiState } from '../../../state/uiState';
+import { animProps } from '../../../utils/animationProps';
 import '../../../utils/arrayExtensions';
-import { DefaultSkeleton } from "../../../utils/tsxUtils";
-import Card from "../../misc/Card";
-import { makePaginationConfig } from "../../misc/common";
-import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
-import { PageComponent, PageInitHelper } from "../Page";
-import { TopicQuickInfoStatistic } from "./QuickInfo";
-import AclList from "./Tab.Acl/AclList";
-import { TopicConfiguration } from "./Tab.Config";
-import { TopicConsumers } from "./Tab.Consumers";
-import { TopicDocumentation } from "./Tab.Docu";
-import { TopicMessageView } from "./Tab.Messages";
-import { TopicPartitions } from "./Tab.Partitions";
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import Card from '../../misc/Card';
+import { makePaginationConfig } from '../../misc/common';
+import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
+import Tabs from '../../misc/tabs/Tabs';
+import { PageComponent, PageInitHelper } from '../Page';
+import { TopicQuickInfoStatistic } from './QuickInfo';
+import AclList from './Tab.Acl/AclList';
+import { TopicConfiguration } from './Tab.Config';
+import { TopicConsumers } from './Tab.Consumers';
+import { TopicDocumentation } from './Tab.Docu';
+import { TopicMessageView } from './Tab.Messages';
+import { TopicPartitions } from './Tab.Partitions';
 
 const { Text } = Typography;
 
@@ -38,19 +39,15 @@ class TopicTab {
         public titleText: string,
         private contentFunc: (topic: Topic) => React.ReactNode,
         private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
-    ) { }
+    ) {}
 
     @computed get isEnabled(): boolean {
         const topic = this.topicGetter();
 
-        if (topic && this.disableHooks)
-            for (const h of this.disableHooks)
-                if (h(topic)) return false;
+        if (topic && this.disableHooks) for (const h of this.disableHooks) if (h(topic)) return false;
 
-        if (!topic)
-            return true; // no data yet
-        if (!topic.allowedActions || topic.allowedActions[0] == 'all')
-            return true; // kowl free version
+        if (!topic) return true; // no data yet
+        if (!topic.allowedActions || topic.allowedActions[0] == 'all') return true; // kowl free version
 
         return topic.allowedActions.includes(this.requiredPermission);
     }
@@ -69,10 +66,15 @@ class TopicTab {
                 if (replacementTitle) return replacementTitle;
             }
 
-        return 1 &&
-            <Popover content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}>
-                <div><LockIcon size={16} />{' '}{this.titleText}</div>
-            </Popover>
+        return (
+            1 && (
+                <Popover content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}>
+                    <div>
+                        <LockIcon size={16} /> {this.titleText}
+                    </div>
+                </Popover>
+            )
+        );
     }
 
     @computed get content(): React.ReactNode {
@@ -81,7 +83,6 @@ class TopicTab {
         return null;
     }
 }
-
 
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {
@@ -226,13 +227,16 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
                 {/* Tabs:  Messages, Configuration */}
                 <Card>
-                    <Tabs style={{ overflow: 'visible' }} animated={false} activeKey={this.selectedTabId} onChange={this.setTabPage}>
-                        {this.topicTabs.map((tab) => (
-                            <Tabs.TabPane key={tab.id} tab={tab.title} disabled={tab.isDisabled}>
-                                {tab.content}
-                            </Tabs.TabPane>
-                        ))}
-                    </Tabs>
+                    <Tabs
+                        tabs={this.topicTabs.map(({ id, title, content, isDisabled }) => ({
+                            key: id,
+                            disabled: isDisabled,
+                            title,
+                            content,
+                        }))}
+                        onChange={this.setTabPage}
+                        selectedTabKey={this.selectedTabId}
+                    />
                 </Card>
             </motion.div>
         );
@@ -286,8 +290,5 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         );
     }
 }
-
-
-
 
 export default TopicDetails;
