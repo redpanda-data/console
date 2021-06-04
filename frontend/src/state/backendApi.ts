@@ -899,8 +899,13 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
     g.lagSum = g.topicOffsets.sum(o => o.summedLag);
 
     if (g.allowedActions) {
-        g.noEditPerms = !g.allowedActions?.includes('editConsumerGroup');
-        g.noDeletePerms = !g.allowedActions?.includes('deleteConsumerGroup');
+        if (g.allowedActions.includes('all')) {
+            // All perms
+        } else {
+            // Not all perms, set helper props
+            g.noEditPerms = !g.allowedActions?.includes('editConsumerGroup');
+            g.noDeletePerms = !g.allowedActions?.includes('deleteConsumerGroup');
+        }
     }
     g.isInUse = g.state.toLowerCase() != 'empty';
 
