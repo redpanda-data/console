@@ -45,7 +45,11 @@ class TopicTab {
     @computed get isEnabled(): boolean {
         const topic = this.topicGetter();
 
-        if (topic && this.disableHooks) for (const h of this.disableHooks) if (h(topic)) return false;
+        if (topic && this.disableHooks) {
+            for (const h of this.disableHooks) {
+                if (h(topic)) return false;
+            }
+        }
 
         if (!topic) return true; // no data yet
         if (!topic.allowedActions || topic.allowedActions[0] == 'all') return true; // kowl free version
@@ -61,12 +65,13 @@ class TopicTab {
         if (this.isEnabled) return this.titleText;
 
         const topic = this.topicGetter();
-        if (topic && this.disableHooks)
+        if (topic && this.disableHooks) {
             for (const h of this.disableHooks) {
                 const replacementTitle = h(topic);
                 if (replacementTitle) return replacementTitle;
             }
-
+        }
+        
         return (
             1 && (
                 <Popover content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}>
@@ -245,7 +250,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
     // depending on the cleanupPolicy we want to show specific config settings at the top
     addBaseFavs(topicConfig: ConfigEntry[]): void {
-        const cleanupPolicy = topicConfig.find(e => e.name === 'cleanup.policy')?.value;
+        const cleanupPolicy = topicConfig.find((e) => e.name === 'cleanup.policy')?.value;
         const favs = uiState.topicSettings.favConfigEntries;
 
         switch (cleanupPolicy) {
