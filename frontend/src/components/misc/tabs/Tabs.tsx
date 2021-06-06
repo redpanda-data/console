@@ -3,7 +3,7 @@ import styles from './Tabs.module.scss';
 
 export interface Tab {
     key: string;
-    title: React.ReactNode;
+    title: React.ReactNode | (() => React.ReactNode);
     content: React.ReactNode;
     disabled?: boolean;
 }
@@ -12,6 +12,11 @@ interface TabsProps {
     tabs: Array<Tab>;
     selectedTabKey?: string;
     onChange?: (selectedTabKey: string) => void;
+}
+
+function renderContent(tabs: Array<Tab>, key: string) {
+    const tab = tabs.find((tab) => tab.key === key);
+    return (typeof tab?.content === 'function') ? tab.content() : tab?.content
 }
 
 export default function Tabs(props: TabsProps) {
@@ -35,13 +40,13 @@ export default function Tabs(props: TabsProps) {
                                     onChange(tab.key);
                                 }}
                             >
-                                {tab.title}
+                                {typeof tab.title === 'function' ? tab.title() : tab.title}
                             </a>
                         </li>
                     ))}
                 </ul>
             </nav>
-            <article>{tabs.find((tab) => tab.key === selectedTab)?.content}</article>
+            <article>{renderContent(tabs, selectedTab)}</article>
         </div>
     );
 }
