@@ -7,7 +7,11 @@ import {
     TopicDocumentationResponse, AclRequest, AclResponse, SchemaOverview, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
     TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
     PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
-    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset, GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry
+    AclRequestDefault, AclResourceType, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, 
+    AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, 
+    EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, 
+    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset, 
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -203,10 +207,12 @@ const apiStore = {
     topicPermissions: new Map<string, TopicPermissions | null>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     topicConsumers: new Map<string, TopicConsumer[]>(),
+    topicAcls: new Map<string, AclResponse | null>(),
 
     ACLs: undefined as AclResponse | undefined | null,
 
     consumerGroups: new Map<string, GroupDescription>(),
+    consumerGroupAcls: new Map<string, AclResponse | null>(),
 
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
@@ -528,6 +534,12 @@ const apiStore = {
             }, addError);
     },
 
+    refreshTopicAcls(topicName: string, force?: boolean) {
+        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName})
+        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+            .then(v => this.topicAcls.set(topicName, v))
+    },
+
     refreshTopicConsumers(topicName: string, force?: boolean) {
         cachedApiRequest<GetTopicConsumersResponse>(`./api/topics/${topicName}/consumers`, force)
             .then(v => this.topicConsumers.set(topicName, v.topicConsumers), addError);
@@ -593,6 +605,12 @@ const apiStore = {
                         this.consumerGroups.set(g.groupId, g);
                 });
             }, addError);
+    },
+
+    refreshConsumerGroupAcls(groupName: string, force?: boolean) {
+        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName})
+        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+            .then(v => this.consumerGroupAcls.set(groupName, v))
     },
 
     async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]):
