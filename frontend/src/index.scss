@@ -1556,6 +1556,16 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     }
 }
 
+.topicDeleteModal {
+    .ant-alert {
+        margin-bottom: 1rem;
+    }
+
+    .ant-modal-footer {
+        border-top: none;
+    }
+}
+
 .topicDocumentation {
     padding: 0 16px;
 

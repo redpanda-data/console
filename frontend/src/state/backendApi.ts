@@ -432,6 +432,10 @@ const apiStore = {
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
+    async deleteTopic(name: string) {
+        return rest(`./api/topics/${encodeURIComponent(name)}`, REST_TIMEOUT_SEC, { method: 'DELETE'});
+    },
+
     refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
         if (Array.isArray(topics))
             // sort in order to maximize cache hits (todo: track/cache each topic individually instead)

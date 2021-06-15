@@ -4,7 +4,7 @@ export interface ApiError {
 }
 
 
-export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig'] as const;
+export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig', 'deleteTopic'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];
 
 export interface Topic {
