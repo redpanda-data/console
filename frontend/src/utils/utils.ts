@@ -562,6 +562,22 @@ export const prettyMilliseconds = function (n: number, options?: prettyMilliseco
     return prettyMillisecondsOriginal(n, options);
 }
 
+const between = (min: number, max: number) => (num: number) => num >= min && num < max;
+const isK = between(1000, 1000000);
+const isM = between(1000000, 1000000000);
+
+const isInfinite = (num: number) => !isFinite(num);
+const toK = (num: number) => `${(num / 1000).toFixed(1)}k`;
+const toM = (num: number) => `${(num / 1000000).toFixed(1)}m`;
+const toG = (num: number) => `${(num / 1000000000).toFixed(1)}g`;
+
+export function prettyNumber(num: number) {
+    if (isNaN(num) || isInfinite(num)) return String(num);
+    if (isK(num)) return toK(num);
+    if (isM(num)) return toM(num);
+    return toG(num);
+}
+
 
 /**
  * random digits and letters (entropy: 53bit)
