@@ -1,5 +1,5 @@
 
-export { }
+export { };
 
 declare global {
     interface Array<T> {
@@ -146,7 +146,7 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
     const ar: { key: K, items: T[] }[] = [];
     map.forEach((items, key) => {
         ar.push({ key, items });
-    })
+    });
 
     return ar;
 };
@@ -179,13 +179,13 @@ Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { 
     for (const a of added)
         this.push(a);
 
-    return { removed: removed.length, added: added.length }
+    return { removed: removed.length, added: added.length };
 };
 
 
 Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => any): T[] {
     if (!keySelector)
-        return [... new Set(this)];
+        return [...new Set(this)];
 
     const set = new Set<any>();
     const ar: T[] = [];

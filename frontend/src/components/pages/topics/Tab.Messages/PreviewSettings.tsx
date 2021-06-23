@@ -53,7 +53,7 @@ const globHelp = <div>
                 <div className="c1"><Code>**.id</Code></div>
                 <div className="c2">
                     (all ID properties)
-            </div >
+                </div >
                 <div className="c3">Double-star searches everywhere</div>
                 <div className='rowSeparator' />
 
@@ -82,7 +82,7 @@ const globHelp = <div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
             <div style={{ opacity: 0.5, fontSize: 'smaller', textAlign: 'center' }}>Example Data</div>
-            <img src={globExampleImg} />
+            <img src={globExampleImg} alt="Examples for glob patterns" />
         </div>
     </div>
 
@@ -99,7 +99,7 @@ const globHelp = <div>
             <li><Code>abc*</Code> One or more stars within a name. Depending on where you place the star, you can check if a name starts with, ends with, or contains some string.</li>
         </ul>
     </div>
-</div>
+</div>;
 
 @observer
 export class PreviewSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
@@ -122,16 +122,17 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
         // add ids to elements that don't have any
         const getFreeId = function (): string {
             let i = 1;
+            // eslint-disable-next-line no-loop-func
             while (tags.any(t => t.id == String(i))) i++;
             return String(i);
-        }
+        };
         tags.filter(t => !t.id).forEach(t => t.id = getFreeId());
 
 
         const onDragEnd = function (result: DropResult, provided: ResponderProvided) {
             if (!result.destination) return;
             arrayMove.mutate(tags, result.source.index, result.destination.index);
-        }
+        };
 
         const content = <>
             <div>
@@ -209,7 +210,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
                     />
                 </div>
             </div>
-        </>
+        </>;
 
         return <Modal
             title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
@@ -302,7 +303,7 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
 
             {/* Remove */}
             <span className="inlineButton" onClick={onRemove} ><XIcon /></span>
-        </div>
+        </div>;
     }
 }
 
@@ -373,7 +374,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
         ar.push(<span className='previewTag'>
             <span className='path'>{displayName}</span>
             <span>{toSafeString(r.prop.value)}</span>
-        </span >)
+        </span >);
     }
 
     return ar;
@@ -520,7 +521,7 @@ if (IsDev) {
         { input: `.a`, output: null },
         { input: `.'a'`, output: null },
         { input: `a..b`, output: null },
-    ]
+    ];
 
     for (const test of tests) {
         const expected = test.output;
@@ -560,5 +561,5 @@ function wildcardToRegex(pattern: string): RegExp {
 }
 
 function regexEscape(regexPattern: string): string {
-    return regexPattern.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    return regexPattern.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
 }

@@ -40,7 +40,7 @@ export class FilterableDataSource<T> {
                 //console.log('updating filterableDataSource: source == undefined|null');
             }
             this._lastFilterText = this.filterText;
-        })
+        });
     }
 
     dispose() {

@@ -33,7 +33,7 @@ async function getProviders() {
     });
 
     if (!response.ok) {
-        throw new Error(await response.text())
+        throw new Error(await response.text());
     }
 
     return (await response.json() as ProvidersResponse);
@@ -82,7 +82,7 @@ class Login extends Component {
 
                 <div className='loginLeft'>
                     <div className='loginLogo' style={{ height: '60px', marginBottom: 'auto', marginTop: '2rem' }}>
-                        <img src={PngLogo} style={{ height: '100%', filter: 'brightness(0.45) sepia(1) saturate(1.5) hue-rotate(165deg)' }} />
+                        <img src={PngLogo} style={{ height: '100%', filter: 'brightness(0.45) sepia(1) saturate(1.5) hue-rotate(165deg)' }} alt="" />
                         <span style={{ textTransform: 'uppercase', color: '#498FC2', letterSpacing: 12, fontSize: '1.75rem', paddingLeft: '20px' }}>Kowl</span>
                     </div>
 
@@ -94,7 +94,7 @@ class Login extends Component {
 
                 <div className='loginRight'>
                     <div style={{ float: 'left', height: '100%', width: '120px', overflow: 'hidden' }}>
-                        <img src={SvgLoginWave} style={{ width: 'auto', height: 'calc(100% + 1px)', transform: 'translateX(-1px)' }} />
+                        <img src={SvgLoginWave} style={{ width: 'auto', height: 'calc(100% + 1px)', transform: 'translateX(-1px)' }} alt="" />
                         {/* <embed style={{ height:'100%'}} type="image/svg+xml" src={SvgLoginWave} /> */}
                     </div>
                     <div className="loginContainerRight">
@@ -106,7 +106,7 @@ class Login extends Component {
                             marginTop: '60px', height: '165px',
                             filter: 'brightness(0.1) sepia(1) saturate(6) hue-rotate(180deg)',
                             opacity: 0.7
-                        }} />
+                        }} alt="" />
 
                         <div style={{ marginTop: 'auto' }}>
                             <div style={{ fontSize: '22px', fontWeight: 600, textTransform: 'uppercase' }}>
@@ -114,7 +114,7 @@ class Login extends Component {
                                 <span style={{ fontSize: '0.66em' }}>to access KOWL</span>
                             </div>
                             <div className='loginButtonList'>
-                                {ar && ar.map(p => (
+                                {ar?.map(p => (
                                     <div key={p.displayName} className='loginButton2' onClick={() => window.location.replace(p.url)}>
                                         {iconMap.get(p.displayName.toLowerCase())}
                                         <span>
@@ -145,7 +145,7 @@ class Login extends Component {
                 </div>
 
             </div>
-        </div>
+        </div>;
     }
 }
 export default Login;

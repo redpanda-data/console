@@ -21,7 +21,7 @@ export function formatConfigValue(name: string, value: string | null | undefined
     //
     // String
     //
-    if (name == "advertised.listeners" || name == "listener.security.protocol.map" || name == "listeners" && value) {
+    if (value && (name == "advertised.listeners" || name == "listener.security.protocol.map" || name == "listeners")) {
         const listeners = value.split(',');
         return listeners.join('\n');
     }
@@ -50,7 +50,7 @@ export function formatConfigValue(name: string, value: string | null | undefined
         [".minutes", 60 * 1000],
         [".hours", 60 * 60 * 1000],
         [".days", 24 * 60 * 60 * 1000],
-    ]
+    ];
     for (const [ext, msFactor] of timeExtensions) {
         if (!name.endsWith(ext)) continue;
         if (num > Number.MAX_SAFE_INTEGER || num == -1) return "Infinite" + suffix;

@@ -130,10 +130,9 @@ export class ReassignmentTracker {
 
             // Remove reassignments that are in completed state for >10sec
             const expiredTrackers = this.trackingReassignments.filter(x => {
-                if (x.actualTimeCompleted == null) return false;
+                if (x.actualTimeCompleted == null) return false; // not yet complete
                 const age = (new Date().getTime() - x.actualTimeCompleted.getTime()) / 1000;
-                if (age > 10)
-                    return true;
+                return age > 10;
             });
             this.trackingReassignments.removeAll(x => expiredTrackers.includes(x));
 

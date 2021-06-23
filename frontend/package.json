@@ -51,9 +51,6 @@
         "eject": "react-scripts eject",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts"
     },
-    "eslintConfig": {
-        "extends": "react-app"
-    },
     "browserslist": {
         "production": [
             ">0.2%",
