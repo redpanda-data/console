@@ -65,13 +65,14 @@
                 ]
             }
         ],
-        "semi": [
-            "warn",
-            "always",
-            {
-                "omitLastInOneLineBlock": false
-            }
-        ],
+        // "semi": [
+        //     "warn",
+        //     "always",
+        //     {
+        //         "omitLastInOneLineBlock": false
+        //     }
+        // ],
+        "semi": "off",
         "no-extra-semi": "warn",
         "semi-spacing": [
             "warn",
@@ -84,14 +85,15 @@
         "no-extend-native": "off", // extensions are on purpose
         // "no-mixed-operators": "off"
         // "no-mixed-operators": ["error", {"groups": [ ["&&", "??"], ["||", "??"] ], "allowSamePrecedence": false } ]
-        "react/jsx-no-target-blank": [
-            "error",
-            {
-                "enforceDynamicLinks": true,
-                "allowReferrer": true, // noopener is enough
-                "warnOnSpreadAttributes": true // spread = pretty much guaranteed that something goes wrong
-            }
-        ]
+        // "react/jsx-no-target-blank": [
+        //     2,
+        //     {
+        //         "enforceDynamicLinks": true,
+        //         "allowReferrer": true, // noopener is enough
+        //         "warnOnSpreadAttributes": true // spread = pretty much guaranteed that something goes wrong
+        //     }
+        // ],
+        "react/jsx-no-target-blank": "off"
     },
     "parser": "@typescript-eslint/parser"
 }

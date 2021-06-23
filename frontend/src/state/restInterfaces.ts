@@ -510,16 +510,18 @@ export interface TopicPermissions {
 //
 // ACLs
 
-// See: https://github.com/Shopify/sarama/blob/master/acl_types.go
+// https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L47
 export enum AclResourceType {
     AclResourceUnknown,
     AclResourceAny,
     AclResourceTopic,
     AclResourceGroup,
     AclResourceCluster,
-    AclResourceTransactionalID
+    AclResourceTransactionalID,
+    AclDelegationToken,
 }
 
+// https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L59
 export enum AclResourcePatternTypeFilter {
     AclPatternUnknown,
     AclPatternAny,
@@ -528,6 +530,7 @@ export enum AclResourcePatternTypeFilter {
     AclPatternPrefixed
 }
 
+// https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L81
 export enum AclOperation {
     AclOperationUnknown,
     AclOperationAny,
@@ -544,6 +547,7 @@ export enum AclOperation {
     AclOperationIdempotentWrite
 }
 
+// https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L71
 export enum AclPermissionType {
     AclPermissionUnknown,
     AclPermissionAny,

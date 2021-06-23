@@ -4,6 +4,7 @@ import { touch, clone } from "../utils/jsonUtils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
 import { AclRequest, AclRequestDefault } from "./restInterfaces";
+import { TableSettings } from "../components/misc/KowlTable";
 
 const settingsName = 'uiSettings-v3';
 
@@ -150,10 +151,16 @@ const uiSettings = observable({
     brokerList: {
         hideEmptyColumns: false,
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
+        quickSearch: '',
 
         valueDisplay: 'friendly' as 'friendly' | 'raw',
         propsFilter: 'onlyChanged' as 'all' | 'onlyChanged',
         propsOrder: 'alphabetical' as 'changedFirst' | 'default' | 'alphabetical',
+
+        configTable: {
+            pageSize: 100,
+            quickSearch: '',
+        }
     },
 
     reassignment: { // partition reassignment
@@ -184,7 +191,7 @@ const uiSettings = observable({
 
     consumerGroupList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
-        quickSearch: ''
+        quickSearch: '',
     },
 
     consumerGroupDetails: {

@@ -7,6 +7,7 @@ import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
 import { findPopupContainer } from '../../utils/tsxUtils';
 
 import styles from './ConfigList.module.scss';
+import { KowlTable } from './KowlTable';
 
 function filterRedundantSynonyms({ synonyms, ...rest }: ConfigEntry): Partial<ConfigEntry> {
     if (synonyms?.length <= 1) {
@@ -75,10 +76,15 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
         },
     ];
     return (
-        <Table size="middle" className={styles.configEntryTable}
+        <KowlTable className={styles.configEntryTable}
 
             dataSource={configEntries.map(filterRedundantSynonyms)}
             columns={columns}
+
+            pagination={{
+                visible: false,
+                defaultPageSize: 10000,
+            }}
 
             expandable={{
                 childrenColumnName: "synonyms",
@@ -87,8 +93,6 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
 
             rowKey="name"
             rowClassName={(record) => (record.isExplicitlySet ? styles.overidden : styles.default)}
-
-            pagination={false}
         />
     );
 }
