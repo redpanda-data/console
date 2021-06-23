@@ -90,6 +90,7 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	if err != nil {
 		return fmt.Errorf("failed to create new kafka client: %w", err)
 	}
+	defer client.Close()
 
 	// 2. Create consumer workers
 	jobs := make(chan *kgo.Record, 100)
