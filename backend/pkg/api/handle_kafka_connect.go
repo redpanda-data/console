@@ -95,7 +95,6 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 func (api *API) handleGetClusterConnectors() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clusterName := chi.URLParam(r, "clusterName")
-		connector := chi.URLParam(r, "connector")
 
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
@@ -116,7 +115,7 @@ func (api *API) handleGetClusterConnectors() http.HandlerFunc {
 			return
 		}
 
-		connectors, restErr := api.ConnectSvc.GetConnector(ctx, clusterName, connector)
+		connectors, restErr := api.ConnectSvc.GetClusterConnectors(ctx, clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

@@ -141,6 +141,7 @@ func (s *Service) GetConnectors(ctx context.Context) []GetConnectorsShard {
 					zap.String("cluster_name", cfg.Name), zap.String("cluster_address", cfg.URL), zap.Error(err))
 				errMsg = err.Error()
 			}
+
 			ch <- GetConnectorsShard{
 				ClusterName:    cfg.Name,
 				ClusterAddress: cfg.URL,
@@ -155,6 +156,32 @@ func (s *Service) GetConnectors(ctx context.Context) []GetConnectorsShard {
 		shards[i] = <-ch
 	}
 	return shards
+}
+
+func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) (GetConnectorsShard, *rest.Error) {
+	c, exists := s.ClientsByCluster[clusterName]
+	if !exists {
+		return GetConnectorsShard{}, &rest.Error{
+			Err:     fmt.Errorf("requested connect cluster with that name does not exist"),
+			Status:  http.StatusNotFound,
+			Message: fmt.Sprintf("No connect cluster with the given cluster name '%v' exists", clusterName),
+		}
+	}
+
+	connectors, err := c.Client.ListConnectorsExpanded(ctx, ListConnectorsOptions{ExpandInfo: true, ExpandStatus: true})
+	errMsg := ""
+	if err != nil {
+		s.Logger.Warn("failed to list connectors from Kafka connect cluster",
+			zap.String("cluster_name", c.Cfg.Name), zap.String("cluster_address", c.Cfg.URL), zap.Error(err))
+		errMsg = err.Error()
+	}
+
+	return GetConnectorsShard{
+		ClusterName:    c.Cfg.Name,
+		ClusterAddress: c.Cfg.URL,
+		Connectors:     connectors,
+		Error:          errMsg,
+	}, nil
 }
 
 type ConnectorInfoWithStatus struct {
