@@ -22,6 +22,8 @@ import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } 
 import { AnimatePresence, AnimateSharedLayout, motion } from "framer-motion";
 import ReactCSSTransitionReplace from 'react-css-transition-replace';
 import { ShortNum } from "../../misc/ShortNum";
+import Tabs from "../../misc/tabs/Tabs";
+import AclList from "../topics/Tab.Acl/AclList";
 
 
 @observer
@@ -39,7 +41,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         makeObservable(this);
     }
 
-
     initPage(p: PageInitHelper): void {
         const group = this.props.groupId;
 
@@ -53,6 +54,59 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
     refreshData(force: boolean) {
         api.refreshConsumerGroup(this.props.groupId, force);
+        api.refreshConsumerGroupAcls(this.props.groupId, force);
+    }
+
+    renderPartitions(group: GroupDescription) {
+        return (
+            <>
+                <div style={{ display: 'flex', marginLeft: '.5em', marginBottom: '2em', gap: '1em', alignItems: 'flex-end' }}>
+                    <OptionGroup
+                        label="View"
+                        options={{
+                            Members: 'member',
+                            Topics: 'topic',
+                        }}
+                        value={this.viewMode}
+                        onChange={(s) => (this.viewMode = s)}
+                    />
+
+                    <OptionGroup
+                        label="Filter"
+                        options={{
+                            'Show All': false,
+                            'With Lag': true,
+                        }}
+                        value={this.onlyShowPartitionsWithLag}
+                        onChange={(s) => (this.onlyShowPartitionsWithLag = s)}
+                    />
+
+                    <span style={{ marginLeft: 'auto' }} />
+
+                    <EditDisabledTooltip group={group}>
+                        <Button onClick={() => this.editGroup()}>Edit Group</Button>
+                        <Button danger onClick={() => this.deleteGroup()}>
+                            Delete Group
+                        </Button>
+                    </EditDisabledTooltip>
+                </div>
+
+                {/* Main Content */}
+                {this.viewMode == 'member' ? (
+                    <GroupByMembers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
+                ) : (
+                    <GroupByTopics
+                        group={group}
+                        onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag}
+                        onEditOffsets={(g) => (this.edittingOffsets = g)}
+                        onDeleteOffsets={(offsets, mode) => {
+                            this.deletingMode = mode;
+                            this.deletingOffsets = offsets;
+                        }}
+                    />
+                )}
+            </>
+        );
     }
 
     render() {
@@ -62,88 +116,50 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         if (!group) return DefaultSkeleton;
 
         // Get info about each topic
-        const requiredTopics = group.members.flatMap(m => m.assignments.map(a => a.topicName)).distinct();
-        const totalPartitions = group.members.flatMap(m => m.assignments).sum(a => a.partitionIds.length);
+        const requiredTopics = group.members.flatMap((m) => m.assignments.map((a) => a.topicName)).distinct();
+        const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds.length);
 
         return (
             <MotionDiv style={{ margin: '0 1rem' }} className="groupDetails">
                 {/* Statistics Card */}
-                {uiSettings.consumerGroupDetails.showStatisticsBar && <Card className='statisticsBar'>
-                    <Row >
-                        <HideStatisticsBarButton onClick={() => uiSettings.consumerGroupDetails.showStatisticsBar = false} />
-                        <Statistic title='State' valueRender={() => <GroupState group={group} />} />
-                        <ProtocolType group={group} />
-                        <Statistic title='Members' value={group.members.length} />
-                        <Statistic title='Assigned Topics' value={requiredTopics.length} />
-                        <Statistic title='Assigned Partitions' value={totalPartitions} />
-                        <Statistic title='Protocol Type' value={group.protocolType} />
-                        <Statistic title='Protocol' value={group.protocol} />
-                        <Statistic title='Coordinator ID' value={group.coordinatorId} />
-                        <Statistic title='Total Lag' value={group.lagSum} />
-                    </Row>
-                </Card>
-                }
+                {uiSettings.consumerGroupDetails.showStatisticsBar && (
+                    <Card className="statisticsBar">
+                        <Row>
+                            <HideStatisticsBarButton onClick={() => (uiSettings.consumerGroupDetails.showStatisticsBar = false)} />
+                            <Statistic title="State" valueRender={() => <GroupState group={group} />} />
+                            <ProtocolType group={group} />
+                            <Statistic title="Members" value={group.members.length} />
+                            <Statistic title="Assigned Topics" value={requiredTopics.length} />
+                            <Statistic title="Assigned Partitions" value={totalPartitions} />
+                            <Statistic title="Protocol Type" value={group.protocolType} />
+                            <Statistic title="Protocol" value={group.protocol} />
+                            <Statistic title="Coordinator ID" value={group.coordinatorId} />
+                            <Statistic title="Total Lag" value={group.lagSum} />
+                        </Row>
+                    </Card>
+                )}
 
                 {/* Main Card */}
                 <Card>
                     {/* View Buttons */}
-                    <div style={{ display: 'flex', marginLeft: '.5em', marginBottom: '2em', gap: '1em', alignItems: 'flex-end' }}>
-
-                        <OptionGroup label='View'
-                            options={{
-                                "Members": 'member',
-                                "Topics": 'topic'
-                            }}
-                            value={this.viewMode}
-                            onChange={s => this.viewMode = s}
-                        />
-
-                        <OptionGroup label='Filter'
-                            options={{
-                                "Show All": false,
-                                "With Lag": true
-                            }}
-                            value={this.onlyShowPartitionsWithLag}
-                            onChange={s => this.onlyShowPartitionsWithLag = s}
-                        />
-
-
-                        <span style={{ marginLeft: 'auto' }} />
-
-                        <EditDisabledTooltip group={group}>
-                            <Button onClick={() => this.editGroup()}>Edit Group</Button>
-                            <Button danger onClick={() => this.deleteGroup()}>Delete Group</Button>
-                        </EditDisabledTooltip>
-
-                    </div>
-
-                    {/* Main Content */}
-                    {this.viewMode == 'member'
-                        ? <GroupByMembers group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag} />
-                        : <GroupByTopics group={group} onlyShowPartitionsWithLag={this.onlyShowPartitionsWithLag}
-                            onEditOffsets={g => this.edittingOffsets = g}
-                            onDeleteOffsets={(offsets, mode) => {
-                                this.deletingMode = mode;
-                                this.deletingOffsets = offsets;
-                            }}
-                        />
-                    }
+                    <Tabs 
+                        tabs={[{
+                            key: "partitions",
+                            title: "Partitions",
+                            content: this.renderPartitions(group)
+                        },{
+                            key: "acl",
+                            title: "ACL",
+                            content: <AclList acl={api.consumerGroupAcls.get(group.groupId)} />
+                        }]}
+                    />
                 </Card>
 
                 {/* Modals */}
                 <>
-                    <EditOffsetsModal
-                        group={group}
-                        offsets={this.edittingOffsets}
-                        onClose={() => this.edittingOffsets = null}
-                    />
+                    <EditOffsetsModal group={group} offsets={this.edittingOffsets} onClose={() => (this.edittingOffsets = null)} />
 
-                    <DeleteOffsetsModal
-                        group={group}
-                        mode={this.deletingMode}
-                        offsets={this.deletingOffsets}
-                        onClose={() => this.deletingOffsets = null}
-                    />
+                    <DeleteOffsetsModal group={group} mode={this.deletingMode} offsets={this.deletingOffsets} onClose={() => (this.deletingOffsets = null)} />
                 </>
             </MotionDiv>
         );
@@ -153,10 +169,9 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         return api.consumerGroups.get(this.props.groupId);
     }
 
-
     @action editGroup() {
-        const groupOffsets = this.group?.topicOffsets.flatMap(x => {
-            return x.partitionOffsets.map(p => {
+        const groupOffsets = this.group?.topicOffsets.flatMap((x) => {
+            return x.partitionOffsets.map((p) => {
                 return { topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset } as GroupOffset;
             });
         });
@@ -167,8 +182,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     }
 
     @action deleteGroup() {
-        const groupOffsets = this.group?.topicOffsets.flatMap(x => {
-            return x.partitionOffsets.map(p => {
+        const groupOffsets = this.group?.topicOffsets.flatMap((x) => {
+            return x.partitionOffsets.map((p) => {
                 return { topicName: x.topic, partitionId: p.partitionId, offset: p.groupOffset } as GroupOffset;
             });
         });
@@ -261,6 +276,11 @@ class GroupByTopics extends Component<{
                             getPopupContainer={findPopupContainer}>
                             <Tag color='blue'>assigned partitions: {partitionsAssigned}</Tag>
                         </Tooltip>
+                        <Button
+                            size='small'
+                            style={{ marginLeft: 'auto' }}
+                            onClick={() => appGlobal.history.push('/topics/' + g.topicName)}
+                        >View Topic</Button>
                     </div>
                 }>
 
@@ -401,7 +421,14 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                         dataSource={assignmentsFlat}
                         rowKey={r => r.topicName + r.partitionId}
                         columns={[
-                            { width: 130, title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName') },
+                            {
+                                width: 130, title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'),
+                                render: (_, record) => <div
+                                    className='hoverLink'
+                                    onClick={() => appGlobal.history.push('/topics/' + record.topicName)}>
+                                    {record.topicName}
+                                </div>
+                            },
                             { title: 'Partition', dataIndex: 'partitionId', sorter: sortField('partitionId') },
                             { title: 'Lag', dataIndex: 'partitionLag', render: v => numberToThousandsString(v), sorter: sortField('partitionLag'), defaultSortOrder: 'descend' },
                         ]}

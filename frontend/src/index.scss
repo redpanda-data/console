@@ -28,6 +28,14 @@ h2 {
     content: ' ';
 }
 
+// linear interpolation (color)
+// returns a value between $a and $b, depending on $t
+// $t=0 returns $a
+// $t=1 returns $b
+@function lerp($a, $b, $t) {
+    @return mix($b, $a, $t * 100);
+}
+
 .scroll-on-hover-y {
     overflow-y: hidden;
     overflow-x: hidden;
@@ -2335,7 +2343,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
         font-family: "Poppins",
         sans-serif;
-        font-size: 14px;
+        font-size: 12px;
         // font-weight: 600;
         line-height: normal;
     }
@@ -2551,7 +2559,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         height: 21px;
     }
 
-    .removeButton {
+    .inlineButton {
         display: inline-flex;
         align-self: stretch;
         place-items: center;
@@ -2576,6 +2584,69 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
             line-height: 24px;
         }
     }
+}
 
+.globHelpGrid {
+    display: grid;
+    grid-auto-rows: auto;
+    grid-template-columns: auto auto auto;
+    gap: 2px 18px;
 
+    align-items: center;
+    margin-top: 1em;
+    margin-bottom: .2em;
+
+    // Title Bold
+    .h {
+        font-weight: 500;
+    }
+
+    // Pattern
+    .c1 {}
+
+    // Example results fade out
+    .c2 {
+        position: relative;
+        max-width: 220px;
+
+        font-family: monospace;
+        font-size: small;
+
+        overflow: hidden;
+        text-overflow: clip;
+        white-space: nowrap;
+
+        $maskImg: linear-gradient(to left,
+                transparent,
+                white 40px,
+                white);
+        mask-image: $maskImg;
+        -webkit-mask-image: $maskImg;
+
+        mask-repeat: no-repeat;
+        mask-position: right;
+    }
+
+    .c3 {
+        max-width: 300px;
+
+        font-size: 12px;
+    }
+
+    // First and last columns get padding
+    .h:first-of-type,
+    .c1 {
+        padding-left: 8px;
+    }
+
+    .rowSeparator {
+        height: 1px;
+        background: hsl(0deg, 0%, 92%);
+        grid-column-end: span 3;
+    }
+
+    .titleRowSeparator {
+        @extend .rowSeparator;
+        margin-top: 2px;
+    }
 }

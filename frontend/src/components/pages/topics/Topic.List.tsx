@@ -15,6 +15,7 @@ import { DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import Card from '../../misc/Card';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
+import { KowlTable } from '../../misc/KowlTable';
 import SearchBar from '../../misc/SearchBar';
 import { PageComponent, PageInitHelper } from '../Page';
 
@@ -124,22 +125,8 @@ class TopicList extends PageComponent {
                         </Col>
                     </Row>
 
-                    <Table
-                        style={{ margin: '0', padding: '0' }}
-                        size="middle"
-                        onRow={(record) => ({
-                            onClick: () => appGlobal.history.push('/topics/' + record.topicName),
-                        })}
-                        pagination={this.pageConfig}
-                        onChange={(pagination) => {
-                            if (pagination.pageSize) uiSettings.topicList.pageSize = pagination.pageSize;
-                            this.pageConfig.current = pagination.current;
-                            this.pageConfig.pageSize = pagination.pageSize;
-                        }}
-                        rowClassName={() => 'hoverLink'}
+                    <KowlTable
                         dataSource={this.filteredTopics ?? []}
-                        rowKey={x => x.topicName}
-                        showSorterTooltip={false}
                         columns={[
                             { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', defaultSortOrder: 'ascend' },
                             { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
@@ -147,6 +134,14 @@ class TopicList extends PageComponent {
                             { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', sorter: sortField('cleanupPolicy'), width: 1 },
                             { title: 'Size', render: (t, r) => renderLogDirSummary(r.logDirSummary), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes, width: '140px' },
                         ]}
+
+                        observableSettings={uiSettings.topicList}
+
+                        rowKey={x => x.topicName}
+                        onRow={(record) => ({
+                            onClick: () => appGlobal.history.push('/topics/' + record.topicName),
+                        })}
+                        rowClassName="hoverLink"
                     />
                 </Card>
             </motion.div>

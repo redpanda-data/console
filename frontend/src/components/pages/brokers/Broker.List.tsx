@@ -16,6 +16,7 @@ import Card from "../../misc/Card";
 import { CrownOutlined } from '@ant-design/icons';
 import { DefaultSkeleton, findPopupContainer, OptionGroup } from "../../../utils/tsxUtils";
 import { ConfigList } from "../../misc/ConfigList";
+import { KowlTable } from "../../misc/KowlTable";
 
 
 
@@ -83,14 +84,14 @@ class BrokerList extends PageComponent {
                 </Card>
 
                 <Card>
-                    <Table
-                        style={{ margin: '0', padding: '0' }} size={'middle'}
-                        pagination={this.pageConfig}
-                        onChange={x => { if (x.pageSize) { this.pageConfig.pageSize = uiSettings.brokerList.pageSize = x.pageSize } }}
+                    <KowlTable
                         dataSource={brokers}
+                        columns={columns}
+
+                        observableSettings={uiSettings.brokerList}
+
                         rowKey={x => x.brokerId.toString()}
                         rowClassName={() => 'pureDisplayRow'}
-                        columns={columns}
                         expandable={{
                             expandIconColumnIndex: 1,
                             expandedRowRender: record => <BrokerDetails brokerId={record.brokerId} />
@@ -126,21 +127,18 @@ const BrokerDetails = observer(({ brokerId }: { brokerId: number }): JSX.Element
         return DefaultSkeleton;
     }
 
-
+    // Handle error while getting config
+    if (typeof brokerConfigs == 'string') return (
+        <div className="error">
+            <h3>Error</h3>
+            <div>
+                <p>{brokerConfigs}</p>
+            </div>
+        </div>
+    );
 
     // Normal Display
     return <BrokerConfigView entries={brokerConfigs} />;
-
-
-    // Mising Entry??
-    // return (
-    //     <div className="error">
-    //         <h3>Error</h3>
-    //         <div>
-    //             <p>{String(brokerConfig.error)}</p>
-    //         </div>
-    //     </div>
-    // );
 });
 
 @observer
@@ -159,6 +157,7 @@ class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
                         const v1 = a.isExplicitlySet ? 1 : 0;
                         const v2 = b.isExplicitlySet ? 1 : 0;
                         return v2 - v1;
+                    default: return 0;
                 }
             });
 

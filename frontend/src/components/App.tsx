@@ -1,5 +1,5 @@
 import React, { Component, ReactNode } from 'react';
-import { observer } from "mobx-react"
+import { observer } from "mobx-react";
 import { Layout, Menu, PageHeader, Button, Tooltip, Popover, Dropdown } from 'antd';
 import { uiSettings } from '../state/ui';
 import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
@@ -42,16 +42,16 @@ const DebugUserInfoBar = () => (
         This frontend has been compiled for usage with Kowl-Business, but the backend server is the free version of Kowl. <br />
         You have been logged in as a locally created fake user to help debugging.
     </div>
-)
+);
 
 const VersionInfo = () => {
     // Local Development Mode
     //   Kowl - DEV
     if (IsDev) return <>
         <div className='versionTitle'>{AppName} DEV</div>
-        <div className='versionDate'>(built Tue Dez 01 0000)</div>
+        <div className='versionDate'>Built {new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}</div>
         <div className='versionGitData'>{"abcdef0"}/{"0fedcba"}</div>
-    </>
+    </>;
 
     // Continuous Delivery Mode
     //   Kowl Business - CI
@@ -64,7 +64,7 @@ const VersionInfo = () => {
         </div>
 
         <div className='versionDate'>
-            (built {getBuildDate()?.toDateString()})
+            (built {getBuildDate()?.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })})
         </div>
 
         {IsBusiness && <div className='versionGitData'>
@@ -72,7 +72,7 @@ const VersionInfo = () => {
                 env.REACT_APP_KOWL_BUSINESS_GIT_REF + "-"}</span>
             <span>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 7)}</span>
         </div>}
-    </>
+    </>;
 
     // Release
     //   Kowl Business v1.2.3
@@ -84,9 +84,9 @@ const VersionInfo = () => {
         </div>
         <div className='versionGitData'>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 7)}</div>
         {IsBusiness && <div className='versionGitData'>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 7)}</div>}
-    </>
+    </>;
 
-}
+};
 const SideBar = observer(() =>
     <Layout style={{
         display: 'flex', flex: 1, flexDirection: 'column',
@@ -101,7 +101,7 @@ const SideBar = observer(() =>
             <div style={{ position: 'relative' }}>
 
                 {/* Logo Image */}
-                <img src={logo2} style={{
+                <img src={logo2} alt="logo" style={{
                     height: uiSettings.sideBarOpen ? '130px' : '65px',
                     transition: 'all 200ms',
                     width: 'auto', display: 'block', margin: 'auto', cursor: 'pointer',
@@ -145,13 +145,13 @@ const SideBar = observer(() =>
         <UserProfile />
 
         {/* Toggle */}
-        <Footer className='sideBarToggle' onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen }}>
+        <Footer className='sideBarToggle' onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen; }}>
             {uiSettings.sideBarOpen
                 ? <MenuFoldOutlined className='icon' />
                 : <MenuUnfoldOutlined className='icon' />}
         </Footer>
     </Layout>
-)
+);
 
 const sideBarWidthDefault = '230px';
 const AppSide = observer(() => (
@@ -162,7 +162,7 @@ const AppSide = observer(() => (
     >
         <SideBar />
     </Sider>
-))
+));
 
 
 let lastRequestCount = 0;
@@ -173,9 +173,9 @@ const DataRefreshButton = observer(() => {
         return <div style={{ maxWidth: '350px' }}>
             Click to force a refresh of the data shown in the current page.
             When switching pages, any data older than <span className='codeBox'>{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be refreshed automatically.
-        </div>
+        </div>;
         // TODO: small table that shows what cached data we have and how old it is
-    }
+    };
 
     // Track how many requests we've sent in total
     if (api.activeRequests.length == 0) lastRequestCount = 0;
@@ -214,8 +214,8 @@ const DataRefreshButton = observer(() => {
                     <span className='pulsating' style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data... {countStr}</span>
                 </>
         }
-    </div>
-})
+    </div>;
+});
 
 const AppPageHeader = observer(() => {
 
@@ -235,7 +235,7 @@ const AppPageHeader = observer(() => {
                 <DataRefreshButton />
             </LayoutBypass>
         </span>
-        : <NavLink to={r.path}>{r.breadcrumbName}</NavLink>
+        : <NavLink to={r.path}>{r.breadcrumbName}</NavLink>;
 
     return <MotionDiv identityKey={uiState.pageTitle} className='pageTitle' style={{ display: 'flex', paddingRight: '16px', alignItems: 'center', marginBottom: '10px' }}>
         <PageHeader
@@ -251,7 +251,7 @@ const AppPageHeader = observer(() => {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UserPreferencesButton />
         </div>
-    </MotionDiv>
+    </MotionDiv>;
 });
 
 const AppFooter = () => {
@@ -260,18 +260,18 @@ const AppFooter = () => {
     return <Footer className="footer">
         {/* Social Media Links */}
         <div className="links">
-            <a href="https://github.com/cloudhut/kowl" title="Visit Kowl's GitHub repository" target='_blank'>
+            <a href="https://github.com/cloudhut/kowl" title="Visit Kowl's GitHub repository" target='_blank' rel='noopener'>
                 <GithubFilled />
             </a>
-            <a href="https://discord.gg/KQj7P6v" target='_blank'>
+            <a href="https://discord.gg/KQj7P6v" target='_blank' rel='noopener'>
                 <span role='img' className='anticon' style={{ fontSize: '120%' }}>
                     {discordIcon}
                 </span>
             </a>
-            <a href="https://twitter.com/cloudhut_kowl" target='_blank'>
+            <a href="https://twitter.com/cloudhut_kowl" target='_blank' rel='noopener'>
                 <TwitterOutlined />
             </a>
-            <a href="https://www.linkedin.com/company/kowl" target='_blank'>
+            <a href="https://www.linkedin.com/company/kowl" target='_blank' rel='noopener'>
                 <LinkedinFilled />
             </a>
         </div>
@@ -280,8 +280,8 @@ const AppFooter = () => {
         <div className='versionText'>
             <VersionInfo />
         </div>
-    </Footer>
-}
+    </Footer>;
+};
 
 const AppContent = observer(() =>
     <Layout className='overflowYOverlay' style={{ borderLeft: '1px solid #ddd' }} id="mainLayout">
@@ -339,9 +339,9 @@ export default class App extends Component {
         if (!IsBusiness)
             return null; // free version has no login handling
 
-        const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />
+        const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
         const path = window.location.pathname.removePrefix(basePathS ?? '');
-        const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); }
+        const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); };
 
         if (path.startsWith('/login'))
             return null; // already in login process, don't interrupt!
@@ -363,7 +363,7 @@ export default class App extends Component {
                     devPrint('not logged in');
                     api.userData = null;
                 } else if (r.status == 404) { // not found: server must be non-business version
-                    devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging')
+                    devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging');
                     uiState.isUsingDebugUserLogin = true;
                     api.userData = {
                         canManageKowl: false,

@@ -20,7 +20,7 @@ export function injectFindFunc(fullFilterCode: string) {
     findPropOccurences.forEach(occurence => {
         // Extract the attributes or keys from the string
         const keysMatch = occurence.match(regexFindProp) || [];
-        const keys = keysMatch[1] && keysMatch[1].split('.') || [];
+        const keys = keysMatch[1]?.split('.') ?? [];
 
         // Map it from 'key.key' into ['key']['key']
         const replacedKeys = keys.map(key => `['${key}']`);
@@ -36,14 +36,14 @@ export function injectFindFunc(fullFilterCode: string) {
 export function sanitizeString(input: string) {
     return input.split('')
         .map((char: string) => {
-            if (char.charCodeAt(0) > 0 && char.charCodeAt(0) < 128) {
+            const code = char.charCodeAt(0);
+            if (code > 0 && code < 128) {
                 return char;
-            } else if (char.charCodeAt(0) >= 128 && char.charCodeAt(0) <= 255) {
+            } else if (code >= 128 && code <= 255) {
                 //Hex escape encoding
-                return `/x${char.charCodeAt(0).toString(16)}`.replace('/', '\\');
-            } else if (char.charCodeAt(0) > 255) {
-                return '';
+                return `/x${code.toString(16)}`.replace('/', '\\');
             }
+            return '';
         })
         .join('');
 }

@@ -5,7 +5,7 @@ import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
 import { AnimatePresence, motion } from "framer-motion";
-import { autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from "mobx";
+import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
@@ -19,7 +19,7 @@ import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
 import { api } from "../../../../state/backendApi";
 import { Payload, Topic, TopicMessage } from "../../../../state/restInterfaces";
-import { ColumnList, FilterEntry, PreviewTag, TopicOffsetOrigin } from "../../../../state/ui";
+import { ColumnList, FilterEntry, PreviewTagV2, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
 import '../../../../utils/arrayExtensions';
@@ -56,8 +56,6 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     @observable previewDisplay: string[] = [];
     // @observable allCurrentKeys: string[];
 
-
-
     @observable showColumnSettings = false;
 
     @observable fetchError = null as Error | null;
@@ -71,6 +69,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
     currentSearchRun: string | null = null;
 
     @observable downloadMessages: TopicMessage[] | null;
+    @observable expandedKeys: React.Key[] = [];
 
 
     constructor(props: { topic: Topic }) {
@@ -100,7 +99,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
             editQuery(query => {
                 const q = String(uiState.topicSettings.quickSearch);
                 query["q"] = q ? q : null;
-            })
+            });
         }, { name: 'update query string' });
 
         this.messageSource.filterText = uiState.topicSettings.quickSearch;
@@ -142,7 +141,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                     <this.MessageTable />
                 </>
             }
-        </>
+        </>;
     }
     SearchControlsBar = observer(() => {
         const searchParams = uiState.topicSettings.searchParams;
@@ -269,7 +268,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
             </div>
 
-        </React.Fragment>
+        </React.Fragment>;
     });
 
     searchFunc = (source: 'auto' | 'manual') => {
@@ -324,11 +323,11 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
             <MotionDiv identityKey={displayText}>
                 <Text type='secondary'>{displayText}</Text>
             </MotionDiv>
-        </div>
+        </div>;
     }
 
     @computed
-    get activePreviewTags(): PreviewTag[] {
+    get activePreviewTags(): PreviewTagV2[] {
         return uiState.topicSettings.previewTags.filter(t => t.isActive);
     }
 
@@ -344,12 +343,12 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                     {(() => {
                         const count = uiState.topicSettings.previewTags.sum(t => t.isActive ? 1 : 0);
                         if (count > 0)
-                            return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>
+                            return <span style={{ marginLeft: '.3em' }}>(<b>{count} active</b>)</span>;
                         return <></>;
                     })()}
                 </Button>
             </span>
-        </>
+        </>;
 
         const copyDropdown = (record: TopicMessage) => (
             <Menu>
@@ -370,11 +369,14 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
+        const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
+        const hasValueTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageValue) > 0;
+
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
             { width: 1, title: 'Partition', dataIndex: 'partitionID', sorter: sortField('partitionID'), },
             { width: 1, title: 'Timestamp', dataIndex: 'timestamp', sorter: sortField('timestamp'), render: (t: number) => <TimestampDisplay unixEpochSecond={t} format={tsFormat} /> },
-            { width: 2, title: 'Key', dataIndex: 'key', render: renderKey, sorter: this.keySorter },
+            { width: hasKeyTags ? '30%' : 2, title: 'Key', dataIndex: 'key', render: (_, r) => <MessageKeyPreview msg={r} previewFields={() => this.activePreviewTags} />, sorter: this.keySorter },
             {
                 dataIndex: 'value',
                 width: 'auto',
@@ -391,7 +393,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                 filterIcon: (_) => {
                     return <Tooltip title='Column Settings' mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement='left'>
                         <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
-                    </Tooltip>
+                    </Tooltip>;
                 },
                 render: (text, record) => !record.isValueNull && (
                     <NoClipboardPopover placement='left'>
@@ -449,12 +451,28 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
                     rowClassName={(r: TopicMessage) => (r.isValueNull && showTombstones) ? 'tombstone' : ''}
+                    onRow={r => {
+                        return {
+                            onDoubleClick: e => {
+                                // Double clicking a row should expand/collapse it
+                                // But not when the user double-clicks the expand/collapse button
+                                if (e.target instanceof HTMLElement)
+                                    if (e.target.classList.contains("ant-table-row-expand-icon"))
+                                        return;
+                                this.toggleRecordExpand(r);
+                            },
+                        };
+                    }}
 
                     expandable={{
                         expandRowByClick: false,
                         expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'value'),
                         rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
                         expandedRowRender: record => renderExpandedMessage(record),
+                        expandedRowKeys: this.expandedKeys.slice(),
+                        onExpand: (p, r) => {
+                            this.toggleRecordExpand(r);
+                        }
                     }}
 
                     columns={filteredColumns}
@@ -478,8 +496,17 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
 
             </ConfigProvider>
-        </>
+        </>;
     })
+
+
+    @action toggleRecordExpand(r: TopicMessage) {
+        const key = r.offset + ' ' + r.partitionID + r.timestamp;
+        // try collapsing it, removeAll returns the number of matches
+        const removed = this.expandedKeys.removeAll(x => x == key);
+        if (removed == 0) // wasn't expanded, so expand it now
+            this.expandedKeys.push(key);
+    }
 
     keySorter(a: TopicMessage, b: TopicMessage, sortOrder?: SortOrder): number {
         const ta = String(a.key) ?? "";
@@ -535,7 +562,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
             query["p"] = String(searchParams.partitionID); // p = partition
             query["s"] = String(searchParams.maxResults); // s = size
             query["o"] = String(searchParams.startOffset); // o = offset
-        })
+        });
 
         let filterCode: string = "";
         if (searchParams.filtersEnabled && canUseFilters) {
@@ -619,14 +646,14 @@ function ${name}() {
     formatTypeToTag(type: string) {
         type = String(type);
         switch (type) {
-            case 'json': return <Tag key={1} color='orange'>JSON</Tag>
-            case 'xml': return <Tag key={2} color='green'>XML</Tag>
-            case 'avro': return <Tag key={3} color='blue'>Avro</Tag>
-            case 'binary': return <Tag key={4} color='red'>Binary</Tag>
-            case 'text': return <Tag key={5} color='gold'>Text</Tag>
+            case 'json': return <Tag key={1} color='orange'>JSON</Tag>;
+            case 'xml': return <Tag key={2} color='green'>XML</Tag>;
+            case 'avro': return <Tag key={3} color='blue'>Avro</Tag>;
+            case 'binary': return <Tag key={4} color='red'>Binary</Tag>;
+            case 'text': return <Tag key={5} color='gold'>Text</Tag>;
             case '': return null;
         }
-        return <Tag key={6} color='black'>Unknown: {type}</Tag>
+        return <Tag key={6} color='black'>Unknown: {type}</Tag>;
     }
 
     empty = () => <Empty description={<>
@@ -670,7 +697,7 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
                 <Radio value='json' style={this.radioStyle}>JSON</Radio>
                 <Radio value='csv' disabled={true} style={this.radioStyle}>CSV</Radio>
             </Radio.Group>
-        </Modal>
+        </Modal>;
     }
 
     saveMessages() {
@@ -701,13 +728,13 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
                 encoding: p.encoding,
                 schemaId: p.schemaId,
             } as any as Payload;
-        }
+        };
 
         for (const src of messages) {
             const msg = {} as Partial<typeof src>;
 
             msg.partitionID = src.partitionID;
-            msg.offset = src.offset
+            msg.offset = src.offset;
             msg.timestamp = src.timestamp;
             msg.compression = src.compression;
             msg.isTransactional = src.isTransactional;
@@ -727,23 +754,41 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
     }
 }
 
-const renderKey = (p: Payload, record: TopicMessage) => {
-    const value = p.payload;
-    const text = typeof value === 'string' ? value : toJson(value);
 
-    if (value == undefined || value == null || text.length == 0 || text == '{}')
-        return renderEmptyIcon("Empty Key");
+@observer
+class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[] }> {
+    render() {
+        const value = this.props.msg.key.payload;
+        const text = typeof value === 'string' ? value : toJson(value);
 
-    if (text.length > 45) {
-        return <span className='cellDiv' style={{ minWidth: '120px' }}>
-            <code style={{ fontSize: '95%' }}>{text.slice(0, 44)}&hellip;</code>
-        </span>
+        if (value == undefined || value == null || text.length == 0 || text == '{}')
+            return renderEmptyIcon("Empty Key");
+
+        if (typeof value == 'object') {
+            const previewTags = this.props.previewFields().filter(t => t.searchInMessageKey);
+            if (previewTags.length > 0) {
+                const tags = getPreviewTags(value, previewTags);
+                return <span className='cellDiv fade' style={{ fontSize: '95%' }}>
+                    <div className={"previewTags previewTags-" + uiState.topicSettings.previewDisplayMode}>
+                        {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
+                    </div>
+                </span>;
+            }
+        }
+
+
+        if (text.length > 300) {
+            return <span className='cellDiv' style={{ minWidth: '200px' }}>
+                <code style={{ fontSize: '95%' }}>{text.slice(0, 300)}&hellip;</code>
+            </span>;
+        }
+
+        return <span className='cellDiv' style={{ width: 'auto' }}>
+            <code style={{ fontSize: '95%', width: 'auto' }}>{text}</code>
+        </span>;
     }
+}
 
-    return <span className='cellDiv' style={{ width: 'auto' }}>
-        <code style={{ fontSize: '95%' }}>{text}</code>
-    </span>;
-};
 
 @observer
 class StartOffsetDateTimePicker extends Component {
@@ -787,7 +832,7 @@ class StartOffsetDateTimePicker extends Component {
                 // console.log('onOk', { value: e.format(), isLocal: e.isLocal(), unix: e.valueOf() });
                 searchParams.startTimestamp = e.valueOf();
             }}
-        />
+        />;
     }
 }
 
@@ -802,13 +847,13 @@ class DateTimePickerExtraFooter extends Component {
             }}>
             <Radio value='local'>Local</Radio>
             <Radio value='utc'>UTC</Radio>
-        </Radio.Group>
+        </Radio.Group>;
     }
 }
 
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTag[] }> {
+class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[] }> {
     render() {
         const msg = this.props.msg;
         const value = msg.value.payload;
@@ -823,7 +868,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 
             if (value === null || value === undefined || msg.isValueNull) {
                 // null: tombstone
-                text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>
+                text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>;
             }
             else if (msg.value.encoding == 'binary') {
                 // If the original data was binary, display as hex dump
@@ -836,22 +881,14 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             else {
                 // Only thing left is 'object'
                 // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-                const previewTags = this.props.previewFields();
+                const previewTags = this.props.previewFields().filter(t => t.searchInMessageValue);
                 if (previewTags.length > 0) {
-                    // Json!
-                    // Construct our preview object
-                    const previewObj: any = {};
-                    const searchOptions = {
-                        caseSensitive: uiState.topicSettings.previewTagsCaseSensitive,
-                        returnFirstResult: uiState.topicSettings.previewMultiResultMode == 'showOnlyFirst'
-                    };
-
                     const tags = getPreviewTags(value, previewTags);
                     text = <span className='cellDiv fade' style={{ fontSize: '95%' }}>
                         <div className={"previewTags previewTags-" + uiState.topicSettings.previewDisplayMode}>
                             {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
                         </div>
-                    </span>
+                    </span>;
                     return text;
 
                 }
@@ -861,10 +898,10 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 }
             }
 
-            return <code><span className='cellDiv' style={{ fontSize: '95%' }}>{text}</span></code>
+            return <code><span className='cellDiv' style={{ fontSize: '95%' }}>{text}</span></code>;
         }
         catch (e) {
-            return <span style={{ color: 'red' }}>Error in RenderPreview: {e.toString()}</span>
+            return <span style={{ color: 'red' }}>Error in RenderPreview: {e.toString()}</span>;
         }
     }
 }
@@ -876,7 +913,7 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
 
         {/* .ant-tabs-nav { width: ??; } */}
         <Tabs animated={false} defaultActiveKey='value'>
-            <Tabs.TabPane key='key' tab='Key'>
+            <Tabs.TabPane key='key' tab='Key' disabled={msg.key == null || msg.key.size == 0}>
                 {renderPayload(msg.key, shouldExpand)}
             </Tabs.TabPane>
             <Tabs.TabPane key='value' tab='Value'>
@@ -886,13 +923,13 @@ function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedF
                 <MessageHeaders msg={msg} />
             </Tabs.TabPane>
         </Tabs>
-    </div>
+    </div>;
 }
 
 function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
     try {
         if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined)
-            return <code>null</code>
+            return <code>null</code>;
 
         const val = payload.payload;
         const isPrimitive =
@@ -905,7 +942,7 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
         if (payload.encoding == 'binary') {
             const mode = 'ascii' as ('ascii' | 'raw' | 'hex');
             if (mode == 'raw') {
-                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{val}</code>;
             }
             else if (mode == 'hex') {
                 const str = String(val);
@@ -916,7 +953,7 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
                     hex += n + ' ';
                 }
 
-                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{hex}</code>;
             }
             else {
                 const str = String(val);
@@ -928,18 +965,18 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
                     result += ch + ' ';
                 }
 
-                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>
+                return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{result}</code>;
             }
         }
 
         if (isPrimitive) {
-            return <div className='codeBox'>{String(val)}</div>
+            return <div className='codeBox'>{String(val)}</div>;
         }
 
-        return <KowlJsonView src={val} shouldCollapse={shouldCollapse} />
+        return <KowlJsonView src={val} shouldCollapse={shouldCollapse} />;
     }
     catch (e) {
-        return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {e.toString()}</span>
+        return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {e.toString()}</span>;
     }
 }
 
@@ -961,7 +998,7 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
                 <div style={{ color: 'rgba(0, 0, 0, 0.6)', }}>{v}</div>
             </div>
         </React.Fragment>)}
-    </div>
+    </div>;
 });
 
 const MessageHeaders = observer((props: { msg: TopicMessage }) => {
@@ -987,13 +1024,13 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
                         render: headerValue => {
                             if (typeof headerValue.payload === 'undefined') return renderEmptyIcon('"undefined"');
                             if (headerValue.payload === null) return renderEmptyIcon('"null"');
-                            if (typeof headerValue.payload === 'number') return <span>{String(headerValue.payload)}</span>
+                            if (typeof headerValue.payload === 'number') return <span>{String(headerValue.payload)}</span>;
 
                             if (typeof headerValue.payload === 'string')
-                                return <span className='cellDiv'>{headerValue.payload}</span>
+                                return <span className='cellDiv'>{headerValue.payload}</span>;
 
                             // object
-                            return <span className='cellDiv'>{toSafeString(headerValue.payload)}</span>
+                            return <span className='cellDiv'>{toSafeString(headerValue.payload)}</span>;
                         },
                     },
                     {
@@ -1013,7 +1050,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
             />
             <br />
         </div>
-    </div>
+    </div>;
 });
 
 
@@ -1047,7 +1084,7 @@ class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDi
                     />
                 </Space>
             </div>
-        </>
+        </>;
 
         return <Modal
             title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Column Settings</span>}
@@ -1094,7 +1131,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
             >
                 {children}
             </Select>
-        </>
+        </>;
     }
 
     handleColumnListChange = (values: string[]) => {
@@ -1114,7 +1151,7 @@ const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): Re
     <Popover key={title} trigger='click' title={popTitle} content={content}>
         <Button type='link' size='small' style={{ fontSize: '1.2em' }}>{title}</Button>
     </Popover>
-)
+);
 
 // TODO Explain:
 // - multiple filters are combined with &&
@@ -1139,10 +1176,10 @@ const helpEntries = [
         <li style={{ margin: '1em 0' }}><span className='codeBox'>value != null</span> Skips tombstone messages</li>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>if (key == 'example') return true</span></li>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
-        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} loading='lazy' /></div></li>
-        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} loading='lazy' /></div></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} alt="Filter Example 1" loading='lazy' /></div></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} alt="Filter Example 2" loading='lazy' /></div></li>
     </ul>),
-].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />)
+].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
 
 @observer
 class MessageSearchFilterBar extends Component {
@@ -1314,7 +1351,7 @@ class MessageSearchFilterBar extends Component {
 
                 </>}
             </Modal>
-        </div>
+        </div>;
     }
 
     revertChanges() {
@@ -1329,5 +1366,5 @@ class MessageSearchFilterBar extends Component {
 
 function renderEmptyIcon(tooltipText?: string) {
     if (!tooltipText) tooltipText = "Empty";
-    return <Tooltip title={tooltipText} mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>
+    return <Tooltip title={tooltipText} mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>;
 }

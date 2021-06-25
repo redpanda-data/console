@@ -1,8 +1,7 @@
-import React, { memo, ReactNode, PureComponent, FunctionComponent, ReactElement, Component, Fragment, ReactNodeArray } from "react";
-import { autorun, IReactionDisposer, observable } from "mobx";
+import React, { Component, } from "react";
+import { autorun, IReactionDisposer, makeObservable, observable } from "mobx";
 import prettyBytesOriginal from "pretty-bytes";
 import prettyMillisecondsOriginal from 'pretty-ms';
-import url from "url";
 import queryString from 'query-string';
 import { editQuery } from "./queryHelper";
 import { message } from "antd";
@@ -165,6 +164,7 @@ export class DebugTimerStore {
 
         this.increaseFrame = this.increaseFrame.bind(this);
         //setInterval(this.increaseFrame, 30);
+        makeObservable(this);
     }
 
     private increaseSec() { this.secondCounter++; }
@@ -237,52 +237,7 @@ export function compareIgnoreCase(a: string, b: string) {
 }
 
 type FoundProperty = { propertyName: string, path: string[], value: any }
-type PropertySearchOptions = { caseSensitive: boolean, returnFirstResult: boolean; }
 type PropertySearchResult = 'continue' | 'abort';
-type PropertySearchContext = { targetPropertyName: string, currentPath: string[], results: FoundProperty[], options: PropertySearchOptions }
-
-export function findElementDeep(obj: any, name: string, options: PropertySearchOptions): FoundProperty[] {
-    const ctx: PropertySearchContext = {
-        targetPropertyName: name,
-        currentPath: [],
-        results: [],
-        options: options,
-    };
-    findElementDeep2(ctx, obj);
-    return ctx.results;
-}
-
-function findElementDeep2(ctx: PropertySearchContext, obj: any): PropertySearchResult {
-    for (const key in obj) {
-
-        const value = obj[key];
-
-        // property match?
-        const isMatch = ctx.options.caseSensitive
-            ? key === ctx.targetPropertyName
-            : compareIgnoreCase(ctx.targetPropertyName, key) === 0;
-
-        if (isMatch) {
-            const clonedPath = Object.assign([], ctx.currentPath);
-            ctx.results.push({ propertyName: key, path: clonedPath, value: value });
-
-            if (ctx.options.returnFirstResult) return 'abort';
-        }
-
-        // descend into object
-        if (typeof value === 'object') {
-            ctx.currentPath.push(key);
-            const childResult = findElementDeep2(ctx, value);
-            ctx.currentPath.pop();
-
-            if (childResult == 'abort')
-                return 'abort';
-        }
-    }
-
-    return 'continue';
-}
-
 
 
 type PropertySearchExContext = {
@@ -292,18 +247,18 @@ type PropertySearchExContext = {
     returnFirstResult: boolean
 }
 
-export function findElementDeepEx(obj: any, isMatch: (propertyName: string, path: string[], value: any) => boolean, returnFirstMatch: boolean): FoundProperty[] {
+export function collectElements(obj: any, isMatch: (propertyName: string, path: string[], value: any) => boolean, returnFirstMatch: boolean): FoundProperty[] {
     const ctx: PropertySearchExContext = {
         isMatch: isMatch,
         currentPath: [],
         results: [],
         returnFirstResult: returnFirstMatch,
     };
-    findElementDeepEx2(ctx, obj);
+    collectElementsRecursive(ctx, obj);
     return ctx.results;
 }
 
-function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
+function collectElementsRecursive(ctx: PropertySearchExContext, obj: any): PropertySearchResult {
     for (const key in obj) {
 
         const value = obj[key];
@@ -321,7 +276,7 @@ function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySea
         // descend into object
         if (typeof value === 'object') {
             ctx.currentPath.push(key);
-            const childResult = findElementDeepEx2(ctx, value);
+            const childResult = collectElementsRecursive(ctx, value);
             ctx.currentPath.pop();
 
             if (childResult == 'abort')
@@ -334,7 +289,94 @@ function findElementDeepEx2(ctx: PropertySearchExContext, obj: any): PropertySea
 
 
 
+type IsMatchFunc = (pathElement: string, propertyName: string, value: any) => boolean;
+export type CollectedProperty = { path: string[], value: any }
 
+export function collectElements2(
+    targetObject: any,
+
+    // "**" collectes all current and nested properties
+    // "*" collects all current properties
+    // anything else is passed to "isMatch"
+    path: string[],
+    isMatch: IsMatchFunc
+): CollectedProperty[] {
+
+    // Explore set
+    let currentExplore: CollectedProperty[] = [
+        { path: [], value: targetObject },
+    ];
+    let nextExplore: CollectedProperty[] = [];
+    const results: CollectedProperty[] = [];
+
+    for (let i = 0; i < path.length; i++) {
+        const segment = path[i];
+        const isLast = i == (path.length - 1);
+        const targetList = isLast ? results : nextExplore;
+
+        for (const foundProp of currentExplore) {
+            const currentObj = foundProp.value;
+
+            switch (segment) {
+                case "**":
+                    // And all their nested objects are a result
+                    const allNested = collectElements(currentObj, (key, path, value) => {
+                        return typeof value == 'object';
+                    }, false);
+
+                    for (const n of allNested) {
+                        targetList.push({
+                            path: [...foundProp.path, ...n.path, n.propertyName],
+                            value: n.value
+                        });
+                    }
+
+                    // Also explore this object again as well (because '**' also includes the current props)
+                    targetList.push({
+                        path: [...foundProp.path],
+                        value: currentObj,
+                    });
+
+                    break;
+
+                case "*":
+                    // Explore all properties
+                    for (const key in currentObj) {
+                        const value = currentObj[key];
+                        if (value == null || typeof value == 'function') continue;
+
+                        targetList.push({
+                            path: [...foundProp.path, key],
+                            value: value,
+                        });
+                    }
+                    break;
+
+                default:
+                    // Some user defined string
+                    for (const key in currentObj) {
+                        const value = currentObj[key];
+                        if (value == null || typeof value == 'function') continue;
+
+                        const match = isMatch(segment, key, value);
+                        if (match) {
+                            targetList.push({
+                                path: [...foundProp.path, key],
+                                value: value,
+                            });
+                        }
+                    }
+                    break;
+            }
+        }
+
+        // use the next array as the current one
+        currentExplore = nextExplore;
+        nextExplore = [];
+    }
+
+    return results;
+}
 
 
 export function getAllMessageKeys(messages: TopicMessage[]): Property[] {

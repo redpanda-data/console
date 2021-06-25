@@ -5,7 +5,7 @@
 //
 
 
-declare var value: any; // set/injected by backend
+declare let value: any; // set/injected by backend
 
 // declare function find(propName: string, ignoreCase?:boolean): any;
 // declare function find(isMatch: (obj:object|Array<any>)=>boolean): any;
@@ -91,7 +91,7 @@ function findByCallback(obj: any, isMatch: (object: any, key: string | number) =
 function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, returnFirstResult: boolean): any[] {
 
     // const log = console.log;
-    const log = (...args: any) => { };
+    const log = (...args: any) => { /* do nothing */ };
 
     const isPatternMatch = (obj: object, pattern: object): boolean => {
         if (typeof obj !== typeof pattern) { log(`  type mismatch obj<>pattern: '${typeof obj}' != '${typeof pattern}'`); return false; }
@@ -105,7 +105,7 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
             if (typeof patternValue == 'function') continue;
 
             const objValue = (obj as any)[k];
-            log(`  [${k}]`)
+            log(`  [${k}]`);
 
             if (typeof objValue !== typeof patternValue) { log(`  property type mismatch: '${typeof objValue}' != '${typeof patternValue}'`); return false; }
 
@@ -121,12 +121,12 @@ function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, ret
                 if (objValue != patternValue) { log(`  primitives not equal: ${objValue} != ${patternValue}`); return false; }
             } else {
                 // Compare object
-                log(`  -> descending into [${k}]`)
+                log(`  -> descending into [${k}]`);
                 if (!isPatternMatch(objValue, patternValue)) return false;
             }
         }
         return true;
-    }
+    };
 
     const ctx: ObjectSearchContext = {
         isMatch: isPatternMatch,
@@ -161,7 +161,7 @@ function findElement(ctx: PropertySearchContext, obj: any): boolean {
         try { isMatch = ctx.isMatch(obj, key); } catch { }
 
         if (isMatch) {
-            const clonedPath = (<any>Object).assign([], ctx.currentPath);
+            const clonedPath = Object.assign([], ctx.currentPath);
             ctx.results.push({ propertyName: key, path: clonedPath, value: value });
 
             if (ctx.returnFirstResult)

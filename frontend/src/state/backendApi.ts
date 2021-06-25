@@ -7,7 +7,11 @@ import {
     TopicDocumentationResponse, AclRequest, AclResponse, SchemaOverview, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
     TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
     PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
-    PatchConfigsRequest, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset, GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry
+    AclRequestDefault, AclResourceType, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, 
+    AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, 
+    EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, 
+    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset, 
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -189,7 +193,7 @@ const apiStore = {
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
 
-    brokerConfigs: new Map<number, ConfigEntry[]>(),
+    brokerConfigs: new Map<number, ConfigEntry[] | string>(), // config entries, or error string
 
     adminInfo: undefined as (AdminInfo | undefined | null),
 
@@ -203,10 +207,12 @@ const apiStore = {
     topicPermissions: new Map<string, TopicPermissions | null>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
     topicConsumers: new Map<string, TopicConsumer[]>(),
+    topicAcls: new Map<string, AclResponse | null>(),
 
     ACLs: undefined as AclResponse | undefined | null,
 
     consumerGroups: new Map<string, GroupDescription>(),
+    consumerGroupAcls: new Map<string, AclResponse | null>(),
 
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
@@ -316,7 +322,6 @@ const apiStore = {
                     }
 
                     m.keyJson = JSON.stringify(m.key.payload);
-
                     m.valueJson = JSON.stringify(m.value.payload);
 
                     if (m.value.encoding == 'binary') {
@@ -422,6 +427,7 @@ const apiStore = {
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
         if (!IsBusiness) return; // permissions endpoint only exists in kowl-business
+        if (this.userData?.user?.providerID == -1) return; // debug user
         cachedApiRequest<TopicPermissions | null>(`./api/permissions/topics/${topicName}`, force)
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
@@ -528,6 +534,12 @@ const apiStore = {
             }, addError);
     },
 
+    refreshTopicAcls(topicName: string, force?: boolean) {
+        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName})
+        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+            .then(v => this.topicAcls.set(topicName, v))
+    },
+
     refreshTopicConsumers(topicName: string, force?: boolean) {
         cachedApiRequest<GetTopicConsumersResponse>(`./api/topics/${topicName}/consumers`, force)
             .then(v => this.topicConsumers.set(topicName, v.topicConsumers), addError);
@@ -554,21 +566,22 @@ const apiStore = {
                         this.clusterInfo = v.clusterInfo;
 
                     for (const b of v.clusterInfo.brokers)
-                        if (b.config.error) {
-                            console.error("unable to refresh broker config", { brokerId: b.brokerId, config: b.config });
-                        }
-                        else {
+                        if (b.config.error)
+                            this.brokerConfigs.set(b.brokerId, b.config.error)
+                        else
                             this.brokerConfigs.set(b.brokerId, b.config.configs);
-                        }
                 });
 
             }, addError);
     },
 
     refreshBrokerConfig(brokerId: number, force?: boolean) {
-        cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force).then(v => {
-            if (v?.brokerConfigs)
+        cachedApiRequest<BrokerConfigResponse | ApiError>(`./api/brokers/${brokerId}/config`, force).then(v => {
+            if ('message' in v) {
+                this.brokerConfigs.set(brokerId, v.message); // error
+            } else {
                 this.brokerConfigs.set(brokerId, v.brokerConfigs);
+            }
         }).catch(addError);
     },
 
@@ -592,6 +605,12 @@ const apiStore = {
                         this.consumerGroups.set(g.groupId, g);
                 });
             }, addError);
+    },
+
+    refreshConsumerGroupAcls(groupName: string, force?: boolean) {
+        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName})
+        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+            .then(v => this.consumerGroupAcls.set(groupName, v))
     },
 
     async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]):
@@ -898,8 +917,13 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
     g.lagSum = g.topicOffsets.sum(o => o.summedLag);
 
     if (g.allowedActions) {
-        g.noEditPerms = !g.allowedActions?.includes('editConsumerGroup');
-        g.noDeletePerms = !g.allowedActions?.includes('deleteConsumerGroup');
+        if (g.allowedActions.includes('all')) {
+            // All perms
+        } else {
+            // Not all perms, set helper props
+            g.noEditPerms = !g.allowedActions?.includes('editConsumerGroup');
+            g.noDeletePerms = !g.allowedActions?.includes('deleteConsumerGroup');
+        }
     }
     g.isInUse = g.state.toLowerCase() != 'empty';
 

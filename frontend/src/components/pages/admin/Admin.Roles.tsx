@@ -32,9 +32,11 @@ export class AdminRoles extends Component<{}> {
                 { title: '', render: r => (<span></span>) },
             ]}
             // expandIconAsCell={false} broken after upgrade to antd4
-            expandIconColumnIndex={0}
-            expandRowByClick={true}
-            expandedRowRender={(r: Role) => <RoleComponent key={r.name} role={r} />}
+            expandable={{
+                expandIconColumnIndex: 0,
+                expandRowByClick: true,
+                expandedRowRender: (r: Role) => <RoleComponent key={r.name} role={r} />
+            }}
         />
 
         return <MotionAlways>

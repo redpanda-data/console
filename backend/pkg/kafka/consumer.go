@@ -77,12 +77,20 @@ type interpreterArguments struct {
 	HeadersByKey map[string]interface{}
 }
 
-func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgress, consumeRequest TopicConsumeRequest) error {
-	// 1. Create new kgo client
-	client, err := s.NewKgoClient()
+func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgress, consumeReq TopicConsumeRequest) error {
+	// 1. Assign partitions with right start offsets and create client
+	partitionOffsets := make(map[string]map[int32]kgo.Offset)
+	partitionOffsets[consumeReq.TopicName] = make(map[int32]kgo.Offset)
+	for _, req := range consumeReq.Partitions {
+		offset := kgo.NewOffset().At(req.StartOffset)
+		partitionOffsets[consumeReq.TopicName][req.PartitionID] = offset
+	}
+
+	client, err := s.NewKgoClient(kgo.ConsumePartitions(partitionOffsets))
 	if err != nil {
 		return fmt.Errorf("failed to create new kafka client: %w", err)
 	}
+	defer client.Close()
 
 	// 2. Create consumer workers
 	jobs := make(chan *kgo.Record, 100)
@@ -95,12 +103,12 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	// If we use more than one worker the order of messages in each partition gets lost. Hence we only use it where
 	// multiple workers are actually beneficial - for potentially high throughput stream requests.
 	workerCount := 1
-	if consumeRequest.FilterInterpreterCode != "" {
+	if consumeReq.FilterInterpreterCode != "" {
 		workerCount = 6
 	}
 	for i := 0; i < workerCount; i++ {
 		// Setup JavaScript interpreter
-		isMessageOK, err := s.setupInterpreter(consumeRequest.FilterInterpreterCode)
+		isMessageOK, err := s.setupInterpreter(consumeReq.FilterInterpreterCode)
 		if err != nil {
 			s.Logger.Error("failed to setup interpreter", zap.Error(err))
 			progress.OnError(fmt.Sprintf("failed to setup interpreter: %v", err.Error()))
@@ -118,18 +126,18 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 
 	// 3. Start go routine that consumes messages from Kafka and produces these records on the jobs channel so that these
 	// can be decoded by our workers.
-	go s.consumeKafkaMessages(workerCtx, client, consumeRequest, jobs)
+	go s.consumeKafkaMessages(workerCtx, client, consumeReq, jobs)
 
 	// 4. Receive decoded messages until our request is satisfied. Once that's the case we will cancel the context
 	// that propagate to all the launched go routines.
 	messageCount := 0
 	messageCountByPartition := make(map[int32]int64)
-	remainingPartitionRequests := len(consumeRequest.Partitions)
+	remainingPartitionRequests := len(consumeReq.Partitions)
 	for msg := range resultsCh {
 		// Since a 'kafka message' is likely transmitted in compressed batches this size is not really accurate
 		progress.OnMessageConsumed(msg.MessageSize)
 
-		partitionReq := consumeRequest.Partitions[msg.PartitionID]
+		partitionReq := consumeReq.Partitions[msg.PartitionID]
 		if msg.IsMessageOk && messageCountByPartition[msg.PartitionID] < partitionReq.MaxMessageCount {
 			messageCount++
 			messageCountByPartition[msg.PartitionID]++
@@ -141,7 +149,7 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 		}
 
 		// Do we need more messages to satisfy the user request? Return if request is satisfied
-		isRequestSatisfied := messageCount == consumeRequest.MaxMessageCount || remainingPartitionRequests == 0
+		isRequestSatisfied := messageCount == consumeReq.MaxMessageCount || remainingPartitionRequests == 0
 		if isRequestSatisfied {
 			return nil
 		}
@@ -153,17 +161,6 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, consumeReq TopicConsumeRequest, jobs chan<- *kgo.Record) {
 	defer close(jobs)
 	defer client.Close()
-
-	// Assign partitions with right start offsets
-	partitionOffsets := make(map[string]map[int32]kgo.Offset)
-	partitionOffsets[consumeReq.TopicName] = make(map[int32]kgo.Offset)
-	for _, req := range consumeReq.Partitions {
-		offset := kgo.NewOffset().At(req.StartOffset)
-		partitionOffsets[consumeReq.TopicName][req.PartitionID] = offset
-	}
-	client.AssignPartitions(
-		kgo.ConsumePartitions(partitionOffsets),
-	)
 
 	for {
 		select {

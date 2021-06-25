@@ -19,6 +19,7 @@ import { uiState } from "../../../state/uiState";
 import { DefaultSkeleton, Label, OptionGroup } from "../../../utils/tsxUtils";
 import { BrokerList } from "../reassign-partitions/components/BrokerList";
 import { ShortNum } from "../../misc/ShortNum";
+import { KowlTable } from "../../misc/KowlTable";
 
 
 @observer
@@ -33,7 +34,6 @@ class GroupList extends PageComponent {
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
-
     }
 
     componentDidMount() {
@@ -48,7 +48,7 @@ class GroupList extends PageComponent {
             editQuery(query => {
                 const q = String(uiSettings.consumerGroupList.quickSearch);
                 if (q) query["q"] = q;
-            })
+            });
         });
     }
     componentWillUnmount() {
@@ -64,6 +64,7 @@ class GroupList extends PageComponent {
 
         const groups = Array.from(api.consumerGroups.values());
         const stateGroups = groups.groupInto(g => g.state);
+        const tableSettings = uiSettings.consumerGroupList ?? {};
 
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
@@ -81,36 +82,25 @@ class GroupList extends PageComponent {
                     {/* Searchbar */} {/* Filters */}
                     <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '2em' }}>
                         <this.SearchBar />
-                        {/* <Checkbox
+                        {/*
+                        <Checkbox
                             value={uiSettings.consumerGroupList.hideEmpty}
                             onChange={c => uiSettings.consumerGroupList.hideEmpty = c.target.checked}
-                        >Hide Empty
-                        </Checkbox> */}
+                        >
+                            Hide Empty
+                        </Checkbox>
+                        */}
                     </div>
 
                     {/* Content */}
-                    <Table
-                        style={{ margin: '0', padding: '0' }} size={'middle'}
-                        onRow={(record) =>
-                        ({
-                            onClick: () => appGlobal.history.push('/groups/' + record.groupId),
-                        })}
-                        pagination={this.pageConfig}
-                        onChange={(pagination) => {
-                            if (pagination.pageSize) uiSettings.consumerGroupList.pageSize = pagination.pageSize;
-                            this.pageConfig.current = pagination.current;
-                            this.pageConfig.pageSize = pagination.pageSize;
-                        }}
-                        rowClassName={() => 'hoverLink'}
-                        showSorterTooltip={false}
+                    <KowlTable
                         dataSource={groups}
-                        rowKey={x => x.groupId}
                         columns={[
                             { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
                             {
                                 title: 'ID', dataIndex: 'groupId',
                                 sorter: sortField('groupId'),
-                                filteredValue: [uiSettings.consumerGroupList.quickSearch],
+                                filteredValue: [tableSettings.quickSearch],
                                 onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
                                 render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
                             },
@@ -118,26 +108,27 @@ class GroupList extends PageComponent {
                             { title: 'Protocol', dataIndex: 'protocol', width: 1 },
                             { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length, defaultSortOrder: 'descend' },
                             { title: 'Lag (Sum)', dataIndex: 'lagSum', render: v => ShortNum({ value: v }), sorter: (a, b) => a.lagSum - b.lagSum },
-                        ]} />
+                        ]}
+
+                        observableSettings={tableSettings}
+
+                        rowKey={x => x.groupId}
+                        rowClassName="hoverLink"
+                        onRow={(record) =>
+                        ({
+                            onClick: () => appGlobal.history.push('/groups/' + record.groupId),
+                        })}
+                    />
                 </Card>
             </motion.div>
-        </>
+        </>;
     }
 
     SearchBar = observer(() => {
-        return <>
-            <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: '350px' }}
-                onChange={e => uiSettings.consumerGroupList.quickSearch = e.target.value}
-                value={uiSettings.consumerGroupList.quickSearch}
-            // addonAfter={
-            //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
-            //         <Icon type='setting' style={{ color: '#0006' }} />
-            //     </Popover>
-            // }
-            />
-
-            {/* <this.FilterSummary /> */}
-        </>
+        return <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: '350px' }}
+            onChange={e => uiSettings.consumerGroupList.quickSearch = e.target.value}
+            value={uiSettings.consumerGroupList.quickSearch}
+        />
     })
 
     GroupId = (p: { group: GroupDescription }) => {
@@ -148,7 +139,7 @@ class GroupList extends PageComponent {
         return <>
             <Tag>Protocol: {protocol}</Tag>
             <span> {p.group.groupId}</span>
-        </>
+        </>;
     }
 }
 

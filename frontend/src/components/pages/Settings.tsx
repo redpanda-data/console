@@ -76,6 +76,7 @@ export class SettingsPage extends PageComponent {
                 appGlobal.history.push(appGlobal.history.location);
             },
             onCancel() {
+                /* do nothing */
             },
         });
     }

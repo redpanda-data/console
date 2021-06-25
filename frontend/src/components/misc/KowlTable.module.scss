@@ -1,0 +1,42 @@
+.kowlTable {
+
+    :global(.ant-table-footer) {
+        padding: 0 !important;
+        background: unset !important;
+
+        display: flex;
+        gap: 1em;
+        margin: 16px 1px 4px 1px;
+
+        :global(.ant-pagination) {
+            margin-left: auto;
+        }
+
+        :global(.ant-pagination-total-text) {
+            // font-family: 'Open Sans';
+            // font-size: 12px;
+            cursor: default;
+        }
+    }
+
+    th:global(.ant-table-cell) {
+        // cursor: default;
+
+        // &:not(:last-of-type) {
+        //     border-right: solid 1px hsl(220deg, 12%, 93%);
+        // }
+
+        /*
+        ::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+
+            background: linear-gradient(45deg, transparent 50%, hsl(205deg, 100%, 60%) 50%);
+        }
+        */
+    }
+}

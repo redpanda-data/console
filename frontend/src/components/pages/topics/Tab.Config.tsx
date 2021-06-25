@@ -60,6 +60,7 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
                         const v1 = a.isExplicitlySet ? 1 : 0;
                         const v2 = b.isExplicitlySet ? 1 : 0;
                         return v2 - v1;
+                    default: return 0;
                 }
             });
     }
@@ -115,8 +116,8 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
 
 
 const TopicConfigList = observer(({ configEntries }: { configEntries: ConfigEntry[] }) => {
-    return <ConfigList configEntries={configEntries} valueDisplay={uiSettings.topicList.valueDisplay} />
-})
+    return <ConfigList configEntries={configEntries} valueDisplay={uiSettings.topicList.valueDisplay} />;
+});
 
 const ConfigDisplaySettings = observer(() => (
     <div

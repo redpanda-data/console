@@ -111,13 +111,14 @@ func (s *Service) Start() error {
 	return s.ProtoService.Start()
 }
 
-func (s *Service) NewKgoClient() (*kgo.Client, error) {
+func (s *Service) NewKgoClient(additionalOpts ...kgo.Opt) (*kgo.Client, error) {
 	// Kafka client
 	kgoOpts, err := NewKgoConfig(&s.Config, s.Logger, s.KafkaClientHooks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
 	}
 
+	kgoOpts = append(kgoOpts, additionalOpts...)
 	kafkaClient, err := kgo.NewClient(kgoOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kafka client: %w", err)

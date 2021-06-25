@@ -1,9 +1,22 @@
 # Changelog
 
-## Master / pending release
+## 1.4.0 / 2021-05-27
+
 - [FEATURE] Proto files can now be provided via the local file system as well
-- [FEATURE] Schema registry support for Protobuf
+- [FEATURE] Schema registry support for Protobuf (including auto deserialization)
 - [FEATURE] Consumer group offsets can now be edited (copy offsets from other group, set to start/end/timestamp) or deleted
+- [ENHANCEMENT] Add two new Kafka SASL Mechanisms: OAuthBearer and AWS MSK IAM
+- [ENHANCEMENT] Preview tags in the message viewer can now be named
+- [ENHANCEMENT] Maximum string length in JSON viewer has been increased from 40 to 200 characters
+- [ENHANCEMENT] CTRL + Click on values in JSON viewer will copy the value into the clipboard
+- [ENHANCEMENT] Menu redesigned (profile info for Kowl Business moved to menu bar)
+- [ENHANCEMENT] Rework broker & topic config pages; Shows config sources and all inherited config settings with their value
+- [ENHANCEMENT] Custom TLS config for schema registry
+- [ENHANCEMENT] Estimate topic log dir size if partition replicas are down (if size is estimated a warning is shown in the frontend)
+- [ENHANCEMENT] Messages can now be expanded/collapsed by double-clicking a row
+- [ENHANCEMENT] Group details page: 'Topics' view now has a 'View Topic' button, and the topic names in the 'Members' view are now clickable (both navigate to the topic details page)
+- [BUGFIX] Topicname is now selectable in consumer group details page
+- [BUGFIX] Relative timestamp now updates live in message table
 
 ## 1.3.0 / 2021-04-13
 
