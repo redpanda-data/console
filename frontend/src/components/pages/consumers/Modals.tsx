@@ -132,7 +132,7 @@ export class EditOffsetsModal extends Component<{
                 }
             </div>
 
-        </Modal>
+        </Modal>;
     }
 
     page1() {
@@ -191,19 +191,19 @@ export class EditOffsetsModal extends Component<{
                                 <Radio value='onlyExisting' disabled={this.isLoadingTimestamps} >
                                     <InfoText tooltip="Will only lookup the offsets for the topics/partitions that are defined in this group. If the other group has offsets for some additional topics/partitions they will be ignored." maxWidth="450px" >
                                         Copy matching offsets
-                                        </InfoText>
+                                    </InfoText>
                                 </Radio>
                                 <Radio value='all' disabled={this.isLoadingTimestamps} >
                                     <InfoText tooltip="If the selected group has offsets for some topics/partitions that don't exist in the current consumer group, they will be copied anyway." maxWidth="450px" >
                                         Full Copy
-                                        </InfoText>
+                                    </InfoText>
                                 </Radio>
                             </Radio.Group>
                         </div>
                     </>
                 },
             ]}
-        />
+        />;
     }
 
     page2() {
@@ -264,7 +264,7 @@ export class EditOffsetsModal extends Component<{
                     </Collapse.Panel>
                 )}
             </Collapse>
-        </div>
+        </div>;
     }
 
     differWarning() {
@@ -276,11 +276,11 @@ export class EditOffsetsModal extends Component<{
                 But when your change request reaches the backend, those offsets might have changed already because new messages were written to the topic.
                 The backend will correct for this difference and apply the correct offset.
             </p>
-        </div>
+        </div>;
 
         return <Popover trigger='click' content={content}>
             <WarningOutlined />
-        </Popover>
+        </Popover>;
     }
 
     @action
@@ -337,12 +337,12 @@ export class EditOffsetsModal extends Component<{
                         return other.topicOffsets
                             .first(t => t.topic == topicName)?.partitionOffsets
                             .first(p => p.partitionId == partitionId)?.groupOffset;
-                    }
+                    };
 
                     const currentOffsets = this.props.offsets;
                     const alreadyExists = function (topicName: string, partitionId: number): boolean {
                         return currentOffsets.any(x => x.topicName == topicName && x.partitionId == partitionId);
-                    }
+                    };
 
                     //
                     // Copy offsets that exist in the current group from the other group
@@ -396,7 +396,7 @@ export class EditOffsetsModal extends Component<{
                 <span>Review</span>
                 <span><ChevronRightIcon /></span>
             </Button>
-        </div>
+        </div>;
         else return <div style={{ display: 'flex' }}>
             <Button key='back' onClick={() => this.setPage(0)} style={{ paddingRight: '18px' }}
                 disabled={disableNav}
@@ -415,7 +415,7 @@ export class EditOffsetsModal extends Component<{
             >
                 <span>Apply</span>
             </Button>
-        </div>
+        </div>;
     }
 
     updateVisible(visible: boolean) {
@@ -473,6 +473,7 @@ export class EditOffsetsModal extends Component<{
             })).filter(t => t.partitions.length > 0);
             if (errors.length > 0) {
                 console.error('apply offsets, backend errors', { errors: errors, request: topics });
+                // eslint-disable-next-line no-throw-literal
                 throw { errors: errors, request: topics };
             }
 
@@ -538,7 +539,7 @@ class GroupTimePicker extends Component<{
                 this.props.onChange(this.timestampUtcMs);
             }}
             disabled={this.props.disabled}
-        />
+        />;
     }
 
     footer() {
@@ -550,7 +551,7 @@ class GroupTimePicker extends Component<{
             }}>
             <Radio value='local'>Local</Radio>
             <Radio value='utc'>UTC</Radio>
-        </Radio.Group>
+        </Radio.Group>;
     }
 }
 
@@ -567,7 +568,7 @@ class GroupTimePicker extends Component<{
         if (val == null) {
             return <Tooltip title="Offset will not be changed" mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}>
                 <span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span>
-            </Tooltip>
+            </Tooltip>;
         }
 
         // Set by timestamp
@@ -582,7 +583,7 @@ class GroupTimePicker extends Component<{
                 // error
                 if (val.error) return <span style={{ color: 'orangered' }}>
                     {val.error}
-                </span>
+                </span>;
 
                 // successful fetch
                 if (val.timestamp > 0)
@@ -590,7 +591,7 @@ class GroupTimePicker extends Component<{
                         <span>{numberToThousandsString(val.offset)}</span>
                         <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}
                         >({new Date(val.timestamp).toLocaleString()})</span>
-                    </div>
+                    </div>;
 
                 // not found - no message after given timestamp
                 // use 'latest'
@@ -598,8 +599,8 @@ class GroupTimePicker extends Component<{
                 return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                     <InfoText tooltip={<div>
                         There is no offset for this partition at or after the given timestamp (<code>{new Date(this.props.selectedTime ?? 0).toLocaleString()}</code>).
-                            As a fallback, the last offset in that partition will be used.
-                        </div>}
+                        As a fallback, the last offset in that partition will be used.
+                    </div>}
                         icon={<WarningOutlined />}
                         iconSize='18px'
                         iconColor='orangered'
@@ -608,7 +609,7 @@ class GroupTimePicker extends Component<{
                         <span>{numberToThousandsString(partition?.waterMarkHigh ?? -1)}</span>
 
                     </InfoText>
-                </div>
+                </div>;
             }
         }
 
@@ -628,12 +629,12 @@ class GroupTimePicker extends Component<{
             return <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                 <span>{typeof content.offset == 'number' ? numberToThousandsString(content.offset) : content.offset}</span>
                 <span style={{ fontSize: 'smaller', color: 'hsl(0deg 0% 67%)', userSelect: 'none', cursor: 'default' }}>({content.name})</span>
-            </div>
+            </div>;
         }
 
         // Loading placeholder
         if (typeof val === 'string') {
-            return <span style={{ opacity: 0.66, fontStyle: 'italic' }}>{val}</span>
+            return <span style={{ opacity: 0.66, fontStyle: 'italic' }}>{val}</span>;
         }
 
         return `Unknown type in 'newOffset' type='${typeof val}' value='{v}'`;
@@ -674,9 +675,9 @@ export class DeleteOffsetsModal extends Component<{
         const singlePartition = offsets.length == 1;
 
         const subTitle =
-            mode == 'group' && <span>All group offsets will be deleted for:</span> ||
-            mode == 'topic' && <span>Group offsets will be deleted for topic:</span> ||
-            mode == 'partition' && <span>Group offsets will be deleted for:</span>;
+            (mode == 'group' && <span>All group offsets will be deleted for:</span>) ||
+            (mode == 'topic' && <span>Group offsets will be deleted for topic:</span>) ||
+            (mode == 'partition' && <span>Group offsets will be deleted for:</span>);
 
 
         return <Modal
@@ -746,7 +747,7 @@ export class DeleteOffsetsModal extends Component<{
                 </div>
 
             </div>
-        </Modal >
+        </Modal >;
     }
 
 
@@ -764,6 +765,7 @@ export class DeleteOffsetsModal extends Component<{
             })).filter(t => t.partitions.length > 0);
             if (errors.length > 0) {
                 console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
+                // eslint-disable-next-line no-throw-literal
                 throw { request: deleteRequest, errors: errors };
             }
 
@@ -812,7 +814,7 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
 
         // otherwise 'x' might be 'Date', which means timestamps are resolved yet
         return undefined;
-    }
+    };
 
     const topicOffsets = offsets.groupInto(x => x.topicName).map(t => ({
         topicName: t.key,

@@ -15,6 +15,7 @@ import { uiSettings } from '../../../state/ui';
 import './Schema.List.scss';
 import SearchBar from '../../misc/SearchBar';
 import { makeObservable, observable } from 'mobx';
+import { KowlTable } from '../../misc/KowlTable';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -57,7 +58,6 @@ function renderNotConfigured() {
 
 @observer
 class SchemaList extends PageComponent<{}> {
-    paginationConfig = makePaginationConfig(uiSettings.schemaList.pageSize);
     @observable searchBar: RefObject<SearchBar<any>> = React.createRef();
     @observable filteredSchemaSubjects: { name: string }[];
 
@@ -105,27 +105,23 @@ class SchemaList extends PageComponent<{}> {
                         onFilteredDataChanged={data => this.filteredSchemaSubjects = data}
                     />
 
-                    <Table
-                        size="middle"
-                        rowClassName={() => 'hoverLink'}
-                        rowKey="name"
-                        onRow={({ name }) => ({
-                            onClick: () => appGlobal.history.push(`/schema-registry/${name}`),
-                        })}
+                    <KowlTable
+                        dataSource={this.filteredSchemaSubjects ?? []}
                         columns={[
                             { title: 'Name', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
                             // { title: 'Compatibility Level', dataIndex: 'compatibilityLevel', sorter: sortField('compatibilityLevel'), width: 150 },
                             // { title: 'Versions', dataIndex: 'versionsCount', sorter: sortField('versionsCount'), width: 80 },
                             // { title: 'Latest Version', dataIndex: 'latestVersion', sorter: sortField('versionsCount'), width: 80 },
                         ]}
-                        dataSource={this.filteredSchemaSubjects ?? []}
-                        pagination={this.paginationConfig}
-                        onChange={(pagination) => {
-                            if (pagination.pageSize) uiSettings.schemaList.pageSize = pagination.pageSize;
-                            this.paginationConfig.current = pagination.current;
-                            this.paginationConfig.pageSize = pagination.pageSize;
-                        }}
-                    ></Table>
+
+                        observableSettings={uiSettings.schemaList}
+
+                        rowClassName={() => 'hoverLink'}
+                        rowKey="name"
+                        onRow={({ name }) => ({
+                            onClick: () => appGlobal.history.push(`/schema-registry/${name}`),
+                        })}
+                    />
                 </Card>
             </motion.div>
         );

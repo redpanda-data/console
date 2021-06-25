@@ -1,3 +1,4 @@
+/* eslint-disable */
 //
 // Usage:
 //   cd frontend/src/utils/interpreter

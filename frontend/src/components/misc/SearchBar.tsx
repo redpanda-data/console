@@ -2,7 +2,7 @@ import { Checkbox, Input } from 'antd';
 import { AnimatePresence } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component } from 'react'
+import React, { Component } from 'react';
 import { animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
 import { clone } from '../../utils/jsonUtils';
@@ -43,14 +43,14 @@ class SearchBar<TItem> extends Component<{
             transaction(() => {
                 setImmediate(() => {
                     this.props.onFilteredDataChanged(data);
-                })
+                });
             });
         });
     }
 
     onChange(e: React.ChangeEvent<HTMLInputElement>) {
-        this.filteredSource.filterText = e.target.value
-        this.props.onQueryChanged(e.target.value)
+        this.filteredSource.filterText = e.target.value;
+        this.props.onQueryChanged(e.target.value);
     }
 
     componentWillUnmount() {
@@ -76,7 +76,7 @@ class SearchBar<TItem> extends Component<{
             />
 
             <this.FilterSummary />
-        </div>
+        </div>;
     }
 
     Settings = observer(() => {
@@ -84,7 +84,7 @@ class SearchBar<TItem> extends Component<{
             <Checkbox checked={true}>Column 1</Checkbox>
             <div style={{ height: 1, margin: '1em 0', background: '#0003' }} />
             <Checkbox>Case-Sensitive</Checkbox>
-        </div>
+        </div>;
     })
 
     FilterSummary = observer((() => {
@@ -104,7 +104,8 @@ class SearchBar<TItem> extends Component<{
                 }
             </AnimatePresence>
 
-        )
+        );
+        // eslint-disable-next-line no-extra-bind
     }).bind(this));
 
     computeFilterSummary(): { identity: string, node: React.ReactNode } | null {
@@ -125,9 +126,9 @@ class SearchBar<TItem> extends Component<{
         if (sourceLength == resultLength)
             return { identity: 'all', node: <span>Filter matched everything</span> };
 
-        return { identity: 'r', node: <span><span style={{ fontWeight: 600 }}>{this.filteredSource.data.length}</span> results</span> }
+        return { identity: 'r', node: <span><span style={{ fontWeight: 600 }}>{this.filteredSource.data.length}</span> results</span> };
     }
 
 }
 
-export default SearchBar
+export default SearchBar;

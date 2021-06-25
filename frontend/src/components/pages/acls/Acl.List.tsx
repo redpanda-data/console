@@ -16,6 +16,7 @@ import Card from "../../misc/Card";
 import { DefaultSkeleton, Label } from "../../../utils/tsxUtils";
 import { LockIcon } from "@primer/octicons-v2-react";
 import { toJson } from "../../../utils/jsonUtils";
+import { KowlTable } from "../../misc/KowlTable";
 
 
 type AclRuleFlat = AclResource & AclRule
@@ -28,12 +29,8 @@ type AclRuleFlat = AclResource & AclRule
 @observer
 class AclList extends PageComponent {
 
-    pageConfig = makePaginationConfig(100, true);
-
     @observable filteredBrokers: Broker[];
-
     @observable resourceTypeFilter: string = "";
-
     @observable filterText = "";
 
     constructor(p: any) {
@@ -87,14 +84,14 @@ class AclList extends PageComponent {
                     {warning}
                     {noAclAuthorizer}
 
-                    <Table
-                        style={{ margin: '0', padding: '0' }} size={'middle'}
-                        pagination={this.pageConfig}
-                        onChange={x => { if (x.pageSize) { this.pageConfig.pageSize = uiSettings.brokerList.pageSize = x.pageSize } }}
+                    <KowlTable
                         dataSource={resources}
+                        columns={columns}
+
+                        observableSettings={uiSettings.brokerList.configTable}
+
                         rowKey={x => x.eqKey}
                         rowClassName={() => 'pureDisplayRow'}
-                        columns={columns}
                     />
                 </Card>
             </motion.div>
@@ -192,9 +189,9 @@ const PermissionDenied = <>
                     <h2><span><LockIcon verticalAlign='middle' size={20} /></span> Permission Denied</h2>
                     <p>
                         You are not allowed to view this page.
-                            <br />
-                            Contact the administrator if you think this is an error.
-                        </p>
+                        <br />
+                        Contact the administrator if you think this is an error.
+                    </p>
                 </div>
 
                 <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/authorization/roles.md">

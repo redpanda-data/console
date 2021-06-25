@@ -7,12 +7,12 @@ export class RestTimeoutError extends Error {
     }
 }
 
-export default function (url: RequestInfo, timeoutMs: number, options?: RequestInit): Promise<Response> {
+export default function fetchWithTimeout(url: RequestInfo, timeoutMs: number, options?: RequestInit): Promise<Response> {
 
     const requestPromise = fetch(url, options);
     const timeoutPromise = new Promise<Response>((_, reject) => {
         setTimeout(() => {
-            reject(new RestTimeoutError("Request timed out after " + (timeoutMs / 1000).toFixed(1) + " sec: " + url))
+            reject(new RestTimeoutError("Request timed out after " + (timeoutMs / 1000).toFixed(1) + " sec: " + url));
         }, timeoutMs);
     });
 

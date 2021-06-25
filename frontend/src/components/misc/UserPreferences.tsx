@@ -1,5 +1,5 @@
 import React, { Component, ReactNode } from 'react';
-import { observer } from "mobx-react"
+import { observer } from "mobx-react";
 import { Menu, Select, Avatar, Popconfirm, Dropdown, Button, Modal, Input, message, Checkbox, InputNumber } from 'antd';
 import { uiSettings } from '../../state/ui';
 import { RenderTrap, Spacer } from './common';
@@ -12,6 +12,16 @@ import { makeObservable, observable } from 'mobx';
 
 const { Option } = Select;
 type Action = () => void;
+
+const settingsTabs: { name: string, component: () => ReactNode }[] = [
+    { name: "Statistics Bar", component: () => <StatsBarTab /> },
+    { name: "Json Viewer", component: () => <JsonViewerTab /> },
+
+    // pagination position
+    // { name: "Message Search", component: () => <MessageSearchTab /> },
+    // { name: "Import/Export", component: () => <ImportExportTab /> },
+];
+
 
 @observer
 export class UserPreferencesButton extends Component {
@@ -29,7 +39,7 @@ export class UserPreferencesButton extends Component {
             <Button shape='circle' icon={<ToolsIcon size={17} />} className='hoverButton userPreferencesButton'
                 onClick={() => this.isOpen = true}
             />
-        </>
+        </>;
     }
 }
 
@@ -85,18 +95,11 @@ export class UserPreferencesDialog extends Component<{ visible: boolean, onClose
                         {tab?.component()}
                     </div>
                 </div>
-            </Modal>
+            </Modal>;
     }
 }
 
-const settingsTabs: { name: string, component: () => ReactNode }[] = [
-    { name: "Statistics Bar", component: () => <StatsBarTab /> },
-    { name: "Json Viewer", component: () => <JsonViewerTab /> },
 
-    // pagination position
-    // { name: "Message Search", component: () => <MessageSearchTab /> },
-    // { name: "Import/Export", component: () => <ImportExportTab /> },
-];
 
 @observer
 class StatsBarTab extends Component {
@@ -111,7 +114,7 @@ class StatsBarTab extends Component {
                     <Checkbox children='Enabled' checked={uiSettings.consumerGroupDetails.showStatisticsBar} onChange={e => uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked} />
                 </Label>
             </div>
-        </div>
+        </div>;
     }
 }
 
@@ -134,7 +137,7 @@ class JsonViewerTab extends Component {
                     <InputNumber value={settings.maxStringLength} onChange={e => settings.maxStringLength = e} min={0} max={10000} style={{ maxWidth: '150px' }} />
                 </Label>
             </div>
-        </div>
+        </div>;
     }
 }
 
@@ -164,7 +167,7 @@ class ImportExportTab extends Component {
             </Label>
 
             <Label text='Export'>
-                <Button onClick={() => { message.success('Preferences copied to clipboard!') }}>
+                <Button onClick={() => { message.success('Preferences copied to clipboard!'); }}>
                     Export User Preferences
                 </Button>
             </Label>
@@ -176,11 +179,11 @@ class ImportExportTab extends Component {
                             placeholder='type "reset" here to confirm and enable the button'
                             value={this.resetConfirm}
                             onChange={str => this.resetConfirm = str.target.value} />
-                        <Button onClick={() => { message.success('Preferences copied to clipboard!') }} danger disabled={this.resetConfirm != 'reset'}>Reset</Button>
+                        <Button onClick={() => { message.success('Preferences copied to clipboard!'); }} danger disabled={this.resetConfirm != 'reset'}>Reset</Button>
                     </div>
                     <span className='smallText'>Clear all your user settings, resetting them to the default values</span>
                 </div>
             </Label>
-        </>
+        </>;
     }
 }
