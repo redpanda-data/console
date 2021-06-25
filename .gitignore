@@ -18,3 +18,5 @@ requests.txt
 
 # Local Formatting
 .prettierrc
+
+docker-compose.yml
