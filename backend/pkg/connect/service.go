@@ -87,7 +87,13 @@ type GetClusterShard struct {
 	ClusterName    string       `json:"clusterName"`
 	ClusterAddress string       `json:"clusterAddress"`
 	ClusterInfo    RootResource `json:"clusterInfo"`
-	Error          string       `json:"error,omitempty"`
+
+	TotalConnectors   int `json:"totalConnectors"`
+	RunningConnectors int `json:"runningConnectors"`
+	TotalTasks        int `json:"totalTasks"`
+	RunningTasks      int `json:"runningTasks"`
+
+	Error string `json:"error,omitempty"`
 }
 
 // GetClusters returns the merged root responses across all configured Connect clusters. Requests will be
@@ -97,19 +103,47 @@ func (s *Service) GetClusters(ctx context.Context) []GetClusterShard {
 	ch := make(chan GetClusterShard, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
 		go func(cfg ConfigCluster, c *Client) {
+			logger := s.Logger.With(zap.String("cluster_name", cfg.Name), zap.String("cluster_address", cfg.URL))
 			clusterInfo, err := c.GetRoot(ctx)
-			errMsg := ""
+			shard := GetClusterShard{
+				ClusterName:     cfg.Name,
+				ClusterAddress:  cfg.URL,
+				ClusterInfo:     clusterInfo,
+				TotalTasks:      -1,
+				TotalConnectors: -1,
+				Error:           "",
+			}
 			if err != nil {
-				s.Logger.Warn("failed to get cluster info from Kafka connect cluster",
-					zap.String("cluster_name", cfg.Name), zap.String("cluster_address", cfg.URL), zap.Error(err))
-				errMsg = err.Error()
+				logger.Warn("failed to get cluster info from Kafka connect cluster", zap.Error(err))
+				shard.Error = err.Error()
+				ch <- shard
+				return
 			}
-			ch <- GetClusterShard{
-				ClusterName:    cfg.Name,
-				ClusterAddress: cfg.URL,
-				ClusterInfo:    clusterInfo,
-				Error:          errMsg,
+
+			connectors, err := c.ListConnectorsExpanded(ctx, ListConnectorsOptions{ExpandStatus: true})
+			if err != nil {
+				logger.Warn("failed to list connectors with status from Kafka connect cluster", zap.Error(err))
+				shard.Error = err.Error()
+				ch <- shard
+				return
 			}
+			shard.TotalTasks = 0
+			shard.TotalConnectors = 0
+			for _, connector := range connectors {
+				shard.TotalConnectors++
+				if connector.Status.Connector.State == "RUNNING" {
+					shard.RunningConnectors++
+				}
+
+				for _, task := range connector.Status.Tasks {
+					shard.TotalTasks++
+					if task.State == "RUNNING" {
+						shard.RunningTasks++
+					}
+				}
+			}
+			ch <- shard
+
 		}(cluster.Cfg, cluster.Client)
 	}
 
