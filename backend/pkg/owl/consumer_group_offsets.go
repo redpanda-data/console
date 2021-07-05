@@ -108,25 +108,21 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 		}
 	}
 
-	highMarkRes, err := s.kafkaSvc.ListOffsets(ctx, topicPartitions, kafka.TimestampLatest)
-	if err != nil {
-		return nil, err
-	}
+	highMarkRes := s.kafkaSvc.ListOffsets(ctx, topicPartitions, kafka.TimestampLatest)
 
 	// 3. Format high water marks
-	for _, topic := range highMarkRes.Topics {
-		for _, partition := range topic.Partitions {
-			err := kerr.ErrorForCode(partition.ErrorCode)
+	for topicName, partitions := range highMarkRes {
+		for pID, partition := range partitions {
 			if err != nil {
-				partitionInfoByIDAndTopic[topic.Topic][partition.Partition] = partitionInfo{
-					PartitionID:   partition.Partition,
+				partitionInfoByIDAndTopic[topicName][pID] = partitionInfo{
+					PartitionID:   pID,
 					Error:         err.Error(),
 					HighWaterMark: -1,
 				}
 				continue
 			}
-			partitionInfoByIDAndTopic[topic.Topic][partition.Partition] = partitionInfo{
-				PartitionID:   partition.Partition,
+			partitionInfoByIDAndTopic[topicName][pID] = partitionInfo{
+				PartitionID:   pID,
 				HighWaterMark: partition.Offset,
 			}
 		}

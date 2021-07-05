@@ -43,7 +43,7 @@ type TopicPartitionDetails struct {
 type TopicPartitionMetadata struct {
 	ID int32 `json:"id"`
 
-	// Error should only be set if the metadata request for this partition has failed
+	// Err should only be set if the metadata request for this partition has failed
 	PartitionError string `json:"partitionError,omitempty"`
 
 	// Replicas returns all broker IDs containing replicas of this partition.
@@ -63,7 +63,7 @@ type TopicPartitionMetadata struct {
 type TopicPartitionMarks struct {
 	PartitionID int32 `json:"-"`
 
-	// Error indicates whether there was an issue fetching the watermarks for this partition.
+	// Err indicates whether there was an issue fetching the watermarks for this partition.
 	WaterMarksError string `json:"waterMarksError,omitempty"`
 
 	// Low water mark for this partition
@@ -166,7 +166,7 @@ func (s *Service) GetTopicDetails(ctx context.Context, topicNames []string) ([]T
 				},
 				TopicPartitionMarks: &TopicPartitionMarks{
 					PartitionID:     partitionMarks.PartitionID,
-					WaterMarksError: partitionMarks.Error,
+					WaterMarksError: errToString(partitionMarks.Error),
 					Low:             partitionMarks.Low,
 					High:            partitionMarks.High,
 				},
@@ -215,9 +215,8 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []st
 			}
 			err := kerr.TypedErrorForCode(partition.ErrorCode)
 			if err != nil {
-				s.logger.Warn("failed to get metadata for partition", zap.String("topic", topic.Topic),
-					zap.Int32("partition_id", partition.Partition),
-					zap.Error(err))
+				// We don't log the error because in case of offline partitions an error would be expected, but would
+				// still contain all the necessary partition information.
 
 				// Propagate the failed response and do not even try any further requests for that partition.
 				metadata.PartitionError = fmt.Sprintf("Failed to get metadata for partition: %v", err.Error())

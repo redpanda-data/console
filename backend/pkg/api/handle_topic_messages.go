@@ -130,7 +130,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			}
 		}
 
-		interpreterCode, _ := req.DecodeInterpreterCode() // Error has been checked in validation function
+		interpreterCode, _ := req.DecodeInterpreterCode() // Err has been checked in validation function
 
 		// Request messages from kafka and return them once we got all the messages or the context is done
 		listReq := owl.ListMessageRequest{

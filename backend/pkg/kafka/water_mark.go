@@ -3,7 +3,6 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -18,33 +17,25 @@ const (
 type PartitionMarks struct {
 	PartitionID int32
 	// Error indicates whether there was an issue fetching the watermarks for this partition.
-	Error string
+	Error error
 
 	Low  int64
 	High int64
 }
 
-// GetPartitionMarks returns a map of: partitionID -> PartitionMarks
+// GetPartitionMarksBulk returns a map of: topicName -> partitionID -> PartitionMarks
 func (s *Service) GetPartitionMarksBulk(ctx context.Context, topicPartitions map[string][]int32) (map[string]map[int32]*PartitionMarks, error) {
 	// Send low & high watermark request in parallel
 	g, ctx := errgroup.WithContext(ctx)
 
-	var lowWaterMarks *kmsg.ListOffsetsResponse
-	var highWaterMarks *kmsg.ListOffsetsResponse
+	var lowWaterMarks map[string]map[int32]ListOffsetsResponseTopicPartition
+	var highWaterMarks map[string]map[int32]ListOffsetsResponseTopicPartition
 	g.Go(func() error {
-		oldestOffsets, err := s.ListOffsets(ctx, topicPartitions, TimestampEarliest)
-		if err != nil {
-			return err
-		}
-		lowWaterMarks = oldestOffsets
+		lowWaterMarks = s.ListOffsets(ctx, topicPartitions, TimestampEarliest)
 		return nil
 	})
 	g.Go(func() error {
-		latestOffsets, err := s.ListOffsets(ctx, topicPartitions, TimestampLatest)
-		if err != nil {
-			return err
-		}
-		highWaterMarks = latestOffsets
+		highWaterMarks = s.ListOffsets(ctx, topicPartitions, TimestampLatest)
 		return nil
 	})
 
@@ -61,7 +52,7 @@ func (s *Service) GetPartitionMarksBulk(ctx context.Context, topicPartitions map
 		for _, partitionID := range partitionIDs {
 			result[topic][partitionID] = &PartitionMarks{
 				PartitionID: partitionID,
-				Error:       "",
+				Error:       nil,
 				Low:         -1, // -1 indicates that this offset has not yet been loaded
 				High:        -1, // -1 indicates that this offset has not yet been loaded
 			}
@@ -69,27 +60,19 @@ func (s *Service) GetPartitionMarksBulk(ctx context.Context, topicPartitions map
 	}
 
 	// Iterate on all low watermarks and put the partial information into the result map
-	for _, topic := range lowWaterMarks.Topics {
-		for _, partition := range topic.Partitions {
-			err := kerr.TypedErrorForCode(partition.ErrorCode)
-			if err != nil {
-				result[topic.Topic][partition.Partition].Error = err.Error()
-				continue
-			}
-			result[topic.Topic][partition.Partition].Low = partition.Offset
+	for topicName, topic := range lowWaterMarks {
+		for pID, partitionOffset := range topic {
+			result[topicName][pID].Low = partitionOffset.Offset
+			result[topicName][pID].Error = partitionOffset.Err
 		}
 	}
 
 	// Enrich the partial information with the high water mark offsets. This loop is slightly different because
 	// we check for existing errors and skip that.
-	for _, topic := range highWaterMarks.Topics {
-		for _, partition := range topic.Partitions {
-			err := kerr.TypedErrorForCode(partition.ErrorCode)
-			if err != nil {
-				result[topic.Topic][partition.Partition].Error = err.Error()
-				continue
-			}
-			result[topic.Topic][partition.Partition].High = partition.Offset
+	for topicName, topic := range highWaterMarks {
+		for pID, partitionOffset := range topic {
+			result[topicName][pID].High = partitionOffset.Offset
+			result[topicName][pID].Error = partitionOffset.Err
 		}
 	}
 
@@ -111,8 +94,16 @@ func (s *Service) GetPartitionMarks(ctx context.Context, topic string, partition
 	return partitionMarksByTopic[topic], nil
 }
 
-// ListOffsets returns a nested map of: topic -> partitionID -> high water mark offset of all available partitions
-func (s *Service) ListOffsets(ctx context.Context, topicPartitions map[string][]int32, timestamp int64) (*kmsg.ListOffsetsResponse, error) {
+type ListOffsetsResponseTopicPartition struct {
+	PartitionID int32
+	Offset      int64
+	Timestamp   int64
+	Err         error
+}
+
+// ListOffsets returns a nested map of: topic -> partitionID -> offset. Each partition may have an error because the
+// leader is not available to answer the requests, because the partition is offline etc.
+func (s *Service) ListOffsets(ctx context.Context, topicPartitions map[string][]int32, timestamp int64) map[string]map[int32]ListOffsetsResponseTopicPartition {
 	topicRequests := make([]kmsg.ListOffsetsRequestTopic, 0, len(topicPartitions))
 
 	for topic, partitionIDs := range topicPartitions {
@@ -136,11 +127,57 @@ func (s *Service) ListOffsets(ctx context.Context, topicPartitions map[string][]
 	req := kmsg.ListOffsetsRequest{
 		Topics: topicRequests,
 	}
-	res, err := req.RequestWith(ctx, s.KafkaClient)
-	if err != nil {
-		s.Logger.Error("failed to request topic offsets", zap.Error(err))
-		return nil, fmt.Errorf("failed to request topic offsets: %w", err)
+	resShards := s.KafkaClient.RequestSharded(ctx, &req)
+
+	partitionsByTopic := make(map[string]map[int32]ListOffsetsResponseTopicPartition)
+	for _, shard := range resShards {
+		err := shard.Err
+		if err != nil {
+			shardReq, ok := shard.Req.(*kmsg.ListOffsetsRequest)
+			if !ok {
+				s.Logger.Fatal("failed to cast ListOffsetsRequest")
+			}
+
+			// Create an entry for each failed shard so that we each failed partition is visible too
+			for _, topic := range shardReq.Topics {
+				partitions, ok := partitionsByTopic[topic.Topic]
+				if !ok {
+					partitions = make(map[int32]ListOffsetsResponseTopicPartition)
+				}
+				for _, p := range topic.Partitions {
+					partitions[p.Partition] = ListOffsetsResponseTopicPartition{
+						PartitionID: p.Partition,
+						Offset:      -1,
+						Timestamp:   timestamp,
+						Err:         err,
+					}
+				}
+				partitionsByTopic[topic.Topic] = partitions
+			}
+			continue
+		}
+
+		// Create an entry for each successfully requested partition
+		res, ok := shard.Resp.(*kmsg.ListOffsetsResponse)
+		if !ok {
+			s.Logger.Fatal("failed to cast ListOffsetsResponse")
+		}
+		for _, topic := range res.Topics {
+			partitions, ok := partitionsByTopic[topic.Topic]
+			if !ok {
+				partitions = make(map[int32]ListOffsetsResponseTopicPartition)
+			}
+			for _, p := range topic.Partitions {
+				partitions[p.Partition] = ListOffsetsResponseTopicPartition{
+					PartitionID: p.Partition,
+					Offset:      p.Offset,
+					Timestamp:   p.Timestamp,
+					Err:         nil,
+				}
+			}
+			partitionsByTopic[topic.Topic] = partitions
+		}
 	}
 
-	return res, nil
+	return partitionsByTopic
 }
