@@ -3,6 +3,8 @@ package owl
 import (
 	"context"
 	"fmt"
+
+	"go.uber.org/zap"
 )
 
 type SchemaDetails struct {
@@ -31,7 +33,11 @@ func (s *Service) GetSchemaDetails(_ context.Context, subject string, version st
 
 	cfgRes, err := s.kafkaSvc.SchemaService.GetSubjectConfig(subject)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get compatibility for given subject: %w", err)
+		s.logger.Error("failed to get compatibility for given subject: %w", zap.Error(err))
+		cfgRes, err = s.kafkaSvc.SchemaService.GetConfig()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get compatibility for given subject: %w", err)
+		}
 	}
 
 	return &SchemaDetails{
