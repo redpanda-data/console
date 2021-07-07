@@ -626,7 +626,8 @@ export interface SchemaDetails {
     schemaId: number;
     version: number;
     compatibility: string;
-    schema: Schema;
+    type: string;
+    schema: Schema | JsonSchema;
     registeredVersions: number[];
 }
 
@@ -636,6 +637,20 @@ export interface Schema {
     namespace: string;
     type: string;
     fields: SchemaField[];
+}
+
+export interface JsonSchema {
+  $id: string;
+  type: string;
+  title: string;
+  description: string;
+  properties?: Record<string, JsonField>;
+}
+
+export interface JsonField {
+  type: string;
+  items?: JsonField[];
+  properties?: Record<string, JsonField>;
 }
 
 export interface SchemaField {

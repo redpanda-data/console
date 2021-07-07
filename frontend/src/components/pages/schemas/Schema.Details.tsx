@@ -10,8 +10,9 @@ import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { KowlJsonView } from '../../misc/KowlJsonView';
 import { sortField } from '../../misc/common';
-import { SchemaField } from '../../../state/restInterfaces';
+import { Schema, SchemaField, JsonSchema} from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
+import { title } from 'process';
 
 export interface SchemaDetailsProps {
     subjectName: string;
@@ -55,8 +56,22 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
             schemaId,
             version,
             compatibility,
-            schema: { type, name, namespace, doc, fields },
+            type: schemaType,
+            schema
         } = api.schemaDetails;
+        let { type, name, namespace, doc, fields }  = schema as Schema;
+
+        if (  schemaType === "JSON" ) {
+          const jsonSchema = schema as JsonSchema;
+          ({type, title: name, description: doc, $id: namespace} = jsonSchema);
+          fields = [];
+          if ( jsonSchema.properties ) {
+            for (const p in jsonSchema.properties) {
+              const property = jsonSchema.properties[p];
+              fields.push ({ name: p,  type: property.type })
+            }
+          }
+        }
 
         const versions = api.schemaDetails?.registeredVersions ?? [];
 

@@ -741,7 +741,12 @@ const apiStore = {
         const rq = cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
 
         return rq
-            .then(({ schemaDetails }) => (this.schemaDetails = schemaDetails))
+            .then(({ schemaDetails }) => { 
+              if ( schemaDetails && typeof schemaDetails.schema === "string" && schemaDetails.type !== "PROTOBUF") {
+                schemaDetails.schema = JSON.parse(schemaDetails.schema);
+              }
+              this.schemaDetails = schemaDetails
+            })
             .catch(addError);
     },
 
