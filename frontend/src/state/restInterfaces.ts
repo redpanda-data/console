@@ -626,6 +626,7 @@ export enum SchemaType {
     "JSON",
     "PROTOBUF",
 }
+
 export interface SchemaDetails {
     string: string;
     schemaId: number;
