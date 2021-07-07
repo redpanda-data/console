@@ -621,12 +621,17 @@ export interface SchemaDetailsResponse {
     schemaDetails: SchemaDetails
 }
 
+export enum SchemaType {
+    "AVRO",
+    "JSON",
+    "PROTOBUF",
+}
 export interface SchemaDetails {
     string: string;
     schemaId: number;
     version: number;
     compatibility: string;
-    type: string;
+    type: SchemaType;
     schema: Schema | JsonSchema;
     registeredVersions: number[];
 }

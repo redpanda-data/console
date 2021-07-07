@@ -137,7 +137,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 	}
 
 	// 2. Test for json schema
-	if payload[0] == byte(0) {
+	if d.SchemaService != nil && len(payload) > 5 && payload[0] == byte(0) {
 		schemaID := binary.BigEndian.Uint32(payload[1:5])
 		trimmed := bytes.TrimLeft(payload[5:], " \t\r\n")
 		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
