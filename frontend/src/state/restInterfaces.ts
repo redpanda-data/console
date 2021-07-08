@@ -622,9 +622,9 @@ export interface SchemaDetailsResponse {
 }
 
 export enum SchemaType {
-    "AVRO",
-    "JSON",
-    "PROTOBUF",
+    AVRO="AVRO",
+    JSON="JSON",
+    PROTOBUF= "PROTOBUF",
 }
 
 export interface SchemaDetails {
@@ -645,9 +645,19 @@ export interface Schema {
     fields: SchemaField[];
 }
 
+export enum JsonFieldType {
+    STRING="string",
+    NUMBER="number",
+    INTEGER= "integer",
+    OBJECT="object",
+    ARRAY="array",
+    BOOLEAN="boolean",
+    NULL="null"
+}
+
 export interface JsonSchema {
   $id: string;
-  type: string;
+  type: JsonFieldType;
   title: string;
   description: string;
   properties?: Record<string, JsonField>;
@@ -655,7 +665,7 @@ export interface JsonSchema {
 
 export interface JsonField {
   type: string;
-  items?: JsonField[];
+  items?: JsonField;
   properties?: Record<string, JsonField>;
 }
 
