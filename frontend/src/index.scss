@@ -653,13 +653,21 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             }
 
             .menuIcon {
+                $size: 22px;
+
                 display: inline-flex;
-                width: 22px;
+                width: $size;
                 margin: 0;
 
                 transition:
                     margin 200ms ease-out,
                     margin-left 200ms ease-out;
+
+                // Safari
+                // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
+                svg {
+                    width: $size;
+                }
             }
 
             &::before {

@@ -3,12 +3,13 @@ package owl
 import (
 	"context"
 	"fmt"
+	"math"
+	"time"
+
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
-	"math"
-	"time"
 )
 
 const (
@@ -289,7 +290,7 @@ func (s *Service) requestOffsetsByTimestamp(ctx context.Context, topicName strin
 		for _, partition := range topic.Partitions {
 			typedErr := kerr.TypedErrorForCode(partition.ErrorCode)
 			if typedErr != nil {
-				return nil, fmt.Errorf("failed to get timestamp for at least one partition. Inner Kafka error: %w", typedErr.Error())
+				return nil, fmt.Errorf("failed to get timestamp for at least one partition. Inner Kafka error: %w", typedErr)
 			}
 			offsetByPartition[partition.Partition] = partition.Offset
 		}

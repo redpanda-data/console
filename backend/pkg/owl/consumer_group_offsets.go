@@ -76,15 +76,36 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 		return nil, fmt.Errorf("failed to get topic metadata: %w", err)
 	}
 
+	// topicPartitions whose high water mark shall be requested
 	topicPartitions := make(map[string][]int32, len(topicNames))
-	for _, topic := range metadata.Topics {
-		partitionIDs, err := s.kafkaSvc.PartitionsToPartitionIDs(topic.Partitions)
-		if err != nil {
-			s.logger.Error("failed to fetch partition list for calculating the group lags", zap.String("topic", topic.Topic), zap.Error(err))
-			return nil, fmt.Errorf("failed to fetch partition list for calculating the group lags: %w", err)
-		}
 
-		topicPartitions[topic.Topic] = partitionIDs
+	type partitionInfo struct {
+		PartitionID   int32
+		Error         string
+		HighWaterMark int64
+	}
+	partitionInfoByIDAndTopic := make(map[string]map[int32]partitionInfo)
+
+	for _, topic := range metadata.Topics {
+		topicName := topic.Topic
+		partitionInfoByIDAndTopic[topic.Topic] = make(map[int32]partitionInfo)
+
+		for _, partition := range topic.Partitions {
+			partitionID := partition.Partition
+			err := kerr.ErrorForCode(partition.ErrorCode)
+			errMsg := ""
+			if err != nil {
+				errMsg = err.Error()
+			} else {
+				// Not an offline partition, so let's try to request this partition's high watermark
+				topicPartitions[topicName] = append(topicPartitions[topicName], partitionID)
+			}
+			partitionInfoByIDAndTopic[topic.Topic][partitionID] = partitionInfo{
+				PartitionID:   partitionID,
+				Error:         errMsg,
+				HighWaterMark: -1, // Not yet requested
+			}
+		}
 	}
 
 	highMarkRes, err := s.kafkaSvc.ListOffsets(ctx, topicPartitions, kafka.TimestampLatest)
@@ -93,26 +114,20 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 	}
 
 	// 3. Format high water marks
-	type highMark struct {
-		PartitionID int32
-		Error       string
-		Offset      int64
-	}
-	highWaterMarks := make(map[string]map[int32]highMark)
 	for _, topic := range highMarkRes.Topics {
-		highWaterMarks[topic.Topic] = make(map[int32]highMark)
 		for _, partition := range topic.Partitions {
 			err := kerr.ErrorForCode(partition.ErrorCode)
 			if err != nil {
-				highWaterMarks[topic.Topic][partition.Partition] = highMark{
-					PartitionID: partition.Partition,
-					Error:       err.Error(),
-					Offset:      -1,
+				partitionInfoByIDAndTopic[topic.Topic][partition.Partition] = partitionInfo{
+					PartitionID:   partition.Partition,
+					Error:         err.Error(),
+					HighWaterMark: -1,
 				}
+				continue
 			}
-			highWaterMarks[topic.Topic][partition.Partition] = highMark{
-				PartitionID: partition.Partition,
-				Offset:      partition.Offset,
+			partitionInfoByIDAndTopic[topic.Topic][partition.Partition] = partitionInfo{
+				PartitionID:   partition.Partition,
+				HighWaterMark: partition.Offset,
 			}
 		}
 	}
@@ -125,7 +140,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 			// In this scope we iterate on a single group's, single topic's offset
 			childLogger := s.logger.With(zap.String("group", group), zap.String("topic", topic))
 
-			highWaterMarks, ok := highWaterMarks[topic]
+			highWaterMarks, ok := partitionInfoByIDAndTopic[topic]
 			if !ok {
 				childLogger.Error("no partition watermark for the group's topic available")
 				return nil, fmt.Errorf("no partition watermark for the group's topic available")
@@ -152,7 +167,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 				}
 				t.PartitionsWithOffset++
 
-				lag := watermark.Offset - groupOffset
+				lag := watermark.HighWaterMark - groupOffset
 				if lag < 0 {
 					// If Watermark has been updated after we got the group offset lag could be negative, which ofc doesn't make sense
 					lag = 0
@@ -161,7 +176,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 				t.PartitionOffsets = append(t.PartitionOffsets, PartitionOffsets{
 					PartitionID:   pID,
 					GroupOffset:   groupOffset,
-					HighWaterMark: watermark.Offset,
+					HighWaterMark: watermark.HighWaterMark,
 					Lag:           lag})
 			}
 			topicLags = append(topicLags, t)
