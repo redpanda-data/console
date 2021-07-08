@@ -5,6 +5,7 @@ import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
 import { AclRequest, AclRequestDefault } from "./restInterfaces";
 import { TableSettings } from "../components/misc/KowlTable";
+import { ConnectTabKeys } from "../components/pages/connect/Connect.Overview";
 
 const settingsName = 'uiSettings-v3';
 
@@ -210,7 +211,13 @@ const uiSettings = observable({
         viewMode: 'fields' as 'json' | 'fields',
     },
 
-    previewNotificationHideUntil: 0, // utc seconds
+    kafkaConnect: {
+        selectedTab: 'clusters' as ConnectTabKeys,
+
+        clusters: {},
+        connectors: {},
+        tasks: {},
+    },
 
     userDefaults: {
         paginationPosition: 'bottomRight' as ('bottomRight' | 'topRight'),

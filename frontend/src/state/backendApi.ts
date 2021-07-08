@@ -7,11 +7,11 @@ import {
     TopicDocumentationResponse, AclRequest, AclResponse, SchemaOverview, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
     TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
     PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
-    AclRequestDefault, AclResourceType, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, 
-    AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, 
-    EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, 
-    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset, 
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest
+    AclRequestDefault, AclResourceType, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType,
+    AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest,
+    EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
+    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, KafkaConnectors, ConnectClusters, KafkaConnectorInfoWithStatus, ListConnectorsExpanded
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -49,20 +49,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
 
     processVersionInfo(res);
 
-    if (!res.ok) {
-        const text = await res.text();
-        try {
-            const errObj = JSON.parse(text) as ApiError;
-            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
-                // if the shape matches, reformat it a bit
-                throw new Error(`${errObj.message} (${res.status} - ${res.statusText})`);
-            }
-        }
-        catch { } // response is not json
-
-        // use generic error text
-        throw new Error(`${text} (${res.status} - ${res.statusText})`);
-    }
+    await tryHandleApiError(res);
 
     const str = await res.text();
     // console.log('json: ' + str);
@@ -215,6 +202,12 @@ const apiStore = {
     consumerGroupAcls: new Map<string, AclResponse | null>(),
 
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
+
+    // connectConnectors: undefined as (KafkaConnectors | undefined),
+    connectClusters: undefined as (ConnectClusters | undefined),
+    connectClusterConnectors: new Map<string, Map<string, ListConnectorsExpanded>>(), // clusterName -> connector -> status
+    connectClusterConnectorDetails: new Map<string, Map<string, KafkaConnectorInfoWithStatus>>(), // clusterName -> connector -> status
+
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -396,20 +389,7 @@ const apiStore = {
             ]
         });
 
-        if (!response.ok) {
-            const text = await response.text();
-            try {
-                const errObj = JSON.parse(text) as ApiError;
-                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
-                    // if the shape matches, reformat it a bit
-                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
-                }
-            }
-            catch { } // not json
-
-            // use generic error text
-            throw new Error(`${text} (${response.status} - ${response.statusText})`);
-        }
+        await tryHandleApiError(response);
 
         const str = await response.text();
         const data = (JSON.parse(str) as GetTopicOffsetsByTimestampResponse);
@@ -535,7 +515,7 @@ const apiStore = {
     },
 
     refreshTopicAcls(topicName: string, force?: boolean) {
-        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName})
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName })
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.topicAcls.set(topicName, v))
     },
@@ -608,7 +588,7 @@ const apiStore = {
     },
 
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
-        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName})
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName })
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.consumerGroupAcls.set(groupName, v))
     },
@@ -628,20 +608,7 @@ const apiStore = {
             body: toJson(request),
         });
 
-        if (!response.ok) {
-            const text = await response.text();
-            try {
-                const errObj = JSON.parse(text) as ApiError;
-                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
-                    // if the shape matches, reformat it a bit
-                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
-                }
-            }
-            catch { } // not json
-
-            // use generic error text
-            throw new Error(`${text} (${response.status} - ${response.statusText})`);
-        }
+        await tryHandleApiError(response);
 
         const str = await response.text();
         const data = (JSON.parse(str) as EditConsumerGroupOffsetsResponse);
@@ -664,23 +631,7 @@ const apiStore = {
             body: toJson(request),
         });
 
-        if (!response.ok) {
-            const text = await response.text();
-            let errObj;
-            try {
-                errObj = JSON.parse(text) as ApiError;
-                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
-                    // if the shape matches, reformat it a bit
-                    errObj = new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
-                }
-            }
-            catch { } // not json
-
-            if (errObj) throw errObj;
-
-            // use generic error text
-            throw new Error(`${text} (${response.status} - ${response.statusText})`);
-        }
+        await tryHandleApiError(response);
 
         const str = await response.text();
         const data = (JSON.parse(str) as DeleteConsumerGroupOffsetsResponse);
@@ -764,20 +715,7 @@ const apiStore = {
             body: toJson(request),
         });
 
-        if (!response.ok) {
-            const text = await response.text();
-            try {
-                const errObj = JSON.parse(text) as ApiError;
-                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
-                    // if the shape matches, reformat it a bit
-                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
-                }
-            }
-            catch { } // not json
-
-            // use generic error text
-            throw new Error(`${text} (${response.status} - ${response.statusText})`);
-        }
+        await tryHandleApiError(response);
 
         const str = await response.text();
         const data = (JSON.parse(str) as AlterPartitionReassignmentsResponse);
@@ -892,25 +830,91 @@ const apiStore = {
             body: toJson(request),
         });
 
-        if (!response.ok) {
-            const text = await response.text();
-            try {
-                const errObj = JSON.parse(text) as ApiError;
-                if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
-                    // if the shape matches, reformat it a bit
-                    throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
-                }
-            }
-            catch { } // not json
-
-            // use generic error text
-            throw new Error(`${text} (${response.status} - ${response.statusText})`);
-        }
+        await tryHandleApiError(response);
 
         const str = await response.text();
         const data = (JSON.parse(str) as PatchConfigsResponse);
         return data;
-    }
+    },
+
+
+    refreshConnectClusters(force?: boolean): void {
+        cachedApiRequest<ConnectClusters | null>('./api/kafka-connect/clusters', force)
+            .then(v => this.connectClusters = (v ?? undefined), addError);
+    },
+
+    // All, or for specific cluster
+    refreshConnectors(clusterName?: string, force?: boolean): Promise<void> {
+        const url = clusterName == null
+            ? './api/kafka-connect/connectors'
+            : `./api/kafka-connect/clusters/${clusterName}/connectors`;
+        return cachedApiRequest<KafkaConnectors | null>(url, force)
+            .then(v => {
+                if (v == null) {
+
+                }
+            }, addError);
+    },
+
+
+    // Details for one connector
+    refreshConnectorDetails(clusterName: string, connectorName: string, force?: boolean): void {
+        cachedApiRequest<KafkaConnectors | null>(`./api/kafka-connect/clusters/${clusterName}/connectors/${connectorName}`, force)
+            .then(v => {
+                //
+            }, addError);
+    },
+
+
+    async deleteConnector(clusterName: string, connector: string): Promise<ApiError | null> {
+        // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
+        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
+            method: 'DELETE',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+        await tryHandleApiError(response);
+        return null;
+    },
+
+    async pauseConnector(clusterName: string, connector: string): Promise<ApiError | null> {
+        // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
+        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/pause`, {
+            method: 'PUT',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+        await tryHandleApiError(response);
+        return null;
+    },
+
+    async resumeConnector(clusterName: string, connector: string): Promise<ApiError | null> {
+        // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
+        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/resume`, {
+            method: 'PUT',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+        await tryHandleApiError(response);
+        return null;
+    },
+
+    async restartConnector(clusterName: string, connector: string): Promise<ApiError | null> {
+        // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
+        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/restart`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+        await tryHandleApiError(response);
+        return null;
+    },
+
+
 }
 
 function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
@@ -967,20 +971,7 @@ export async function partialTopicConfigs(configKeys: string[], topics?: string[
 
     const response = await fetch('./api/topics-configs?' + query);
 
-    if (!response.ok) {
-        const text = await response.text();
-        try {
-            const errObj = JSON.parse(text) as ApiError;
-            if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
-                // if the shape matches, reformat it a bit
-                throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
-            }
-        }
-        catch { } // not json
-
-        // use generic error text
-        throw new Error(`${text} (${response.status} - ${response.statusText})`);
-    }
+    await tryHandleApiError(response);
 
     const str = await response.text();
     const data = (JSON.parse(str) as PartialTopicConfigsResponse);
@@ -995,6 +986,26 @@ export interface MessageSearchRequest {
     filterInterpreterCode: string, // js code, base64 encoded
 }
 
+
+async function tryHandleApiError(response: Response) {
+    if (response.ok) return;
+
+    const text = await response.text();
+    try {
+        const errObj = JSON.parse(text) as ApiError;
+        if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
+            // if the shape matches, reformat it a bit
+            throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
+        }
+    }
+    catch (err: any) {
+        // not json
+        console.log(`response code ${response.status} failed to parse response as 'ApiError'. response text:\n${text}`);
+    }
+
+    // use generic error text
+    throw new Error(`${text} (${response.status} - ${response.statusText})`);
+}
 
 function addError(err: Error) {
     api.errors.push(err);

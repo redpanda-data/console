@@ -772,8 +772,107 @@ export interface PatchConfigsRequest {
 
 export interface PatchConfigsResponse {
     patchedConfigs: {
-        error: string | null;
+        error?: string;
         resourceName: string;
         resourceType: ConfigResourceType;
     }[];
 }
+
+
+// GET "/kafka-connect/clusters"
+export interface ConnectClusters { // response
+    clusterShards: ConnectClusterShard[];
+    filtered: {
+        clusterCount: number;
+        connectorCount: number;
+    };
+}
+export interface ConnectClusterShard { // GetClusterShard
+    clusterName: string;
+    clusterAddress: string;
+    clusterInfo: { // RootResource
+        version: string;
+        commit: string;
+        kafka_cluster_id: string;
+    };
+
+    runningConnectors: number;
+    totalConnectors: number;
+    runningTasks: number;
+    totalTasks: number;
+
+    error?: string;
+}
+
+// GET "/kafka-connect/connectors"
+export interface KafkaConnectors { // response
+    connectorShards: GetConnectorsShard[];
+    filtered: {
+        clusterCount: number;
+        connectorCount: number;
+    };
+}
+
+
+// GET "/kafka-connect/clusters/{clusterName}/connectors"
+export interface GetConnectorsShard { // GetConnectorsShard
+    clusterName: string;
+    clusterAddress: string; // useless?
+    connectors: {
+        [connectorName: string]: ListConnectorsExpanded;
+    };
+    error?: string;
+}
+export interface ListConnectorsExpanded { // ListConnectorsResponseExpanded
+    info: null | {
+        name: string;
+        config: { [key: string]: string };
+        tasks: {
+            connector: string;
+            task: number;
+        }[];
+        type: string;
+    };
+    status: null | {
+        name: string;
+        Connector: {
+            state: string;
+            worker_id: string;
+        };
+        tasks: {
+            id: number;
+            state: string;
+            worker_id: string;
+        }[];
+        type: string;
+    };
+}
+
+
+// GET "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
+export interface KafkaConnectorInfoWithStatus { // ConnectorInfoWithStatus
+    // embedded ConnectorStateInfo
+    name: string;
+    connector: { // ConnectorState
+        state: string;
+        worker_id: string;
+    };
+    tasks: { // TaskState
+        id: number;
+        state: string;
+        worker_id: string;
+    }[];
+    type: string;
+
+    // Additional Props
+    config: {
+        [key: string]: string;
+    };
+}
+
+
+// DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
+// PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
+// PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
+// POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
+// all 4 return either nothing (code 200), or an ApiError
