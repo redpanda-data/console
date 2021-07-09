@@ -10,13 +10,22 @@ import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
 import { DefaultSkeleton, Label, InfoText } from "../../../utils/tsxUtils";
 import { BrokerList } from "./components/BrokerList";
 import ReassignPartitions, { PartitionSelection, } from "./ReassignPartitions";
-import { clone } from "../../../utils/jsonUtils";
+import { clone, toJson } from "../../../utils/jsonUtils";
 import { computeMovedReplicas } from "./logic/utils";
 import { uiSettings } from "../../../state/ui";
 import { IsDev } from "../../../utils/env";
 import { BandwidthSlider } from "./components/BandwidthSlider";
 
-export type PartitionWithMoves = Partition & { movedReplicas: number, brokersBefore: number[], brokersAfter: number[] };
+export type PartitionWithMoves = Partition & {
+    brokersBefore: number[],
+    brokersAfter: number[],
+    // numAddedBrokers = number of brokers that are "new" to the partition
+    // So only *new* brokers, not counting brokers that have previously (and maybe still are) hosted a replica of the partition
+    numAddedBrokers: number,
+    numRemovedBrokers: number,
+    changedLeader: boolean,
+    anyChanges: boolean, // if false, replica assignment is exactly as before
+};
 export type TopicWithMoves = { topicName: string; topic: Topic; allPartitions: Partition[]; selectedPartitions: PartitionWithMoves[]; };
 
 @observer
@@ -26,6 +35,8 @@ export class StepReview extends Component<{
     assignments: PartitionReassignmentRequest,
     reassignPartitions: ReassignPartitions, // since api is still changing, we pass parent down so we can call functions on it directly
 }> {
+    @observable unused: number = 0;
+
     pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeReview, true);
 
     constructor(p: any) {
@@ -64,11 +75,11 @@ export class StepReview extends Component<{
                         tooltip="The number of replicas that will be moved to a different broker."
                         maxWidth='180px'
                     >Reassignments</InfoText>,
-                render: (v, r) => r.selectedPartitions.sum(p => p.movedReplicas),
+                render: (v, r) => r.selectedPartitions.sum(p => p.numAddedBrokers),
             },
             {
                 width: 120, title: 'Estimated Traffic',
-                render: (v, r) => prettyBytesOrNA(r.selectedPartitions.sum(p => p.movedReplicas * p.replicaSize)),
+                render: (v, r) => prettyBytesOrNA(r.selectedPartitions.sum(p => p.numAddedBrokers * p.replicaSize)),
             },
         ];
 
@@ -134,7 +145,7 @@ export class StepReview extends Component<{
 
         const trafficStats = this.props.topicsWithMoves.map(t => {
             const partitionStats = t.selectedPartitions.map(p => {
-                const totalTraffic = p.replicaSize * p.movedReplicas;
+                const totalTraffic = p.replicaSize * p.numAddedBrokers;
 
                 if (totalTraffic == 0) {
                     // Moving zero replicas or replicas with zero size won't take any time
@@ -187,7 +198,7 @@ export class StepReview extends Component<{
                 : prettyMilliseconds(estimatedTimeSec * 1000, { secondsDecimalDigits: 0, unitCount: 2, verbose: true })
 
         const data = [
-            { title: 'Moved Replicas', value: this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.movedReplicas)) },
+            { title: 'Moved Replicas', value: this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.numAddedBrokers)) },
             { title: 'Total Traffic', value: "~" + prettyBytesOrNA(totalTraffic) },
             { title: 'Traffic Throttle', value: trafficThrottle },
             { title: 'Estimated Time', value: estimatedTime },
@@ -206,16 +217,6 @@ export class StepReview extends Component<{
                 </div>)}
             </div>
         </div>;
-    }
-
-    @computed get brokersAfter(): number[] {
-        const set = new Set<number>();
-        for (const t of this.props.assignments.topics)
-            for (const p of t.partitions)
-                if (p.replicas)
-                    for (const id of p.replicas)
-                        set.add(id);
-        return [...set.values()];
     }
 }
 
