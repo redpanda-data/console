@@ -1,15 +1,17 @@
 import { Component, ReactNode } from "react";
 import React from "react";
-import { Topic, } from "../../../state/restInterfaces";
-import { Table, Alert, } from "antd";
+import { Partition, Topic, } from "../../../state/restInterfaces";
+import { Table, Alert, Tooltip, Popover, } from "antd";
 import { observer } from "mobx-react";
 import { api, } from "../../../state/backendApi";
 import { sortField, makePaginationConfig } from "../../misc/common";
 import { MotionAlways } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
-import { numberToThousandsString, DefaultSkeleton, InfoText } from "../../../utils/tsxUtils";
+import { numberToThousandsString, DefaultSkeleton, InfoText, findPopupContainer, LayoutBypass } from "../../../utils/tsxUtils";
 import { BrokerList } from "../reassign-partitions/components/BrokerList";
+import { SkipIcon } from "@primer/octicons-v2-react";
+import { WarningTwoTone } from "@ant-design/icons";
 
 
 @observer
@@ -39,20 +41,35 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
             dataSource={partitions}
             rowKey={x => x.id.toString()}
             columns={[
-                { title: 'Partition ID', dataIndex: 'id', sorter: sortField('id'), defaultSortOrder: 'ascend' },
+                {
+                    title: 'Partition ID', dataIndex: 'id', sorter: sortField('id'), defaultSortOrder: 'ascend',
+                    render: (v, p) => !p.partitionError && !p.waterMarksError
+                        ? v
+                        : <span style={{ display: 'inline-flex', width: '100%' }}>
+                            <span>{v}</span>
+                            <span style={{ marginLeft: 'auto', marginRight: '2px', display: 'inline-block' }}>{renderPartitionError(p)}</span>
+                        </span>
+                },
                 {
                     title: <InfoText tooltip="Low Water Mark" tooltipOverText>Low</InfoText>,
-                    dataIndex: 'waterMarkLow', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkLow')
+                    dataIndex: 'waterMarkLow',
+                    render: (value, p) => (!p.partitionError && !p.waterMarksError) && numberToThousandsString(value),
+                    sorter: sortField('waterMarkLow'),
                 },
                 {
                     title: <InfoText tooltip="High Water Mark" tooltipOverText>High</InfoText>,
-                    dataIndex: 'waterMarkHigh', render: (t) => numberToThousandsString(t), sorter: sortField('waterMarkHigh')
+                    dataIndex: 'waterMarkHigh',
+                    render: (value, p) => (!p.partitionError && !p.waterMarksError) && numberToThousandsString(value),
+                    sorter: sortField('waterMarkHigh')
                 },
                 {
-                    title: 'Messages', key: 'msgCount', render: (t, r) => numberToThousandsString(r.waterMarkHigh - r.waterMarkLow),
-                    sorter: (p1, p2) => (p1.waterMarkHigh - p1.waterMarkLow) - (p2.waterMarkHigh - p2.waterMarkLow)
+                    title: 'Messages', key: 'msgCount',
+                    render: (value, p) => (!p.partitionError && !p.waterMarksError) && numberToThousandsString(p.waterMarkHigh - p.waterMarkLow),
+                    sorter: (p1, p2) => (p1.waterMarksError || p2.waterMarksError)
+                        ? 0
+                        : (p1.waterMarkHigh - p1.waterMarkLow) - (p2.waterMarkHigh - p2.waterMarkLow)
                 },
-                { title: 'Brokers', render: (v, r) => <BrokerList brokerIds={r.replicas} /> }
+                { title: 'Brokers', render: (v, r) => r.replicas && <BrokerList brokerIds={r.replicas} /> }
             ]} />
 
         return <>
@@ -60,4 +77,27 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
             {table}
         </>
     }
+}
+
+function renderPartitionError(partition: Partition) {
+    const txt = [partition.partitionError, partition.waterMarksError].join('\n\n');
+
+    return <Popover
+        title='Partition Error'
+        placement='rightTop' overlayClassName='popoverSmall'
+        getPopupContainer={findPopupContainer}
+        content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
+            {txt}
+        </div>
+        }
+    >
+        <span>
+            <LayoutBypass justifyContent='center' alignItems='center' width='20px' height='18px'>
+                <span style={{ fontSize: '19px' }}>
+                    <WarningTwoTone twoToneColor='orange' />
+                </span>
+            </LayoutBypass>
+        </span>
+    </Popover>
+
 }

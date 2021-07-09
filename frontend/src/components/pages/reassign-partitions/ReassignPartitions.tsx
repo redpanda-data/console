@@ -126,6 +126,21 @@ class ReassignPartitions extends PageComponent {
     render() {
         if (!api.clusterInfo) return DefaultSkeleton;
         if (!api.topics) return DefaultSkeleton;
+
+        // wait until every topic has partitions, and no partitions have errors
+        for (const t of api.topics) {
+            const p = api.topicPartitions.get(t.topicName);
+            if (!p)
+                return `topic ${t.topicName} has no partitions yet`; // no partitions for this topic yet...
+            const errorPartitions = p.filter(x => x.partitionError != null || x.waterMarksError != null);
+            if (errorPartitions.length > 0) {
+                //return `topic ${t.topicName} has  ${errorPartitions.length} partition errors`;
+
+                console.error(`cannot continue since topic ${t.topicName} has ${errorPartitions.length} partitions with errors`);
+                //return DefaultSkeleton;
+            }
+        }
+
         if (api.topicPartitions.size < api.topics.length) return DefaultSkeleton;
         if (api.partitionReassignments === undefined) return DefaultSkeleton;
 

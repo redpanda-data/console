@@ -7,10 +7,10 @@ import {
     TopicDocumentationResponse, AclRequest, AclResponse, SchemaOverview, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
     TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
     PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
-    AclRequestDefault, AclResourceType, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, 
-    AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, 
-    EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, 
-    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset, 
+    AclRequestDefault, AclResourceType, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType,
+    AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest,
+    EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
+    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
     GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
@@ -481,9 +481,11 @@ const apiStore = {
                             p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
                         }
 
+                        // Set partition
+                        this.topicPartitions.set(t.topicName, t.partitions);
+
                         if (partitionErrors.length == 0 && waterMarkErrors.length == 0) {
-                            // Set partition
-                            this.topicPartitions.set(t.topicName, t.partitions);
+
                         } else {
                             errors.push({
                                 topicName: t.topicName,
@@ -502,40 +504,39 @@ const apiStore = {
     refreshPartitionsForTopic(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
             .then(response => {
-                if (response?.partitions) {
-                    let partitionErrors = 0, waterMarkErrors = 0;
-
-                    // Add some local/cached properties to make working with the data easier
-                    for (const p of response.partitions) {
-                        // topicName
-                        p.topicName = topicName;
-
-                        if (p.partitionError) partitionErrors++;
-                        if (p.waterMarksError) waterMarkErrors++;
-                        if (partitionErrors || waterMarkErrors) continue;
-
-                        // replicaSize
-                        const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
-                        const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
-                        p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-                    }
-
-                    if (partitionErrors == 0 && waterMarkErrors == 0) {
-                        // Set partitions
-                        this.topicPartitions.set(topicName, response.partitions);
-                    } else {
-                        console.error(`refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors}, w=${waterMarkErrors})`)
-                    }
-
-                } else {
+                if (!response?.partitions) {
                     // Set null to indicate that we're not allowed to see the partitions
                     this.topicPartitions.set(topicName, null);
+                    return;
                 }
+
+                let partitionErrors = 0, waterMarkErrors = 0;
+
+                // Add some local/cached properties to make working with the data easier
+                for (const p of response.partitions) {
+                    // topicName
+                    p.topicName = topicName;
+
+                    if (p.partitionError) partitionErrors++;
+                    if (p.waterMarksError) waterMarkErrors++;
+                    if (partitionErrors || waterMarkErrors) continue;
+
+                    // replicaSize
+                    const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                    const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
+                    p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+                }
+
+                // Set partitions
+                this.topicPartitions.set(topicName, response.partitions);
+
+                if (partitionErrors > 0 || waterMarkErrors > 0)
+                    console.warn(`refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`);
             }, addError);
     },
 
     refreshTopicAcls(topicName: string, force?: boolean) {
-        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName})
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName })
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.topicAcls.set(topicName, v))
     },
@@ -608,7 +609,7 @@ const apiStore = {
     },
 
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
-        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName})
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName })
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.consumerGroupAcls.set(groupName, v))
     },
