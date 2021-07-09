@@ -7,10 +7,10 @@ import {
     TopicDocumentationResponse, AclRequest, AclResponse, SchemaOverview, SchemaOverviewResponse, SchemaDetailsResponse, SchemaDetails,
     TopicDocumentation, TopicDescription, ApiError, PartitionReassignmentsResponse, PartitionReassignments,
     PartitionReassignmentRequest, AlterPartitionReassignmentsResponse, Broker, GetAllPartitionsResponse,
-    AclRequestDefault, AclResourceType, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType, 
-    AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest, 
-    EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, 
-    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset, 
+    AclRequestDefault, AclResourceType, PatchConfigsResponse, EndpointCompatibilityResponse, EndpointCompatibility, ConfigResourceType,
+    AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest,
+    EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
+    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
     GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
@@ -535,7 +535,7 @@ const apiStore = {
     },
 
     refreshTopicAcls(topicName: string, force?: boolean) {
-        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName})
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName })
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.topicAcls.set(topicName, v))
     },
@@ -608,7 +608,7 @@ const apiStore = {
     },
 
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
-        const query = aclRequestToQuery({...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName})
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName })
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.consumerGroupAcls.set(groupName, v))
     },

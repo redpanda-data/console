@@ -46,11 +46,17 @@ export class StepReview extends Component<{
             },
             {
                 width: '50%', title: 'Brokers Before',
-                render: (v, r) => <BrokerList brokerIds={r.selectedPartitions.flatMap(p => p.replicas)} />
+                render: (v, r) => {
+                    const brokersBefore = r.selectedPartitions.flatMap(x => x.brokersBefore).distinct().sort((a, b) => a - b);
+                    return <BrokerList brokerIds={brokersBefore} />
+                }
             },
             {
                 width: '50%', title: 'Brokers After',
-                render: (v, r) => <BrokerList brokerIds={this.brokersAfter} />
+                render: (v, r) => {
+                    const plannedBrokers = r.selectedPartitions.flatMap(x => x.brokersAfter).distinct().sort((a, b) => a - b);
+                    return <BrokerList brokerIds={plannedBrokers} />
+                }
             },
             {
                 width: 100, title: (p) =>
@@ -116,8 +122,8 @@ export class StepReview extends Component<{
             <ul style={{ marginTop: '0.5em' }}>
                 <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
                 <li>Once the reassignment completes you'll have to remove the throttling configuration. <br />
-                        Kowl will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
-                        </li>
+                    Kowl will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
+                </li>
             </ul>
         </div>
     }
@@ -220,7 +226,7 @@ class ReviewPartitionTable extends Component<{ topic: Topic, topicPartitions: Pa
     brokerTooltip = <div style={{ maxWidth: '380px', fontSize: 'smaller' }}>
         These are the brokers this partitions replicas are assigned to.<br />
         The broker highlighted in blue is currently hosting/handling the leading partition, while the brokers shown in grey are hosting the partitions replicas.
-        </div>;
+    </div>;
 
     render() {
 

@@ -93,7 +93,8 @@
         //         "warnOnSpreadAttributes": true // spread = pretty much guaranteed that something goes wrong
         //     }
         // ],
-        "react/jsx-no-target-blank": "off"
+        "react/jsx-no-target-blank": "off",
+        "prefer-const": "warn"
     },
     "parser": "@typescript-eslint/parser"
 }
