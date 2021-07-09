@@ -36,7 +36,7 @@ function findGeneric(self, arg1, arg2, returnFirstResult) {
         return findByPattern(self, pattern, caseSensitive, returnFirstResult);
     }
     else {
-        throw new Err('first parameter of find() must be: string, or function, or pattern object');
+        throw new Error('first parameter of find() must be: string, or function, or pattern object');
     }
 }
 function findByName(obj, propertyName, caseSensitive, returnFirstResult) {
