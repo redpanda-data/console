@@ -13,6 +13,8 @@ declare global {
         sum<T>(this: T[], selector: (x: T) => number): number;
         min<T>(this: T[], selector: (x: T) => number): number;
         max<T>(this: T[], selector: (x: T) => number): number;
+        minBy<T>(this: T[], selector: (x: T) => number): T | undefined;
+        maxBy<T>(this: T[], selector: (x: T) => number): T | undefined;
 
         any<T>(this: T[], selector: (x: T) => boolean): boolean;
         all<T>(this: T[], selector: (x: T) => boolean): boolean;
@@ -109,13 +111,62 @@ Array.prototype.sum = function sum<T>(this: T[], selector: (x: T) => number) {
 };
 
 Array.prototype.min = function min<T>(this: T[], selector: (x: T) => number) {
-    return this.reduce((pre, cur) => Math.min(pre, selector(cur)), 0);
+    let cur = Number.POSITIVE_INFINITY;
+
+    for (let i = 0; i < this.length; i++) {
+        const value = selector(this[i]);
+        if (value < cur)
+            cur = value;
+    }
+
+    return cur;
 };
 
 Array.prototype.max = function max<T>(this: T[], selector: (x: T) => number) {
-    return this.reduce((pre, cur) => Math.max(pre, selector(cur)), 0);
+    let cur = Number.NEGATIVE_INFINITY;
+
+    for (let i = 0; i < this.length; i++) {
+        const value = selector(this[i]);
+        if (value > cur)
+            cur = value;
+    }
+
+    return cur;
 };
 
+Array.prototype.minBy = function minBy<T>(this: T[], selector: (x: T) => number) {
+    if (this.length == 0) return undefined;
+
+    let bestIndex = 0;
+    let bestVal = selector(this[0]);
+
+    for (let i = 1; i < this.length; i++) {
+        const x = selector(this[i]);
+        if (x < bestVal) {
+            bestIndex = i;
+            bestVal = x;
+        }
+    }
+
+    return this[bestIndex];
+};
+
+Array.prototype.maxBy = function maxBy<T>(this: T[], selector: (x: T) => number) {
+    if (this.length == 0) return undefined;
+
+    let bestIndex = 0;
+    let bestVal = selector(this[0]);
+
+    for (let i = 1; i < this.length; i++) {
+        const x = selector(this[i]);
+        if (x > bestVal) {
+            bestIndex = i;
+            bestVal = x;
+        }
+    }
+
+    return this[bestIndex];
+};
 
 Array.prototype.any = function any<T>(this: T[], selector: (x: T) => boolean) {
     for (const e of this)

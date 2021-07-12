@@ -55,6 +55,11 @@ function computeReassignments(
     // Track information like used disk space per broker, so we extend each broker with some metadata
     const allExBrokers = apiData.brokers.map(b => new ExBroker(b));
     const targetExBrokers = allExBrokers.filter(exb => targetBrokers.find(b => exb.brokerId == b.brokerId) != undefined);
+    const getExBroker = (brokerId: number): ExBroker => {
+        const exBroker = allExBrokers.find(x => x.brokerId == brokerId);
+        if (exBroker === undefined) throw new Error("cannot find ExBroker with brokerId " + brokerId);
+        return exBroker;
+    };
 
     // Recompute broker stats:
     // For the sake of calculation, it is easier to start with a fresh slate.
@@ -62,9 +67,6 @@ function computeReassignments(
     // and subtracting its size(disk space) from broker it is on.
     for (const broker of allExBrokers)
         broker.recompute(apiData, selectedTopicPartitions);
-
-
-    // dumpBrokerInfo('Real:', allExBrokers);
 
     const resultAssignments: TopicAssignments = {};
     for (const t of selectedTopicPartitions) {
@@ -82,39 +84,46 @@ function computeReassignments(
         computeTopicAssignments(topicPartitions, targetExBrokers, allExBrokers, resultAssignments[topicPartitions.topic.topicName]);
     }
 
-
-    // dumpBrokerInfo('Non Optimized:', allExBrokers);
-
     // Optimize Leaders:
     // Every broker should have roughly the same number of partitions it leads.
-    allExBrokers.sort((a, b) => a.actualLeader - b.actualLeader);
-    const leaderSkewInitial = allExBrokers.last()!.actualLeader - allExBrokers.first()!.actualLeader;
+    const skewActual = calcRange(allExBrokers, x => x.actualLeader);
 
-    let totalSwitched = 0;
     const optimizationLog: { skewBefore: number, skewAfter: number, swaps: number }[] = [];
     for (let round = 0; round < 10; round++) {
-        allExBrokers.sort((a, b) => a.plannedLeader - b.plannedLeader);
-        const skewBefore = allExBrokers.last()!.plannedLeader - allExBrokers.first()!.plannedLeader;
-
+        const { range: skewBefore } = calcRange(allExBrokers, x => x.plannedLeader);
         const leaderSwitchCount = balanceLeaders(selectedTopicPartitions, resultAssignments, allExBrokers, apiData);
-        totalSwitched += leaderSwitchCount;
+        const { range: skewAfter } = calcRange(allExBrokers, x => x.plannedLeader);
 
-        allExBrokers.sort((a, b) => a.plannedLeader - b.plannedLeader);
-        const skewAfter = allExBrokers.last()!.plannedLeader - allExBrokers.first()!.plannedLeader;
+        optimizationLog.push({
+            skewBefore,
+            skewAfter,
+            swaps: leaderSwitchCount
+        });
 
-        optimizationLog.push({ skewBefore, skewAfter, swaps: leaderSwitchCount });
-
-        if (skewAfter == 0 || skewAfter >= skewBefore) {
+        if (skewAfter == 0 || skewBefore <= skewAfter) {
             break;
         }
     }
 
-    // dumpBrokerInfo('Optimized:', allExBrokers);
-    console.info(`after optimizing leaders`, {
-        leaderSkewInitial: leaderSkewInitial,
-        log: optimizationLog,
+    const skewPlannedInCluster = calcRange(allExBrokers, x => x.plannedLeader);
+    console.debug(`leader skew in cluster`, {
+        actual: {
+            skew: skewActual.range,
+            min: `${skewActual.minValue} partitions (brokerId ${skewActual.min?.brokerId})`,
+            max: `${skewActual.maxValue} partitions (brokerId ${skewActual.max?.brokerId})`,
+        },
+
+        planned: {
+            skew: skewPlannedInCluster.range,
+            min: `${skewPlannedInCluster.minValue} partitions (brokerId ${skewPlannedInCluster.min?.brokerId})`,
+            max: `${skewPlannedInCluster.maxValue} partitions (brokerId ${skewPlannedInCluster.max?.brokerId})`,
+        },
+
+        log: optimizationLog
     });
 
+    const criticalBrokers = findRiskyPartitions(allExBrokers, selectedTopicPartitions, resultAssignments, getExBroker);
+    reportRiskyPartitions(criticalBrokers);
 
     return resultAssignments;
 }
@@ -142,14 +151,13 @@ function computeTopicAssignments(
     const replicationFactor = topic.replicationFactor;
     if (replicationFactor <= 0) return; // normally it shouldn't be possible; every topic must have at least 1 replica for each of its partitions
 
-    // todo: first create a list of potential assignments, and then only apply the best one, repeat
-
-    // Track how many replicas (of this topic, ignoring from which partitions exactly) were assigned to each broker
+    // Track how many replicas (of this topic!) were assigned to each broker
     const brokerReplicaCount: BrokerReplicaCount[] = targetBrokers.map(b => ({ broker: b, assignedReplicas: 0 }));
 
-    // For each partition, distribute the replicas to the brokers.
+    // Find the most suitable brokers for each partition
+    partitions.sort((a, b) => a.id - b.id);
     for (const partition of partitions) {
-        // Determine what broker for which replica
+        // Find brokers to host the replicas (order is not important, leader is determined later)
         const replicaAssignments = computeReplicaAssignments(partition, replicationFactor, brokerReplicaCount, allBrokers);
 
         resultAssignments[partition.id].brokers = replicaAssignments;
@@ -173,60 +181,79 @@ function computeReplicaAssignments(partition: Partition, replicas: number, broke
     if (sourceBrokers.any(x => x == null)) throw new Error(`replicas of partition ${partition.id} (${toJson(partition.replicas)}) define a brokerId which can't be found in 'allBrokers': ${toJson(allBrokers.map(b => ({ id: b.brokerId, address: b.address, rack: b.rack })))}`);
     const sourceRacks = sourceBrokers.map(b => b.rack).distinct();
 
-    // Track brokers we've used so far so we don't use any broker twice
+    // Track brokers we've used so far (trying to not use any broker twice)
     const consumedBrokers: ExBroker[] = [];
 
+    // Track racks we've used so far (trying to not use any rack twice)
+    const replicasInRack = (rack: string) => brokerReplicaCount.filter(x => x.broker.rack == rack).sum(x => x.assignedReplicas);
+
     for (let i = 0; i < replicas; i++) {
-        // For each replica to be assigned, we create a set of potential brokers.
-        // The potential brokers are those that have least assignments from this partition.
-        // If we'd only assign based on the additional metrics, all replicas would be assigned to only one broker (which would be bad if rf=1)
 
-        brokerReplicaCount.sort((a, b) => a.assignedReplicas - b.assignedReplicas);
-        const filteredBrokerCounts = brokerReplicaCount.filter(b => !consumedBrokers.includes(b.broker));
-        const minAssignments = filteredBrokerCounts[0].assignedReplicas;
-        const potential = filteredBrokerCounts.filter(b => b.assignedReplicas == minAssignments);
+        // Sort to find the best broker (better brokers first)
+        brokerReplicaCount.sort((a, b) => {
+            // Precondition
+            // Each broker can't host more than 1 replica of a partition
+            const aConsumed = consumedBrokers.includes(a.broker);
+            const bConsumed = consumedBrokers.includes(b.broker);
+            if (aConsumed && !bConsumed) return 1;
+            if (!aConsumed && bConsumed) return -1;
 
-        // Multiple brokers, sort by additional metrics
-        if (potential.length > 1) {
-            potential.sort((a, b) => {
-                // 1. Same broker as before is better than a different one
-                const aIsSame = sourceBrokers.includes(a.broker);
-                const bIsSame = sourceBrokers.includes(b.broker);
-                if (aIsSame && !bIsSame) return -1;
-                if (bIsSame && !aIsSame) return 1;
+            // 1. Prefer distribution across different racks.
+            //    If we already assigned a replica to one broker, we'd like to
+            //    assign the next replica to a broker in a different rack.
+            //    (-> robustness against outages of a whole rack)
+            const replicasInRackA = replicasInRack(a.broker.rack);
+            const replicasInRackB = replicasInRack(b.broker.rack);
+            if (replicasInRackA < replicasInRackB) return -1;
+            if (replicasInRackB < replicasInRackA) return 1;
 
-                // 2. A broker from the same rack is better than one from a different rack
-                const aIsSameRack = sourceRacks.includes(a.broker.rack);
-                const bIsSameRack = sourceRacks.includes(b.broker.rack);
-                if (aIsSameRack && !bIsSameRack) return -1;
-                if (bIsSameRack && !aIsSameRack) return 1;
+            // 2. Prefer the broker hosting the fewest replicas (for *this* topic).
+            //    (-> balanced replicas across user-selected brokers)
+            const topicReplicasOnA = a.assignedReplicas;
+            const topicReplicasOnB = b.assignedReplicas;
+            if (topicReplicasOnA < topicReplicasOnB) return -1;
+            if (topicReplicasOnB < topicReplicasOnA) return 1;
 
-                // 3. Neither of the given brokers is in the same rack as any source broker.
-                //    So we decide by which broker has the fewest total partitions/replicas assigned to it.
-                const replicasOnA = a.broker.plannedReplicas;
-                const replicasOnB = b.broker.plannedReplicas;
-                if (replicasOnA < replicasOnB) return -1;
-                if (replicasOnB < replicasOnA) return 1;
+            // 3. Prefer the broker hosting the fewest replicas (over *all* topics).
+            //    (-> balanced replica count across cluster)
+            const replicasOnA = a.broker.plannedReplicas;
+            const replicasOnB = b.broker.plannedReplicas;
+            if (replicasOnA < replicasOnB) return -1;
+            if (replicasOnB < replicasOnA) return 1;
 
-                // 5. Both brokers actually have the same number of assigned replicas!
-                //    But maybe one of them uses less disk space than the other?
-                const diskOnA = a.broker.plannedSize;
-                const diskOnB = b.broker.plannedSize;
-                if (diskOnA < diskOnB) return -1;
-                if (diskOnB < diskOnA) return 1;
+            // 4. Prefer using the same brokers as before.
+            //    (-> no network traffic)
+            const aIsSource = sourceBrokers.includes(a.broker);
+            const bIsSource = sourceBrokers.includes(b.broker);
+            if (aIsSource && !bIsSource) return -1;
+            if (bIsSource && !aIsSource) return 1;
 
-                // They're identical, so it doesn't matter which one we use.
-                return 0;
-            });
-        }
+            // 5. Prefer using the same rack as before.
+            //    (-> less expensive network traffic)
+            const aIsSameRack = sourceRacks.includes(a.broker.rack);
+            const bIsSameRack = sourceRacks.includes(b.broker.rack);
+            if (aIsSameRack && !bIsSameRack) return -1;
+            if (bIsSameRack && !aIsSameRack) return 1;
+
+            // 6. Prefer brokers with free disk space
+            //    (-> balanced disk-space across cluster)
+            const diskOnA = a.broker.plannedSize;
+            const diskOnB = b.broker.plannedSize;
+            if (diskOnA < diskOnB) return -1;
+            if (diskOnB < diskOnA) return 1;
+
+            // They're identical, so it doesn't matter which one we use.
+            return 0;
+        });
 
         // Take the best broker
-        potential[0].assignedReplicas++; // increase temporary counter (which only tracks assignments within the topic)
-        const bestBroker = potential[0].broker;
+        const bestTrackedBroker = brokerReplicaCount[0];
+        const bestBroker = bestTrackedBroker.broker;
+        bestTrackedBroker.assignedReplicas++; // increase temporary counter (which only tracks assignments within the topic)
         resultBrokers.push(bestBroker);
         consumedBrokers.push(bestBroker);
 
-        // increase total number of assigned replicas
+        // Increase total number of assigned replicas
         bestBroker.assignedReplicas++;
         // The new assignment will take up disk space, which must be tracked as well.
         bestBroker.assignedSize += partition.replicaSize;
@@ -282,6 +309,86 @@ function balanceLeaders(selectedTopicPartitions: TopicPartitions[], resultAssign
     }
 
     return leaderSwitchCount;
+}
+
+type RiskyPartition = {
+    topic: Topic,
+    partition: Partition,
+    criticalRacks: string[], // if this rack is offline, the whole partition will be unavailable
+    criticalBrokers: ExBroker[], // if this broker is offline...
+};
+
+function findRiskyPartitions(
+    targetBrokers: ExBroker[],
+    selectedTopicPartitions: TopicPartitions[],
+    resultAssignments: TopicAssignments,
+    getExBroker: (id: number) => ExBroker
+): RiskyPartition[] {
+    const targetRacks = targetBrokers.map(b => b.rack).distinct();
+
+    const riskyPartitions: RiskyPartition[] = [];
+
+    for (const t of selectedTopicPartitions) {
+        const { topic, partitions } = t;
+        const topicAssignments = resultAssignments[topic.topicName];
+        for (const partition of partitions) {
+            const partitionAssignments = topicAssignments[partition.id];
+            const replicaBrokers = partitionAssignments.brokers.map(b => getExBroker(b.brokerId));
+
+            // Will this partition be unavailable when any one broker is offline?
+            // If so, which are the "critical" brokers (or racks) for each partition?
+            const riskyPartition: RiskyPartition = {
+                topic, partition,
+                criticalBrokers: [],
+                criticalRacks: [],
+            };
+
+            // Check if the partition would be offline if each single broker is offline
+            for (const b of targetBrokers) {
+                const remainingBrokers = replicaBrokers.except([b]);
+                if (remainingBrokers.length == 0)
+                    riskyPartition.criticalBrokers.push(b);
+            }
+
+            // Check for offline racks
+            for (const rack of targetRacks) {
+                const remainingBrokers = replicaBrokers.filter(x => x.rack !== rack);
+                if (remainingBrokers.length == 0)
+                    riskyPartition.criticalRacks.push(rack);
+            }
+
+            if (riskyPartition.criticalRacks.length > 0 || riskyPartition.criticalBrokers.length > 0)
+                riskyPartitions.push(riskyPartition);
+        }
+    }
+
+    return riskyPartitions;
+}
+
+// If there are any critical brokers or racks, this might indicate a bug in the distribution algorithm.
+// Except for situations where a topic has a replication factor of 1 (each partition will always be on only one broker),
+// or when there is only a single rack available (happens when brokers have null or empty string set as their rack).
+function reportRiskyPartitions(riskyPartitions: RiskyPartition[]) {
+    for (const { key: topic, items: partitionIssues } of riskyPartitions.groupInto(x => x.topic)) {
+
+        // topics with rf:1 will always be an issue
+        if (topic.replicationFactor <= 1)
+            continue;
+
+        // check if any partition has any issues
+        const issues = partitionIssues.filter(x => x.criticalBrokers.length > 0 || x.criticalRacks.length > 0);
+        if (issues.length == 0)
+            continue;
+
+        // at least one partition with issues, report as table
+        const table = issues.map(x => ({
+            partitionId: x.partition.id,
+            criticalBrokers: x.criticalBrokers.map(b => String(b.brokerId)).join(', '),
+            criticalRacks: x.criticalRacks.join(', '),
+        }));
+        console.error(`Issues in topic "${topic.topicName}" (RF: ${topic.replicationFactor}) (${issues.length} issues).`);
+        console.table(table);
+    }
 }
 
 // Broker extended with tracking information.
@@ -427,6 +534,39 @@ function throwIfNullOrEmpty(name: string, obj: any[] | Map<any, any>) {
         if (obj.size == 0)
             throw new Error(name + " is empty");
     }
+}
+
+function calcRange<T>(ar: T[], selector: (item: T) => number): {
+    range: number,
+    min: T | undefined,
+    minValue: number,
+
+    max: T | undefined,
+    maxValue: number,
+} {
+    if (ar.length == 0) return {
+        range: 0,
+        min: undefined,
+        minValue: 0,
+        max: undefined,
+        maxValue: 0
+    };
+
+    const max = ar.maxBy(selector)!;
+    const maxVal = selector(max);
+
+    const min = ar.minBy(selector)!;
+    const minVal = selector(min);
+
+    const range = maxVal - minVal;
+
+    return {
+        range: range,
+        min: min,
+        minValue: minVal,
+        max: max,
+        maxValue: maxVal,
+    };
 }
 
 function dumpBrokerInfo(title: string, brokers: ExBroker[]) {
