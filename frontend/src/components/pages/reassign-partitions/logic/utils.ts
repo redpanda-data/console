@@ -49,12 +49,33 @@ export function computeMovedReplicas(
                 .first(t => t.topicName == topicName)?.partitions
                 .first(e => e.partitionId == partition.id)?.replicas;
 
-            let moves = 0;
+            let added = 0;
+            let removed = 0;
+            let changedLeader = false;
+            let anyChanges = false;
+
             if (newBrokers) {
-                const intersection = oldBrokers.intersection(newBrokers);
-                moves = oldBrokers.length - intersection.length;
+                // find those brokers that are completely new (did not previously host a replica of this partition)
+                added = newBrokers.except(oldBrokers).length;
+                removed = oldBrokers.except(newBrokers).length;
+                changedLeader = oldBrokers[0] != newBrokers[0];
+
+                anyChanges = changedLeader || oldBrokers.length != newBrokers.length;
+                if (!anyChanges) {
+                    for (let i = 0; i < oldBrokers.length && !anyChanges; i++)
+                        if (oldBrokers[i] != newBrokers[i])
+                            anyChanges = true;
+                }
             }
-            partitionsWithMoves.push({ ...partition, movedReplicas: moves, brokersBefore: oldBrokers, brokersAfter: newBrokers ?? [] });
+            partitionsWithMoves.push({
+                ...partition,
+                brokersBefore: oldBrokers,
+                brokersAfter: newBrokers ?? [],
+                numAddedBrokers: added,
+                numRemovedBrokers: removed,
+                changedLeader: changedLeader,
+                anyChanges: anyChanges,
+            });
         }
 
         ar.push({

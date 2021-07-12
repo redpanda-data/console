@@ -6,7 +6,7 @@ declare global {
         remove(obj: T): boolean;
         removeAll(selector: (x: T) => boolean): number;
 
-        first<T>(this: T[], selector: (x: T) => boolean): T | undefined;
+        first<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
         last<T>(this: T[], selector?: (x: T) => boolean): T | undefined;
 
         count<T>(this: T[], selector: (x: T) => boolean): number;
@@ -80,10 +80,16 @@ Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) =>
 };
 
 
-Array.prototype.first = function first<T>(this: T[], selector: (x: T) => boolean): T | undefined {
+Array.prototype.first = function first<T>(this: T[], selector?: (x: T) => boolean): T | undefined {
+    if (!selector)
+        return this.length > 0
+            ? this[0]
+            : undefined;
+
     for (const e of this)
         if (selector(e))
             return e;
+
     return undefined;
 };
 

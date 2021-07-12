@@ -1,6 +1,6 @@
 import { untracked } from "mobx";
 import { Topic, Partition, Broker, ConfigEntry, BrokerConfig } from "../../../../state/restInterfaces";
-import { toJson } from "../../../../utils/jsonUtils";
+import { clone, toJson } from "../../../../utils/jsonUtils";
 
 // Requirements:
 // 1. Each replica must be on a different broker (unless replicationFactor < brokerCount makes it impossible).
@@ -64,6 +64,8 @@ function computeReassignments(
         broker.recompute(apiData, selectedTopicPartitions);
 
 
+    // dumpBrokerInfo('Real:', allExBrokers);
+
     const resultAssignments: TopicAssignments = {};
     for (const t of selectedTopicPartitions) {
         resultAssignments[t.topic.topicName] = {};
@@ -80,46 +82,39 @@ function computeReassignments(
         computeTopicAssignments(topicPartitions, targetExBrokers, allExBrokers, resultAssignments[topicPartitions.topic.topicName]);
     }
 
+
+    // dumpBrokerInfo('Non Optimized:', allExBrokers);
+
     // Optimize Leaders:
     // Every broker should have roughly the same number of partitions it leads.
-    let leaderSwitchCount = 0;
-    for (const t of selectedTopicPartitions) {
-        for (const p of t.partitions) {
-            // map plain brokers to extended brokers (those with attached tracking data)
-            const newBrokers = resultAssignments[t.topic.topicName][p.id].brokers.map(b => allExBrokers.first(e => e.brokerId == b.brokerId)!);
-            const newLeader = allExBrokers.first(b => b.brokerId == newBrokers[0].brokerId)!;
+    allExBrokers.sort((a, b) => a.actualLeader - b.actualLeader);
+    const leaderSkewInitial = allExBrokers.last()!.actualLeader - allExBrokers.first()!.actualLeader;
 
-            // from all the brokers that will soon be the ones hosting this partitions replicas,
-            // is there one that would be better suited to be the leader?
-            // Sort them by ascending leader count (number of partitions they lead)
-            // We must make a copy of the newBrokers aray because we don't want to modify it (yet)
-            const sortedBrokers = newBrokers.slice(0);
-            sortedBrokers.sort((a, b) => (a.initialLeader + a.assignedLeader) - (b.initialLeader + b.assignedLeader));
+    let totalSwitched = 0;
+    const optimizationLog: { skewBefore: number, skewAfter: number, swaps: number }[] = [];
+    for (let round = 0; round < 10; round++) {
+        allExBrokers.sort((a, b) => a.plannedLeader - b.plannedLeader);
+        const skewBefore = allExBrokers.last()!.plannedLeader - allExBrokers.first()!.plannedLeader;
 
-            const bestLeader = sortedBrokers[0];
+        const leaderSwitchCount = balanceLeaders(selectedTopicPartitions, resultAssignments, allExBrokers, apiData);
+        totalSwitched += leaderSwitchCount;
 
-            if (bestLeader != newLeader) {
-                // We found a better leader, swap the two and adjust their tracking info
-                const indexBest = newBrokers.indexOf(bestLeader);
-                if (indexBest < 0) throw new Error('cannot find new/best leader in exBroker array');
+        allExBrokers.sort((a, b) => a.plannedLeader - b.plannedLeader);
+        const skewAfter = allExBrokers.last()!.plannedLeader - allExBrokers.first()!.plannedLeader;
 
-                // Swap the two brokers
-                newBrokers[0] = bestLeader;
-                newBrokers[indexBest] = newLeader;
+        optimizationLog.push({ skewBefore, skewAfter, swaps: leaderSwitchCount });
 
-                // adjust tracking info
-                newLeader.assignedLeader--;
-                bestLeader.assignedLeader++;
-
-                // adjust final assignments
-                // mapping our extendedBrokers back to the "simple" brokers
-                resultAssignments[t.topic.topicName][p.id].brokers = newBrokers.map(exBroker => apiData.brokers.first(b => b.brokerId == exBroker.brokerId)!);
-
-                leaderSwitchCount++;
-            }
+        if (skewAfter == 0 || skewAfter >= skewBefore) {
+            break;
         }
     }
-    console.debug(`optimize leaders: ${leaderSwitchCount} leaders switched`);
+
+    // dumpBrokerInfo('Optimized:', allExBrokers);
+    console.info(`after optimizing leaders`, {
+        leaderSkewInitial: leaderSkewInitial,
+        log: optimizationLog,
+    });
+
 
     return resultAssignments;
 }
@@ -208,15 +203,15 @@ function computeReplicaAssignments(partition: Partition, replicas: number, broke
 
                 // 3. Neither of the given brokers is in the same rack as any source broker.
                 //    So we decide by which broker has the fewest total partitions/replicas assigned to it.
-                const replicasOnA = a.broker.initialReplicas + a.broker.assignedReplicas;
-                const replicasOnB = b.broker.initialReplicas + b.broker.assignedReplicas;
+                const replicasOnA = a.broker.plannedReplicas;
+                const replicasOnB = b.broker.plannedReplicas;
                 if (replicasOnA < replicasOnB) return -1;
                 if (replicasOnB < replicasOnA) return 1;
 
                 // 5. Both brokers actually have the same number of assigned replicas!
                 //    But maybe one of them uses less disk space than the other?
-                const diskOnA = a.broker.initialSize + a.broker.assignedSize;
-                const diskOnB = a.broker.initialSize + b.broker.assignedSize;
+                const diskOnA = a.broker.plannedSize;
+                const diskOnB = b.broker.plannedSize;
                 if (diskOnA < diskOnB) return -1;
                 if (diskOnB < diskOnA) return 1;
 
@@ -235,13 +230,59 @@ function computeReplicaAssignments(partition: Partition, replicas: number, broke
         bestBroker.assignedReplicas++;
         // The new assignment will take up disk space, which must be tracked as well.
         bestBroker.assignedSize += partition.replicaSize;
-        // if the broker is the first one, it is the leader
-        bestBroker.assignedLeader++;
     }
+
+    // Count the first broker in the list as the leader
+    resultBrokers[0].assignedLeader++;
 
     return resultBrokers;
 }
 
+
+function balanceLeaders(selectedTopicPartitions: TopicPartitions[], resultAssignments: TopicAssignments, allExBrokers: ExBroker[], apiData: ApiData) {
+    let leaderSwitchCount = 0;
+    for (const t of selectedTopicPartitions) {
+        for (const p of t.partitions) {
+            // map plain brokers to extended brokers (those with attached tracking data)
+            const newBrokers = resultAssignments[t.topic.topicName][p.id].brokers.map(b => allExBrokers.first(e => e.brokerId == b.brokerId)!);
+            const plannedLeader = allExBrokers.first(b => b.brokerId == newBrokers[0].brokerId)!;
+
+            // from all the brokers that will soon be the ones hosting this partitions replicas,
+            // is there one that would be better suited to be the leader?
+            // Sort them by ascending leader count (number of partitions they lead)
+            // We must make a copy of the newBrokers aray because we don't want to modify it (yet)
+            const sortedBrokers = newBrokers.slice(0);
+            sortedBrokers.sort((a, b) => a.plannedLeader - b.plannedLeader);
+
+            const betterLeader = sortedBrokers[0];
+
+            if (betterLeader != plannedLeader) {
+                // We found a better leader, swap the two and adjust their tracking info
+                const indexBest = newBrokers.indexOf(betterLeader);
+                if (indexBest < 0)
+                    throw new Error('cannot find new/best leader in exBroker array');
+
+                // Swap the two brokers
+                newBrokers[0] = betterLeader;
+                newBrokers[indexBest] = plannedLeader;
+
+                // Adjust tracking info for leaders and consumed disk size
+                plannedLeader.assignedLeader--;
+                plannedLeader.assignedSize -= p.replicaSize;
+                betterLeader.assignedLeader++;
+                betterLeader.assignedSize += p.replicaSize;
+
+                // Update final assignments
+                // mapping our extendedBrokers back to the "simple" brokers
+                resultAssignments[t.topic.topicName][p.id].brokers = newBrokers.map(exBroker => apiData.brokers.first(b => b.brokerId == exBroker.brokerId)!);
+
+                leaderSwitchCount++;
+            }
+        }
+    }
+
+    return leaderSwitchCount;
+}
 
 // Broker extended with tracking information.
 // Used to quickly determine which is the best broker for a given replica, without having to recompute the tracked information all the time
@@ -270,6 +311,11 @@ class ExBroker implements Broker {
     assignedSize: number = 0;
     assignedLeader: number = 0;
 
+    get plannedReplicas(): number { return this.initialReplicas + this.assignedReplicas; }
+    get plannedSize(): number { return this.initialSize + this.assignedSize; }
+    get plannedLeader(): number { return this.initialLeader + this.assignedLeader; }
+
+
     constructor(sourceBroker: Broker) {
         Object.assign(this, sourceBroker);
     }
@@ -296,14 +342,17 @@ class ExBroker implements Broker {
                 this.actualReplicas += replicasAssignedToThisBroker;
                 this.actualLeader += p.leader == this.brokerId ? 1 : 0;
 
-                // size: using 'first()' because each broker has exactly one entry (or maybe zero if broker is offline)
-                const logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId);
-                if (logDirEntry !== undefined)
-                    this.actualSize += logDirEntry.size;
-                else {
-                    // todo:
-                    // - fallback to another entry? (using maximum size we find)
-                    // - throw error?
+                if (replicasAssignedToThisBroker > 0) {
+                    // This broker hosts a replica of this partition
+                    // find size of the logdir for the partition on this broker
+                    const logDirEntry = p.partitionLogDirs.first(x => !x.error && x.brokerId == this.brokerId);
+                    if (logDirEntry !== undefined)
+                        this.actualSize += logDirEntry.size;
+                    else {
+                        // todo:
+                        // - fallback to another entry? (using maximum size we find)
+                        // - throw error?
+                    }
                 }
             }
         }
@@ -317,18 +366,20 @@ class ExBroker implements Broker {
 
         for (const topic of selectedTopicPartitions)
             for (const p of topic.partitions) {
-                selectedReplicas += p.replicas.count(x => x == this.brokerId);
-                selectedLeader += p.leader == this.brokerId ? 1 : 0;
+                const replicasOnBroker = p.replicas.count(x => x == this.brokerId);
+                selectedReplicas += replicasOnBroker;
+                selectedLeader += (p.leader == this.brokerId) ? 1 : 0;
 
-                // using 'first()' because each broker as exactly one logDirEntry (or maybe zero if broker is offline)
-                const logDirEntry = p.partitionLogDirs.first(x => x.error == "" && x.brokerId == this.brokerId);
-                if (logDirEntry) {
-                    // direct match
-                    selectedSize += logDirEntry.size;
-                } else {
-                    // broker offline, assume maximum using the size reported by another broker
-                    const fallbackSize = p.partitionLogDirs.filter(x => x.error == "").max(x => x.size);
-                    selectedSize += fallbackSize;
+                if (replicasOnBroker > 0) {
+                    // using 'first()' because each broker has exactly one logDirEntry (or maybe zero if broker is offline)
+                    const logDirEntry = p.partitionLogDirs.first(x => !x.error && x.brokerId == this.brokerId);
+                    if (logDirEntry) {
+                        // direct match
+                        selectedSize += logDirEntry.size;
+                    } else {
+                        // broker offline, use fallback
+                        selectedSize += p.replicaSize;
+                    }
                 }
             }
 
@@ -376,4 +427,32 @@ function throwIfNullOrEmpty(name: string, obj: any[] | Map<any, any>) {
         if (obj.size == 0)
             throw new Error(name + " is empty");
     }
+}
+
+function dumpBrokerInfo(title: string, brokers: ExBroker[]) {
+    console.log(title);
+    console.table(brokers.map((x: ExBroker) => ({
+        id: x.brokerId,
+        address: x.address,
+        actualLeader: x.actualLeader,
+        plannedLeader: x.plannedLeader,
+
+        actualReplicas: x.actualReplicas,
+        plannedReplicas: x.plannedReplicas,
+
+        actualSize: x.actualSize,
+        plannedSize: x.plannedSize,
+
+        full: {
+            ...x
+        }
+    })), [
+        'address',
+        'actualLeader',
+        'plannedLeader',
+        'actualReplicas',
+        'plannedReplicas',
+        'actualSize',
+        'plannedSize'
+    ]);
 }
