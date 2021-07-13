@@ -272,7 +272,7 @@ function balanceLeaders(selectedTopicPartitions: TopicPartitions[], resultAssign
         for (const p of t.partitions) {
             // map plain brokers to extended brokers (those with attached tracking data)
             const newBrokers = resultAssignments[t.topic.topicName][p.id].brokers.map(b => allExBrokers.first(e => e.brokerId == b.brokerId)!);
-            const plannedLeader = allExBrokers.first(b => b.brokerId == newBrokers[0].brokerId)!;
+            const plannedLeader = newBrokers[0];
 
             // from all the brokers that will soon be the ones hosting this partitions replicas,
             // is there one that would be better suited to be the leader?
@@ -285,13 +285,13 @@ function balanceLeaders(selectedTopicPartitions: TopicPartitions[], resultAssign
 
             if (betterLeader != plannedLeader) {
                 // We found a better leader, swap the two and adjust their tracking info
-                const indexBest = newBrokers.indexOf(betterLeader);
-                if (indexBest < 0)
+                const betterLeaderIndex = newBrokers.indexOf(betterLeader);
+                if (betterLeaderIndex < 0)
                     throw new Error('cannot find new/best leader in exBroker array');
 
                 // Swap the two brokers
                 newBrokers[0] = betterLeader;
-                newBrokers[indexBest] = plannedLeader;
+                newBrokers[betterLeaderIndex] = plannedLeader;
 
                 // Adjust tracking info for leaders and consumed disk size
                 plannedLeader.assignedLeader--;
