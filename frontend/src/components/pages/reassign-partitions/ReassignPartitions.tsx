@@ -142,6 +142,7 @@ class ReassignPartitions extends PageComponent {
     componentWillUnmount() {
         reassignmentTracker.stop();
         if (this.autoScrollReactionDisposer) this.autoScrollReactionDisposer();
+        if (this.resetSelectionOnErrorsReactionDisposer) this.resetSelectionOnErrorsReactionDisposer();
 
         this.stopRefreshingTopicConfigs();
     }
