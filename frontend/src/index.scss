@@ -1784,6 +1784,11 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
             }
         }
     }
+
+    .errorPartition td {
+        background: #ff8d002e !important;
+        color: #0005;
+    }
 }
 
 .nestedTable .ant-table-container tr {

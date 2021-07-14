@@ -454,7 +454,7 @@ const apiStore = {
 
                     for (const t of response.topics) {
                         if (t.error != null) {
-                            console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
+                            // console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
                             continue;
                         }
 
@@ -473,7 +473,10 @@ const apiStore = {
                                 waterMarkErrors.push({ partitionId: p.id, error: p.waterMarksError });
                                 partitionHasError = true;
                             }
-                            if (partitionHasError) continue;
+                            if (partitionHasError) {
+                                p.hasErrors = true;
+                                continue;
+                            }
 
                             // Add some local/cached properties to make working with the data easier
                             const validLogDirs = p.partitionLogDirs.filter(e => !e.error && e.size >= 0);
@@ -495,8 +498,8 @@ const apiStore = {
                         }
                     }
 
-                    if (errors.length > 0)
-                        console.error('refreshAllTopicPartitions: response had errors', errors);
+                    // if (errors.length > 0)
+                    //     console.error('refreshAllTopicPartitions: response had errors', errors);
                 });
             }, addError);
     },
@@ -519,7 +522,10 @@ const apiStore = {
 
                     if (p.partitionError) partitionErrors++;
                     if (p.waterMarksError) waterMarkErrors++;
-                    if (partitionErrors || waterMarkErrors) continue;
+                    if (partitionErrors || waterMarkErrors) {
+                        p.hasErrors = true;
+                        continue;
+                    }
 
                     // replicaSize
                     const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);

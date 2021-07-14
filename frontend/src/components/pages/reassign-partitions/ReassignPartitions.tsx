@@ -69,6 +69,7 @@ class ReassignPartitions extends PageComponent {
     @observable requestInProgress = false;
 
     autoScrollReactionDisposer: IReactionDisposer | null = null;
+    resetSelectionOnErrorsReactionDisposer: IReactionDisposer | null = null;
 
 
     constructor(p: any) {
@@ -105,6 +106,28 @@ class ReassignPartitions extends PageComponent {
             if (currentStep != 0)
                 setTimeout(() => scrollTo('wizard', 'start', -20), 20);
         })
+        this.resetSelectionOnErrorsReactionDisposer = autorun(() => {
+            if (this.selectedBrokerIds.length == 0) {
+                const selectedTopicPartitions = Object.values(this.partitionSelection);
+                if (selectedTopicPartitions.length == 0 || selectedTopicPartitions.all(x => x.length == 0))
+                    return;  // nothing selected so far
+            }
+
+            let reset = false;
+
+            // has user selected a broker that is not available anymore?
+            if (this.selectedBrokerIds.any(x => api.clusterInfo?.brokers.find(b => b.brokerId == x) == undefined))
+                reset = true;
+
+            // has user selected a topic partition that is not available anymore?
+            if (reset == false)
+                if (this.selectedTopicPartitions == null)
+                    reset = true;
+
+            if (reset) {
+                this.resetSelectionAndPage(true, true);
+            }
+        })
 
         reassignmentTracker.start();
     }
@@ -131,14 +154,8 @@ class ReassignPartitions extends PageComponent {
         for (const t of api.topics) {
             const p = api.topicPartitions.get(t.topicName);
             if (!p)
-                return `topic ${t.topicName} has no partitions yet`; // no partitions for this topic yet...
-            const errorPartitions = p.filter(x => x.partitionError != null || x.waterMarksError != null);
-            if (errorPartitions.length > 0) {
-                //return `topic ${t.topicName} has  ${errorPartitions.length} partition errors`;
-
-                console.error(`cannot continue since topic ${t.topicName} has ${errorPartitions.length} partitions with errors`);
-                //return DefaultSkeleton;
-            }
+                // no partitions for this topic yet...
+                return null;
         }
 
         if (api.topicPartitions.size < api.topics.length) return DefaultSkeleton;
@@ -240,6 +257,29 @@ class ReassignPartitions extends PageComponent {
         </>
     }
 
+    resetSelectionAndPage(scrollTop: boolean, showSelectionWarning: boolean) {
+        transaction(() => {
+            this.refreshData(true);
+            this.partitionSelection = {};
+            this.selectedBrokerIds = [];
+            this.reassignmentRequest = null;
+
+            if (showSelectionWarning)
+                notification.warn({
+                    message: 'Selection has been reset',
+                    description: 'Your selection contained brokers or partitions that are not available anymore after the refresh. \n' +
+                        'Your selection has been reset.',
+                    duration: 0,
+                });
+
+            if (scrollTop)
+                setTimeout(() => {
+                    this.currentStep = 0;
+                    setImmediate(() => scrollToTop());
+                }, 300);
+        });
+    }
+
     // will be wrapped in a 'transaction' since we're modifying multiple observables
     onNextPage() {
         if (this.currentStep == 0) {
@@ -248,16 +288,28 @@ class ReassignPartitions extends PageComponent {
 
         if (this.currentStep == 1) {
             // Assign -> Review
-            const topicPartitions: TopicPartitions[] = this.selectedTopicPartitions;
+            const topicPartitions = this.selectedTopicPartitions;
+            if (topicPartitions == null) {
+                this.resetSelectionAndPage(true, true);
+                return;
+            }
+
             const targetBrokers = this.selectedBrokerIds.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)).filterFalsy();
             if (targetBrokers.any(b => b == null))
                 throw new Error('one or more broker ids could not be mapped to broker entries');
+
+            const apiTopicPartitions = new Map<string, Partition[]>();
+            for (const [topicName, partitions] of api.topicPartitions) {
+                if (!partitions) continue;
+                const validOnly = partitions.filter(x => !x.hasErrors);
+                apiTopicPartitions.set(topicName, validOnly);
+            }
 
             // error checking will happen inside computeReassignments
             const apiData = {
                 brokers: api.clusterInfo!.brokers,
                 topics: api.topics as Topic[],
-                topicPartitions: api.topicPartitions as Map<string, Partition[]>
+                topicPartitions: apiTopicPartitions
             };
 
             const topicAssignments = computeReassignments(
@@ -266,9 +318,9 @@ class ReassignPartitions extends PageComponent {
                 targetBrokers
             );
 
-            this._debug_apiData = apiData;
-            this._debug_topicPartitions = topicPartitions;
-            this._debug_brokers = targetBrokers;
+            // this._debug_apiData = apiData;
+            // this._debug_topicPartitions = topicPartitions;
+            // this._debug_brokers = targetBrokers;
 
 
             this.reassignmentRequest = topicAssignmentsToReassignmentRequest(topicAssignments);
@@ -291,17 +343,7 @@ class ReassignPartitions extends PageComponent {
                     const success = await this.startReassignment(request);
                     if (success) {
                         // Reset settings, go back to first page
-                        transaction(() => {
-                            this.refreshData(true);
-                            this.partitionSelection = {};
-                            this.selectedBrokerIds = [];
-                            this.reassignmentRequest = null;
-
-                            setTimeout(() => {
-                                this.currentStep = 0;
-                                setImmediate(() => scrollToTop());
-                            }, 300);
-                        });
+                        this.resetSelectionAndPage(true, false);
                     }
                 }
                 catch (err) {
@@ -557,11 +599,16 @@ class ReassignPartitions extends PageComponent {
 
     }
 
-    @computed get selectedTopicPartitions(): TopicPartitions[] {
+    @computed get selectedTopicPartitions(): TopicPartitions[] | undefined {
+        const apiTopics = api.topics;
+        if (!apiTopics) return undefined;
+        const apiPartitions = api.topicPartitions;
+        if (!apiPartitions) return undefined;
+
         return partitionSelectionToTopicPartitions(
             this.partitionSelection,
-            api.topicPartitions,
-            api.topics!
+            apiPartitions,
+            apiTopics
         );
     }
 
