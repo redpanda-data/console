@@ -54,8 +54,8 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 		ConnectorCount int `json:"connectorCount"`
 	}
 	type response struct {
-		ConnectorShards []connect.GetConnectorsShard `json:"connectorShards"`
-		// Filtered describes the number of filtered clusters or connectors due to missing Kowl Business permissions
+		Clusters []connect.ClusterConnectors `json:"clusters"`
+		// Filtered describes the number of filtered clusters and connectors due to missing Kowl Business permissions
 		Filtered responseFilterStats `json:"filtered"`
 	}
 
@@ -63,26 +63,24 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
-		filteredShards := make([]connect.GetConnectorsShard, 0)
 		filteredClusters := 0
 		filteredConnectors := 0
 		connectors := api.ConnectSvc.GetConnectors(ctx)
-		for _, connector := range connectors {
-			clusterName := connector.ClusterName
+		for _, shard := range connectors {
+			clusterName := shard.ClusterName
 			canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
 			if restErr != nil {
 				api.Logger.Error("failed to check view connect cluster permissions", zap.Error(restErr.Err))
 			}
 			if !canSee {
 				filteredClusters += 1
-				filteredConnectors += len(connector.Connectors)
+				filteredConnectors += len(shard.Connectors)
 				continue
 			}
-			filteredShards = append(filteredShards, connector)
 		}
 
 		res := response{
-			ConnectorShards: filteredShards,
+			Clusters: connectors,
 			Filtered: responseFilterStats{
 				ClusterCount:   filteredClusters,
 				ConnectorCount: filteredConnectors,
