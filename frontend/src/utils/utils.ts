@@ -7,6 +7,7 @@ import { editQuery } from "./queryHelper";
 import { message } from "antd";
 import { MessageType } from "antd/lib/message";
 import { TopicMessage } from "../state/restInterfaces";
+import { reverse } from "node:dns";
 
 
 
@@ -572,12 +573,26 @@ const toM = (num: number) => `${(num / 1000000).toFixed(1)}m`;
 const toG = (num: number) => `${(num / 1000000000).toFixed(1)}g`;
 
 export function prettyNumber(num: number) {
-    if (isNaN(num) || isInfinite(num)) return String(num);
+    if (isNaN(num) || isInfinite(num) || num < 1000) return String(num);
     if (isK(num)) return toK(num);
     if (isM(num)) return toM(num);
     return toG(num);
 }
 
+export function fromDecimalSeparated(str: string): number {
+    if (!str || str === '') return 0;
+    return parseInt(str.replace(',', ''));
+}
+
+export function toDecimalSeparated(num: number): string {
+    return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+export function keepInRange(num: number, min: number, max: number) {
+    if (num < min) return min;
+    else if (num > max) return max;
+    else return num;
+}
 
 /**
  * random digits and letters (entropy: 53bit)

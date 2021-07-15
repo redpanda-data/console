@@ -1,13 +1,17 @@
-import { Alert, Modal, Select, Slider, Spin } from 'antd';
+import { Alert, Input, Modal, Select, Slider, Spin } from 'antd';
 import { observer } from 'mobx-react';
 import React, { useEffect, useState } from 'react';
 import { api } from '../../../../state/backendApi';
 import { Topic } from '../../../../state/restInterfaces';
 import { RadioOptionGroup } from '../../../../utils/tsxUtils';
-import { prettyNumber } from '../../../../utils/utils';
+import { fromDecimalSeparated, keepInRange, prettyNumber, toDecimalSeparated } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 
+import styles from './DeleteRecordsModal.module.scss';
+
 type PartitionSelectionValue = 'allPartitions' | 'specificPartition';
+
+const SLIDER_INPUT_REGEX = /(^([1-9]\d*)|(\d{1,3}(,\d{3})*)$)|^$/;
 
 function SelectPartitionStep({ selectedValue, selectValue, partitions }: { selectedValue: PartitionSelectionValue; selectValue: (v: PartitionSelectionValue) => void; partitions: Array<number> }): JSX.Element {
     return (
@@ -74,6 +78,8 @@ const SelectOffsetStep = ({ selectValue, selectedValue, topicName, partitionId }
 };
 
 const ManualOffsetContent = observer(({ topicName, partitionId }: { topicName: string; partitionId: number }) => {
+    const [sliderValue, setSliderValue] = useState(0);
+
     if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
         const partitionErrors = api.topicPartitionErrors.get(topicName)?.map(({ partitionError }) => <li>{partitionError}</li>);
         const waterMarksErrors = api.topicWatermarksErrors.get(topicName)?.map(({ waterMarksError }) => <li>{waterMarksError}</li>);
@@ -95,7 +101,24 @@ const ManualOffsetContent = observer(({ topicName, partitionId }: { topicName: s
         );
         return <Alert type="error" message={message} />;
     }
-    return api.topicPartitions?.get(topicName) ? <Slider marks={getMarks(topicName, partitionId)} /> : <Spin />;
+    const { marks, min, max } = getMarks(topicName, partitionId);
+    return api.topicPartitions?.get(topicName) ? (
+        <div className={styles.sliderContainer}>
+            <Slider marks={marks} min={min} max={max} onChange={setSliderValue} value={sliderValue} className={styles.slider}/>
+            <Input
+                className={styles.sliderValue}
+                value={toDecimalSeparated(sliderValue)}
+                onChange={(e) => {
+                    const { value } = e.target;
+                    if (!SLIDER_INPUT_REGEX.test(value)) return;
+                    const rangedValue = keepInRange(fromDecimalSeparated(value), min || 0, max || Number.MAX_SAFE_INTEGER);
+                    setSliderValue(rangedValue);
+                }}
+            />
+        </div>
+    ) : (
+        <Spin />
+    );
 });
 
 function getMarks(topicName: string, partitionId: number) {
@@ -103,14 +126,20 @@ function getMarks(topicName: string, partitionId: number) {
     if (!partition) return {};
 
     const diff = partition.waterMarkHigh - partition.waterMarkLow;
-    const marks = [partition.waterMarkLow, diff * 0.5, diff * 0.75, partition.waterMarkHigh];
+    const marks = [partition.waterMarkLow, diff * 0.33, diff * 0.67, partition.waterMarkHigh];
 
-    return marks.reduce((acc, it) => {
+    const formattedMarks = marks.reduce((acc, it) => {
         const key = it.toFixed(0);
         const value = prettyNumber(it);
         acc[key] = value;
         return acc;
     }, {} as { [index: string]: string });
+
+    return {
+        min: partition.waterMarkLow,
+        max: partition.waterMarkHigh,
+        marks: formattedMarks,
+    };
 }
 
 interface DeleteRecordsModalProps {
@@ -133,7 +162,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     const [step, setStep] = useState(1);
 
     return (
-        <Modal title="Delete records in topic" visible={visible} okType="danger" okText={step === 1 ? 'Choose End Offset' : 'Delete Records'} onOk={() => step === 1 && setStep(2)} onCancel={onCancel}>
+        <Modal title="Delete records in topic" visible={visible} okType="danger" okText={step === 1 ? 'Choose End Offset' : 'Delete Records'} onOk={() => step === 1 && setStep(2)} onCancel={onCancel} width="700px">
             {step === 1 && <SelectPartitionStep partitions={range(0, topic.partitionCount)} selectValue={setPartitionSelectionValue} selectedValue={partitionSelectionValue} />}
             {step === 2 && <SelectOffsetStep selectValue={setOffsetSelectionValue} selectedValue={offsetSelectionValue} topicName={topic.topicName} partitionId={0} />}
         </Modal>

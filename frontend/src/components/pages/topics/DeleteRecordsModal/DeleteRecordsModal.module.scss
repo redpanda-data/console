@@ -1,0 +1,16 @@
+.sliderContainer {
+    display: flex;
+    align-items: center;
+}
+
+.sliderValue {
+    width: calc(124rem / 16);
+    margin-left: 2rem;
+    line-height: calc(22rem / 16);
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.slider {
+    flex-grow: 1;
+}
