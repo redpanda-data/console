@@ -65,7 +65,7 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 
 		filteredClusters := 0
 		filteredConnectors := 0
-		connectors := api.ConnectSvc.GetConnectors(ctx)
+		connectors := api.ConnectSvc.GetAllClusterConnectors(ctx)
 		for _, shard := range connectors {
 			clusterName := shard.ClusterName
 			canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)

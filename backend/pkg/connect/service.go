@@ -101,6 +101,7 @@ type GetClusterShard struct {
 // GetClusters returns the merged root responses across all configured Connect clusters. Requests will be
 // sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
 // for too long.
+// TODO: Is that endpoint required or should/could we use the existing endpoint that returns all connectors?
 func (s *Service) GetClusters(ctx context.Context) []GetClusterShard {
 	ch := make(chan GetClusterShard, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
@@ -162,19 +163,11 @@ type ClusterConnectors struct {
 	Connectors     []ClusterConnectorInfo `json:"connectors"`
 	Error          string                 `json:"error,omitempty"`
 }
-type ClusterConnectorInfo struct {
-	Name         string `json:"name"`
-	Class        string `json:"class"`
-	Type         string `json:"type"`  // Source or Sink
-	State        string `json:"state"` // Running, ..
-	TotalTasks   int    `json:"totalTasks"`
-	RunningTasks int    `json:"runningTasks"`
-}
 
-// GetConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
+// GetAllClusterConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
 // sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
 // for too long.
-func (s *Service) GetConnectors(ctx context.Context) []ClusterConnectors {
+func (s *Service) GetAllClusterConnectors(ctx context.Context) []ClusterConnectors {
 	ch := make(chan ClusterConnectors, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
 		go func(cfg ConfigCluster, c *con.Client) {
@@ -186,25 +179,16 @@ func (s *Service) GetConnectors(ctx context.Context) []ClusterConnectors {
 				errMsg = err.Error()
 			}
 
-			connectorInfo := make([]ClusterConnectorInfo, 0, len(connectors))
-			for _, c := range connectors {
-				connectorInfo = append(connectorInfo, ClusterConnectorInfo{
-					Name:       c.Info.Name,
-					Class:      c.Info.Config["connector.class"],
-					Type:       c.Info.Type,
-					State:      c.Status.Connector.State,
-					TotalTasks: len(c.Status.Tasks),
-				})
-			}
 			ch <- ClusterConnectors{
 				ClusterName:    cfg.Name,
 				ClusterAddress: cfg.URL,
-				Connectors:     connectorInfo,
+				Connectors:     listConnectorsExpandedToClusterConnectorInfo(connectors),
 				Error:          errMsg,
 			}
 		}(cluster.Cfg, cluster.Client)
 	}
 
+	// Consume all list connector responses and merge them into a single array.
 	shards := make([]ClusterConnectors, cap(ch))
 	for i := 0; i < cap(ch); i++ {
 		shards[i] = <-ch
@@ -212,6 +196,8 @@ func (s *Service) GetConnectors(ctx context.Context) []ClusterConnectors {
 	return shards
 }
 
+// GetClusterConnectors returns the GET /connectors response for a single connect cluster. A cluster can be referenced
+// by it's name (as specified in the user config).
 func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) (ClusterConnectors, *rest.Error) {
 	c, exists := s.ClientsByCluster[clusterName]
 	if !exists {
@@ -230,39 +216,20 @@ func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) 
 		errMsg = err.Error()
 	}
 
-	connectorInfo := make([]ClusterConnectorInfo, 0, len(connectors))
-	for _, c := range connectors {
-		connectorInfo = append(connectorInfo, ClusterConnectorInfo{
-			Name:       c.Info.Name,
-			Class:      c.Info.Config["connector.class"],
-			Type:       c.Info.Type,
-			TotalTasks: len(c.Status.Tasks),
-		})
-	}
 	return ClusterConnectors{
 		ClusterName:    c.Cfg.Name,
 		ClusterAddress: c.Cfg.URL,
-		Connectors:     connectorInfo,
+		Connectors:     listConnectorsExpandedToClusterConnectorInfo(connectors),
 		Error:          errMsg,
 	}, nil
 }
 
-type ClusterConnectorInfoDetailed struct {
-	Name         string `json:"name"`
-	Class        string `json:"class"`
-	Type         string `json:"type"`  // Source or Sink
-	State        string `json:"state"` // Running, ..
-	Topic        string `json:"topic"`
-	TotalTasks   int    `json:"totalTasks"`
-	RunningTasks int    `json:"runningTasks"`
-}
-
 // GetConnector requests the connector info as well as the status info and merges both information together. If either
 // request fails an error will be returned.
-func (s *Service) GetConnector(ctx context.Context, clusterName string, connector string) (ClusterConnectorInfoDetailed, *rest.Error) {
+func (s *Service) GetConnector(ctx context.Context, clusterName string, connector string) (ClusterConnectorInfo, *rest.Error) {
 	c, exists := s.ClientsByCluster[clusterName]
 	if !exists {
-		return ClusterConnectorInfoDetailed{}, &rest.Error{
+		return ClusterConnectorInfo{}, &rest.Error{
 			Err:          fmt.Errorf("a client for the given cluster name does not exist"),
 			Status:       http.StatusNotFound,
 			Message:      "There's no configured cluster with the given connect cluster name",
@@ -273,7 +240,7 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 
 	cInfo, err := c.Client.GetConnector(ctx, connector)
 	if err != nil {
-		return ClusterConnectorInfoDetailed{}, &rest.Error{
+		return ClusterConnectorInfo{}, &rest.Error{
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
 			Message:      fmt.Sprintf("Failed to get connector info: %v", err.Error()),
@@ -281,18 +248,10 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 			IsSilent:     false,
 		}
 	}
-	className, exists := cInfo.Config["connector.class"]
-	if !exists {
-		className = "unknown"
-	}
-	topicName, exists := cInfo.Config["kafka.topic"]
-	if !exists {
-		topicName = "unknown"
-	}
 
 	stateInfo, err := c.Client.GetConnectorStatus(ctx, connector)
 	if err != nil {
-		return ClusterConnectorInfoDetailed{}, &rest.Error{
+		return ClusterConnectorInfo{}, &rest.Error{
 			Err:          err,
 			Status:       http.StatusServiceUnavailable,
 			Message:      fmt.Sprintf("Failed to get connector state: %v", err.Error()),
@@ -301,21 +260,28 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 		}
 	}
 
+	tasks := make([]ClusterConnectorTaskInfo, len(stateInfo.Tasks))
 	runningTasks := 0
-	for _, task := range stateInfo.Tasks {
+	for i, task := range stateInfo.Tasks {
+		tasks[i] = ClusterConnectorTaskInfo{
+			TaskID:   task.ID,
+			State:    task.State,
+			WorkerID: task.WorkerID,
+		}
 		if task.State == "RUNNING" {
 			runningTasks++
 		}
 	}
 
-	return ClusterConnectorInfoDetailed{
+	return ClusterConnectorInfo{
 		Name:         cInfo.Name,
-		Class:        className,
+		Class:        getMapValueOrString(cInfo.Config, "connector.class", "unknown"),
 		Type:         cInfo.Type,
 		State:        stateInfo.Connector.State,
-		Topic:        topicName,
+		Topic:        getMapValueOrString(cInfo.Config, "kafka.topic", "unknown"),
 		TotalTasks:   len(stateInfo.Tasks),
 		RunningTasks: runningTasks,
+		Tasks:        tasks,
 	}, nil
 }
 
