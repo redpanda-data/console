@@ -13,41 +13,6 @@ import (
 	"github.com/cloudhut/common/rest"
 )
 
-func (api *API) handleGetClusters() http.HandlerFunc {
-	type response struct {
-		ClusterShards []connect.GetClusterShard `json:"clusterShards"`
-		// Filtered describes the number of filtered clusters due to missing Kowl Business permissions
-		FilteredClusters int `json:"filtered"`
-	}
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
-		defer cancel()
-
-		filteredShards := make([]connect.GetClusterShard, 0)
-		filteredClusters := 0
-		clusters := api.ConnectSvc.GetClusters(ctx)
-		for _, cluster := range clusters {
-			clusterName := cluster.ClusterName
-			canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
-			if restErr != nil {
-				api.Logger.Error("failed to check view connect cluster permissions", zap.Error(restErr.Err))
-			}
-			if !canSee {
-				filteredClusters += 1
-				continue
-			}
-			filteredShards = append(filteredShards, cluster)
-		}
-
-		res := response{
-			ClusterShards:    filteredShards,
-			FilteredClusters: filteredClusters,
-		}
-		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
-	}
-}
-
 func (api *API) handleGetConnectors() http.HandlerFunc {
 	type responseFilterStats struct {
 		ClusterCount   int `json:"clusterCount"`
