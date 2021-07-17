@@ -20,6 +20,10 @@ type ClusterConnectorTaskInfo struct {
 }
 
 func listConnectorsExpandedToClusterConnectorInfo(l map[string]connect.ListConnectorsResponseExpanded) []ClusterConnectorInfo {
+	if l == nil {
+		return []ClusterConnectorInfo{}
+	}
+
 	connectorInfo := make([]ClusterConnectorInfo, 0, len(l))
 	for _, c := range l {
 		tasks := make([]ClusterConnectorTaskInfo, len(c.Status.Tasks))
@@ -41,6 +45,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]connect.ListConne
 			Topic:        getMapValueOrString(c.Info.Config, "kafka.topic", "unknown"),
 			Type:         c.Info.Type,
 			State:        c.Status.Connector.State,
+			Tasks:        tasks,
 			TotalTasks:   len(c.Status.Tasks),
 			RunningTasks: runningTasks,
 		})

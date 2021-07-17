@@ -158,10 +158,14 @@ func (s *Service) GetClusters(ctx context.Context) []GetClusterShard {
 }
 
 type ClusterConnectors struct {
-	ClusterName    string                 `json:"clusterName"`
-	ClusterAddress string                 `json:"clusterAddress"`
-	Connectors     []ClusterConnectorInfo `json:"connectors"`
-	Error          string                 `json:"error,omitempty"`
+	ClusterName    string           `json:"clusterName"`
+	ClusterAddress string           `json:"clusterAddress"`
+	ClusterInfo    con.RootResource `json:"clusterInfo"`
+
+	TotalConnectors   int                    `json:"totalConnectors"`
+	RunningConnectors int                    `json:"runningConnectors"`
+	Connectors        []ClusterConnectorInfo `json:"connectors"`
+	Error             string                 `json:"error,omitempty"`
 }
 
 // GetAllClusterConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
@@ -177,13 +181,40 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) []ClusterConnecto
 				s.Logger.Warn("failed to list connectors from Kafka connect cluster",
 					zap.String("cluster_name", cfg.Name), zap.String("cluster_address", cfg.URL), zap.Error(err))
 				errMsg = err.Error()
+
+				ch <- ClusterConnectors{
+					ClusterName:    cfg.Name,
+					ClusterAddress: cfg.URL,
+					Connectors:     listConnectorsExpandedToClusterConnectorInfo(connectors),
+					Error:          errMsg,
+				}
+				return
+			}
+
+			root, err := c.GetRoot(ctx)
+			if err != nil {
+				s.Logger.Warn("failed to list root resource from Kafka connect cluster",
+					zap.String("cluster_name", cfg.Name), zap.String("cluster_address", cfg.URL), zap.Error(err))
+				errMsg = err.Error()
+			}
+
+			totalConnectors := 0
+			runningConnectors := 0
+			for _, connector := range connectors {
+				totalConnectors++
+				if connector.Status.Connector.State == "RUNNING" {
+					runningConnectors++
+				}
 			}
 
 			ch <- ClusterConnectors{
-				ClusterName:    cfg.Name,
-				ClusterAddress: cfg.URL,
-				Connectors:     listConnectorsExpandedToClusterConnectorInfo(connectors),
-				Error:          errMsg,
+				ClusterName:       cfg.Name,
+				ClusterAddress:    cfg.URL,
+				ClusterInfo:       root,
+				TotalConnectors:   totalConnectors,
+				RunningConnectors: runningConnectors,
+				Connectors:        listConnectorsExpandedToClusterConnectorInfo(connectors),
+				Error:             errMsg,
 			}
 		}(cluster.Cfg, cluster.Client)
 	}
