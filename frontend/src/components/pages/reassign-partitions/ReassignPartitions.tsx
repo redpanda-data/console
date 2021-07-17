@@ -613,6 +613,17 @@ class ReassignPartitions extends PageComponent {
         );
     }
 
+    @computed get maximumSelectedReplicationFactor(): number {
+        let maxRf = 0;
+        for (const topicName in this.partitionSelection) {
+            const topic = api.topics?.first(x => x.topicName == topicName);
+            if (topic)
+                if (topic.replicationFactor > maxRf)
+                    maxRf = topic.replicationFactor;
+        }
+        return maxRf;
+    }
+
     @computed get topicsWithMoves(): TopicWithMoves[] {
         if (this.reassignmentRequest == null) return [];
         if (api.topics == null) return [];
@@ -637,7 +648,11 @@ interface WizardStep {
     title: string;
     icon: React.ReactElement;
     backButton?: string;
-    nextButton: { text: string; isEnabled: (c: ReassignPartitions) => boolean | string };
+    nextButton: {
+        text: string;
+        isEnabled: (rp: ReassignPartitions) => boolean | string;
+        computeWarning?: (rp: ReassignPartitions) => string | undefined;
+    };
 }
 const steps: WizardStep[] = [
     {
@@ -645,7 +660,8 @@ const steps: WizardStep[] = [
         icon: <UnorderedListOutlined />,
         nextButton: {
             text: 'Select Target Brokers',
-            isEnabled: c => Object.keys(c.partitionSelection).length > 0
+            // Can only continue if at least one partition was selected
+            isEnabled: rp => Object.keys(rp.partitionSelection).length > 0
         }
     },
     {
@@ -654,13 +670,41 @@ const steps: WizardStep[] = [
         backButton: 'Select Partitions',
         nextButton: {
             text: 'Review Plan',
-            isEnabled: c => {
-                const partitions = Object.keys(c.partitionSelection).map(t => ({ topic: api.topics!.first(x => x.topicName == t)!, partitions: api.topicPartitions.get(t)! }));
-                if (partitions.any(p => p.partitions == null || p.topic == null)) return false;
-                const maxRf = partitions.max(p => p.topic.replicationFactor);
-                if (c.selectedBrokerIds.length >= maxRf)
-                    return true;
-                return `Select at least ${maxRf} brokers`;
+            // Can only continue if enough brokers are selected,
+            // so all replicas of each partitions can be put on a different broker.
+            isEnabled: rp => {
+                const maxRf = rp.maximumSelectedReplicationFactor;
+
+                if (rp.selectedBrokerIds.length < maxRf)
+                    return `Select at least ${maxRf} brokers`;
+
+                return true;
+            },
+            computeWarning: rp => {
+                const allBrokers = api.clusterInfo?.brokers;
+                if (!allBrokers) return undefined;
+
+                // Show a warning if the user has selected brokers that are all in the same rack, but
+                // could theoretically select brokers that are in different racks.
+                const allRacks = allBrokers.map(x => x.rack ?? '').distinct();
+                if (!allRacks) return undefined; // can't happen since no brokers == can't reach this page anyway
+                if (allRacks.length <= 1) return undefined; // Ok, all available brokers are on the same rack
+
+                // At least 2 racks available
+                const selectedBrokers = rp.selectedBrokerIds
+                    .map(id => allBrokers.first(x => x.brokerId == id)) // map ID to Broker
+                    .filter(Boolean) as Broker[]; // filter missing entries
+                const selectedRacks = selectedBrokers.map(x => x.rack ?? '').distinct();
+
+                if (selectedRacks.length == 1 && allRacks.length >= 2) {
+                    let selectedRack = selectedRacks[0];
+                    if (!selectedRack || selectedRack.length == 0) selectedRack = "(empty)";
+                    const msgStart = selectedBrokers.length == 1
+                        ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
+                        : "";
+
+
+                }
             }
         }
     },
@@ -674,6 +718,3 @@ const steps: WizardStep[] = [
         }
     },
 ];
-
-
-

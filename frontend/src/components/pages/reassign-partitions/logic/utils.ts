@@ -186,3 +186,9 @@ export function topicAssignmentsToReassignmentRequest(topicAssignments: TopicAss
 
     return { topics: topics };
 }
+
+// Bad = only brokers from a single rack are selected, and there are other brokers that
+// could also be selected that are in different racks
+export function isBadBrokerSelection(): boolean {
+    this.brokers
+}
