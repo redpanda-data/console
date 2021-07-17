@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/linkedin/goavro/v2"
@@ -100,21 +101,36 @@ func (s *Service) GetProtoDescriptors() (map[int]*desc.FileDescriptor, error) {
 	return descriptors, nil
 }
 
+func (s *Service) addReferences(schema SchemaVersionedResponse, schemaRepository map[string]map[int]SchemaVersionedResponse, schemasByPath map[string]string) error {
+
+	for _, ref := range schema.References {
+		refSubject, exists := schemaRepository[ref.Subject]
+		if !exists {
+			return fmt.Errorf("failed to resolve reference. Reference with subject '%' does not exist", ref.Subject)
+		}
+		refSchema, exists := refSubject[ref.Version]
+		if !exists {
+			return fmt.Errorf("failed to resolve reference. Reference with subject '%', version '%d' does not exist", ref.Subject, ref.Version)
+		}
+		// The reference name is the name that has been used for the import in the proto schema (e.g. 'customer.proto')
+		schemasByPath[ref.Name] = refSchema.Schema
+
+		err := s.addReferences(refSchema, schemaRepository, schemasByPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepository map[string]map[int]SchemaVersionedResponse) (*desc.FileDescriptor, error) {
 	// 1. Let's find the references for each schema and put the references' schemas into our in memory filesystem.
 	schemasByPath := make(map[string]string)
 	schemasByPath[schema.Subject] = schema.Schema
-	for _, ref := range schema.References {
-		refSubject, exists := schemaRepository[ref.Subject]
-		if !exists {
-			return nil, fmt.Errorf("failed to resolve reference. Reference with subject '%' does not exist", ref.Subject)
-		}
-		refSchema, exists := refSubject[ref.Version]
-		if !exists {
-			return nil, fmt.Errorf("failed to resolve reference. Reference with subject '%', version '%d' does not exist", ref.Subject, ref.Version)
-		}
-		// The reference name is the name that has been used for the import in the proto schema (e.g. 'customer.proto')
-		schemasByPath[ref.Name] = refSchema.Schema
+	err := s.addReferences(schema, schemaRepository, schemasByPath)
+	if err != nil {
+		return nil, err
 	}
 
 	// 2. Parse schema to descriptor file
