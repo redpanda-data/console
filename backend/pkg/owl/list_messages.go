@@ -53,21 +53,46 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 
 	progress.OnPhase("Get Partitions")
 	// Create array of partitionIDs which shall be consumed (always do that to ensure the requested topic exists at all)
-	partitions, err := s.kafkaSvc.ListPartitionIDs(ctx, listReq.TopicName)
-	if err != nil {
-		return fmt.Errorf("failed to get partitions: %w", err)
+	metadata, restErr := s.kafkaSvc.GetSingleMetadata(ctx, listReq.TopicName)
+	if restErr != nil {
+		return fmt.Errorf("failed to get partitions: %w", restErr.Err)
 	}
 
-	// Check if requested partitionID exists
-	if listReq.PartitionID > int32(len(partitions)) {
-		return fmt.Errorf("requested partitionID (%v) is greater than number of partitions (%v)", listReq.PartitionID, len(partitions))
+	partitionByID := make(map[int32]kmsg.MetadataResponseTopicPartition)
+	onlinePartitionIDs := make([]int32, 0)
+	offlinePartitionIDs := make([]int32, 0)
+	for _, partition := range metadata.Partitions {
+		partitionByID[partition.Partition] = partition
+
+		err := kerr.TypedErrorForCode(partition.ErrorCode)
+		if err != nil {
+			offlinePartitionIDs = append(offlinePartitionIDs, partition.Partition)
+			continue
+		}
+		onlinePartitionIDs = append(onlinePartitionIDs, partition.Partition)
 	}
 
-	partitionIDs := make([]int32, 0, len(partitions))
+	partitionIDs := make([]int32, len(onlinePartitionIDs))
 	if listReq.PartitionID == partitionsAll {
-		partitionIDs = partitions
+		if len(offlinePartitionIDs) > 0 {
+			progress.OnError(
+				fmt.Sprintf("%v of the requested partitions are offline. Messages will be listed from the remaining %v partitions",
+					len(offlinePartitionIDs), len(onlinePartitionIDs)),
+			)
+		}
+		partitionIDs = onlinePartitionIDs
 	} else {
-		partitionIDs = append(partitionIDs, listReq.PartitionID)
+		// Check if requested partitionID exists
+		pInfo, exists := partitionByID[listReq.PartitionID]
+		if !exists {
+			return fmt.Errorf("requested partitionID (%v) does not exist in topic (%v)", listReq.PartitionID, listReq.TopicName)
+		}
+
+		// Check if the requested partitionID is available
+		if err := kerr.ErrorForCode(pInfo.ErrorCode); err != nil {
+			return fmt.Errorf("requested partitionID (%v) is not available: %w", listReq.PartitionID, err)
+		}
+		partitionIDs = []int32{listReq.PartitionID}
 	}
 
 	progress.OnPhase("Get Watermarks and calculate consuming requests")

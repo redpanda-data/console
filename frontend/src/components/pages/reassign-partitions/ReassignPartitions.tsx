@@ -69,6 +69,7 @@ class ReassignPartitions extends PageComponent {
     @observable requestInProgress = false;
 
     autoScrollReactionDisposer: IReactionDisposer | null = null;
+    resetSelectionOnErrorsReactionDisposer: IReactionDisposer | null = null;
 
 
     constructor(p: any) {
@@ -105,6 +106,28 @@ class ReassignPartitions extends PageComponent {
             if (currentStep != 0)
                 setTimeout(() => scrollTo('wizard', 'start', -20), 20);
         })
+        this.resetSelectionOnErrorsReactionDisposer = autorun(() => {
+            if (this.selectedBrokerIds.length == 0) {
+                const selectedTopicPartitions = Object.values(this.partitionSelection);
+                if (selectedTopicPartitions.length == 0 || selectedTopicPartitions.all(x => x.length == 0))
+                    return;  // nothing selected so far
+            }
+
+            let reset = false;
+
+            // has user selected a broker that is not available anymore?
+            if (this.selectedBrokerIds.any(x => api.clusterInfo?.brokers.find(b => b.brokerId == x) == undefined))
+                reset = true;
+
+            // has user selected a topic partition that is not available anymore?
+            if (reset == false)
+                if (this.selectedTopicPartitions == null)
+                    reset = true;
+
+            if (reset) {
+                this.resetSelectionAndPage(true, true);
+            }
+        })
 
         reassignmentTracker.start();
     }
@@ -119,6 +142,7 @@ class ReassignPartitions extends PageComponent {
     componentWillUnmount() {
         reassignmentTracker.stop();
         if (this.autoScrollReactionDisposer) this.autoScrollReactionDisposer();
+        if (this.resetSelectionOnErrorsReactionDisposer) this.resetSelectionOnErrorsReactionDisposer();
 
         this.stopRefreshingTopicConfigs();
     }
@@ -126,6 +150,15 @@ class ReassignPartitions extends PageComponent {
     render() {
         if (!api.clusterInfo) return DefaultSkeleton;
         if (!api.topics) return DefaultSkeleton;
+
+        // wait until every topic has partitions, and no partitions have errors
+        for (const t of api.topics) {
+            const p = api.topicPartitions.get(t.topicName);
+            if (!p)
+                // no partitions for this topic yet...
+                return null;
+        }
+
         if (api.topicPartitions.size < api.topics.length) return DefaultSkeleton;
         if (api.partitionReassignments === undefined) return DefaultSkeleton;
 
@@ -225,6 +258,29 @@ class ReassignPartitions extends PageComponent {
         </>
     }
 
+    resetSelectionAndPage(scrollTop: boolean, showSelectionWarning: boolean) {
+        transaction(() => {
+            this.refreshData(true);
+            this.partitionSelection = {};
+            this.selectedBrokerIds = [];
+            this.reassignmentRequest = null;
+
+            if (showSelectionWarning)
+                notification.warn({
+                    message: 'Selection has been reset',
+                    description: 'Your selection contained brokers or partitions that are not available anymore after the refresh. \n' +
+                        'Your selection has been reset.',
+                    duration: 0,
+                });
+
+            if (scrollTop)
+                setTimeout(() => {
+                    this.currentStep = 0;
+                    setImmediate(() => scrollToTop());
+                }, 300);
+        });
+    }
+
     // will be wrapped in a 'transaction' since we're modifying multiple observables
     onNextPage() {
         if (this.currentStep == 0) {
@@ -233,16 +289,28 @@ class ReassignPartitions extends PageComponent {
 
         if (this.currentStep == 1) {
             // Assign -> Review
-            const topicPartitions: TopicPartitions[] = this.selectedTopicPartitions;
+            const topicPartitions = this.selectedTopicPartitions;
+            if (topicPartitions == null) {
+                this.resetSelectionAndPage(true, true);
+                return;
+            }
+
             const targetBrokers = this.selectedBrokerIds.map(id => api.clusterInfo?.brokers.first(b => b.brokerId == id)).filterFalsy();
             if (targetBrokers.any(b => b == null))
                 throw new Error('one or more broker ids could not be mapped to broker entries');
+
+            const apiTopicPartitions = new Map<string, Partition[]>();
+            for (const [topicName, partitions] of api.topicPartitions) {
+                if (!partitions) continue;
+                const validOnly = partitions.filter(x => !x.hasErrors);
+                apiTopicPartitions.set(topicName, validOnly);
+            }
 
             // error checking will happen inside computeReassignments
             const apiData = {
                 brokers: api.clusterInfo!.brokers,
                 topics: api.topics as Topic[],
-                topicPartitions: api.topicPartitions as Map<string, Partition[]>
+                topicPartitions: apiTopicPartitions
             };
 
             const topicAssignments = computeReassignments(
@@ -251,9 +319,9 @@ class ReassignPartitions extends PageComponent {
                 targetBrokers
             );
 
-            this._debug_apiData = apiData;
-            this._debug_topicPartitions = topicPartitions;
-            this._debug_brokers = targetBrokers;
+            // this._debug_apiData = apiData;
+            // this._debug_topicPartitions = topicPartitions;
+            // this._debug_brokers = targetBrokers;
 
 
             this.reassignmentRequest = topicAssignmentsToReassignmentRequest(topicAssignments);
@@ -276,17 +344,7 @@ class ReassignPartitions extends PageComponent {
                     const success = await this.startReassignment(request);
                     if (success) {
                         // Reset settings, go back to first page
-                        transaction(() => {
-                            this.refreshData(true);
-                            this.partitionSelection = {};
-                            this.selectedBrokerIds = [];
-                            this.reassignmentRequest = null;
-
-                            setTimeout(() => {
-                                this.currentStep = 0;
-                                setImmediate(() => scrollToTop());
-                            }, 300);
-                        });
+                        this.resetSelectionAndPage(true, false);
                     }
                 }
                 catch (err) {
@@ -542,12 +600,28 @@ class ReassignPartitions extends PageComponent {
 
     }
 
-    @computed get selectedTopicPartitions(): TopicPartitions[] {
+    @computed get selectedTopicPartitions(): TopicPartitions[] | undefined {
+        const apiTopics = api.topics;
+        if (!apiTopics) return undefined;
+        const apiPartitions = api.topicPartitions;
+        if (!apiPartitions) return undefined;
+
         return partitionSelectionToTopicPartitions(
             this.partitionSelection,
-            api.topicPartitions,
-            api.topics!
+            apiPartitions,
+            apiTopics
         );
+    }
+
+    @computed get maximumSelectedReplicationFactor(): number {
+        let maxRf = 0;
+        for (const topicName in this.partitionSelection) {
+            const topic = api.topics?.first(x => x.topicName == topicName);
+            if (topic)
+                if (topic.replicationFactor > maxRf)
+                    maxRf = topic.replicationFactor;
+        }
+        return maxRf;
     }
 
     @computed get topicsWithMoves(): TopicWithMoves[] {
@@ -574,7 +648,11 @@ interface WizardStep {
     title: string;
     icon: React.ReactElement;
     backButton?: string;
-    nextButton: { text: string; isEnabled: (c: ReassignPartitions) => boolean | string };
+    nextButton: {
+        text: string;
+        isEnabled: (rp: ReassignPartitions) => boolean | string;
+        computeWarning?: (rp: ReassignPartitions) => string | undefined;
+    };
 }
 const steps: WizardStep[] = [
     {
@@ -582,7 +660,8 @@ const steps: WizardStep[] = [
         icon: <UnorderedListOutlined />,
         nextButton: {
             text: 'Select Target Brokers',
-            isEnabled: c => Object.keys(c.partitionSelection).length > 0
+            // Can only continue if at least one partition was selected
+            isEnabled: rp => Object.keys(rp.partitionSelection).length > 0
         }
     },
     {
@@ -591,13 +670,41 @@ const steps: WizardStep[] = [
         backButton: 'Select Partitions',
         nextButton: {
             text: 'Review Plan',
-            isEnabled: c => {
-                const partitions = Object.keys(c.partitionSelection).map(t => ({ topic: api.topics!.first(x => x.topicName == t)!, partitions: api.topicPartitions.get(t)! }));
-                if (partitions.any(p => p.partitions == null || p.topic == null)) return false;
-                const maxRf = partitions.max(p => p.topic.replicationFactor);
-                if (c.selectedBrokerIds.length >= maxRf)
-                    return true;
-                return `Select at least ${maxRf} brokers`;
+            // Can only continue if enough brokers are selected,
+            // so all replicas of each partitions can be put on a different broker.
+            isEnabled: rp => {
+                const maxRf = rp.maximumSelectedReplicationFactor;
+
+                if (rp.selectedBrokerIds.length < maxRf)
+                    return `Select at least ${maxRf} brokers`;
+
+                return true;
+            },
+            computeWarning: rp => {
+                const allBrokers = api.clusterInfo?.brokers;
+                if (!allBrokers) return undefined;
+
+                // Show a warning if the user has selected brokers that are all in the same rack, but
+                // could theoretically select brokers that are in different racks.
+                const allRacks = allBrokers.map(x => x.rack ?? '').distinct();
+                if (!allRacks) return undefined; // can't happen since no brokers == can't reach this page anyway
+                if (allRacks.length <= 1) return undefined; // Ok, all available brokers are on the same rack
+
+                // At least 2 racks available
+                const selectedBrokers = rp.selectedBrokerIds
+                    .map(id => allBrokers.first(x => x.brokerId == id)) // map ID to Broker
+                    .filter(Boolean) as Broker[]; // filter missing entries
+                const selectedRacks = selectedBrokers.map(x => x.rack ?? '').distinct();
+
+                if (selectedRacks.length == 1 && allRacks.length >= 2) {
+                    let selectedRack = selectedRacks[0];
+                    if (!selectedRack || selectedRack.length == 0) selectedRack = "(empty)";
+                    const msgStart = selectedBrokers.length == 1
+                        ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
+                        : "";
+
+
+                }
             }
         }
     },
@@ -611,6 +718,3 @@ const steps: WizardStep[] = [
         }
     },
 ];
-
-
-

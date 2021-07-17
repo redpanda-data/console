@@ -8,18 +8,27 @@ export function partitionSelectionToTopicPartitions(
     partitionSelection: PartitionSelection,
     apiTopicPartitions: Map<string, Partition[] | null>,
     apiTopics: Topic[]
-): TopicPartitions[] {
+): TopicPartitions[] | undefined {
 
     const ar: TopicPartitions[] = [];
-    for (const [topicName, partitions] of apiTopicPartitions) {
-        if (partitions == null) continue;
-        if (partitionSelection[topicName] == null) continue;
-        const topic = apiTopics?.first(t => t.topicName == topicName);
-        if (topic == null) continue;
 
-        const relevantPartitions = partitions.filter(p => partitionSelection[topicName].includes(p.id));
-        ar.push({ topic: topic, partitions: relevantPartitions });
+    for (const topicName in partitionSelection) {
+        const topic = apiTopics.first(x => x.topicName == topicName);
+        if (!topic) return undefined; // topic not available
+
+        const allPartitions = apiTopicPartitions.get(topicName);
+        if (!allPartitions) return undefined; // partitions for topic not available
+
+        const partitionIds = partitionSelection[topicName];
+        const relevantPartitions = partitionIds.map(id => allPartitions.first(p => p.id == id));
+        if (relevantPartitions.any(p => p == null))
+            return undefined; // at least one selected partition not available
+
+        // we've checked that there can't be any falsy partitions
+        // so we assert that 'relevantPartitions' is the right type
+        ar.push({ topic: topic, partitions: relevantPartitions as Partition[] });
     }
+
     return ar;
 }
 
@@ -49,12 +58,33 @@ export function computeMovedReplicas(
                 .first(t => t.topicName == topicName)?.partitions
                 .first(e => e.partitionId == partition.id)?.replicas;
 
-            let moves = 0;
+            let added = 0;
+            let removed = 0;
+            let changedLeader = false;
+            let anyChanges = false;
+
             if (newBrokers) {
-                const intersection = oldBrokers.intersection(newBrokers);
-                moves = oldBrokers.length - intersection.length;
+                // find those brokers that are completely new (did not previously host a replica of this partition)
+                added = newBrokers.except(oldBrokers).length;
+                removed = oldBrokers.except(newBrokers).length;
+                changedLeader = oldBrokers[0] != newBrokers[0];
+
+                anyChanges = changedLeader || oldBrokers.length != newBrokers.length;
+                if (!anyChanges) {
+                    for (let i = 0; i < oldBrokers.length && !anyChanges; i++)
+                        if (oldBrokers[i] != newBrokers[i])
+                            anyChanges = true;
+                }
             }
-            partitionsWithMoves.push({ ...partition, movedReplicas: moves, brokersBefore: oldBrokers, brokersAfter: newBrokers ?? [] });
+            partitionsWithMoves.push({
+                ...partition,
+                brokersBefore: oldBrokers,
+                brokersAfter: newBrokers ?? [],
+                numAddedBrokers: added,
+                numRemovedBrokers: removed,
+                changedLeader: changedLeader,
+                anyChanges: anyChanges,
+            });
         }
 
         ar.push({
@@ -155,4 +185,10 @@ export function topicAssignmentsToReassignmentRequest(topicAssignments: TopicAss
     }
 
     return { topics: topics };
+}
+
+// Bad = only brokers from a single rack are selected, and there are other brokers that
+// could also be selected that are in different racks
+export function isBadBrokerSelection(): boolean {
+    this.brokers
 }

@@ -56,6 +56,7 @@ export interface Partition {
     // added by frontend:
     replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
     topicName: string; // used for finding the actual topic this partition belongs to (in case we pass around a partition reference on its own)
+    hasErrors: boolean; // just (partitionError || waterMarksError)
 }
 
 export interface GetPartitionsResponse {

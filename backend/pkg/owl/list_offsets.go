@@ -39,34 +39,30 @@ func (s *Service) ListOffsets(ctx context.Context, topicNames []string, timestam
 			topicPartitions[topic.Topic] = append(topicPartitions[topic.Topic], partition.Partition)
 		}
 	}
-	kres, err := s.kafkaSvc.ListOffsets(ctx, topicPartitions, timestamp)
-	if err != nil {
-		return nil, err
-	}
+	offsets := s.kafkaSvc.ListOffsets(ctx, topicPartitions, timestamp)
 
-	offsetResponses := make([]TopicOffset, len(kres.Topics))
-	for i, topic := range kres.Topics {
-		pOffsets := make([]PartitionOffset, len(topic.Partitions))
-		for j, partition := range topic.Partitions {
-			err := kerr.ErrorForCode(partition.ErrorCode)
+	offsetResponses := make([]TopicOffset, 0, len(offsets))
+	for topicName, partitions := range offsets {
+		pOffsets := make([]PartitionOffset, len(partitions))
+		for pID, partition := range partitions {
 			if err != nil {
-				pOffsets[j] = PartitionOffset{
+				pOffsets[pID] = PartitionOffset{
 					Error:       err.Error(),
-					PartitionID: partition.Partition,
+					PartitionID: pID,
 					Offset:      partition.Offset,
 				}
 			}
 
-			pOffsets[j] = PartitionOffset{
-				PartitionID: partition.Partition,
+			pOffsets[pID] = PartitionOffset{
+				PartitionID: pID,
 				Offset:      partition.Offset,
 				Timestamp:   partition.Timestamp,
 			}
 		}
-		offsetResponses[i] = TopicOffset{
-			TopicName:  topic.Topic,
+		offsetResponses = append(offsetResponses, TopicOffset{
+			TopicName:  topicName,
 			Partitions: pOffsets,
-		}
+		})
 	}
 
 	return offsetResponses, nil

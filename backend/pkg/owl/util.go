@@ -18,3 +18,10 @@ func find(slice []string, val string) (int, bool) {
 	}
 	return -1, false
 }
+
+func errToString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}

@@ -61,7 +61,7 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 		var errMessage string
 		if err != nil {
 			s.Logger.Debug("failed to check if message is ok", zap.Error(err))
-			errMessage = fmt.Sprintf("Failed to check if message is ok (partition: '%v', offset: '%v'). Error: %v", record.Partition, record.Offset, err)
+			errMessage = fmt.Sprintf("Failed to check if message is ok (partition: '%v', offset: '%v'). Err: %v", record.Partition, record.Offset, err)
 		}
 
 		topicMessage := &TopicMessage{

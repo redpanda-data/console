@@ -88,7 +88,7 @@ export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE,
         pageSize: pageSize,
 
         showSizeChanger: true,
-        pageSizeOptions: ['10', '20', '50', '100'],
+        pageSizeOptions: ['10', '20', '50', '100', '200'],
         showTotal: (total: number) => `Total ${total} items`,
         hideOnSinglePage: hideOnSinglePage ?? false,
     };

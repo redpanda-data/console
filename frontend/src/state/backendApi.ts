@@ -11,7 +11,8 @@ import {
     AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest,
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, KafkaConnectors, ConnectClusters, KafkaConnectorInfoWithStatus, ListConnectorsExpanded
+    KafkaConnectors, ConnectClusters, KafkaConnectorInfoWithStatus, ListConnectorsExpanded,
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -434,7 +435,7 @@ const apiStore = {
 
                     for (const t of response.topics) {
                         if (t.error != null) {
-                            console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
+                            // console.error(`refreshAllTopicPartitions: error for topic ${t.topicName}: ${t.error}`);
                             continue;
                         }
 
@@ -453,7 +454,10 @@ const apiStore = {
                                 waterMarkErrors.push({ partitionId: p.id, error: p.waterMarksError });
                                 partitionHasError = true;
                             }
-                            if (partitionHasError) continue;
+                            if (partitionHasError) {
+                                p.hasErrors = true;
+                                continue;
+                            }
 
                             // Add some local/cached properties to make working with the data easier
                             const validLogDirs = p.partitionLogDirs.filter(e => !e.error && e.size >= 0);
@@ -461,9 +465,11 @@ const apiStore = {
                             p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
                         }
 
+                        // Set partition
+                        this.topicPartitions.set(t.topicName, t.partitions);
+
                         if (partitionErrors.length == 0 && waterMarkErrors.length == 0) {
-                            // Set partition
-                            this.topicPartitions.set(t.topicName, t.partitions);
+
                         } else {
                             errors.push({
                                 topicName: t.topicName,
@@ -473,8 +479,8 @@ const apiStore = {
                         }
                     }
 
-                    if (errors.length > 0)
-                        console.error('refreshAllTopicPartitions: response had errors', errors);
+                    // if (errors.length > 0)
+                    //     console.error('refreshAllTopicPartitions: response had errors', errors);
                 });
             }, addError);
     },
@@ -482,35 +488,37 @@ const apiStore = {
     refreshPartitionsForTopic(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
             .then(response => {
-                if (response?.partitions) {
-                    let partitionErrors = 0, waterMarkErrors = 0;
-
-                    // Add some local/cached properties to make working with the data easier
-                    for (const p of response.partitions) {
-                        // topicName
-                        p.topicName = topicName;
-
-                        if (p.partitionError) partitionErrors++;
-                        if (p.waterMarksError) waterMarkErrors++;
-                        if (partitionErrors || waterMarkErrors) continue;
-
-                        // replicaSize
-                        const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
-                        const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
-                        p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
-                    }
-
-                    if (partitionErrors == 0 && waterMarkErrors == 0) {
-                        // Set partitions
-                        this.topicPartitions.set(topicName, response.partitions);
-                    } else {
-                        console.error(`refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors}, w=${waterMarkErrors})`)
-                    }
-
-                } else {
+                if (!response?.partitions) {
                     // Set null to indicate that we're not allowed to see the partitions
                     this.topicPartitions.set(topicName, null);
+                    return;
                 }
+
+                let partitionErrors = 0, waterMarkErrors = 0;
+
+                // Add some local/cached properties to make working with the data easier
+                for (const p of response.partitions) {
+                    // topicName
+                    p.topicName = topicName;
+
+                    if (p.partitionError) partitionErrors++;
+                    if (p.waterMarksError) waterMarkErrors++;
+                    if (partitionErrors || waterMarkErrors) {
+                        p.hasErrors = true;
+                        continue;
+                    }
+
+                    // replicaSize
+                    const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                    const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
+                    p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+                }
+
+                // Set partitions
+                this.topicPartitions.set(topicName, response.partitions);
+
+                if (partitionErrors > 0 || waterMarkErrors > 0)
+                    console.warn(`refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`);
             }, addError);
     },
 
