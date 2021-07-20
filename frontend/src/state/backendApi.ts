@@ -434,8 +434,20 @@ const apiStore = {
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
-    async deleteTopic(name: string) {
-        return rest(`./api/topics/${encodeURIComponent(name)}`, REST_TIMEOUT_SEC, { method: 'DELETE'});
+    async deleteTopic(topicName: string) {
+        return rest(`./api/topics/${encodeURIComponent(topicName)}`, REST_TIMEOUT_SEC, { method: 'DELETE'});
+    },
+
+    async deleteTopicRecords(topicName: string, partitionId: number, offset: number) {
+        return rest(`./topics/${topicName}/records`, REST_TIMEOUT_SEC, {
+            method: "DELETE",
+            body: JSON.stringify({
+                partitions: {
+                    partitionId,
+                    offset
+                }
+            })
+        });
     },
 
     refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
