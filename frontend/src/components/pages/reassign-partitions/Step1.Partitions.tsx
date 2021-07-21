@@ -17,6 +17,7 @@ import { uiSettings } from "../../../state/ui";
 import { ColumnFilterItem, ColumnsType, ExpandableConfig, FilterDropdownProps, TableRowSelection } from "antd/lib/table/interface";
 import { SearchOutlined, WarningTwoTone } from "@ant-design/icons";
 import { AlertIcon } from "@primer/octicons-v2-react";
+import { SearchTitle } from "../../misc/KowlTable";
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
 
@@ -79,7 +80,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
             {
-                title: <SearchTitle title='Topic' isFilterOpen={() => this.filterOpen} setFilterOpen={x => this.filterOpen = x} />,
+                title: <SearchTitle title='Topic' observableFilterOpen={this} observableSettings={uiSettings.reassignment} />,
                 dataIndex: 'topicName',
                 render: (v, record) => {
                     const content = filterActive
@@ -412,77 +413,6 @@ export class SelectPartitionTable extends Component<{
         return { disabled: p.hasErrors };
     }
 }
-
-@observer
-class SearchTitle extends Component<{ title: string, isFilterOpen: () => boolean, setFilterOpen: (x: boolean) => void }> {
-    inputRef = React.createRef<Input>(); // reference to input, used to focus it
-
-    constructor(p: any) {
-        super(p);
-        this.hideSearchBar = this.hideSearchBar.bind(this);
-        this.onKeyDown = this.onKeyDown.bind(this);
-    }
-
-    render() {
-        if (!this.props.isFilterOpen())
-            return this.props.title;
-
-        // Render the actual search bar
-
-        setImmediate(() => { // inputRef won't be set yet, so we delay by one frame
-            this.inputRef.current?.focus();
-        });
-
-        return <span>
-            <span >{this.props.title}</span>
-            <div className="tableInlineSearchBox"
-                onClick={e => e.stopPropagation()}
-                onMouseDown={e => e.stopPropagation()}
-                onMouseUp={e => e.stopPropagation()}
-                style={{
-                    position: 'absolute', top: 0, right: '36px', bottom: 0, left: 0,
-                    display: 'flex', placeContent: 'center', placeItems: 'center',
-                    padding: '4px 6px',
-                }}
-            >
-                <Input
-                    ref={this.inputRef}
-                    onBlur={e => {
-                        const inputWrapper = e.target.parentElement;
-                        const focusInside = inputWrapper?.contains((e.relatedTarget as HTMLElement));
-
-                        if (focusInside) {
-                            // Most likely a click on the "clear" button
-                            uiSettings.reassignment.quickSearch = "";
-                            this.hideSearchBar();
-                        } else {
-
-                            setTimeout(this.hideSearchBar);
-                        }
-                    }}
-                    onKeyDown={this.onKeyDown}
-                    allowClear={true}
-                    placeholder="Enter search term or /regex/"
-                    value={uiSettings.reassignment.quickSearch}
-                    onChange={e => uiSettings.reassignment.quickSearch = e.target.value}
-                    style={{ borderRadius: '3px' }}
-                    spellCheck={false}
-                />
-            </div>
-        </span>
-
-    }
-
-    hideSearchBar() {
-        this.props.setFilterOpen(false);
-    }
-
-    onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-        if (e.key == 'Enter' || e.key == 'Escape')
-            this.hideSearchBar();
-    }
-}
-
 
 function filterIcon(filterActive: boolean) {
     return <div style={{

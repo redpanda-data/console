@@ -805,16 +805,51 @@ export interface ConnectClusterShard { // GetClusterShard
     error?: string;
 }
 
+
 // GET "/kafka-connect/connectors"
 export interface KafkaConnectors { // response
-    connectorShards: GetConnectorsShard[];
+    clusters: ClusterConnectors[];
     filtered: {
         clusterCount: number;
         connectorCount: number;
     };
 }
 
+export interface ClusterConnectors { // ClusterConnectors
+    clusterName: string;
+    clusterAddress: string;
+    clusterInfo: {
+        version: string;
+        commit: string;
+        kafka_cluster_id: string;
+    };
 
+    totalConnectors: number;
+    runningConnectors: number;
+    connectors: ClusterConnectorInfo[];
+
+    error?: string;
+}
+
+export interface ClusterConnectorInfo {
+    name: string;
+    class: string; // java class name
+    type: string;  // Source or Sink
+    topic: string; // Kafka Topic name
+    state: string; // Running, ...
+
+    totalTasks: number;
+    runningTasks: number;
+    tasks: ClusterConnectorTaskInfo[];
+}
+
+export interface ClusterConnectorTaskInfo {
+    taskId: number;
+    state: string;
+    workerId: string;
+}
+
+/*
 // GET "/kafka-connect/clusters/{clusterName}/connectors"
 export interface GetConnectorsShard { // GetConnectorsShard
     clusterName: string;
@@ -870,7 +905,7 @@ export interface KafkaConnectorInfoWithStatus { // ConnectorInfoWithStatus
         [key: string]: string;
     };
 }
-
+*/
 
 // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
 // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)

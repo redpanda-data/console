@@ -11,7 +11,7 @@ import {
     AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest,
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
-    KafkaConnectors, ConnectClusters, KafkaConnectorInfoWithStatus, ListConnectorsExpanded,
+    KafkaConnectors, ConnectClusters,
     GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
@@ -204,11 +204,7 @@ const apiStore = {
 
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
-    // connectConnectors: undefined as (KafkaConnectors | undefined),
-    connectClusters: undefined as (ConnectClusters | undefined),
-    connectClusterConnectors: new Map<string, Map<string, ListConnectorsExpanded>>(), // clusterName -> connector -> status
-    connectClusterConnectorDetails: new Map<string, Map<string, KafkaConnectorInfoWithStatus>>(), // clusterName -> connector -> status
-
+    connectConnectors: undefined as (KafkaConnectors | undefined),
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -847,32 +843,32 @@ const apiStore = {
 
 
     refreshConnectClusters(force?: boolean): void {
-        cachedApiRequest<ConnectClusters | null>('./api/kafka-connect/clusters', force)
-            .then(v => this.connectClusters = (v ?? undefined), addError);
+        cachedApiRequest<KafkaConnectors | null>('./api/kafka-connect/connectors', force)
+            .then(v => this.connectConnectors = (v ?? undefined), addError);
     },
+    /*
+        // All, or for specific cluster
+        refreshConnectors(clusterName?: string, force?: boolean): Promise<void> {
+            const url = clusterName == null
+                ? './api/kafka-connect/connectors'
+                : `./api/kafka-connect/clusters/${clusterName}/connectors`;
+            return cachedApiRequest<KafkaConnectors | null>(url, force)
+                .then(v => {
+                    if (v == null) {
 
-    // All, or for specific cluster
-    refreshConnectors(clusterName?: string, force?: boolean): Promise<void> {
-        const url = clusterName == null
-            ? './api/kafka-connect/connectors'
-            : `./api/kafka-connect/clusters/${clusterName}/connectors`;
-        return cachedApiRequest<KafkaConnectors | null>(url, force)
-            .then(v => {
-                if (v == null) {
-
-                }
-            }, addError);
-    },
+                    }
+                }, addError);
+        },
 
 
-    // Details for one connector
-    refreshConnectorDetails(clusterName: string, connectorName: string, force?: boolean): void {
-        cachedApiRequest<KafkaConnectors | null>(`./api/kafka-connect/clusters/${clusterName}/connectors/${connectorName}`, force)
-            .then(v => {
-                //
-            }, addError);
-    },
-
+        // Details for one connector
+        refreshConnectorDetails(clusterName: string, connectorName: string, force?: boolean): void {
+            cachedApiRequest<KafkaConnectors | null>(`./api/kafka-connect/clusters/${clusterName}/connectors/${connectorName}`, force)
+                .then(v => {
+                    //
+                }, addError);
+        },
+    */
 
     async deleteConnector(clusterName: string, connector: string): Promise<ApiError | null> {
         // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"

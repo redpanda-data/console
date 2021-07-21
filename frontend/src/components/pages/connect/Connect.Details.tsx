@@ -8,7 +8,7 @@ import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { TopicActions, Topic, ConnectClusterShard, ListConnectorsExpanded } from '../../../state/restInterfaces';
+import { TopicActions, Topic, ConnectClusterShard } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { clone } from '../../../utils/jsonUtils';
@@ -110,7 +110,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
     refreshData(force: boolean) {
         //
-        api.refreshConnectors(undefined, force);
+        api.refreshConnectClusters(force);
     }
 
     render() {
@@ -119,17 +119,13 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
         const settings = uiSettings.kafkaConnect;
 
-        const taskStats = api.connectClusters?.clusterShards.reduce((p, c) => ({
-            running: p.running + c.runningTasks,
-            total: p.total + c.totalTasks,
-        }), { running: 0, total: 0 });
 
         return (
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
                     <div style={{ display: 'flex', gap: '1em' }}>
-                        <Statistic title="Connect Clusters" value={api.connectClusters?.clusterShards.length} />
-                        <Statistic title="Tasks" value={`${taskStats?.running} / ${taskStats?.total}`} />
+                        {/* <Statistic title="Connect Clusters" value={api.connectClusters?.clusterShards.length} />
+                        <Statistic title="Tasks" value={`${taskStats?.running} / ${taskStats?.total}`} /> */}
                     </div>
                 </Card>
 
