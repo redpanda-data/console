@@ -435,7 +435,7 @@ const apiStore = {
     },
 
     async deleteTopic(topicName: string) {
-        return rest(`./api/topics/${encodeURIComponent(topicName)}`, REST_TIMEOUT_SEC, { method: 'DELETE'});
+        return rest(`./api/topics/${encodeURIComponent(topicName)}`, REST_TIMEOUT_SEC, { method: 'DELETE'}).catch(addError);
     },
 
     async deleteTopicRecords(topicName: string, partitionId: number, offset: number) {
@@ -447,7 +447,19 @@ const apiStore = {
                     offset
                 }
             })
-        });
+        }).catch(addError);
+    },
+
+    async deleteTopicRecordsOnAllPartitions(topicName: string, offset: number) {
+        const partitions = this.topicPartitions?.get(topicName)
+
+        if (!partitions || partitions.length === 0) {
+            addError(new Error(`Topic ${topicName} doesn't have partitions.`))
+            return;
+        }
+
+        const deletions = await Promise.allSettled(partitions.map(partition => this.deleteTopicRecords(topicName, partition.id, offset)));
+        deletions.forEach(deletion => deletion.status === 'rejected' && addError(deletion.reason instanceof Error ? deletion.reason : new Error(deletion.reason)));
     },
 
     refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {

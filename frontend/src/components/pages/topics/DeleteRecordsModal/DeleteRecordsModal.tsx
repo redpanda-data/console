@@ -9,22 +9,20 @@ import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
 
-type PartitionOption = 'allPartitions' | 'specificPartition';
+type PartitionOption = null | 'allPartitions' | 'specificPartition';
 
 const SLIDER_INPUT_REGEX = /(^([1-9]\d*)|(\d{1,3}(,\d{3})*)$)|^$/;
 
 function SelectPartitionStep({
     selectedPartitionOption,
     onPartitionOptionSelected,
-    onSpecificPartitionSelected,
+    onPartitionSpecified: onSpecificPartitionSelected,
     partitions,
-    selectedPartition,
 }: {
     selectedPartitionOption: PartitionOption;
     onPartitionOptionSelected: (v: PartitionOption) => void;
-    onSpecificPartitionSelected: (v: number) => void;
+    onPartitionSpecified: (v: null | number) => void;
     partitions: Array<number>;
-    selectedPartition: number;
 }): JSX.Element {
     return (
         <>
@@ -34,8 +32,13 @@ function SelectPartitionStep({
             </p>
             <RadioOptionGroup<PartitionOption>
                 value={selectedPartitionOption}
-                onChange={onPartitionOptionSelected}
-                showContent="always"
+                onChange={(v) => {
+                    if (v === 'allPartitions') {
+                        onSpecificPartitionSelected(null);
+                    }
+                    onPartitionOptionSelected(v);
+                }}
+                showContent="onlyWhenSelected"
                 options={[
                     {
                         value: 'allPartitions',
@@ -48,12 +51,20 @@ function SelectPartitionStep({
                         title: 'Specific Partition',
                         subTitle: 'Delete records within a specific partition in this topic only.',
                         content: (
-                            <>
+                            // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
+                            // fixes immediately self closing Select drop down after an option has already been selected
+                            <span
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                }}
+                            >
                                 <Select<number>
-                                    value={selectedPartition}
                                     size="middle"
                                     className={styles.partitionSelect}
                                     onChange={onSpecificPartitionSelected}
+                                    defaultActiveFirstOption={false}
+                                    placeholder="Choose Partition…"
                                 >
                                     {partitions.map((i) => (
                                         <Select.Option key={i} value={i}>
@@ -61,7 +72,7 @@ function SelectPartitionStep({
                                         </Select.Option>
                                     ))}
                                 </Select>
-                            </>
+                            </span>
                         ),
                     },
                 ]}
@@ -70,22 +81,23 @@ function SelectPartitionStep({
     );
 }
 
-type OffsetOption = 'manualOffset' | 'timestamp';
+type OffsetOption = null | 'manualOffset' | 'timestamp';
 
 const SelectOffsetStep = ({
-    selectValue,
-    selectedValue,
+    onOffsetOptionSelected: selectValue,
+    offsetOption: selectedValue,
     topicName,
     partitionId,
     partitionOption,
+    onOffsetSpecified,
 }: {
     partitionId: number;
     topicName: string;
-    selectedValue: OffsetOption;
-    selectValue: (v: OffsetOption) => void;
+    offsetOption: OffsetOption;
+    onOffsetOptionSelected: (v: OffsetOption) => void;
     partitionOption: PartitionOption;
+    onOffsetSpecified: (v: number) => void;
 }) => {
-    debugger;
     return (
         <>
             <p>
@@ -96,7 +108,7 @@ const SelectOffsetStep = ({
             <RadioOptionGroup<OffsetOption>
                 value={selectedValue}
                 onChange={selectValue}
-                showContent="always"
+                showContent="onlyWhenSelected"
                 options={[
                     {
                         value: 'manualOffset',
@@ -104,12 +116,13 @@ const SelectOffsetStep = ({
                         subTitle:
                             partitionOption === 'allPartitions'
                                 ? 'Delete records until high watermark across all partitions in this topic.'
-                                : 'Delete records until specified offset across all selected partitions in this topic.',
+                                : `Delete records until specified offset across all selected partitions (ID: ${partitionId}) in this topic.`,
                         content: (
                             <ManualOffsetContent
                                 topicName={topicName}
                                 partitionId={partitionId}
                                 partitionOption={partitionOption}
+                                onOffsetSpecified={onOffsetSpecified}
                             />
                         ),
                     },
@@ -129,14 +142,19 @@ const ManualOffsetContent = observer(
         topicName,
         partitionId,
         partitionOption,
+        onOffsetSpecified,
     }: {
         topicName: string;
         partitionId: number;
         partitionOption: PartitionOption;
+        onOffsetSpecified: (v: number) => void;
     }) => {
         const [sliderValue, setSliderValue] = useState(0);
 
-        debugger;
+        const updateOffsetFromSlider = (v: number) => {
+            setSliderValue(v);
+            onOffsetSpecified(v);
+        };
 
         if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
             const partitionErrors = api.topicPartitionErrors
@@ -166,8 +184,6 @@ const ManualOffsetContent = observer(
 
         const partitions = api.topicPartitions?.get(topicName);
 
-        debugger;
-
         if (!partitions) {
             return <Spin />;
         }
@@ -195,7 +211,7 @@ const ManualOffsetContent = observer(
                     marks={marks}
                     min={min}
                     max={max}
-                    onChange={setSliderValue}
+                    onChange={updateOffsetFromSlider}
                     value={sliderValue}
                     className={styles.slider}
                 />
@@ -210,7 +226,7 @@ const ManualOffsetContent = observer(
                             min || 0,
                             max || Number.MAX_SAFE_INTEGER
                         );
-                        setSliderValue(rangedValue);
+                        updateOffsetFromSlider(rangedValue);
                     }}
                 />
             </div>
@@ -265,10 +281,36 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         api.refreshPartitionsForTopic(topic.topicName, true);
     }, [topic.topicName]);
 
-    const [partitionOption, setPartitionOption] = useState<PartitionOption>('allPartitions');
-    const [specificPartition, setSpecificPartition] = useState<number>(0);
-    const [offsetOption, setOffsetOption] = useState<OffsetOption>('manualOffset');
+    const [partitionOption, setPartitionOption] = useState<PartitionOption>(null);
+    const [specifiedPartition, setSpecifiedPartition] = useState<null | number>(null);
+    const [offsetOption, setOffsetOption] = useState<OffsetOption>(null);
     const [step, setStep] = useState<1 | 2>(1);
+    const [specifiedOffset, setSpecifiedOffset] = useState<number>(0);
+
+    const isOkButtonDisabled = () => {
+        if (step === 1) {
+            return partitionOption === null || (partitionOption === 'specificPartition' && specifiedPartition === null);
+        }
+
+        return offsetOption === null;
+    };
+
+    const onOk = () => {
+        if (step === 1) {
+            setStep(2);
+            return;
+        }
+
+        if (partitionOption === 'allPartitions') {
+            const deletions = Promise.all(
+                api.topicPartitions
+                    .get(topic.topicName)!
+                    .map((partition) => api.deleteTopicRecords(topic.topicName, partition.id, specifiedOffset))
+            );
+        }
+
+        api.deleteTopicRecords(topic.topicName, specifiedPartition!, specifiedOffset);
+    };
 
     return (
         <Modal
@@ -277,6 +319,9 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             okType="danger"
             okText={step === 1 ? 'Choose End Offset' : 'Delete Records'}
             onOk={() => step === 1 && setStep(2)}
+            okButtonProps={{
+                disabled: isOkButtonDisabled(),
+            }}
             onCancel={onCancel}
             width="700px"
         >
@@ -285,17 +330,17 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                     partitions={range(0, topic.partitionCount)}
                     onPartitionOptionSelected={setPartitionOption}
                     selectedPartitionOption={partitionOption}
-                    onSpecificPartitionSelected={setSpecificPartition}
-                    selectedPartition={specificPartition}
+                    onPartitionSpecified={setSpecifiedPartition}
                 />
             )}
-            {step === 2 && specificPartition != null && (
+            {step === 2 && specifiedPartition != null && (
                 <SelectOffsetStep
-                    selectValue={setOffsetOption}
-                    selectedValue={offsetOption}
+                    onOffsetOptionSelected={setOffsetOption}
+                    offsetOption={offsetOption}
                     topicName={topic.topicName}
-                    partitionId={specificPartition}
+                    partitionId={specifiedPartition}
                     partitionOption={partitionOption}
+                    onOffsetSpecified={setSpecifiedOffset}
                 />
             )}
         </Modal>
