@@ -30,6 +30,7 @@ import Editor from "@monaco-editor/react";
 
 // Monaco Type
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
+import { StatisticsCard } from './helper';
 export type Monaco = typeof monacoType;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -115,66 +116,125 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
     render() {
         const clusterName = this.props.clusterName;
-        const connector = this.props.connector;
+        const connectorName = this.props.connector;
 
         const settings = uiSettings.kafkaConnect;
+        const cluster = api.connectConnectors?.clusters.first(c => c.clusterName == clusterName);
+        const connector = cluster?.connectors.first(c => c.name == connectorName);
 
+        const state = connector?.state.toLowerCase();
+        const isRunning = state == 'running';
+
+        const tasks = connector?.tasks ?? [];
 
         return (
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-                <Card>
-                    <div style={{ display: 'flex', gap: '1em' }}>
-                        {/* <Statistic title="Connect Clusters" value={api.connectClusters?.clusterShards.length} />
-                        <Statistic title="Tasks" value={`${taskStats?.running} / ${taskStats?.total}`} /> */}
-                    </div>
-                </Card>
+                <StatisticsCard />
 
                 <Card>
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '.5em' }}>
-                        <span style={{ display: 'inline-flex', gap: '.5em' }}>
-                            <span style={{ fontSize: '15px' }}>{okIcon}</span>
-                            <span style={{ fontSize: 'medium', fontWeight: 600 }}>{clusterName}{' / '}{connector}</span>
-                            <span style={{ fontSize: 'small', opacity: 0.5 }}>(running)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', margin: '.5em 0', paddingLeft: '2px' }}>
+                        <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
+                            <span style={{ fontSize: '17px', display: 'inline-block' }}>{okIcon}</span>
+                            <span style={{ fontSize: 'medium', fontWeight: 600, lineHeight: '0px', marginBottom: '1px' }}>{clusterName}{' / '}{connectorName}</span>
+                            <span style={{ fontSize: 'small', opacity: 0.5 }}>({state ?? '<empty>'})</span>
                         </span>
 
                         <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '.5em', fontSize: '12px' }}>
-                            <Button >Pause/Resume</Button>
-                            <Button >Restart</Button>
+                            <Button onClick={() => {
+                                if (isRunning) api.pauseConnector(clusterName, connectorName);
+                                else api.resumeConnector(clusterName, connectorName);
+                            }}>
+                                {isRunning ? 'Pause' : 'Resume'}
+                            </Button>
+                            <Button onClick={() => api.restartConnector(clusterName, connectorName)}>Restart</Button>
                         </span>
                     </div>
 
-                    <div style={{ marginTop: '1em', border: '1px solid hsl(0deg, 0%, 90%)', borderRadius: '2px' }}>
-                        <Editor
-                            beforeMount={onBeforeEditorMount}
-                            onMount={onMountEditor}
+                    <div style={{ marginTop: '1em' }}>
 
-                            // theme="vs-dark"
-                            // defaultLanguage="typescript"
+                        <div style={{ border: '1px solid hsl(0deg, 0%, 90%)', borderRadius: '2px' }}>
+                            <Editor
+                                beforeMount={onBeforeEditorMount}
+                                onMount={onMountEditor}
 
-                            // theme='myCoolTheme'
-                            // language='mySpecialLanguage'
+                                // theme="vs-dark"
+                                // defaultLanguage="typescript"
 
-                            // language='yaml'
-                            // defaultValue={yamlText}
+                                // theme='myCoolTheme'
+                                // language='mySpecialLanguage'
 
-                            language='protobuf'
-                            defaultValue={protoText}
-                            theme='proto-custom'
+                                // language='yaml'
+                                // defaultValue={yamlText}
 
-                            options={{
-                                minimap: {
-                                    enabled: false,
+                                // language='protobuf'
+                                // defaultValue={protoText}
+                                // theme='proto-custom'
+
+                                options={{
+                                    minimap: {
+                                        enabled: false,
+                                    },
+                                    roundedSelection: false,
+                                    padding: {
+                                        top: 4,
+                                    },
+                                    showFoldingControls: 'always',
+                                    glyphMargin: false,
+                                    lineNumbersMinChars: 4,
+                                }}
+
+                                height="400px"
+                            />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
+                            <Button disabled={true}>Update Config</Button>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '1em' }}>
+                        <KowlTable
+                            dataSource={tasks}
+                            columns={[
+                                {
+                                    title: 'Task', dataIndex: 'taskId', width: 200,
+                                    sorter: sortField('taskId'), defaultSortOrder: 'ascend',
+                                    render: (v) => <Code>Task-{v}</Code>
                                 },
-                                roundedSelection: false,
-                                padding: {
-                                    top: 4,
+                                {
+                                    title: 'Status', dataIndex: 'state', sorter: sortField('state')
                                 },
-                                showFoldingControls: 'always',
-                                glyphMargin: false,
-                                lineNumbersMinChars: 4,
+                                {
+                                    title: 'Worker', dataIndex: 'workerId', sorter: sortField('workerId'),
+                                    render: (v) => <Code>{v}</Code>
+                                },
+                                {
+                                    title: 'Actions', width: 200,
+                                    render: (_, task) => <span style={{ display: 'inline-flex', gap: '.75em', alignItems: 'center' }}>
+                                        {/* Pause/Resume Task */}
+                                        <span className='linkBtn' onClick={() => {
+                                            // if (isRunning) api.pauseConnector(clusterName, connectorName);
+                                            // else api.resumeConnector(clusterName, connectorName);
+                                        }}>
+                                            {task.state.toLowerCase() == 'running' ? 'Pause' : 'Resume'}
+                                        </span>
+                                        {/* Separator */}
+                                        <span className='inlineSeparator' />
+                                        {/* Restart Task */}
+                                        <span className='linkBtn' onClick={() => {
+                                            // if (isRunning) api.pauseConnector(clusterName, connectorName);
+                                            // else api.resumeConnector(clusterName, connectorName);
+                                        }}>
+                                            Restart
+                                        </span>
+                                    </span>
+                                },
+                            ]}
+                            rowKey='taskId'
+
+                            search={{
+                                columnTitle: 'Task',
+                                isRowMatch: (row, regex) => regex.test(String(row.taskId)) || regex.test(row.state) || regex.test(row.workerId)
                             }}
-
-                            height="600px"
                         />
                     </div>
                 </Card>

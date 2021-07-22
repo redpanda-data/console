@@ -12,7 +12,7 @@ import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { clone } from '../../../utils/jsonUtils';
 import { editQuery } from '../../../utils/queryHelper';
-import { Code, DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton, findPopupContainer, LayoutBypass, QuickTable } from '../../../utils/tsxUtils';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import Card from '../../misc/Card';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
@@ -20,7 +20,7 @@ import { KowlTable } from '../../misc/KowlTable';
 import SearchBar from '../../misc/SearchBar';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
-import { connectorMetadata } from './helper';
+import { connectorMetadata, StatisticsCard } from './helper';
 
 
 
@@ -49,17 +49,10 @@ class KafkaConnectOverview extends PageComponent {
     render() {
         if (!api.connectConnectors) return DefaultSkeleton;
         const settings = uiSettings.kafkaConnect;
-        const ar = api.connectConnectors.clusters;
-        const { clusterCount, connectorCount } = api.connectConnectors.filtered;
 
         return (
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-                <Card>
-                    <div style={{ display: 'flex', gap: '1em' }}>
-                        <Statistic title="Connect Clusters" value={clusterCount} />
-                        <Statistic title="Total Connectors" value={connectorCount} />
-                    </div>
-                </Card>
+                <StatisticsCard />
 
                 <Card>
                     <Tabs tabs={connectTabs}
@@ -129,18 +122,16 @@ class TabConnectors extends Component {
             columns={[
                 {
                     title: 'Connector', dataIndex: 'name',
-                    render: (_, r) => {
-                        // const name = connectorMetadata[r.class]?.friendlyName ?? r.name;
-                        // return name;
-                        return r.name;
-                    },
+                    render: (_, r) => (
+                        <span className='hoverLink' onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
+                            {r.name}
+                        </span>
+                    ),
                     sorter: sortField('name'), defaultSortOrder: 'ascend'
                 },
                 {
                     title: 'Class', dataIndex: 'class',
-                    render: (_, r) => {
-                        return <ConnectorClass connector={r} />
-                    }
+                    render: (_, r) => <ConnectorClass connector={r} />
                 },
                 {
                     width: 100,
@@ -170,6 +161,8 @@ class TabConnectors extends Component {
                     || regex.test(row.cluster.clusterName),
             }}
             rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name}
+
+            className='connectorsTable'
         />
     }
 }
@@ -183,13 +176,21 @@ class TabTasks extends Component {
         return <KowlTable
             dataSource={allTasks}
             columns={[
-                { title: 'Connector', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend' },
+                {
+                    title: 'Connector', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend',
+                    render: (_, r) => (
+                        <span className='hoverLink' onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
+                            {r.name}
+                        </span>
+                    )
+                },
                 { title: 'Task ID', dataIndex: 'taskId', sorter: sortField('taskId') },
                 { title: 'State', dataIndex: 'taskState', sorter: sortField('taskState') },
                 { title: 'Worker', dataIndex: 'taskWorkerId', sorter: sortField('taskWorkerId') },
                 { title: 'Cluster', render: (_, c) => <Code>{c.cluster.clusterName}</Code> },
             ]}
             rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name + r.taskId}
+            className='tasksTable'
         />
     }
 }
@@ -214,7 +215,17 @@ const ConnectorClass = React.memo((props: { connector: ClusterConnectorInfo }) =
                 {c.class}
             </div>}
         >
-            {meta.friendlyName}
+            <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
+                {meta.logo &&
+                    <LayoutBypass height='0px' width='26px'>
+                        {/* <span style={{ display: 'inline-block', maxHeight: '0px' }}> */}
+                        {meta.logo}
+                        {/* </span> */}
+                    </LayoutBypass>
+                }
+                {meta.friendlyName}
+            </span>
+
         </Popover>
     </span>
 })
