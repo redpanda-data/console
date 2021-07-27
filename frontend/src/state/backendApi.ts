@@ -439,13 +439,14 @@ const apiStore = {
     },
 
     async deleteTopicRecords(topicName: string, partitionId: number, offset: number) {
-        return rest(`./topics/${topicName}/records`, REST_TIMEOUT_SEC, {
+        return rest(`./api/topics/${topicName}/records`, REST_TIMEOUT_SEC, {
             method: "DELETE",
+            headers: { "Content-Type": "application/json"},
             body: JSON.stringify({
-                partitions: {
+                partitions: [{
                     partitionId,
                     offset
-                }
+                }]
             })
         }).catch(addError);
     },

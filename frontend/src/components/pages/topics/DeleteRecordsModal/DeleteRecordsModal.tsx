@@ -9,7 +9,9 @@ import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
 
-type PartitionOption = null | 'allPartitions' | 'specificPartition';
+type AllPartitions = 'allPartitions'
+type SpecificPartition = 'specificPartition'
+type PartitionOption = null | AllPartitions | SpecificPartition
 
 const SLIDER_INPUT_REGEX = /(^([1-9]\d*)|(\d{1,3}(,\d{3})*)$)|^$/;
 
@@ -82,20 +84,19 @@ function SelectPartitionStep({
 }
 
 type OffsetOption = null | 'manualOffset' | 'timestamp';
+type PartitionInfo = [SpecificPartition, number] | AllPartitions;
 
 const SelectOffsetStep = ({
     onOffsetOptionSelected: selectValue,
     offsetOption: selectedValue,
     topicName,
-    partitionId,
-    partitionOption,
+    partitionInfo,
     onOffsetSpecified,
 }: {
-    partitionId: number;
     topicName: string;
     offsetOption: OffsetOption;
     onOffsetOptionSelected: (v: OffsetOption) => void;
-    partitionOption: PartitionOption;
+    partitionInfo: PartitionInfo;
     onOffsetSpecified: (v: number) => void;
 }) => {
     return (
@@ -114,14 +115,13 @@ const SelectOffsetStep = ({
                         value: 'manualOffset',
                         title: 'Manual Offset',
                         subTitle:
-                            partitionOption === 'allPartitions'
+                            partitionInfo === 'allPartitions'
                                 ? 'Delete records until high watermark across all partitions in this topic.'
-                                : `Delete records until specified offset across all selected partitions (ID: ${partitionId}) in this topic.`,
+                                : `Delete records until specified offset across all selected partitions (ID: ${partitionInfo[1]}) in this topic.`,
                         content: (
                             <ManualOffsetContent
                                 topicName={topicName}
-                                partitionId={partitionId}
-                                partitionOption={partitionOption}
+                                partitionInfo={partitionInfo}
                                 onOffsetSpecified={onOffsetSpecified}
                             />
                         ),
@@ -140,13 +140,11 @@ const SelectOffsetStep = ({
 const ManualOffsetContent = observer(
     ({
         topicName,
-        partitionId,
-        partitionOption,
         onOffsetSpecified,
+        partitionInfo
     }: {
         topicName: string;
-        partitionId: number;
-        partitionOption: PartitionOption;
+        partitionInfo: PartitionInfo;
         onOffsetSpecified: (v: number) => void;
     }) => {
         const [sliderValue, setSliderValue] = useState(0);
@@ -188,7 +186,7 @@ const ManualOffsetContent = observer(
             return <Spin />;
         }
 
-        if (partitionOption === 'allPartitions') {
+        if (partitionInfo === 'allPartitions') {
             const { low, high } = getMinMaxWatermarks(partitions);
             return (
                 <div className={styles.sliderContainer}>
@@ -197,7 +195,8 @@ const ManualOffsetContent = observer(
                 </div>
             );
         }
-
+        
+        const [_, partitionId] = partitionInfo
         const partition = partitions.find((p) => p.id === partitionId);
 
         if (!partition) {
@@ -270,10 +269,11 @@ interface DeleteRecordsModalProps {
     topic: Topic | undefined | null;
     visible: boolean;
     onCancel: () => void;
+    onFinish: () => void;
 }
 
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element {
-    const { visible, topic, onCancel } = props;
+    const { visible, topic, onCancel, onFinish } = props;
 
     if (!topic) return <></>;
 
@@ -286,6 +286,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     const [offsetOption, setOffsetOption] = useState<OffsetOption>(null);
     const [step, setStep] = useState<1 | 2>(1);
     const [specifiedOffset, setSpecifiedOffset] = useState<number>(0);
+    const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
 
     const isOkButtonDisabled = () => {
         if (step === 1) {
@@ -301,16 +302,28 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             return;
         }
 
-        if (partitionOption === 'allPartitions') {
-            const deletions = Promise.all(
-                api.topicPartitions
-                    .get(topic.topicName)!
-                    .map((partition) => api.deleteTopicRecords(topic.topicName, partition.id, specifiedOffset))
-            );
-        }
+        // if (partitionOption === 'allPartitions') {
+        //     debugger;
+        //     const deletions = Promise.all(
+        //         api.topicPartitions
+        //             .get(topic.topicName)!
+        //             .map((partition) => api.deleteTopicRecords(topic.topicName, partition.id, specifiedOffset))
+        //     );
+        //     console.log({deletions})
+        // }
 
-        api.deleteTopicRecords(topic.topicName, specifiedPartition!, specifiedOffset);
+        setOkButtonLoading(true);
+        api.deleteTopicRecords(topic.topicName, specifiedPartition!, specifiedOffset).then(() => {
+            onFinish()
+        });
     };
+
+    const getPartitionInfo = (): PartitionInfo => {
+        if (specifiedPartition != null && partitionOption === 'specificPartition') {
+            return ["specificPartition", specifiedPartition]
+        }
+        return "allPartitions"
+    }
 
     return (
         <Modal
@@ -318,9 +331,10 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             visible={visible}
             okType="danger"
             okText={step === 1 ? 'Choose End Offset' : 'Delete Records'}
-            onOk={() => step === 1 && setStep(2)}
+            onOk={onOk}
             okButtonProps={{
                 disabled: isOkButtonDisabled(),
+                loading: okButtonLoading
             }}
             onCancel={onCancel}
             width="700px"
@@ -333,14 +347,13 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                     onPartitionSpecified={setSpecifiedPartition}
                 />
             )}
-            {step === 2 && specifiedPartition != null && (
+            {step === 2 && partitionOption != null && (
                 <SelectOffsetStep
                     onOffsetOptionSelected={setOffsetOption}
                     offsetOption={offsetOption}
                     topicName={topic.topicName}
-                    partitionId={specifiedPartition}
-                    partitionOption={partitionOption}
                     onOffsetSpecified={setSpecifiedOffset}
+                    partitionInfo={getPartitionInfo()}
                 />
             )}
         </Modal>

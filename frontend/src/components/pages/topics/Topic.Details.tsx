@@ -142,6 +142,15 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         }
     }
 
+    hideDeleteRecordsModal() {
+        this.deleteRecordsModalVisible = false;
+    }
+
+    finishDeleteRecordsModal() {
+        this.hideDeleteRecordsModal();
+        this.refreshData(true);
+    }
+
     refreshData(force: boolean) {
         // there is no single endpoint to refresh a single topic
         api.refreshTopics(force);
@@ -248,7 +257,12 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         />
                     </Card>
                 </motion.div>
-                <DeleteRecordsModal topic={this.topic} visible={this.deleteRecordsModalVisible} onCancel={() => (this.deleteRecordsModalVisible = false)} />
+                <DeleteRecordsModal 
+                    topic={this.topic} 
+                    visible={this.deleteRecordsModalVisible} 
+                    onCancel={() => this.hideDeleteRecordsModal()} 
+                    onFinish={() => this.finishDeleteRecordsModal()} 
+                />
             </>
         );
     }
