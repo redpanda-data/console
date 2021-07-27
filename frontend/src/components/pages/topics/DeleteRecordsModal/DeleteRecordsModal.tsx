@@ -9,9 +9,9 @@ import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
 
-type AllPartitions = 'allPartitions'
-type SpecificPartition = 'specificPartition'
-type PartitionOption = null | AllPartitions | SpecificPartition
+type AllPartitions = 'allPartitions';
+type SpecificPartition = 'specificPartition';
+type PartitionOption = null | AllPartitions | SpecificPartition;
 
 const SLIDER_INPUT_REGEX = /(^([1-9]\d*)|(\d{1,3}(,\d{3})*)$)|^$/;
 
@@ -141,7 +141,7 @@ const ManualOffsetContent = observer(
     ({
         topicName,
         onOffsetSpecified,
-        partitionInfo
+        partitionInfo,
     }: {
         topicName: string;
         partitionInfo: PartitionInfo;
@@ -195,8 +195,8 @@ const ManualOffsetContent = observer(
                 </div>
             );
         }
-        
-        const [_, partitionId] = partitionInfo
+
+        const [_, partitionId] = partitionInfo;
         const partition = partitions.find((p) => p.id === partitionId);
 
         if (!partition) {
@@ -302,28 +302,31 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             return;
         }
 
-        // if (partitionOption === 'allPartitions') {
-        //     debugger;
-        //     const deletions = Promise.all(
-        //         api.topicPartitions
-        //             .get(topic.topicName)!
-        //             .map((partition) => api.deleteTopicRecords(topic.topicName, partition.id, specifiedOffset))
-        //     );
-        //     console.log({deletions})
-        // }
-
         setOkButtonLoading(true);
+
+        if (partitionOption === 'allPartitions') {
+            const deletions = Promise.all(
+                api.topicPartitions
+                    .get(topic.topicName)!
+                    .map((partition) => api.deleteTopicRecords(topic.topicName, partition.id, specifiedOffset))
+            ).then(() => {
+                onFinish();
+            });
+
+            return;
+        }
+
         api.deleteTopicRecords(topic.topicName, specifiedPartition!, specifiedOffset).then(() => {
-            onFinish()
+            onFinish();
         });
     };
 
     const getPartitionInfo = (): PartitionInfo => {
         if (specifiedPartition != null && partitionOption === 'specificPartition') {
-            return ["specificPartition", specifiedPartition]
+            return ['specificPartition', specifiedPartition];
         }
-        return "allPartitions"
-    }
+        return 'allPartitions';
+    };
 
     return (
         <Modal
@@ -334,7 +337,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             onOk={onOk}
             okButtonProps={{
                 disabled: isOkButtonDisabled(),
-                loading: okButtonLoading
+                loading: okButtonLoading,
             }}
             onCancel={onCancel}
             width="700px"
