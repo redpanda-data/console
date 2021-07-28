@@ -8,6 +8,7 @@ import { fromDecimalSeparated, keepInRange, prettyNumber, toDecimalSeparated } f
 import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
+import { KowlTimePicker } from '../../../misc/KowlTimePicker';
 
 type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
@@ -92,12 +93,16 @@ const SelectOffsetStep = ({
     topicName,
     partitionInfo,
     onOffsetSpecified,
+    timestamp,
+    onTimestampChanged,
 }: {
     topicName: string;
     offsetOption: OffsetOption;
     onOffsetOptionSelected: (v: OffsetOption) => void;
     partitionInfo: PartitionInfo;
     onOffsetSpecified: (v: number) => void;
+    timestamp: number | null;
+    onTimestampChanged: (v: number) => void;
 }) => {
     return (
         <>
@@ -130,6 +135,21 @@ const SelectOffsetStep = ({
                         value: 'timestamp',
                         title: 'Timestamp',
                         subTitle: 'Delete all records prior to the selected timestamp.',
+                        content: (
+                            // Workaround for Ant Design Issue: https://github.com/ant-design/ant-design/issues/25959
+                            // fixes immediately self closing Select drop down after an option has already been selected
+                            <span
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                }}
+                            >
+                                <KowlTimePicker
+                                    valueUtcMs={timestamp || Date.now().valueOf()}
+                                    onChange={onTimestampChanged}
+                                />
+                            </span>
+                        ),
                     },
                 ]}
             />
@@ -287,10 +307,20 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     const [step, setStep] = useState<1 | 2>(1);
     const [specifiedOffset, setSpecifiedOffset] = useState<number>(0);
     const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
+    const [timestamp, setTimestamp] = useState<null | number>(null);
+
+    const isAllPartitions = partitionOption === 'allPartitions'
+    const isSpecficPartition = partitionOption === 'specificPartition'
+    const isManualOffset = offsetOption === 'manualOffset'
+    const isTimestamp = offsetOption === 'timestamp'
 
     const isOkButtonDisabled = () => {
         if (step === 1) {
-            return partitionOption === null || (partitionOption === 'specificPartition' && specifiedPartition === null);
+            return partitionOption === null || (isSpecficPartition && specifiedPartition === null);
+        }
+
+        if (step === 2) {
+            return offsetOption === null || (isTimestamp && timestamp === null)
         }
 
         return offsetOption === null;
@@ -303,13 +333,27 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         }
 
         setOkButtonLoading(true);
-
-        if (partitionOption === 'allPartitions') {
+        
+        if (isAllPartitions && isManualOffset) {
+            // TODO: check high watermark for per partition use, not one for all as of now
             api.deleteTopicRecords(topic.topicName, specifiedOffset).then(onFinish);
-            return;
-        }
+        } else if(isSpecficPartition && isManualOffset) {
+            api.deleteTopicRecords(topic.topicName, specifiedOffset, specifiedPartition!).then(onFinish);
+        } else if (isTimestamp && timestamp != null) {
+            api.getTopicOffsetsByTimestamp([topic.topicName], timestamp).then((topicOffsets) => {
+                if (isAllPartitions) {
+                    // TODO: solve multiple offsets 
+                } else if (isSpecficPartition) {
+                    const partitionOffset = topicOffsets[0].partitions.find(p => specifiedPartition === p.partitionId)?.offset
 
-        api.deleteTopicRecords(topic.topicName, specifiedOffset, specifiedPartition!).then(onFinish);
+                    if (partitionOffset && partitionOffset >= 0) {
+                        api.deleteTopicRecords(topic.topicName, partitionOffset, specifiedPartition!).then(onFinish)
+                    } else {
+                        onFinish()
+                    }
+                }
+            })
+        }
     };
 
     const getPartitionInfo = (): PartitionInfo => {
@@ -348,6 +392,8 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                     topicName={topic.topicName}
                     onOffsetSpecified={setSpecifiedOffset}
                     partitionInfo={getPartitionInfo()}
+                    timestamp={timestamp}
+                    onTimestampChanged={setTimestamp}
                 />
             )}
         </Modal>
