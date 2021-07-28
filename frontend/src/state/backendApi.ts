@@ -438,29 +438,19 @@ const apiStore = {
         return rest(`./api/topics/${encodeURIComponent(topicName)}`, REST_TIMEOUT_SEC, { method: 'DELETE'}).catch(addError);
     },
 
-    async deleteTopicRecords(topicName: string, partitionId: number, offset: number) {
-        return rest(`./api/topics/${topicName}/records`, REST_TIMEOUT_SEC, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json"},
-            body: JSON.stringify({
-                partitions: [{
-                    partitionId,
-                    offset
-                }]
-            })
-        }).catch(addError);
-    },
-
-    async deleteTopicRecordsOnAllPartitions(topicName: string, offset: number) {
-        const partitions = this.topicPartitions?.get(topicName)
+    async deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
+        const partitions = (partitionId != undefined) ? [{partitionId, offset}] : this.topicPartitions?.get(topicName)?.map(partition => ({partitionId: partition.id, offset}));
 
         if (!partitions || partitions.length === 0) {
             addError(new Error(`Topic ${topicName} doesn't have partitions.`))
             return;
         }
 
-        const deletions = await Promise.allSettled(partitions.map(partition => this.deleteTopicRecords(topicName, partition.id, offset)));
-        deletions.forEach(deletion => deletion.status === 'rejected' && addError(deletion.reason instanceof Error ? deletion.reason : new Error(deletion.reason)));
+        return rest(`./api/topics/${topicName}/records`, REST_TIMEOUT_SEC, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json"},
+            body: JSON.stringify({partitions})
+        }).catch(addError);
     },
 
     refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {

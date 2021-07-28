@@ -305,20 +305,11 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         setOkButtonLoading(true);
 
         if (partitionOption === 'allPartitions') {
-            const deletions = Promise.all(
-                api.topicPartitions
-                    .get(topic.topicName)!
-                    .map((partition) => api.deleteTopicRecords(topic.topicName, partition.id, specifiedOffset))
-            ).then(() => {
-                onFinish();
-            });
-
+            api.deleteTopicRecords(topic.topicName, specifiedOffset).then(onFinish);
             return;
         }
 
-        api.deleteTopicRecords(topic.topicName, specifiedPartition!, specifiedOffset).then(() => {
-            onFinish();
-        });
+        api.deleteTopicRecords(topic.topicName, specifiedOffset, specifiedPartition!).then(onFinish);
     };
 
     const getPartitionInfo = (): PartitionInfo => {
