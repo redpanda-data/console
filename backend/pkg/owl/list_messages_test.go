@@ -1,6 +1,8 @@
 package owl
 
 import (
+	"context"
+	"github.com/stretchr/testify/require"
 	"math"
 	"testing"
 
@@ -9,8 +11,9 @@ import (
 )
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {
+	svc := Service{}
 	// Request less messages than we have partitions
-	marks := map[int32]kafka.PartitionMarks{
+	marks := map[int32]*kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 10},
 		2: {PartitionID: 2, Low: 10, High: 30},
@@ -29,14 +32,15 @@ func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) 
 		1: {PartitionID: 1, IsDrained: false, StartOffset: marks[1].High - 1, EndOffset: marks[1].High - 1, MaxMessageCount: 1, LowWaterMark: marks[1].Low, HighWaterMark: marks[1].High},
 		2: {PartitionID: 2, IsDrained: false, StartOffset: marks[2].High - 1, EndOffset: marks[2].High - 1, MaxMessageCount: 1, LowWaterMark: marks[2].Low, HighWaterMark: marks[2].High},
 	}
-	actual := calculateConsumeRequests(req, marks)
-
+	actual, err := svc.calculateConsumeRequests(context.Background(), req, marks)
+	require.NoError(t, err)
 	assert.Equal(t, expected, actual, "expected other result for unbalanced message distribution - all partition IDs")
 }
 
 func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
+	svc := Service{}
 	// Unbalanced message distribution across 3 partitions
-	marks := map[int32]kafka.PartitionMarks{
+	marks := map[int32]*kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 11},
 		2: {PartitionID: 2, Low: 10, High: 31},
@@ -55,13 +59,14 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 		1: {PartitionID: 1, IsDrained: true, LowWaterMark: marks[1].Low, HighWaterMark: marks[1].High, StartOffset: 0, EndOffset: marks[1].High - 1, MaxMessageCount: 10},
 		2: {PartitionID: 2, IsDrained: true, LowWaterMark: marks[2].Low, HighWaterMark: marks[2].High, StartOffset: 10, EndOffset: marks[2].High - 1, MaxMessageCount: 20},
 	}
-	actual := calculateConsumeRequests(req, marks)
-
+	actual, err := svc.calculateConsumeRequests(context.Background(), req, marks)
+	require.NoError(t, err)
 	assert.Equal(t, expected, actual, "expected other result for unbalanced message distribution - all partition IDs")
 }
 
 func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
-	marks := map[int32]kafka.PartitionMarks{
+	svc := Service{}
+	marks := map[int32]*kafka.PartitionMarks{
 		14: {PartitionID: 14, Low: 100, High: 301},
 	}
 	lowMark := marks[14].Low
@@ -129,15 +134,17 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 	}
 
 	for i, table := range tt {
-		actual := calculateConsumeRequests(table.req, marks)
+		actual, err := svc.calculateConsumeRequests(context.Background(), table.req, marks)
+		assert.NoError(t, err)
 		assert.Equal(t, table.expected, actual, "expected other result for single partition test. Case: ", i)
 	}
 }
 
 func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
+	svc := Service{}
 	// Request less messages than we have partitions, if filter code is set we handle consume requests different than
 	// usual - as we don't care about the distribution between partitions.
-	marks := map[int32]kafka.PartitionMarks{
+	marks := map[int32]*kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
 		1: {PartitionID: 1, Low: 0, High: 300},
 		2: {PartitionID: 2, Low: 0, High: 300},
@@ -179,7 +186,8 @@ func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
 	}
 
 	for i, table := range tt {
-		actual := calculateConsumeRequests(table.req, marks)
+		actual, err := svc.calculateConsumeRequests(context.Background(), table.req, marks)
+		assert.NoError(t, err)
 		assert.Equal(t, table.expected, actual, "expected other result for all partitions with filter enable. Case: ", i)
 	}
 }
