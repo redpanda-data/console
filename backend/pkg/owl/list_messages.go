@@ -45,9 +45,14 @@ type ListMessageResponse struct {
 	Messages        []*kafka.TopicMessage `json:"messages"`
 }
 
-// ListMessages fetches one or more kafka messages and returns them by spinning one partition consumer
-// (which runs in it's own goroutine) for each partition and funneling all the data to eventually
-// return it. The second return parameter is a bool which indicates whether the requested topic exists.
+// ListMessages processes a list message request as sent from the Frontend. This function is responsible (mostly
+// by coordinating/calling other methods) for:
+// 1. Fetching the partition IDs from the requested topics by looking up the topic's metadata
+// 2. Checking the availability of the requested partitions (does the topic exist, are the partitions online etc)
+// 3. Requesting all low and high offsets for each partition
+// 4. Constructing a TopicConsumeRequest that is used by the Kafka Service to consume the right Kafka messages
+// 5. Start consume request via the Kafka Service
+// 6. Send a completion message to the frontend, that will show stats about the completed (or aborted) message search
 func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, progress kafka.IListMessagesProgress) error {
 	start := time.Now()
 
@@ -134,6 +139,8 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 // calculateConsumeRequests is supposed to calculate the start and end offsets for each partition consumer, so that
 // we'll end up with ${messageCount} messages in total. To do so we'll take the known low and high watermarks into
 // account. Gaps between low and high watermarks (caused by compactions) will be neglected for now.
+// This function will return a map of PartitionConsumeRequests, keyed by the respective PartitionID. An error will
+// be returned if it fails to request the partition offsets for the given timestamp.
 func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMessageRequest, marks map[int32]*kafka.PartitionMarks) (map[int32]*kafka.PartitionConsumeRequest, error) {
 	requests := make(map[int32]*kafka.PartitionConsumeRequest, len(marks))
 
