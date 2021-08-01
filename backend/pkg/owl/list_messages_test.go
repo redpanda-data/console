@@ -42,8 +42,8 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 	// Unbalanced message distribution across 3 partitions
 	marks := map[int32]*kafka.PartitionMarks{
 		0: {PartitionID: 0, Low: 0, High: 300},
-		1: {PartitionID: 1, Low: 0, High: 11},
-		2: {PartitionID: 2, Low: 10, High: 31},
+		1: {PartitionID: 1, Low: 0, High: 10},
+		2: {PartitionID: 2, Low: 10, High: 30},
 	}
 
 	req := &ListMessageRequest{
