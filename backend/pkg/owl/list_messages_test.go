@@ -67,7 +67,7 @@ func TestCalculateConsumeRequests_AllPartitions_Unbalanced(t *testing.T) {
 func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 	svc := Service{}
 	marks := map[int32]*kafka.PartitionMarks{
-		14: {PartitionID: 14, Low: 100, High: 301},
+		14: {PartitionID: 14, Low: 100, High: 300},
 	}
 	lowMark := marks[14].Low
 	highMark := marks[14].High
@@ -112,7 +112,7 @@ func TestCalculateConsumeRequests_SinglePartition(t *testing.T) {
 		{
 			&ListMessageRequest{TopicName: "test", PartitionID: 14, StartOffset: StartOffsetRecent, MessageCount: 500},
 			map[int32]*kafka.PartitionConsumeRequest{
-				14: {PartitionID: 14, IsDrained: true, StartOffset: lowMark, EndOffset: highMark - 1, MaxMessageCount: 201, LowWaterMark: lowMark, HighWaterMark: highMark},
+				14: {PartitionID: 14, IsDrained: true, StartOffset: lowMark, EndOffset: highMark - 1, MaxMessageCount: 200, LowWaterMark: lowMark, HighWaterMark: highMark},
 			},
 		},
 
