@@ -24,6 +24,7 @@ type ClusterConnectors struct {
 type ClusterConnectorInfo struct {
 	Name         string                     `json:"name"`
 	Class        string                     `json:"class"`
+	Config       map[string]string          `json:"config"`
 	Type         string                     `json:"type"`  // Source or Sink
 	Topic        string                     `json:"topic"` // Kafka Topic name
 	State        string                     `json:"state"` // Running, ..
@@ -177,6 +178,7 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 	return ClusterConnectorInfo{
 		Name:         cInfo.Name,
 		Class:        getMapValueOrString(cInfo.Config, "connector.class", "unknown"),
+		Config:       cInfo.Config,
 		Type:         cInfo.Type,
 		State:        stateInfo.Connector.State,
 		Topic:        getMapValueOrString(cInfo.Config, "kafka.topic", "unknown"),
@@ -210,6 +212,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 			Name:         c.Info.Name,
 			Class:        getMapValueOrString(c.Info.Config, "connector.class", "unknown"),
 			Topic:        getMapValueOrString(c.Info.Config, "kafka.topic", "unknown"),
+			Config:       c.Info.Config,
 			Type:         c.Info.Type,
 			State:        c.Status.Connector.State,
 			Tasks:        tasks,
