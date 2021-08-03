@@ -128,7 +128,6 @@ class TopicList extends PageComponent {
                     <KowlTable
                         dataSource={this.filteredTopics ?? []}
                         rowKey={(x) => x.topicName}
-                        showSorterTooltip={false}
                         columns={[
                             { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', defaultSortOrder: 'ascend' },
                             { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
@@ -161,8 +160,6 @@ class TopicList extends PageComponent {
                         ]}
 
                         observableSettings={uiSettings.topicList}
-
-                        rowKey={x => x.topicName}
                         onRow={(record) => ({
                             onClick: () => appGlobal.history.push('/topics/' + record.topicName),
                         })}

@@ -295,11 +295,9 @@ interface DeleteRecordsModalProps {
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element {
     const { visible, topic, onCancel, onFinish } = props;
 
-    if (!topic) return <></>;
-
     useEffect(() => {
-        api.refreshPartitionsForTopic(topic.topicName, true);
-    }, [topic.topicName]);
+        topic?.topicName && api.refreshPartitionsForTopic(topic.topicName, true);
+    }, [topic?.topicName]);
 
     const [partitionOption, setPartitionOption] = useState<PartitionOption>(null);
     const [specifiedPartition, setSpecifiedPartition] = useState<null | number>(null);
@@ -313,6 +311,8 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     const isSpecficPartition = partitionOption === 'specificPartition'
     const isManualOffset = offsetOption === 'manualOffset'
     const isTimestamp = offsetOption === 'timestamp'
+
+    if (!topic) return <></>;
 
     const isOkButtonDisabled = () => {
         if (step === 1) {
