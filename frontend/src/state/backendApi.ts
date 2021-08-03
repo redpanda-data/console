@@ -11,7 +11,7 @@ import {
     AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest,
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -446,7 +446,25 @@ const apiStore = {
             return;
         }
 
-        return rest(`./api/topics/${topicName}/records`, REST_TIMEOUT_SEC, {
+        return rest<DeleteRecordsResponseData>(`./api/topics/${topicName}/records`, REST_TIMEOUT_SEC, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json"},
+            body: JSON.stringify({partitions})
+        }).catch(addError);
+    },
+
+    async deleteTopicRecordsFromAllPartitionsHighWatermark(topicName: string) {
+        const partitions = this.topicPartitions?.get(topicName)?.map(({waterMarkHigh, id}) => ({
+            partitionId: id,
+            offset: waterMarkHigh
+        }));
+
+        if (!partitions || partitions.length === 0) {
+            addError(new Error(`Topic ${topicName} doesn't have partitions.`))
+            return;
+        }
+
+        return rest<DeleteRecordsResponseData>(`./api/topics/${topicName}/records`, REST_TIMEOUT_SEC, {
             method: "DELETE",
             headers: { "Content-Type": "application/json"},
             body: JSON.stringify({partitions})

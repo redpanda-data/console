@@ -72,6 +72,17 @@ export interface GetAllPartitionsResponse {
     }[];
 }
 
+export interface DeleteRecordsResponseData {
+    topicName: string;
+    partitions: [
+        {
+            partitionId: number;
+            lowWaterMark: number;
+            error: string;
+        }
+    ];
+}
+
 
 
 export interface TopicConsumer {

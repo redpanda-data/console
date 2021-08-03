@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Input, Modal, Select, Slider, Spin } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
-import { Partition, Topic } from '../../../../state/restInterfaces';
+import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
 import { RadioOptionGroup } from '../../../../utils/tsxUtils';
 import { fromDecimalSeparated, keepInRange, prettyNumber, toDecimalSeparated } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
@@ -306,53 +306,80 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     const [specifiedOffset, setSpecifiedOffset] = useState<number>(0);
     const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
     const [timestamp, setTimestamp] = useState<null | number>(null);
+    const [errors, setErrors] = useState<Array<string>>([]);
 
-    const isAllPartitions = partitionOption === 'allPartitions'
-    const isSpecficPartition = partitionOption === 'specificPartition'
-    const isManualOffset = offsetOption === 'manualOffset'
-    const isTimestamp = offsetOption === 'timestamp'
+    const hasErrors = errors.length > 0;
+    const isAllPartitions = partitionOption === 'allPartitions';
+    const isSpecficPartition = partitionOption === 'specificPartition';
+    const isManualOffset = offsetOption === 'manualOffset';
+    const isTimestamp = offsetOption === 'timestamp';
+
+    const handleFinish = async (responseData: DeleteRecordsResponseData | null | void) => {
+        if (responseData == null) {
+            setErrors([
+                'You are not allowed to delete records on this topic. Please contact your Kafka administrator.',
+            ]);
+            return;
+        }
+
+        const errorPartitions = responseData.partitions.filter((partition) => !!partition.error);
+
+        if (errorPartitions.length > 0) {
+            setErrors(errorPartitions.map(({ partitionId, error }) => `Partition ${partitionId}: ${error}`));
+            setOkButtonLoading(false)
+        } else {
+            onFinish();
+        }
+    };
 
     if (!topic) return <></>;
 
     const isOkButtonDisabled = () => {
+        if (hasErrors) return false;
+
         if (step === 1) {
             return partitionOption === null || (isSpecficPartition && specifiedPartition === null);
         }
 
         if (step === 2) {
-            return offsetOption === null || (isTimestamp && timestamp === null)
+            return offsetOption === null || (isTimestamp && timestamp === null);
         }
 
         return offsetOption === null;
     };
 
     const onOk = () => {
+        if (hasErrors) {
+            onFinish();
+        }
+
         if (step === 1) {
             setStep(2);
             return;
         }
 
         setOkButtonLoading(true);
-        
+
         if (isAllPartitions && isManualOffset) {
-            // TODO: check high watermark for per partition use, not one for all as of now
-            api.deleteTopicRecords(topic.topicName, specifiedOffset).then(onFinish);
-        } else if(isSpecficPartition && isManualOffset) {
-            api.deleteTopicRecords(topic.topicName, specifiedOffset, specifiedPartition!).then(onFinish);
+            api.deleteTopicRecordsFromAllPartitionsHighWatermark(topic.topicName).then(handleFinish);
+        } else if (isSpecficPartition && isManualOffset) {
+            api.deleteTopicRecords(topic.topicName, specifiedOffset, specifiedPartition!).then(handleFinish);
         } else if (isTimestamp && timestamp != null) {
             api.getTopicOffsetsByTimestamp([topic.topicName], timestamp).then((topicOffsets) => {
                 if (isAllPartitions) {
-                    // TODO: solve multiple offsets 
+                    // TODO: solve multiple offsets
                 } else if (isSpecficPartition) {
-                    const partitionOffset = topicOffsets[0].partitions.find(p => specifiedPartition === p.partitionId)?.offset
+                    const partitionOffset = topicOffsets[0].partitions.find(
+                        (p) => specifiedPartition === p.partitionId
+                    )?.offset;
 
                     if (partitionOffset && partitionOffset >= 0) {
-                        api.deleteTopicRecords(topic.topicName, partitionOffset, specifiedPartition!).then(onFinish)
+                        api.deleteTopicRecords(topic.topicName, partitionOffset, specifiedPartition!).then(onFinish);
                     } else {
-                        onFinish()
+                        onFinish();
                     }
                 }
-            })
+            });
         }
     };
 
@@ -367,8 +394,8 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         <Modal
             title="Delete records in topic"
             visible={visible}
-            okType="danger"
-            okText={step === 1 ? 'Choose End Offset' : 'Delete Records'}
+            okType={hasErrors ? "default" : "danger"}
+            okText={hasErrors ? 'Ok' : step === 1 ? 'Choose End Offset' : 'Delete Records'}
             onOk={onOk}
             okButtonProps={{
                 disabled: isOkButtonDisabled(),
@@ -377,7 +404,13 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             onCancel={onCancel}
             width="700px"
         >
-            {step === 1 && (
+            {hasErrors && <Alert type="error" message={<>
+                <p>Errors have occurred when processing your request. Please contact your Kafka Administrator.</p>
+                <ul>
+                    {errors.map((error) => <li>{error}</li>)}
+                </ul>
+            </>} />}
+            {!hasErrors && step === 1 && (
                 <SelectPartitionStep
                     partitions={range(0, topic.partitionCount)}
                     onPartitionOptionSelected={setPartitionOption}
@@ -385,7 +418,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                     onPartitionSpecified={setSpecifiedPartition}
                 />
             )}
-            {step === 2 && partitionOption != null && (
+            {!hasErrors && step === 2 && partitionOption != null && (
                 <SelectOffsetStep
                     onOffsetOptionSelected={setOffsetOption}
                     offsetOption={offsetOption}
