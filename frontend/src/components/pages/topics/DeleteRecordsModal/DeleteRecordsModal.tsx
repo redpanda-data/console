@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Input, Modal, Select, Slider, Spin } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
-import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
+import { DeleteRecordsResponseData, Partition, Topic, TopicOffset } from '../../../../state/restInterfaces';
 import { RadioOptionGroup } from '../../../../utils/tsxUtils';
 import { fromDecimalSeparated, keepInRange, prettyNumber, toDecimalSeparated } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
@@ -290,7 +290,7 @@ interface DeleteRecordsModalProps {
     visible: boolean;
     onCancel: () => void;
     onFinish: () => void;
-    afterClose: () => void
+    afterClose: () => void;
 }
 
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element {
@@ -327,7 +327,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
 
         if (errorPartitions.length > 0) {
             setErrors(errorPartitions.map(({ partitionId, error }) => `Partition ${partitionId}: ${error}`));
-            setOkButtonLoading(false)
+            setOkButtonLoading(false);
         } else {
             onFinish();
         }
@@ -368,16 +368,22 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         } else if (isTimestamp && timestamp != null) {
             api.getTopicOffsetsByTimestamp([topic.topicName], timestamp).then((topicOffsets) => {
                 if (isAllPartitions) {
-                    // TODO: solve multiple offsets
+                    const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
+                        partitionId,
+                        offset,
+                    }));
+                    api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topic.topicName, pairs).then(handleFinish);
                 } else if (isSpecficPartition) {
                     const partitionOffset = topicOffsets[0].partitions.find(
                         (p) => specifiedPartition === p.partitionId
                     )?.offset;
 
                     if (partitionOffset && partitionOffset >= 0) {
-                        api.deleteTopicRecords(topic.topicName, partitionOffset, specifiedPartition!).then(onFinish);
+                        api.deleteTopicRecords(topic.topicName, partitionOffset, specifiedPartition!).then(
+                            handleFinish
+                        );
                     } else {
-                        onFinish();
+                        setErrors(["No partition offset was specified, this should not happen. Please contact your Kowl administrator."])
                     }
                 }
             });
@@ -395,7 +401,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
         <Modal
             title="Delete records in topic"
             visible={visible}
-            okType={hasErrors ? "default" : "danger"}
+            okType={hasErrors ? 'default' : 'danger'}
             okText={hasErrors ? 'Ok' : step === 1 ? 'Choose End Offset' : 'Delete Records'}
             onOk={onOk}
             okButtonProps={{
@@ -406,12 +412,24 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             width="700px"
             afterClose={afterClose}
         >
-            {hasErrors && <Alert type="error" message={<>
-                <p>Errors have occurred when processing your request. Please contact your Kafka Administrator.</p>
-                <ul>
-                    {errors.map((error) => <li>{error}</li>)}
-                </ul>
-            </>} />}
+            {hasErrors && (
+                <Alert
+                    type="error"
+                    message={
+                        <>
+                            <p>
+                                Errors have occurred when processing your request. Please contact your Kafka
+                                Administrator.
+                            </p>
+                            <ul>
+                                {errors.map((error) => (
+                                    <li>{error}</li>
+                                ))}
+                            </ul>
+                        </>
+                    }
+                />
+            )}
             {!hasErrors && step === 1 && (
                 <SelectPartitionStep
                     partitions={range(0, topic.partitionCount)}
