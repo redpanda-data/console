@@ -39,11 +39,17 @@ import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import * as moment from 'moment';
+import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 
 
 const { Text } = Typography;
 const { Option } = Select;
 const InputGroup = Input.Group;
+
+interface TopicMessageViewProps {
+    topic: Topic;
+    refreshTopicData: (force: boolean) => void;
+}
 
 /*
     TODO:
@@ -52,7 +58,7 @@ const InputGroup = Input.Group;
 */
 
 @observer
-export class TopicMessageView extends Component<{ topic: Topic }> {
+export class TopicMessageView extends Component<TopicMessageViewProps> {
     @observable previewDisplay: string[] = [];
     // @observable allCurrentKeys: string[];
 
@@ -70,9 +76,11 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
     @observable downloadMessages: TopicMessage[] | null;
     @observable expandedKeys: React.Key[] = [];
+    
+    @observable deleteRecordsModalVisible = false
+    @observable deleteRecordsModalAlive = false
 
-
-    constructor(props: { topic: Topic }) {
+    constructor(props: TopicMessageViewProps) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
         makeObservable(this);
@@ -140,6 +148,19 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
                     <this.MessageTable />
                 </>
+            }
+
+            {
+                this.deleteRecordsModalAlive
+                && (
+                    <DeleteRecordsModal 
+                        topic={this.props.topic} 
+                        visible={this.deleteRecordsModalVisible} 
+                        onCancel={() => this.hideDeleteRecordsModal()} 
+                        onFinish={() => this.finishDeleteRecordsModal()} 
+                        afterClose={() => console.log('after close', this.deleteRecordsModalAlive = false)}
+                    />
+                )
             }
         </>;
     }
@@ -248,6 +269,13 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
                 }
 
+                {
+                    !this.props.topic.cleanupPolicy.includes('compact') 
+                    && (<div className={styles.deleteButtonWrapper}>
+                            <Button type="default" danger onClick={() => this.showDeleteRecordsModal()}>Delete Records</Button>
+                        </div>)
+                }
+
                 {/*
                 api.MessageSearchPhase && api.MessageSearchPhase.length > 0 && searchParams.filters.length>0 &&
                     <StatusIndicator
@@ -270,6 +298,20 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
         </React.Fragment>;
     });
+
+    showDeleteRecordsModal() {
+        this.deleteRecordsModalAlive = true;
+        this.deleteRecordsModalVisible = true;
+    }
+
+    hideDeleteRecordsModal() {
+        this.deleteRecordsModalVisible = false;
+    }
+
+    finishDeleteRecordsModal() {
+        this.hideDeleteRecordsModal();
+        this.props.refreshTopicData(true);
+    }
 
     searchFunc = (source: 'auto' | 'manual') => {
 

@@ -290,10 +290,11 @@ interface DeleteRecordsModalProps {
     visible: boolean;
     onCancel: () => void;
     onFinish: () => void;
+    afterClose: () => void
 }
 
 export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element {
-    const { visible, topic, onCancel, onFinish } = props;
+    const { visible, topic, onCancel, onFinish, afterClose } = props;
 
     useEffect(() => {
         topic?.topicName && api.refreshPartitionsForTopic(topic.topicName, true);
@@ -403,6 +404,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             }}
             onCancel={onCancel}
             width="700px"
+            afterClose={afterClose}
         >
             {hasErrors && <Alert type="error" message={<>
                 <p>Errors have occurred when processing your request. Please contact your Kafka Administrator.</p>

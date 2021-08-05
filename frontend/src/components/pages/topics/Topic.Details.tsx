@@ -93,7 +93,7 @@ class TopicTab {
 
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {
-    @observable deleteRecordsModalVisible = true
+    @observable deleteRecordsModalVisible = false
     topicTabs: TopicTab[];
 
     constructor(props: any) {
@@ -102,7 +102,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         const topic = () => this.topic;
 
         this.topicTabs = [
-            new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} />),
+            new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
             new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
             new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', (t) => <TopicPartitions topic={t} />),
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
@@ -140,15 +140,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             api.messages = [];
             api.messagesFor = '';
         }
-    }
-
-    hideDeleteRecordsModal() {
-        this.deleteRecordsModalVisible = false;
-    }
-
-    finishDeleteRecordsModal() {
-        this.hideDeleteRecordsModal();
-        this.refreshData(true);
     }
 
     refreshData(force: boolean) {
@@ -257,12 +248,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         />
                     </Card>
                 </motion.div>
-                <DeleteRecordsModal 
-                    topic={this.topic} 
-                    visible={this.deleteRecordsModalVisible} 
-                    onCancel={() => this.hideDeleteRecordsModal()} 
-                    onFinish={() => this.finishDeleteRecordsModal()} 
-                />
             </>
         );
     }
