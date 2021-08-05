@@ -18,3 +18,10 @@
 .partitionSelect {
     margin-top: 1em;
 }
+
+.twoCol {
+    display: grid;
+    grid-template-columns: 66px 1fr;
+    gap: 30px;
+    margin-bottom: 25px;
+}

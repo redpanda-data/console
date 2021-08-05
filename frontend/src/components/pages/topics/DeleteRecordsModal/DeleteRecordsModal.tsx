@@ -16,6 +16,10 @@ type PartitionOption = null | AllPartitions | SpecificPartition;
 
 const SLIDER_INPUT_REGEX = /(^([1-9]\d*)|(\d{1,3}(,\d{3})*)$)|^$/;
 
+function TrashIcon() {
+    return <svg width="66" height="67" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="33" cy="33.6" r="33" fill="#F53649"/><path d="M18.806 24.729h28.388M29.452 31.826V42.47M36.548 31.826V42.47M20.58 24.729l1.775 21.29a3.548 3.548 0 003.548 3.549h14.194a3.548 3.548 0 003.548-3.549l1.774-21.29" stroke="#fff" stroke-width="3.333" stroke-linecap="round" stroke-linejoin="round"/><path d="M27.677 24.729v-5.322a1.774 1.774 0 011.775-1.775h7.096a1.774 1.774 0 011.774 1.774v5.323" stroke="#fff" stroke-width="3.333" stroke-linecap="round" stroke-linejoin="round"/></svg>
+}
+
 function SelectPartitionStep({
     selectedPartitionOption,
     onPartitionOptionSelected,
@@ -29,10 +33,13 @@ function SelectPartitionStep({
 }): JSX.Element {
     return (
         <>
-            <p>
-                You are about to delete records in your topic. Choose on what partitions you want to delete records. In
-                the next step you can choose the new low water mark for your selected partitions.
-            </p>
+            <div className={styles.twoCol}>
+                <TrashIcon />
+                <p>
+                    You are about to delete records in your topic. Choose on what partitions you want to delete records. In
+                    the next step you can choose the new low water mark for your selected partitions.
+                </p>
+            </div>
             <RadioOptionGroup<PartitionOption>
                 value={selectedPartitionOption}
                 onChange={(v) => {
@@ -106,11 +113,14 @@ const SelectOffsetStep = ({
 }) => {
     return (
         <>
-            <p>
-                Choose the new low offset for your selected partitions. Take note that this is a soft delete and that
-                the actual data may still be on the hard drive but not visible for any clients, even if they request the
-                data.
-            </p>
+            <div className={styles.twoCol}>
+                <TrashIcon />
+                <p>
+                    Choose the new low offset for your selected partitions. Take note that this is a soft delete and that
+                    the actual data may still be on the hard drive but not visible for any clients, even if they request the
+                    data.
+                </p>
+            </div>
             <RadioOptionGroup<OffsetOption>
                 value={selectedValue}
                 onChange={selectValue}
