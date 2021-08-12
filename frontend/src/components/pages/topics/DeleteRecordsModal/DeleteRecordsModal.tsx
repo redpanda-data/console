@@ -17,7 +17,25 @@ type PartitionOption = null | AllPartitions | SpecificPartition;
 const SLIDER_INPUT_REGEX = /(^([1-9]\d*)|(\d{1,3}(,\d{3})*)$)|^$/;
 
 function TrashIcon() {
-    return <svg width="66" height="67" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="33" cy="33.6" r="33" fill="#F53649"/><path d="M18.806 24.729h28.388M29.452 31.826V42.47M36.548 31.826V42.47M20.58 24.729l1.775 21.29a3.548 3.548 0 003.548 3.549h14.194a3.548 3.548 0 003.548-3.549l1.774-21.29" stroke="#fff" stroke-width="3.333" stroke-linecap="round" stroke-linejoin="round"/><path d="M27.677 24.729v-5.322a1.774 1.774 0 011.775-1.775h7.096a1.774 1.774 0 011.774 1.774v5.323" stroke="#fff" stroke-width="3.333" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    return (
+        <svg width="66" height="67" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="33" cy="33.6" r="33" fill="#F53649" />
+            <path
+                d="M18.806 24.729h28.388M29.452 31.826V42.47M36.548 31.826V42.47M20.58 24.729l1.775 21.29a3.548 3.548 0 003.548 3.549h14.194a3.548 3.548 0 003.548-3.549l1.774-21.29"
+                stroke="#fff"
+                strokeWidth="3.333"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <path
+                d="M27.677 24.729v-5.322a1.774 1.774 0 011.775-1.775h7.096a1.774 1.774 0 011.774 1.774v5.323"
+                stroke="#fff"
+                strokeWidth="3.333"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
 }
 
 function SelectPartitionStep({
@@ -36,8 +54,8 @@ function SelectPartitionStep({
             <div className={styles.twoCol}>
                 <TrashIcon />
                 <p>
-                    You are about to delete records in your topic. Choose on what partitions you want to delete records. In
-                    the next step you can choose the new low water mark for your selected partitions.
+                    You are about to delete records in your topic. Choose on what partitions you want to delete records.
+                    In the next step you can choose the new low water mark for your selected partitions.
                 </p>
             </div>
             <RadioOptionGroup<PartitionOption>
@@ -91,7 +109,7 @@ function SelectPartitionStep({
     );
 }
 
-type OffsetOption = null | 'manualOffset' | 'timestamp';
+type OffsetOption = null | 'highWatermark' | 'manualOffset' | 'timestamp';
 type PartitionInfo = [SpecificPartition, number] | AllPartitions;
 
 const SelectOffsetStep = ({
@@ -111,14 +129,34 @@ const SelectOffsetStep = ({
     timestamp: number | null;
     onTimestampChanged: (v: number) => void;
 }) => {
+    const upperOption =
+        partitionInfo === 'allPartitions'
+            ? {
+                  value: 'highWatermark' as OffsetOption,
+                  title: 'High Watermark',
+                  subTitle: 'Delete records until high watermark across all partitions in this topic.',
+              }
+            : {
+                  value: 'manualOffset' as OffsetOption,
+                  title: 'Manual Offset',
+                  subTitle: `Delete records until specified offset across all selected partitions (ID: ${partitionInfo[1]}) in this topic.`,
+                  content: (
+                      <ManualOffsetContent
+                          topicName={topicName}
+                          partitionInfo={partitionInfo}
+                          onOffsetSpecified={onOffsetSpecified}
+                      />
+                  ),
+              };
+
     return (
         <>
             <div className={styles.twoCol}>
                 <TrashIcon />
                 <p>
-                    Choose the new low offset for your selected partitions. Take note that this is a soft delete and that
-                    the actual data may still be on the hard drive but not visible for any clients, even if they request the
-                    data.
+                    Choose the new low offset for your selected partitions. Take note that this is a soft delete and
+                    that the actual data may still be on the hard drive but not visible for any clients, even if they
+                    request the data.
                 </p>
             </div>
             <RadioOptionGroup<OffsetOption>
@@ -126,21 +164,7 @@ const SelectOffsetStep = ({
                 onChange={selectValue}
                 showContent="onlyWhenSelected"
                 options={[
-                    {
-                        value: 'manualOffset',
-                        title: 'Manual Offset',
-                        subTitle:
-                            partitionInfo === 'allPartitions'
-                                ? 'Delete records until high watermark across all partitions in this topic.'
-                                : `Delete records until specified offset across all selected partitions (ID: ${partitionInfo[1]}) in this topic.`,
-                        content: (
-                            <ManualOffsetContent
-                                topicName={topicName}
-                                partitionInfo={partitionInfo}
-                                onOffsetSpecified={onOffsetSpecified}
-                            />
-                        ),
-                    },
+                    upperOption,
                     {
                         value: 'timestamp',
                         title: 'Timestamp',
@@ -323,6 +347,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     const isAllPartitions = partitionOption === 'allPartitions';
     const isSpecficPartition = partitionOption === 'specificPartition';
     const isManualOffset = offsetOption === 'manualOffset';
+    const isHighWatermark = offsetOption === 'highWatermark';
     const isTimestamp = offsetOption === 'timestamp';
 
     const handleFinish = async (responseData: DeleteRecordsResponseData | null | void) => {
@@ -371,7 +396,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
 
         setOkButtonLoading(true);
 
-        if (isAllPartitions && isManualOffset) {
+        if (isAllPartitions && isHighWatermark) {
             api.deleteTopicRecordsFromAllPartitionsHighWatermark(topic.topicName).then(handleFinish);
         } else if (isSpecficPartition && isManualOffset) {
             api.deleteTopicRecords(topic.topicName, specifiedOffset, specifiedPartition!).then(handleFinish);
@@ -393,10 +418,14 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                             handleFinish
                         );
                     } else {
-                        setErrors(["No partition offset was specified, this should not happen. Please contact your Kowl administrator."])
+                        setErrors([
+                            'No partition offset was specified, this should not happen. Please contact your Kowl administrator.',
+                        ]);
                     }
                 }
             });
+        } else {
+            setErrors(['Something went wrong, please contact your Kowl administrator.'])
         }
     };
 
