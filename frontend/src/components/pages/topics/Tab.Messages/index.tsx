@@ -170,6 +170,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const spaceStyle = { marginRight: '16px', marginTop: '12px' };
         const canUseFilters = api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
 
+        const isCompacted = this.props.topic.cleanupPolicy.includes('compact');
         return <React.Fragment>
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 {/* Search Settings*/}
@@ -245,10 +246,18 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     </div>
                 </Label>
 
+                {/* Delete Records */}
+                <div className={styles.deleteButtonWrapper}>
+                    {isCompacted 
+                        ? <Tooltip placement="top" title="Records on Topics with the `compact` cleanup policy cannot be deleted."><Button disabled>Delete Records</Button></Tooltip>
+                        : <Button type="default" danger onClick={() => this.showDeleteRecordsModal()} disabled={isCompacted}>Delete Records</Button>
+                    }
+                </div>
+
                 {/* Quick Search */}
-                <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto' }}>
+                <div className={styles.quickSearchWrapper}>
                     <Input placeholder='Quick Search' allowClear={true} size='middle'
-                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
+                        className={styles.quickSearchInput}
                         value={uiState.topicSettings.quickSearch}
                         onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
                         addonAfter={null} disabled={this.fetchError != null}
@@ -267,13 +276,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         messagesConsumed={searchParams.filtersEnabled ? String(api.messagesTotalConsumed) : undefined}
                     />
 
-                }
-
-                {
-                    !this.props.topic.cleanupPolicy.includes('compact') 
-                    && (<div className={styles.deleteButtonWrapper}>
-                            <Button type="default" danger onClick={() => this.showDeleteRecordsModal()}>Delete Records</Button>
-                        </div>)
                 }
 
                 {/*

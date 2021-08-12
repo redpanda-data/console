@@ -43,10 +43,25 @@
     }
 }
 
-.deleteButtonWrapper {
+.deleteButtonWrapper,
+.quickSearch {
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.deleteButtonWrapper {
+    margin-left: auto;
+}
+
+.quickSearchWrapper {
     margin-left: 1rem;
+}
+
+.quickSearchInput {
+    width: 200px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    height: 32px;
 }
