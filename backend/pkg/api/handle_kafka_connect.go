@@ -123,6 +123,60 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 	}
 }
 
+type putConnectorConfigRequest struct {
+	Config map[string]string `json:"config"`
+}
+
+func (c *putConnectorConfigRequest) OK() error {
+	if len(c.Config) == 0 {
+		return fmt.Errorf("you must at least put one config item into the config")
+	}
+	return nil
+}
+
+func (c *putConnectorConfigRequest) ToClientRequest() con.PutConnectorConfigOptions {
+	return con.PutConnectorConfigOptions{
+		Config: c.Config,
+	}
+}
+
+func (api *API) handlePutConnectorConfig() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clusterName := chi.URLParam(r, "clusterName")
+		connectorName := chi.URLParam(r, "connectorName")
+
+		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canEdit {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to create connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		var req putConnectorConfigRequest
+		restErr = rest.Decode(w, r, &req)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		cInfo, restErr := api.ConnectSvc.PutConnectorConfig(r.Context(), clusterName, connectorName, req.ToClientRequest())
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, cInfo)
+	}
+}
+
 type createConnectorRequest struct {
 	ConnectorName string            `json:"connectorName"`
 	Config        map[string]string `json:"config"`
