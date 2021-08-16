@@ -94,6 +94,7 @@ func (api *API) routes() *chi.Mux {
 				// Kafka Connect
 				r.Get("/kafka-connect/connectors", api.handleGetConnectors())
 				r.Get("/kafka-connect/clusters/{clusterName}/connectors", api.handleGetClusterConnectors())
+				r.Post("/kafka-connect/clusters/{clusterName}/connectors", api.handleCreateConnector())
 				r.Get("/kafka-connect/clusters/{clusterName}/connectors/{connector}", api.handleGetConnector())
 				r.Delete("/kafka-connect/clusters/{clusterName}/connectors/{connector}", api.handleDeleteConnector())
 				r.Put("/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause", api.handlePauseConnector())

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	con "github.com/cloudhut/connect-client"
 	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
@@ -119,6 +120,60 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 		}
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, connectorInfo)
+	}
+}
+
+type createConnectorRequest struct {
+	ConnectorName string            `json:"connectorName"`
+	Config        map[string]string `json:"config"`
+}
+
+func (c *createConnectorRequest) OK() error {
+	req := c.ToClientRequest()
+	return req.Validate()
+}
+
+func (c *createConnectorRequest) ToClientRequest() con.CreateConnectorRequest {
+	return con.CreateConnectorRequest{
+		Name:   c.ConnectorName,
+		Config: c.Config,
+	}
+}
+
+func (api *API) handleCreateConnector() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clusterName := chi.URLParam(r, "clusterName")
+
+		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canEdit {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to create connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		var req createConnectorRequest
+		restErr = rest.Decode(w, r, &req)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		cInfo, restErr := api.ConnectSvc.CreateConnector(r.Context(), clusterName, req.ToClientRequest())
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, cInfo)
 	}
 }
 
