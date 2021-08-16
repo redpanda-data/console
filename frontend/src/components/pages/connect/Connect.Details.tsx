@@ -8,7 +8,7 @@ import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { TopicActions, Topic, ConnectClusterShard } from '../../../state/restInterfaces';
+import { TopicActions, Topic, ConnectClusterShard, ApiError } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { clone } from '../../../utils/jsonUtils';
@@ -34,51 +34,51 @@ import { StatisticsCard } from './helper';
 export type Monaco = typeof monacoType;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const monacoProtoLint = require('monaco-proto-lint');
+// const monacoProtoLint = require('monaco-proto-lint');
 
-const protoLangConf: monacoType.languages.LanguageConfiguration = {
-    indentationRules: {
-        // ^.*\{[^}'']*$
-        increaseIndentPattern: /^.*\{[^}'']*$/,
-        // ^(.*\*/)?\s*\}.*$
-        decreaseIndentPattern: /^(.*\*\/)?\s*\}.*$/,
-    },
-    wordPattern: /(-?\d*\.\d\w*)|([^`~!@#%^&*()\-=+[{\]}\\|;:'",.<>/?\s]+)(\.proto){0,1}/g,
-    comments: {
-        lineComment: '//',
-        blockComment: ['/*', '*/']
-    },
-    brackets: [
-        ['{', '}'],
-        ['[', ']'],
-        ['(', ')'],
-        ['<', '>'],
-    ],
-    folding: {
-        markers: {
-            start: new RegExp("^\\s*<!--\\s*#?region\\b.*-->"),
-            end: new RegExp("^\\s*<!--\\s*#?endregion\\b.*-->")
-        },
-        offSide: true,
-    }
-}
+// const protoLangConf: monacoType.languages.LanguageConfiguration = {
+//     indentationRules: {
+//         // ^.*\{[^}'']*$
+//         increaseIndentPattern: /^.*\{[^}'']*$/,
+//         // ^(.*\*/)?\s*\}.*$
+//         decreaseIndentPattern: /^(.*\*\/)?\s*\}.*$/,
+//     },
+//     wordPattern: /(-?\d*\.\d\w*)|([^`~!@#%^&*()\-=+[{\]}\\|;:'",.<>/?\s]+)(\.proto){0,1}/g,
+//     comments: {
+//         lineComment: '//',
+//         blockComment: ['/*', '*/']
+//     },
+//     brackets: [
+//         ['{', '}'],
+//         ['[', ']'],
+//         ['(', ')'],
+//         ['<', '>'],
+//     ],
+//     folding: {
+//         markers: {
+//             start: new RegExp("^\\s*<!--\\s*#?region\\b.*-->"),
+//             end: new RegExp("^\\s*<!--\\s*#?endregion\\b.*-->")
+//         },
+//         offSide: true,
+//     }
+// }
 
 
 function onBeforeEditorMount(m: Monaco) {
-    monacoProtoLint.default(m);
-    m.languages.setLanguageConfiguration('protobuf', protoLangConf);
+    // monacoProtoLint.default(m);
+    // m.languages.setLanguageConfiguration('protobuf', protoLangConf);
 
-    m.editor.defineTheme('proto-custom', {
-        base: 'vs',
-        inherit: true,
-        rules: [
-            { token: 'comment', foreground: '#66747B' }
-        ],
-        colors: {
-            "comment": "#66747B",
-            "editorLineNumber.foreground": "#aaa",
-        }
-    })
+    // m.editor.defineTheme('proto-custom', {
+    //     base: 'vs',
+    //     inherit: true,
+    //     rules: [
+    //         { token: 'comment', foreground: '#66747B' }
+    //     ],
+    //     colors: {
+    //         "comment": "#66747B",
+    //         "editorLineNumber.foreground": "#aaa",
+    //     }
+    // })
 }
 
 function onMountEditor(editor: any, monaco: any) {
@@ -92,6 +92,7 @@ function onMountEditor(editor: any, monaco: any) {
 class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connector: string }> {
 
     @observable placeholder = 5;
+    currentConfig: string = "";
 
     constructor(p: any) {
         super(p);
@@ -103,6 +104,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
         const connector = this.props.connector;
         p.title = 'Overview';
         p.addBreadcrumb('Kafka Connect', '/kafka-connect');
+        p.addBreadcrumb(clusterName, `/kafka-connect`);
         p.addBreadcrumb(connector, `/kafka-connect/${clusterName}/${connector}`);
 
         this.refreshData(false);
@@ -134,19 +136,28 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                 <Card>
                     <div style={{ display: 'flex', alignItems: 'center', margin: '.5em 0', paddingLeft: '2px' }}>
                         <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
-                            <span style={{ fontSize: '17px', display: 'inline-block' }}>{okIcon}</span>
-                            <span style={{ fontSize: 'medium', fontWeight: 600, lineHeight: '0px', marginBottom: '1px' }}>{clusterName}{' / '}{connectorName}</span>
+                            <span style={{ fontSize: '17px', display: 'inline-block' }}>{isRunning ? okIcon : warnIcon}</span>
+                            <span style={{ fontSize: 'medium', fontWeight: 600, lineHeight: '0px', marginBottom: '1px' }}>{connectorName}</span>
                             <span style={{ fontSize: 'small', opacity: 0.5 }}>({state ?? '<empty>'})</span>
                         </span>
 
                         <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '.5em', fontSize: '12px' }}>
-                            <Button onClick={() => {
-                                if (isRunning) api.pauseConnector(clusterName, connectorName);
-                                else api.resumeConnector(clusterName, connectorName);
+                            <Button onClick={async () => {
+                                let f: () => Promise<ApiError | null>;
+                                if (isRunning)
+                                    f = () => api.pauseConnector(clusterName, connectorName);
+                                else
+                                    f = () => api.resumeConnector(clusterName, connectorName);
+
+                                await f();
+                                this.refreshData(true);
                             }}>
                                 {isRunning ? 'Pause' : 'Resume'}
                             </Button>
-                            <Button onClick={() => api.restartConnector(clusterName, connectorName)}>Restart</Button>
+                            <Button onClick={async () => {
+                                await api.restartConnector(clusterName, connectorName);
+                                this.refreshData(true);
+                            }}>Restart</Button>
                         </span>
                     </div>
 
@@ -162,6 +173,13 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
                                 // theme='myCoolTheme'
                                 // language='mySpecialLanguage'
+
+                                language='json'
+                                value={connector?.jsonConfig}
+                                onChange={(v, e) => {
+                                    if (v)
+                                        this.currentConfig = v;
+                                }}
 
                                 // language='yaml'
                                 // defaultValue={yamlText}
@@ -187,7 +205,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                             />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
-                            <Button disabled={true}>Update Config</Button>
+                            <Button disabled={true} onClick={() => {
+                                //
+                            }}>Update Config</Button>
                         </div>
                     </div>
 
@@ -207,27 +227,27 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                     title: 'Worker', dataIndex: 'workerId', sorter: sortField('workerId'),
                                     render: (v) => <Code>{v}</Code>
                                 },
-                                {
-                                    title: 'Actions', width: 200,
-                                    render: (_, task) => <span style={{ display: 'inline-flex', gap: '.75em', alignItems: 'center' }}>
-                                        {/* Pause/Resume Task */}
-                                        <span className='linkBtn' onClick={() => {
-                                            // if (isRunning) api.pauseConnector(clusterName, connectorName);
-                                            // else api.resumeConnector(clusterName, connectorName);
-                                        }}>
-                                            {task.state.toLowerCase() == 'running' ? 'Pause' : 'Resume'}
-                                        </span>
-                                        {/* Separator */}
-                                        <span className='inlineSeparator' />
-                                        {/* Restart Task */}
-                                        <span className='linkBtn' onClick={() => {
-                                            // if (isRunning) api.pauseConnector(clusterName, connectorName);
-                                            // else api.resumeConnector(clusterName, connectorName);
-                                        }}>
-                                            Restart
-                                        </span>
-                                    </span>
-                                },
+                                // {
+                                //     title: 'Actions', width: 200,
+                                //     render: (_, task) => <span style={{ display: 'inline-flex', gap: '.75em', alignItems: 'center' }}>
+                                //         {/* Pause/Resume Task */}
+                                //         <span className='linkBtn' onClick={() => {
+                                //             // if (isRunning) api.pauseConnector(clusterName, connectorName);
+                                //             // else api.resumeConnector(clusterName, connectorName);
+                                //         }}>
+                                //             {task.state.toLowerCase() == 'running' ? 'Pause' : 'Resume'}
+                                //         </span>
+                                //         {/* Separator */}
+                                //         <span className='inlineSeparator' />
+                                //         {/* Restart Task */}
+                                //         <span className='linkBtn' onClick={() => {
+                                //             // if (isRunning) api.pauseConnector(clusterName, connectorName);
+                                //             // else api.resumeConnector(clusterName, connectorName);
+                                //         }}>
+                                //             Restart
+                                //         </span>
+                                //     </span>
+                                // },
                             ]}
                             rowKey='taskId'
 

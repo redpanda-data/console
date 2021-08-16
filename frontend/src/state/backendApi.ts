@@ -844,7 +844,21 @@ const apiStore = {
 
     refreshConnectClusters(force?: boolean): void {
         cachedApiRequest<KafkaConnectors | null>('./api/kafka-connect/connectors', force)
-            .then(v => this.connectConnectors = (v ?? undefined), addError);
+            .then(v => {
+                if (!v) {
+                    this.connectConnectors = undefined;
+                }
+                else {
+                    for (const cluster of v.clusters)
+                        for (const connector of cluster.connectors)
+                            if (connector.config)
+                                connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
+                            else
+                                connector.jsonConfig = "";
+
+                    this.connectConnectors = v;
+                }
+            }, addError);
     },
     /*
         // All, or for specific cluster

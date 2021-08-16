@@ -834,6 +834,7 @@ export interface ClusterConnectors { // ClusterConnectors
 export interface ClusterConnectorInfo {
     name: string;
     class: string; // java class name
+    config: object; // map[string]string
     type: string;  // Source or Sink
     topic: string; // Kafka Topic name
     state: string; // Running, ...
@@ -841,6 +842,9 @@ export interface ClusterConnectorInfo {
     totalTasks: number;
     runningTasks: number;
     tasks: ClusterConnectorTaskInfo[];
+
+    // added by frontend
+    jsonConfig: string;
 }
 
 export interface ClusterConnectorTaskInfo {
