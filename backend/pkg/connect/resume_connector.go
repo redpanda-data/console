@@ -12,15 +12,9 @@ import (
 // ResumeConnector resumes a paused connector or do nothing if the connector is not paused.
 // This call asynchronous and the tasks will not transition to RUNNING state at the same time.
 func (s *Service) ResumeConnector(ctx context.Context, clusterName string, connector string) *rest.Error {
-	c, exists := s.ClientsByCluster[clusterName]
-	if !exists {
-		return &rest.Error{
-			Err:          fmt.Errorf("a client for the given cluster name does not exist"),
-			Status:       http.StatusNotFound,
-			Message:      "There's no configured cluster with the given connect cluster name",
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
-			IsSilent:     false,
-		}
+	c, restErr := s.getConnectClusterByName(clusterName)
+	if restErr != nil {
+		return restErr
 	}
 
 	err := c.Client.ResumeConnector(ctx, connector)

@@ -101,13 +101,9 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) []ClusterConnecto
 // GetClusterConnectors returns the GET /connectors response for a single connect cluster. A cluster can be referenced
 // by it's name (as specified in the user config).
 func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) (ClusterConnectors, *rest.Error) {
-	c, exists := s.ClientsByCluster[clusterName]
-	if !exists {
-		return ClusterConnectors{}, &rest.Error{
-			Err:     fmt.Errorf("requested connect cluster with that name does not exist"),
-			Status:  http.StatusNotFound,
-			Message: fmt.Sprintf("No connect cluster with the given cluster name '%v' exists", clusterName),
-		}
+	c, restErr := s.getConnectClusterByName(clusterName)
+	if restErr != nil {
+		return ClusterConnectors{}, restErr
 	}
 
 	connectors, err := c.Client.ListConnectorsExpanded(ctx)
@@ -129,15 +125,9 @@ func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) 
 // GetConnector requests the connector info as well as the status info and merges both information together. If either
 // request fails an error will be returned.
 func (s *Service) GetConnector(ctx context.Context, clusterName string, connector string) (ClusterConnectorInfo, *rest.Error) {
-	c, exists := s.ClientsByCluster[clusterName]
-	if !exists {
-		return ClusterConnectorInfo{}, &rest.Error{
-			Err:          fmt.Errorf("a client for the given cluster name does not exist"),
-			Status:       http.StatusNotFound,
-			Message:      "There's no configured cluster with the given connect cluster name",
-			InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName), zap.String("connector", connector)},
-			IsSilent:     false,
-		}
+	c, restErr := s.getConnectClusterByName(clusterName)
+	if restErr != nil {
+		return ClusterConnectorInfo{}, restErr
 	}
 
 	cInfo, err := c.Client.GetConnector(ctx, connector)
