@@ -199,6 +199,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                     showFoldingControls: 'always',
                                     glyphMargin: false,
                                     lineNumbersMinChars: 4,
+                                    scrollbar: {
+                                        alwaysConsumeMouseWheel: false
+                                    }
                                 }}
 
                                 height="400px"
