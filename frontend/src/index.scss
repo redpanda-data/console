@@ -2335,6 +2335,11 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         gap: 1em;
         font-size: 20px;
 
+        a {
+            width: 32px;
+            height: 32px;
+        }
+
         .anticon {
             padding: 6px;
             cursor: pointer;
