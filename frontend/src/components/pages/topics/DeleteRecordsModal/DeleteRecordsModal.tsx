@@ -240,16 +240,6 @@ const ManualOffsetContent = observer(
             return <Spin />;
         }
 
-        if (partitionInfo === 'allPartitions') {
-            const { low, high } = getMinMaxWatermarks(partitions);
-            return (
-                <div className={styles.sliderContainer}>
-                    <Slider disabled min={low} max={high} value={high} className={styles.slider} />
-                    <Input disabled className={styles.sliderValue} value={toDecimalSeparated(high)} />
-                </div>
-            );
-        }
-
         const [_, partitionId] = partitionInfo;
         const partition = partitions.find((p) => p.id === partitionId);
 
@@ -287,36 +277,35 @@ const ManualOffsetContent = observer(
     }
 );
 
-function getMinMaxWatermarks(partitions: Array<Partition>) {
-    return partitions.reduce(
-        (acc, it) => {
-            return {
-                low: Math.min(acc.low, it.waterMarkLow),
-                high: Math.max(acc.high, it.waterMarkHigh),
-            };
-        },
-        { low: Infinity, high: 0 }
-    );
-}
-
 function getMarks(partition: Partition) {
     if (!partition) return {};
 
     const diff = partition.waterMarkHigh - partition.waterMarkLow;
-    const marks = [partition.waterMarkLow, diff * 0.33, diff * 0.67, partition.waterMarkHigh];
 
-    const formattedMarks = marks.reduce((acc, it) => {
+    let marks: Array<number> = [];
+
+    if (diff > 0) {
+        marks = [partition.waterMarkLow, partition.waterMarkLow]
+    }
+
+    if (diff > 100) {
+        marks = [partition.waterMarkLow, diff * 0.33, diff * 0.67, partition.waterMarkHigh]
+    }
+    
+    return {
+        min: partition.waterMarkLow,
+        max: partition.waterMarkHigh,
+        marks: formatMarks(marks),
+    };
+}
+
+function formatMarks(marks: number[]) {
+    return marks.reduce((acc, it) => {
         const key = it.toFixed(0);
         const value = prettyNumber(it);
         acc[key] = value;
         return acc;
-    }, {} as { [index: string]: string });
-
-    return {
-        min: partition.waterMarkLow,
-        max: partition.waterMarkHigh,
-        marks: formattedMarks,
-    };
+    }, {} as { [index: string]: string; });
 }
 
 interface DeleteRecordsModalProps {
