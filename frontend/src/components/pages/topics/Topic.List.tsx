@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrashIcon } from '@heroicons/react/outline';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
-import { Alert, Button, Checkbox, Col, Modal, Popover, Row, Statistic, Table, Tooltip } from 'antd';
+import { Alert, Button, Checkbox, Col, Modal, notification, Popover, Row, Statistic, Table, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -252,6 +252,9 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
     const finish = () => {
         onFinish();
         cleanup();
+        notification['success']({
+            message: `Topic \`${topicToDelete}\` deleted successfully`,
+        });
     };
 
     const cancel = () => {
@@ -278,7 +281,7 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
                 api.deleteTopic(topicToDelete!) // modal is not shown when topic is null
                     .then(finish)
                     .catch(setError)
-                    .finally(() => setDeletionPending(false));
+                    .finally(() => {setDeletionPending(false)});
             }}
         >
             <>
