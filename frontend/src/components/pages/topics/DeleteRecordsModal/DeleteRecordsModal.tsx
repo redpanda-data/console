@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Input, Modal, Select, Slider, Spin } from 'antd';
+import { Alert, Input, Modal, notification, Select, Slider, Spin } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
 import { DeleteRecordsResponseData, Partition, Topic, TopicOffset } from '../../../../state/restInterfaces';
@@ -285,13 +285,13 @@ function getMarks(partition: Partition) {
     let marks: Array<number> = [];
 
     if (diff > 0) {
-        marks = [partition.waterMarkLow, partition.waterMarkLow]
+        marks = [partition.waterMarkLow, partition.waterMarkLow];
     }
 
     if (diff > 100) {
-        marks = [partition.waterMarkLow, diff * 0.33, diff * 0.67, partition.waterMarkHigh]
+        marks = [partition.waterMarkLow, diff * 0.33, diff * 0.67, partition.waterMarkHigh];
     }
-    
+
     return {
         min: partition.waterMarkLow,
         max: partition.waterMarkHigh,
@@ -305,7 +305,7 @@ function formatMarks(marks: number[]) {
         const value = prettyNumber(it);
         acc[key] = value;
         return acc;
-    }, {} as { [index: string]: string; });
+    }, {} as { [index: string]: string });
 }
 
 interface DeleteRecordsModalProps {
@@ -329,7 +329,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     const [step, setStep] = useState<1 | 2>(1);
     const [specifiedOffset, setSpecifiedOffset] = useState<number>(0);
     const [okButtonLoading, setOkButtonLoading] = useState<boolean>(false);
-    const [timestamp, setTimestamp] = useState<null | number>(null);
+    const [timestamp, setTimestamp] = useState<number>(Date.now());
     const [errors, setErrors] = useState<Array<string>>([]);
 
     const hasErrors = errors.length > 0;
@@ -354,6 +354,9 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
             setOkButtonLoading(false);
         } else {
             onFinish();
+            notification['success']({
+                message: 'Records deleted successfully',
+            });
         }
     };
 
@@ -402,7 +405,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                         (p) => specifiedPartition === p.partitionId
                     )?.offset;
 
-                    if (partitionOffset && partitionOffset >= 0) {
+                    if (partitionOffset != null) {
                         api.deleteTopicRecords(topic.topicName, partitionOffset, specifiedPartition!).then(
                             handleFinish
                         );
@@ -414,7 +417,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                 }
             });
         } else {
-            setErrors(['Something went wrong, please contact your Kowl administrator.'])
+            setErrors(['Something went wrong, please contact your Kowl administrator.']);
         }
     };
 
