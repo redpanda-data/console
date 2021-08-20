@@ -3,15 +3,16 @@ package connect
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"net/http"
 )
 
 func (s *Service) PutConnectorConfig(ctx context.Context, clusterName string, connectorName string, req con.PutConnectorConfigOptions) (con.ConnectorInfo, *rest.Error) {
-	c, restErr := s.getConnectClusterByName(connectorName)
+	c, restErr := s.getConnectClusterByName(clusterName)
 	if restErr != nil {
 		return con.ConnectorInfo{}, restErr
 	}
