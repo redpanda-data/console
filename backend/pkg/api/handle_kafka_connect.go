@@ -3,13 +3,14 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
+
 	con "github.com/cloudhut/connect-client"
 	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"net/http"
-	"time"
 
 	"github.com/cloudhut/common/rest"
 )
@@ -143,7 +144,7 @@ func (c *putConnectorConfigRequest) ToClientRequest() con.PutConnectorConfigOpti
 func (api *API) handlePutConnectorConfig() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clusterName := chi.URLParam(r, "clusterName")
-		connectorName := chi.URLParam(r, "connectorName")
+		connectorName := chi.URLParam(r, "connector")
 
 		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
