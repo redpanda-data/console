@@ -1,7 +1,7 @@
 /* eslint-disable no-useless-escape */
 import { CheckCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
-import { Button, Checkbox, Col, Empty, Popover, Row, Statistic, Table } from 'antd';
+import { Button, Checkbox, Col, Empty, message, Popover, Row, Statistic, Table } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -92,7 +92,7 @@ function onMountEditor(editor: any, monaco: any) {
 class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connector: string }> {
 
     @observable placeholder = 5;
-    currentConfig: string = "";
+    @observable currentConfig: string = "";
 
     constructor(p: any) {
         super(p);
@@ -104,8 +104,8 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
         const connector = this.props.connector;
         p.title = 'Overview';
         p.addBreadcrumb('Kafka Connect', '/kafka-connect');
-        p.addBreadcrumb(clusterName, `/kafka-connect`);
-        p.addBreadcrumb(connector, `/kafka-connect/${clusterName}/${connector}`);
+        // p.addBreadcrumb(clusterName, `/kafka-connect`);
+        p.addBreadcrumb(clusterName + ' / ' + connector, `/kafka-connect/${clusterName}/${connector}`);
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -114,6 +114,15 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
     refreshData(force: boolean) {
         //
         api.refreshConnectClusters(force);
+
+        // update config in editor
+        const clusterName = this.props.clusterName;
+        const connectorName = this.props.connector;
+
+        const cluster = api.connectConnectors?.clusters.first(c => c.clusterName == clusterName);
+        const connector = cluster?.connectors.first(c => c.name == connectorName);
+
+        this.currentConfig = connector?.jsonConfig ?? '';
     }
 
     render() {
@@ -175,7 +184,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                 // language='mySpecialLanguage'
 
                                 language='json'
-                                value={connector?.jsonConfig}
+                                value={this.currentConfig}
                                 onChange={(v, e) => {
                                     if (v)
                                         this.currentConfig = v;
@@ -208,8 +217,23 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                             />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
-                            <Button disabled={true} onClick={() => {
-                                //
+                            <Button disabled={(() => {
+                                if (!this.currentConfig) return true;
+                                try { JSON.parse(this.currentConfig); }
+                                catch (ex: any) { return true; }
+                                return false;
+                            })()} onClick={async () => {
+
+                                let newConfigObj: object;
+                                try {
+                                    newConfigObj = JSON.parse(this.currentConfig);
+                                } catch (ex: any) {
+                                    message.error("Config is not valid json!", 3);
+                                    return;
+                                }
+
+                                await api.updateConnector(clusterName, connectorName, newConfigObj);
+                                this.refreshData(true);
                             }}>Update Config</Button>
                         </div>
                     </div>

@@ -932,6 +932,19 @@ const apiStore = {
         return null;
     },
 
+    async updateConnector(clusterName: string, connector: string, config: object): Promise<ApiError | null> {
+        // PUT "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
+        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
+            method: 'PUT',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify({ config: config }),
+        });
+        await tryHandleApiError(response);
+        return null;
+    },
+
 
 }
 
