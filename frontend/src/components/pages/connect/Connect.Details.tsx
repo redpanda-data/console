@@ -1,9 +1,9 @@
 /* eslint-disable no-useless-escape */
 import { CheckCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
-import { Button, Checkbox, Col, Empty, message, Popover, Row, Statistic, Table } from 'antd';
+import { Button, Checkbox, Col, Empty, message, notification, Popover, Row, Statistic, Table } from 'antd';
 import { motion } from 'framer-motion';
-import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
+import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -94,6 +94,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
     @observable placeholder = 5;
     @observable currentConfig: string = "";
 
+    autoRunDisposer: IReactionDisposer | undefined;
+    showConfigUpdated = false;
+
     constructor(p: any) {
         super(p);
         makeObservable(this);
@@ -107,22 +110,37 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
         // p.addBreadcrumb(clusterName, `/kafka-connect`);
         p.addBreadcrumb(clusterName + ' / ' + connector, `/kafka-connect/${clusterName}/${connector}`);
 
+
+        this.autoRunDisposer = autorun(() => {
+            // update config in editor
+            const clusterName = this.props.clusterName;
+            const connectorName = this.props.connector;
+
+            const cluster = api.connectConnectors?.clusters.first(c => c.clusterName == clusterName);
+            const connector = cluster?.connectors.first(c => c.name == connectorName);
+
+            const currentConfig = untracked(() => this.currentConfig);
+            const isInitialUpdate = !currentConfig;
+            const newConfig = connector?.jsonConfig ?? '';
+            if (newConfig && newConfig != currentConfig) {
+                this.currentConfig = newConfig;
+                if (!isInitialUpdate) message.info('Shown config has been updated');
+            }
+        });
+
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
     refreshData(force: boolean) {
-        //
         api.refreshConnectClusters(force);
+    }
 
-        // update config in editor
-        const clusterName = this.props.clusterName;
-        const connectorName = this.props.connector;
-
-        const cluster = api.connectConnectors?.clusters.first(c => c.clusterName == clusterName);
-        const connector = cluster?.connectors.first(c => c.name == connectorName);
-
-        this.currentConfig = connector?.jsonConfig ?? '';
+    componentWillUnmount() {
+        if (this.autoRunDisposer) {
+            this.autoRunDisposer();
+            this.autoRunDisposer = undefined;
+        }
     }
 
     render() {
@@ -232,8 +250,15 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                     return;
                                 }
 
-                                await api.updateConnector(clusterName, connectorName, newConfigObj);
+                                const err = await api.updateConnector(clusterName, connectorName, newConfigObj);
+                                if (err) {
+                                    notification.error({ message: 'Error', description: 'Unable to update config:\n' + JSON.stringify(err, undefined, 4) });
+                                    return;
+                                }
                                 this.refreshData(true);
+
+                                message.success('New connector config applied!');
+
                             }}>Update Config</Button>
                         </div>
                     </div>

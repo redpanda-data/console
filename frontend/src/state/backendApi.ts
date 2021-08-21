@@ -1031,7 +1031,7 @@ async function tryHandleApiError(response: Response) {
     }
     catch (err: any) {
         // not json
-        console.log(`response code ${response.status} failed to parse response as 'ApiError'. response text:\n${text}`);
+        console.log(`response code ${response.status} failed to parse response as 'ApiError'`, { responseText: text, response: response });
     }
 
     // use generic error text
