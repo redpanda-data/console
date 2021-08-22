@@ -90,6 +90,36 @@ func (api *API) handleGetClusterConnectors() http.HandlerFunc {
 	}
 }
 
+func (api *API) handleGetClusterInfo() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clusterName := chi.URLParam(r, "clusterName")
+
+		canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canSee {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to view this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to view connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		clusterInfo, restErr := api.ConnectSvc.GetClusterInfo(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, clusterInfo)
+	}
+}
+
 func (api *API) handleGetConnector() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clusterName := chi.URLParam(r, "clusterName")
