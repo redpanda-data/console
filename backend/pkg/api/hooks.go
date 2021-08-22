@@ -35,6 +35,8 @@ type RouteHooks interface {
 type OwlHooks interface {
 	// Topic Hooks
 	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanDeleteTopic(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicMessages(ctx context.Context, topicName string) (bool, *rest.Error)
@@ -75,6 +77,12 @@ func (*defaultHooks) ConfigRouter(_ chi.Router)    {}
 
 // Owl Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanDeleteTopic(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanDeleteTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
 func (*defaultHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, *rest.Error) {

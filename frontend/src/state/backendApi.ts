@@ -11,7 +11,7 @@ import {
     AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest,
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -206,6 +206,8 @@ const apiStore = {
     topicDocumentation: new Map<string, TopicDocumentation>(),
     topicPermissions: new Map<string, TopicPermissions | null>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
+    topicPartitionErrors: new Map<string, Array<{id: number, partitionError: string}>>(),
+    topicWatermarksErrors: new Map<string, Array<{id: number, waterMarksError: string}>>(),
     topicConsumers: new Map<string, TopicConsumer[]>(),
     topicAcls: new Map<string, AclResponse | null>(),
 
@@ -432,6 +434,43 @@ const apiStore = {
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
+    async deleteTopic(topicName: string) {
+        return rest(`./api/topics/${encodeURIComponent(topicName)}`, REST_TIMEOUT_SEC, { method: 'DELETE'}).catch(addError);
+    },
+
+    async deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
+        const partitions = (partitionId != undefined) ? [{partitionId, offset}] : this.topicPartitions?.get(topicName)?.map(partition => ({partitionId: partition.id, offset}));
+
+        if (!partitions || partitions.length === 0) {
+            addError(new Error(`Topic ${topicName} doesn't have partitions.`))
+            return;
+        }
+
+        return this.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
+    },
+
+    async deleteTopicRecordsFromAllPartitionsHighWatermark(topicName: string) {
+        const partitions = this.topicPartitions?.get(topicName)?.map(({waterMarkHigh, id}) => ({
+            partitionId: id,
+            offset: waterMarkHigh
+        }));
+
+        if (!partitions || partitions.length === 0) {
+            addError(new Error(`Topic ${topicName} doesn't have partitions.`));
+            return;
+        }
+
+        return this.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
+    },
+
+    async deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName: string, pairs: Array<{partitionId: number, offset: number}>) {
+        return rest<DeleteRecordsResponseData>(`./api/topics/${topicName}/records`, REST_TIMEOUT_SEC, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json"},
+            body: JSON.stringify({partitions: pairs})
+        }).catch(addError);
+    },
+
     refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
         if (Array.isArray(topics))
             // sort in order to maximize cache hits (todo: track/cache each topic individually instead)
@@ -504,7 +543,37 @@ const apiStore = {
     refreshPartitionsForTopic(topicName: string, force?: boolean) {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
             .then(response => {
-                if (!response?.partitions) {
+                if (response?.partitions) {
+                    const partitionErrors: Array<{id: number, partitionError: string}> = [], waterMarksErrors: Array<{id: number, waterMarksError: string}> = [];
+
+
+                    // Add some local/cached properties to make working with the data easier
+                    for (const p of response.partitions) {
+                        // topicName
+                        p.topicName = topicName;
+
+                        if (p.partitionError) partitionErrors.push({id: p.id, partitionError: p.partitionError});
+                        if (p.waterMarksError) waterMarksErrors.push({id: p.id, waterMarksError: p.waterMarksError});
+                        if (partitionErrors.length || waterMarksErrors.length) continue;
+
+                        // replicaSize
+                        const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                        const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
+                        p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
+                    }
+
+                    if (partitionErrors.length == 0 && waterMarksErrors.length == 0) {
+                        // Set partitions
+                        this.topicPartitionErrors.delete(topicName)
+                        this.topicWatermarksErrors.delete(topicName)
+                        this.topicPartitions.set(topicName, response.partitions);
+                    } else {
+                        this.topicPartitionErrors.set(topicName, partitionErrors)
+                        this.topicWatermarksErrors.set(topicName, waterMarksErrors)
+                        console.error(`refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`)
+                    }
+
+                } else {
                     // Set null to indicate that we're not allowed to see the partitions
                     this.topicPartitions.set(topicName, null);
                     return;

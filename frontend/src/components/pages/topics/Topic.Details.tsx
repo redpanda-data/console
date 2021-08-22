@@ -3,7 +3,7 @@ import React from 'react';
 import { LockIcon } from '@primer/octicons-v2-react';
 import { Button, Popover, Result, Typography } from 'antd';
 import { motion } from 'framer-motion';
-import { computed, makeObservable } from 'mobx';
+import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -25,6 +25,7 @@ import { TopicConsumers } from './Tab.Consumers';
 import { TopicDocumentation } from './Tab.Docu';
 import { TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
+import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
 
 const { Text } = Typography;
 
@@ -92,6 +93,7 @@ class TopicTab {
 
 @observer
 class TopicDetails extends PageComponent<{ topicName: string }> {
+    @observable deleteRecordsModalVisible = false
     topicTabs: TopicTab[];
 
     constructor(props: any) {
@@ -100,7 +102,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         const topic = () => this.topic;
 
         this.topicTabs = [
-            new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} />),
+            new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
             new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
             new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', (t) => <TopicPartitions topic={t} />),
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
@@ -223,28 +225,30 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
         setImmediate(() => topicConfig && this.addBaseFavs(topicConfig));
 
         return (
-            <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
-                {uiSettings.topicDetailsShowStatisticsBar && (
-                    <Card className="statisticsBar">
-                        <HideStatisticsBarButton onClick={() => (uiSettings.topicDetailsShowStatisticsBar = false)} />
-                        <TopicQuickInfoStatistic topic={topic} />
-                    </Card>
-                )}
+            <>
+                <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
+                    {uiSettings.topicDetailsShowStatisticsBar && (
+                        <Card className="statisticsBar">
+                            <HideStatisticsBarButton onClick={() => (uiSettings.topicDetailsShowStatisticsBar = false)} />
+                            <TopicQuickInfoStatistic topic={topic} />
+                        </Card>
+                    )}
 
-                {/* Tabs:  Messages, Configuration */}
-                <Card>
-                    <Tabs
-                        tabs={this.topicTabs.map(({ id, title, content, isDisabled }) => ({
-                            key: id,
-                            disabled: isDisabled,
-                            title,
-                            content,
-                        }))}
-                        onChange={this.setTabPage}
-                        selectedTabKey={this.selectedTabId}
-                    />
-                </Card>
-            </motion.div>
+                    {/* Tabs:  Messages, Configuration */}
+                    <Card>
+                        <Tabs
+                            tabs={this.topicTabs.map(({ id, title, content, isDisabled }) => ({
+                                key: id,
+                                disabled: isDisabled,
+                                title,
+                                content,
+                            }))}
+                            onChange={this.setTabPage}
+                            selectedTabKey={this.selectedTabId}
+                        />
+                    </Card>
+                </motion.div>
+            </>
         );
     }
 

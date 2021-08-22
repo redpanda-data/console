@@ -1,0 +1,27 @@
+.sliderContainer {
+    display: flex;
+    align-items: center;
+}
+
+.sliderValue {
+    width: calc(124rem / 16);
+    margin-left: 2rem;
+    line-height: calc(22rem / 16);
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.slider {
+    flex-grow: 1;
+}
+
+.partitionSelect {
+    margin-top: 1em;
+}
+
+.twoCol {
+    display: grid;
+    grid-template-columns: 66px 1fr;
+    gap: 30px;
+    margin-bottom: 25px;
+}
