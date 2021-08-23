@@ -26,6 +26,7 @@ import { TopicDocumentation } from './Tab.Docu';
 import { TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
 import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
+import { IsBusiness } from '../../../utils/env';
 
 const { Text } = Typography;
 
@@ -41,7 +42,7 @@ class TopicTab {
         public titleText: string,
         private contentFunc: (topic: Topic) => React.ReactNode,
         private disableHooks?: ((topic: Topic) => React.ReactNode | undefined)[]
-    ) {}
+    ) { }
 
     @computed get isEnabled(): boolean {
         const topic = this.topicGetter();
@@ -72,7 +73,7 @@ class TopicTab {
                 if (replacementTitle) return replacementTitle;
             }
         }
-        
+
         return (
             1 && (
                 <Popover content={`You're missing the required permission '${this.requiredPermission}' to view this tab`}>
@@ -106,7 +107,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
             new TopicTab(topic, 'partitions', 'viewPartitions', 'Partitions', (t) => <TopicPartitions topic={t} />),
             new TopicTab(topic, 'configuration', 'viewConfig', 'Configuration', (t) => <TopicConfiguration topic={t} />),
-            new TopicTab(topic, 'topicacl', 'all', 'ACL', (t) => {
+            new TopicTab(topic, 'topicacl', 'seeTopic', 'ACL', (t) => {
                 const paginationConfig = makePaginationConfig();
                 return (
                     <AclList
@@ -118,7 +119,14 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         }}
                     />
                 );
-            }),
+            }, [(t) => {
+                if (IsBusiness)
+                    if (api.userData != null && !api.userData.canListAcls)
+                        return <Popover content={`You need the cluster-permission 'viewAcl' to view this tab`}>
+                            <div> <LockIcon size={16} /> ACL</div>
+                        </Popover>
+                return undefined;
+            }]),
             new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', (t) => <TopicDocumentation topic={t} />),
         ];
         makeObservable(this);
