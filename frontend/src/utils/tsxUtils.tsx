@@ -260,7 +260,7 @@ export class RadioOptionGroup<T> extends Component<{
         subTitle: string,
         content?: ReactNode,
     }[],
-    value: T, onChange: (value: T) => void,
+    value?: T, onChange: (value: T) => void,
     showContent?: 'always' | 'onlyWhenSelected',
     disabled?: boolean,
     children?: never

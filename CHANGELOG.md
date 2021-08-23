@@ -1,5 +1,10 @@
 # Changelog
 
+## Master / unreleased
+
+- [FEATURE] Add support for deleting topics
+- [FEATURE] Add support for deleting records within topics (only possible on topics with cleanup.policy=delete due to limitations in Kafka)
+
 ## 1.4.0 / 2021-05-27
 
 - [FEATURE] Proto files can now be provided via the local file system as well

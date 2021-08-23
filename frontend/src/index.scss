@@ -1556,6 +1556,16 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     }
 }
 
+.topicDeleteModal {
+    .ant-alert {
+        margin-bottom: 1rem;
+    }
+
+    .ant-modal-footer {
+        border-top: none;
+    }
+}
+
 .topicDocumentation {
     padding: 0 16px;
 
@@ -2324,6 +2334,11 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         align-items: flex-start;
         gap: 1em;
         font-size: 20px;
+
+        a {
+            width: 32px;
+            height: 32px;
+        }
 
         .anticon {
             padding: 6px;

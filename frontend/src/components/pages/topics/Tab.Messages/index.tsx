@@ -39,11 +39,17 @@ import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import * as moment from 'moment';
+import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 
 
 const { Text } = Typography;
 const { Option } = Select;
 const InputGroup = Input.Group;
+
+interface TopicMessageViewProps {
+    topic: Topic;
+    refreshTopicData: (force: boolean) => void;
+}
 
 /*
     TODO:
@@ -52,7 +58,7 @@ const InputGroup = Input.Group;
 */
 
 @observer
-export class TopicMessageView extends Component<{ topic: Topic }> {
+export class TopicMessageView extends Component<TopicMessageViewProps> {
     @observable previewDisplay: string[] = [];
     // @observable allCurrentKeys: string[];
 
@@ -70,9 +76,11 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
     @observable downloadMessages: TopicMessage[] | null;
     @observable expandedKeys: React.Key[] = [];
+    
+    @observable deleteRecordsModalVisible = false
+    @observable deleteRecordsModalAlive = false
 
-
-    constructor(props: { topic: Topic }) {
+    constructor(props: TopicMessageViewProps) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
         makeObservable(this);
@@ -141,6 +149,19 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                     <this.MessageTable />
                 </>
             }
+
+            {
+                this.deleteRecordsModalAlive
+                && (
+                    <DeleteRecordsModal 
+                        topic={this.props.topic} 
+                        visible={this.deleteRecordsModalVisible} 
+                        onCancel={() => this.hideDeleteRecordsModal()} 
+                        onFinish={() => this.finishDeleteRecordsModal()} 
+                        afterClose={() => console.log('after close', this.deleteRecordsModalAlive = false)}
+                    />
+                )
+            }
         </>;
     }
     SearchControlsBar = observer(() => {
@@ -149,6 +170,7 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
         const spaceStyle = { marginRight: '16px', marginTop: '12px' };
         const canUseFilters = api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
 
+        const isCompacted = this.props.topic.cleanupPolicy.includes('compact');
         return <React.Fragment>
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 {/* Search Settings*/}
@@ -224,10 +246,18 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
                     </div>
                 </Label>
 
+                {/* Delete Records */}
+                <div className={styles.deleteButtonWrapper}>
+                    {isCompacted 
+                        ? <Tooltip placement="top" title="Records on Topics with the `compact` cleanup policy cannot be deleted."><Button disabled>Delete Records</Button></Tooltip>
+                        : <Button type="default" danger onClick={() => this.showDeleteRecordsModal()} disabled={isCompacted}>Delete Records</Button>
+                    }
+                </div>
+
                 {/* Quick Search */}
-                <div style={{ marginTop: spaceStyle.marginTop, marginLeft: 'auto' }}>
+                <div className={styles.quickSearchWrapper}>
                     <Input placeholder='Quick Search' allowClear={true} size='middle'
-                        style={{ width: '200px', padding: '2px 8px', whiteSpace: 'nowrap' }}
+                        className={styles.quickSearchInput}
                         value={uiState.topicSettings.quickSearch}
                         onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
                         addonAfter={null} disabled={this.fetchError != null}
@@ -270,6 +300,20 @@ export class TopicMessageView extends Component<{ topic: Topic }> {
 
         </React.Fragment>;
     });
+
+    showDeleteRecordsModal() {
+        this.deleteRecordsModalAlive = true;
+        this.deleteRecordsModalVisible = true;
+    }
+
+    hideDeleteRecordsModal() {
+        this.deleteRecordsModalVisible = false;
+    }
+
+    finishDeleteRecordsModal() {
+        this.hideDeleteRecordsModal();
+        this.props.refreshTopicData(true);
+    }
 
     searchFunc = (source: 'auto' | 'manual') => {
 
