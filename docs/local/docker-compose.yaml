@@ -33,7 +33,7 @@ services:
       - zoo1
 
   kowl:
-    image: quay.io/cloudhut/kowl:v1.2.2
+    image: quay.io/cloudhut/kowl:v1.4.0
     restart: on-failure
     hostname: kowl
     volumes:
