@@ -224,9 +224,12 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                     scrollBeyondLastLine: false,
                                     lineNumbersMinChars: 4,
                                     scrollbar: {
-                                        alwaysConsumeMouseWheel: false
+                                        alwaysConsumeMouseWheel: false,
                                     },
                                     fontSize: 12,
+                                    occurrencesHighlight: false,
+                                    foldingHighlight: false,
+                                    selectionHighlight: false,
                                 }}
 
                                 height="300px"
@@ -234,7 +237,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
-                            <Button disabled={(() => {
+                            <Button type='primary' ghost style={{ width: '200px' }} disabled={(() => {
                                 if (!this.currentConfig) return true;
                                 try { JSON.parse(this.currentConfig); }
                                 catch (ex: any) { return true; }
@@ -258,7 +261,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
                                 message.success('New connector config applied!');
 
-                            }}>Update Config</Button>
+                            }}>
+                                Update Config
+                            </Button>
                         </div>
                     </div>
 
