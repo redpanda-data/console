@@ -100,6 +100,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
         const clusterName = this.props.clusterName;
         const connector = this.props.connector;
         p.title = connector;
+        p.addBreadcrumb("Kafka Connect", `/kafka-connect`);
         p.addBreadcrumb(clusterName, `/kafka-connect/${clusterName}`);
         p.addBreadcrumb(connector, `/kafka-connect/${clusterName}/${connector}`);
 

@@ -79,7 +79,16 @@ class TabClusters extends Component {
         return <KowlTable<ClusterConnectors>
             dataSource={clusters}
             columns={[
-                { title: 'Name', dataIndex: 'clusterName', sorter: sortField('clusterName'), defaultSortOrder: 'ascend' },
+                {
+                    title: 'Cluster', dataIndex: 'clusterName',
+                    render: (_, r) => (
+                        <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
+                            onClick={() => appGlobal.history.push(`/kafka-connect/${r.clusterName}`)}>
+                            {r.clusterName}
+                        </span>
+                    ),
+                    sorter: sortField('clusterName'), defaultSortOrder: 'ascend'
+                },
                 { title: 'Version', render: (_, r) => r.clusterInfo.version, sorter: sortField('clusterAddress') },
                 {
                     width: 150,
@@ -123,7 +132,8 @@ class TabConnectors extends Component {
                 {
                     title: 'Connector', dataIndex: 'name',
                     render: (_, r) => (
-                        <span className='hoverLink' onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
+                        <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
+                            onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
                             {r.name}
                         </span>
                     ),
