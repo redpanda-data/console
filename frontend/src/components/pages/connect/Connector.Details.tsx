@@ -107,7 +107,6 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
             const isInitialUpdate = !currentConfig;
             const newConfig = connector?.jsonConfig ?? '';
             if (newConfig && newConfig != currentConfig) {
-                console.log('updating config', { oldConf: currentConfig, newConf: newConfig })
                 this.currentConfig = newConfig;
                 if (!isInitialUpdate) message.info('Shown config has been updated');
             }
