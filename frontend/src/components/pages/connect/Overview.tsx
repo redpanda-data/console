@@ -20,7 +20,7 @@ import { KowlTable } from '../../misc/KowlTable';
 import SearchBar from '../../misc/SearchBar';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
-import { connectorMetadata, StatisticsCard } from './helper';
+import { ConnectorClass, connectorMetadata, StatisticsCard } from './helper';
 
 
 
@@ -201,31 +201,3 @@ const connectTabs: Tab[] = [
     { key: 'connectors', title: 'Connectors', content: <TabConnectors /> },
     { key: 'tasks', title: 'Tasks', content: <TabTasks /> },
 ];
-
-const ConnectorClass = React.memo((props: { connector: ClusterConnectorInfo }) => {
-    const c = props.connector;
-    const meta = connectorMetadata[c.class];
-    if (!meta)
-        return <span>{c.class}</span>;
-
-    return <span>
-        <Popover placement='rightTop' overlayClassName='popoverSmall'
-            getPopupContainer={findPopupContainer}
-            content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
-                {c.class}
-            </div>}
-        >
-            <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
-                {meta.logo &&
-                    <LayoutBypass height='0px' width='26px'>
-                        {/* <span style={{ display: 'inline-block', maxHeight: '0px' }}> */}
-                        {meta.logo}
-                        {/* </span> */}
-                    </LayoutBypass>
-                }
-                {meta.friendlyName}
-            </span>
-
-        </Popover>
-    </span>
-})

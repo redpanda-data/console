@@ -5,7 +5,7 @@ import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
 import { AclRequest, AclRequestDefault } from "./restInterfaces";
 import { TableSettings } from "../components/misc/KowlTable";
-import { ConnectTabKeys } from "../components/pages/connect/Connect.Overview";
+import { ConnectTabKeys } from "../components/pages/connect/Overview";
 
 const settingsName = 'uiSettings-v3';
 

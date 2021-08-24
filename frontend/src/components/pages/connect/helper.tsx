@@ -1,11 +1,13 @@
 
 
-import { Statistic } from 'antd';
+import { Popover, Statistic } from 'antd';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
 
 import DatagenLogo from '../../../assets/connectors/datagen.png';
 import { api } from '../../../state/backendApi';
+import { ClusterConnectorInfo } from '../../../state/restInterfaces';
+import { findPopupContainer, LayoutBypass } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
 
 interface ConnectorMetadata {
@@ -37,3 +39,35 @@ export const StatisticsCard = observer(() => {
         </div>
     </Card>
 });
+
+
+
+
+
+export const ConnectorClass = React.memo((props: { connector: ClusterConnectorInfo }) => {
+    const c = props.connector;
+    const meta = connectorMetadata[c.class];
+    if (!meta)
+        return <span>{c.class}</span>;
+
+    return <span>
+        <Popover placement='rightTop' overlayClassName='popoverSmall'
+            getPopupContainer={findPopupContainer}
+            content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
+                {c.class}
+            </div>}
+        >
+            <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
+                {meta.logo &&
+                    <LayoutBypass height='0px' width='26px'>
+                        {/* <span style={{ display: 'inline-block', maxHeight: '0px' }}> */}
+                        {meta.logo}
+                        {/* </span> */}
+                    </LayoutBypass>
+                }
+                {meta.friendlyName}
+            </span>
+
+        </Popover>
+    </span>
+})

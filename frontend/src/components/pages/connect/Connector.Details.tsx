@@ -1,5 +1,5 @@
 /* eslint-disable no-useless-escape */
-import { CheckCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
+import { CheckCircleTwoTone, ExclamationCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
 import { Button, message, notification } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
@@ -99,10 +99,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
     initPage(p: PageInitHelper): void {
         const clusterName = this.props.clusterName;
         const connector = this.props.connector;
-        p.title = 'Overview';
-        p.addBreadcrumb('Kafka Connect', '/kafka-connect');
-        // p.addBreadcrumb(clusterName, `/kafka-connect`);
-        p.addBreadcrumb(clusterName + ' / ' + connector, `/kafka-connect/${clusterName}/${connector}`);
+        p.title = connector;
+        p.addBreadcrumb(clusterName, `/kafka-connect/${clusterName}`);
+        p.addBreadcrumb(connector, `/kafka-connect/${clusterName}/${connector}`);
 
 
         this.autoRunDisposer = autorun(() => {
@@ -273,7 +272,18 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                     render: (v) => <Code>Task-{v}</Code>
                                 },
                                 {
-                                    title: 'Status', dataIndex: 'state', sorter: sortField('state')
+                                    title: 'Status', dataIndex: 'state', sorter: sortField('state'),
+                                    render: v => <>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '17px', display: 'inline-block', marginRight: '4px' }}>
+                                                {v == 'FAILED'
+                                                    ? errIcon
+                                                    : v == 'RUNNING'
+                                                        ? okIcon : warnIcon}
+                                            </span>
+                                            {v}
+                                        </span>
+                                    </>
                                 },
                                 {
                                     title: 'Worker', dataIndex: 'workerId', sorter: sortField('workerId'),
@@ -319,6 +329,7 @@ export default KafkaConnectorDetails;
 
 const okIcon = <CheckCircleTwoTone twoToneColor='#52c41a' />;
 const warnIcon = <WarningTwoTone twoToneColor='orange' />;
+const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
 const mr05: CSSProperties = { marginRight: '.5em' };
 
 const protoText = `

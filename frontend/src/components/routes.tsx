@@ -23,8 +23,9 @@ import { AdjustmentsIcon, ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon
 import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
 import { Feature, FeatureEntry, Features, isSupported } from "../state/supportedFeatures";
 import { UserPermissions } from "../state/restInterfaces";
-import KafkaConnectOverview from "./pages/connect/Connect.Overview";
-import KafkaConnectorDetails from "./pages/connect/Connect.Details";
+import KafkaConnectOverview from "./pages/connect/Overview";
+import KafkaConnectorDetails from "./pages/connect/Connector.Details";
+import KafkaClusterDetails from "./pages/connect/Cluster.Details";
 
 
 //
@@ -272,7 +273,8 @@ export const APP_ROUTES: IRouteEntry[] = [
     ),
 
     MakeRoute<{}>('/kafka-connect', KafkaConnectOverview, 'Kafka Connect', <span className='menuIcon anticon'><LinkIcon /></span>, true),
-    MakeRoute<{ connector: string }>('/kafka-connect/:clusterName/:connector', KafkaConnectorDetails, 'KafkaConnect'),
+    MakeRoute<{ clusterName: string }>('/kafka-connect/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
+    MakeRoute<{ clusterName: string, connector: string }>('/kafka-connect/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className='menuIcon anticon'><BeakerIcon /></span>, false,
         routeVisibility(true,
