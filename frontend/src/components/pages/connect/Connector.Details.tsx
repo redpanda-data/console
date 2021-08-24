@@ -94,16 +94,6 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
     constructor(p: any) {
         super(p);
         makeObservable(this);
-    }
-
-    initPage(p: PageInitHelper): void {
-        const clusterName = this.props.clusterName;
-        const connector = this.props.connector;
-        p.title = connector;
-        p.addBreadcrumb("Kafka Connect", `/kafka-connect`);
-        p.addBreadcrumb(clusterName, `/kafka-connect/${clusterName}`);
-        p.addBreadcrumb(connector, `/kafka-connect/${clusterName}/${connector}`);
-
 
         this.autoRunDisposer = autorun(() => {
             // update config in editor
@@ -117,10 +107,22 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
             const isInitialUpdate = !currentConfig;
             const newConfig = connector?.jsonConfig ?? '';
             if (newConfig && newConfig != currentConfig) {
+                console.log('updating config', { oldConf: currentConfig, newConf: newConfig })
                 this.currentConfig = newConfig;
                 if (!isInitialUpdate) message.info('Shown config has been updated');
             }
         });
+    }
+
+    initPage(p: PageInitHelper): void {
+        const clusterName = this.props.clusterName;
+        const connector = this.props.connector;
+        p.title = connector;
+        p.addBreadcrumb("Kafka Connect", `/kafka-connect`);
+        p.addBreadcrumb(clusterName, `/kafka-connect/${clusterName}`);
+        p.addBreadcrumb(connector, `/kafka-connect/${clusterName}/${connector}`);
+
+
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -200,8 +202,11 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                 language='json'
                                 value={this.currentConfig}
                                 onChange={(v, e) => {
-                                    if (v)
+                                    if (v) {
+                                        if (!this.currentConfig && !v)
+                                            return; // dont replace undefiend with empty (which would trigger our 'autorun')
                                         this.currentConfig = v;
+                                    }
                                 }}
 
                                 // language='yaml'
