@@ -1,25 +1,19 @@
 /* eslint-disable no-useless-escape */
 import { CheckCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
-import { Button, Checkbox, Col, Empty, message, notification, Popover, Row, Statistic, Table } from 'antd';
+import { Button, message, notification } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { TopicActions, Topic, ConnectClusterShard, ApiError } from '../../../state/restInterfaces';
+import { ApiError } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
-import { clone } from '../../../utils/jsonUtils';
-import { editQuery } from '../../../utils/queryHelper';
-import { Code, DefaultSkeleton, QuickTable } from '../../../utils/tsxUtils';
-import { prettyBytesOrNA } from '../../../utils/utils';
+import { Code } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
-import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
+import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
-import SearchBar from '../../misc/SearchBar';
-import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
 
 
@@ -160,7 +154,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <StatisticsCard />
 
+                {/* Main Card */}
                 <Card>
+                    {/* Title + Pause/Restart */}
                     <div style={{ display: 'flex', alignItems: 'center', margin: '.5em 0', paddingLeft: '2px' }}>
                         <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
                             <span style={{ fontSize: '17px', display: 'inline-block' }}>{isRunning ? okIcon : warnIcon}</span>
@@ -188,8 +184,8 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                         </span>
                     </div>
 
+                    {/* Editor */}
                     <div style={{ marginTop: '1em' }}>
-
                         <div style={{ border: '1px solid hsl(0deg, 0%, 90%)', borderRadius: '2px' }}>
                             <Editor
                                 beforeMount={onBeforeEditorMount}
@@ -225,15 +221,18 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                     },
                                     showFoldingControls: 'always',
                                     glyphMargin: false,
+                                    scrollBeyondLastLine: false,
                                     lineNumbersMinChars: 4,
                                     scrollbar: {
                                         alwaysConsumeMouseWheel: false
-                                    }
+                                    },
+                                    fontSize: 12,
                                 }}
 
-                                height="400px"
+                                height="300px"
                             />
                         </div>
+
                         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
                             <Button disabled={(() => {
                                 if (!this.currentConfig) return true;
@@ -263,6 +262,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                         </div>
                     </div>
 
+                    {/* Task List */}
                     <div style={{ marginTop: '1em' }}>
                         <KowlTable
                             dataSource={tasks}
