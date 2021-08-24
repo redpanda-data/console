@@ -18,7 +18,7 @@ import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
 import { format as formatUrl, parse as parseUrl } from "url";
 import { api } from "../../../../state/backendApi";
-import { Payload, Topic, TopicMessage } from "../../../../state/restInterfaces";
+import { Payload, Topic, TopicAction, TopicMessage } from "../../../../state/restInterfaces";
 import { ColumnList, FilterEntry, PreviewTagV2, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
@@ -248,10 +248,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                 {/* Delete Records */}
                 <div className={styles.deleteButtonWrapper}>
-                    {isCompacted 
-                        ? <Tooltip placement="top" title="Records on Topics with the `compact` cleanup policy cannot be deleted."><Button disabled>Delete Records</Button></Tooltip>
-                        : <Button type="default" danger onClick={() => this.showDeleteRecordsModal()} disabled={isCompacted}>Delete Records</Button>
-                    }
+                    {isCompacted && <Tooltip placement="top" title="Records on Topics with the `compact` cleanup policy cannot be deleted."><Button disabled>Delete Records</Button></Tooltip>}
+                    {hasDeleteRecordsPrivilege(topic.allowedActions || [])
+                        ? <Button type="default" danger onClick={() => this.showDeleteRecordsModal()} disabled={isCompacted}>Delete Records</Button> 
+                        : <Tooltip placement="top" title="You're not permitted to delete records on this topic."><Button disabled>Delete Records</Button></Tooltip>}
                 </div>
 
                 {/* Quick Search */}
@@ -1411,4 +1411,8 @@ class MessageSearchFilterBar extends Component {
 function renderEmptyIcon(tooltipText?: string) {
     if (!tooltipText) tooltipText = "Empty";
     return <Tooltip title={tooltipText} mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>;
+}
+
+function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction>) {
+    return allowedActions.includes('deleteTopicRecords')
 }
