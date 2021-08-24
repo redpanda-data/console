@@ -15,6 +15,7 @@ type SpecificPartition = 'specificPartition';
 type PartitionOption = null | AllPartitions | SpecificPartition;
 
 const SLIDER_INPUT_REGEX = /(^([1-9]\d*)|(\d{1,3}(,\d{3})*)$)|^$/;
+const DIGITS_ONLY_REGEX = /^\d*$/;
 
 function TrashIcon() {
     return (
@@ -255,22 +256,37 @@ const ManualOffsetContent = observer(
                     min={min}
                     max={max}
                     onChange={updateOffsetFromSlider}
-                    value={sliderValue}
+                    
                     className={styles.slider}
                 />
                 <Input
                     className={styles.sliderValue}
-                    value={toDecimalSeparated(sliderValue)}
+                    value={sliderValue}
                     onChange={(e) => {
                         const { value } = e.target;
-                        if (!SLIDER_INPUT_REGEX.test(value)) return;
-                        const rangedValue = keepInRange(
-                            fromDecimalSeparated(value),
-                            min || 0,
-                            max || Number.MAX_SAFE_INTEGER
-                        );
-                        updateOffsetFromSlider(rangedValue);
+                        if(!DIGITS_ONLY_REGEX.test(value)) return;
+                        updateOffsetFromSlider(Number(value))
                     }}
+                    onBlur={() => {
+                        if (sliderValue < min) {
+                            updateOffsetFromSlider(min)
+                        } else if (sliderValue > max) {
+                            updateOffsetFromSlider(max)
+                        } else {
+                            updateOffsetFromSlider(sliderValue)
+                        }
+                    }}
+
+                    // onChange={(e) => {
+                    //     const { value } = e.target;
+                    //     if (!SLIDER_INPUT_REGEX.test(value)) return;
+                    //     const rangedValue = keepInRange(
+                    //         fromDecimalSeparated(value),
+                    //         min || 0,
+                    //         max || Number.MAX_SAFE_INTEGER
+                    //     );
+                    //     updateOffsetFromSlider(rangedValue);
+                    // }}
                 />
             </div>
         );
@@ -278,7 +294,10 @@ const ManualOffsetContent = observer(
 );
 
 function getMarks(partition: Partition) {
-    if (!partition) return {};
+    if (!partition) return {
+        min: 0,
+        max: Infinity,
+    };
 
     const diff = partition.waterMarkHigh - partition.waterMarkLow;
 
@@ -289,7 +308,7 @@ function getMarks(partition: Partition) {
     }
 
     if (diff > 100) {
-        marks = [partition.waterMarkLow, diff * 0.33, diff * 0.67, partition.waterMarkHigh];
+        marks = [partition.waterMarkLow, partition.waterMarkLow + diff * 0.33, partition.waterMarkLow + diff * 0.67, partition.waterMarkHigh];
     }
 
     return {
