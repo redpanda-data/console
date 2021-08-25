@@ -31,8 +31,8 @@ require (
 	github.com/prometheus/common v0.20.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	github.com/twmb/franz-go v0.10.0
-	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210726202344-c376dbc9081f
+	github.com/twmb/franz-go v0.10.2
+	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210823212011-0d01f7456b4d
 	github.com/vmihailenco/msgpack/v5 v5.3.1
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.1 // indirect
