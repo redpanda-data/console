@@ -4,7 +4,7 @@ import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '
 import { Component } from 'react';
 import React from 'react';
 import { findPopupContainer, numberToThousandsString, QuickTable, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
-import { Alert, Button, Collapse, ConfigProvider, DatePicker, message, Modal, Popover, Radio, Select, Table, Tooltip } from 'antd';
+import { Alert, Button, Collapse, ConfigProvider, message, Modal, Popover, Radio, Select, Table, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { action, autorun, computed, FlowCancellationError, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
@@ -13,7 +13,6 @@ import { animProps_modalPage, animProps_radioOptionGroup, MotionDiv } from '../.
 import { AnimatePresence, AnimateSharedLayout, motion } from 'framer-motion';
 import ReactCSSTransitionReplace from 'react-css-transition-replace';
 import { sortField } from '../../misc/common';
-import moment from 'moment';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { api } from '../../../state/backendApi';
 import { WarningOutlined } from '@ant-design/icons';
@@ -21,6 +20,7 @@ import { Message } from '../../../utils/utils';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { basePathS } from '../../../utils/env';
 import { appGlobal } from '../../../state/appGlobal';
+import { KowlTimePicker } from '../../misc/KowlTimePicker';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 
@@ -160,7 +160,7 @@ export class EditOffsetsModal extends Component<{
                         paddingTop: '6px',
                         marginLeft: '-1px',
                     }}>
-                        <GroupTimePicker valueUtcMs={this.timestampUtcMs} onChange={t => this.timestampUtcMs = t} disabled={this.isLoadingTimestamps} />
+                        <KowlTimePicker valueUtcMs={this.timestampUtcMs} onChange={t => this.timestampUtcMs = t} disabled={this.isLoadingTimestamps} />
                     </div>
                 },
                 {
@@ -496,62 +496,6 @@ export class EditOffsetsModal extends Component<{
             api.refreshConsumerGroup(this.props.group.groupId, true);
             this.props.onClose();
         }
-    }
-}
-
-@observer
-class GroupTimePicker extends Component<{
-    valueUtcMs: number,
-    onChange: (utcMs: number) => void,
-    disabled?: boolean
-}> {
-
-    @observable isLocalTimeMode = false;
-    @observable timestampUtcMs: number = new Date().valueOf();
-
-    constructor(p: any) {
-        super(p);
-        this.timestampUtcMs = this.props.valueUtcMs;
-        makeObservable(this);
-    }
-
-    render() {
-        let format = "DD.MM.YYYY HH:mm:ss";
-        let current: moment.Moment = moment.utc(this.timestampUtcMs);
-
-        if (this.isLocalTimeMode) {
-            current = current?.local();
-            format += " [(Local)]";
-        } else {
-            format += " [(UTC)]";
-        }
-
-        return <DatePicker showTime={true} allowClear={false}
-            renderExtraFooter={() => this.footer()}
-            format={format}
-            value={current}
-            onChange={e => {
-                this.timestampUtcMs = e?.valueOf() ?? -1;
-                this.props.onChange(this.timestampUtcMs);
-            }}
-            onOk={e => {
-                this.timestampUtcMs = e.valueOf();
-                this.props.onChange(this.timestampUtcMs);
-            }}
-            disabled={this.props.disabled}
-        />;
-    }
-
-    footer() {
-        return <Radio.Group
-            value={this.isLocalTimeMode ? 'local' : 'utc'}
-            onChange={e => {
-                // console.log("date mode changed", { newValue: e.target.value, isLocalMode: this.isLocalTimeMode });
-                this.isLocalTimeMode = e.target.value == 'local';
-            }}>
-            <Radio value='local'>Local</Radio>
-            <Radio value='utc'>UTC</Radio>
-        </Radio.Group>;
     }
 }
 

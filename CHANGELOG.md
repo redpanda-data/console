@@ -1,5 +1,11 @@
 # Changelog
 
+## Master / unreleased
+
+- [FEATURE] Add support for deleting topics
+- [FEATURE] Add support for deleting records within topics (only possible on topics with cleanup.policy=delete due to limitations in Kafka)
+- [ENHANCEMENT] Broker lists (for example in a topic's 'Partitions' tab) now show which broker is leading the partition
+
 ## 1.4.0 / 2021-05-27
 
 - [FEATURE] Proto files can now be provided via the local file system as well

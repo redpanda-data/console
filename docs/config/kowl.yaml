@@ -59,7 +59,7 @@ kafka:
   #   passphrase: # This can be set via the --kafka.tls.passphrase flag as well
   #   insecureSkipTlsVerify: false
   # schemaRegistry:
-  #   enabled: true
+  #   enabled: false
   #   urls: [] # Url with scheme is required, e.g. ["http://localhost:8081"]
   #   username: # Basic auth username
   #   password: # Basic auth password

@@ -1182,6 +1182,15 @@ svg {
     height: 100%;
 }
 
+.svgCenter {
+    display: inline-block;
+    vertical-align: middle;
+    margin-top: -20px;
+    margin-bottom: -20px;
+    margin-left: -3px;
+    margin-right: -3px;
+}
+
 .messageSearchFilterBar .ant-tag {
     padding: 0px 10px;
     border-radius: 50px;
@@ -1556,6 +1565,16 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     }
 }
 
+.topicDeleteModal {
+    .ant-alert {
+        margin-bottom: 1rem;
+    }
+
+    .ant-modal-footer {
+        border-top: none;
+    }
+}
+
 .topicDocumentation {
     padding: 0 16px;
 
@@ -1819,9 +1838,12 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     background: hsl(0deg, 0%, 85%);
 
     .broker-tag {
+        display: inline-flex;
+
         position: relative;
         border: none;
         // font-size: 13px;
+        font-weight: 500;
         user-select: none;
         // padding: 1px 9px;
         margin: 0;
@@ -1830,6 +1852,16 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
         background: hsl(207deg, 10%, 95%);
         color: hsl(0deg, 0%, 45%);
 
+        &.leader {
+            &::after {
+                @include beforeAfter;
+
+                border-radius: 3px;
+
+                border: 0px solid hsl(0deg, 0%, 60%);
+                border-bottom-width: 2px;
+            }
+        }
 
         &:hover {
             opacity: 1;
@@ -1878,8 +1910,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
 
         }
 
-
-
         &.removed {
             color: hsl(15deg, 75%, 60%);
             // box-shadow: inset #ff7054 0px 0px 2px 1px;
@@ -1894,7 +1924,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
             }
         }
 
-
         &:first-child {
             border-top-left-radius: 3px;
             border-bottom-left-radius: 3px;
@@ -1905,6 +1934,10 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
             border-bottom-right-radius: 3px;
         }
 
+        // The number inside
+        span {
+            padding: 0 2px;
+        }
     }
 }
 
@@ -2329,6 +2362,11 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         align-items: flex-start;
         gap: 1em;
         font-size: 20px;
+
+        a {
+            width: 32px;
+            height: 32px;
+        }
 
         .anticon {
             padding: 6px;

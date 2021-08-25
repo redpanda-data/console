@@ -69,7 +69,10 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
                         ? 0
                         : (p1.waterMarkHigh - p1.waterMarkLow) - (p2.waterMarkHigh - p2.waterMarkLow)
                 },
-                { title: 'Brokers', render: (v, r) => r.replicas && <BrokerList brokerIds={r.replicas} /> }
+                {
+                    title: 'Brokers',
+                    render: (v, r) => r.replicas && <BrokerList brokerIds={r.replicas} leaderId={r.replicas.length > 0 ? r.replicas[0] : -1} />
+                }
             ]} />
 
         return <>
