@@ -7,6 +7,7 @@ export class IndeterminateCheckbox extends Component<{ originalCheckbox: React.R
 
     render() {
         const state = this.props.getCheckState();
+
         // console.log(`checkbox${index} props: ${(originNode as any).props?.indeterminate}`)
         const clone = React.cloneElement(this.props.originalCheckbox as any, {
             checked: state.checked,

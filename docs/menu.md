@@ -3,6 +3,7 @@
     - [Installation](./installation.md)
 - **Features**
     - [Hosting](./features/hosting.md)
+    - [Kafka Connect](./features/kafka-connect.md)
     - [Topic Documentation](./features/topic-documentation.md)
     - [Protobuf](./features/protobuf.md)
 - **Kowl Business**

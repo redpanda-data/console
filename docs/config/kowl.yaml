@@ -112,6 +112,20 @@ kafka:
   #   enabled: false
   #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
 
+# connect:
+#   enabled: false
+#   clusters: []
+#     - name: xy
+#       url: http://my-cluster:8083
+#       tls:
+#         enabled: false
+#         # caFilepath:
+#         # certFilepath:
+#         # keyFilepath:
+#         # insecureSkipTlsVerify: false
+#       username:
+#       password: # This can be set via the via the --connect.clusters.i.password flag as well (i to be replaced with the array index)
+#       token: # This can be set via the via the --connect.clusters.i.token flag as well (i to be replaced with the array index)
 
 # owl:
 #   # Config to use for embedded topic documentation, see /docs/features/topic-documentation.md for more details

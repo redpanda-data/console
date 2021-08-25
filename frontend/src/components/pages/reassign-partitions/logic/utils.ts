@@ -8,18 +8,27 @@ export function partitionSelectionToTopicPartitions(
     partitionSelection: PartitionSelection,
     apiTopicPartitions: Map<string, Partition[] | null>,
     apiTopics: Topic[]
-): TopicPartitions[] {
+): TopicPartitions[] | undefined {
 
     const ar: TopicPartitions[] = [];
-    for (const [topicName, partitions] of apiTopicPartitions) {
-        if (partitions == null) continue;
-        if (partitionSelection[topicName] == null) continue;
-        const topic = apiTopics?.first(t => t.topicName == topicName);
-        if (topic == null) continue;
 
-        const relevantPartitions = partitions.filter(p => partitionSelection[topicName].includes(p.id));
-        ar.push({ topic: topic, partitions: relevantPartitions });
+    for (const topicName in partitionSelection) {
+        const topic = apiTopics.first(x => x.topicName == topicName);
+        if (!topic) return undefined; // topic not available
+
+        const allPartitions = apiTopicPartitions.get(topicName);
+        if (!allPartitions) return undefined; // partitions for topic not available
+
+        const partitionIds = partitionSelection[topicName];
+        const relevantPartitions = partitionIds.map(id => allPartitions.first(p => p.id == id));
+        if (relevantPartitions.any(p => p == null))
+            return undefined; // at least one selected partition not available
+
+        // we've checked that there can't be any falsy partitions
+        // so we assert that 'relevantPartitions' is the right type
+        ar.push({ topic: topic, partitions: relevantPartitions as Partition[] });
     }
+
     return ar;
 }
 

@@ -43,7 +43,7 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
             columns={[
                 {
                     title: 'Partition ID', dataIndex: 'id', sorter: sortField('id'), defaultSortOrder: 'ascend',
-                    render: (v, p) => !p.partitionError && !p.waterMarksError
+                    render: (v, p) => !p.hasErrors
                         ? v
                         : <span style={{ display: 'inline-flex', width: '100%' }}>
                             <span>{v}</span>
@@ -53,18 +53,18 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
                 {
                     title: <InfoText tooltip="Low Water Mark" tooltipOverText>Low</InfoText>,
                     dataIndex: 'waterMarkLow',
-                    render: (value, p) => (!p.partitionError && !p.waterMarksError) && numberToThousandsString(value),
+                    render: (value, p) => !p.hasErrors && numberToThousandsString(value),
                     sorter: sortField('waterMarkLow'),
                 },
                 {
                     title: <InfoText tooltip="High Water Mark" tooltipOverText>High</InfoText>,
                     dataIndex: 'waterMarkHigh',
-                    render: (value, p) => (!p.partitionError && !p.waterMarksError) && numberToThousandsString(value),
+                    render: (value, p) => !p.hasErrors && numberToThousandsString(value),
                     sorter: sortField('waterMarkHigh')
                 },
                 {
                     title: 'Messages', key: 'msgCount',
-                    render: (value, p) => (!p.partitionError && !p.waterMarksError) && numberToThousandsString(p.waterMarkHigh - p.waterMarkLow),
+                    render: (_, p) => !p.hasErrors && numberToThousandsString(p.waterMarkHigh - p.waterMarkLow),
                     sorter: (p1, p2) => (p1.waterMarksError || p2.waterMarksError)
                         ? 0
                         : (p1.waterMarkHigh - p1.waterMarkLow) - (p2.waterMarkHigh - p2.waterMarkLow)

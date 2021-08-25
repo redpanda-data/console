@@ -33,6 +33,8 @@ export class BrokerList extends Component<BrokerListProps> {
             sortedIds = partition.replicas.distinct().sort((a, b) => a - b);
             if (partition.offlineReplicas) offlineIds.push(...partition.offlineReplicas);
         } else {
+            if (!this.props.brokerIds) return null;
+
             sortedIds = this.props.brokerIds.distinct().sort((a, b) => a - b);
             addedIds = this.props.addedIds ?? [];
             removedIds = this.props.removedIds ?? [];

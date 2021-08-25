@@ -8,7 +8,8 @@ require (
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
-	github.com/cloudhut/common v0.5.1
+	github.com/cloudhut/common v0.6.0
+	github.com/cloudhut/connect-client v0.0.0-20210821130356-16c47ffced8c
 	github.com/dop251/goja v0.0.0-20210406175830-1b11a6af686d
 	github.com/gliderlabs/ssh v0.3.2 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible

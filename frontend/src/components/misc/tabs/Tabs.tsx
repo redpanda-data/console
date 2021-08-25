@@ -4,7 +4,7 @@ import styles from './Tabs.module.scss';
 export interface Tab {
     key: string;
     title: React.ReactNode | (() => React.ReactNode);
-    content: React.ReactNode;
+    content: React.ReactNode | (() => React.ReactNode);
     disabled?: boolean;
 }
 
@@ -16,7 +16,7 @@ interface TabsProps {
 
 function renderContent(tabs: Array<Tab>, key: string) {
     const tab = tabs.find((tab) => tab.key === key);
-    return (typeof tab?.content === 'function') ? tab.content() : tab?.content
+    return (typeof tab?.content === 'function') ? tab.content() : tab?.content;
 }
 
 export default function Tabs(props: TabsProps) {

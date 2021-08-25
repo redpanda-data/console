@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
@@ -130,26 +129,8 @@ func (api *API) handlePatchPartitionAssignments() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse and validate request
 		var req patchPartitionsRequest
-		err := rest.Decode(w, r, &req)
-		if err != nil {
-			var mr *rest.MalformedRequest
-			if errors.As(err, &mr) {
-				restErr := &rest.Error{
-					Err:      fmt.Errorf(mr.Error()),
-					Status:   mr.Status,
-					Message:  mr.Message,
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
-				IsSilent: false,
-			}
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
@@ -296,26 +277,8 @@ func (api *API) handlePatchConfigs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse and validate request
 		var req patchConfigsRequest
-		err := rest.Decode(w, r, &req)
-		if err != nil {
-			var mr *rest.MalformedRequest
-			if errors.As(err, &mr) {
-				restErr := &rest.Error{
-					Err:      fmt.Errorf(mr.Error()),
-					Status:   mr.Status,
-					Message:  mr.Message,
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
-				IsSilent: false,
-			}
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}

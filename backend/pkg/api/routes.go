@@ -60,30 +60,53 @@ func (api *API) routes() *chi.Mux {
 			api.Hooks.Route.ConfigAPIRouter(r)
 
 			r.Route("/api", func(r chi.Router) {
+				// Cluster
 				r.Get("/api-versions", api.handleGetAPIVersions())
 				r.Get("/brokers/{brokerID}/config", api.handleBrokerConfig())
 				r.Get("/cluster", api.handleDescribeCluster())
-				r.Get("/topics", api.handleGetTopics())
 				r.Get("/acls", api.handleGetACLsOverview())
+
+				// Topics
 				r.Get("/topics-configs", api.handleGetTopicsConfigs())
 				r.Get("/topics-offsets", api.handleGetTopicsOffsets())
+				r.Get("/topics", api.handleGetTopics())
 				r.Delete("/topics/{topicName}", api.handleDeleteTopic())
 				r.Delete("/topics/{topicName}/records", api.handleDeleteTopicRecords())
 				r.Get("/topics/{topicName}/partitions", api.handleGetPartitions())
 				r.Get("/topics/{topicName}/configuration", api.handleGetTopicConfig())
 				r.Get("/topics/{topicName}/consumers", api.handleGetTopicConsumers())
 				r.Get("/topics/{topicName}/documentation", api.handleGetTopicDocumentation())
+
+				// Consumer Groups
+				r.Get("/consumer-groups", api.handleGetConsumerGroups())
 				r.Get("/consumer-groups/{groupId}", api.handleGetConsumerGroup())
 				r.Patch("/consumer-groups/{groupId}", api.handlePatchConsumerGroup())
 				r.Delete("/consumer-groups/{groupId}", api.handleDeleteConsumerGroupOffsets())
+
+				// Operations
 				r.Get("/operations/topic-details", api.handleGetAllTopicDetails())
 				r.Get("/operations/reassign-partitions", api.handleGetPartitionReassignments())
 				r.Patch("/operations/reassign-partitions", api.handlePatchPartitionAssignments())
 				r.Patch("/operations/configs", api.handlePatchConfigs())
-				r.Get("/consumer-groups", api.handleGetConsumerGroups())
-				r.Get("/kowl/endpoints", api.handleGetEndpoints())
+
+				// Schema Registry
 				r.Get("/schemas", api.handleGetSchemaOverview())
 				r.Get("/schemas/subjects/{subject}/versions/{version}", api.handleGetSchemaDetails())
+
+				// Kafka Connect
+				r.Get("/kafka-connect/connectors", api.handleGetConnectors())
+				r.Get("/kafka-connect/clusters/{clusterName}", api.handleGetClusterInfo())
+				r.Get("/kafka-connect/clusters/{clusterName}/connectors", api.handleGetClusterConnectors())
+				r.Post("/kafka-connect/clusters/{clusterName}/connectors", api.handleCreateConnector())
+				r.Get("/kafka-connect/clusters/{clusterName}/connectors/{connector}", api.handleGetConnector())
+				r.Put("/kafka-connect/clusters/{clusterName}/connectors/{connector}", api.handlePutConnectorConfig())
+				r.Delete("/kafka-connect/clusters/{clusterName}/connectors/{connector}", api.handleDeleteConnector())
+				r.Put("/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause", api.handlePauseConnector())
+				r.Put("/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume", api.handleResumeConnector())
+				r.Post("/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart", api.handleRestartConnector())
+
+				// Kowl
+				r.Get("/kowl/endpoints", api.handleGetEndpoints())
 			})
 		})
 

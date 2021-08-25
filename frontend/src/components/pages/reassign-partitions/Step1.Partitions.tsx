@@ -1,6 +1,6 @@
 import React, { Component, useRef } from "react";
 import { observer } from "mobx-react";
-import { ConfigProvider, Empty, Input, Table, Tooltip } from "antd";
+import { ConfigProvider, Empty, Input, Popover, Table, Tooltip } from "antd";
 import { makePaginationConfig, renderLogDirSummary, sortField, WarningToolip } from "../../misc/common";
 import { Partition, PartitionReassignmentsPartition, Topic } from "../../../state/restInterfaces";
 import { BrokerList } from "./components/BrokerList";
@@ -14,9 +14,10 @@ import { computed, IReactionDisposer, makeObservable, observable, transaction } 
 import { PartitionSelection } from "./ReassignPartitions";
 import Highlighter from 'react-highlight-words';
 import { uiSettings } from "../../../state/ui";
-import { ColumnFilterItem, FilterDropdownProps } from "antd/lib/table/interface";
-import { SearchOutlined } from "@ant-design/icons";
+import { ColumnFilterItem, ColumnsType, ExpandableConfig, FilterDropdownProps, TableRowSelection } from "antd/lib/table/interface";
+import { SearchOutlined, WarningTwoTone } from "@ant-design/icons";
 import { AlertIcon } from "@primer/octicons-v2-react";
+import { SearchTitle } from "../../misc/KowlTable";
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
 
@@ -27,6 +28,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
     @observable filterOpen = false; // topic name searchbar
 
     @observable selectedBrokerFilters: (string | number)[] | null = null;
+    expandableConfig: ExpandableConfig<TopicWithPartitions>;
 
     constructor(props: any) {
         super(props);
@@ -35,6 +37,26 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         this.isSelected = this.isSelected.bind(this);
         this.getSelectedPartitions = this.getSelectedPartitions.bind(this);
         this.getTopicCheckState = this.getTopicCheckState.bind(this);
+        this.getRowKey = this.getRowKey.bind(this);
+
+        this.expandableConfig = {
+            // expandedRowKeys: this.expandedTopics.slice(),
+            // onExpandedRowsChange: keys => {
+            //     // console.log('replacing expanded row keys', { current: this.expandedTopics, new: keys })
+            //     this.expandedTopics = keys as string[];
+            // },
+            // expandIconColumnIndex: 1,
+            expandedRowRender: topic => topic.partitions
+                ? <SelectPartitionTable
+                    topic={topic}
+                    topicPartitions={topic.partitions}
+                    isSelected={this.isSelected}
+                    setSelection={this.setSelection}
+                    getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
+                />
+                : <>Error loading partitions</>,
+        };
+
         makeObservable(this);
     }
 
@@ -58,7 +80,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
             {
-                title: <SearchTitle title='Topic' isFilterOpen={() => this.filterOpen} setFilterOpen={x => this.filterOpen = x} />,
+                title: <SearchTitle title='Topic' observableFilterOpen={this} observableSettings={uiSettings.reassignment} />,
                 dataIndex: 'topicName',
                 render: (v, record) => {
                     const content = filterActive
@@ -89,7 +111,17 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 },
             },
             {
-                title: 'Partitions', width: 140, dataIndex: 'partitionCount',
+                title: 'Partitions', width: 140,
+                render: (_, t) => {
+                    const errors = t.partitions.count(p => p.hasErrors);
+                    if (errors == 0) return t.partitionCount;
+
+                    return <span>
+                        <span>{t.partitionCount - errors} / {t.partitionCount}</span>
+                        {' '}
+                        {renderPartitionErrorsForTopic(errors)}
+                    </span>
+                },
                 sorter: sortField('partitionCount')
             },
             {
@@ -163,11 +195,10 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                         columns={columns}
                         showSorterTooltip={false}
 
-                        rowKey={r => r.topicName}
+                        rowKey={this.getRowKey}
                         rowClassName={'pureDisplayRow'}
-
-                        onRow={record => ({
-                            onClick: () => this.setTopicSelection(record, !this.getTopicCheckState(record.topicName).checked),
+                        onRow={r => ({
+                            onClick: () => this.setTopicSelection(r, !this.getTopicCheckState(r.topicName).checked),
                             // onDoubleClick: () => this.expandedTopics.includes(record.topicName)
                             //     ? this.expandedTopics.remove(record.topicName)
                             //     : this.expandedTopics.push(record.topicName),
@@ -178,8 +209,8 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                             columnTitle: <div style={{ display: 'flex' }} >
                                 <InfoText tooltip={<>
                                     If you want to select multiple adjacent items, you can use the SHIFT key.<br />
-                                Shift-Click selects the first item, last item and all items in between.
-                            </>} iconSize='16px' placement='right' />
+                                    Shift-Click selects the first item, last item and all items in between.
+                                </>} iconSize='16px' placement='right' />
                             </div>,
                             renderCell: (value: boolean, record, index, originNode: React.ReactNode) => {
                                 return <IndeterminateCheckbox
@@ -195,38 +226,29 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                                 transaction(() => {
                                     for (const r of changeRows)
                                         for (const p of r.partitions)
-                                            this.setSelection(r.topicName, p.id, selected);
+                                            this.setSelection(r.topicName, p.id, selected && !p.hasErrors);
                                 });
                             },
                         }}
 
-                        expandable={{
-                            // expandedRowKeys: this.expandedTopics.slice(),
-                            // onExpandedRowsChange: keys => {
-                            //     // console.log('replacing expanded row keys', { current: this.expandedTopics, new: keys })
-                            //     this.expandedTopics = keys as string[];
-                            // },
-                            // expandIconColumnIndex: 1,
-                            expandedRowRender: topic => topic.partitions
-                                ? <SelectPartitionTable
-                                    topic={topic}
-                                    topicPartitions={topic.partitions}
-                                    isSelected={this.isSelected}
-                                    setSelection={this.setSelection}
-                                    getSelectedPartitions={() => this.getSelectedPartitions(topic.topicName)}
-                                />
-                                : <>Error loading partitions</>,
-                        }}
+                        expandable={this.expandableConfig}
                     />
                 </ConfigProvider>
             </div>
         </>
     }
 
+    getRowKey(r: TopicWithPartitions) {
+        return r.topicName;
+    }
+
+
     setTopicSelection(topic: TopicWithPartitions, isSelected: boolean) {
         transaction(() => {
-            for (const p of topic.partitions)
-                this.setSelection(topic.topicName, p.id, isSelected);
+            for (const p of topic.partitions) {
+                const selected = isSelected && !p.hasErrors;
+                this.setSelection(topic.topicName, p.id, selected);
+            }
         });
     }
 
@@ -267,7 +289,8 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         if (selected.length == 0)
             return { checked: false, indeterminate: false };
 
-        if (selected.length == tp.partitionCount)
+        const validPartitions = tp.partitions.count(x => !x.hasErrors);
+        if (validPartitions > 0 && selected.length == validPartitions)
             return { checked: true, indeterminate: false };
 
         return { checked: false, indeterminate: true };
@@ -341,107 +364,55 @@ export class SelectPartitionTable extends Component<{
     getSelectedPartitions: () => number[];
 }> {
     partitionsPageConfig = makePaginationConfig(100, true);
+    scroll = { y: '300px' };
+    rowClassName = (p: Partition) => p.hasErrors ? 'errorPartition' : '';
+
+    columns: ColumnsType<Partition> = [
+        { width: 100, title: 'Partition', dataIndex: 'id', sortOrder: 'ascend', sorter: (a, b) => a.id - b.id },
+        {
+            width: undefined, title: 'Brokers', render: (_, p) =>
+                Boolean(p.replicas)
+                    ? <BrokerList brokerIds={p.replicas} leaderId={p.leader} />
+                    : renderPartitionError(p)
+        },
+        {
+            width: 100, title: 'Size', render: (v, p) => prettyBytesOrNA(p.replicaSize),
+            sortOrder: 'ascend', sorter: (a, b) => a.replicaSize - b.replicaSize
+        },
+    ];
 
     render() {
         return <div style={{ paddingTop: '4px', paddingBottom: '8px', width: 0, minWidth: '100%' }}>
             <Table size='small' className='nestedTable'
                 dataSource={this.props.topicPartitions}
                 pagination={this.partitionsPageConfig}
-                scroll={{ y: '300px' }}
-                rowKey={r => r.id}
-                rowSelection={{
-                    type: 'checkbox',
-                    columnWidth: '43px',
-                    columnTitle: <></>,
-                    selectedRowKeys: this.props.getSelectedPartitions().slice(),
-                    onSelect: (record, selected: boolean, selectedRows) => {
-                        this.props.setSelection(this.props.topic.topicName, record.id, selected);
-                    },
-                }}
-                columns={[
-                    { width: 100, title: 'Partition', dataIndex: 'id', sortOrder: 'ascend', sorter: (a, b) => a.id - b.id },
-                    {
-                        width: undefined, title: 'Brokers', render: (v, record) => <BrokerList brokerIds={record.replicas} leaderId={record.leader} />
-                    },
-                    {
-                        width: 100, title: 'Size', render: (v, p) => prettyBytesOrNA(p.replicaSize),
-                        sortOrder: 'ascend', sorter: (a, b) => a.replicaSize - b.replicaSize
-                    },
-                ]} />
+                scroll={this.scroll}
+                rowClassName={this.rowClassName}
+                rowKey={this.getRowKey}
+                rowSelection={this.rowSelection}
+                columns={this.columns} />
         </div>;
     }
-}
 
-@observer
-class SearchTitle extends Component<{ title: string, isFilterOpen: () => boolean, setFilterOpen: (x: boolean) => void }> {
-    inputRef = React.createRef<Input>(); // reference to input, used to focus it
-
-    constructor(p: any) {
-        super(p);
-        this.hideSearchBar = this.hideSearchBar.bind(this);
-        this.onKeyDown = this.onKeyDown.bind(this);
+    getRowKey(p: Partition) {
+        return p.id;
     }
 
-    render() {
-        if (!this.props.isFilterOpen())
-            return this.props.title;
-
-        // Render the actual search bar
-
-        setImmediate(() => { // inputRef won't be set yet, so we delay by one frame
-            this.inputRef.current?.focus();
-        });
-
-        return <span>
-            <span >{this.props.title}</span>
-            <div className="tableInlineSearchBox"
-                onClick={e => e.stopPropagation()}
-                onMouseDown={e => e.stopPropagation()}
-                onMouseUp={e => e.stopPropagation()}
-                style={{
-                    position: 'absolute', top: 0, right: '36px', bottom: 0, left: 0,
-                    display: 'flex', placeContent: 'center', placeItems: 'center',
-                    padding: '4px 6px',
-                }}
-            >
-                <Input
-                    ref={this.inputRef}
-                    onBlur={e => {
-                        const inputWrapper = e.target.parentElement;
-                        const focusInside = inputWrapper?.contains((e.relatedTarget as HTMLElement));
-
-                        if (focusInside) {
-                            // Most likely a click on the "clear" button
-                            uiSettings.reassignment.quickSearch = "";
-                            this.hideSearchBar();
-                        } else {
-
-                            setTimeout(this.hideSearchBar);
-                        }
-                    }}
-                    onKeyDown={this.onKeyDown}
-                    allowClear={true}
-                    placeholder="Enter search term or /regex/"
-                    value={uiSettings.reassignment.quickSearch}
-                    onChange={e => uiSettings.reassignment.quickSearch = e.target.value}
-                    style={{ borderRadius: '3px' }}
-                    spellCheck={false}
-                />
-            </div>
-        </span>
-
+    @computed get rowSelection(): TableRowSelection<Partition> {
+        return {
+            type: 'checkbox',
+            columnWidth: '43px',
+            columnTitle: <></>,
+            selectedRowKeys: this.props.getSelectedPartitions().slice(),
+            getCheckboxProps: this.getCheckboxProps,
+            onSelect: (p, selected) => this.props.setSelection(this.props.topic.topicName, p.id, selected && !p.hasErrors),
+        }
     }
 
-    hideSearchBar() {
-        this.props.setFilterOpen(false);
-    }
-
-    onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-        if (e.key == 'Enter' || e.key == 'Escape')
-            this.hideSearchBar();
+    getCheckboxProps(p: Partition) {
+        return { disabled: p.hasErrors };
     }
 }
-
 
 function filterIcon(filterActive: boolean) {
     return <div style={{
@@ -451,4 +422,47 @@ function filterIcon(filterActive: boolean) {
     }}>
         <SearchOutlined style={{ color: filterActive ? '#1890ff' : 'hsl(0deg, 0%, 67%)', fontSize: '14px' }} />
     </div>
+}
+
+function renderPartitionError(partition: Partition) {
+    const txt = [partition.partitionError, partition.waterMarksError].join('\n\n');
+
+    return <Popover
+        title='Partition Error'
+        placement='rightTop' overlayClassName='popoverSmall'
+        getPopupContainer={findPopupContainer}
+        content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
+            {txt}
+        </div>
+        }
+    >
+        <span>
+            <LayoutBypass justifyContent='center' alignItems='center' width='20px' height='18px'>
+                <span style={{ fontSize: '19px' }}>
+                    <WarningTwoTone twoToneColor='orange' />
+                </span>
+            </LayoutBypass>
+        </span>
+    </Popover>
+}
+
+function renderPartitionErrorsForTopic(partitionsWithErrors: number) {
+    return <Popover
+        title='Partition Error'
+        placement='rightTop' overlayClassName='popoverSmall'
+        getPopupContainer={findPopupContainer}
+        content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
+            Some partitions could not be retreived.<br />
+            Expand the topic to see which partitions are affected.
+        </div>
+        }
+    >
+        <span>
+            <LayoutBypass justifyContent='center' alignItems='center' width='20px' height='18px'>
+                <span style={{ fontSize: '19px' }}>
+                    <WarningTwoTone twoToneColor='orange' />
+                </span>
+            </LayoutBypass>
+        </span>
+    </Popover>
 }

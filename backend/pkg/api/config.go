@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/cloudhut/common/flagext"
+	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
@@ -26,10 +27,11 @@ type Config struct {
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 	FrontendPath     string `yaml:"frontendPath"`  // path to frontend files (index.html), set to './build' by default
 
-	Owl    owl.Config     `yaml:"owl"`
-	REST   rest.Config    `yaml:"server"`
-	Kafka  kafka.Config   `yaml:"kafka"`
-	Logger logging.Config `yaml:"logger"`
+	Owl     owl.Config     `yaml:"owl"`
+	Connect connect.Config `yaml:"connect"`
+	REST    rest.Config    `yaml:"server"`
+	Kafka   kafka.Config   `yaml:"kafka"`
+	Logger  logging.Config `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs
@@ -39,6 +41,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
 	c.Owl.RegisterFlags(f)
+	c.Connect.RegisterFlags(f)
 }
 
 // Validate all root and child config structs
@@ -58,6 +61,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Owl config: %w", err)
 	}
 
+	err = c.Connect.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate Connect config: %w", err)
+	}
+
 	return nil
 }
 
@@ -71,6 +79,7 @@ func (c *Config) SetDefaults() {
 	c.REST.SetDefaults()
 	c.Kafka.SetDefaults()
 	c.Owl.SetDefaults()
+	c.Connect.SetDefaults()
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.

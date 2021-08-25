@@ -265,10 +265,11 @@ Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: 
             if (!s.has(e))
                 this.push(e);
     }
-
-    for (const e of elements)
-        if (!this.includes(e))
-            this.push(e);
+    else {
+        for (const e of elements)
+            if (!this.includes(e))
+                this.push(e);
+    }
 };
 
 Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): T[] {

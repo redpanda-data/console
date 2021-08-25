@@ -56,6 +56,7 @@ export interface Partition {
     // added by frontend:
     replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
     topicName: string; // used for finding the actual topic this partition belongs to (in case we pass around a partition reference on its own)
+    hasErrors: boolean; // just (partitionError || waterMarksError)
 }
 
 export interface GetPartitionsResponse {
@@ -814,8 +815,146 @@ export interface PatchConfigsRequest {
 
 export interface PatchConfigsResponse {
     patchedConfigs: {
-        error: string | null;
+        error?: string;
         resourceName: string;
         resourceType: ConfigResourceType;
     }[];
 }
+
+
+// GET "/kafka-connect/clusters"
+export interface ConnectClusters { // response
+    clusterShards: ConnectClusterShard[];
+    filtered: {
+        clusterCount: number;
+        connectorCount: number;
+    };
+}
+export interface ConnectClusterShard { // GetClusterShard
+    clusterName: string;
+    clusterAddress: string;
+    clusterInfo: { // RootResource
+        version: string;
+        commit: string;
+        kafka_cluster_id: string;
+    };
+
+    runningConnectors: number;
+    totalConnectors: number;
+    runningTasks: number;
+    totalTasks: number;
+
+    error?: string;
+}
+
+
+// GET "/kafka-connect/connectors"
+export interface KafkaConnectors { // response
+    clusters: ClusterConnectors[];
+    filtered: {
+        clusterCount: number;
+        connectorCount: number;
+    };
+}
+
+export interface ClusterConnectors { // ClusterConnectors
+    clusterName: string;
+    clusterAddress: string;
+    clusterInfo: {
+        version: string;
+        commit: string;
+        kafka_cluster_id: string;
+    };
+
+    totalConnectors: number;
+    runningConnectors: number;
+    connectors: ClusterConnectorInfo[];
+
+    error?: string;
+}
+
+export interface ClusterConnectorInfo {
+    name: string;
+    class: string; // java class name
+    config: object; // map[string]string
+    type: string;  // Source or Sink
+    topic: string; // Kafka Topic name
+    state: string; // Running, ...
+
+    totalTasks: number;
+    runningTasks: number;
+    tasks: ClusterConnectorTaskInfo[];
+
+    // added by frontend
+    jsonConfig: string;
+}
+
+export interface ClusterConnectorTaskInfo {
+    taskId: number;
+    state: string;
+    workerId: string;
+}
+
+/*
+// GET "/kafka-connect/clusters/{clusterName}/connectors"
+export interface GetConnectorsShard { // GetConnectorsShard
+    clusterName: string;
+    clusterAddress: string; // useless?
+    connectors: {
+        [connectorName: string]: ListConnectorsExpanded;
+    };
+    error?: string;
+}
+export interface ListConnectorsExpanded { // ListConnectorsResponseExpanded
+    info: null | {
+        name: string;
+        config: { [key: string]: string };
+        tasks: {
+            connector: string;
+            task: number;
+        }[];
+        type: string;
+    };
+    status: null | {
+        name: string;
+        Connector: {
+            state: string;
+            worker_id: string;
+        };
+        tasks: {
+            id: number;
+            state: string;
+            worker_id: string;
+        }[];
+        type: string;
+    };
+}
+
+
+// GET "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
+export interface KafkaConnectorInfoWithStatus { // ConnectorInfoWithStatus
+    // embedded ConnectorStateInfo
+    name: string;
+    connector: { // ConnectorState
+        state: string;
+        worker_id: string;
+    };
+    tasks: { // TaskState
+        id: number;
+        state: string;
+        worker_id: string;
+    }[];
+    type: string;
+
+    // Additional Props
+    config: {
+        [key: string]: string;
+    };
+}
+*/
+
+// DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
+// PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
+// PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
+// POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
+// all 4 return either nothing (code 200), or an ApiError

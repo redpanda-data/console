@@ -1803,6 +1803,11 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
             }
         }
     }
+
+    .errorPartition td {
+        background: #ff8d002e !important;
+        color: #0005;
+    }
 }
 
 .nestedTable .ant-table-container tr {
@@ -2695,4 +2700,43 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         @extend .rowSeparator;
         margin-top: 2px;
     }
+}
+
+.linkBtn {
+    cursor: pointer;
+    color: hsl(205, 100%, 50%);
+
+    &:hover {
+        text-decoration: solid underline;
+    }
+}
+
+.inlineSeparator {
+    display: inline-block;
+
+    height: 16px;
+    width: 1px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+
+    background: hsl(0deg, 0%, 80%);
+}
+
+.connectorsTable,
+.tasksTable {
+    tr:hover {
+        .hoverLink {
+            // text-decoration: solid underline;
+            text-decoration-color: #444;
+
+            &:hover {
+                text-decoration-color: unset;
+            }
+        }
+    }
+}
+
+.connectorLogo {
+    width: 100%;
+    height: 100%;
 }
