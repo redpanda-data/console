@@ -2,7 +2,6 @@ package api
 
 import (
 	_ "context"
-	"errors"
 	"fmt"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap/zapcore"
@@ -228,26 +227,8 @@ func (api *API) handleDeleteTopicRecords() http.HandlerFunc {
 
 		// 1. Parse and validate request
 		var req deleteTopicRecordsRequest
-		err := rest.Decode(w, r, &req)
-		if err != nil {
-			var mr *rest.MalformedRequest
-			if errors.As(err, &mr) {
-				restErr := &rest.Error{
-					Err:      fmt.Errorf(mr.Error()),
-					Status:   mr.Status,
-					Message:  mr.Message,
-					IsSilent: false,
-				}
-				rest.SendRESTError(w, r, api.Logger, restErr)
-				return
-			}
-
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusInternalServerError,
-				Message:  fmt.Sprintf("Failed to decode request payload: %v", err.Error()),
-				IsSilent: false,
-			}
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
