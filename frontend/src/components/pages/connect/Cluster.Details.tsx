@@ -138,15 +138,12 @@ export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
 
     const addr = cluster?.clusterAddress ?? '...';
     const version = cluster?.clusterInfo.version ?? '...';
-    const commit = cluster?.clusterInfo.commit ?? '...';
-    const id = cluster?.clusterInfo.kafka_cluster_id ?? '...';
 
     return <Card>
         <div style={{ display: 'flex', gap: '1em' }}>
             <Statistic title="Connectors" value={`${runningConnectors} / ${totalConnectors}`} />
             <Statistic title="Address" value={addr} />
-            <Statistic title="Version" value={`${version} (${commit})`} />
-            <Statistic title="Kafka Cluster" value={id} />
+            <Statistic title="Version" value={version} />
 
         </div>
     </Card>

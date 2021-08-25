@@ -2688,7 +2688,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 .tasksTable {
     tr:hover {
         .hoverLink {
-            text-decoration: solid underline;
+            // text-decoration: solid underline;
             text-decoration-color: #444;
 
             &:hover {
