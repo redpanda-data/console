@@ -248,7 +248,7 @@ class ReviewPartitionTable extends Component<{ topic: Topic, topicPartitions: Pa
                         render: (v, record) => {
                             const partitionAssignments = this.props.assignments.partitions.first(p => p.partitionId == record.id);
                             if (partitionAssignments == null || partitionAssignments.replicas == null) return '??';
-                            return <BrokerList brokerIds={partitionAssignments.replicas} />
+                            return <BrokerList brokerIds={partitionAssignments.replicas} leaderId={partitionAssignments.replicas[0]} />
                         }
                     },
                 ]}
