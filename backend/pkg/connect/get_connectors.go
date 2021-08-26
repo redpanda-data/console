@@ -42,7 +42,11 @@ type ClusterConnectorTaskInfo struct {
 // GetAllClusterConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
 // sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
 // for too long.
-func (s *Service) GetAllClusterConnectors(ctx context.Context) []ClusterConnectors {
+func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]ClusterConnectors, error) {
+	if !s.Cfg.Enabled {
+		return nil, ErrKafkaConnectNotConfigured
+	}
+
 	ch := make(chan ClusterConnectors, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
 		go func(cfg ConfigCluster, c *con.Client) {
@@ -95,7 +99,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) []ClusterConnecto
 	for i := 0; i < cap(ch); i++ {
 		shards[i] = <-ch
 	}
-	return shards
+	return shards, nil
 }
 
 // GetClusterConnectors returns the GET /connectors response for a single connect cluster. A cluster can be referenced

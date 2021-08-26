@@ -21,7 +21,8 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 		ConnectorCount int `json:"connectorCount"`
 	}
 	type response struct {
-		Clusters []connect.ClusterConnectors `json:"clusters"`
+		IsConfigured bool                        `json:"isConfigured"`
+		Clusters     []connect.ClusterConnectors `json:"clusters"`
 		// Filtered describes the number of filtered clusters and connectors due to missing Kowl Business permissions
 		Filtered responseFilterStats `json:"filtered"`
 	}
@@ -30,9 +31,24 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 		defer cancel()
 
+		connectors, err := api.ConnectSvc.GetAllClusterConnectors(ctx)
+		if err != nil {
+			if err == connect.ErrKafkaConnectNotConfigured {
+				rest.SendResponse(w, r, api.Logger, http.StatusOK, response{IsConfigured: false})
+				return
+			}
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("failed to get cluster connectors: %w", err),
+				Status:   http.StatusInternalServerError,
+				Message:  fmt.Sprintf("Failed to get cluster connectors: %v", err.Error()),
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
 		filteredClusters := 0
 		filteredConnectors := 0
-		connectors := api.ConnectSvc.GetAllClusterConnectors(ctx)
 		for _, shard := range connectors {
 			clusterName := shard.ClusterName
 			canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
