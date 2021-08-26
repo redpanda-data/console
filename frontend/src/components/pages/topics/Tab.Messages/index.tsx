@@ -248,10 +248,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                 {/* Delete Records */}
                 <div className={styles.deleteButtonWrapper}>
-                    {isCompacted && <Tooltip placement="top" title="Records on Topics with the `compact` cleanup policy cannot be deleted."><Button disabled>Delete Records</Button></Tooltip>}
-                    {hasDeleteRecordsPrivilege(topic.allowedActions || [])
-                        ? <Button type="default" danger onClick={() => this.showDeleteRecordsModal()} disabled={isCompacted}>Delete Records</Button> 
-                        : <Tooltip placement="top" title="You're not permitted to delete records on this topic."><Button disabled>Delete Records</Button></Tooltip>}
+                    <DeleteRecordsButton allowedActions={topic.allowedActions || []} isCompacted={isCompacted} onClick={() => this.showDeleteRecordsModal()} />
                 </div>
 
                 {/* Quick Search */}
@@ -1415,4 +1412,34 @@ function renderEmptyIcon(tooltipText?: string) {
 
 function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction>) {
     return allowedActions.includes('deleteTopicRecords')
+}
+
+function DeleteRecordsButton({
+    isCompacted,
+    allowedActions,
+    onClick,
+}: {
+    isCompacted: boolean;
+    allowedActions: Array<TopicAction>;
+    onClick: () => void;
+}) {
+    if (isCompacted) {
+        return (
+            <Tooltip placement="top" title="Records on Topics with the `compact` cleanup policy cannot be deleted.">
+                <Button disabled>Delete Records</Button>
+            </Tooltip>
+        );
+    } else if (hasDeleteRecordsPrivilege(allowedActions)) {
+        return (
+            <Button type="default" danger onClick={onClick} disabled={isCompacted}>
+                Delete Records
+            </Button>
+        );
+    } else {
+        return (
+            <Tooltip placement="top" title="You're not permitted to delete records on this topic.">
+                <Button disabled>Delete Records</Button>
+            </Tooltip>
+        );
+    }
 }
