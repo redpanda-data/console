@@ -68,6 +68,7 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 				ClusterCount:   filteredClusters,
 				ConnectorCount: filteredConnectors,
 			},
+			IsConfigured: true,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
