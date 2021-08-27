@@ -85,15 +85,20 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 },
                                 {
                                     title: 'Class', dataIndex: 'class',
-                                    render: (_, r) => <ConnectorClass connector={r} />
+                                    render: (_, r) => <ConnectorClass connector={r} />,
+                                    sorter: sortField('class')
                                 },
                                 {
                                     width: 100,
-                                    title: 'Type', dataIndex: 'type'
+                                    title: 'Type', dataIndex: 'type',
+                                    sorter: sortField('type')
+
                                 },
                                 {
                                     width: 120,
-                                    title: 'State', dataIndex: 'state'
+                                    title: 'State', dataIndex: 'state',
+                                    sorter: sortField('type')
+
                                 },
                                 {
                                     width: 120,

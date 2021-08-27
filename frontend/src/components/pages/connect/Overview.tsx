@@ -143,15 +143,18 @@ class TabConnectors extends Component {
                 },
                 {
                     title: 'Class', dataIndex: 'class',
-                    render: (_, r) => <ConnectorClass connector={r} />
+                    render: (_, r) => <ConnectorClass connector={r} />,
+                    sorter: sortField('class')
                 },
                 {
                     width: 100,
-                    title: 'Type', dataIndex: 'type'
+                    title: 'Type', dataIndex: 'type',
+                    sorter: sortField('type')
                 },
                 {
                     width: 120,
-                    title: 'State', dataIndex: 'state'
+                    title: 'State', dataIndex: 'state',
+                    sorter: sortField('state')
                 },
                 {
                     width: 120,
@@ -162,7 +165,11 @@ class TabConnectors extends Component {
                         </>
                     }
                 },
-                { title: 'Cluster', render: (_, c) => <Code>{c.cluster.clusterName}</Code> },
+                {
+                    title: 'Cluster',
+                    render: (_, c) => <Code>{c.cluster.clusterName}</Code>,
+                    sorter: (a, b) => String(a.cluster.clusterName).localeCompare(String(b.cluster.clusterName))
+                },
             ]}
             search={{
                 columnTitle: 'Connector',
