@@ -24,7 +24,7 @@ import Editor from "@monaco-editor/react";
 
 // Monaco Type
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
-import { StatisticsCard } from './helper';
+import { NotConfigured, StatisticsCard } from './helper';
 export type Monaco = typeof monacoType;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -100,7 +100,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
             const clusterName = this.props.clusterName;
             const connectorName = this.props.connector;
 
-            const cluster = api.connectConnectors?.clusters.first(c => c.clusterName == clusterName);
+            const cluster = api.connectConnectors?.clusters?.first(c => c.clusterName == clusterName);
             const connector = cluster?.connectors.first(c => c.name == connectorName);
 
             const currentConfig = untracked(() => this.currentConfig);
@@ -142,8 +142,10 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
         const clusterName = this.props.clusterName;
         const connectorName = this.props.connector;
 
+        if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
+
         const settings = uiSettings.kafkaConnect;
-        const cluster = api.connectConnectors?.clusters.first(c => c.clusterName == clusterName);
+        const cluster = api.connectConnectors?.clusters?.first(c => c.clusterName == clusterName);
         const connector = cluster?.connectors.first(c => c.name == connectorName);
 
         const state = connector?.state.toLowerCase();

@@ -20,7 +20,7 @@ import { KowlTable } from '../../misc/KowlTable';
 import SearchBar from '../../misc/SearchBar';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
-import { ConnectorClass, connectorMetadata, StatisticsCard } from './helper';
+import { ConnectorClass, connectorMetadata, NotConfigured, StatisticsCard } from './helper';
 
 
 
@@ -48,6 +48,7 @@ class KafkaConnectOverview extends PageComponent {
 
     render() {
         if (!api.connectConnectors) return DefaultSkeleton;
+        if (api.connectConnectors.isConfigured == false) return <NotConfigured />;
         const settings = uiSettings.kafkaConnect;
 
         return (
@@ -74,7 +75,8 @@ const mr05: CSSProperties = { marginRight: '.5em' };
 
 class TabClusters extends Component {
     render() {
-        const clusters = api.connectConnectors!.clusters;
+        const clusters = api.connectConnectors?.clusters;
+        if (clusters == null) return null;
 
         return <KowlTable<ClusterConnectors>
             dataSource={clusters}
@@ -124,7 +126,7 @@ class TabClusters extends Component {
 class TabConnectors extends Component {
     render() {
         const clusters = api.connectConnectors!.clusters;
-        const allConnectors = clusters.flatMap(cluster => cluster.connectors.map(c => ({ cluster, ...c })));
+        const allConnectors = clusters?.flatMap(cluster => cluster.connectors.map(c => ({ cluster, ...c })));
 
         return <KowlTable
             dataSource={allConnectors}
@@ -180,8 +182,8 @@ class TabConnectors extends Component {
 class TabTasks extends Component {
     render() {
         const clusters = api.connectConnectors!.clusters;
-        const allConnectors = clusters.flatMap(cluster => cluster.connectors.map(c => ({ cluster, ...c })));
-        const allTasks = allConnectors.flatMap(con => con.tasks.map(task => ({ ...con, taskId: task.taskId, taskState: task.state, taskWorkerId: task.workerId })));
+        const allConnectors = clusters?.flatMap(cluster => cluster.connectors.map(c => ({ cluster, ...c })));
+        const allTasks = allConnectors?.flatMap(con => con.tasks.map(task => ({ ...con, taskId: task.taskId, taskState: task.state, taskWorkerId: task.workerId })));
 
         return <KowlTable
             dataSource={allTasks}

@@ -15,7 +15,7 @@ import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
-import { ConnectorClass } from './helper';
+import { ConnectorClass, NotConfigured } from './helper';
 
 
 @observer
@@ -45,8 +45,9 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     render() {
         const clusterName = this.props.clusterName;
 
-        const settings = uiSettings.kafkaConnect;
-        const cluster = api.connectConnectors?.clusters.first(c => c.clusterName == clusterName);
+        if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
+
+        const cluster = api.connectConnectors?.clusters?.first(c => c.clusterName == clusterName);
         const connectors = cluster?.connectors;
 
 
@@ -131,7 +132,7 @@ const mr05: CSSProperties = { marginRight: '.5em' };
 
 
 export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
-    const cluster = api.connectConnectors?.clusters.first(x => x.clusterName == p.clusterName);
+    const cluster = api.connectConnectors?.clusters?.first(x => x.clusterName == p.clusterName);
 
     const runningConnectors = cluster?.runningConnectors ?? '...';
     const totalConnectors = cluster?.totalConnectors ?? '...';

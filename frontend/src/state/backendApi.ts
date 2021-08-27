@@ -923,12 +923,13 @@ const apiStore = {
                     this.connectConnectors = undefined;
                 }
                 else {
-                    for (const cluster of v.clusters)
-                        for (const connector of cluster.connectors)
-                            if (connector.config)
-                                connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
-                            else
-                                connector.jsonConfig = "";
+                    if (v.clusters)
+                        for (const cluster of v.clusters)
+                            for (const connector of cluster.connectors)
+                                if (connector.config)
+                                    connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
+                                else
+                                    connector.jsonConfig = "";
 
                     this.connectConnectors = v;
                 }

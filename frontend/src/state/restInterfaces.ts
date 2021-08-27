@@ -634,9 +634,9 @@ export interface SchemaDetailsResponse {
 }
 
 export enum SchemaType {
-    AVRO="AVRO",
-    JSON="JSON",
-    PROTOBUF= "PROTOBUF",
+    AVRO = "AVRO",
+    JSON = "JSON",
+    PROTOBUF = "PROTOBUF",
 }
 
 export interface SchemaDetails {
@@ -658,27 +658,27 @@ export interface Schema {
 }
 
 export enum JsonFieldType {
-    STRING="string",
-    NUMBER="number",
-    INTEGER= "integer",
-    OBJECT="object",
-    ARRAY="array",
-    BOOLEAN="boolean",
-    NULL="null"
+    STRING = "string",
+    NUMBER = "number",
+    INTEGER = "integer",
+    OBJECT = "object",
+    ARRAY = "array",
+    BOOLEAN = "boolean",
+    NULL = "null"
 }
 
 export interface JsonSchema {
-  $id: string;
-  type: JsonFieldType;
-  title: string;
-  description: string;
-  properties?: Record<string, JsonField>;
+    $id: string;
+    type: JsonFieldType;
+    title: string;
+    description: string;
+    properties?: Record<string, JsonField>;
 }
 
 export interface JsonField {
-  type: string;
-  items?: JsonField;
-  properties?: Record<string, JsonField>;
+    type: string;
+    items?: JsonField;
+    properties?: Record<string, JsonField>;
 }
 
 export interface SchemaField {
@@ -850,11 +850,12 @@ export interface ConnectClusterShard { // GetClusterShard
 
 // GET "/kafka-connect/connectors"
 export interface KafkaConnectors { // response
-    clusters: ClusterConnectors[];
+    clusters: ClusterConnectors[] | null; // only null when isConfigured=false
     filtered: {
         clusterCount: number;
         connectorCount: number;
     };
+    isConfigured: boolean;
 }
 
 export interface ClusterConnectors { // ClusterConnectors

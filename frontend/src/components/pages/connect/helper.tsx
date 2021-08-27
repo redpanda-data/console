@@ -1,12 +1,14 @@
 
 
-import { Popover, Statistic } from 'antd';
+import { Button, Empty, Popover, Statistic } from 'antd';
+import { motion } from 'framer-motion';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
 
 import DatagenLogo from '../../../assets/connectors/datagen.png';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectorInfo } from '../../../state/restInterfaces';
+import { animProps } from '../../../utils/animationProps';
 import { findPopupContainer, LayoutBypass } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
 
@@ -29,8 +31,8 @@ export const connectorMetadata: {
 
 
 export const StatisticsCard = observer(() => {
-    const totalClusters = api.connectConnectors?.clusters.length ?? '...';
-    const totalConnectors = api.connectConnectors?.clusters.sum(c => c.totalConnectors) ?? '...';
+    const totalClusters = api.connectConnectors?.clusters?.length ?? '...';
+    const totalConnectors = api.connectConnectors?.clusters?.sum(c => c.totalConnectors) ?? '...';
 
     return <Card>
         <div style={{ display: 'flex', gap: '1em' }}>
@@ -70,4 +72,28 @@ export const ConnectorClass = React.memo((props: { connector: ClusterConnectorIn
 
         </Popover>
     </span>
-})
+});
+
+export function NotConfigured() {
+    return (
+        <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
+            <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
+                <Empty description={null}>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <h2>Not Configured</h2>
+
+                        <p>
+                            Kafka Connect is not configured in Kowl.
+                            <br />
+                            Setup the connection details to your Kafka Connect cluster in your Kowl config, to view and control all your connectors and tasks.
+                        </p>
+                    </div>
+
+                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
+                        <Button type="primary">Kowl Config Documentation</Button>
+                    </a>
+                </Empty>
+            </Card>
+        </motion.div>
+    );
+}
