@@ -114,11 +114,13 @@ kafka:
 
 # connect:
 #   enabled: false
+#   # An empty array for clusters is the default, but you have to specify at least one cluster, as soon as
+#   # you enable Kafka connect. Otherwise you'll not be able to start Kowl.
 #   clusters: []
 #     - name: xy
 #       url: http://my-cluster:8083
 #       tls:
-#         enabled: false
+#         enabled: false # Trusted certificates are still allowed if TLS is not enabled.
 #         # caFilepath:
 #         # certFilepath:
 #         # keyFilepath:
