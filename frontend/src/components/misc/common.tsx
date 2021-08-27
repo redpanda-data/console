@@ -105,7 +105,7 @@ export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
         if (typeof a[field] === 'string') {
             const left = String(a[field]);
             const right = String(b[field]);
-            return left.localeCompare(right);
+            return left.localeCompare(right, undefined, { numeric: true });
         }
         if (typeof a[field] === 'number') {
             const left = +a[field];

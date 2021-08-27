@@ -329,6 +329,11 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                 columnTitle: 'Task',
                                 isRowMatch: (row, regex) => regex.test(String(row.taskId)) || regex.test(row.state) || regex.test(row.workerId)
                             }}
+
+                            observableSettings={uiSettings.kafkaConnect.connectorDetails}
+                            pagination={{
+                                defaultPageSize: 10,
+                            }}
                         />
                     </div>
                 </Card>

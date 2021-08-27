@@ -118,6 +118,10 @@ class TabClusters extends Component {
                     return isMatch;
                 },
             }}
+            observableSettings={uiSettings.kafkaConnect.clusters}
+            pagination={{
+                defaultPageSize: 10,
+            }}
             rowKey='clusterName'
         />
     }
@@ -181,6 +185,10 @@ class TabConnectors extends Component {
             }}
             rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name}
 
+            observableSettings={uiSettings.kafkaConnect.connectors}
+            pagination={{
+                defaultPageSize: 10,
+            }}
             className='connectorsTable'
         />
     }
@@ -210,6 +218,11 @@ class TabTasks extends Component {
             ]}
             rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name + r.taskId}
             className='tasksTable'
+
+            observableSettings={uiSettings.kafkaConnect.tasks}
+            pagination={{
+                defaultPageSize: 10,
+            }}
         />
     }
 }

@@ -214,9 +214,27 @@ const uiSettings = observable({
     kafkaConnect: {
         selectedTab: 'clusters' as ConnectTabKeys,
 
-        clusters: {},
-        connectors: {},
-        tasks: {},
+        clusters: {
+            pageSize: undefined as any as number,
+            quickSearch: ''
+        },
+        connectors: {
+            pageSize: undefined as any as number,
+            quickSearch: ''
+        },
+        tasks: {
+            pageSize: undefined as any as number,
+            quickSearch: ''
+        },
+
+        clusterDetails: {
+            pageSize: undefined as any as number,
+            quickSearch: ''
+        },
+        connectorDetails: {
+            pageSize: undefined as any as number,
+            quickSearch: ''
+        }
     },
 
     userDefaults: {

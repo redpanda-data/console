@@ -119,6 +119,11 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                             }}
                             rowKey={r => r.name}
 
+                            observableSettings={uiSettings.kafkaConnect.clusterDetails}
+                            pagination={{
+                                defaultPageSize: 10,
+                            }}
+
                             className='connectorsTable'
                         />
                     </div>

@@ -171,6 +171,8 @@ export class KowlTable<T extends object = any> extends Component<{
                     return <Pagination size="small" showSizeChanger
                         total={this.currentDataSource.length}
                         showTotal={(total) => <span className='paginationTotal'>Total {total} items</span>}
+                        pageSize={this.pagination.pageSize}
+                        pageSizeOptions={this.pagination.pageSizeOptions}
 
                         current={this.pagination.current ?? this.pagination.defaultCurrent}
                         onChange={(page, pageSize) => {

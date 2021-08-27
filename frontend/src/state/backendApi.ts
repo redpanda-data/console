@@ -18,7 +18,7 @@ import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
-import { toJson } from "../utils/jsonUtils";
+import { clone, toJson } from "../utils/jsonUtils";
 import { IsDev, IsBusiness, basePathS } from "../utils/env";
 import { appGlobal } from "./appGlobal";
 import { ServerVersionInfo, uiState } from "./uiState";
@@ -923,6 +923,20 @@ const apiStore = {
                     this.connectConnectors = undefined;
                 }
                 else {
+
+                    //////// DEBUG
+                    if (v.clusters) {
+                        const clus = v.clusters[0];
+                        const conn = clus.connectors[0];
+                        for (let index = 0; index < 200; index++) {
+                            const n = clone(conn);
+                            n.name += "-" + (index + 2);
+                            clus.connectors.push(n);
+                        }
+                    }
+                    //////// DEBUG
+
+
                     if (v.clusters)
                         for (const cluster of v.clusters)
                             for (const connector of cluster.connectors)
