@@ -48,9 +48,33 @@ export const StatisticsCard = observer(() => {
 
 export const ConnectorClass = React.memo((props: { connector: ClusterConnectorInfo }) => {
     const c = props.connector;
-    const meta = connectorMetadata[c.class];
-    if (!meta)
-        return <span>{c.class}</span>;
+    // const meta = connectorMetadata[c.class];
+    const meta = null as any;
+
+    let content: JSX.Element;
+    if (meta) {
+        // Use known connector name (and maybe image)
+        content = <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
+            {meta.logo &&
+                <LayoutBypass height='0px' width='26px'>
+                    {/* <span style={{ display: 'inline-block', maxHeight: '0px' }}> */}
+                    {meta.logo}
+                    {/* </span> */}
+                </LayoutBypass>
+            }
+            {meta.friendlyName}
+        </span>
+    }
+    else {
+        // Otherwise just remove the namespace of the class and use that
+        let shortName = c.class;
+        const lastDot = shortName.lastIndexOf('.');
+        if (lastDot >= 0)
+            shortName = shortName.substr(lastDot + 1, undefined);
+
+        content = <span>{shortName}</span>
+    }
+
 
     return <span>
         <Popover placement='rightTop' overlayClassName='popoverSmall'
@@ -59,17 +83,7 @@ export const ConnectorClass = React.memo((props: { connector: ClusterConnectorIn
                 {c.class}
             </div>}
         >
-            <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
-                {meta.logo &&
-                    <LayoutBypass height='0px' width='26px'>
-                        {/* <span style={{ display: 'inline-block', maxHeight: '0px' }}> */}
-                        {meta.logo}
-                        {/* </span> */}
-                    </LayoutBypass>
-                }
-                {meta.friendlyName}
-            </span>
-
+            {content}
         </Popover>
     </span>
 });
