@@ -62,6 +62,7 @@ type OwlHooks interface {
 	CanViewConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
 	CanEditConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
 	CanDeleteConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
+	AllowedConnectClusterActions(ctx context.Context, clusterName string) ([]string, *rest.Error)
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -140,4 +141,8 @@ func (*defaultHooks) CanEditConnectCluster(_ context.Context, _ string) (bool, *
 }
 func (*defaultHooks) CanDeleteConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
+}
+func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) ([]string, *rest.Error) {
+	// "all" will be considered as wild card - all actions are allowed
+	return []string{"all"}, nil
 }
