@@ -2005,6 +2005,29 @@ mark {
 .ant-table-filter-trigger {
     width: 36px;
     background: hsl(0deg, 0%, 94%);
+
+    transition: background-color ease-out 0.1s;
+    color: hsl(0deg, 0%, 67%);
+
+    &:hover {
+        background: hsl(0deg, 0%, 89%);
+
+        .tableFilterIcon {
+            color: hsl(0deg, 0%, 60%);
+        }
+    }
+
+    .tableFilterIcon {
+        @include tlrb;
+        position: absolute;
+        color: hsl(0deg, 0%, 67%);
+        font-size: 14px;
+
+        &.active {
+            background: hsl(208deg, 100%, 93%);
+            color: #1890ff;
+        }
+    }
 }
 
 .tableInlineSearchBox {

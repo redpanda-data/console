@@ -310,12 +310,8 @@ export class SearchTitle extends Component<{
 }
 
 function filterIcon(filterActive: boolean) {
-    return <div style={{
-        background: filterActive ? 'hsl(208deg, 100%, 93%)' : undefined,
-        position: 'absolute',
-        left: 0, top: 0, right: 0, bottom: 0
-    }}>
-        <SearchOutlined style={{ color: filterActive ? '#1890ff' : 'hsl(0deg, 0%, 67%)', fontSize: '14px' }} />
+    return <div className={filterActive ? 'tableFilterIcon active' : 'tableFilterIcon'}>
+        <SearchOutlined />
     </div>
 }
 
