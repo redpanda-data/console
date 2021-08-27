@@ -92,6 +92,10 @@ This is an overview of all actions by resource:
 
 `viewConsumers` : View all consumers which consume that topic
 
+`deleteTopic` : Delete a Kafka topic (only possible if `delete.topic.enable=true` is configured on the brokers)
+
+`deleteTopicRecords` : Delete records within a Kafka topic (only possible within `cleanup.policy=delete` topics due to Kafka constraints)
+
 ##### Resource: Cluster
 
 `viewAcl` : List all ACL rules defined in the cluster
@@ -113,7 +117,7 @@ We regularly add new features and therefore we also add new actions. Every time 
 | `application` | `admin` | [`edit`]
 | `topics` | `view` | [`seeTopic`, `viewPartitions`, `viewConfig`, `viewMessages`, `useSearchFilter`, `viewConsumers`]
 | `topics` | `edit` | [`view`]
-| `topics` | `admin` | [`edit`]
+| `topics` | `admin` | [`edit`, `deleteTopic`, `deleteTopicRecords`]
 | `cluster` | `view` | [`viewAcl`]
 | `cluster` | `edit` | [`view`, `reassignPartitions`]
 | `cluster` | `admin` | [`edit`]
