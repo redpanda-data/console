@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, message, notification } from 'antd';
+import { Button, message, notification, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
@@ -10,7 +10,7 @@ import { api } from '../../../state/backendApi';
 import { ApiError } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
-import { Code } from '../../../utils/tsxUtils';
+import { Code, findPopupContainer } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
@@ -146,12 +146,17 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
         const settings = uiSettings.kafkaConnect;
         const cluster = api.connectConnectors?.clusters?.first(c => c.clusterName == clusterName);
+        if (!cluster) return "cluster not found";
         const connector = cluster?.connectors.first(c => c.name == connectorName);
+        if (!connector) return "connector not found";
 
-        const state = connector?.state.toLowerCase();
+        const state = connector.state.toLowerCase();
         const isRunning = state == 'running';
 
-        const tasks = connector?.tasks ?? [];
+        const tasks = connector.tasks;
+
+        const canEdit = cluster.canEditCluster;
+
 
         return (
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
@@ -168,22 +173,35 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                         </span>
 
                         <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '.5em', fontSize: '12px' }}>
-                            <Button onClick={async () => {
-                                let f: () => Promise<ApiError | null>;
-                                if (isRunning)
-                                    f = () => api.pauseConnector(clusterName, connectorName);
-                                else
-                                    f = () => api.resumeConnector(clusterName, connectorName);
+                            <Tooltip
+                                placement="top" trigger={!canEdit ? "hover" : "none"} mouseLeaveDelay={0}
+                                getPopupContainer={findPopupContainer}
+                                overlay={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
+                            >
+                                <Button disabled={!canEdit} onClick={async () => {
+                                    let f: () => Promise<ApiError | null>;
+                                    if (isRunning)
+                                        f = () => api.pauseConnector(clusterName, connectorName);
+                                    else
+                                        f = () => api.resumeConnector(clusterName, connectorName);
 
-                                await f();
-                                this.refreshData(true);
-                            }}>
-                                {isRunning ? 'Pause' : 'Resume'}
-                            </Button>
-                            <Button onClick={async () => {
-                                await api.restartConnector(clusterName, connectorName);
-                                this.refreshData(true);
-                            }}>Restart</Button>
+                                    await f();
+                                    this.refreshData(true);
+                                }}>
+                                    {isRunning ? 'Pause' : 'Resume'}
+                                </Button>
+
+                            </Tooltip>
+                            <Tooltip
+                                placement="top" trigger={!canEdit ? "hover" : "none"} mouseLeaveDelay={0}
+                                getPopupContainer={findPopupContainer}
+                                overlay={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
+                            >
+                                <Button disabled={!canEdit} onClick={async () => {
+                                    await api.restartConnector(clusterName, connectorName);
+                                    this.refreshData(true);
+                                }}>Restart</Button>
+                            </Tooltip>
                         </span>
                     </div>
 
@@ -193,6 +211,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                             <Editor
                                 beforeMount={onBeforeEditorMount}
                                 onMount={onMountEditor}
+
 
                                 // theme="vs-dark"
                                 // defaultLanguage="typescript"
@@ -218,6 +237,8 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                 // theme='proto-custom'
 
                                 options={{
+                                    readOnly: !canEdit,
+
                                     minimap: {
                                         enabled: false,
                                     },
@@ -243,33 +264,41 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
-                            <Button type='primary' ghost style={{ width: '200px' }} disabled={(() => {
-                                if (!this.currentConfig) return true;
-                                try { JSON.parse(this.currentConfig); }
-                                catch (ex: any) { return true; }
-                                return false;
-                            })()} onClick={async () => {
+                            <Tooltip
+                                placement="top" trigger={!canEdit ? "hover" : "none"} mouseLeaveDelay={0}
+                                getPopupContainer={findPopupContainer}
+                                overlay={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
+                            >
+                                <Button type='primary' ghost style={{ width: '200px' }} disabled={(() => {
+                                    if (!canEdit) return true;
 
-                                let newConfigObj: object;
-                                try {
-                                    newConfigObj = JSON.parse(this.currentConfig);
-                                } catch (ex: any) {
-                                    message.error("Config is not valid json!", 3);
-                                    return;
-                                }
+                                    if (!this.currentConfig) return true;
+                                    try { JSON.parse(this.currentConfig); }
+                                    catch (ex: any) { return true; }
+                                    return false;
+                                })()} onClick={async () => {
 
-                                const err = await api.updateConnector(clusterName, connectorName, newConfigObj);
-                                if (err) {
-                                    notification.error({ message: 'Error', description: 'Unable to update config:\n' + JSON.stringify(err, undefined, 4) });
-                                    return;
-                                }
-                                this.refreshData(true);
+                                    let newConfigObj: object;
+                                    try {
+                                        newConfigObj = JSON.parse(this.currentConfig);
+                                    } catch (ex: any) {
+                                        message.error("Config is not valid json!", 3);
+                                        return;
+                                    }
 
-                                message.success('New connector config applied!');
+                                    const err = await api.updateConnector(clusterName, connectorName, newConfigObj);
+                                    if (err) {
+                                        notification.error({ message: 'Error', description: 'Unable to update config:\n' + JSON.stringify(err, undefined, 4) });
+                                        return;
+                                    }
+                                    this.refreshData(true);
 
-                            }}>
-                                Update Config
-                            </Button>
+                                    message.success('New connector config applied!');
+
+                                }}>
+                                    Update Config
+                                </Button>
+                            </Tooltip>
                         </div>
                     </div>
 
@@ -348,54 +377,3 @@ const okIcon = <CheckCircleTwoTone twoToneColor='#52c41a' />;
 const warnIcon = <WarningTwoTone twoToneColor='orange' />;
 const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
 const mr05: CSSProperties = { marginRight: '.5em' };
-
-const protoText = `
-// [START declaration]
-syntax = "proto3";
-package tutorial;
-
-import "google/protobuf/timestamp.proto";
-// [END declaration]
-
-// [START java_declaration]
-option java_multiple_files = true;
-option java_package = "com.example.tutorial.protos";
-option java_outer_classname = "AddressBookProtos";
-// [END java_declaration]
-
-// [START csharp_declaration]
-option csharp_namespace = "Google.Protobuf.Examples.AddressBook";
-// [END csharp_declaration]
-
-// [START go_declaration]
-option go_package = "../tutorial";
-// [END go_declaration]
-
-// [START messages]
-message Person {
-  string name = 1;
-  int32 id = 2;  // Unique ID number for this person.
-  string email = 3;
-
-  enum PhoneType {
-    MOBILE = 0;
-    HOME = 1;
-    WORK = 2;
-  }
-
-  message PhoneNumber {
-    string number = 1;
-    PhoneType type = 2;
-  }
-
-  repeated PhoneNumber phones = 4;
-
-  google.protobuf.Timestamp last_updated = 5;
-}
-
-// Our address book file is just one of these.
-message AddressBook {
-  repeated Person people = 1;
-}
-// [END messages]
-`.trim() + "\n\n";
