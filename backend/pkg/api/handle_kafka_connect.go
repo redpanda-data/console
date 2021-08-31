@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	con "github.com/cloudhut/connect-client"
@@ -393,6 +394,51 @@ func (api *API) handleRestartConnector() http.HandlerFunc {
 		}
 
 		restErr = api.ConnectSvc.RestartConnector(ctx, clusterName, connector)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, nil)
+	}
+}
+
+func (api *API) handleRestartConnectorTask() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		clusterName := chi.URLParam(r, "clusterName")
+		connector := chi.URLParam(r, "connector")
+		taskIDstr := chi.URLParam(r, "taskID")
+		taskID, err := strconv.Atoi(taskIDstr)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      fmt.Errorf("failed to parse task id as number"),
+				Status:   http.StatusBadRequest,
+				Message:  "Invalid TaskID given. TaskID must be a number.",
+				IsSilent: false,
+			})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		defer cancel()
+
+		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canEdit {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to edit in this connect cluster"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to edit connectors in this Kafka connect cluster",
+				InternalLogs: []zapcore.Field{zap.String("cluster_name", clusterName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		restErr = api.ConnectSvc.RestartConnectorTask(ctx, clusterName, connector, taskID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
