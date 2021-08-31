@@ -19,6 +19,9 @@ type ClusterConnectors struct {
 	RunningConnectors int                    `json:"runningConnectors"`
 	Connectors        []ClusterConnectorInfo `json:"connectors"`
 	Error             string                 `json:"error,omitempty"`
+
+	// This is set at the HTTP handler level as this will be returned by the Hooks.
+	AllowedActions []string `json:"allowedActions"`
 }
 
 type ClusterConnectorInfo struct {
@@ -42,12 +45,12 @@ type ClusterConnectorTaskInfo struct {
 // GetAllClusterConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
 // sent concurrently. Context timeout should be configured correctly in order to not await responses from offline clusters
 // for too long.
-func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]ClusterConnectors, error) {
+func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnectors, error) {
 	if !s.Cfg.Enabled {
 		return nil, ErrKafkaConnectNotConfigured
 	}
 
-	ch := make(chan ClusterConnectors, len(s.ClientsByCluster))
+	ch := make(chan *ClusterConnectors, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
 		go func(cfg ConfigCluster, c *con.Client) {
 			connectors, err := c.ListConnectorsExpanded(ctx)
@@ -57,7 +60,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]ClusterConnect
 					zap.String("cluster_name", cfg.Name), zap.String("cluster_address", cfg.URL), zap.Error(err))
 				errMsg = err.Error()
 
-				ch <- ClusterConnectors{
+				ch <- &ClusterConnectors{
 					ClusterName:    cfg.Name,
 					ClusterAddress: cfg.URL,
 					Connectors:     listConnectorsExpandedToClusterConnectorInfo(connectors),
@@ -82,7 +85,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]ClusterConnect
 				}
 			}
 
-			ch <- ClusterConnectors{
+			ch <- &ClusterConnectors{
 				ClusterName:       cfg.Name,
 				ClusterAddress:    cfg.URL,
 				ClusterInfo:       root,
@@ -95,7 +98,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]ClusterConnect
 	}
 
 	// Consume all list connector responses and merge them into a single array.
-	shards := make([]ClusterConnectors, cap(ch))
+	shards := make([]*ClusterConnectors, cap(ch))
 	for i := 0; i < cap(ch); i++ {
 		shards[i] = <-ch
 	}
