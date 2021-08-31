@@ -231,6 +231,7 @@ export interface GroupDescription {
 
     // reasons for why the group can't be editted
     noEditSupport: boolean;
+    noDeleteSupport: boolean;
     isInUse: boolean;
     noEditPerms: boolean;
     noDeletePerms: boolean;
@@ -851,12 +852,11 @@ export interface ConnectClusterShard { // GetClusterShard
 // GET "/kafka-connect/connectors"
 export interface KafkaConnectors { // response
     clusters: ClusterConnectors[] | null; // only null when isConfigured=false
-    filtered: {
-        clusterCount: number;
-        connectorCount: number;
-    };
     isConfigured: boolean;
 }
+
+export const ConnectClusterActions = ['canViewConnectCluster', 'canEditConnectCluster', 'canDeleteConnectCluster'] as const;
+export type ConnectClusterAction = 'all' | typeof ConnectClusterActions[number];
 
 export interface ClusterConnectors { // ClusterConnectors
     clusterName: string;
@@ -870,8 +870,14 @@ export interface ClusterConnectors { // ClusterConnectors
     totalConnectors: number;
     runningConnectors: number;
     connectors: ClusterConnectorInfo[];
+    allowedActions: ConnectClusterAction[] | undefined;
 
     error?: string;
+
+    // Added by frontend
+    canViewCluster: boolean;
+    canEditCluster: boolean;
+    canDeleteCluster: boolean;
 }
 
 export interface ClusterConnectorInfo {

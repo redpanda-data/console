@@ -142,12 +142,12 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 {/* Main Card */}
                 <Card>
                     {/* View Buttons */}
-                    <Tabs 
+                    <Tabs
                         tabs={[{
                             key: "partitions",
                             title: "Partitions",
                             content: this.renderPartitions(group)
-                        },{
+                        }, {
                             key: "acl",
                             title: "ACL",
                             content: <AclList acl={api.consumerGroupAcls.get(group.groupId)} />
@@ -537,23 +537,29 @@ const EditDisabledTooltip = (p: { group: GroupDescription, children: [editButton
             })}
         </Tooltip>
 
-    // Check if feature is supported
-    const notSupportedMessage = "This cluster version does not support editting group offsets";
-    if (group.noEditSupport) return <>
-        {wrap(editButton, notSupportedMessage)}
-        {wrap(deleteButton, notSupportedMessage)}
-    </>
-
-    // Check if in use
-    if (group.isInUse) return <>
-        {wrap(editButton, "Consumer groups with active members cannot be edited")}
-        {wrap(deleteButton, "Consumer groups with active members cannot be deleted")}
-    </>
-
     // Wrap each button if the user doesn't have the corresponding permission
+    let editButtonMessage = null as string | null;
+    let deleteButtonMessage = null as string | null;
+
+    if (group.noEditPerms) editButtonMessage = "You don't have 'editConsumerGroup' permissions for this group";
+    if (group.noDeletePerms) deleteButtonMessage = "You don't have 'deleteConsumerGroup' permissions for this group";
+
+    if (group.isInUse) {
+        if (editButtonMessage == null) editButtonMessage = "Consumer groups with active members cannot be edited";
+        if (deleteButtonMessage == null) deleteButtonMessage = "Consumer groups with active members cannot be deleted";
+    }
+
+    if (group.noEditSupport)
+        if (editButtonMessage == null)
+            editButtonMessage = "This cluster does not support editting group offsets";
+
+    if (group.noDeleteSupport)
+        if (deleteButtonMessage == null)
+            deleteButtonMessage = "This cluster does not support deleting group offsets";
+
     return <>
-        {group.noEditPerms ? wrap(editButton, "You don't have 'editConsumerGroup' permissions for this group") : editButton}
-        {group.noDeletePerms ? wrap(deleteButton, "You don't have 'deleteConsumerGroup' permissions for this group") : deleteButton}
+        {editButtonMessage != null ? wrap(editButton, editButtonMessage) : editButton}
+        {deleteButtonMessage != null ? wrap(deleteButton, deleteButtonMessage) : deleteButton}
     </>
 }
 

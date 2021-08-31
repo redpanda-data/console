@@ -925,25 +925,31 @@ const apiStore = {
                 else {
 
                     //////// DEBUG
-                    if (v.clusters) {
-                        const clus = v.clusters[0];
-                        const conn = clus.connectors[0];
-                        for (let index = 0; index < 200; index++) {
-                            const n = clone(conn);
-                            n.name += "-" + (index + 2);
-                            clus.connectors.push(n);
-                        }
-                    }
+                    // if (v.clusters) {
+                    //     const clus = v.clusters[0];
+                    //     const conn = clus.connectors[0];
+                    //     for (let index = 0; index < 200; index++) {
+                    //         const n = clone(conn);
+                    //         n.name += "-" + (index + 2);
+                    //         clus.connectors.push(n);
+                    //     }
+                    // }
                     //////// DEBUG
 
-
                     if (v.clusters)
-                        for (const cluster of v.clusters)
+                        for (const cluster of v.clusters) {
+
+                            cluster.canViewCluster = (cluster.allowedActions == null) || cluster.allowedActions.includes('all') || cluster.allowedActions.includes('canViewConnectCluster');
+                            cluster.canEditCluster = (cluster.allowedActions == null) || cluster.allowedActions.includes('all') || cluster.allowedActions.includes('canEditConnectCluster');
+                            cluster.canDeleteCluster = (cluster.allowedActions == null) || cluster.allowedActions.includes('all') || cluster.allowedActions.includes('canDeleteConnectCluster');
+
                             for (const connector of cluster.connectors)
                                 if (connector.config)
                                     connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
                                 else
                                     connector.jsonConfig = "";
+                        }
+
 
                     this.connectConnectors = v;
                 }
@@ -1051,8 +1057,10 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
     }
     g.isInUse = g.state.toLowerCase() != 'empty';
 
-    if (!Features.deleteGroup || !Features.patchGroup)
+    if (!Features.patchGroup)
         g.noEditSupport = true;
+    if (!Features.deleteGroup)
+        g.noDeleteSupport = true;
 }
 
 export const brokerMap = computed(() => {
