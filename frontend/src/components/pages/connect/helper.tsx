@@ -90,7 +90,7 @@ export const ConnectorClass = React.memo((props: { connector: ClusterConnectorIn
     </span>
 });
 
-function removeNamespace(className: string): string {
+export function removeNamespace(className: string): string {
     if (!className) return className;
 
     const lastDot = className.lastIndexOf('.');

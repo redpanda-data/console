@@ -12,7 +12,7 @@ import {
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
     KafkaConnectors, ConnectClusters,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo
 } from "./restInterfaces";
 import { comparer, computed, observable, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -207,6 +207,7 @@ const apiStore = {
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
     connectConnectors: undefined as (KafkaConnectors | undefined),
+    connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
 
     // undefined = we haven't checked yet
     // null = call completed, and we're not logged in
@@ -952,6 +953,18 @@ const apiStore = {
 
 
                     this.connectConnectors = v;
+                }
+            }, addError);
+    },
+
+    refreshClusterAdditionalInfo(clusterName: string, force?: boolean): void {
+        cachedApiRequest<ClusterAdditionalInfo | null>(`./api/kafka-connect/clusters/${clusterName}`, force)
+            .then(v => {
+                if (!v) {
+                    this.connectAdditionalClusterInfo.delete(clusterName);
+                }
+                else {
+                    this.connectAdditionalClusterInfo.set(clusterName, v);
                 }
             }, addError);
     },

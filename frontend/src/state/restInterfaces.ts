@@ -902,6 +902,18 @@ export interface ClusterConnectorTaskInfo {
     workerId: string;
 }
 
+// GET "/kafka-connect/clusters/{clusterName}"
+export interface ClusterAdditionalInfo {
+    clusterName: string;
+    host: string;
+    clusterVersion: string;
+    plugins: {
+        class: string;
+        type?: string;
+        version?: string;
+    }[];
+}
+
 /*
 // GET "/kafka-connect/clusters/{clusterName}/connectors"
 export interface GetConnectorsShard { // GetConnectorsShard

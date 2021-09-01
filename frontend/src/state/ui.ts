@@ -231,6 +231,11 @@ const uiSettings = observable({
             pageSize: undefined as any as number,
             quickSearch: ''
         },
+        clusterDetailsPlugins: {
+            pageSize: undefined as any as number,
+            quickSearch: ''
+        },
+
         connectorDetails: {
             pageSize: undefined as any as number,
             quickSearch: ''
