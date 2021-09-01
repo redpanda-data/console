@@ -7,7 +7,7 @@ import { observer } from 'mobx-react';
 import { CSSProperties } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { ApiError } from '../../../state/restInterfaces';
+import { ApiError, ClusterConnectorTaskInfo } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { Code, findPopupContainer } from '../../../utils/tsxUtils';
@@ -90,6 +90,8 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
     autoRunDisposer: IReactionDisposer | undefined;
     showConfigUpdated = false;
+
+    @observable restartingTask: ClusterConnectorTaskInfo | null = null;
 
     constructor(p: any) {
         super(p);
@@ -305,6 +307,8 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                     {/* Task List */}
                     <div style={{ marginTop: '1em' }}>
                         <KowlTable
+                            key="taskList"
+
                             dataSource={tasks}
                             columns={[
                                 {
@@ -330,33 +334,50 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                     title: 'Worker', dataIndex: 'workerId', sorter: sortField('workerId'),
                                     render: (v) => <Code>{v}</Code>
                                 },
-                                // {
-                                //     title: 'Actions', width: 200,
-                                //     render: (_, task) => <span style={{ display: 'inline-flex', gap: '.75em', alignItems: 'center' }}>
-                                //         {/* Pause/Resume Task */}
-                                //         <span className='linkBtn' onClick={() => {
-                                //             // if (isRunning) api.pauseConnector(clusterName, connectorName);
-                                //             // else api.resumeConnector(clusterName, connectorName);
-                                //         }}>
-                                //             {task.state.toLowerCase() == 'running' ? 'Pause' : 'Resume'}
-                                //         </span>
-                                //         {/* Separator */}
-                                //         <span className='inlineSeparator' />
-                                //         {/* Restart Task */}
-                                //         <span className='linkBtn' onClick={() => {
-                                //             // if (isRunning) api.pauseConnector(clusterName, connectorName);
-                                //             // else api.resumeConnector(clusterName, connectorName);
-                                //         }}>
-                                //             Restart
-                                //         </span>
-                                //     </span>
-                                // },
+                                {
+                                    title: 'Actions', width: 150,
+                                    render: (_, task) => <span style={{ display: 'inline-flex', gap: '.75em', alignItems: 'center' }}>
+                                        {/* Pause/Resume Task */}
+                                        {/* <span className='linkBtn' onClick={() => {
+                                            // if (isRunning) api.pauseConnector(clusterName, connectorName);
+                                            // else api.resumeConnector(clusterName, connectorName);
+                                        }}>
+                                            {task.state.toLowerCase() == 'running' ? 'Pause' : 'Resume'}
+                                        </span> */}
+                                        {/* Separator */}
+                                        {/* <span className='inlineSeparator' /> */}
+                                        {/* Restart Task */}
+                                        <span className={'linkBtn' + (this.restartingTask != null ? ' disabled' : '')} onClick={async () => {
+                                            if (this.restartingTask) return;
+                                            this.restartingTask = task;
+
+                                            try {
+                                                await api.restartTask(cluster.clusterName, connectorName, task.taskId);
+                                                message.success(`Task '${task.taskId}' restarted!`);
+                                            } catch (err) {
+                                                notification.error({
+                                                    message: <div>
+                                                        <h5>Failed to restart task '{task.taskId}'</h5>
+                                                        {String(err)}
+                                                    </div>
+                                                });
+                                            }
+
+                                            this.restartingTask = null;
+                                            this.refreshData(true);
+                                        }}>
+                                            Restart
+                                        </span>
+                                    </span>
+                                },
                             ]}
                             rowKey='taskId'
 
                             search={{
                                 columnTitle: 'Task',
-                                isRowMatch: (row, regex) => regex.test(String(row.taskId)) || regex.test(row.state) || regex.test(row.workerId)
+                                isRowMatch: (row, regex) => regex.test(String(row.taskId))
+                                    || regex.test(row.state)
+                                    || regex.test(row.workerId)
                             }}
 
                             observableSettings={uiSettings.kafkaConnect.connectorDetails}

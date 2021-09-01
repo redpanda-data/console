@@ -1040,7 +1040,17 @@ const apiStore = {
         return null;
     },
 
-
+    async restartTask(clusterName: string, connector: string, taskID: number): Promise<ApiError | null> {
+        // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart"
+        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/tasks/${String(taskID)}/restart`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+        await tryHandleApiError(response);
+        return null;
+    },
 }
 
 function addFrontendFieldsForConsumerGroup(g: GroupDescription) {

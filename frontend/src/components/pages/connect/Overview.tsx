@@ -112,7 +112,7 @@ class TabClusters extends Component {
                 },
             ]}
             search={{
-                columnTitle: 'Name',
+                columnTitle: 'Cluster',
                 isRowMatch: (row, regex) => {
                     const isMatch = regex.test(row.clusterName) || regex.test(row.clusterInfo.version);
                     return isMatch;
@@ -217,12 +217,21 @@ class TabTasks extends Component {
                 { title: 'Cluster', render: (_, c) => <Code>{c.cluster.clusterName}</Code> },
             ]}
             rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name + r.taskId}
-            className='tasksTable'
+
+            search={{
+                columnTitle: 'Connector',
+                isRowMatch: (row, regex) => regex.test(row.name)
+                    || regex.test(String(row.taskId))
+                    || regex.test(row.taskState)
+                    || regex.test(row.taskWorkerId)
+                    || regex.test(row.cluster.clusterName)
+            }}
 
             observableSettings={uiSettings.kafkaConnect.tasks}
             pagination={{
                 defaultPageSize: 10,
             }}
+            className='tasksTable'
         />
     }
 }

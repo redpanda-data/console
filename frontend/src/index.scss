@@ -2733,6 +2733,12 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     &:hover {
         text-decoration: solid underline;
     }
+
+    &.disabled {
+        opacity: 0.5;
+        color: black;
+        pointer-events: none;
+    }
 }
 
 .inlineSeparator {

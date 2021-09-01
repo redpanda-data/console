@@ -71,6 +71,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                     {/* Connectors List */}
                     <div style={{ marginTop: '1em' }}>
                         <KowlTable
+                            key="connectorsList"
                             dataSource={connectors}
                             columns={[
                                 {
@@ -127,6 +128,11 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                             className='connectorsTable'
                         />
                     </div>
+
+                    {/* Plugin List */}
+                    {/* <div style={{ marginTop: '1em' }}>
+
+                    </div> */}
                 </Card>
             </motion.div>
         );
