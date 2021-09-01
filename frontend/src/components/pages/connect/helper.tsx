@@ -11,10 +11,22 @@ import { animProps } from '../../../utils/animationProps';
 import { findPopupContainer, LayoutBypass } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
 
-import DatagenLogo from '../../../assets/connectors/datagen.png';
+import ElasticLogo from '../../../assets/connectors/elastic.png';
 import MsSqlLogo from '../../../assets/connectors/mssql.png';
 import MongoDBLogo from '../../../assets/connectors/mongodb.png';
 import DebeziumLogo from '../../../assets/connectors/debezium.png';
+import ConfluentLogo from '../../../assets/connectors/confluent.png';
+import HdfsLogo from '../../../assets/connectors/hdfs.png';
+import JdbcLogo from '../../../assets/connectors/jdbc.png';
+import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
+import PostgresqlLogo from '../../../assets/connectors/postgres.png';
+import SalesforceLogo from '../../../assets/connectors/salesforce.png';
+import ServicenowLogo from '../../../assets/connectors/servicenow.png';
+import BigQueryLogo from '../../../assets/connectors/google-bigquery.svg';
+import PubSubLogo from '../../../assets/connectors/google-pub-sub.svg';
+import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
+import CassandraLogo from '../../../assets/connectors/cassandra.png';
+import DB2Logo from '../../../assets/connectors/db2.png';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -24,21 +36,92 @@ interface ConnectorMetadata {
     readonly friendlyName?: string;      // override display name (instead of just 'className without namespace')
 }
 export const connectorMetadata: ConnectorMetadata[] = [
+    // Confluent Connectors
     {
-        className: "io.confluent.kafka.connect.datagen.DatagenConnector",
-        logo: <img src={DatagenLogo} alt='datagen logo' className='connectorLogo' />
+        className: "io.confluent.connect.hdfs.",
+        logo: <img src={HdfsLogo} alt='HDFS logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.debezium.connector.sqlserver.SqlServerConnector",
-        logo: <img src={MsSqlLogo} alt='mssql logo' className='connectorLogo' />
+        className: "io.confluent.connect.s3.",
+        logo: <img src={AmazonS3} alt='Amazon S3 logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.debezium.connector.sqlserver.MongoDBConnector",
-        logo: <img src={MongoDBLogo} alt='mongo db logo' className='connectorLogo' />
+        className: "io.confluent.connect.jms.",
+        logo: <img src={JdbcLogo} alt='JMS logo' className='connectorLogo' />
     } as const,
+    {
+        className: "io.confluent.connect.jdbc.",
+        logo: <img src={JdbcLogo} alt='JDBC logo' className='connectorLogo' />
+    } as const,
+    {
+        className: "io.confluent.connect.salesforce.",
+        logo: <img src={SalesforceLogo} alt='Salesforce logo' className='connectorLogo' />
+    } as const,
+    {
+        className: "io.confluent.connect.servicenow.",
+        logo: <img src={ServicenowLogo} alt='Servicenow logo' className='connectorLogo' />
+    } as const,
+    {
+        className: "io.confluent.connect.elasticsearch.",
+        logo: <img src={ElasticLogo} alt='Elastic logo' className='connectorLogo' />
+    } as const,
+    {
+        className: "io.confluent.connect.gcp.pubsub.",
+        logo: <img src={PubSubLogo} alt='Google PubSub logo' className='connectorLogo' />
+    } as const,
+    {
+        className: "io.confluent.connect.cassandra.",
+        logo: <img src={CassandraLogo} alt='Cassandra logo' className='connectorLogo' />
+    } as const,
+
+    // Debezium Connectors
+    {
+        className: "io.debezium.connector.sqlserver.",
+        logo: <img src={MsSqlLogo} alt='MSSQL logo' className='connectorLogo' />
+    } as const,
+    {
+        className: "io.debezium.connector.mongodb.",
+        logo: <img src={MongoDBLogo} alt='MongoDB logo' className='connectorLogo' />
+    } as const,
+    {
+        className: "io.debezium.connector.postgresql.",
+        logo: <img src={PostgresqlLogo} alt='PostgreSQL logo' className='connectorLogo' />
+    } as const,
+    {
+        className: "io.debezium.connector.cassandra.",
+        logo: <img src={CassandraLogo} alt='Cassandra logo' className='connectorLogo' />
+    } as const,
+    {
+        className: "io.debezium.connector.db2.",
+        logo: <img src={DB2Logo} alt='IBM DB2 logo' className='connectorLogo' />
+    } as const,
+    
+    // Stream Reactor / Lenses
+    {
+        className: "com.datamountaineer.streamreactor.connect.cassandra.",
+        logo: <img src={CassandraLogo} alt='Cassandra logo' className='connectorLogo' />
+    } as const,
+
+    // WePay Connectors
+    {
+        className: "com.wepay.kafka.connect.bigqueryl.",
+        logo: <img src={BigQueryLogo} alt='Google BigQuery logo' className='connectorLogo' />
+    } as const,
+
+    // Snowflake Connectors
+    {
+        className: "com.snowflake.kafka.connector",
+        logo: <img src={SnowflakeLogo} alt='Snowflake logo' className='connectorLogo' />
+    } as const,
+
+    // Fallbacks with a very generous classname prefix (usually just the maintainers' logo)
     {
         classNamePrefix: "io.debezium.",
-        logo: <img src={DebeziumLogo} alt='debezium logo' className='connectorLogo' />
+        logo: <img src={DebeziumLogo} alt='Debezium logo' className='connectorLogo' />
+    } as const,
+    {
+        classNamePrefix: "io.confluent.",
+        logo: <img src={ConfluentLogo} alt='Confluent logo' className='connectorLogo' />
     } as const,
 ];
 
