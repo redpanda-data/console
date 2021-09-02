@@ -4,6 +4,7 @@
 
 - [FEATURE] Add support for deleting topics
 - [FEATURE] Add support for deleting records within topics (only possible on topics with cleanup.policy=delete due to limitations in Kafka)
+- [FEATURE] Add support for managing multiple Kafka connect clusters via Kowl (creating connectors is yet to be added)
 - [ENHANCEMENT] Broker lists (for example in a topic's 'Partitions' tab) now show which broker is leading the partition
 
 ## 1.4.0 / 2021-05-27
