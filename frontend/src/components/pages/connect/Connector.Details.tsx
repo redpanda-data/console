@@ -24,7 +24,7 @@ import Editor from "@monaco-editor/react";
 
 // Monaco Type
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
-import { NotConfigured, StatisticsCard } from './helper';
+import { ConnectorStatisticsCard, NotConfigured, OverviewStatisticsCard } from './helper';
 export type Monaco = typeof monacoType;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -162,7 +162,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
         return (
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-                <StatisticsCard />
+                <ConnectorStatisticsCard clusterName={clusterName} connectorName={connectorName} />
 
                 {/* Main Card */}
                 <Card>

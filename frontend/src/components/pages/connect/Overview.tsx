@@ -1,6 +1,6 @@
 import { CheckCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
-import { Checkbox, Col, Empty, Popover, Row, Statistic, Table } from 'antd';
+import { Checkbox, Col, Empty, Popover, Row, Statistic, Table, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -20,7 +20,7 @@ import { KowlTable } from '../../misc/KowlTable';
 import SearchBar from '../../misc/SearchBar';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
-import { ConnectorClass, connectorMetadata, NotConfigured, StatisticsCard } from './helper';
+import { ConnectorClass, NotConfigured, OverviewStatisticsCard } from './helper';
 
 
 
@@ -53,7 +53,7 @@ class KafkaConnectOverview extends PageComponent {
 
         return (
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-                <StatisticsCard />
+                <OverviewStatisticsCard />
 
                 <Card>
                     <Tabs tabs={connectTabs}
@@ -137,11 +137,14 @@ class TabConnectors extends Component {
             columns={[
                 {
                     title: 'Connector', dataIndex: 'name',
+                    width: '35%',
                     render: (_, r) => (
-                        <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
-                            onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
-                            {r.name}
-                        </span>
+                        <Tooltip placement="topLeft" title={r.name}>
+                            <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
+                                onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
+                                {r.name}
+                            </span>
+                        </Tooltip>
                     ),
                     sorter: sortField('name'), defaultSortOrder: 'ascend'
                 },
@@ -204,7 +207,9 @@ class TabTasks extends Component {
             dataSource={allTasks}
             columns={[
                 {
-                    title: 'Connector', dataIndex: 'name', sorter: sortField('name'), defaultSortOrder: 'ascend',
+                    title: 'Connector', dataIndex: 'name',
+                    width: '35%',
+                    sorter: sortField('name'), defaultSortOrder: 'ascend',
                     render: (_, r) => (
                         <span className='hoverLink' onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
                             {r.name}

@@ -15,7 +15,7 @@ import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
-import { ConnectorClass, NotConfigured, removeNamespace } from './helper';
+import { ClusterStatisticsCard, ConnectorClass, NotConfigured, removeNamespace } from './helper';
 
 
 @observer
@@ -59,26 +59,18 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
                 {/* Main Card */}
                 <Card>
-                    {/* Title + Pause/Restart */}
-                    <div style={{ display: 'flex', alignItems: 'center', margin: '.5em 0', paddingLeft: '2px' }}>
-                        {/*
-                         <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
-                            <span style={{ fontSize: '17px', display: 'inline-block' }}>{isRunning ? okIcon : warnIcon}</span>
-                            <span style={{ fontSize: 'medium', fontWeight: 600, lineHeight: '0px', marginBottom: '1px' }}>{connectorName}</span>
-                            <span style={{ fontSize: 'small', opacity: 0.5 }}>({state ?? '<empty>'})</span>
-                        </span>
-                        */}
-                    </div>
-
                     {/* Connectors List */}
-                    <div style={{ marginTop: '1em' }}>
-                        <h3>Connectors</h3>
+                    <div>
+                        <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>
+                            Connectors
+                        </h3>
                         <KowlTable
                             key="connectorsList"
                             dataSource={connectors}
                             columns={[
                                 {
                                     title: 'Connector', dataIndex: 'name',
+                                    width: '35%',
                                     render: (_, r) => (
                                         <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
                                             onClick={() => appGlobal.history.push(`/kafka-connect/${clusterName}/${r.name}`)}>
@@ -134,7 +126,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
                     {/* Plugin List */}
                     <div style={{ marginTop: '2em' }}>
-                        <h3>Plugins</h3>
+                        <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Plugins</h3>
 
                         <KowlTable
                             dataSource={additionalInfo?.plugins}
@@ -199,21 +191,3 @@ const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
 const mr05: CSSProperties = { marginRight: '.5em' };
 
 
-export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
-    const cluster = api.connectConnectors?.clusters?.first(x => x.clusterName == p.clusterName);
-
-    const runningConnectors = cluster?.runningConnectors ?? '...';
-    const totalConnectors = cluster?.totalConnectors ?? '...';
-
-    const addr = cluster?.clusterAddress ?? '...';
-    const version = cluster?.clusterInfo.version ?? '...';
-
-    return <Card>
-        <div style={{ display: 'flex', gap: '1em' }}>
-            <Statistic title="Connectors" value={`${runningConnectors} / ${totalConnectors}`} />
-            <Statistic title="Address" value={addr} />
-            <Statistic title="Version" value={version} />
-
-        </div>
-    </Card>
-});

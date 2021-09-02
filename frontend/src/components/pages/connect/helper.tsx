@@ -1,6 +1,6 @@
 
 
-import { Button, Empty, Popover, Statistic } from 'antd';
+import { Button, Empty, Popover, Statistic, Tooltip } from 'antd';
 import { m, motion } from 'framer-motion';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
@@ -35,7 +35,11 @@ interface ConnectorMetadata {
     readonly logo?: JSX.Element,         // img element for the connector
     readonly friendlyName?: string;      // override display name (instead of just 'className without namespace')
 }
-export const connectorMetadata: ConnectorMetadata[] = [
+
+// Order of entries matters:
+// - first step is checking if there is any exact match for 'className'
+// - second step is going through the list and taking the first entry where 'classNamePrefix' matches
+const connectorMetadata: ConnectorMetadata[] = [
     // Confluent Connectors
     {
         classNamePrefix: "io.confluent.connect.hdfs.",
@@ -95,7 +99,7 @@ export const connectorMetadata: ConnectorMetadata[] = [
         classNamePrefix: "io.debezium.connector.db2.",
         logo: <img src={DB2Logo} alt='IBM DB2 logo' className='connectorLogo' />
     } as const,
-    
+
     // Stream Reactor / Lenses
     {
         classNamePrefix: "com.datamountaineer.streamreactor.connect.cassandra.",
@@ -125,19 +129,55 @@ export const connectorMetadata: ConnectorMetadata[] = [
     } as const,
 ];
 
+const connectorMetadataMatchCache: {
+    [className: string]: ConnectorMetadata
+} = {};
+
+function findConnectorMetadata(connector: ClusterConnectorInfo): ConnectorMetadata | null {
+    const c = connector.class;
+
+    // Quick and dirty cache
+    // If cache has too many entries, remove some
+    const cacheKeys = Object.keys(connectorMetadataMatchCache);
+    if (cacheKeys.length > 200)
+        for (const k of cacheKeys.slice(0, 5))
+            delete connectorMetadataMatchCache[k];
+
+    // try find in cache
+    let meta = connectorMetadataMatchCache[c];
+    if (meta) return meta;
+
+    // look for exact match
+    for (const e of connectorMetadata)
+        if (e.className)
+            if (e.className == c) {
+                meta = e;
+                break;
+            }
+
+    // look for prefix match
+    if (!meta)
+        for (const e of connectorMetadata)
+            if (e.classNamePrefix)
+                if (c.startsWith(e.classNamePrefix)) {
+                    meta = e;
+                    break;
+                }
+
+    // store entry in cache (if we found one)
+    if (meta) {
+        connectorMetadataMatchCache[c] = meta;
+        return meta;
+    }
+
+    return null;
+}
+
+
 
 export const ConnectorClass = React.memo((props: { connector: ClusterConnectorInfo }) => {
     const c = props.connector;
-    let meta: ConnectorMetadata | null = null;
-
-    for (const m of connectorMetadata) {
-        if ((m.className && m.className == c.class) ||
-            (m.classNamePrefix && c.class.startsWith(m.classNamePrefix))) {
-            meta = m;
-            break;
-        }
-    }
-
+    const meta = findConnectorMetadata(c);
     const displayName = meta?.friendlyName ?? removeNamespace(c.class);
 
     let content: JSX.Element;
@@ -183,7 +223,7 @@ export function removeNamespace(className: string): string {
     return className;
 }
 
-export const StatisticsCard = observer(() => {
+export const OverviewStatisticsCard = observer(() => {
     const totalClusters = api.connectConnectors?.clusters?.length ?? '...';
     const totalConnectors = api.connectConnectors?.clusters?.sum(c => c.totalConnectors) ?? '...';
 
@@ -195,6 +235,40 @@ export const StatisticsCard = observer(() => {
     </Card>
 });
 
+export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
+    const cluster = api.connectConnectors?.clusters?.first(x => x.clusterName == p.clusterName);
+
+    const runningConnectors = cluster?.runningConnectors ?? '...';
+    const totalConnectors = cluster?.totalConnectors ?? '...';
+
+    const addr = cluster?.clusterAddress ?? '...';
+    const version = cluster?.clusterInfo.version ?? '...';
+
+    return <Card>
+        <div style={{ display: 'flex', gap: '1em' }}>
+            <Statistic title="Cluster" value={cluster?.clusterName} />
+
+            <Statistic title="Connectors" value={`${runningConnectors} / ${totalConnectors}`} />
+            <Statistic title="Address" value={addr} />
+            <Statistic title="Version" value={version} />
+
+        </div>
+    </Card>
+});
+
+export const ConnectorStatisticsCard = observer((p: { clusterName: string, connectorName: string }) => {
+    const cluster = api.connectConnectors?.clusters?.first(x => x.clusterName == p.clusterName);
+    const connector = cluster?.connectors.first(x => x.name == p.connectorName);
+
+    return <Card>
+        <div style={{ display: 'flex', gap: '1em' }}>
+            <Statistic title="Cluster" value={cluster?.clusterName} />
+            <Statistic title="Connector" value={connector?.name} />
+
+            <Statistic title="Tasks" value={`${connector?.runningTasks} / ${connector?.totalTasks}`} />
+        </div>
+    </Card>
+});
 
 
 
