@@ -38,79 +38,79 @@ interface ConnectorMetadata {
 export const connectorMetadata: ConnectorMetadata[] = [
     // Confluent Connectors
     {
-        className: "io.confluent.connect.hdfs.",
+        classNamePrefix: "io.confluent.connect.hdfs.",
         logo: <img src={HdfsLogo} alt='HDFS logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.confluent.connect.s3.",
+        classNamePrefix: "io.confluent.connect.s3.",
         logo: <img src={AmazonS3} alt='Amazon S3 logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.confluent.connect.jms.",
+        classNamePrefix: "io.confluent.connect.jms.",
         logo: <img src={JdbcLogo} alt='JMS logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.confluent.connect.jdbc.",
+        classNamePrefix: "io.confluent.connect.jdbc.",
         logo: <img src={JdbcLogo} alt='JDBC logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.confluent.connect.salesforce.",
+        classNamePrefix: "io.confluent.connect.salesforce.",
         logo: <img src={SalesforceLogo} alt='Salesforce logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.confluent.connect.servicenow.",
+        classNamePrefix: "io.confluent.connect.servicenow.",
         logo: <img src={ServicenowLogo} alt='Servicenow logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.confluent.connect.elasticsearch.",
+        classNamePrefix: "io.confluent.connect.elasticsearch.",
         logo: <img src={ElasticLogo} alt='Elastic logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.confluent.connect.gcp.pubsub.",
+        classNamePrefix: "io.confluent.connect.gcp.pubsub.",
         logo: <img src={PubSubLogo} alt='Google PubSub logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.confluent.connect.cassandra.",
+        classNamePrefix: "io.confluent.connect.cassandra.",
         logo: <img src={CassandraLogo} alt='Cassandra logo' className='connectorLogo' />
     } as const,
 
     // Debezium Connectors
     {
-        className: "io.debezium.connector.sqlserver.",
+        classNamePrefix: "io.debezium.connector.sqlserver.",
         logo: <img src={MsSqlLogo} alt='MSSQL logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.debezium.connector.mongodb.",
+        classNamePrefix: "io.debezium.connector.mongodb.",
         logo: <img src={MongoDBLogo} alt='MongoDB logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.debezium.connector.postgresql.",
+        classNamePrefix: "io.debezium.connector.postgresql.",
         logo: <img src={PostgresqlLogo} alt='PostgreSQL logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.debezium.connector.cassandra.",
+        classNamePrefix: "io.debezium.connector.cassandra.",
         logo: <img src={CassandraLogo} alt='Cassandra logo' className='connectorLogo' />
     } as const,
     {
-        className: "io.debezium.connector.db2.",
+        classNamePrefix: "io.debezium.connector.db2.",
         logo: <img src={DB2Logo} alt='IBM DB2 logo' className='connectorLogo' />
     } as const,
     
     // Stream Reactor / Lenses
     {
-        className: "com.datamountaineer.streamreactor.connect.cassandra.",
+        classNamePrefix: "com.datamountaineer.streamreactor.connect.cassandra.",
         logo: <img src={CassandraLogo} alt='Cassandra logo' className='connectorLogo' />
     } as const,
 
     // WePay Connectors
     {
-        className: "com.wepay.kafka.connect.bigqueryl.",
+        classNamePrefix: "com.wepay.kafka.connect.bigqueryl.",
         logo: <img src={BigQueryLogo} alt='Google BigQuery logo' className='connectorLogo' />
     } as const,
 
     // Snowflake Connectors
     {
-        className: "com.snowflake.kafka.connector",
+        classNamePrefix: "com.snowflake.kafka.connector",
         logo: <img src={SnowflakeLogo} alt='Snowflake logo' className='connectorLogo' />
     } as const,
 
