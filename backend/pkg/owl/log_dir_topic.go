@@ -72,7 +72,7 @@ func (s *Service) logDirsByTopic(ctx context.Context, metadata *kmsg.MetadataRes
 		for _, logDir := range res.LogDirs.Dirs {
 			err := kerr.ErrorForCode(logDir.ErrorCode)
 			if err != nil {
-				errorByBrokerID[brokerID] = errors.Wrap(res.Error, "failed to inspect log dir")
+				errorByBrokerID[brokerID] = errors.Wrap(err, "failed to inspect log dir")
 				continue
 			}
 
@@ -115,10 +115,13 @@ func (s *Service) logDirsByTopic(ctx context.Context, metadata *kmsg.MetadataRes
 			}
 
 			for _, replicaID := range partition.Replicas {
-				// Have we got a log dir response for this specific partition replica?
+				// Have we got a log dir response for this specific partition replica? If not we want to create a
+				// dummy response that contains a proper error message for the requested replica.
+				// Thus we first look up the per broker errors, but we also return a fallback message if we haven't
+				// got an error/response back from the broker.
 				if _, exists := partitionLogDirs[topicName][partitionID][replicaID]; !exists {
-					err, exists := errorByBrokerID[replicaID]
-					if !exists {
+					err, errExists := errorByBrokerID[replicaID]
+					if !errExists {
 						// We should never run into this. We should always receive a proper error if responses are missing!
 						err = fmt.Errorf("haven't got a log dir response for this replica even though it had been requested")
 					}
