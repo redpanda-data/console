@@ -14,11 +14,12 @@ roles:
         excludes: ["battle-logs"]
         allowedActions: ["viewer"]
 
-      # ACLs do not have includes or excludes as there are no permissions implemented for individual ACL rules
-      - resource: acls
+      # Resource cluster does not have includes or excludes as there are no permissions implemented for individual ACL rules
+      # Other actions also possible, i.e.: "reassignPartitions", "patchConfigs"
+      - resource: cluster
         allowedActions: ["viewAcl"]
 
       - resource: topics
         includes: ["battle-logs"]
-        # Other actions are "viewMessages", "useSearchFilter", "viewConsumers"
+        # Other actions also possible, i.e.: "viewMessages", "useSearchFilter", "viewConsumers"
         allowedActions: ["seeTopic", "viewPartitions", "viewConfig"]
