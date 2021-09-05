@@ -217,7 +217,12 @@ func buildBasicAuth(cfg BasicAuthConfig) transport.AuthMethod {
 
 func buildSshAuth(cfg SSHConfig) (transport.AuthMethod, error) {
 	if cfg.PrivateKeyFilePath != "" {
-		auth, err := ssh.NewPublicKeysFromFile(cfg.Username, cfg.PrivateKeyFilePath, cfg.Passphrase)
+		_, err := os.Stat(cfg.PrivateKeyFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("read file %s failed %s\n", cfg.PrivateKeyFilePath, err.Error())
+		}
+
+		auth, err := ssh.NewPublicKeysFromFile("git", cfg.PrivateKeyFilePath, cfg.Passphrase)
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +230,7 @@ func buildSshAuth(cfg SSHConfig) (transport.AuthMethod, error) {
 	}
 
 	if cfg.PrivateKey != "" {
-		auth, err := ssh.NewPublicKeys(cfg.Username, []byte(cfg.PrivateKey), cfg.Passphrase)
+		auth, err := ssh.NewPublicKeys("git", []byte(cfg.PrivateKey), cfg.Passphrase)
 		if err != nil {
 			return nil, err
 		}
