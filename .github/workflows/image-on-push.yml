@@ -24,22 +24,33 @@ jobs:
         id: set_timestamp
 
       - name: Login to Quay
-        env:
-          QUAY_ENCRYPTED_PASS: ${{ secrets.QUAY_ENCRYPTED_PASS }}
-        run: docker login quay.io -u=cloudhut+github_push -p=${QUAY_ENCRYPTED_PASS}
+        uses: docker/login-action@v1
+        with:
+          username: cloudhut+github_push
+          password: ${{ secrets.QUAY_ENCRYPTED_PASS }}
 
-      - name: Build Docker Image
-        run:
-          docker build
-          --build-arg "KOWL_GIT_SHA=${GITHUB_SHA}"
-          --build-arg "KOWL_GIT_REF=${{ steps.extract_ref.outputs.ref }}"
-          --build-arg "KOWL_TIMESTAMP=${{ steps.set_timestamp.outputs.time }}"
-          --build-arg "BUILT_FROM_PUSH=true"
-          -t quay.io/cloudhut/kowl:master-$(echo ${GITHUB_SHA} | cut -c1-8)
-          -t quay.io/cloudhut/kowl:master
-          .
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            quay.io/cloudhut/kowl
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=raw,value=master
+            type=sha,prefix=master-,format=short
 
-      - name: Push Image
-        run: |
-          docker push quay.io/cloudhut/kowl:master-$(echo ${GITHUB_SHA} | cut -c1-8)
-          docker push quay.io/cloudhut/kowl:master
+      - name: Build and push Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          build-args: |
+            KOWL_GIT_SHA=${{ github.sha }}
+            KOWL_GIT_REF=${{ steps.extract_ref.outputs.ref }}
+            KOWL_TIMESTAMP=${{ steps.set_timestamp.outputs.time }}
+            BUILT_FROM_PUSH=true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=registry,ref=quay.io/cloudhut/kowl:buildcache
+          cache-to: type=registry,ref=quay.io/cloudhut/kowl:buildcache,mode=max
