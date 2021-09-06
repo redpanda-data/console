@@ -1,5 +1,5 @@
 
-name: Docker Image for master branch
+name: Build & Push Docker Image
 
 on:
   push:
