@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - master
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -41,6 +43,7 @@ jobs:
           tags: |
             type=raw,value=master
             type=sha,prefix=master-,format=short
+            type=semver,pattern={{raw}},enable=${{ github.event.action == 'published' }}
 
       # Use Buildx with moby/buildkit to utilize registry caching and more 
       # advanced building techniques (e.g. concurrent multistage builds)
