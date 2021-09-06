@@ -42,9 +42,12 @@ jobs:
             type=raw,value=master
             type=sha,prefix=master-,format=short
 
-      # Setup Buildx with to utilize registry caching
-      - name: Setup Docker Buildx
+      # Use Buildx with moby/buildkit to utilize registry caching and more 
+      # advanced building techniques (e.g. concurrent multistage builds)
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
+        with:
+          driver-opts: image=moby/buildkit:master,network=host
 
       - name: Build and push Docker Image
         uses: docker/build-push-action@v2
