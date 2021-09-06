@@ -108,13 +108,14 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 
 	// 2. Put files into cache
 	empty := make(map[string]filesystem.File)
-	files, err := c.readFiles(fs, empty, ".", 5)
+	files, err := c.readFiles(fs, empty, c.Cfg.Repository.BaseDirectory, 5)
 	if err != nil {
 		return fmt.Errorf("failed to get files: %w", err)
 	}
 	c.setFileContents(files)
 
-	c.logger.Info("successfully cloned git repository", zap.Int("read_files", len(files)))
+	c.logger.Info("successfully cloned git repository",
+		zap.String("base_directory", c.Cfg.Repository.BaseDirectory), zap.Int("read_files", len(files)))
 
 	if c.OnFilesUpdatedHook != nil {
 		c.OnFilesUpdatedHook()

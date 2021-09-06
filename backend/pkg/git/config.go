@@ -51,6 +51,8 @@ func (c *Config) Validate() error {
 
 // SetDefaults for all root and child config structs
 func (c *Config) SetDefaults() {
+	c.Repository.SetDefaults()
+	
 	c.RefreshInterval = time.Minute
 	c.MaxFileSize = 500 * 1000 // 500KB
 	c.IndexByFullFilepath = false

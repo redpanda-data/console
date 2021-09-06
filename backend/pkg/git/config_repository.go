@@ -5,8 +5,9 @@ import (
 )
 
 type RepositoryConfig struct {
-	URL    string `yaml:"url"`
-	Branch string `yaml:"branch"`
+	URL           string `yaml:"url"`
+	Branch        string `yaml:"branch"`
+	BaseDirectory string `yaml:"baseDirectory"`
 }
 
 // Validate given input for config properties
@@ -16,4 +17,8 @@ func (c *RepositoryConfig) Validate() error {
 	}
 
 	return nil
+}
+
+func (c *RepositoryConfig) SetDefaults() {
+	c.BaseDirectory = "."
 }

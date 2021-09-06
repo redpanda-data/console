@@ -40,6 +40,13 @@ func (c *Service) readFiles(fs billy.Filesystem, res map[string]filesystem.File,
 		return nil, fmt.Errorf("failed to read dir: %w", err)
 	}
 
+	// This case should only be entered when currentPath equals to a directory that is not existent. This could happen
+	// if the configured base directory does not exist.
+	if fileInfos == nil {
+		c.logger.Warn("visited git directory does not exist", zap.String("current_path", currentPath))
+		return res, nil
+	}
+
 	for _, info := range fileInfos {
 		name := info.Name()
 		filePath := path.Join(currentPath, name)
