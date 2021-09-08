@@ -412,15 +412,12 @@ func (s *Service) createProtoRegistry() error {
 // protoFileToDescriptorWithBinary parses a .proto file and compiles it to a descriptor using the protoc binary. Protoc must
 // be available as command or this will fail.
 // Imported dependencies (such as Protobuf timestamp) are included so that the descriptors are self-contained.
-//
-// ProtoPath is the path that contains all .proto files. This directory will be searched for imports.
-// Filename is the .proto file within the protoPath that shall be parsed.
 func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*desc.FileDescriptor, error) {
 	filesStr := make(map[string]string, len(files))
 	filePaths := make([]string, 0, len(filesStr))
 	for _, file := range files {
 		filesStr[file.Path] = string(file.Payload)
-		filePaths = append(filePaths, file.Path)
+		filePaths = append(filePaths, string(file.Path[1:len(file.Path)]))
 	}
 
 	errorReporter := func(err protoparse.ErrorWithPos) error {
@@ -434,6 +431,7 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 
 	parser := protoparse.Parser{
 		Accessor:              protoparse.FileContentsFromMap(filesStr),
+		ImportPaths:	       []string{"/"},
 		InferImportPaths:      true,
 		ValidateUnlinkedFiles: true,
 		IncludeSourceCodeInfo: true,
