@@ -36,6 +36,7 @@ require (
 	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210901051457-3c197a133ddd
 	github.com/vmihailenco/msgpack/v5 v5.3.1
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
+	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20210903162142-ad29c8ab022f // indirect

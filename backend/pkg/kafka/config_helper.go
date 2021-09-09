@@ -20,6 +20,7 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/kerberos"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+	"github.com/youmark/pkcs8"
 	"go.uber.org/zap"
 )
 
@@ -170,7 +171,11 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 				return nil, fmt.Errorf("no valid private key found")
 			}
 
-			if x509.IsEncryptedPEMBlock(pemBlock) {
+			// Assume the key is PKCS8 encrypted, and try to decrypt it as such
+			pkcs8DecryptedKey, err := tryPKCS8Decryption(pemBlock, []byte(cfg.TLS.Passphrase))
+			if err == nil {
+				privateKey = pem.EncodeToMemory(&pem.Block{Type: pemBlock.Type, Bytes: pkcs8DecryptedKey})
+			} else if x509.IsEncryptedPEMBlock(pemBlock) {
 				decryptedKey, err := x509.DecryptPEMBlock(pemBlock, []byte(cfg.TLS.Passphrase))
 				if err != nil {
 					return nil, fmt.Errorf("private key is encrypted, but could not decrypt it: %s", err)
@@ -178,6 +183,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 				// If private key was encrypted we can overwrite the original contents now with the decrypted version
 				privateKey = pem.EncodeToMemory(&pem.Block{Type: pemBlock.Type, Bytes: decryptedKey})
 			}
+
 			tlsCert, err := tls.X509KeyPair(cert, privateKey)
 			if err != nil {
 				return nil, fmt.Errorf("cannot parse pem: %s", err)
@@ -197,4 +203,18 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 	}
 
 	return opts, nil
+}
+
+func tryPKCS8Decryption(block *pem.Block, password []byte) ([]byte, error) {
+	pkcs8PrivateKey, err := pkcs8.ParsePKCS8PrivateKey(block.Bytes, password)
+	if err != nil {
+		return nil, err
+	}
+
+	decryptedBytes, err := x509.MarshalPKCS8PrivateKey(pkcs8PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return decryptedBytes, nil
 }
