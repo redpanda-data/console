@@ -60,9 +60,10 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 	res := make([]*TopicSummary, len(topicNames))
 	for i, topic := range metadata.Topics {
 		policy := "N/A"
+		topicName := *topic.Topic
 		if configs != nil {
 			// Configs might be nil if we don't have the required Kafka ACLs to get topic configs.
-			if val, ok := configs[topic.Topic]; ok {
+			if val, ok := configs[topicName]; ok {
 				entry := val.GetConfigEntryByName("cleanup.policy")
 				if entry != nil {
 					// This should be safe to dereference as only sensitive values will be nil
@@ -72,12 +73,12 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 		}
 
 		res[i] = &TopicSummary{
-			TopicName:         topic.Topic,
+			TopicName:         topicName,
 			IsInternal:        topic.IsInternal,
 			PartitionCount:    len(topic.Partitions),
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
 			CleanupPolicy:     policy,
-			LogDirSummary:     logDirsByTopic[topic.Topic],
+			LogDirSummary:     logDirsByTopic[topicName],
 		}
 	}
 
@@ -102,15 +103,16 @@ func (s *Service) GetAllTopicNames(ctx context.Context, metadata *kmsg.MetadataR
 
 	topicNames := make([]string, len(metadata.Topics))
 	for i, topic := range metadata.Topics {
+		topicName := *topic.Topic
 		err := kerr.ErrorForCode(topic.ErrorCode)
 		if err != nil {
 			s.logger.Error("failed to get topic metadata while listing topics",
-				zap.String("topic_name", topic.Topic),
+				zap.String("topic_name", topicName),
 				zap.Error(err))
 			return nil, err
 		}
 
-		topicNames[i] = topic.Topic
+		topicNames[i] = topicName
 	}
 
 	return topicNames, nil

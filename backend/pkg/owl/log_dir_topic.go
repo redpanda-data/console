@@ -36,15 +36,16 @@ func (s *Service) logDirsByTopic(ctx context.Context, metadata *kmsg.MetadataRes
 			// If there's an error on the topic level we won't have any partitions reported back
 			continue
 		}
-		replicaIDsByTopicPartition[topic.Topic] = make(map[int32][]int32)
+		topicName := *topic.Topic
+		replicaIDsByTopicPartition[topicName] = make(map[int32][]int32)
 
 		req := kmsg.NewDescribeLogDirsRequestTopic()
-		req.Topic = topic.Topic
+		req.Topic = topicName
 		req.Partitions = make([]int32, 0)
 		for _, partition := range topic.Partitions {
 			partitionID := partition.Partition
 			req.Partitions = append(req.Partitions, partitionID)
-			replicaIDsByTopicPartition[topic.Topic][partitionID] = partition.Replicas
+			replicaIDsByTopicPartition[topicName][partitionID] = partition.Replicas
 		}
 		topicLogDirReqs = append(topicLogDirReqs, req)
 	}
@@ -103,7 +104,7 @@ func (s *Service) logDirsByTopic(ctx context.Context, metadata *kmsg.MetadataRes
 	// 3. Iterate on all available topic partitions and their replicas to check for missing responses from partition
 	// replicas. Enhance missing replica entries as needed.
 	for _, topic := range metadata.Topics {
-		topicName := topic.Topic
+		topicName := *topic.Topic
 		if _, exists := partitionLogDirs[topicName]; !exists {
 			partitionLogDirs[topicName] = make(map[int32]map[int32]partitionLogDir)
 		}

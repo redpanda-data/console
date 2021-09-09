@@ -4,7 +4,6 @@ go 1.15
 
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20210707164159-52430bf6b52c // indirect
-	github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7 // indirect
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bitly/go-simplejson v0.5.0 // indirect
@@ -17,6 +16,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.3.1
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-resty/resty/v2 v2.6.0
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/jarcoal/httpmock v1.0.8
@@ -32,8 +32,8 @@ require (
 	github.com/prometheus/common v0.20.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	github.com/twmb/franz-go v0.10.2
-	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210823212011-0d01f7456b4d
+	github.com/twmb/franz-go v1.0.0
+	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210901051457-3c197a133ddd
 	github.com/vmihailenco/msgpack/v5 v5.3.1
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	go.uber.org/zap v1.16.0

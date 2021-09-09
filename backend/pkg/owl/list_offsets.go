@@ -36,7 +36,8 @@ func (s *Service) ListOffsets(ctx context.Context, topicNames []string, timestam
 			if err != nil {
 				return nil, fmt.Errorf("failed to request partition info for topic '%v', partition: '%v': %w", topic.Topic, partition.Partition, err)
 			}
-			topicPartitions[topic.Topic] = append(topicPartitions[topic.Topic], partition.Partition)
+			topicName := *topic.Topic
+			topicPartitions[topicName] = append(topicPartitions[topicName], partition.Partition)
 		}
 	}
 	offsets := s.kafkaSvc.ListOffsets(ctx, topicPartitions, timestamp)

@@ -31,7 +31,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		kgo.MaxVersions(kversion.V2_6_0()),
 		kgo.ClientID(cfg.ClientID),
 		kgo.FetchMaxBytes(5 * 1000 * 1000), // 5MB
-		kgo.AllowedConcurrentFetches(12),
+		kgo.MaxConcurrentFetches(12),
 		// We keep control records because we need to consume them in order to know whether the last message in a
 		// a partition is worth waiting for or not (because it's a control record which we would never receive otherwise)
 		kgo.KeepControlRecords(),

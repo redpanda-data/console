@@ -87,8 +87,8 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 	partitionInfoByIDAndTopic := make(map[string]map[int32]partitionInfo)
 
 	for _, topic := range metadata.Topics {
-		topicName := topic.Topic
-		partitionInfoByIDAndTopic[topic.Topic] = make(map[int32]partitionInfo)
+		topicName := *topic.Topic
+		partitionInfoByIDAndTopic[topicName] = make(map[int32]partitionInfo)
 
 		for _, partition := range topic.Partitions {
 			partitionID := partition.Partition
@@ -100,7 +100,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 				// Not an offline partition, so let's try to request this partition's high watermark
 				topicPartitions[topicName] = append(topicPartitions[topicName], partitionID)
 			}
-			partitionInfoByIDAndTopic[topic.Topic][partitionID] = partitionInfo{
+			partitionInfoByIDAndTopic[topicName][partitionID] = partitionInfo{
 				PartitionID:   partitionID,
 				Error:         errMsg,
 				HighWaterMark: -1, // Not yet requested

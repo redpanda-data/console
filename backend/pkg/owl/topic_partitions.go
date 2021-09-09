@@ -194,16 +194,17 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []st
 
 	overviewByTopic := make(map[string]TopicDetails)
 	for _, topic := range metadata.Topics {
+		topicName := *topic.Topic
 		topicOverview := TopicDetails{
-			TopicName: topic.Topic,
+			TopicName: topicName,
 		}
 		err := kerr.TypedErrorForCode(topic.ErrorCode)
 		if err != nil {
-			s.logger.Warn("failed to get metadata for topic", zap.String("topic", topic.Topic), zap.Error(err))
+			s.logger.Warn("failed to get metadata for topic", zap.String("topic", topicName), zap.Error(err))
 
 			// Propagate the failed response and do not even try any further requests for that topic.
 			topicOverview.Error = fmt.Sprintf("Failed to get metadata for topic: %v", err.Error())
-			overviewByTopic[topic.Topic] = topicOverview
+			overviewByTopic[topicName] = topicOverview
 			continue
 		}
 
@@ -239,7 +240,7 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []st
 			}
 		}
 		topicOverview.Partitions = partitionInfo
-		overviewByTopic[topic.Topic] = topicOverview
+		overviewByTopic[topicName] = topicOverview
 	}
 
 	return overviewByTopic, nil
