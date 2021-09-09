@@ -14,7 +14,7 @@ import (
 type BrokerConfig struct {
 	brokerID int32 `json:"-"`
 
-	Configs []BrokerConfigEntry `json:"configs"`
+	Configs []BrokerConfigEntry `json:"configs,omitempty"`
 	Error   string              `json:"error,omitempty"`
 }
 
@@ -66,10 +66,6 @@ func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConf
 	configsByBrokerID := make(map[int32]BrokerConfig)
 	for i := 0; i < cap(resCh); i++ {
 		res := <-resCh
-		if res.Error != "" {
-			res.Configs = nil
-			continue
-		}
 		configsByBrokerID[res.brokerID] = res
 	}
 
