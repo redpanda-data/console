@@ -50,11 +50,21 @@ Supported providers are: `Google`, `GitHub` and `Okta`.
 
 Depending on your `kind` and `provider` the `name` property may refer to different things. This is an overview to what it refers for every possible case:
 
+**Google:**
+
 | Kind    | Provider | Name Reference                                        |
 | ------- | -------- | ----------------------------------------------------- |
 | `user`  | Google   | Google E-Mail address                                 |
-| `user`  | GitHub   | Login handle / GitHub username                        |
-| `user`  | Okta     | Login handle / email                                  |
 | `group` | Google   | Google Group Name (which is an E-Mail address)        |
+
+**GitHub:**
+| Kind    | Provider | Name Reference                                        |
+| ------- | -------- | ----------------------------------------------------- |
+| `user`  | GitHub   | Login handle / GitHub username                        |
 | `group` | GitHub   | GitHub team name within your GitHub organization      |
+
+**Okta:**
+| Kind    | Provider | Name Reference                                        |
+| ------- | -------- | ----------------------------------------------------- |
+| `user`  | Okta     | Login handle / email                                  |
 | `group` | Okta     | Okta Group ID (not name), e.g. "00gra1ajmZa1G1ks04x9" |
