@@ -417,7 +417,7 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 	filePaths := make([]string, 0, len(filesStr))
 	for _, file := range files {
 		filesStr[file.Path] = string(file.Payload)
-		filePaths = append(filePaths, file.Path[1:])
+		filePaths = append(filePaths, file.Path)
 	}
 
 	errorReporter := func(err protoparse.ErrorWithPos) error {
@@ -431,7 +431,7 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 
 	parser := protoparse.Parser{
 		Accessor:              protoparse.FileContentsFromMap(filesStr),
-		ImportPaths:	       []string{"/"},
+		ImportPaths:           []string{"."},
 		InferImportPaths:      true,
 		ValidateUnlinkedFiles: true,
 		IncludeSourceCodeInfo: true,
