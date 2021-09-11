@@ -12,6 +12,7 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
 	"go.uber.org/zap"
+	"strings"
 	"sync"
 )
 
@@ -416,8 +417,11 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 	filesStr := make(map[string]string, len(files))
 	filePaths := make([]string, 0, len(filesStr))
 	for _, file := range files {
+		// Apparently a slash prepends the filepath on some OS (not windows). Hence let's try to remove the prefix if it
+		// exists, so that there's no filename mismatch because of that.
+		trimmedFilepath := strings.TrimPrefix(file.Path, "/")
 		filesStr[file.Path] = string(file.Payload)
-		filePaths = append(filePaths, file.Path)
+		filePaths = append(filePaths, trimmedFilepath)
 	}
 
 	errorReporter := func(err protoparse.ErrorWithPos) error {
