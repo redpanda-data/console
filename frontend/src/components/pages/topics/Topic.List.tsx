@@ -3,7 +3,7 @@ import { TrashIcon } from '@heroicons/react/outline';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
 import { Alert, Button, Checkbox, Col, Modal, notification, Popover, Row, Statistic, Table, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
-import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
+import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -23,7 +23,6 @@ import { useState } from 'react';
 class TopicList extends PageComponent {
     pageConfig = makePaginationConfig(uiSettings.topicList.pageSize);
     quickSearchReaction: IReactionDisposer;
-    @observable filteredTopics: Topic[];
     @observable topicToDelete: null | string = null;
 
     constructor(p: any) {
@@ -61,7 +60,7 @@ class TopicList extends PageComponent {
         api.refreshTopics(force);
     }
 
-    getTopics() {
+    @computed get topics() {
         if (!api.topics) return [];
         return api.topics.filter((t) => (uiSettings.topicList.hideInternalTopics && t.isInternal ? false : true));
     }
@@ -74,7 +73,7 @@ class TopicList extends PageComponent {
     render() {
         if (!api.topics) return DefaultSkeleton;
 
-        const topics = this.getTopics();
+        const topics = this.topics;
 
         const partitionCountReal = topics.sum((x) => x.partitionCount);
         const partitionCountOnlyReplicated = topics.sum((x) => x.partitionCount * (x.replicationFactor - 1));
@@ -108,15 +107,6 @@ class TopicList extends PageComponent {
                 <Card>
                     <Row justify="space-between" align="middle">
                         <Col span="auto">
-                            <SearchBar<Topic>
-                                dataSource={this.getTopics}
-                                isFilterMatch={this.isFilterMatch}
-                                filterText={uiSettings.topicList.quickSearch}
-                                onQueryChanged={(filterText) => (uiSettings.topicList.quickSearch = filterText)}
-                                onFilteredDataChanged={(data) => {
-                                    this.filteredTopics = data;
-                                }}
-                            />
                         </Col>
                         <Col>
                             <Checkbox style={{ paddingLeft: '1rem', marginLeft: 'auto' }} checked={uiSettings.topicList.hideInternalTopics} onChange={(e) => (uiSettings.topicList.hideInternalTopics = e.target.checked)}>
@@ -126,13 +116,20 @@ class TopicList extends PageComponent {
                     </Row>
 
                     <KowlTable
-                        dataSource={this.filteredTopics ?? []}
+                        dataSource={topics}
                         rowKey={(x) => x.topicName}
                         columns={[
                             { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', defaultSortOrder: 'ascend' },
                             { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
                             { title: 'Replication', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
-                            { title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', sorter: sortField('cleanupPolicy'), width: 1 },
+                            {
+                                title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1,
+                                filterType: {
+                                    type: 'enum',
+                                    optionClassName: 'transform-caps'
+                                },
+                                sorter: sortField('cleanupPolicy'),
+                            },
                             { title: 'Size', render: (t, r) => renderLogDirSummary(r.logDirSummary), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes, width: '140px' },
                             {
                                 width: 1,
@@ -158,6 +155,16 @@ class TopicList extends PageComponent {
                                 ),
                             },
                         ]}
+
+                        search={{
+                            searchColumnIndex: 0,
+                            isRowMatch: (row, regex) => {
+                                if (regex.test(row.topicName)) return true;
+                                if (regex.test(row.cleanupPolicy)) return true;
+                                return false;
+                            },
+
+                        }}
 
                         observableSettings={uiSettings.topicList}
                         onRow={(record) => ({
@@ -281,7 +288,7 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
                 api.deleteTopic(topicToDelete!) // modal is not shown when topic is null
                     .then(finish)
                     .catch(setError)
-                    .finally(() => {setDeletionPending(false)});
+                    .finally(() => { setDeletionPending(false) });
             }}
         >
             <>

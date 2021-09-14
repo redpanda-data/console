@@ -13,6 +13,7 @@ export interface Topic {
     partitionCount: number;
     replicationFactor: number;
     cleanupPolicy: string;
+    documentation: "UNKNOWN" | "NOT_CONFIGURED" | "NOT_EXISTENT" | "AVAILABLE";
     logDirSummary: TopicLogDirSummary;
     allowedActions: TopicAction[] | undefined;
 }

@@ -351,6 +351,7 @@ td.ant-table-column-sort {
 .ant-pagination-total-text {
     font-size: 13px;
     opacity: 80%;
+    transform: translateY(-1px);
 }
 
 .ant-pagination-item {
@@ -2009,6 +2010,10 @@ mark {
     transition: background-color ease-out 0.1s;
     color: hsl(0deg, 0%, 67%);
 
+    &.active {
+        background: hsl(208deg, 100%, 93%);
+    }
+
     &:hover {
         background: hsl(0deg, 0%, 89%);
 
@@ -2028,6 +2033,10 @@ mark {
             color: #1890ff;
         }
     }
+}
+
+.ant-table.ant-table-middle .ant-table-thead .ant-table-filter-column-title {
+    padding-right: 3em;
 }
 
 .tableInlineSearchBox {
@@ -2771,4 +2780,17 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     height: 100%;
 
     transform: translateZ(0); // fixes images becoming blurry when downscaled (for whatever reason)
+}
+
+.filterCheckbox {
+    &::after {
+        @include beforeAfter();
+        width: 100%;
+        height: 100%;
+
+    }
+}
+
+.transform-caps {
+    text-transform: capitalize;
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { LockIcon } from '@primer/octicons-v2-react';
-import { Button, Popover, Result, Typography } from 'antd';
+import { Button, Popover, Result, Tooltip, Typography } from 'antd';
 import { motion } from 'framer-motion';
 import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -27,6 +27,7 @@ import { TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
 import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
 import { IsBusiness } from '../../../utils/env';
+import { WarningOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -102,6 +103,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         const topic = () => this.topic;
 
+        const mkDocuTip = (text: string, icon?: JSX.Element) => <Tooltip overlay={text} placement='left'><span>{icon ?? null}Documentation</span></Tooltip>
+        const warnIcon = <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}><WarningOutlined color='hsl(22deg 29% 85%)' /></span>;
+
         this.topicTabs = [
             new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
             new TopicTab(topic, 'consumers', 'viewConsumers', 'Consumers', (t) => <TopicConsumers topic={t} />),
@@ -127,7 +131,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         </Popover>
                 return undefined;
             }]),
-            new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', (t) => <TopicDocumentation topic={t} />),
+            new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', (t) => <TopicDocumentation topic={t} />, [
+                t => t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured in Kowl', warnIcon) : null,
+                t => t.documentation == 'NOT_EXISTENT' ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon) : null,
+            ]),
         ];
         makeObservable(this);
     }

@@ -12,9 +12,9 @@ import {
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
     KafkaConnectors, ConnectClusters,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo
 } from "./restInterfaces";
-import { comparer, computed, observable, transaction } from "mobx";
+import { comparer, computed, observable, runInAction, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
@@ -917,46 +917,30 @@ const apiStore = {
     },
 
 
-    refreshConnectClusters(force?: boolean): void {
-        cachedApiRequest<KafkaConnectors | null>('./api/kafka-connect/connectors', force)
+    async refreshConnectClusters(force?: boolean): Promise<void> {
+        return cachedApiRequest<KafkaConnectors | null>('./api/kafka-connect/connectors', force)
             .then(v => {
+                // backend error
                 if (!v) {
                     this.connectConnectors = undefined;
+                    return;
                 }
-                else {
 
-                    //////// DEBUG
-                    // if (v.clusters) {
-                    //     const clus = v.clusters[0];
-                    //     const conn = clus.connectors[0];
-                    //     for (let index = 0; index < 200; index++) {
-                    //         const n = clone(conn);
-                    //         n.name += "-" + (index + 2);
-                    //         clus.connectors.push(n);
-                    //     }
-                    // }
-                    //////// DEBUG
-
-                    if (v.clusters)
-                        for (const cluster of v.clusters) {
-
-                            cluster.canViewCluster = (cluster.allowedActions == null) || cluster.allowedActions.includes('all') || cluster.allowedActions.includes('canViewConnectCluster');
-                            cluster.canEditCluster = (cluster.allowedActions == null) || cluster.allowedActions.includes('all') || cluster.allowedActions.includes('canEditConnectCluster');
-                            cluster.canDeleteCluster = (cluster.allowedActions == null) || cluster.allowedActions.includes('all') || cluster.allowedActions.includes('canDeleteConnectCluster');
-
-                            for (const connector of cluster.connectors)
-                                if (connector.config)
-                                    connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
-                                else
-                                    connector.jsonConfig = "";
-                        }
-
-
+                // not configured
+                if (!v.clusters) {
                     this.connectConnectors = v;
+                    return;
                 }
+
+                // prepare helper properties
+                for (const cluster of v.clusters)
+                    addFrontendFieldsForConnectCluster(cluster);
+
+                this.connectConnectors = v;
             }, addError);
     },
 
+    // AdditionalInfo = list of plugins
     refreshClusterAdditionalInfo(clusterName: string, force?: boolean): void {
         cachedApiRequest<ClusterAdditionalInfo | null>(`./api/kafka-connect/clusters/${clusterName}`, force)
             .then(v => {
@@ -968,6 +952,57 @@ const apiStore = {
                 }
             }, addError);
     },
+
+    /*
+    Commented out for now!
+    There are some issues with refreshing a single connector:
+        - We might not have the cluster/connector cached (can happen when a user visits the details page directly)
+        - Updating the inner details (e.g. running tasks) won't update the cached total/running tasks in the cluster object
+          which might make things pretty confusing for a user (pausing a connector, then going back to the overview page).
+          One solution would be to update all clusters/connectors, which defeats the purpose of refreshing only one.
+          The real solution would be to not have pre-computed fields.
+
+
+    // Details for one connector
+    async refreshConnectorDetails(clusterName: string, connectorName: string, force?: boolean): Promise<void> {
+
+        const existingCluster = this.connectConnectors?.clusters?.find(x => x.clusterName == clusterName);
+        if (!existingCluster)
+            // if we don't have any info yet, or we don't know about that cluster, we need a full refresh
+            return this.refreshConnectClusters(force);
+
+        return cachedApiRequest<ClusterConnectorInfo | null>(`./api/kafka-connect/clusters/${clusterName}/connectors/${connectorName}`, force)
+            .then(v => {
+                if (!v) return; // backend error
+
+                const cluster = this.connectConnectors?.clusters?.find(x => x.clusterName == clusterName);
+                if (!cluster) return; // did we forget about the cluster somehow?
+
+                const connector = cluster.connectors.
+
+                // update given clusters
+                runInAction(() => {
+                    const clusters = this.connectConnectors?.clusters;
+                    if (!v.clusters) return; // shouldn't happen: this method shouldn't get called if we don't already have info cached
+                    if (!clusters) return; // shouldn't happen: if we don't have clusters locally we'd have refreshed them
+
+                    for (const updatedCluster of v.clusters) {
+                        addFrontendFieldsForConnectCluster(updatedCluster);
+
+                        const index = clusters.findIndex(x => x.clusterName == updatedCluster.clusterName);
+                        if (index < 0) {
+                            // shouldn't happen, if we don't know the cluster, then how would we have requested new info for it?
+                            clusters.push(updatedCluster);
+                        } else {
+                            // overwrite existing cluster with new data
+                            clusters[index] = updatedCluster;
+                        }
+                    }
+                });
+
+            }, addError);
+    },
+*/
     /*
         // All, or for specific cluster
         refreshConnectors(clusterName?: string, force?: boolean): Promise<void> {
@@ -983,13 +1018,7 @@ const apiStore = {
         },
 
 
-        // Details for one connector
-        refreshConnectorDetails(clusterName: string, connectorName: string, force?: boolean): void {
-            cachedApiRequest<KafkaConnectors | null>(`./api/kafka-connect/clusters/${clusterName}/connectors/${connectorName}`, force)
-                .then(v => {
-                    //
-                }, addError);
-        },
+
     */
 
     async deleteConnector(clusterName: string, connector: string): Promise<ApiError | null> {
@@ -1064,6 +1093,21 @@ const apiStore = {
         await tryHandleApiError(response);
         return null;
     },
+}
+
+function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {
+    const allowedActions = cluster.allowedActions ?? ['all'];
+    const allowAll = allowedActions.includes('all');
+
+    cluster.canViewCluster = allowAll || allowedActions.includes('canViewConnectCluster');
+    cluster.canEditCluster = allowAll || allowedActions.includes('canEditConnectCluster');
+    cluster.canDeleteCluster = allowAll || allowedActions.includes('canDeleteConnectCluster');
+
+    for (const connector of cluster.connectors)
+        if (connector.config)
+            connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
+        else
+            connector.jsonConfig = "";
 }
 
 function addFrontendFieldsForConsumerGroup(g: GroupDescription) {

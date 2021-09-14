@@ -1,7 +1,7 @@
 
 
-import { Button, Empty, Popover, Statistic, Tooltip } from 'antd';
-import { m, motion } from 'framer-motion';
+import { Alert, Button, Empty, message, Modal, Popover, Statistic } from 'antd';
+import { motion } from 'framer-motion';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
 
@@ -27,6 +27,7 @@ import PubSubLogo from '../../../assets/connectors/google-pub-sub.svg';
 import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
 import CassandraLogo from '../../../assets/connectors/cassandra.png';
 import DB2Logo from '../../../assets/connectors/db2.png';
+import { action, makeObservable, observable, runInAction } from 'mobx';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -295,4 +296,81 @@ export function NotConfigured() {
             </Card>
         </motion.div>
     );
+}
+
+@observer
+export class ConfirmModal<T> extends Component<{
+    target: () => T | null, // when set, dialog is shown
+    clearTarget: () => void, // called when the dialog is done
+
+    content: (target: T) => JSX.Element, // "are you sure you want to ..."
+    successMessage: (target: T) => JSX.Element, // "x done successfully"
+
+    onOk: (target: T) => Promise<void>,
+}> {
+    @observable isPending = false;
+    @observable error: string | Error | null = null;
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
+
+    @action.bound async onOk() {
+        this.isPending = true;
+        const target = this.props.target()!;
+        try {
+            await this.props.onOk(target);
+            this.success(target);
+        } catch (err) {
+            this.error = err as any;
+        } finally {
+            this.isPending = false;
+        }
+    }
+
+    @action.bound success(target: T) {
+        const messageContent = this.props.successMessage(target);
+        message.success({ content: messageContent });
+
+        this.cancel();
+    }
+
+    @action.bound cancel() {
+        runInAction(() => {
+            this.isPending = false;
+            this.error = null;
+            this.props.clearTarget();
+        })
+
+    }
+
+    render() {
+        const target = this.props.target();
+        const error = this.error;
+        const content = target && this.props.content(target);
+
+        return <Modal
+            className="confirmModal"
+            visible={target != null}
+            centered closable={false} maskClosable={!this.isPending} keyboard={!this.isPending}
+            okText={this.error ? 'Retry' : 'Yes'}
+            confirmLoading={this.isPending}
+            okType="danger"
+            cancelText="No"
+            cancelButtonProps={{ disabled: this.isPending }}
+            onCancel={this.cancel}
+            onOk={this.onOk}
+        >
+            <>
+                {error && <Alert type="error"
+                    message={`Error`}
+                    description={typeof error == 'string' ? error : error.message} />
+                }
+                <p>
+                    {content}
+                </p>
+            </>
+        </Modal>
+    }
 }

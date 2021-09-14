@@ -107,7 +107,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 }
                             ]}
                             search={{
-                                columnTitle: 'Connector',
+                                searchColumnIndex: 0,
                                 isRowMatch: (row, regex) => regex.test(row.name)
                                     || regex.test(row.class)
                                     || regex.test(row.type)
@@ -158,7 +158,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 },
                             ]}
                             search={{
-                                columnTitle: 'Class',
+                                searchColumnIndex: 0,
                                 isRowMatch: (row, regex) => {
                                     if (regex.test(row.class)) return true;
                                     if (row.type && regex.test(row.type)) return true;
