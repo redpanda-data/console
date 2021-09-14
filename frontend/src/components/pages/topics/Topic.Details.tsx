@@ -132,7 +132,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                 return undefined;
             }]),
             new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', (t) => <TopicDocumentation topic={t} />, [
-                t => t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured in Kowl', warnIcon) : null,
+                t => t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured in Kowl') : null,
                 t => t.documentation == 'NOT_EXISTENT' ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon) : null,
             ]),
         ];
