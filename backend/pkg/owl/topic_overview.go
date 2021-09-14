@@ -11,6 +11,15 @@ import (
 	"go.uber.org/zap"
 )
 
+type DocumentationState string
+
+const (
+	DocumentationStateUnknown       DocumentationState = "UNKNOWN"
+	DocumentationStateNotConfigured                    = "NOT_CONFIGURED"
+	DocumentationStateNotExistent                      = "NOT_EXISTENT"
+	DocumentationStateAvailable                        = "AVAILABLE"
+)
+
 // TopicSummary is all information we get when listing Kafka topics
 type TopicSummary struct {
 	TopicName         string             `json:"topicName"`
@@ -18,6 +27,7 @@ type TopicSummary struct {
 	PartitionCount    int                `json:"partitionCount"`
 	ReplicationFactor int                `json:"replicationFactor"`
 	CleanupPolicy     string             `json:"cleanupPolicy"`
+	Documentation     DocumentationState `json:"documentation"`
 	LogDirSummary     TopicLogDirSummary `json:"logDirSummary"`
 
 	// What actions the logged in user is allowed to run on this topic
@@ -72,6 +82,16 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 			}
 		}
 
+		docs := s.GetTopicDocumentation(topicName)
+		docState := DocumentationStateUnknown
+		if !docs.IsEnabled {
+			docState = DocumentationStateNotConfigured
+		} else if docs.Markdown == nil {
+			docState = DocumentationStateNotExistent
+		} else {
+			docState = DocumentationStateAvailable
+		}
+
 		res[i] = &TopicSummary{
 			TopicName:         topicName,
 			IsInternal:        topic.IsInternal,
@@ -79,6 +99,7 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 			ReplicationFactor: len(topic.Partitions[0].Replicas),
 			CleanupPolicy:     policy,
 			LogDirSummary:     logDirsByTopic[topicName],
+			Documentation:     docState,
 		}
 	}
 
