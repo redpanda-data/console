@@ -881,13 +881,22 @@ export interface ClusterConnectors { // ClusterConnectors
     canDeleteCluster: boolean;
 }
 
+// https://docs.confluent.io/home/connect/monitoring.html#connector-and-task-status
+export enum ConnectorState {
+    Unassigned = 'UNASSIGNED',
+    Running = 'RUNNING',
+    Paused = 'PAUSED',
+    Failed = 'FAILED',
+}
+export type TaskState = ConnectorState;
+
 export interface ClusterConnectorInfo {
     name: string;
     class: string; // java class name
     config: object; // map[string]string
     type: string;  // Source or Sink
     topic: string; // Kafka Topic name
-    state: string; // Running, ...
+    state: ConnectorState;
 
     totalTasks: number;
     runningTasks: number;
@@ -899,9 +908,12 @@ export interface ClusterConnectorInfo {
 
 export interface ClusterConnectorTaskInfo {
     taskId: number;
-    state: string;
+    state: TaskState;
     workerId: string;
 }
+
+
+
 
 // GET "/kafka-connect/clusters/{clusterName}"
 export interface ClusterAdditionalInfo {

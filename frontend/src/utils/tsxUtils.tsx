@@ -401,12 +401,12 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 }
 
 // todo: layoutbypass and zerosizewrapper do the same thing, merge them.
-export class LayoutBypass extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string }> {
+export class LayoutBypass extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string, positionContentAbsolute?: boolean, noTransform?: boolean }> {
 
     static readonly style: CSSProperties = {
         display: 'inline-flex',
         width: '0px', height: '0px',
-        transform: 'translateY(-1px)',
+        transform: 'translateY(-0.5px)',
         // zIndex: 1,
         justifyContent: 'center',
         alignItems: 'center',
@@ -420,7 +420,7 @@ export class LayoutBypass extends Component<{ width?: string, height?: string, j
         }
 
         return <span className='verticalCenter' style={style}>
-            <span>
+            <span style={p.positionContentAbsolute ? { position: 'absolute' } : undefined}>
                 {this.props.children}
             </span>
         </span>
@@ -467,7 +467,8 @@ export const Ellipsis = (p: { children?: React.ReactNode, className?: string }) 
     return <span className={p.className} style={ellipsisSpanStyle}>{p.children}</span>
 }
 
-export const Code = (p: { children?: React.ReactNode }) => {
-    return <span className="codeBox">{p.children}</span>
+export const Code = (p: { children?: React.ReactNode, nowrap?: boolean }) => {
+    const className = p.nowrap ? 'codeBox nowrap' : 'codebox';
+    return <span className={className}>{p.children}</span>
 }
 

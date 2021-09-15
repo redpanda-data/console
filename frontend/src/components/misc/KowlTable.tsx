@@ -18,6 +18,7 @@ type EnumFilter = {
         displayName?: string;
     }[];
     optionClassName?: string;
+    toDisplay?: (value: any) => string,
 };
 
 type NumericFilter = {
@@ -27,7 +28,7 @@ type NumericFilter = {
 //type antdFilterProps = 'filters' | 'filterDropdown' | 'filterDropdownVisible' | 'filterIcon' | 'filterMultiple' | 'filtered' | 'filteredValue' | 'onFilter' | 'onFilterDropdownVisibleChange' | 'defaultFilteredValue';
 type antdFilterProps = 'defaultFilteredValue';
 
-type KowlColumnType<T> = Omit<ColumnType<T>, antdFilterProps | 'render'> & {
+export type KowlColumnType<T> = Omit<ColumnType<T>, antdFilterProps | 'render'> & {
     filterType?: EnumFilter | NumericFilter;
     render?: (value: any, record: T, index: number, highlight: (text: string) => JSX.Element) => React.ReactNode;
 };
@@ -155,7 +156,7 @@ export class KowlTable<T extends object = any> extends Component<{
 
             if (searchColumn) {
                 searchColumn.filterIcon = filterIcon(this.filterActive);
-                searchColumn.filterDropdownVisible = this.filterOpen;
+                searchColumn.filterDropdownVisible = false;
             }
         });
 
@@ -231,7 +232,7 @@ export class KowlTable<T extends object = any> extends Component<{
             }
         };
 
-        this.searchColumn.filterDropdown = <></>;
+        this.searchColumn.filterDropdown = (p) => null;
         this.searchColumn.onFilterDropdownVisibleChange = visible => {
             // only accept requests to open the filter
             if (visible)
@@ -266,7 +267,8 @@ export class KowlTable<T extends object = any> extends Component<{
                         if (givenValues.has(val)) continue; // no duplicates
 
                         givenValues.add(val);
-                        col.filters.push({ value: val, text: String(val) });
+                        const display = col.filterType.toDisplay?.(val) ?? String(val);
+                        col.filters.push({ value: val, text: display });
                     }
                 }
 

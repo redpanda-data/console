@@ -15,7 +15,7 @@ import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
-import { ClusterStatisticsCard, ConnectorClass, NotConfigured, removeNamespace } from './helper';
+import { ClusterStatisticsCard, ConnectorClass, NotConfigured, removeNamespace, TasksColumn, TaskState } from './helper';
 
 
 @observer
@@ -87,23 +87,20 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 {
                                     width: 100,
                                     title: 'Type', dataIndex: 'type',
+                                    className: 'capitalize',
                                     sorter: sortField('type')
 
                                 },
                                 {
                                     width: 120,
                                     title: 'State', dataIndex: 'state',
-                                    sorter: sortField('type')
+                                    render: (_, r) => <TaskState state={r.state} />,
+                                    sorter: sortField('state')
 
                                 },
                                 {
                                     width: 120,
-                                    title: 'Tasks', render: (_, c) => {
-                                        return <>
-                                            <span style={mr05}>{c.runningTasks} / {c.totalTasks}</span>
-                                            {c.runningTasks < c.totalTasks ? warnIcon : okIcon}
-                                        </>
-                                    }
+                                    title: 'Tasks', render: (_, c) => <TasksColumn observable={c} />
                                 }
                             ]}
                             search={{
@@ -150,6 +147,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 },
                                 {
                                     title: 'Type', dataIndex: 'type',
+                                    className: 'capitalize',
                                     sorter: sortField('type')
                                 },
                                 {
@@ -184,10 +182,5 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 }
 
 export default KafkaClusterDetails;
-
-const okIcon = <CheckCircleTwoTone twoToneColor='#52c41a' />;
-const warnIcon = <WarningTwoTone twoToneColor='orange' />;
-const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
-const mr05: CSSProperties = { marginRight: '.5em' };
 
 

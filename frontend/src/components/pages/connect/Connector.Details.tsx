@@ -24,7 +24,7 @@ import Editor from "@monaco-editor/react";
 
 // Monaco Type
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
-import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, OverviewStatisticsCard } from './helper';
+import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, OverviewStatisticsCard, TaskState } from './helper';
 export type Monaco = typeof monacoType;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -310,30 +310,20 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                 {
                                     title: 'Task', dataIndex: 'taskId', width: 200,
                                     sorter: sortField('taskId'), defaultSortOrder: 'ascend',
-                                    render: (v) => <Code>Task-{v}</Code>
+                                    render: (v) => <Code nowrap>Task-{v}</Code>
                                 },
                                 {
                                     title: 'Status', dataIndex: 'state', sorter: sortField('state'),
-                                    render: v => <>
-                                        <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '17px', display: 'inline-block', marginRight: '4px' }}>
-                                                {v == 'FAILED'
-                                                    ? errIcon
-                                                    : v == 'RUNNING'
-                                                        ? okIcon : warnIcon}
-                                            </span>
-                                            {v}
-                                        </span>
-                                    </>
+                                    render: (_, r) => <TaskState state={r.state} />
                                 },
                                 {
                                     title: 'Worker', dataIndex: 'workerId', sorter: sortField('workerId'),
-                                    render: (v) => <Code>{v}</Code>
+                                    render: (_, r) => <Code nowrap>{r.workerId}</Code>
                                 },
                                 {
                                     title: 'Actions', width: 150,
-                                    render: (_, task) => <TaskActionsColumn
-                                        clusterName={clusterName} connectorName={connectorName} taskId={task.taskId}
+                                    render: (_, r) => <TaskActionsColumn
+                                        clusterName={clusterName} connectorName={connectorName} taskId={r.taskId}
                                         getRestartingTask={() => this.restartingTask}
                                         setRestartingTask={t => this.restartingTask = t}
                                     />
@@ -361,7 +351,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                     target={() => this.pausingConnector}
                     clearTarget={() => this.pausingConnector = null}
 
-                    content={(c) => <>Pause connector <strong>{c.name}</strong>?</>}
+                    content={(c) => <>{isRunning ? 'Pause' : 'Resume'} connector <strong>{c.name}</strong>?</>}
                     successMessage={(c) => <> {isRunning ? 'Paused' : 'Resumed'} connector <strong>{c.name}</strong></>}
 
                     onOk={async (c) => {

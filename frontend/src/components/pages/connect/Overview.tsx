@@ -20,7 +20,7 @@ import { KowlTable } from '../../misc/KowlTable';
 import SearchBar from '../../misc/SearchBar';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
-import { ConnectorClass, NotConfigured, OverviewStatisticsCard } from './helper';
+import { ConnectorClass, ConnectorsColumn, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 
 
 
@@ -68,9 +68,6 @@ class KafkaConnectOverview extends PageComponent {
 
 export default KafkaConnectOverview;
 
-const okIcon = <CheckCircleTwoTone twoToneColor='#52c41a' />;
-const warnIcon = <WarningTwoTone twoToneColor='orange' />;
-const mr05: CSSProperties = { marginRight: '.5em' };
 
 
 class TabClusters extends Component {
@@ -94,21 +91,11 @@ class TabClusters extends Component {
                 { title: 'Version', render: (_, r) => r.clusterInfo.version, sorter: sortField('clusterAddress') },
                 {
                     width: 150,
-                    title: 'Connectors', render: (_, r) => <>
-                        <span style={mr05}>{r.runningConnectors} / {r.totalConnectors}</span>
-                        {r.runningConnectors < r.totalConnectors ? warnIcon : okIcon}
-                    </>
+                    title: 'Connectors', render: (_, r) => <ConnectorsColumn observable={r} />
                 },
                 {
                     width: 150,
-                    title: 'Tasks', render: (_, r) => {
-                        const runningTasks = r.connectors.sum(x => x.runningTasks);
-                        const totalTasks = r.connectors.sum(x => x.totalTasks);
-                        return <>
-                            <span style={mr05}>{runningTasks} / {totalTasks}</span>
-                            {runningTasks < totalTasks ? warnIcon : okIcon}
-                        </>
-                    }
+                    title: 'Tasks', render: (_, r) => <TasksColumn observable={r.connectors} />
                 },
             ]}
             search={{
@@ -156,25 +143,22 @@ class TabConnectors extends Component {
                 {
                     width: 100,
                     title: 'Type', dataIndex: 'type',
+                    className: 'capitalize',
                     sorter: sortField('type')
                 },
                 {
                     width: 120,
                     title: 'State', dataIndex: 'state',
+                    render: (_, r) => <TaskState state={r.state} />,
                     sorter: sortField('state')
                 },
                 {
                     width: 120,
-                    title: 'Tasks', render: (_, c) => {
-                        return <>
-                            <span style={mr05}>{c.runningTasks} / {c.totalTasks}</span>
-                            {c.runningTasks < c.totalTasks ? warnIcon : okIcon}
-                        </>
-                    }
+                    title: 'Tasks', render: (_, c) => <TasksColumn observable={c} />
                 },
                 {
                     title: 'Cluster',
-                    render: (_, c) => <Code>{c.cluster.clusterName}</Code>,
+                    render: (_, c) => <Code nowrap>{c.cluster.clusterName}</Code>,
                     sorter: (a, b) => String(a.cluster.clusterName).localeCompare(String(b.cluster.clusterName))
                 },
             ]}
@@ -217,9 +201,16 @@ class TabTasks extends Component {
                     )
                 },
                 { title: 'Task ID', dataIndex: 'taskId', sorter: sortField('taskId') },
-                { title: 'State', dataIndex: 'taskState', sorter: sortField('taskState') },
+                {
+                    title: 'State', dataIndex: 'taskState',
+                    render: (_, r) => <TaskState state={r.state} />,
+                    sorter: sortField('taskState')
+                },
                 { title: 'Worker', dataIndex: 'taskWorkerId', sorter: sortField('taskWorkerId') },
-                { title: 'Cluster', render: (_, c) => <Code>{c.cluster.clusterName}</Code> },
+                {
+                    title: 'Cluster',
+                    render: (_, c) => <Code nowrap>{c.cluster.clusterName}</Code>
+                },
             ]}
             rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name + r.taskId}
 
@@ -247,3 +238,4 @@ const connectTabs: Tab[] = [
     { key: 'connectors', title: 'Connectors', content: <TabConnectors /> },
     { key: 'tasks', title: 'Tasks', content: <TabTasks /> },
 ];
+

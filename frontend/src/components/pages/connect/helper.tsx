@@ -6,7 +6,7 @@ import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
 
 import { api } from '../../../state/backendApi';
-import { ClusterConnectorInfo } from '../../../state/restInterfaces';
+import { ClusterConnectorInfo, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
 import { animProps } from '../../../utils/animationProps';
 import { findPopupContainer, LayoutBypass } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
@@ -28,6 +28,7 @@ import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
 import CassandraLogo from '../../../assets/connectors/cassandra.png';
 import DB2Logo from '../../../assets/connectors/db2.png';
 import { action, makeObservable, observable, runInAction } from 'mobx';
+import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleFilled, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -190,19 +191,17 @@ export const ConnectorClass = React.memo((props: { connector: ClusterConnectorIn
     else {
         // We found custom metadata
         // Show connector logo
-        content = <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
+        content = <span style={{ display: 'flex', gap: '.5em', alignItems: 'center', verticalAlign: 'inherit' }}>
             {meta.logo &&
-                <LayoutBypass height='0px' width='26px'>
-                    {/* <span style={{ display: 'inline-block', maxHeight: '0px' }}> */}
+                <LayoutBypass height='0px' width='27px'>
                     {meta.logo}
-                    {/* </span> */}
                 </LayoutBypass>
             }
             {displayName}
         </span>
     }
 
-    return <span>
+    return <>
         <Popover placement='right' overlayClassName='popoverSmall'
             getPopupContainer={findPopupContainer}
             content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
@@ -211,7 +210,7 @@ export const ConnectorClass = React.memo((props: { connector: ClusterConnectorIn
         >
             {content}
         </Popover>
-    </span>
+    </>
 });
 
 export function removeNamespace(className: string): string {
@@ -374,3 +373,75 @@ export class ConfirmModal<T> extends Component<{
         </Modal>
     }
 }
+
+// Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
+// or an array of connectors (in which case it will show the sum)
+type TaskInfo = { runningTasks: number, totalTasks: number };
+export const TasksColumn = observer((props: { observable: TaskInfo | TaskInfo[] }) => {
+
+    let running = 0;
+    let total = 0;
+    if ('runningTasks' in props.observable) {
+        running = props.observable.runningTasks;
+        total = props.observable.totalTasks;
+    } else {
+        running = props.observable.sum(x => x.runningTasks);
+        total = props.observable.sum(x => x.totalTasks);
+    }
+
+    return <>
+        <span>{running} / {total}</span>
+        {running < total ? <span style={ml05}>{warnIcon}</span> : null}
+    </>
+});
+
+type ConnectorInfo = { runningConnectors: number, totalConnectors: number };
+export const ConnectorsColumn = observer((props: { observable: ConnectorInfo | ConnectorInfo[] }) => {
+
+    let running = 0;
+    let total = 0;
+    if ('runningConnectors' in props.observable) {
+        running = props.observable.runningConnectors;
+        total = props.observable.totalConnectors;
+    } else {
+        running = props.observable.sum(x => x.runningConnectors);
+        total = props.observable.sum(x => x.totalConnectors);
+    }
+
+    return <>
+        <span>{running} / {total}</span>
+        {running < total ? <span style={ml05}>{warnIcon}</span> : null}
+    </>
+});
+
+
+
+export const TaskState = observer((p: { state: ClusterConnectorTaskInfo['state'] }) => {
+    const state = p.state;
+    const iconWrapper = (icon: JSX.Element) => <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle' }}>
+        <LayoutBypass width='17px'>
+            {icon}
+        </LayoutBypass>
+    </span>
+
+    let icon: JSX.Element = <></>;
+    if (state == ConnectorState.Running) icon = iconWrapper(okIcon);
+    if (state == ConnectorState.Failed) icon = iconWrapper(errIcon);
+    if (state == ConnectorState.Paused) icon = iconWrapper(pauseIcon);
+    if (state == ConnectorState.Unassigned) icon = iconWrapper(waitIcon);
+
+    return <span style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'atuo' }} className='capitalize'>
+        {icon}
+        {String(state).toLowerCase()}
+    </span>
+});
+
+
+const okIcon = <CheckCircleTwoTone />;
+const warnIcon = <WarningTwoTone twoToneColor='orange' />;
+const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
+const waitIcon = <HourglassTwoTone twoToneColor='#888' />;
+const pauseIcon = <span style={{ color: '#555' }}><PauseCircleOutlined /></span>;
+
+const mr05: CSSProperties = { marginRight: '.5em' };
+const ml05: CSSProperties = { marginLeft: '.5em' };
