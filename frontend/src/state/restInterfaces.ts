@@ -159,7 +159,7 @@ export interface ConfigEntry {
     isReadOnly: boolean,
     isSensitive: boolean,
     // documentation: string, // remvoed for now, we have documentation locally in the frontend
-    synonyms: ConfigEntrySynonym[]
+    synonyms: ConfigEntrySynonym[] | undefined;
 }
 
 interface ConfigEntrySynonym {

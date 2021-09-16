@@ -376,7 +376,25 @@ const apiStore = {
 
     async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
         const promise = cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
-            .then(v => this.topicConfig.set(topicName, addSynonymTypes(v) ?? null), addError); // 403 -> null
+            .then(v => {
+                if (!v) {
+                    this.topicConfig.delete(topicName);
+                    return;
+                }
+
+                if (v.topicDescription.error) {
+                    this.topicConfig.set(topicName, v.topicDescription);
+                    return;
+                }
+
+                // add 'type' to each synonym
+                // in the raw data, only the root entries have 'type', but the nested synonyms do not
+                // we need 'type' on synonyms as well for filtering
+                const topicDescription = v.topicDescription;
+                prepareSynonyms(topicDescription.configEntries);
+                this.topicConfig.set(topicName, topicDescription);
+
+            }, addError); // 403 -> null
         return promise as Promise<void>;
     },
 
@@ -616,6 +634,12 @@ const apiStore = {
                 transaction(() => {
                     // don't assign if the value didn't change
                     // we'd re-trigger all observers!
+
+                    // add 'type' to each synonym entry
+                    for (const broker of v.clusterInfo.brokers)
+                        if (broker.config && !broker.config.error)
+                            prepareSynonyms(broker.config.configs)
+
                     if (!comparer.structural(this.clusterInfo, v.clusterInfo))
                         this.clusterInfo = v.clusterInfo;
 
@@ -625,15 +649,17 @@ const apiStore = {
                         else
                             this.brokerConfigs.set(b.brokerId, b.config.configs);
                 });
-
             }, addError);
     },
 
     refreshBrokerConfig(brokerId: number, force?: boolean) {
         cachedApiRequest<BrokerConfigResponse | ApiError>(`./api/brokers/${brokerId}/config`, force).then(v => {
             if ('message' in v) {
-                this.brokerConfigs.set(brokerId, v.message); // error
+                // error
+                this.brokerConfigs.set(brokerId, v.message);
             } else {
+                // success
+                prepareSynonyms(v.brokerConfigs);
                 this.brokerConfigs.set(brokerId, v.brokerConfigs);
             }
         }).catch(addError);
@@ -1142,14 +1168,30 @@ export const brokerMap = computed(() => {
 }, { name: 'brokerMap', equals: comparer.structural });
 
 
-function addSynonymTypes(topicConfigResponse: TopicConfigResponse | null): TopicDescription | null {
-    topicConfigResponse?.topicDescription.configEntries.forEach(configEntry => {
-        configEntry.synonyms.forEach(synonym => {
-            synonym.type = configEntry.type
-        })
-    })
-    return topicConfigResponse?.topicDescription ?? null;
+// 1. add 'type' to each synonym, so when expanding a config entry (to view its synonyms), we can still see the type
+// 2. remove redundant synonym entries (those that have the same source as the root config entry)
+function prepareSynonyms(configEntries: ConfigEntry[]) {
+    for (const e of configEntries) {
+        if (e.synonyms == undefined)
+            continue;
+
+        // remove redundant entry
+        if (e.synonyms.length > 0)
+            if (e.synonyms[0].source == e.source)
+                e.synonyms.splice(0, 1);
+
+        if (e.synonyms.length == 0) {
+            // delete empty arrays, otherwise Tables will show this entry as 'expandable' even though it has no children
+            delete e.synonyms;
+            continue;
+        }
+
+        // add 'type' from root object
+        for (const s of e.synonyms)
+            s.type = e.type;
+    }
 }
+
 
 export function aclRequestToQuery(request: AclRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);
