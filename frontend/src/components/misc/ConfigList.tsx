@@ -5,9 +5,10 @@ import { ConfigEntry } from '../../state/restInterfaces';
 import { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
 import { findPopupContainer } from '../../utils/tsxUtils';
+import { sortField } from './common';
 
 import styles from './ConfigList.module.scss';
-import { KowlTable } from './KowlTable';
+import { KowlColumnType, KowlTable } from './KowlTable';
 
 function filterRedundantSynonyms({ synonyms, ...rest }: ConfigEntry): Partial<ConfigEntry> {
     if (synonyms?.length <= 1) {
@@ -19,7 +20,7 @@ function filterRedundantSynonyms({ synonyms, ...rest }: ConfigEntry): Partial<Co
 
 
 export function ConfigList({ configEntries, valueDisplay }: { configEntries: ConfigEntry[]; valueDisplay: ValueDisplay }) {
-    const columns = [
+    const columns: KowlColumnType<Partial<ConfigEntry>>[] = [
         {
             title: 'Configuration',
             dataIndex: 'name',
@@ -53,7 +54,9 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
         {
             title: 'Type',
             dataIndex: 'type',
-            render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span>
+            render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span>,
+            filterType: { type: 'enum', toDisplay: x => String(x).toLowerCase(), optionClassName: 'capitalize' },
+            sorter: sortField('type')
         },
         {
             title: (
@@ -70,9 +73,11 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
                 <span className={styles.source}>{text
                     .toLowerCase()
                     .split('_')
-                    .map((s) => s.replace(/^\w/, (c) => c.toUpperCase()))
                     .join(' ')}
                 </span>,
+            filterType: { type: 'enum' },
+            sorter: sortField('source')
+
         },
     ];
     return (

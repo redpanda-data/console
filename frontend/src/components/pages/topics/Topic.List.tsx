@@ -60,11 +60,6 @@ class TopicList extends PageComponent {
         api.refreshTopics(force);
     }
 
-    @computed get topics() {
-        if (!api.topics) return [];
-        return api.topics.filter((t) => (uiSettings.topicList.hideInternalTopics && t.isInternal ? false : true));
-    }
-
     isFilterMatch(filter: string, item: Topic): boolean {
         if (item.topicName.toLowerCase().includes(filter.toLowerCase())) return true;
         return false;
@@ -73,7 +68,7 @@ class TopicList extends PageComponent {
     render() {
         if (!api.topics) return DefaultSkeleton;
 
-        const topics = this.topics;
+        const topics = api.topics;
 
         const partitionCountReal = topics.sum((x) => x.partitionCount);
         const partitionCountOnlyReplicated = topics.sum((x) => x.partitionCount * (x.replicationFactor - 1));
@@ -105,16 +100,6 @@ class TopicList extends PageComponent {
                 </Card>
 
                 <Card>
-                    <Row justify="space-between" align="middle">
-                        <Col span="auto">
-                        </Col>
-                        <Col>
-                            <Checkbox style={{ paddingLeft: '1rem', marginLeft: 'auto' }} checked={uiSettings.topicList.hideInternalTopics} onChange={(e) => (uiSettings.topicList.hideInternalTopics = e.target.checked)}>
-                                Hide internal topics
-                            </Checkbox>
-                        </Col>
-                    </Row>
-
                     <KowlTable
                         dataSource={topics}
                         rowKey={(x) => x.topicName}
@@ -126,18 +111,20 @@ class TopicList extends PageComponent {
                                 title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1,
                                 filterType: {
                                     type: 'enum',
-                                    optionClassName: 'transform-caps'
+                                    optionClassName: 'capitalize'
                                 },
                                 sorter: sortField('cleanupPolicy'),
                             },
-                            { title: 'Size', render: (t, r) => renderLogDirSummary(r.logDirSummary), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes, width: '140px' },
+                            {
+                                title: 'Size', render: (t, r) => renderLogDirSummary(r.logDirSummary), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes, width: '140px',
+                            },
                             {
                                 width: 1,
                                 title: ' ',
                                 key: 'action',
                                 className: 'msgTableActionColumn',
                                 render: (text, record) => (
-                                    <div style={{ paddingRight: '.5em', display: 'flex', gap: '4px' }}>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
                                         <DeleteDisabledTooltip topic={record}>
                                             <Button
                                                 type="text"
