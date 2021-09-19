@@ -1,4 +1,4 @@
-import { EyeInvisibleTwoTone, InfoCircleFilled, LockOutlined } from '@ant-design/icons';
+import { EditTwoTone, EyeInvisibleTwoTone, InfoCircleFilled, LockOutlined, LockTwoTone } from '@ant-design/icons';
 import { Popover, Table, Tooltip } from 'antd';
 import React, { useState } from 'react';
 import { ConfigEntry } from '../../state/restInterfaces';
@@ -20,14 +20,19 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
                     <Tooltip overlay={text} getPopupContainer={findPopupContainer} mouseEnterDelay={0.25}>
                         <span className={styles.nameText}>{text}</span>
                     </Tooltip>
-                    {record.isSensitive && <span className={styles.configFlags}>
-                        <Tooltip overlay="Value has been redacted because it's sensitive">
-                            {record.isSensitive && <EyeInvisibleTwoTone twoToneColor="#1890ff" />}
-                        </Tooltip>
+                    {(record.isSensitive || record.isExplicitlySet || record.isReadOnly) && <span className={styles.configFlags}>
 
-                        {/* value reported by kafka seems to be wrong (?) so we'll not display the value */}
-                        {/* {record.isReadOnly && <LockOutlined twoToneColor="#1890ff" style={{ color: '#1890ff' }} />} */}
+                        {/*
+                        {record.isExplicitlySet && <Tooltip overlay="Value was set explicitly">
+                            <EditTwoTone twoToneColor="#1890ff" />
+                        </Tooltip>} */}
+
+                        {record.isSensitive && <Tooltip overlay="Value has been redacted because it's sensitive">
+                            <EyeInvisibleTwoTone twoToneColor="#1890ff" />
+                        </Tooltip>}
+
                     </span>}
+
                 </div>
             )
         },
@@ -41,7 +46,7 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
             ),
         },
         {
-            title: 'Type',
+            title: 'Type', width: '120px',
             dataIndex: 'type',
             render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span>,
             filterType: { type: 'enum', toDisplay: x => String(x).toLowerCase(), optionClassName: 'capitalize' },
@@ -61,14 +66,14 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
                     </Tooltip>
                 </span>
             ),
-            dataIndex: 'source',
+            dataIndex: 'source', width: '180px',
             render: (text: string) =>
                 <span className={styles.source}>{text
                     .toLowerCase()
                     .split('_')
                     .join(' ')}
                 </span>,
-            filterType: { type: 'enum' },
+            filterType: { type: 'enum', toDisplay: x => x.toLowerCase().split('_').join(' '), optionClassName: 'capitalize' },
             sorter: sortField('source')
 
         },
