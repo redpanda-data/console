@@ -6,7 +6,7 @@ import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
 
 import { api } from '../../../state/backendApi';
-import { ClusterConnectorInfo, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
+import { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
 import { animProps } from '../../../utils/animationProps';
 import { findPopupContainer, LayoutBypass } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
@@ -376,45 +376,59 @@ export class ConfirmModal<T> extends Component<{
 
 // Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
 // or an array of connectors (in which case it will show the sum)
-type TaskInfo = { runningTasks: number, totalTasks: number };
-export const TasksColumn = observer((props: { observable: TaskInfo | TaskInfo[] }) => {
+
+export const TasksColumn = observer((props: { observable: ClusterConnectors | ClusterConnectorInfo }) => {
+    const obs = props.observable;
 
     let running = 0;
     let total = 0;
-    if ('runningTasks' in props.observable) {
-        running = props.observable.runningTasks;
-        total = props.observable.totalTasks;
-    } else {
-        running = props.observable.sum(x => x.runningTasks);
-        total = props.observable.sum(x => x.totalTasks);
+
+    if ('error' in obs && obs.error != null)
+        return null;
+
+    if ('clusterName' in obs) {
+        // ClusterConnectors
+        if (obs.error) return null;
+        running = obs.connectors.sum(x => x.runningTasks);
+        total = obs.connectors.sum(x => x.totalTasks);
+    } else if ('name' in obs) {
+        // ClusterConnectorInfo
+        running = obs.runningTasks;
+        total = obs.totalTasks;
     }
 
     return <>
+        {running < total ? <span style={mr05}>{warnIcon}</span> : null}
         <span>{running} / {total}</span>
-        {running < total ? <span style={ml05}>{warnIcon}</span> : null}
     </>
 });
 
-type ConnectorInfo = { runningConnectors: number, totalConnectors: number };
+type ConnectorInfo = { runningConnectors: number, totalConnectors: number, error?: string };
 export const ConnectorsColumn = observer((props: { observable: ConnectorInfo | ConnectorInfo[] }) => {
 
     let running = 0;
     let total = 0;
+    let error: string | undefined = undefined;
     if ('runningConnectors' in props.observable) {
         running = props.observable.runningConnectors;
         total = props.observable.totalConnectors;
+        error = props.observable.error;
     } else {
+        if (props.observable.length == 0)
+            return null;
+        error = props.observable[0].error;
         running = props.observable.sum(x => x.runningConnectors);
         total = props.observable.sum(x => x.totalConnectors);
     }
 
+    if (error)
+        return null;
+
     return <>
+        {running < total ? <span style={mr05}>{warnIcon}</span> : null}
         <span>{running} / {total}</span>
-        {running < total ? <span style={ml05}>{warnIcon}</span> : null}
     </>
 });
-
-
 
 export const TaskState = observer((p: { state: ClusterConnectorTaskInfo['state'] }) => {
     const state = p.state;
@@ -430,7 +444,7 @@ export const TaskState = observer((p: { state: ClusterConnectorTaskInfo['state']
     if (state == ConnectorState.Paused) icon = iconWrapper(pauseIcon);
     if (state == ConnectorState.Unassigned) icon = iconWrapper(waitIcon);
 
-    return <span style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'atuo' }} className='capitalize'>
+    return <span style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }} className='capitalize'>
         {icon}
         {String(state).toLowerCase()}
     </span>
@@ -439,9 +453,9 @@ export const TaskState = observer((p: { state: ClusterConnectorTaskInfo['state']
 
 const okIcon = <CheckCircleTwoTone />;
 const warnIcon = <WarningTwoTone twoToneColor='orange' />;
-const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
+export const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
 const waitIcon = <HourglassTwoTone twoToneColor='#888' />;
 const pauseIcon = <span style={{ color: '#555' }}><PauseCircleOutlined /></span>;
 
-const mr05: CSSProperties = { marginRight: '.5em' };
+export const mr05: CSSProperties = { marginRight: '.5em' };
 const ml05: CSSProperties = { marginLeft: '.5em' };

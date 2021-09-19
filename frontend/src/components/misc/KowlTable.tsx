@@ -195,7 +195,6 @@ export class KowlTable<T extends object = any> extends Component<{
         this.searchColumn = cols[props.search.searchColumnIndex] as KowlColumnTypeInternal<T> | undefined;
         if (!this.searchColumn) {
             console.warn('search column index is invalid', { index: props.search.searchColumnIndex, columns: cols });
-            //throw new Error(`Couldn't find 'serachColumn' titled '${props.search?.columnTitle}'`);
             return;
         }
 

@@ -20,7 +20,7 @@ import { KowlTable } from '../../misc/KowlTable';
 import SearchBar from '../../misc/SearchBar';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
-import { ConnectorClass, ConnectorsColumn, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
+import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 
 
 
@@ -80,12 +80,20 @@ class TabClusters extends Component {
             columns={[
                 {
                     title: 'Cluster', dataIndex: 'clusterName',
-                    render: (_, r) => (
-                        <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
+                    render: (_, r) => {
+
+                        if (r.error) {
+                            return <Tooltip overlay={r.error} getPopupContainer={findPopupContainer}>
+                                <span style={mr05}>{errIcon}</span>
+                                {r.clusterName}
+                            </Tooltip>
+                        }
+
+                        return <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
                             onClick={() => appGlobal.history.push(`/kafka-connect/${r.clusterName}`)}>
                             {r.clusterName}
                         </span>
-                    ),
+                    },
                     sorter: sortField('clusterName'), defaultSortOrder: 'ascend'
                 },
                 { title: 'Version', render: (_, r) => r.clusterInfo.version, sorter: sortField('clusterAddress') },
@@ -95,7 +103,7 @@ class TabClusters extends Component {
                 },
                 {
                     width: 150,
-                    title: 'Tasks', render: (_, r) => <TasksColumn observable={r.connectors} />
+                    title: 'Tasks', render: (_, r) => <TasksColumn observable={r} />
                 },
             ]}
             search={{
@@ -126,7 +134,7 @@ class TabConnectors extends Component {
                     title: 'Connector', dataIndex: 'name',
                     width: '35%',
                     render: (_, r) => (
-                        <Tooltip placement="topLeft" title={r.name}>
+                        <Tooltip placement="topLeft" title={r.name} getPopupContainer={findPopupContainer}>
                             <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
                                 onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
                                 {r.name}
