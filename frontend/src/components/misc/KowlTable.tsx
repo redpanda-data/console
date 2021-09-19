@@ -5,11 +5,12 @@ import styles from './KowlTable.module.scss';
 import { ColumnFilterItem, ColumnTitleProps, ExpandableConfig, FilterDropdownProps, TablePaginationConfig } from "antd/lib/table/interface";
 import { uiState } from "../../state/uiState";
 import { DEFAULT_TABLE_PAGE_SIZE } from "./common";
-import { action, autorun, comparer, computed, IReactionDisposer, IReactionPublic, makeObservable, observable, reaction, runInAction, spy, transaction } from "mobx";
+import { action, autorun, comparer, computed, IReactionDisposer, IReactionPublic, makeObservable, observable, reaction, transaction } from "mobx";
 import { observer } from "mobx-react";
 import { clone } from "../../utils/jsonUtils";
 import { SearchOutlined } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
+import { findPopupContainer } from "../../utils/tsxUtils";
 
 type EnumFilter = {
     type: 'enum',
@@ -110,11 +111,11 @@ export class KowlTable<T extends object = any> extends Component<{
         const disposers = this.reactionDisposers;
         const ar = function <T>(data: () => T, effect: (prev: T, cur: T, count: number) => void, delay?: number) {
             let count = 0;
-            const newEffect = (cur: any, prev: any) => {
+            const newEffect = (cur: any, prev: any, r: IReactionPublic) => {
                 effect(prev, cur, ++count);
             };
             const d = reaction(data, newEffect, {
-                equals: customComparer,
+                equals: customComparerIsSame,
                 delay: delay,
                 fireImmediately: true,
             });
@@ -136,7 +137,7 @@ export class KowlTable<T extends object = any> extends Component<{
         });
 
         // Keep search column up to date ('active state' of the filter icon etc)
-        ar(() => ({ query: this.observableSettings.quickSearch, searchColumn: this.searchColumn, filterOpen: this.filterOpen }), (prev, cur, count) => {
+        ar(() => ({ query: this.observableSettings.quickSearch, searchColumn: this.searchColumn, filterOpen: this.filterOpen, oriCols: this.props.columns }), (prev, cur, count) => {
             const { searchColumn } = cur;
 
             if (cur.query && cur.query.length > 0) {
@@ -243,10 +244,6 @@ export class KowlTable<T extends object = any> extends Component<{
     }
 
     @action ensureFiltersAreUpdated(data: readonly T[] | undefined) {
-        console.log('update filter column props', { data, custom: this.customColumns });
-
-        if (!data) return;
-
         // Filter columns
         for (const col of this.customColumns) {
 
@@ -260,7 +257,7 @@ export class KowlTable<T extends object = any> extends Component<{
                 })) ?? [];
 
                 // Add missing values
-                if (typeof col.dataIndex == 'string') {
+                if (typeof col.dataIndex == 'string' && data) {
                     const givenValues = new Set(col.filterType.filterEnumOptions?.map(x => x.value) ?? []);
 
                     for (const row of data) {
@@ -324,14 +321,6 @@ export class KowlTable<T extends object = any> extends Component<{
 
     renderCount = 0;
     render() {
-        // spy(change => {
-        //     if (change.type == 'add' || change.type == 'report-end') return;
-        //     console.log('spy', change);
-        // })
-        console.log('table render ' + (++this.renderCount), {
-            filters: this.customColumns.map(x => `${x.dataIndex}[${x.filters?.length ?? ''} filters]`).join(',  ')
-        });
-
         const p = this.props;
         if (p.dataSource)
             this.currentDataSource = p.dataSource;
@@ -342,7 +331,6 @@ export class KowlTable<T extends object = any> extends Component<{
         // trigger mobx update
         const unused1 = pagination.pageSize;
         const unused2 = pagination.current;
-
 
         return <>
             <Table<T>
@@ -360,6 +348,7 @@ export class KowlTable<T extends object = any> extends Component<{
 
                 pagination={pagination}
 
+                getPopupContainer={findPopupContainer}
                 expandable={p.expandable}
                 footer={currentView => {
                     // todo: additional footer elements
@@ -547,7 +536,7 @@ function filterIcon(filterActive: boolean) {
 }
 
 // like structural comparer, but ignores functions
-function customComparer<T>(a: T, b: T, remainingDepth?: number): boolean {
+function customComparerIsSame<T>(a: T, b: T, remainingDepth?: number): boolean {
     if (remainingDepth == undefined) remainingDepth = 5;
     if (remainingDepth != undefined && remainingDepth <= 0) return true;
 
@@ -587,7 +576,7 @@ function customComparer<T>(a: T, b: T, remainingDepth?: number): boolean {
         if (typeof aVal != typeof bVal)
             return false;
 
-        if (!customComparer(aVal, bVal, remainingDepth - 1))
+        if (!customComparerIsSame(aVal, bVal, remainingDepth - 1))
             return false;
     }
 
