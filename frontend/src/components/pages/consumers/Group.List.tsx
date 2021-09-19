@@ -96,7 +96,10 @@ class GroupList extends PageComponent {
                     <KowlTable
                         dataSource={groups}
                         columns={[
-                            { title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} /> },
+                            {
+                                title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} />,
+                                filterType: { type: 'enum', }
+                            },
                             {
                                 title: 'ID', dataIndex: 'groupId',
                                 sorter: sortField('groupId'),

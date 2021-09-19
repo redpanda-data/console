@@ -131,9 +131,8 @@ export class KowlTable<T extends object = any> extends Component<{
         });
 
         // Keep our columns up to date (to learn about new values for filtering)
-        ar(() => this.props.dataSource, (prev, cur, count) => {
-            // console.log('dataSource changed ' + count, { prev, cur });
-            this.ensureFiltersAreUpdated(cur);
+        ar(() => ({ data: this.props.dataSource, oriCols: this.props.columns }), (prev, cur, count) => {
+            this.ensureFiltersAreUpdated(cur.data);
         });
 
         // Keep search column up to date ('active state' of the filter icon etc)

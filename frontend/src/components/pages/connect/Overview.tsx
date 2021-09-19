@@ -94,9 +94,12 @@ class TabClusters extends Component {
                             {r.clusterName}
                         </span>
                     },
-                    sorter: sortField('clusterName'), defaultSortOrder: 'ascend'
+                    sorter: sortField('clusterName'), defaultSortOrder: 'ascend',
                 },
-                { title: 'Version', render: (_, r) => r.clusterInfo.version, sorter: sortField('clusterAddress') },
+                {
+                    title: 'Version', render: (_, r) => r.clusterInfo.version, sorter: sortField('clusterAddress'),
+                    filterType: { type: 'enum' },
+                },
                 {
                     width: 150,
                     title: 'Connectors', render: (_, r) => <ConnectorsColumn observable={r} />
@@ -152,13 +155,16 @@ class TabConnectors extends Component {
                     width: 100,
                     title: 'Type', dataIndex: 'type',
                     className: 'capitalize',
-                    sorter: sortField('type')
+                    sorter: sortField('type'),
+                    filterType: { type: 'enum', optionClassName: 'capitalize' },
+
                 },
                 {
                     width: 120,
                     title: 'State', dataIndex: 'state',
                     render: (_, r) => <TaskState state={r.state} />,
-                    sorter: sortField('state')
+                    sorter: sortField('state'),
+                    filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => x ? String(x).toLowerCase() : '' },
                 },
                 {
                     width: 120,
@@ -212,9 +218,13 @@ class TabTasks extends Component {
                 {
                     title: 'State', dataIndex: 'taskState',
                     render: (_, r) => <TaskState state={r.state} />,
-                    sorter: sortField('taskState')
+                    sorter: sortField('taskState'),
+                    filterType: { type: 'enum', optionClassName: 'capitalize' },
                 },
-                { title: 'Worker', dataIndex: 'taskWorkerId', sorter: sortField('taskWorkerId') },
+                {
+                    title: 'Worker', dataIndex: 'taskWorkerId', sorter: sortField('taskWorkerId'),
+                    filterType: { type: 'enum' },
+                },
                 {
                     title: 'Cluster',
                     render: (_, c) => <Code nowrap>{c.cluster.clusterName}</Code>

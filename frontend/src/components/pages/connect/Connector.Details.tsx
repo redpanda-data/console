@@ -314,11 +314,13 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                 },
                                 {
                                     title: 'Status', dataIndex: 'state', sorter: sortField('state'),
-                                    render: (_, r) => <TaskState state={r.state} />
+                                    render: (_, r) => <TaskState state={r.state} />,
+                                    filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => String(x).toLowerCase() },
                                 },
                                 {
                                     title: 'Worker', dataIndex: 'workerId', sorter: sortField('workerId'),
-                                    render: (_, r) => <Code nowrap>{r.workerId}</Code>
+                                    render: (_, r) => <Code nowrap>{r.workerId}</Code>,
+                                    filterType: { type: 'enum' },
                                 },
                                 {
                                     title: 'Actions', width: 150,

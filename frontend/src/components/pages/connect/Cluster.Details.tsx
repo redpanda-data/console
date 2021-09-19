@@ -88,14 +88,16 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     width: 100,
                                     title: 'Type', dataIndex: 'type',
                                     className: 'capitalize',
-                                    sorter: sortField('type')
+                                    sorter: sortField('type'),
+                                    filterType: { type: 'enum', optionClassName: 'capitalize' },
 
                                 },
                                 {
                                     width: 120,
                                     title: 'State', dataIndex: 'state',
                                     render: (_, r) => <TaskState state={r.state} />,
-                                    sorter: sortField('state')
+                                    sorter: sortField('state'),
+                                    filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => String(x).toLowerCase() },
 
                                 },
                                 {
@@ -148,11 +150,13 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 {
                                     title: 'Type', dataIndex: 'type',
                                     className: 'capitalize',
-                                    sorter: sortField('type')
+                                    sorter: sortField('type'),
+                                    filterType: { type: 'enum', optionClassName: 'capitalize', },
                                 },
                                 {
                                     title: 'Version', dataIndex: 'version',
-                                    sorter: sortField('version')
+                                    sorter: sortField('version'),
+                                    filterType: { type: 'enum' },
                                 },
                             ]}
                             search={{
