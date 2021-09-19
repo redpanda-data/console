@@ -99,7 +99,7 @@ class TabClusters extends Component {
                 },
             ]}
             search={{
-                columnTitle: 'Cluster',
+                searchColumnIndex: 0,
                 isRowMatch: (row, regex) => {
                     const isMatch = regex.test(row.clusterName) || regex.test(row.clusterInfo.version);
                     return isMatch;
@@ -163,7 +163,7 @@ class TabConnectors extends Component {
                 },
             ]}
             search={{
-                columnTitle: 'Connector',
+                searchColumnIndex: 0,
                 isRowMatch: (row, regex) => regex.test(row.name)
                     || regex.test(row.class)
                     || regex.test(row.type)
@@ -215,7 +215,7 @@ class TabTasks extends Component {
             rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name + r.taskId}
 
             search={{
-                columnTitle: 'Connector',
+                searchColumnIndex: 0,
                 isRowMatch: (row, regex) => regex.test(row.name)
                     || regex.test(String(row.taskId))
                     || regex.test(row.taskState)

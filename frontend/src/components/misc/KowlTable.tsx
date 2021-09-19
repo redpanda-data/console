@@ -1,11 +1,11 @@
 import React, { ReactNode, Component, CSSProperties } from "react";
-import { Checkbox, Input, Menu, Pagination, Table } from "antd";
+import { Button, Checkbox, Input, Menu, Pagination, Table } from "antd";
 import { ColumnType } from "antd/lib/table";
 import styles from './KowlTable.module.scss';
 import { ColumnFilterItem, ColumnTitleProps, ExpandableConfig, FilterDropdownProps, TablePaginationConfig } from "antd/lib/table/interface";
 import { uiState } from "../../state/uiState";
 import { DEFAULT_TABLE_PAGE_SIZE } from "./common";
-import { action, autorun, comparer, computed, IReactionDisposer, IReactionPublic, makeObservable, observable, reaction, runInAction, transaction } from "mobx";
+import { action, autorun, comparer, computed, IReactionDisposer, IReactionPublic, makeObservable, observable, reaction, runInAction, spy, transaction } from "mobx";
 import { observer } from "mobx-react";
 import { clone } from "../../utils/jsonUtils";
 import { SearchOutlined } from "@ant-design/icons";
@@ -43,7 +43,6 @@ export class KowlTable<T extends object = any> extends Component<{
     dataSource: readonly T[] | undefined
     columns: KowlColumnType<T>[],
     search?: {
-        columnTitle?: string;// todo remove /////////////////////////////////////////////////////////////////////////////////////////////////
         searchColumnIndex?: number;
         isRowMatch: (row: T, regex: RegExp) => boolean,
     }
@@ -137,7 +136,7 @@ export class KowlTable<T extends object = any> extends Component<{
         });
 
         // Keep search column up to date ('active state' of the filter icon etc)
-        ar(() => ({ query: this.props.observableSettings?.quickSearch, searchColumn: this.searchColumn, filterOpen: this.filterOpen }), (prev, cur, count) => {
+        ar(() => ({ query: this.observableSettings.quickSearch, searchColumn: this.searchColumn, filterOpen: this.filterOpen }), (prev, cur, count) => {
             const { searchColumn } = cur;
 
             if (cur.query && cur.query.length > 0) {
@@ -155,16 +154,16 @@ export class KowlTable<T extends object = any> extends Component<{
             }
 
             if (searchColumn) {
-                searchColumn.filterIcon = filterIcon(this.filterActive);
+                searchColumn.filterIcon = this.filterIcon;
                 searchColumn.filterDropdownVisible = false;
             }
         });
 
         // update display data
-        ar(() => ({ data: this.props.dataSource, filterActive: this.filterActive, query: this.props.observableSettings?.quickSearch }), (prev, cur, count) => {
+        ar(() => ({ data: this.props.dataSource, filterActive: this.filterActive, query: this.observableSettings?.quickSearch }), (prev, cur, count) => {
             const { data, filterActive, query } = cur;
+            // console.warn('update DisplayData', { data, filterActive, query, "this.displayData": this.displayData });
             if (!data) return;
-            // console.log('update data ' + count, { prev, cur });
 
             if (filterActive) {
                 this.displayData = data.filter(this.onFilter);
@@ -180,12 +179,15 @@ export class KowlTable<T extends object = any> extends Component<{
     }
 
     @action updateCustomColumns(cols: KowlColumnType<T>[]) {
+        // console.count('table update columns');
         this.customColumns = cols.map(col => Object.assign({}, col)) as KowlColumnTypeInternal<T>[];
         this.searchColumn = undefined;
         this.updateSearchColumn(this.customColumns);
     }
 
     @action updateSearchColumn(cols: KowlColumnType<T>[]) {
+        // console.count('table update search');
+
         const props = this.props;
         if (props.search?.searchColumnIndex == undefined) return;
 
@@ -237,10 +239,13 @@ export class KowlTable<T extends object = any> extends Component<{
             // only accept requests to open the filter
             if (visible)
                 this.filterOpen = visible;
+            this.searchColumn!.filterDropdownVisible = false;
         };
     }
 
     @action ensureFiltersAreUpdated(data: readonly T[] | undefined) {
+        console.log('update filter column props', { data, custom: this.customColumns });
+
         if (!data) return;
 
         // Filter columns
@@ -272,6 +277,9 @@ export class KowlTable<T extends object = any> extends Component<{
                     }
                 }
 
+                // Enum filtering
+                // for now only string dataIndex is supported;
+                // number and array types might be added later
                 col.onFilter = (filterValue, rec: T) => {
                     // is this row a match?
                     if (typeof col.dataIndex == 'string') {
@@ -279,8 +287,6 @@ export class KowlTable<T extends object = any> extends Component<{
                         return val == filterValue;
                     }
 
-                    // for now only string dataIndex is supported;
-                    // number and array types might be added later
                     return true;
                 };
 
@@ -317,7 +323,16 @@ export class KowlTable<T extends object = any> extends Component<{
 
     @observable displayData: readonly T[] = [];
 
+    renderCount = 0;
     render() {
+        // spy(change => {
+        //     if (change.type == 'add' || change.type == 'report-end') return;
+        //     console.log('spy', change);
+        // })
+        console.log('table render ' + (++this.renderCount), {
+            filters: this.customColumns.map(x => `${x.dataIndex}[${x.filters?.length ?? ''} filters]`).join(',  ')
+        });
+
         const p = this.props;
         if (p.dataSource)
             this.currentDataSource = p.dataSource;
@@ -330,55 +345,63 @@ export class KowlTable<T extends object = any> extends Component<{
         const unused2 = pagination.current;
 
 
-        return <Table<T>
-            style={{ margin: '0', padding: '0' }}
-            size="middle"
-            showSorterTooltip={false}
-            className={styles.kowlTable + " " + (p.className ?? '')}
+        return <>
+            <Table<T>
+                style={{ margin: '0', padding: '0' }}
+                size="middle"
+                showSorterTooltip={false}
+                className={styles.kowlTable + " " + (p.className ?? '')}
 
-            dataSource={this.displayData}
-            columns={this.customColumns}
+                dataSource={this.displayData}
+                columns={this.customColumns}
 
-            rowKey={p.rowKey}
-            rowClassName={p.rowClassName}
-            onRow={p.onRow}
+                rowKey={p.rowKey}
+                rowClassName={p.rowClassName}
+                onRow={p.onRow}
 
-            pagination={pagination}
+                pagination={pagination}
 
-            expandable={p.expandable}
-            footer={currentView => {
-                // todo: additional footer elements
-                // console.log('footer', clone({ pagination: pagination, settings: settings }));
-                if (!this.paginationVisible) return null;
+                expandable={p.expandable}
+                footer={currentView => {
+                    // todo: additional footer elements
+                    // console.log('footer', clone({ pagination: pagination, settings: settings }));
+                    if (!this.paginationVisible) return null;
 
-                return <Pagination size="small" showSizeChanger
-                    total={this.currentDataSource.length}
-                    showTotal={(total) => {
-                        const shown = currentView.length;
-                        return <span className='paginationTotal'>{
-                            (shown == total)
-                                ? `Total ${total} items`
-                                : `Showing ${shown} of ${total} items`
-                        }</span>
-                    }}
-                    pageSize={this.pagination.pageSize}
-                    pageSizeOptions={this.pagination.pageSizeOptions}
-
-                    current={this.pagination.current ?? this.pagination.defaultCurrent}
-                    onChange={(page, pageSize) => {
-                        // console.log('Pagination.onChange', { page: page, pageSize: pageSize });
-
-                        transaction(() => {
-                            pagination.current = page;
-                            if (pageSize != undefined) {
-                                pagination.pageSize = pageSize;
-                                settings.pageSize = pageSize;
+                    return <Pagination size="small" showSizeChanger
+                        total={this.currentDataSource.length}
+                        showTotal={(total) => {
+                            const shown = currentView.length;
+                            return <span className='paginationTotal'>{
+                                (shown == total)
+                                    ? `Total ${total} items`
+                                    : `Showing ${shown} of ${total} items`
                             }
-                        });
-                    }}
-                />
-            }}
-        />;
+                            </span>
+                        }}
+                        pageSize={this.pagination.pageSize}
+                        pageSizeOptions={this.pagination.pageSizeOptions}
+
+                        current={this.pagination.current ?? this.pagination.defaultCurrent}
+                        onChange={(page, pageSize) => {
+                            // console.log('Pagination.onChange', { page: page, pageSize: pageSize });
+
+                            transaction(() => {
+                                pagination.current = page;
+                                if (pageSize != undefined) {
+                                    pagination.pageSize = pageSize;
+                                    settings.pageSize = pageSize;
+                                }
+                            });
+                        }}
+                    />
+                }}
+            />
+
+        </>
+    }
+
+    @computed get filterIcon() {
+        return filterIcon(this.filterActive);
     }
 
     onFilter(record: T): boolean {
@@ -525,7 +548,11 @@ function filterIcon(filterActive: boolean) {
 }
 
 // like structural comparer, but ignores functions
-function customComparer<T>(a: T, b: T): boolean {
+function customComparer<T>(a: T, b: T, remainingDepth?: number): boolean {
+    if (remainingDepth == undefined) remainingDepth = 5;
+    if (remainingDepth != undefined && remainingDepth <= 0) return true;
+
+
     if (a === undefined && b === undefined) return true;
     if (a === null && b === null) return true;
     if (!a && b) return false;
@@ -561,7 +588,7 @@ function customComparer<T>(a: T, b: T): boolean {
         if (typeof aVal != typeof bVal)
             return false;
 
-        if (!customComparer(aVal, bVal))
+        if (!customComparer(aVal, bVal, remainingDepth - 1))
             return false;
     }
 
