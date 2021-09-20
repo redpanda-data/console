@@ -2005,7 +2005,7 @@ mark {
 
 .ant-table-filter-trigger {
     width: 32px;
-    background: hsl(0deg, 0%, 94%);
+    background: linear-gradient(to right, transparent, hsl(0deg, 0%, 94%));
 
     transition: background-color ease-out 0.1s;
     color: hsl(0deg, 0%, 67%);
