@@ -12,7 +12,7 @@ import {
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
     KafkaConnectors, ConnectClusters,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo, WrappedError, isApiError, AlterPartitionReassignmentsPartitionResponse
 } from "./restInterfaces";
 import { comparer, computed, observable, runInAction, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -50,12 +50,7 @@ export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC
 
     processVersionInfo(res);
 
-    await tryHandleApiError(res);
-
-    const str = await res.text();
-    // console.log('json: ' + str);
-    const data = (JSON.parse(str) as T);
-    return data;
+    return tryParseOrUnwrapError<T>(res);
 }
 
 async function handle401(res: Response) {
@@ -407,11 +402,8 @@ const apiStore = {
             ]
         });
 
-        await tryHandleApiError(response);
-
-        const str = await response.text();
-        const data = (JSON.parse(str) as GetTopicOffsetsByTimestampResponse);
-        return data.topicOffsets;
+        const r = await tryParseOrUnwrapError<GetTopicOffsetsByTimestampResponse>(response);
+        return r.topicOffsets;
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
@@ -708,12 +700,9 @@ const apiStore = {
             body: toJson(request),
         });
 
-        await tryHandleApiError(response);
-
-        const str = await response.text();
-        const data = (JSON.parse(str) as EditConsumerGroupOffsetsResponse);
-        if (data.error) throw data.error;
-        return data.topics;
+        const r = await tryParseOrUnwrapError<EditConsumerGroupOffsetsResponse>(response);
+        if (r.error) throw Error(r.error);
+        return r.topics;
     },
 
     async deleteConsumerGroupOffsets(groupId: string, topics: DeleteConsumerGroupOffsetsTopic[]):
@@ -731,11 +720,8 @@ const apiStore = {
             body: toJson(request),
         });
 
-        await tryHandleApiError(response);
-
-        const str = await response.text();
-        const data = (JSON.parse(str) as DeleteConsumerGroupOffsetsResponse);
-        return data.topics;
+        const r = await tryParseOrUnwrapError<DeleteConsumerGroupOffsetsResponse>(response);
+        return r.topics;
     },
 
 
@@ -820,11 +806,7 @@ const apiStore = {
             body: toJson(request),
         });
 
-        await tryHandleApiError(response);
-
-        const str = await response.text();
-        const data = (JSON.parse(str) as AlterPartitionReassignmentsResponse);
-        return data;
+        return await tryParseOrUnwrapError<AlterPartitionReassignmentsResponse>(response);
     },
 
     async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number): Promise<PatchConfigsResponse> {
@@ -935,11 +917,7 @@ const apiStore = {
             body: toJson(request),
         });
 
-        await tryHandleApiError(response);
-
-        const str = await response.text();
-        const data = (JSON.parse(str) as PatchConfigsResponse);
-        return data;
+        return await tryParseOrUnwrapError<PatchConfigsResponse>(response);
     },
 
 
@@ -1047,7 +1025,7 @@ const apiStore = {
 
     */
 
-    async deleteConnector(clusterName: string, connector: string): Promise<ApiError | null> {
+    async deleteConnector(clusterName: string, connector: string): Promise<null> {
         // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
             method: 'DELETE',
@@ -1055,11 +1033,10 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        await tryHandleApiError(response);
-        return null;
+        return tryParseOrUnwrapError<null>(response);
     },
 
-    async pauseConnector(clusterName: string, connector: string): Promise<ApiError | null> {
+    async pauseConnector(clusterName: string, connector: string): Promise<null> {
         // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/pause`, {
             method: 'PUT',
@@ -1067,11 +1044,10 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        await tryHandleApiError(response);
-        return null;
+        return tryParseOrUnwrapError<null>(response);
     },
 
-    async resumeConnector(clusterName: string, connector: string): Promise<ApiError | null> {
+    async resumeConnector(clusterName: string, connector: string): Promise<null> {
         // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/resume`, {
             method: 'PUT',
@@ -1079,11 +1055,10 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        await tryHandleApiError(response);
-        return null;
+        return tryParseOrUnwrapError<null>(response);
     },
 
-    async restartConnector(clusterName: string, connector: string): Promise<ApiError | null> {
+    async restartConnector(clusterName: string, connector: string): Promise<null> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/restart`, {
             method: 'POST',
@@ -1091,11 +1066,10 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        await tryHandleApiError(response);
-        return null;
+        return tryParseOrUnwrapError<null>(response);
     },
 
-    async updateConnector(clusterName: string, connector: string, config: object): Promise<ApiError | null> {
+    async updateConnector(clusterName: string, connector: string, config: object): Promise<null> {
         // PUT "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
             method: 'PUT',
@@ -1104,11 +1078,10 @@ const apiStore = {
             ],
             body: JSON.stringify({ config: config }),
         });
-        await tryHandleApiError(response);
-        return null;
+        return tryParseOrUnwrapError<null>(response);
     },
 
-    async restartTask(clusterName: string, connector: string, taskID: number): Promise<ApiError | null> {
+    async restartTask(clusterName: string, connector: string, taskID: number): Promise<null> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart"
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/tasks/${String(taskID)}/restart`, {
             method: 'POST',
@@ -1116,8 +1089,8 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        await tryHandleApiError(response);
-        return null;
+
+        return tryParseOrUnwrapError<null>(response);
     },
 }
 
@@ -1207,12 +1180,7 @@ export async function partialTopicConfigs(configKeys: string[], topics?: string[
         : `configKeys=${keys}`;
 
     const response = await fetch('./api/topics-configs?' + query);
-
-    await tryHandleApiError(response);
-
-    const str = await response.text();
-    const data = (JSON.parse(str) as PartialTopicConfigsResponse);
-    return data;
+    return tryParseOrUnwrapError<PartialTopicConfigsResponse>(response);
 }
 
 export interface MessageSearchRequest {
@@ -1223,34 +1191,26 @@ export interface MessageSearchRequest {
     filterInterpreterCode: string, // js code, base64 encoded
 }
 
-
-async function tryHandleApiError(response: Response) {
-    if (response.ok) return;
-
+async function tryParseOrUnwrapError<T>(response: Response): Promise<T> {
+    // network error => .text() will throw
     const text = await response.text();
-    try {
-        const errObj = JSON.parse(text) as ApiError;
-        if (errObj && typeof errObj.statusCode !== "undefined" && typeof errObj.message !== "undefined") {
-            // if the shape matches, reformat it a bit
-            throw new Error(`${errObj.message} (${response.status} - ${response.statusText})`);
-        }
-    }
-    catch (err: any) {
-        // not json
-        console.log(`response code ${response.status} failed to parse response as 'ApiError'`, { responseText: text, response: response });
-    }
 
-    // use generic error text
-    throw new Error(`${text} (${response.status} - ${response.statusText})`);
+    // kowl error    => status won't be ok
+    if (!response.ok)
+        throw new Error(text);
+
+    // invalid JSON  => parse will throw
+    const obj = JSON.parse(text);
+
+    // backend error => content will be ApiError
+    if (isApiError(obj))
+        throw new WrappedError(response, obj);
+
+    return obj as T;
 }
 
 function addError(err: Error) {
     api.errors.push(err);
-    // notification['error']({
-    // 	message: 'REST: ' + err.name,
-    // 	description: err.message,
-    // 	duration: 7
-    // })
 }
 
 

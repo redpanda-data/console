@@ -3,6 +3,35 @@ export interface ApiError {
     message: string;
 }
 
+export function isApiError(obj: any): obj is ApiError {
+    if (!obj || typeof obj != 'object')
+        return false;
+
+    if (typeof obj.statusCode == 'number' && typeof obj.message == 'string')
+        return true;
+
+    return false;
+}
+
+export class WrappedError extends Error {
+    statusCode: number;
+    path: string;
+
+    constructor(response: Response, apiError: ApiError) {
+        super(apiError.message);
+
+        this.statusCode = apiError.statusCode;
+
+        // try showing only the path of the url
+        try {
+            const u = new URL(response.url);
+            this.path = u.pathname + u.search;
+        } catch {
+            this.path = response.url;
+        }
+    }
+}
+
 
 export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig', 'deleteTopic', 'deleteTopicRecords'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];

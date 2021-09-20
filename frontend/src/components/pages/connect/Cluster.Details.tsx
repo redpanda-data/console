@@ -95,7 +95,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 {
                                     width: 120,
                                     title: 'State', dataIndex: 'state',
-                                    render: (_, r) => <TaskState state={r.state} />,
+                                    render: (_, r) => <TaskState observable={r} />,
                                     sorter: sortField('state'),
                                     filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => String(x).toLowerCase() },
 

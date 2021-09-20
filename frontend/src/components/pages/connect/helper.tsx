@@ -6,7 +6,7 @@ import { observer } from 'mobx-react';
 import React, { Component, CSSProperties } from 'react';
 
 import { api } from '../../../state/backendApi';
-import { ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
+import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
 import { animProps } from '../../../utils/animationProps';
 import { findPopupContainer, LayoutBypass } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
@@ -333,7 +333,8 @@ export class ConfirmModal<T> extends Component<{
 
     render() {
         const target = this.props.target();
-        const error = this.error;
+        const err = this.renderError();
+
         const content = target && this.props.content(target);
 
         return <Modal
@@ -349,15 +350,52 @@ export class ConfirmModal<T> extends Component<{
             onOk={this.onOk}
         >
             <>
-                {error && <Alert type="error"
-                    message={`Error`}
-                    description={typeof error == 'string' ? error : error.message} />
-                }
-                <p>
+                <div>
                     {content}
-                </p>
+                </div>
+                {err && <Alert
+                    type="error" style={{ marginTop: '1em', padding: '10px 15px' }}
+                    message={err.title}
+                    description={err.content}
+                />}
+
             </>
         </Modal>
+    }
+
+    renderError(): { title: JSX.Element, content: JSX.Element } | undefined {
+        if (!this.error)
+            return undefined;
+
+        const txt = typeof this.error == 'string'
+            ? this.error
+            : this.error.message;
+
+        // try parsing as json
+        let apiErr: ApiError | undefined;
+        try {
+            apiErr = JSON.parse(txt) as ApiError;
+            if (!apiErr || !apiErr.message || !apiErr.statusCode)
+                apiErr = undefined;
+        } catch {
+            apiErr = undefined;
+        }
+
+        // return text only
+        if (!apiErr)
+            return {
+                title: <>Error</>,
+                content: <>{txt}</>
+            };
+
+        // render error object
+        return {
+            title: <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3em' }}>
+                <span>Error</span>
+                <span style={{ fontSize: '75%', opacity: 0.7 }}>- {apiErr.statusCode}</span>
+            </div>,
+            content: <div className='codeBox' style={{ mixBlendMode: 'multiply' }}>{apiErr.message}</div>
+        };
     }
 }
 
@@ -417,8 +455,8 @@ export const ConnectorsColumn = observer((props: { observable: ConnectorInfo | C
     </>
 });
 
-export const TaskState = observer((p: { state: ClusterConnectorTaskInfo['state'] }) => {
-    const state = p.state;
+export const TaskState = observer((p: { observable: { state: ClusterConnectorTaskInfo['state'] } }) => {
+    const state = p.observable.state;
     const iconWrapper = (icon: JSX.Element) => <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle' }}>
         <LayoutBypass width='17px'>
             {icon}

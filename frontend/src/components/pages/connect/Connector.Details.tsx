@@ -314,7 +314,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                 },
                                 {
                                     title: 'Status', dataIndex: 'state', sorter: sortField('state'),
-                                    render: (_, r) => <TaskState state={r.state} />,
+                                    render: (_, r) => <TaskState observable={r} />,
                                     filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => String(x).toLowerCase() },
                                 },
                                 {

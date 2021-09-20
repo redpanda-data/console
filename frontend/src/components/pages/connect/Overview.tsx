@@ -26,12 +26,9 @@ import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, Overvie
 
 @observer
 class KafkaConnectOverview extends PageComponent {
-
-    @observable placeholder = 5;
-
     constructor(p: any) {
         super(p);
-        makeObservable(this);
+        // makeObservable(this);
     }
 
     initPage(p: PageInitHelper): void {
@@ -69,8 +66,9 @@ class KafkaConnectOverview extends PageComponent {
 export default KafkaConnectOverview;
 
 
-
+@observer
 class TabClusters extends Component {
+
     render() {
         const clusters = api.connectConnectors?.clusters;
         if (clusters == null) return null;
@@ -125,6 +123,7 @@ class TabClusters extends Component {
     }
 }
 
+@observer
 class TabConnectors extends Component {
     render() {
         const clusters = api.connectConnectors!.clusters;
@@ -162,7 +161,7 @@ class TabConnectors extends Component {
                 {
                     width: 120,
                     title: 'State', dataIndex: 'state',
-                    render: (_, r) => <TaskState state={r.state} />,
+                    render: (_, r) => <TaskState observable={r} />,
                     sorter: sortField('state'),
                     filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => x ? String(x).toLowerCase() : '' },
                 },
@@ -195,6 +194,7 @@ class TabConnectors extends Component {
     }
 }
 
+@observer
 class TabTasks extends Component {
     render() {
         const clusters = api.connectConnectors!.clusters;
@@ -217,7 +217,7 @@ class TabTasks extends Component {
                 { title: 'Task ID', dataIndex: 'taskId', sorter: sortField('taskId') },
                 {
                     title: 'State', dataIndex: 'taskState',
-                    render: (_, r) => <TaskState state={r.state} />,
+                    render: (_, r) => <TaskState observable={r} />,
                     sorter: sortField('taskState'),
                     filterType: { type: 'enum', optionClassName: 'capitalize' },
                 },
