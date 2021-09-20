@@ -135,8 +135,8 @@ const connectorMetadataMatchCache: {
     [className: string]: ConnectorMetadata
 } = {};
 
-function findConnectorMetadata(connector: ClusterConnectorInfo): ConnectorMetadata | null {
-    const c = connector.class;
+function findConnectorMetadata(className: string): ConnectorMetadata | null {
+    const c = className;
 
     // Quick and dirty cache
     // If cache has too many entries, remove some
@@ -177,40 +177,27 @@ function findConnectorMetadata(connector: ClusterConnectorInfo): ConnectorMetada
 
 
 
-export const ConnectorClass = React.memo((props: { connector: ClusterConnectorInfo }) => {
-    const c = props.connector;
+export const ConnectorClass = observer((props: { observable: { class: string; } }) => {
+    const c = props.observable.class;
     const meta = findConnectorMetadata(c);
-    const displayName = meta?.friendlyName ?? removeNamespace(c.class);
+    const displayName = meta?.friendlyName ?? removeNamespace(c);
 
-    let content: JSX.Element;
-    if (!meta) {
-        // No additional information available
-        // Default: simple display
-        content = <span>{displayName}</span>
-    }
-    else {
-        // We found custom metadata
-        // Show connector logo
-        content = <span style={{ display: 'flex', gap: '.5em', alignItems: 'center', verticalAlign: 'inherit' }}>
-            {meta.logo &&
-                <LayoutBypass height='0px' width='27px'>
+    return <span>
+        {meta && meta.logo &&
+            <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
+                <LayoutBypass height='0px' width='27px' >
                     {meta.logo}
                 </LayoutBypass>
-            }
-            {displayName}
-        </span>
-    }
-
-    return <>
+            </span>}
         <Popover placement='right' overlayClassName='popoverSmall'
             getPopupContainer={findPopupContainer}
             content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
-                {c.class}
+                {c}
             </div>}
         >
-            {content}
+            {displayName}
         </Popover>
-    </>
+    </span>
 });
 
 export function removeNamespace(className: string): string {

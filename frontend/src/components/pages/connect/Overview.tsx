@@ -148,7 +148,7 @@ class TabConnectors extends Component {
                 },
                 {
                     title: 'Class', dataIndex: 'class',
-                    render: (_, r) => <ConnectorClass connector={r} />,
+                    render: (_, r) => <ConnectorClass observable={r} />,
                     sorter: sortField('class')
                 },
                 {

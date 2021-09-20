@@ -81,7 +81,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 },
                                 {
                                     title: 'Class', dataIndex: 'class',
-                                    render: (_, r) => <ConnectorClass connector={r} />,
+                                    render: (_, r) => <ConnectorClass observable={r} />,
                                     sorter: sortField('class')
                                 },
                                 {
@@ -133,19 +133,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 {
                                     title: 'Class', dataIndex: 'class',
                                     sorter: sortField('class'),
-                                    render: (v, r) => {
-                                        const shortClass = removeNamespace(r.class);
-                                        if (shortClass != r.class) return <Popover placement='right' overlayClassName='popoverSmall'
-                                            getPopupContainer={findPopupContainer}
-                                            content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
-                                                {r.class}
-                                            </div>}
-                                        >
-                                            {shortClass}
-                                        </Popover>
-
-                                        return r.class;
-                                    }
+                                    render: (v, r) => <ConnectorClass observable={r} />
                                 },
                                 {
                                     title: 'Type', dataIndex: 'type',
