@@ -945,6 +945,7 @@ th.msgTableActionColumn .ant-table-filter-trigger-container {
 
 button.ant-table-row-expand-icon {
     margin-left: 12px;
+    transform: scale(1); // fixes buggy display in firefox
 }
 
 /* Fix: make it possible to configure column width */
