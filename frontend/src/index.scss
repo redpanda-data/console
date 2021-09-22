@@ -350,7 +350,7 @@ td.ant-table-column-sort {
 
 .ant-pagination-total-text {
     font-size: 13px;
-    opacity: 80%;
+    opacity: 0.8;
     transform: translateY(-1px);
 }
 
@@ -553,7 +553,7 @@ td.ant-table-column-sort {
     background: url('assets/pattern3.png') repeat-x 330px bottom;
     background-position-y: 115%;
     mix-blend-mode: hard-light;
-    opacity: 35%;
+    opacity: 0.35;
     zoom: 80%;
     @include tlrb;
     z-index: -1;
