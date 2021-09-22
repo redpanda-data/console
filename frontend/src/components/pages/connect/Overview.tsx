@@ -1,5 +1,4 @@
 import { CheckCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
 import { Checkbox, Col, Empty, Popover, Row, Statistic, Table, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
