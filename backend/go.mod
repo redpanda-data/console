@@ -33,7 +33,7 @@ require (
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/twmb/franz-go v1.0.0
-	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210901051457-3c197a133ddd
+	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210922170710-c329b1949567
 	github.com/vmihailenco/msgpack/v5 v5.3.1
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	go.uber.org/zap v1.16.0

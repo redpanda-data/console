@@ -309,7 +309,7 @@ func (api *API) handlePatchConfigs() http.HandlerFunc {
 			for j, cfg := range resource.Configs {
 				cfgReq := kmsg.NewIncrementalAlterConfigsRequestResourceConfig()
 				cfgReq.Name = cfg.Name
-				cfgReq.Op = cfg.Op
+				cfgReq.Op = kmsg.IncrementalAlterConfigOp(cfg.Op)
 				cfgReq.Value = cfg.Value
 				cfgReqs[j] = cfgReq
 			}
