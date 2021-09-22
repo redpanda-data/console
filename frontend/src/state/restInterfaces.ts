@@ -939,6 +939,7 @@ export interface ClusterConnectorTaskInfo {
     taskId: number;
     state: TaskState;
     workerId: string;
+    trace?: string; // error message
 }
 
 
