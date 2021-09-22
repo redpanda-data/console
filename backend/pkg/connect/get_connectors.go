@@ -40,6 +40,7 @@ type ClusterConnectorTaskInfo struct {
 	TaskID   int    `json:"taskId"`
 	State    string `json:"state"`
 	WorkerID string `json:"workerId"`
+	Trace    string `json:"trace,omitempty"` // only set if the task is errored
 }
 
 // GetAllClusterConnectors returns the merged GET /connectors responses across all configured Connect clusters. Requests will be
@@ -166,6 +167,7 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 			TaskID:   task.ID,
 			State:    task.State,
 			WorkerID: task.WorkerID,
+			Trace:    task.Trace,
 		}
 		if task.State == "RUNNING" {
 			runningTasks++
@@ -199,6 +201,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 				TaskID:   task.ID,
 				State:    task.State,
 				WorkerID: task.WorkerID,
+				Trace:    task.Trace,
 			}
 			if task.State == "RUNNING" {
 				runningTasks++
