@@ -36,6 +36,7 @@ func (c *SASLConfig) RegisterFlags(f *flag.FlagSet) {
 // SetDefaults for SASL Config
 func (c *SASLConfig) SetDefaults() {
 	c.Mechanism = SASLMechanismPlain
+	c.GSSAPIConfig.SetDefaults()
 }
 
 // Validate SASL config input
