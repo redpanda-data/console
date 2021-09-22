@@ -1,8 +1,8 @@
 import { Component } from "react"
 import React from "react"
 import { Tooltip, message } from "antd"
-import { EyeClosedIcon } from "@primer/octicons-v2-react"
 import { findPopupContainer } from "../../utils/tsxUtils"
+import { EyeClosedIcon } from "@primer/octicons-react"
 
 
 

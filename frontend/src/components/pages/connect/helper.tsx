@@ -476,11 +476,11 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
 });
 
 
-const okIcon = <CheckCircleTwoTone />;
-const warnIcon = <WarningTwoTone twoToneColor='orange' />;
+export const okIcon = <CheckCircleTwoTone twoToneColor='#52c41a' />;
+export const warnIcon = <WarningTwoTone twoToneColor='orange' />;
 export const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
 const waitIcon = <HourglassTwoTone twoToneColor='#888' />;
 const pauseIcon = <span style={{ color: '#555' }}><PauseCircleOutlined /></span>;
 
 export const mr05: CSSProperties = { marginRight: '.5em' };
-const ml05: CSSProperties = { marginLeft: '.5em' };
+export const ml05: CSSProperties = { marginLeft: '.5em' };

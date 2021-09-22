@@ -1,6 +1,4 @@
 import React from 'react';
-
-import { LockIcon } from '@primer/octicons-v2-react';
 import { Button, Popover, Result, Tooltip, Typography } from 'antd';
 import { motion } from 'framer-motion';
 import { computed, makeObservable, observable } from 'mobx';
@@ -28,6 +26,7 @@ import { TopicPartitions } from './Tab.Partitions';
 import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
 import { IsBusiness } from '../../../utils/env';
 import { WarningOutlined } from '@ant-design/icons';
+import { LockIcon } from '@primer/octicons-react';
 
 const { Text } = Typography;
 

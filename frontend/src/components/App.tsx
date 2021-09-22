@@ -25,11 +25,11 @@ import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined, TwitterOutlined, LinkedinFilled } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
-import { SyncIcon, ChevronRightIcon, ToolsIcon } from '@primer/octicons-v2-react';
 import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
 import { renderErrorModals } from './misc/ErrorModal';
+import { SyncIcon, ChevronRightIcon } from '@primer/octicons-react';
 
 const { Content, Footer, Sider } = Layout;
 

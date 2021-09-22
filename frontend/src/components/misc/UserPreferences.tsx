@@ -6,9 +6,9 @@ import { RenderTrap, Spacer } from './common';
 import { api } from '../../state/backendApi';
 import Icon, { UserOutlined } from '@ant-design/icons';
 import { IsBusiness } from '../../utils/env';
-import { ChevronDownIcon, ToolsIcon } from '@primer/octicons-v2-react';
 import { Label } from '../../utils/tsxUtils';
 import { makeObservable, observable } from 'mobx';
+import { ToolsIcon } from '@primer/octicons-react';
 
 const { Option } = Select;
 type Action = () => void;

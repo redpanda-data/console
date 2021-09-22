@@ -1,13 +1,12 @@
 /* eslint-disable no-useless-escape */
-import { CheckCircleTwoTone, ExclamationCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, message, notification, Tooltip } from 'antd';
+import { Button, message, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, CSSProperties } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { ApiError, ClusterConnectorInfo, ClusterConnectorTaskInfo } from '../../../state/restInterfaces';
+import { ClusterConnectorInfo } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { Code, findPopupContainer } from '../../../utils/tsxUtils';
@@ -24,7 +23,7 @@ import Editor from "@monaco-editor/react";
 
 // Monaco Type
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
-import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, OverviewStatisticsCard, TaskState } from './helper';
+import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, okIcon, TaskState, warnIcon } from './helper';
 export type Monaco = typeof monacoType;
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -463,7 +462,3 @@ class TaskActionsColumn extends Component<{
     }
 }
 
-const okIcon = <CheckCircleTwoTone twoToneColor='#52c41a' />;
-const warnIcon = <WarningTwoTone twoToneColor='orange' />;
-const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
-const mr05: CSSProperties = { marginRight: '.5em' };

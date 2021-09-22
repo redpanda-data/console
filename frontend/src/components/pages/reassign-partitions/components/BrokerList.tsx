@@ -4,7 +4,6 @@ import { LazyMap } from "../../../../utils/LazyMap";
 import { Broker, Partition } from "../../../../state/restInterfaces";
 import { api, brokerMap } from "../../../../state/backendApi";
 import { findPopupContainer, QuickTable } from "../../../../utils/tsxUtils";
-import { CheckIcon } from "@primer/octicons-v2-react";
 import { observer } from "mobx-react";
 import { ChevronRightIcon } from "@heroicons/react/solid";
 

@@ -16,7 +16,6 @@ import Highlighter from 'react-highlight-words';
 import { uiSettings } from "../../../state/ui";
 import { ColumnFilterItem, ColumnsType, ExpandableConfig, FilterDropdownProps, TableRowSelection } from "antd/lib/table/interface";
 import { SearchOutlined, WarningTwoTone } from "@ant-design/icons";
-import { AlertIcon } from "@primer/octicons-v2-react";
 import { SearchTitle } from "../../misc/KowlTable";
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };

@@ -1,6 +1,6 @@
-import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, PlusOutlined, QuestionCircleTwoTone, SettingFilled, SettingOutlined } from '@ant-design/icons';
-import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, ThreeBarsIcon, XCircleIcon } from '@primer/octicons-v2-react';
-import { Alert, AutoComplete, Button, Checkbox, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu, message, Modal, Popover, Radio, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
+import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
+import { Alert, Button, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu, message, Modal, Popover, Radio, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -42,6 +42,7 @@ import * as moment from 'moment';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 
 
+
 const { Text } = Typography;
 const { Option } = Select;
 const InputGroup = Input.Group;
@@ -64,7 +65,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     @observable showColumnSettings = false;
 
-    @observable fetchError = null as Error | null;
+    @observable fetchError = null as any | null;
 
     pageConfig = makePaginationConfig(uiState.topicSettings.messagesPageSize);
     messageSource = new FilterableDataSource<TopicMessage>(() => api.messages, this.isFilterMatch, 16);
@@ -76,7 +77,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     @observable downloadMessages: TopicMessage[] | null;
     @observable expandedKeys: React.Key[] = [];
-    
+
     @observable deleteRecordsModalVisible = false
     @observable deleteRecordsModalAlive = false
 
@@ -131,7 +132,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     message="Backend API Error"
                     description={<div>
                         <Text>Please check and modify the request before resubmitting.</Text>
-                        <div className='codeBox'>{this.fetchError.message}</div>
+                        <div className='codeBox'>{((this.fetchError as Error).message ?? String(this.fetchError))}</div>
                         <Button onClick={() => this.executeMessageSearch()}>
                             Retry Search
                         </Button>
@@ -153,11 +154,11 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             {
                 this.deleteRecordsModalAlive
                 && (
-                    <DeleteRecordsModal 
-                        topic={this.props.topic} 
-                        visible={this.deleteRecordsModalVisible} 
-                        onCancel={() => this.hideDeleteRecordsModal()} 
-                        onFinish={() => this.finishDeleteRecordsModal()} 
+                    <DeleteRecordsModal
+                        topic={this.props.topic}
+                        visible={this.deleteRecordsModalVisible}
+                        onCancel={() => this.hideDeleteRecordsModal()}
+                        onFinish={() => this.finishDeleteRecordsModal()}
                         afterClose={() => console.log('after close', this.deleteRecordsModalAlive = false)}
                     />
                 )
@@ -187,7 +188,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             dropdownMatchSelectWidth={false} style={{ width: '9em' }}
                         >
                             <Option value={TopicOffsetOrigin.End}>Newest</Option>
-                            <Option value={TopicOffsetOrigin.EndMinusResults}>Newest<span style={{ opacity: '90%' }}>-{searchParams.maxResults}</span></Option>
+                            <Option value={TopicOffsetOrigin.EndMinusResults}>Newest<span style={{ opacity: '0.9' }}>-{searchParams.maxResults}</span></Option>
                             <Option value={TopicOffsetOrigin.Start}>Oldest</Option>
                             <Option value={TopicOffsetOrigin.Custom}>Custom</Option>
                             <Option value={TopicOffsetOrigin.Timestamp}>Timestamp</Option>
@@ -642,8 +643,8 @@ function ${name}() {
             try {
                 this.fetchError = null;
                 api.startMessageSearch(request);
-            } catch (error) {
-                console.error('error in searchTopicMessages: ' + error.toString());
+            } catch (error: any) {
+                console.error('error in searchTopicMessages: ' + ((error as Error).message ?? String(error)));
                 this.fetchError = error;
             }
         });
@@ -942,7 +943,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
             return <code><span className='cellDiv' style={{ fontSize: '95%' }}>{text}</span></code>;
         }
         catch (e) {
-            return <span style={{ color: 'red' }}>Error in RenderPreview: {e.toString()}</span>;
+            return <span style={{ color: 'red' }}>Error in RenderPreview: {((e as Error).message ?? String(e))}</span>;
         }
     }
 }
@@ -1017,7 +1018,7 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
         return <KowlJsonView src={val} shouldCollapse={shouldCollapse} />;
     }
     catch (e) {
-        return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {e.toString()}</span>;
+        return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {((e as Error).message ?? String(e))}</span>;
     }
 }
 

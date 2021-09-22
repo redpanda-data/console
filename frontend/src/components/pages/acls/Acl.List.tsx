@@ -14,9 +14,9 @@ import { containsIgnoreCase } from "../../../utils/utils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import { DefaultSkeleton, Label } from "../../../utils/tsxUtils";
-import { LockIcon } from "@primer/octicons-v2-react";
 import { toJson } from "../../../utils/jsonUtils";
 import { KowlTable } from "../../misc/KowlTable";
+import { LockIcon } from "@primer/octicons-react";
 
 
 type AclRuleFlat = AclResource & AclRule

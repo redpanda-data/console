@@ -10,7 +10,6 @@ import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
 import { numberToThousandsString, DefaultSkeleton, InfoText, findPopupContainer, LayoutBypass } from "../../../utils/tsxUtils";
 import { BrokerList } from "../reassign-partitions/components/BrokerList";
-import { SkipIcon } from "@primer/octicons-v2-react";
 import { WarningTwoTone } from "@ant-design/icons";
 
 

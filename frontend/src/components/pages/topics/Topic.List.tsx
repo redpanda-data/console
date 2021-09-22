@@ -1,6 +1,5 @@
 import React from 'react';
 import { TrashIcon } from '@heroicons/react/outline';
-import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-v2-react';
 import { Alert, Button, Checkbox, Col, Modal, notification, Popover, Row, Statistic, Table, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
@@ -18,6 +17,7 @@ import { KowlTable } from '../../misc/KowlTable';
 import SearchBar from '../../misc/SearchBar';
 import { PageComponent, PageInitHelper } from '../Page';
 import { useState } from 'react';
+import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
 
 @observer
 class TopicList extends PageComponent {

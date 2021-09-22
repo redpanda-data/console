@@ -1,5 +1,4 @@
 import { FilterOutlined } from "@ant-design/icons";
-import { ThreeBarsIcon, XIcon, GearIcon, InfoIcon } from "@primer/octicons-v2-react";
 import { AutoComplete, Button, Checkbox, Input, Modal, Popover, Typography } from "antd";
 import Item from "antd/lib/list/Item";
 import Paragraph from "antd/lib/typography/Paragraph";
@@ -19,6 +18,7 @@ import { clone, toJson } from "../../../../utils/jsonUtils";
 import { Code, Label, OptionGroup, QuickTable, toSafeString } from "../../../../utils/tsxUtils";
 import { getAllMessageKeys, randomId, collectElements2, CollectedProperty } from "../../../../utils/utils";
 import globExampleImg from '../../../../assets/globExample.png';
+import { InfoIcon, ThreeBarsIcon, GearIcon, XIcon } from "@primer/octicons-react";
 
 const { Text } = Typography;
 

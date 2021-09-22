@@ -14,7 +14,6 @@ import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
 import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined, YahooFilled } from '@ant-design/icons';
 import { DefaultSkeleton, ObjToKv, OptionGroup, QuickTable } from "../../../utils/tsxUtils";
-import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-v2-react";
 import { stringify } from "query-string";
 import { StepSelectBrokers } from "./Step2.Brokers";
 import { BrokerList } from "./components/BrokerList";
@@ -28,6 +27,7 @@ import { Message, scrollTo, scrollToTop } from "../../../utils/utils";
 import { ActiveReassignments } from "./components/ActiveReassignments";
 import { ReassignmentTracker } from "./logic/reassignmentTracker";
 import { showErrorModal } from "../../misc/ErrorModal";
+import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-react";
 
 
 const { Step } = Steps;

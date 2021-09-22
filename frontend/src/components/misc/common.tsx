@@ -12,7 +12,7 @@ import env, { IsBusiness, IsDev } from "../../utils/env";
 import { LayoutBypass, QuickTable } from "../../utils/tsxUtils";
 import { clone, toJson } from "../../utils/jsonUtils";
 import { TopicLogDirSummary } from "../../state/restInterfaces";
-import { AlertIcon } from "@primer/octicons-v2-react";
+import { AlertIcon } from "@primer/octicons-react";
 
 const { useBreakpoint } = Grid;
 

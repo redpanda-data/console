@@ -8,7 +8,6 @@ import { Alert, Button, Collapse, ConfigProvider, message, Modal, Popover, Radio
 import { observer } from 'mobx-react';
 import { action, autorun, computed, FlowCancellationError, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { DeleteConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsTopic, GroupDescription, PartitionOffset, TopicOffset } from '../../../state/restInterfaces';
-import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-v2-react';
 import { animProps_modalPage, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { AnimatePresence, AnimateSharedLayout, motion } from 'framer-motion';
 import ReactCSSTransitionReplace from 'react-css-transition-replace';
@@ -21,6 +20,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { basePathS } from '../../../utils/env';
 import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
+import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 

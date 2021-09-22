@@ -10,8 +10,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { animProps, animProps_radioOptionGroup, MotionDiv } from "./animationProps";
 import { SizeType } from "antd/lib/config-provider/SizeContext";
 import { makeObservable, observable } from "mobx";
-import { InfoIcon } from "@primer/octicons-v2-react";
 import { TooltipPlacement } from "antd/lib/tooltip";
+import { InfoIcon } from "@primer/octicons-react";
 
 
 

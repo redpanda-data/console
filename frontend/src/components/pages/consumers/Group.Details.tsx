@@ -14,7 +14,6 @@ import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, Ques
 import { TablePaginationConfig } from "antd/lib/table";
 import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString, InfoText } from "../../../utils/tsxUtils";
 import { uiSettings } from "../../../state/ui";
-import { SkipIcon } from "@primer/octicons-v2-react";
 import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
 import { PencilIcon, TrashIcon, XCircleIcon } from '@heroicons/react/solid';
 import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
@@ -24,6 +23,7 @@ import ReactCSSTransitionReplace from 'react-css-transition-replace';
 import { ShortNum } from "../../misc/ShortNum";
 import Tabs from "../../misc/tabs/Tabs";
 import AclList from "../topics/Tab.Acl/AclList";
+import { SkipIcon } from "@primer/octicons-react";
 
 
 @observer
