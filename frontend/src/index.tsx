@@ -15,6 +15,10 @@ import { appGlobal } from "./state/appGlobal";
 import { basePathS, IsBusiness } from "./utils/env";
 import { api } from "./state/backendApi";
 
+import './assets/fonts/open-sans.css';
+import './assets/fonts/poppins.css';
+import './assets/fonts/quicksand.css';
+
 const HistorySetter = withRouter((p: RouteComponentProps) => {
     appGlobal.history = p.history;
     return <></>;

@@ -2006,16 +2006,20 @@ mark {
 .ant-table-filter-trigger {
     width: 32px;
     background: linear-gradient(to right, transparent, hsl(0deg, 0%, 94%));
+    // mix-blend-mode: multiply;
 
     transition: background-color ease-out 0.1s;
     color: hsl(0deg, 0%, 67%);
 
     &.active {
         background: hsl(208deg, 100%, 93%);
+        //    mix-blend-mode: luminosity;
     }
 
     &:hover {
         background: hsl(0deg, 0%, 89%);
+        //     mix-blend-mode: luminosity;
+
 
         .tableFilterIcon {
             color: hsl(0deg, 0%, 60%);
