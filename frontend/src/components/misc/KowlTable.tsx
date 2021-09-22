@@ -2,12 +2,12 @@ import React, { ReactNode, Component, CSSProperties } from "react";
 import { Button, Checkbox, Input, Menu, Pagination, Table } from "antd";
 import { ColumnType } from "antd/lib/table";
 import styles from './KowlTable.module.scss';
-import { ColumnFilterItem, ColumnTitleProps, ExpandableConfig, FilterDropdownProps, TablePaginationConfig } from "antd/lib/table/interface";
+import { ColumnFilterItem, ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from "antd/lib/table/interface";
 import { uiState } from "../../state/uiState";
 import { DEFAULT_TABLE_PAGE_SIZE } from "./common";
 import { action, autorun, comparer, computed, IReactionDisposer, IReactionPublic, makeObservable, observable, reaction, transaction } from "mobx";
 import { observer } from "mobx-react";
-import { clone } from "../../utils/jsonUtils";
+import { clone, toJson } from "../../utils/jsonUtils";
 import { SearchOutlined } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import { findPopupContainer } from "../../utils/tsxUtils";
@@ -67,6 +67,7 @@ export class KowlTable<T extends object = any> extends Component<{
     paginationVisible: boolean;
     @observable observableSettings: TableSettings;
     @observable pagination: TablePaginationConfig;
+    @observable filteredTotal: number = -1;
     currentDataSource: readonly T[] = [];
 
     @observable filterOpen = false; // search bar visible
@@ -93,8 +94,17 @@ export class KowlTable<T extends object = any> extends Component<{
             defaultCurrent: 1,
             current: 1,
             showSizeChanger: true,
-            position: [],
+
+            // hacky: we can't just set position:[] because then antd will pass us the unfiltered data source!
+            position: ['topLeft'],
+            className: 'displayNone',
+
             hideOnSinglePage: false,
+
+            showTotal: action((total, range) => {
+                this.filteredTotal = total;
+                return null;
+            }),
         };
 
         this.observableSettings = this.props.observableSettings ?? observable({
@@ -181,6 +191,10 @@ export class KowlTable<T extends object = any> extends Component<{
     @action updateCustomColumns(cols: KowlColumnType<T>[]) {
         // console.count('table update columns');
         this.customColumns = cols.map(col => Object.assign({}, col)) as KowlColumnTypeInternal<T>[];
+
+        // for (const col of this.customColumns)
+        //     col.onHeaderCell = () => ({ style: { background: '#dbeeff' } });
+
         this.searchColumn = undefined;
         this.updateSearchColumn(this.customColumns);
     }
@@ -242,7 +256,7 @@ export class KowlTable<T extends object = any> extends Component<{
         };
     }
 
-    @action ensureFiltersAreUpdated(data: readonly T[] | undefined) {
+    @action.bound ensureFiltersAreUpdated(data: readonly T[] | undefined) {
         // Filter columns
         for (const col of this.customColumns) {
 
@@ -324,74 +338,46 @@ export class KowlTable<T extends object = any> extends Component<{
         if (p.dataSource)
             this.currentDataSource = p.dataSource;
 
-        const settings = this.observableSettings;
         const pagination = this.pagination;
 
         // trigger mobx update
         const unused1 = pagination.pageSize;
         const unused2 = pagination.current;
 
-        return <>
-            <Table<T>
-                style={{ margin: '0', padding: '0' }}
-                size="middle"
-                showSorterTooltip={false}
-                className={styles.kowlTable + " " + (p.className ?? '')}
+        return <Table<T>
+            style={{ margin: '0', padding: '0' }}
+            size="middle"
+            showSorterTooltip={false}
+            className={styles.kowlTable + " " + (p.className ?? '')}
 
-                dataSource={this.displayData}
-                columns={this.customColumns}
+            dataSource={this.displayData}
+            columns={this.customColumns}
 
-                rowKey={p.rowKey}
-                rowClassName={p.rowClassName}
-                onRow={p.onRow}
+            rowKey={p.rowKey}
+            rowClassName={p.rowClassName}
+            onRow={p.onRow}
 
-                pagination={pagination}
+            pagination={pagination}
 
-                getPopupContainer={findPopupContainer}
-                expandable={p.expandable}
-                footer={currentView => {
-                    // todo: additional footer elements
-                    // console.log('footer', clone({ pagination: pagination, settings: settings }));
-                    if (!this.paginationVisible) return null;
-
-                    return <Pagination size="small" showSizeChanger
-                        total={this.currentDataSource.length}
-                        showTotal={(total) => {
-                            const shown = currentView.length;
-                            return <span className='paginationTotal'>{
-                                (shown == total)
-                                    ? `Total ${total} items`
-                                    : `Showing ${shown} of ${total} items`
-                            }
-                            </span>
-                        }}
-                        pageSize={this.pagination.pageSize}
-                        pageSizeOptions={this.pagination.pageSizeOptions}
-
-                        current={this.pagination.current ?? this.pagination.defaultCurrent}
-                        onChange={(page, pageSize) => {
-                            // console.log('Pagination.onChange', { page: page, pageSize: pageSize });
-
-                            transaction(() => {
-                                pagination.current = page;
-                                if (pageSize != undefined) {
-                                    pagination.pageSize = pageSize;
-                                    settings.pageSize = pageSize;
-                                }
-                            });
-                        }}
-                    />
-                }}
-            />
-
-        </>
+            getPopupContainer={findPopupContainer}
+            expandable={p.expandable}
+            footer={this.renderFooter}
+            onChange={(pagination: TablePaginationConfig, filters: Record<string, FilterValue | null>, sorter: SorterResult<T> | SorterResult<T>[], extra: TableCurrentDataSource<T>) => {
+                console.log('table onChange', {
+                    extra,
+                    pagination,
+                    filters,
+                    sorter
+                })
+            }}
+        />
     }
 
     @computed get filterIcon() {
         return filterIcon(this.filterActive);
     }
 
-    onFilter(record: T): boolean {
+    onFilter = (record: T): boolean => {
 
         let isMatch: boolean;
         const regex = this.searchRegex;
@@ -415,6 +401,70 @@ export class KowlTable<T extends object = any> extends Component<{
 
         return isMatch;
     }
+
+    renderFooter = (currentView: readonly T[]): React.ReactNode => {
+        const pagination = this.pagination;
+
+        // antd bug: 'showTotal' won't be called when no entries match the filters
+        const filteredTotal = currentView.length == 0
+            ? 1
+            : this.filteredTotal;
+
+        // todo: additional footer elements
+        // console.log('footer', clone({
+        //     "this.filteredTotal": this.filteredTotal,
+        //     "viewLen": currentView.length,
+        //     "usedFilteredTotal": filteredTotal,
+        //     "sourceLen": this.currentDataSource.length,
+        //     pagination: {
+        //         pageSize: pagination.pageSize,
+        //         current: pagination.current,
+        //         defaultCurrent: pagination.defaultCurrent,
+        //     }
+        // }));
+        if (!this.paginationVisible) return null;
+
+        const source = this.currentDataSource;
+        const sourceTotal = source.length;
+        const usingFilters = filteredTotal < sourceTotal;
+
+        return <Pagination size="small"
+            showSizeChanger
+            total={filteredTotal}
+            showTotal={() => {
+                let text: string;
+                if (sourceTotal == 0)
+                    text = "";
+                else if (usingFilters)
+                    if (currentView.length == 0)
+                        text = `No matches`;
+                    else
+                        text = `Showing ${filteredTotal} matches (out of ${sourceTotal} total)`;
+                else
+                    text = `Total ${sourceTotal} items`;
+
+                return <span className='paginationTotal'>{text}</span>
+            }}
+            pageSize={pagination.pageSize}
+            pageSizeOptions={pagination.pageSizeOptions}
+            current={pagination.current ?? pagination.defaultCurrent}
+            onChange={this.onPaginationChange}
+        />
+
+    }
+
+    @action.bound onPaginationChange(page: number, pageSize?: number | undefined) {
+        const settings = this.observableSettings;
+        const pagination = this.pagination;
+
+        console.log('Pagination.onPaginationChange', { page: page, pageSize: pageSize });
+        pagination.current = page;
+        if (pageSize != undefined) {
+            pagination.pageSize = pageSize;
+            settings.pageSize = pageSize;
+        }
+    }
+
 }
 
 // sorter:  SorterResult<T>|SorterResult<T>[]
@@ -580,13 +630,4 @@ function customComparerIsSame<T>(a: T, b: T, remainingDepth?: number): boolean {
     }
 
     return true;
-}
-
-
-function debounceEffect<T>(effect: (arg: T, r: IReactionPublic) => void, debounceMs: number) {
-    let timer: NodeJS.Timeout;
-    return (arg: T, r: IReactionPublic) => {
-        clearTimeout(timer)
-        timer = setTimeout(() => effect(arg, r), debounceMs)
-    }
 }
