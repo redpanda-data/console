@@ -3,7 +3,7 @@
 import { Alert, Button, Empty, message, Modal, Popover, Statistic } from 'antd';
 import { motion } from 'framer-motion';
 import { observer } from 'mobx-react';
-import React, { Component, CSSProperties } from 'react';
+import React, { Component, CSSProperties, useState } from 'react';
 
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
@@ -461,8 +461,10 @@ export const ConnectorsColumn = observer((props: { observable: ConnectorInfo | C
     </>
 });
 
-export const TaskState = observer((p: { observable: { state: ClusterConnectorTaskInfo['state'] } }) => {
-    const state = p.observable.state;
+export const TaskState = observer((p: { observable: { state: ClusterConnectorTaskInfo['state'], trace?: string, taskId?: number } }) => {
+    const task = p.observable;
+    const state = task.state;
+
     const iconWrapper = (icon: JSX.Element) => <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle' }}>
         <LayoutBypass width='17px'>
             {icon}
@@ -475,10 +477,41 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     if (state == ConnectorState.Paused) icon = iconWrapper(pauseIcon);
     if (state == ConnectorState.Unassigned) icon = iconWrapper(waitIcon);
 
-    return <span style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }} className='capitalize'>
+    let stateContent = <span style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }} className='capitalize'>
         {icon}
         {String(state).toLowerCase()}
-    </span>
+    </span>;
+
+
+    let errBtn: JSX.Element | undefined = undefined;
+    let modal: JSX.Element | undefined = undefined;
+    if (task.taskId != null && task.trace) {
+        const [err, showErr] = useState(undefined as string | undefined);
+
+        errBtn = <LayoutBypass height='12px' width='autos'>
+            <Button danger onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
+                {stateContent}
+                <span>(Show Error)</span>
+            </Button>
+        </LayoutBypass>
+
+        const close = () => showErr(undefined);
+        modal = <Modal visible={err != null} onOk={close} onCancel={close} cancelButtonProps={{ style: { display: 'none' } }}
+            bodyStyle={{ paddingBottom: '8px', paddingTop: '14px' }}
+            centered
+            closable={false} maskClosable={true}
+            okText='Close' width='60%'
+        >
+            <>
+                <h3>{`Error trace of task ${task.taskId}`}</h3>
+                <div className='codeBox' style={{ whiteSpace: 'pre', overflow: 'scroll', width: '100%', padding: '10px 8px' }}>{err}</div>
+            </>
+        </Modal>;
+
+        stateContent = errBtn;
+    }
+
+    return <div>{stateContent}{modal}</div>
 });
 
 

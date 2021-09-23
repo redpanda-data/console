@@ -136,15 +136,16 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     render: (v, r) => <ConnectorClass observable={r} />
                                 },
                                 {
-                                    title: 'Type', dataIndex: 'type',
-                                    className: 'capitalize',
-                                    sorter: sortField('type'),
-                                    filterType: { type: 'enum', optionClassName: 'capitalize', },
-                                },
-                                {
                                     title: 'Version', dataIndex: 'version',
                                     sorter: sortField('version'),
                                     filterType: { type: 'enum' },
+                                },
+                                {
+                                    title: 'Type', dataIndex: 'type',
+                                    width: '150px',
+                                    className: 'capitalize',
+                                    sorter: sortField('type'),
+                                    filterType: { type: 'enum', optionClassName: 'capitalize', },
                                 },
                             ]}
                             search={{
