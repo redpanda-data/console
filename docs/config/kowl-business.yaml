@@ -44,7 +44,7 @@ kafka:
   #     username:
   #     password: # can be set via the --kafka.sasl.gssapi.password flag as well
   #     realm:
-  #     enableFast: True
+  #     enableFast: true
   #   oauth:
   #     token: # can be set via the --kafka.sasl.oauth.token flag as well
   #   awsMskIam:

@@ -18,7 +18,7 @@ type SASLGSSAPIConfig struct {
 	// EnableFAST enables FAST, which is a pre-authentication framework for Kerberos.
 	// It includes a mechanism for tunneling pre-authentication exchanges using armoured KDC messages.
 	// FAST provides increased resistance to passive password guessing attacks.
-	EnableFast bool `yaml:"EnableFast"`
+	EnableFast bool `yaml:"enableFast"`
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag
