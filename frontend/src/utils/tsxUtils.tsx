@@ -401,7 +401,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
 }
 
 // todo: layoutbypass and zerosizewrapper do the same thing, merge them.
-export class LayoutBypass extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string, positionContentAbsolute?: boolean, noTransform?: boolean }> {
+export class LayoutBypass extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string, positionContentAbsolute?: boolean, transform?: string }> {
 
     static readonly style: CSSProperties = {
         display: 'inline-flex',
@@ -415,7 +415,7 @@ export class LayoutBypass extends Component<{ width?: string, height?: string, j
     render() {
         const p = this.props;
         let style = LayoutBypass.style;
-        if (p.width || p.height || p.justifyContent || p.alignItems) {
+        if (p.width || p.height || p.justifyContent || p.alignItems || p.transform) {
             style = Object.assign({}, style, p);
         }
 

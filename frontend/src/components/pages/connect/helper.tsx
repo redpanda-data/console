@@ -29,6 +29,7 @@ import CassandraLogo from '../../../assets/connectors/cassandra.png';
 import DB2Logo from '../../../assets/connectors/db2.png';
 import { action, makeObservable, observable, runInAction } from 'mobx';
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleFilled, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
+import { QuestionMarkCircleIcon } from '@heroicons/react/solid';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -37,6 +38,8 @@ interface ConnectorMetadata {
     readonly logo?: JSX.Element,         // img element for the connector
     readonly friendlyName?: string;      // override display name (instead of just 'className without namespace')
 }
+
+const fallbackConnector: ConnectorMetadata = { logo: <QuestionMarkCircleIcon className='connectorLogo' style={{ transform: 'translateY(2px) scale(1.15)' }} color='#a9a9a9' /> };
 
 // Order of entries matters:
 // - first step is checking if there is any exact match for 'className'
@@ -166,13 +169,14 @@ function findConnectorMetadata(className: string): ConnectorMetadata | null {
                     break;
                 }
 
-    // store entry in cache (if we found one)
-    if (meta) {
-        connectorMetadataMatchCache[c] = meta;
-        return meta;
+    // use fallback icon
+    if (!meta) {
+        meta = fallbackConnector;
     }
 
-    return null;
+    // store entry in cache
+    connectorMetadataMatchCache[c] = meta;
+    return meta;
 }
 
 
@@ -182,13 +186,15 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
     const meta = findConnectorMetadata(c);
     const displayName = meta?.friendlyName ?? removeNamespace(c);
 
-    return <span>
+    return <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
         {meta && meta.logo &&
             <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
-                <LayoutBypass height='0px' width='27px' >
+                <LayoutBypass height='0px' width='25px' transform='translateY(-1px)' >
                     {meta.logo}
                 </LayoutBypass>
-            </span>}
+            </span>
+        }
+
         <Popover placement='right' overlayClassName='popoverSmall'
             getPopupContainer={findPopupContainer}
             content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
@@ -197,7 +203,7 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
         >
             {displayName}
         </Popover>
-    </span>
+    </div>
 });
 
 export function removeNamespace(className: string): string {
