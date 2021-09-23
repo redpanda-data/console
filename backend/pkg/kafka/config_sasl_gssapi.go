@@ -14,6 +14,11 @@ type SASLGSSAPIConfig struct {
 	Username           string `yaml:"username"`
 	Password           string `yaml:"password"`
 	Realm              string `yaml:"realm"`
+
+	// EnableFAST enables FAST, which is a pre-authentication framework for Kerberos.
+	// It includes a mechanism for tunneling pre-authentication exchanges using armoured KDC messages.
+	// FAST provides increased resistance to passive password guessing attacks.
+	EnableFast bool `yaml:"enableFast"`
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag
@@ -27,4 +32,8 @@ func (c *SASLGSSAPIConfig) Validate() error {
 	}
 
 	return nil
+}
+
+func (s *SASLGSSAPIConfig) SetDefaults() {
+	s.EnableFast = true
 }

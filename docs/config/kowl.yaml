@@ -2,15 +2,15 @@
 # Kowl considers config options from three sources:
 # Flags, YAML config and env variables - in that order.
 # Accordingly env variables and YAML configs can overwrite input
-# that is set via flags. 
+# that is set via flags.
 #
 # --- YAML
 # If you want to configure Kowl using a YAML file, specify the path
-# either by setting the flag -config.filepath or by providing 
+# either by setting the flag -config.filepath or by providing
 # the path via the env variable CONFIG_FILEPATH.
 #
 # --- Env variables
-# All config options can be configured via environment variables 
+# All config options can be configured via environment variables
 # as well.
 # Env variables that expect array values can be provided by providing
 # a comma separated string ("kafka-0:9092,kafka-1:9092").
@@ -44,6 +44,7 @@ kafka:
   #     username:
   #     password: # can be set via the --kafka.sasl.gssapi.password flag as well
   #     realm:
+  #     enableFast: true
   #   oauth:
   #     token: # can be set via the --kafka.sasl.oauth.token flag as well
   #   awsMskIam:
@@ -111,7 +112,6 @@ kafka:
   # messagePack:
   #   enabled: false
   #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
-
 # connect:
 #   enabled: false
 #   # An empty array for clusters is the default, but you have to specify at least one cluster, as soon as
