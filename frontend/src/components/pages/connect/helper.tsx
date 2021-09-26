@@ -324,8 +324,7 @@ export class ConfirmModal<T> extends Component<{
 
     @action.bound success(target: T) {
         const messageContent = this.props.successMessage(target);
-        let msg: MessageType;
-        msg = message.success({ content: messageContent, onClick: () => msg?.() });
+        const msg = message.success({ content: messageContent, onClick: () => msg?.() });
 
         this.cancel();
     }
