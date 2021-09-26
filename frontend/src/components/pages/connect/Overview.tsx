@@ -94,14 +94,17 @@ class TabClusters extends Component {
                     sorter: sortField('clusterName'), defaultSortOrder: 'ascend',
                 },
                 {
+                    dataIndex: 'clusterAddress',
                     title: 'Version', render: (_, r) => r.clusterInfo.version, sorter: sortField('clusterAddress'),
                     filterType: { type: 'enum' },
                 },
                 {
+                    dataIndex: 'connectors',
                     width: 150,
                     title: 'Connectors', render: (_, r) => <ConnectorsColumn observable={r} />
                 },
                 {
+                    dataIndex: 'connectors',
                     width: 150,
                     title: 'Tasks', render: (_, r) => <TasksColumn observable={r} />
                 },
@@ -198,7 +201,15 @@ class TabTasks extends Component {
     render() {
         const clusters = api.connectConnectors!.clusters;
         const allConnectors = clusters?.flatMap(cluster => cluster.connectors.map(c => ({ cluster, ...c })));
-        const allTasks = allConnectors?.flatMap(con => con.tasks.map(task => ({ ...con, taskId: task.taskId, taskState: task.state, taskWorkerId: task.workerId })));
+        const allTasks = allConnectors?.flatMap(con => con.tasks.map(task => {
+            return {
+                ...task,
+                connector: con,
+                cluster: con.cluster,
+
+                connectorName: con.name,
+            };
+        }));
 
         return <KowlTable
             dataSource={allTasks}
@@ -206,22 +217,25 @@ class TabTasks extends Component {
                 {
                     title: 'Connector', dataIndex: 'name',
                     width: '35%',
-                    sorter: sortField('name'), defaultSortOrder: 'ascend',
+                    sorter: sortField('connectorName'), defaultSortOrder: 'ascend',
                     render: (_, r) => (
-                        <span className='hoverLink' onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
-                            {r.name}
+                        <span className='hoverLink' onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.connectorName}`)}>
+                            {r.connectorName}
                         </span>
                     )
                 },
-                { title: 'Task ID', dataIndex: 'taskId', sorter: sortField('taskId') },
                 {
-                    title: 'State', dataIndex: 'taskState',
-                    render: (_, r) => <TaskState observable={r} />,
-                    sorter: sortField('taskState'),
-                    filterType: { type: 'enum', optionClassName: 'capitalize' },
+                    title: 'Task ID', dataIndex: 'taskId', sorter: sortField('taskId'),
+                    width: 50,
                 },
                 {
-                    title: 'Worker', dataIndex: 'taskWorkerId', sorter: sortField('taskWorkerId'),
+                    title: 'State', dataIndex: 'state',
+                    render: (_, r) => <TaskState observable={r} />,
+                    sorter: sortField('state'),
+                    filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: x => String(x).toLowerCase() },
+                },
+                {
+                    title: 'Worker', dataIndex: 'workerId', sorter: sortField('workerId'),
                     filterType: { type: 'enum' },
                 },
                 {
@@ -229,14 +243,14 @@ class TabTasks extends Component {
                     render: (_, c) => <Code nowrap>{c.cluster.clusterName}</Code>
                 },
             ]}
-            rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.name + r.taskId}
+            rowKey={r => r.cluster.clusterName + r.cluster.clusterAddress + r.connectorName + r.taskId}
 
             search={{
                 searchColumnIndex: 0,
-                isRowMatch: (row, regex) => regex.test(row.name)
+                isRowMatch: (row, regex) => regex.test(row.connectorName)
                     || regex.test(String(row.taskId))
-                    || regex.test(row.taskState)
-                    || regex.test(row.taskWorkerId)
+                    || regex.test(row.state)
+                    || regex.test(row.workerId)
                     || regex.test(row.cluster.clusterName)
             }}
 

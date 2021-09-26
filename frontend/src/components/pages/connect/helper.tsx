@@ -30,6 +30,7 @@ import DB2Logo from '../../../assets/connectors/db2.png';
 import { action, makeObservable, observable, runInAction } from 'mobx';
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleFilled, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
 import { QuestionMarkCircleIcon } from '@heroicons/react/solid';
+import { MessageType } from 'antd/lib/message';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -323,7 +324,8 @@ export class ConfirmModal<T> extends Component<{
 
     @action.bound success(target: T) {
         const messageContent = this.props.successMessage(target);
-        message.success({ content: messageContent });
+        let msg: MessageType;
+        msg = message.success({ content: messageContent, onClick: () => msg?.() });
 
         this.cancel();
     }

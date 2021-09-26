@@ -32,6 +32,7 @@ type antdFilterProps = 'defaultFilteredValue';
 export type KowlColumnType<T> = Omit<ColumnType<T>, antdFilterProps | 'render'> & {
     filterType?: EnumFilter | NumericFilter;
     render?: (value: any, record: T, index: number, highlight: (text: string) => JSX.Element) => React.ReactNode;
+    //dataIndex: keyof T | string[];
 };
 
 type KowlColumnTypeInternal<T> = ColumnType<T> & {
@@ -262,6 +263,9 @@ export class KowlTable<T extends object = any> extends Component<{
 
             if (col.filterType == undefined) continue;
             if (col.filterType.type == 'enum') {
+
+                if (col.dataIndex == undefined)
+                    console.warn('columns with filterType also require dataIndex');
 
                 // Add user defined values
                 col.filters = col.filterType.filterEnumOptions?.map(e => ({
