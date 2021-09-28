@@ -1,0 +1,47 @@
+.wizard {
+  :global(.ant-steps-item-custom.ant-steps-item-process .ant-steps-item-icon) > :global(.ant-steps-icon),
+  :global(.ant-steps-item-finish .ant-steps-item-icon) > :global(.ant-steps-icon) {
+    color: #5850EC;
+  }
+
+  :global(.ant-steps-item-finish) > :global(.ant-steps-item-container) > :global(.ant-steps-item-content) > :global(.ant-steps-item-title::after),
+  :global(.ant-btn-primary) {
+    background-color: #5850EC;
+  }
+
+  :global(.ant-btn:not(.ant-btn-primary)) {
+    &:hover, &:focus {
+      border-color: lighten(#5850EC, 3%);
+      color: lighten(#5850EC, 3%);
+    }
+  }
+
+  :global(.ant-btn-primary) {
+    &:hover, &:focus {
+      background-color: lighten(#5850EC, 3%);
+      border-color: lighten(#5850EC, 3%);
+    }
+  }
+}
+
+.steps {
+  margin-bottom: 35px;
+}
+
+.content {
+  margin-bottom: 35px;
+}
+
+.footer {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.nextButton {
+  margin-left: auto;
+}
+
+.prevButton {
+  margin-right: 15px;
+}
