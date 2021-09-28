@@ -18,14 +18,14 @@ import { api } from "../state/backendApi";
 import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
-import { IsDev } from "../utils/env";
-import { AdjustmentsIcon, ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, PuzzleIcon, ShieldCheckIcon, BeakerIcon, LinkIcon } from '@heroicons/react/outline'
+import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, BeakerIcon, LinkIcon } from '@heroicons/react/outline'
 import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
-import { Feature, FeatureEntry, Features, isSupported } from "../state/supportedFeatures";
+import { Feature, FeatureEntry, isSupported } from "../state/supportedFeatures";
 import { UserPermissions } from "../state/restInterfaces";
 import KafkaConnectOverview from "./pages/connect/Overview";
 import KafkaConnectorDetails from "./pages/connect/Connector.Details";
 import KafkaClusterDetails from "./pages/connect/Cluster.Details";
+import CreateConnector from "./pages/connect/CreateConnector";
 
 
 //
@@ -273,6 +273,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     ),
 
     MakeRoute<{}>('/kafka-connect', KafkaConnectOverview, 'Kafka Connect', <span className='menuIcon anticon'><LinkIcon /></span>, true),
+    MakeRoute<{}>('/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
     MakeRoute<{ clusterName: string }>('/kafka-connect/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string, connector: string }>('/kafka-connect/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
 
