@@ -1,0 +1,22 @@
+.radioCardGroup {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-gap: 1rem;
+
+  & > li,
+  & > li > label {
+    display: contents;
+  }
+
+  & > li > label {
+    cursor: pointer;
+  }
+
+  & > li > label > input {
+    display: none;
+  }
+}
