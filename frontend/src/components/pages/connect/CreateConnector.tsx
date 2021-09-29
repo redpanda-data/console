@@ -13,8 +13,8 @@ import {appGlobal} from '../../../state/appGlobal';
 import {ClusterConnectors} from '../../../state/restInterfaces';
 import {Select} from 'antd';
 import {HiddenRadioList} from '../../misc/HiddenRadioList';
-import {ConnectorBoxCard} from './ConnectorBoxCard';
-import { DemoPage } from './dynamic-ui/components';
+import {ConnectorBoxCard, ConnectorPlugin} from './ConnectorBoxCard';
+import {DemoPage} from './dynamic-ui/components';
 
 const {Option} = Select;
 
@@ -22,8 +22,8 @@ interface ConnectorTypeProps {
   connectClusters: Array<ClusterConnectors>;
   activeCluster: string | null;
   onActiveClusterChange: (clusterName: string | null) => void;
-  selectedPlugin: string | null;
-  onPluginSelectionChange: (pluginClassName: string | null) => void;
+  selectedPlugin: ConnectorPlugin | null;
+  onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void;
 }
 
 const ConnectorType = observer(({
@@ -48,12 +48,14 @@ const ConnectorType = observer(({
     {activeCluster == null ? null : (<>
       <h2>Connector Type</h2>
 
-      <HiddenRadioList<string> name={'connector-type'} onChange={onPluginSelectionChange}
-                               value={selectedPlugin ?? undefined}
-                               options={api.connectAdditionalClusterInfo.get(activeCluster)?.plugins.map(plugin => ({
-                                 value: plugin.class,
-                                 render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin}/>,
-                               })) || []}/>
+      <HiddenRadioList<ConnectorPlugin>
+          name={'connector-type'}
+          onChange={onPluginSelectionChange}
+          value={selectedPlugin ?? undefined}
+          options={api.connectAdditionalClusterInfo.get(activeCluster)?.plugins.map(plugin => ({
+            value: plugin,
+            render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin}/>,
+          })) || []}/>
     </>)}
   </>);
 });
@@ -77,7 +79,7 @@ class CreateConnector extends PageComponent {
     if (clusters == null) return null;
 
     return (
-        <motion.div {...animProps} style={{margin: '0 1rem'}}>
+        <motion.div {...animProps} className={styles.motionContainer}>
           <Card className={styles.wizardView}>
             <ConnectorWizard connectClusters={clusters}/>
           </Card>
@@ -93,7 +95,7 @@ interface ConnectorWizardProps {
 function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [activeCluster, setActiveCluster] = useState<string | null>(null);
-  const [selectedPlugin, setSelectedPlugin] = useState<string | null>(null);
+  const [selectedPlugin, setSelectedPlugin] = useState<ConnectorPlugin | null>(null);
 
   const steps: Array<WizardStep> = [
     {
@@ -112,7 +114,18 @@ function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
       title: 'Properties',
       description: 'Configure basic connection properties.',
       icon: <ApiOutlined/>,
-      content: <DemoPage />,
+      content: <>
+        {selectedPlugin != null
+            ? <div className={styles.connectorBoxCard}>
+              <ConnectorBoxCard
+                  connectorPlugin={selectedPlugin}
+                  borderStyle={'dashed'}
+                  borderWidth={'medium'}
+                  hoverable={false}/>
+            </div>
+            : null}
+        <DemoPage/>
+      </>,
       postConditionMet: () => true,
     }, {
       title: 'Additional Properties',

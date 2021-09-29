@@ -9,9 +9,18 @@
   border-style: dashed;
 }
 
-.hoverable:hover,
-.active {
-  border-width: 2px;
+.hoverable:hover {
+  border-color: lighten(#418fd8, 25%);
+}
+
+.active,
+.active:hover {
   border-color: #418fd8;
+}
+
+.hoverable:hover,
+.active,
+.medium {
+  border-width: 2px;
   padding: 15px;
 }

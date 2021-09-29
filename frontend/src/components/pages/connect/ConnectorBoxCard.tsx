@@ -4,18 +4,18 @@ import React from 'react';
 import BoxCard, {BoxCardProps} from '../../misc/BoxCard';
 import {HiddenRadioOption} from '../../misc/HiddenRadioList';
 
-interface ConnectorBoxCardProps extends BoxCardProps, HiddenRadioOption<string> {
+interface ConnectorBoxCardProps extends Omit<BoxCardProps, "children">, Omit<HiddenRadioOption<string>, "render" | "value"> {
   connectorPlugin: ConnectorPlugin;
 }
 
 export function ConnectorBoxCard(props: ConnectorBoxCardProps) {
-  const {checked, connectorPlugin} = props;
-  return (<BoxCard active={checked}>
+  const {checked, connectorPlugin, hoverable, active, borderWidth, borderStyle} = props;
+  return (<BoxCard active={checked || active} hoverable={hoverable} borderStyle={borderStyle} borderWidth={borderWidth}>
     <ConnectorRadioCardContent connectorPlugin={connectorPlugin}/>
   </BoxCard>);
 }
 
-type ConnectorPlugin = { class: string; type?: string; version?: string };
+export type ConnectorPlugin = { class: string; type?: string; version?: string };
 
 function ConnectorRadioCardContent({connectorPlugin}: { connectorPlugin: ConnectorPlugin }) {
   const {friendlyName, logo} = findConnectorMetadata(connectorPlugin.class) ?? {};

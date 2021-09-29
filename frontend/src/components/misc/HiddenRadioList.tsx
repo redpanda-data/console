@@ -30,7 +30,7 @@ export function HiddenRadioList<ValueType>({options, name, onChange, value, ...r
                   type="radio"
                   value={String(option.value)}
                   name={name}
-                  onInput={() => onChange(option.value)}
+                  onChange={() => onChange(option.value)}
                   checked={checked}
                   disabled={disabled}
               />
