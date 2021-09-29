@@ -6,7 +6,7 @@ import { MessageType } from "antd/lib/message";
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 import { TimestampDisplayFormat } from "../state/ui";
 import { observer } from "mobx-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, transform } from "framer-motion";
 import { animProps, animProps_radioOptionGroup, MotionDiv } from "./animationProps";
 import { SizeType } from "antd/lib/config-provider/SizeContext";
 import { makeObservable, observable } from "mobx";
@@ -196,22 +196,27 @@ export const InfoText = (p: {
     icon?: React.ReactNode,
 
     maxWidth?: string,
+    align?: 'center' | 'left',
     placement?: TooltipPlacement
+
+    gap?: string,
+    transform?: string
 }) => {
 
-    const overlay = p.maxWidth == null ? p.tooltip : <div style={{ maxWidth: p.maxWidth }}>{p.tooltip}</div>
+    const overlay = (p.maxWidth || p.align) ? <div style={{ maxWidth: p.maxWidth, textAlign: p.align }}>{p.tooltip}</div> : p.tooltip;
 
     const size = p.iconSize ?? '14px';
+    const gap = p.gap ?? '4px';
 
     const gray = 'hsl(0deg, 0%, 50%)';
     const blue = 'hsl(209deg, 100%, 55%)';
     const color = p.iconColor ?? gray;
 
-    const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size, marginLeft: '4px', }} >{p.icon ?? <InfoIcon />}</span>
+    const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size, height: size, marginLeft: gap, transform: p.transform }}>{p.icon ?? <InfoIcon />}</span>
 
     if (p.tooltipOverText === true)
         return <Tooltip overlay={overlay} trigger="hover" mouseLeaveDelay={0} getPopupContainer={findPopupContainer} placement={p.placement}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
                 {p.children}
                 {icon}
             </span>

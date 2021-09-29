@@ -1,0 +1,602 @@
+{
+    "name": "com.github.jcustenborder.kafka.connect.twitter.TwitterSourceConnector",
+    "error_count": 8,
+    "groups": [
+        "Common",
+        "Transforms",
+        "Predicates",
+        "Error Handling",
+        "Topic Creation",
+        ""
+    ],
+    "configs": [
+        {
+            "definition": {
+                "name": "name",
+                "type": "STRING",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Globally unique name to use for this connector.",
+                "group": "Common",
+                "width": "MEDIUM",
+                "display_name": "Connector name",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "name",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"name\" which has no default value."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "connector.class",
+                "type": "STRING",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Name or alias of the class for this connector. Must be a subclass of org.apache.kafka.connect.connector.Connector. If the connector is org.apache.kafka.connect.file.FileStreamSinkConnector, you can either specify this full name,  or use \"FileStreamSink\" or \"FileStreamSinkConnector\" to make the configuration a bit shorter",
+                "group": "Common",
+                "width": "LONG",
+                "display_name": "Connector class",
+                "dependents": [],
+                "order": 2
+            },
+            "value": {
+                "name": "connector.class",
+                "value": "com.github.jcustenborder.kafka.connect.twitter.TwitterSourceConnector",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "tasks.max",
+                "type": "INT",
+                "required": false,
+                "default_value": "1",
+                "importance": "HIGH",
+                "documentation": "Maximum number of tasks to use for this connector.",
+                "group": "Common",
+                "width": "SHORT",
+                "display_name": "Tasks max",
+                "dependents": [],
+                "order": 3
+            },
+            "value": {
+                "name": "tasks.max",
+                "value": "1",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "key.converter",
+                "type": "CLASS",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "Converter class used to convert between Kafka Connect format and the serialized form that is written to Kafka. This controls the format of the keys in messages written to or read from Kafka, and since this is independent of connectors it allows any connector to work with any serialization format. Examples of common formats include JSON and Avro.",
+                "group": "Common",
+                "width": "SHORT",
+                "display_name": "Key converter class",
+                "dependents": [],
+                "order": 4
+            },
+            "value": {
+                "name": "key.converter",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "value.converter",
+                "type": "CLASS",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "Converter class used to convert between Kafka Connect format and the serialized form that is written to Kafka. This controls the format of the values in messages written to or read from Kafka, and since this is independent of connectors it allows any connector to work with any serialization format. Examples of common formats include JSON and Avro.",
+                "group": "Common",
+                "width": "SHORT",
+                "display_name": "Value converter class",
+                "dependents": [],
+                "order": 5
+            },
+            "value": {
+                "name": "value.converter",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "header.converter",
+                "type": "CLASS",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "HeaderConverter class used to convert between Kafka Connect format and the serialized form that is written to Kafka. This controls the format of the header values in messages written to or read from Kafka, and since this is independent of connectors it allows any connector to work with any serialization format. Examples of common formats include JSON and Avro. By default, the SimpleHeaderConverter is used to serialize header values to strings and deserialize them by inferring the schemas.",
+                "group": "Common",
+                "width": "SHORT",
+                "display_name": "Header converter class",
+                "dependents": [],
+                "order": 6
+            },
+            "value": {
+                "name": "header.converter",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "transforms",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "Aliases for the transformations to be applied to records.",
+                "group": "Transforms",
+                "width": "LONG",
+                "display_name": "Transforms",
+                "dependents": [],
+                "order": 7
+            },
+            "value": {
+                "name": "transforms",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "predicates",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "Aliases for the predicates used by transformations.",
+                "group": "Predicates",
+                "width": "LONG",
+                "display_name": "Predicates",
+                "dependents": [],
+                "order": 8
+            },
+            "value": {
+                "name": "predicates",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "config.action.reload",
+                "type": "STRING",
+                "required": false,
+                "default_value": "restart",
+                "importance": "LOW",
+                "documentation": "The action that Connect should take on the connector when changes in external configuration providers result in a change in the connector's configuration properties. A value of 'none' indicates that Connect will do nothing. A value of 'restart' indicates that Connect should restart/reload the connector with the updated configuration properties.The restart may actually be scheduled in the future if the external configuration provider indicates that a configuration value will expire in the future.",
+                "group": "Common",
+                "width": "MEDIUM",
+                "display_name": "Reload Action",
+                "dependents": [],
+                "order": 9
+            },
+            "value": {
+                "name": "config.action.reload",
+                "value": "restart",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.retry.timeout",
+                "type": "LONG",
+                "required": false,
+                "default_value": "0",
+                "importance": "MEDIUM",
+                "documentation": "The maximum duration in milliseconds that a failed operation will be reattempted. The default is 0, which means no retries will be attempted. Use -1 for infinite retries.",
+                "group": "Error Handling",
+                "width": "MEDIUM",
+                "display_name": "Retry Timeout for Errors",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "errors.retry.timeout",
+                "value": "0",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.retry.delay.max.ms",
+                "type": "LONG",
+                "required": false,
+                "default_value": "60000",
+                "importance": "MEDIUM",
+                "documentation": "The maximum duration in milliseconds between consecutive retry attempts. Jitter will be added to the delay once this limit is reached to prevent thundering herd issues.",
+                "group": "Error Handling",
+                "width": "MEDIUM",
+                "display_name": "Maximum Delay Between Retries for Errors",
+                "dependents": [],
+                "order": 2
+            },
+            "value": {
+                "name": "errors.retry.delay.max.ms",
+                "value": "60000",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.tolerance",
+                "type": "STRING",
+                "required": false,
+                "default_value": "none",
+                "importance": "MEDIUM",
+                "documentation": "Behavior for tolerating errors during connector operation. 'none' is the default value and signals that any error will result in an immediate connector task failure; 'all' changes the behavior to skip over problematic records.",
+                "group": "Error Handling",
+                "width": "SHORT",
+                "display_name": "Error Tolerance",
+                "dependents": [],
+                "order": 3
+            },
+            "value": {
+                "name": "errors.tolerance",
+                "value": "none",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.log.enable",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "MEDIUM",
+                "documentation": "If true, write each error and the details of the failed operation and problematic record to the Connect application log. This is 'false' by default, so that only errors that are not tolerated are reported.",
+                "group": "Error Handling",
+                "width": "SHORT",
+                "display_name": "Log Errors",
+                "dependents": [],
+                "order": 4
+            },
+            "value": {
+                "name": "errors.log.enable",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.log.include.messages",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "MEDIUM",
+                "documentation": "Whether to the include in the log the Connect record that resulted in a failure. This is 'false' by default, which will prevent record keys, values, and headers from being written to log files, although some information such as topic and partition number will still be logged.",
+                "group": "Error Handling",
+                "width": "SHORT",
+                "display_name": "Log Error Details",
+                "dependents": [],
+                "order": 5
+            },
+            "value": {
+                "name": "errors.log.include.messages",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "topic.creation.groups",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "Groups of configurations for topics created by source connectors",
+                "group": "Topic Creation",
+                "width": "LONG",
+                "display_name": "Topic Creation Groups",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "topic.creation.groups",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "twitter.debug",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "LOW",
+                "documentation": "Flag to enable debug logging for the twitter api.",
+                "group": null,
+                "width": "NONE",
+                "display_name": "twitter.debug",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "twitter.debug",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "twitter.oauth.consumerKey",
+                "type": "PASSWORD",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "OAuth consumer key",
+                "group": null,
+                "width": "NONE",
+                "display_name": "twitter.oauth.consumerKey",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "twitter.oauth.consumerKey",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"twitter.oauth.consumerKey\" which has no default value."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "twitter.oauth.consumerSecret",
+                "type": "PASSWORD",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "OAuth consumer secret",
+                "group": null,
+                "width": "NONE",
+                "display_name": "twitter.oauth.consumerSecret",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "twitter.oauth.consumerSecret",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"twitter.oauth.consumerSecret\" which has no default value."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "twitter.oauth.accessToken",
+                "type": "PASSWORD",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "OAuth access token",
+                "group": null,
+                "width": "NONE",
+                "display_name": "twitter.oauth.accessToken",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "twitter.oauth.accessToken",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"twitter.oauth.accessToken\" which has no default value."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "twitter.oauth.accessTokenSecret",
+                "type": "PASSWORD",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "OAuth access token secret",
+                "group": null,
+                "width": "NONE",
+                "display_name": "twitter.oauth.accessTokenSecret",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "twitter.oauth.accessTokenSecret",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"twitter.oauth.accessTokenSecret\" which has no default value."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "filter.keywords",
+                "type": "LIST",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Twitter keywords to filter for.",
+                "group": null,
+                "width": "NONE",
+                "display_name": "filter.keywords",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "filter.keywords",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"filter.keywords\" which has no default value."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "filter.userIds",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "HIGH",
+                "documentation": "Twitter user IDs to follow.",
+                "group": "",
+                "width": "NONE",
+                "display_name": "filter.userIds",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "filter.userIds",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "kafka.status.topic",
+                "type": "STRING",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Kafka topic to write the statuses to.",
+                "group": null,
+                "width": "NONE",
+                "display_name": "kafka.status.topic",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "kafka.status.topic",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"kafka.status.topic\" which has no default value."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "process.deletes",
+                "type": "BOOLEAN",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Should this connector process deletes.",
+                "group": null,
+                "width": "NONE",
+                "display_name": "process.deletes",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "process.deletes",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"process.deletes\" which has no default value."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "queue.empty.ms",
+                "type": "INT",
+                "required": false,
+                "default_value": "100",
+                "importance": "LOW",
+                "documentation": "The amount of time to wait if there are no records in the queue.",
+                "group": "",
+                "width": "NONE",
+                "display_name": "queue.empty.ms",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "queue.empty.ms",
+                "value": "100",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "queue.batch.size",
+                "type": "INT",
+                "required": false,
+                "default_value": "100",
+                "importance": "LOW",
+                "documentation": "The number of records to return in a single batch.",
+                "group": "",
+                "width": "NONE",
+                "display_name": "queue.batch.size",
+                "dependents": [],
+                "order": -1
+            },
+            "value": {
+                "name": "queue.batch.size",
+                "value": "100",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        }
+    ]
+}

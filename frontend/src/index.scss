@@ -1287,6 +1287,20 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     padding: 9px 0 0 !important;
 }
 
+.ant-collapse.ant-collapse-ghost {
+
+    .ant-collapse-header {
+        padding-left: 20px;
+
+        .ant-collapse-arrow {
+            left: 2px;
+        }
+    }
+
+    .ant-collapse-content-box {
+        padding: 6px 9px !important;
+    }
+}
 
 
 .subjectListExpander {

@@ -1,0 +1,1625 @@
+{
+    "name": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
+    "error_count": 3,
+    "groups": [
+        "Common",
+        "Transforms",
+        "Predicates",
+        "Error Handling",
+        "Connector",
+        "Data Conversion",
+        "Proxy",
+        "Security",
+        "Kerberos",
+        "Data Stream"
+    ],
+    "configs": [
+        {
+            "definition": {
+                "name": "name",
+                "type": "STRING",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Globally unique name to use for this connector.",
+                "group": "Common",
+                "width": "MEDIUM",
+                "display_name": "Connector name",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "name",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"name\" which has no default value."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "connector.class",
+                "type": "STRING",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Name or alias of the class for this connector. Must be a subclass of org.apache.kafka.connect.connector.Connector. If the connector is org.apache.kafka.connect.file.FileStreamSinkConnector, you can either specify this full name,  or use \"FileStreamSink\" or \"FileStreamSinkConnector\" to make the configuration a bit shorter",
+                "group": "Common",
+                "width": "LONG",
+                "display_name": "Connector class",
+                "dependents": [],
+                "order": 2
+            },
+            "value": {
+                "name": "connector.class",
+                "value": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "tasks.max",
+                "type": "INT",
+                "required": false,
+                "default_value": "1",
+                "importance": "HIGH",
+                "documentation": "Maximum number of tasks to use for this connector.",
+                "group": "Common",
+                "width": "SHORT",
+                "display_name": "Tasks max",
+                "dependents": [],
+                "order": 3
+            },
+            "value": {
+                "name": "tasks.max",
+                "value": "1",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "key.converter",
+                "type": "CLASS",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "Converter class used to convert between Kafka Connect format and the serialized form that is written to Kafka. This controls the format of the keys in messages written to or read from Kafka, and since this is independent of connectors it allows any connector to work with any serialization format. Examples of common formats include JSON and Avro.",
+                "group": "Common",
+                "width": "SHORT",
+                "display_name": "Key converter class",
+                "dependents": [],
+                "order": 4
+            },
+            "value": {
+                "name": "key.converter",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "value.converter",
+                "type": "CLASS",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "Converter class used to convert between Kafka Connect format and the serialized form that is written to Kafka. This controls the format of the values in messages written to or read from Kafka, and since this is independent of connectors it allows any connector to work with any serialization format. Examples of common formats include JSON and Avro.",
+                "group": "Common",
+                "width": "SHORT",
+                "display_name": "Value converter class",
+                "dependents": [],
+                "order": 5
+            },
+            "value": {
+                "name": "value.converter",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "header.converter",
+                "type": "CLASS",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "HeaderConverter class used to convert between Kafka Connect format and the serialized form that is written to Kafka. This controls the format of the header values in messages written to or read from Kafka, and since this is independent of connectors it allows any connector to work with any serialization format. Examples of common formats include JSON and Avro. By default, the SimpleHeaderConverter is used to serialize header values to strings and deserialize them by inferring the schemas.",
+                "group": "Common",
+                "width": "SHORT",
+                "display_name": "Header converter class",
+                "dependents": [],
+                "order": 6
+            },
+            "value": {
+                "name": "header.converter",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "transforms",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "Aliases for the transformations to be applied to records.",
+                "group": "Transforms",
+                "width": "LONG",
+                "display_name": "Transforms",
+                "dependents": [],
+                "order": 7
+            },
+            "value": {
+                "name": "transforms",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "predicates",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "Aliases for the predicates used by transformations.",
+                "group": "Predicates",
+                "width": "LONG",
+                "display_name": "Predicates",
+                "dependents": [],
+                "order": 8
+            },
+            "value": {
+                "name": "predicates",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "config.action.reload",
+                "type": "STRING",
+                "required": false,
+                "default_value": "restart",
+                "importance": "LOW",
+                "documentation": "The action that Connect should take on the connector when changes in external configuration providers result in a change in the connector's configuration properties. A value of 'none' indicates that Connect will do nothing. A value of 'restart' indicates that Connect should restart/reload the connector with the updated configuration properties.The restart may actually be scheduled in the future if the external configuration provider indicates that a configuration value will expire in the future.",
+                "group": "Common",
+                "width": "MEDIUM",
+                "display_name": "Reload Action",
+                "dependents": [],
+                "order": 9
+            },
+            "value": {
+                "name": "config.action.reload",
+                "value": "restart",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.retry.timeout",
+                "type": "LONG",
+                "required": false,
+                "default_value": "0",
+                "importance": "MEDIUM",
+                "documentation": "The maximum duration in milliseconds that a failed operation will be reattempted. The default is 0, which means no retries will be attempted. Use -1 for infinite retries.",
+                "group": "Error Handling",
+                "width": "MEDIUM",
+                "display_name": "Retry Timeout for Errors",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "errors.retry.timeout",
+                "value": "0",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.retry.delay.max.ms",
+                "type": "LONG",
+                "required": false,
+                "default_value": "60000",
+                "importance": "MEDIUM",
+                "documentation": "The maximum duration in milliseconds between consecutive retry attempts. Jitter will be added to the delay once this limit is reached to prevent thundering herd issues.",
+                "group": "Error Handling",
+                "width": "MEDIUM",
+                "display_name": "Maximum Delay Between Retries for Errors",
+                "dependents": [],
+                "order": 2
+            },
+            "value": {
+                "name": "errors.retry.delay.max.ms",
+                "value": "60000",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.tolerance",
+                "type": "STRING",
+                "required": false,
+                "default_value": "none",
+                "importance": "MEDIUM",
+                "documentation": "Behavior for tolerating errors during connector operation. 'none' is the default value and signals that any error will result in an immediate connector task failure; 'all' changes the behavior to skip over problematic records.",
+                "group": "Error Handling",
+                "width": "SHORT",
+                "display_name": "Error Tolerance",
+                "dependents": [],
+                "order": 3
+            },
+            "value": {
+                "name": "errors.tolerance",
+                "value": "none",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.log.enable",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "MEDIUM",
+                "documentation": "If true, write each error and the details of the failed operation and problematic record to the Connect application log. This is 'false' by default, so that only errors that are not tolerated are reported.",
+                "group": "Error Handling",
+                "width": "SHORT",
+                "display_name": "Log Errors",
+                "dependents": [],
+                "order": 4
+            },
+            "value": {
+                "name": "errors.log.enable",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.log.include.messages",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "MEDIUM",
+                "documentation": "Whether to the include in the log the Connect record that resulted in a failure. This is 'false' by default, which will prevent record keys, values, and headers from being written to log files, although some information such as topic and partition number will still be logged.",
+                "group": "Error Handling",
+                "width": "SHORT",
+                "display_name": "Log Error Details",
+                "dependents": [],
+                "order": 5
+            },
+            "value": {
+                "name": "errors.log.include.messages",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "topics",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "HIGH",
+                "documentation": "List of topics to consume, separated by commas",
+                "group": "Common",
+                "width": "LONG",
+                "display_name": "Topics",
+                "dependents": [],
+                "order": 4
+            },
+            "value": {
+                "name": "topics",
+                "value": "abc",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "topics.regex",
+                "type": "STRING",
+                "required": false,
+                "default_value": "",
+                "importance": "HIGH",
+                "documentation": "Regular expression giving topics to consume. Under the hood, the regex is compiled to a <code>java.util.regex.Pattern</code>. Only one of topics or topics.regex should be specified.",
+                "group": "Common",
+                "width": "LONG",
+                "display_name": "Topics regex",
+                "dependents": [],
+                "order": 4
+            },
+            "value": {
+                "name": "topics.regex",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.deadletterqueue.topic.name",
+                "type": "STRING",
+                "required": false,
+                "default_value": "",
+                "importance": "MEDIUM",
+                "documentation": "The name of the topic to be used as the dead letter queue (DLQ) for messages that result in an error when processed by this sink connector, or its transformations or converters. The topic name is blank by default, which means that no messages are to be recorded in the DLQ.",
+                "group": "Error Handling",
+                "width": "MEDIUM",
+                "display_name": "Dead Letter Queue Topic Name",
+                "dependents": [],
+                "order": 6
+            },
+            "value": {
+                "name": "errors.deadletterqueue.topic.name",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.deadletterqueue.topic.replication.factor",
+                "type": "SHORT",
+                "required": false,
+                "default_value": "3",
+                "importance": "MEDIUM",
+                "documentation": "Replication factor used to create the dead letter queue topic when it doesn't already exist.",
+                "group": "Error Handling",
+                "width": "MEDIUM",
+                "display_name": "Dead Letter Queue Topic Replication Factor",
+                "dependents": [],
+                "order": 7
+            },
+            "value": {
+                "name": "errors.deadletterqueue.topic.replication.factor",
+                "value": "3",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "errors.deadletterqueue.context.headers.enable",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "MEDIUM",
+                "documentation": "If true, add headers containing error context to the messages written to the dead letter queue. To avoid clashing with headers from the original record, all error context header keys, all error context header keys will start with <code>__connect.errors.</code>",
+                "group": "Error Handling",
+                "width": "MEDIUM",
+                "display_name": "Enable Error Context Headers",
+                "dependents": [],
+                "order": 8
+            },
+            "value": {
+                "name": "errors.deadletterqueue.context.headers.enable",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "connection.url",
+                "type": "LIST",
+                "required": true,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "The comma-separated list of one or more Elasticsearch URLs, such as ``http://eshost1:9200,http://eshost2:9200`` or ``https://eshost3:9200``. HTTPS is used for all connections if any of the URLs starts with ``https:``. A URL without a protocol is treated as ``http``.",
+                "group": "Connector",
+                "width": "LONG",
+                "display_name": "Connection URLs",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "connection.url",
+                "value": null,
+                "recommended_values": [],
+                "errors": [
+                    "Missing required configuration \"connection.url\" which has no default value.",
+                    "Invalid value null for configuration connection.url: The config must be provided and non-null."
+                ],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "connection.username",
+                "type": "STRING",
+                "required": false,
+                "default_value": null,
+                "importance": "MEDIUM",
+                "documentation": "The username used to authenticate with Elasticsearch. The default is the null, and authentication will only be performed if  both the username and password are non-null.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Connection Username",
+                "dependents": [],
+                "order": 2
+            },
+            "value": {
+                "name": "connection.username",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "connection.password",
+                "type": "PASSWORD",
+                "required": false,
+                "default_value": null,
+                "importance": "MEDIUM",
+                "documentation": "The password used to authenticate with Elasticsearch. The default is the null, and authentication will only be performed if  both the username and password are non-null.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Connection Password",
+                "dependents": [],
+                "order": 3
+            },
+            "value": {
+                "name": "connection.password",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "batch.size",
+                "type": "INT",
+                "required": false,
+                "default_value": "2000",
+                "importance": "MEDIUM",
+                "documentation": "The number of records to process as a batch when writing to Elasticsearch.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Batch Size",
+                "dependents": [],
+                "order": 4
+            },
+            "value": {
+                "name": "batch.size",
+                "value": "2000",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "bulk.size.bytes",
+                "type": "LONG",
+                "required": false,
+                "default_value": "5242880",
+                "importance": "LOW",
+                "documentation": "The maximum size (in bytes) to be process as a batch when writing records to Elasticsearch. Setting to '-1' will disable this configuration. If the condition set by 'batch.size' is met first, it will be used instead.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Bulk Size (bytes)",
+                "dependents": [],
+                "order": 5
+            },
+            "value": {
+                "name": "bulk.size.bytes",
+                "value": "5242880",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "max.in.flight.requests",
+                "type": "INT",
+                "required": false,
+                "default_value": "5",
+                "importance": "MEDIUM",
+                "documentation": "The maximum number of indexing requests that can be in-flight to Elasticsearch before blocking further requests.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Max In-flight Requests",
+                "dependents": [],
+                "order": 6
+            },
+            "value": {
+                "name": "max.in.flight.requests",
+                "value": "5",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "max.buffered.records",
+                "type": "INT",
+                "required": false,
+                "default_value": "20000",
+                "importance": "LOW",
+                "documentation": "The maximum number of records each task will buffer before blocking acceptance of more records. This config can be used to limit the memory usage for each task.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Max Buffered Records",
+                "dependents": [],
+                "order": 7
+            },
+            "value": {
+                "name": "max.buffered.records",
+                "value": "20000",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "linger.ms",
+                "type": "LONG",
+                "required": false,
+                "default_value": "1",
+                "importance": "LOW",
+                "documentation": "Linger time in milliseconds for batching.\nRecords that arrive in between request transmissions are batched into a single bulk indexing request, based on the ``batch.size`` configuration. Normally this only occurs under load when records arrive faster than they can be sent out. However it may be desirable to reduce the number of requests even under light load and benefit from bulk indexing. This setting helps accomplish that - when a pending batch is not full, rather than immediately sending it out the task will wait up to the given delay to allow other records to be added so that they can be batched into a single request.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Linger (ms)",
+                "dependents": [],
+                "order": 8
+            },
+            "value": {
+                "name": "linger.ms",
+                "value": "1",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "flush.timeout.ms",
+                "type": "LONG",
+                "required": false,
+                "default_value": "180000",
+                "importance": "LOW",
+                "documentation": "The timeout in milliseconds to use for periodic flushing, and when waiting for buffer space to be made available by completed requests as records are added. If this timeout is exceeded the task will fail.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Flush Timeout (ms)",
+                "dependents": [],
+                "order": 9
+            },
+            "value": {
+                "name": "flush.timeout.ms",
+                "value": "180000",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "max.retries",
+                "type": "INT",
+                "required": false,
+                "default_value": "5",
+                "importance": "LOW",
+                "documentation": "The maximum number of retries that are allowed for failed indexing requests. If the retry attempts are exhausted the task will fail.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Max Retries",
+                "dependents": [],
+                "order": 10
+            },
+            "value": {
+                "name": "max.retries",
+                "value": "5",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "retry.backoff.ms",
+                "type": "LONG",
+                "required": false,
+                "default_value": "100",
+                "importance": "LOW",
+                "documentation": "How long to wait in milliseconds before attempting the first retry of a failed indexing request. Upon a failure, this connector may wait up to twice as long as the previous wait, up to the maximum number of retries. This avoids retrying in a tight loop under failure scenarios.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Retry Backoff (ms)",
+                "dependents": [],
+                "order": 11
+            },
+            "value": {
+                "name": "retry.backoff.ms",
+                "value": "100",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "connection.compression",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "LOW",
+                "documentation": "Whether to use GZip compression on HTTP connection to ElasticSearch. Valid options are ``true`` and ``false``. Default is ``false``. To make this setting to work the ``http.compression`` setting also needs to be enabled at the Elasticsearch nodes or the load-balancer before using it.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Compression",
+                "dependents": [],
+                "order": 12
+            },
+            "value": {
+                "name": "connection.compression",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "max.connection.idle.time.ms",
+                "type": "INT",
+                "required": false,
+                "default_value": "60000",
+                "importance": "LOW",
+                "documentation": "How long to wait in milliseconds before dropping an idle connection to prevent a read timeout.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Max Connection Idle Time",
+                "dependents": [],
+                "order": 13
+            },
+            "value": {
+                "name": "max.connection.idle.time.ms",
+                "value": "60000",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "connection.timeout.ms",
+                "type": "INT",
+                "required": false,
+                "default_value": "1000",
+                "importance": "LOW",
+                "documentation": "How long to wait in milliseconds when establishing a connection to the Elasticsearch server. The task fails if the client fails to connect to the server in this interval, and will need to be restarted.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Connection Timeout",
+                "dependents": [],
+                "order": 14
+            },
+            "value": {
+                "name": "connection.timeout.ms",
+                "value": "1000",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "read.timeout.ms",
+                "type": "INT",
+                "required": false,
+                "default_value": "3000",
+                "importance": "LOW",
+                "documentation": "How long to wait in milliseconds for the Elasticsearch server to send a response. The task fails if any read operation times out, and will need to be restarted to resume further operations.",
+                "group": "Connector",
+                "width": "SHORT",
+                "display_name": "Read Timeout",
+                "dependents": [],
+                "order": 15
+            },
+            "value": {
+                "name": "read.timeout.ms",
+                "value": "3000",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "key.ignore",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "HIGH",
+                "documentation": "Whether to ignore the record key for the purpose of forming the Elasticsearch document ID. When this is set to ``true``, document IDs will be generated as the record's ``topic+partition+offset``.\n Note that this is a global config that applies to all topics, use ``topic.key.ignore`` to override as ``true`` for specific topics.",
+                "group": "Data Conversion",
+                "width": "SHORT",
+                "display_name": "Ignore Key mode",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "key.ignore",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "schema.ignore",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "LOW",
+                "documentation": "Whether to ignore schemas during indexing. When this is set to ``true``, the record schema will be ignored for the purpose of registering an Elasticsearch mapping. Elasticsearch will infer the mapping from the data (dynamic mapping needs to be enabled by the user).\n Note that this is a global config that applies to all topics, use ``topic.schema.ignore`` to override as ``true`` for specific topics.",
+                "group": "Data Conversion",
+                "width": "SHORT",
+                "display_name": "Ignore Schema mode",
+                "dependents": [],
+                "order": 2
+            },
+            "value": {
+                "name": "schema.ignore",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "compact.map.entries",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "true",
+                "importance": "LOW",
+                "documentation": "Defines how map entries with string keys within record values should be written to JSON. When this is set to ``true``, these entries are written compactly as ``\"entryKey\": \"entryValue\"``. Otherwise, map entries with string keys are written as a nested document ``{\"key\": \"entryKey\", \"value\": \"entryValue\"}``. All map entries with non-string keys are always written as nested documents. Prior to 3.3.0, this connector always wrote map entries as nested documents, so set this to ``false`` to use that older behavior.",
+                "group": "Data Conversion",
+                "width": "SHORT",
+                "display_name": "Compact Map Entries",
+                "dependents": [],
+                "order": 3
+            },
+            "value": {
+                "name": "compact.map.entries",
+                "value": "true",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "topic.key.ignore",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "List of topics for which ``key.ignore`` should be ``true``.",
+                "group": "Data Conversion",
+                "width": "LONG",
+                "display_name": "Topics for 'Ignore Key' mode",
+                "dependents": [],
+                "order": 4
+            },
+            "value": {
+                "name": "topic.key.ignore",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "topic.schema.ignore",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "List of topics for which ``schema.ignore`` should be ``true``.",
+                "group": "Data Conversion",
+                "width": "LONG",
+                "display_name": "Topics for 'Ignore Schema' mode",
+                "dependents": [],
+                "order": 5
+            },
+            "value": {
+                "name": "topic.schema.ignore",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "drop.invalid.message",
+                "type": "BOOLEAN",
+                "required": false,
+                "default_value": "false",
+                "importance": "LOW",
+                "documentation": "Whether to drop kafka message when it cannot be converted to output message.",
+                "group": "Data Conversion",
+                "width": "LONG",
+                "display_name": "Drop invalid messages",
+                "dependents": [],
+                "order": 6
+            },
+            "value": {
+                "name": "drop.invalid.message",
+                "value": "false",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "behavior.on.null.values",
+                "type": "STRING",
+                "required": false,
+                "default_value": "FAIL",
+                "importance": "LOW",
+                "documentation": "How to handle records with a non-null key and a null value (i.e. Kafka tombstone records). Valid options are 'ignore', 'delete', and 'fail'.",
+                "group": "Data Conversion",
+                "width": "SHORT",
+                "display_name": "Behavior for null-valued records",
+                "dependents": [],
+                "order": 7
+            },
+            "value": {
+                "name": "behavior.on.null.values",
+                "value": "FAIL",
+                "recommended_values": [
+                    "ignore",
+                    "delete",
+                    "fail"
+                ],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "behavior.on.malformed.documents",
+                "type": "STRING",
+                "required": false,
+                "default_value": "FAIL",
+                "importance": "LOW",
+                "documentation": "How to handle records that Elasticsearch rejects due to some malformation of the document itself, such as an index mapping conflict, a field name containing illegal characters, or a record with a missing id. Valid options are ignore', 'warn', and 'fail'.",
+                "group": "Data Conversion",
+                "width": "SHORT",
+                "display_name": "Behavior on malformed documents",
+                "dependents": [],
+                "order": 8
+            },
+            "value": {
+                "name": "behavior.on.malformed.documents",
+                "value": "FAIL",
+                "recommended_values": [
+                    "ignore",
+                    "warn",
+                    "fail"
+                ],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "write.method",
+                "type": "STRING",
+                "required": false,
+                "default_value": "INSERT",
+                "importance": "LOW",
+                "documentation": "Method used for writing data to Elasticsearch, and one of INSERT or UPSERT. The default method is INSERT, in which the connector constructs a document from the record value and inserts that document into Elasticsearch, completely replacing any existing document with the same ID; this matches previous behavior. The UPSERT method will create a new document if one with the specified ID does not yet exist, or will update an existing document with the same ID by adding/replacing only those fields present in the record value. The UPSERT method may require additional time and resources of Elasticsearch, so consider increasing the read.timeout.ms and decreasing the batch.size configuration properties.",
+                "group": "Data Conversion",
+                "width": "SHORT",
+                "display_name": "Write Method",
+                "dependents": [],
+                "order": 9
+            },
+            "value": {
+                "name": "write.method",
+                "value": "INSERT",
+                "recommended_values": [
+                    "insert",
+                    "upsert"
+                ],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "proxy.host",
+                "type": "STRING",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "The address of the proxy host to connect through. Supports the basic authentication scheme only.",
+                "group": "Proxy",
+                "width": "LONG",
+                "display_name": "Proxy Host",
+                "dependents": [],
+                "order": 0
+            },
+            "value": {
+                "name": "proxy.host",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "proxy.port",
+                "type": "INT",
+                "required": false,
+                "default_value": "8080",
+                "importance": "LOW",
+                "documentation": "The port of the proxy host to connect through.",
+                "group": "Proxy",
+                "width": "LONG",
+                "display_name": "Proxy Port",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "proxy.port",
+                "value": "8080",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "proxy.username",
+                "type": "STRING",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "The username for the proxy host.",
+                "group": "Proxy",
+                "width": "LONG",
+                "display_name": "Proxy Username",
+                "dependents": [],
+                "order": 2
+            },
+            "value": {
+                "name": "proxy.username",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "proxy.password",
+                "type": "PASSWORD",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "The password for the proxy host.",
+                "group": "Proxy",
+                "width": "LONG",
+                "display_name": "Proxy Password",
+                "dependents": [],
+                "order": 3
+            },
+            "value": {
+                "name": "proxy.password",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.security.protocol",
+                "type": "STRING",
+                "required": false,
+                "default_value": "PLAINTEXT",
+                "importance": "MEDIUM",
+                "documentation": "The security protocol to use when connecting to Elasticsearch. Values can be `PLAINTEXT` or `SSL`. If `PLAINTEXT` is passed, all configs prefixed by elastic.https. will be ignored.",
+                "group": "Security",
+                "width": "SHORT",
+                "display_name": "Security protocol",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "elastic.security.protocol",
+                "value": "PLAINTEXT",
+                "recommended_values": [
+                    "plaintext",
+                    "ssl"
+                ],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.key.password",
+                "type": "PASSWORD",
+                "required": false,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "The password of the private key in the key store file orthe PEM key specified in `ssl.keystore.key'. This is required for clients only if two-way authentication is configured.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.key.password",
+                "dependents": [],
+                "order": 31
+            },
+            "value": {
+                "name": "elastic.https.ssl.key.password",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.keystore.certificate.chain",
+                "type": "PASSWORD",
+                "required": false,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Certificate chain in the format specified by 'ssl.keystore.type'. Default SSL engine factory supports only PEM format with a list of X.509 certificates",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.keystore.certificate.chain",
+                "dependents": [],
+                "order": 32
+            },
+            "value": {
+                "name": "elastic.https.ssl.keystore.certificate.chain",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.keystore.key",
+                "type": "PASSWORD",
+                "required": false,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Private key in the format specified by 'ssl.keystore.type'. Default SSL engine factory supports only PEM format with PKCS#8 keys. If the key is encrypted, key password must be specified using 'ssl.key.password'",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.keystore.key",
+                "dependents": [],
+                "order": 33
+            },
+            "value": {
+                "name": "elastic.https.ssl.keystore.key",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.keystore.location",
+                "type": "STRING",
+                "required": false,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "The location of the key store file. This is optional for client and can be used for two-way authentication for client.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.keystore.location",
+                "dependents": [],
+                "order": 34
+            },
+            "value": {
+                "name": "elastic.https.ssl.keystore.location",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.keystore.password",
+                "type": "PASSWORD",
+                "required": false,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "The store password for the key store file. This is optional for client and only needed if 'ssl.keystore.location' is configured.  Key store password is not supported for PEM format.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.keystore.password",
+                "dependents": [],
+                "order": 35
+            },
+            "value": {
+                "name": "elastic.https.ssl.keystore.password",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.truststore.certificates",
+                "type": "PASSWORD",
+                "required": false,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "Trusted certificates in the format specified by 'ssl.truststore.type'. Default SSL engine factory supports only PEM format with X.509 certificates.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.truststore.certificates",
+                "dependents": [],
+                "order": 36
+            },
+            "value": {
+                "name": "elastic.https.ssl.truststore.certificates",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.truststore.location",
+                "type": "STRING",
+                "required": false,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "The location of the trust store file. ",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.truststore.location",
+                "dependents": [],
+                "order": 37
+            },
+            "value": {
+                "name": "elastic.https.ssl.truststore.location",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.truststore.password",
+                "type": "PASSWORD",
+                "required": false,
+                "default_value": null,
+                "importance": "HIGH",
+                "documentation": "The password for the trust store file. If a password is not set, trust store file configured will still be used, but integrity checking is disabled. Trust store password is not supported for PEM format.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.truststore.password",
+                "dependents": [],
+                "order": 38
+            },
+            "value": {
+                "name": "elastic.https.ssl.truststore.password",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.enabled.protocols",
+                "type": "LIST",
+                "required": false,
+                "default_value": "TLSv1.2,TLSv1.3",
+                "importance": "MEDIUM",
+                "documentation": "The list of protocols enabled for SSL connections. The default is 'TLSv1.2,TLSv1.3' when running with Java 11 or newer, 'TLSv1.2' otherwise. With the default value for Java 11, clients and servers will prefer TLSv1.3 if both support it and fallback to TLSv1.2 otherwise (assuming both support at least TLSv1.2). This default should be fine for most cases. Also see the config documentation for `ssl.protocol`.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.enabled.protocols",
+                "dependents": [],
+                "order": 39
+            },
+            "value": {
+                "name": "elastic.https.ssl.enabled.protocols",
+                "value": "TLSv1.2,TLSv1.3",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.keystore.type",
+                "type": "STRING",
+                "required": false,
+                "default_value": "JKS",
+                "importance": "MEDIUM",
+                "documentation": "The file format of the key store file. This is optional for client.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.keystore.type",
+                "dependents": [],
+                "order": 40
+            },
+            "value": {
+                "name": "elastic.https.ssl.keystore.type",
+                "value": "JKS",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.protocol",
+                "type": "STRING",
+                "required": false,
+                "default_value": "TLSv1.3",
+                "importance": "MEDIUM",
+                "documentation": "The SSL protocol used to generate the SSLContext. The default is 'TLSv1.3' when running with Java 11 or newer, 'TLSv1.2' otherwise. This value should be fine for most use cases. Allowed values in recent JVMs are 'TLSv1.2' and 'TLSv1.3'. 'TLS', 'TLSv1.1', 'SSL', 'SSLv2' and 'SSLv3' may be supported in older JVMs, but their usage is discouraged due to known security vulnerabilities. With the default value for this config and 'ssl.enabled.protocols', clients will downgrade to 'TLSv1.2' if the server does not support 'TLSv1.3'. If this config is set to 'TLSv1.2', clients will not use 'TLSv1.3' even if it is one of the values in ssl.enabled.protocols and the server only supports 'TLSv1.3'.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.protocol",
+                "dependents": [],
+                "order": 41
+            },
+            "value": {
+                "name": "elastic.https.ssl.protocol",
+                "value": "TLSv1.3",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.provider",
+                "type": "STRING",
+                "required": false,
+                "default_value": null,
+                "importance": "MEDIUM",
+                "documentation": "The name of the security provider used for SSL connections. Default value is the default security provider of the JVM.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.provider",
+                "dependents": [],
+                "order": 42
+            },
+            "value": {
+                "name": "elastic.https.ssl.provider",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.truststore.type",
+                "type": "STRING",
+                "required": false,
+                "default_value": "JKS",
+                "importance": "MEDIUM",
+                "documentation": "The file format of the trust store file.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.truststore.type",
+                "dependents": [],
+                "order": 43
+            },
+            "value": {
+                "name": "elastic.https.ssl.truststore.type",
+                "value": "JKS",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.cipher.suites",
+                "type": "LIST",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "A list of cipher suites. This is a named combination of authentication, encryption, MAC and key exchange algorithm used to negotiate the security settings for a network connection using TLS or SSL network protocol. By default all the available cipher suites are supported.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.cipher.suites",
+                "dependents": [],
+                "order": 44
+            },
+            "value": {
+                "name": "elastic.https.ssl.cipher.suites",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.endpoint.identification.algorithm",
+                "type": "STRING",
+                "required": false,
+                "default_value": "https",
+                "importance": "LOW",
+                "documentation": "The endpoint identification algorithm to validate server hostname using server certificate. ",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.endpoint.identification.algorithm",
+                "dependents": [],
+                "order": 45
+            },
+            "value": {
+                "name": "elastic.https.ssl.endpoint.identification.algorithm",
+                "value": "https",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.engine.factory.class",
+                "type": "CLASS",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "The class of type org.apache.kafka.common.security.auth.SslEngineFactory to provide SSLEngine objects. Default value is org.apache.kafka.common.security.ssl.DefaultSslEngineFactory",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.engine.factory.class",
+                "dependents": [],
+                "order": 46
+            },
+            "value": {
+                "name": "elastic.https.ssl.engine.factory.class",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.keymanager.algorithm",
+                "type": "STRING",
+                "required": false,
+                "default_value": "SunX509",
+                "importance": "LOW",
+                "documentation": "The algorithm used by key manager factory for SSL connections. Default value is the key manager factory algorithm configured for the Java Virtual Machine.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.keymanager.algorithm",
+                "dependents": [],
+                "order": 47
+            },
+            "value": {
+                "name": "elastic.https.ssl.keymanager.algorithm",
+                "value": "SunX509",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.secure.random.implementation",
+                "type": "STRING",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "The SecureRandom PRNG implementation to use for SSL cryptography operations. ",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.secure.random.implementation",
+                "dependents": [],
+                "order": 48
+            },
+            "value": {
+                "name": "elastic.https.ssl.secure.random.implementation",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "elastic.https.ssl.trustmanager.algorithm",
+                "type": "STRING",
+                "required": false,
+                "default_value": "PKIX",
+                "importance": "LOW",
+                "documentation": "The algorithm used by trust manager factory for SSL connections. Default value is the trust manager factory algorithm configured for the Java Virtual Machine.",
+                "group": "Security",
+                "width": "NONE",
+                "display_name": "ssl.trustmanager.algorithm",
+                "dependents": [],
+                "order": 49
+            },
+            "value": {
+                "name": "elastic.https.ssl.trustmanager.algorithm",
+                "value": "PKIX",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "kerberos.user.principal",
+                "type": "STRING",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "The Kerberos user principal the connector may use to authenticate with Kerberos.",
+                "group": "Kerberos",
+                "width": "LONG",
+                "display_name": "Kerberos User Principal",
+                "dependents": [],
+                "order": 0
+            },
+            "value": {
+                "name": "kerberos.user.principal",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "kerberos.keytab.path",
+                "type": "STRING",
+                "required": false,
+                "default_value": null,
+                "importance": "LOW",
+                "documentation": "The path to the keytab file to use for authentication with Kerberos.",
+                "group": "Kerberos",
+                "width": "LONG",
+                "display_name": "Kerberos Keytab File Path",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "kerberos.keytab.path",
+                "value": null,
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "data.stream.dataset",
+                "type": "STRING",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "Generic name describing data ingested and its structure to be written to a data stream. Can be any arbitrary string that is no longer than 100 characters, is in all lowercase, and does not contain spaces or any of these special characters ``/\\*\"<>|,#:-``. Otherwise, no value indicates the connector will write to regular indices instead. If set, this configuration will be used alongside ``data.stream.type`` to construct the data stream name in the form of {``data.stream.type``}-{``data.stream.dataset``}-{topic}.",
+                "group": "Data Stream",
+                "width": "MEDIUM",
+                "display_name": "Data Stream Dataset",
+                "dependents": [],
+                "order": 1
+            },
+            "value": {
+                "name": "data.stream.dataset",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "data.stream.type",
+                "type": "STRING",
+                "required": false,
+                "default_value": "NONE",
+                "importance": "LOW",
+                "documentation": "Generic type describing the data to be written to data stream. The default is NONE which indicates the connector will write to regular indices instead. If set, this configuration will be used alongside data.stream.dataset to construct the data stream name in the form of {``data.stream.type``}-{``data.stream.dataset``}-{topic}.",
+                "group": "Data Stream",
+                "width": "SHORT",
+                "display_name": "Data Stream Type",
+                "dependents": [],
+                "order": 2
+            },
+            "value": {
+                "name": "data.stream.type",
+                "value": "NONE",
+                "recommended_values": [
+                    "logs",
+                    "metrics",
+                    "none"
+                ],
+                "errors": [],
+                "visible": true
+            }
+        },
+        {
+            "definition": {
+                "name": "data.stream.timestamp.field",
+                "type": "LIST",
+                "required": false,
+                "default_value": "",
+                "importance": "LOW",
+                "documentation": "The Kafka record field to use as the timestamp for the ``@timestamp`` field in documents sent to a data stream.\n All documents sent to a data stream needs an ``@timestamp`` field with values of type ``date`` or ``data_nanos``. Otherwise, the document will not be sent. If multiple fields are provided, the first field listed that also appears in the record will be used. If this configuration is left empty, all of the documents will use the Kafka record timestamp as the ``@timestamp`` field value. Note that ``@timestamp`` still needs to be explicitly listed if records already contain this field. This configuration can only be set if ``data.stream.type`` and ``data.stream.dataset`` are set.",
+                "group": "Data Stream",
+                "width": "LONG",
+                "display_name": "Data Stream Timestamp Field",
+                "dependents": [],
+                "order": 3
+            },
+            "value": {
+                "name": "data.stream.timestamp.field",
+                "value": "",
+                "recommended_values": [],
+                "errors": [],
+                "visible": true
+            }
+        }
+    ]
+}
