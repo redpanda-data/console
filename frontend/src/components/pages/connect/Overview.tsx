@@ -1,5 +1,5 @@
 import { CheckCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Checkbox, Col, Empty, Popover, Row, Statistic, Table, Tooltip } from 'antd';
+import {Button, Checkbox, Col, Empty, Popover, Row, Statistic, Table, Tooltip} from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -20,6 +20,7 @@ import SearchBar from '../../misc/SearchBar';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
+import { Link } from 'react-router-dom';
 
 
 
@@ -72,7 +73,10 @@ class TabClusters extends Component {
         const clusters = api.connectConnectors?.clusters;
         if (clusters == null) return null;
 
-        return <KowlTable<ClusterConnectors>
+        return (<>
+          <div style={{display: 'flex', marginBottom: "15px"}}><Link style={{marginLeft: 'auto'}} to={'/create-connector'}><Button type={'primary'}>Create Connector</Button></Link></div>
+
+          <KowlTable<ClusterConnectors>
             dataSource={clusters}
             columns={[
                 {
@@ -121,7 +125,8 @@ class TabClusters extends Component {
                 defaultPageSize: 10,
             }}
             rowKey='clusterName'
-        />
+          />
+        </>)
     }
 }
 
