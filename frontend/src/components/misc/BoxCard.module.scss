@@ -1,0 +1,17 @@
+.boxCard {
+  border: solid 1px #DDDDDD;
+  padding: 16px;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.dashed {
+  border-style: dashed;
+}
+
+.hoverable:hover,
+.active {
+  border-width: 2px;
+  border-color: #418fd8;
+  padding: 15px;
+}
