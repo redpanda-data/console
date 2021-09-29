@@ -28,9 +28,8 @@ import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
 import CassandraLogo from '../../../assets/connectors/cassandra.png';
 import DB2Logo from '../../../assets/connectors/db2.png';
 import { action, makeObservable, observable, runInAction } from 'mobx';
-import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleFilled, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
+import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
 import { QuestionMarkCircleIcon } from '@heroicons/react/solid';
-import { MessageType } from 'antd/lib/message';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -139,7 +138,7 @@ const connectorMetadataMatchCache: {
     [className: string]: ConnectorMetadata
 } = {};
 
-function findConnectorMetadata(className: string): ConnectorMetadata | null {
+export function findConnectorMetadata(className: string): ConnectorMetadata | null {
     const c = className;
 
     // Quick and dirty cache

@@ -1,0 +1,31 @@
+.radioCardContent {
+  display: flex;
+  align-items: center;
+}
+
+.radioCardLogo {
+  width: 32px;
+  height: 32px;
+  margin-right: 16px;
+  flex-grow: 0;
+  flex-shrink: 0;
+}
+
+.radioCardInfo {
+  flex-basis: 100%;
+
+  & > strong {
+    font-size: 14px;
+    line-height: 22px;
+    font-weight: normal;
+  }
+}
+
+.pluginType,
+.pluginMeta {
+  color: lighten(black, 55%);
+}
+
+.pluginMeta {
+  margin-bottom: 0;
+}
