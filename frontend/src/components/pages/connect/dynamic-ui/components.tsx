@@ -1,24 +1,13 @@
 /* eslint-disable no-useless-escape */
-import { CheckCircleTwoTone, ExclamationCircleTwoTone, EyeInvisibleOutlined, EyeTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, Select, Skeleton, Tooltip } from 'antd';
-import { motion } from 'framer-motion';
-import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
+import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
+import { Collapse, Input, InputNumber, Switch, Select, Skeleton, Tooltip } from 'antd';
+import { autorun, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, CSSProperties } from 'react';
-import { appGlobal } from '../../../../state/appGlobal';
 import { api } from '../../../../state/backendApi';
-import { ApiError, ConnectorValidationResult, PropertyWidth } from '../../../../state/restInterfaces';
-import { uiSettings } from '../../../../state/ui';
-import { animProps } from '../../../../utils/animationProps';
-import { Code, findPopupContainer, InfoText } from '../../../../utils/tsxUtils';
-import Card from '../../../misc/Card';
-import { sortField } from '../../../misc/common';
-import { KowlTable } from '../../../misc/KowlTable';
-import { PageComponent, PageInitHelper } from '../../Page';
-import { ClusterStatisticsCard, ConnectorClass, NotConfigured, removeNamespace, TasksColumn, TaskState } from '../helper';
+import { ApiError, ConnectorProperty, ConnectorValidationResult, DataType, PropertyWidth } from '../../../../state/restInterfaces';
+import { findPopupContainer, InfoText } from '../../../../utils/tsxUtils';
 import { scrollTo } from "../../../../utils/utils";
-
-import postgresPropsRaw from '../../../../assets/postgres.json';
 
 // React Editor
 import KowlEditor from '../../../misc/KowlEditor';
@@ -27,12 +16,6 @@ import KowlEditor from '../../../misc/KowlEditor';
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
 export type Monaco = typeof monacoType;
 
-const postgresProps = postgresPropsRaw as ConnectorValidationResult;
-
-type ArrayElement<ArrayType extends readonly unknown[]> =
-    ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
-
-type PropertyEntry = ArrayElement<typeof postgresProps.configs>;
 
 interface PropertyGroup {
     groupName: string;
@@ -41,10 +24,13 @@ interface PropertyGroup {
 
 interface Property {
     name: string;
-    entry: PropertyEntry;
+    entry: ConnectorProperty;
     value: string | number | boolean | string[];
 
     isHidden: boolean; // currently only used for "connector.class"
+
+    errors: string[];
+    lastErrorValue: any;
 }
 
 interface ConfigPageProps {
@@ -78,7 +64,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
         try {
             // Validate with empty object to get all properties initially
             const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, {
-                name: "",
+                "name": "",
                 "connector.class": pluginClassName,
                 "topic": "x",
                 "topics": "y",
@@ -88,7 +74,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
             for (const p of validationResult.configs) {
                 const def = p.definition;
                 if (!def.group)
-                    def.group = "Default Group)";
+                    def.group = "Default";
                 if (def.order < 0)
                     def.order = Number.POSITIVE_INFINITY;
                 if (!def.width || def.width == PropertyWidth.None)
@@ -100,10 +86,19 @@ export class ConfigPage extends Component<ConfigPageProps> {
                 .map(p => ({
                     name: p.definition.name,
                     entry: p,
-                    value: p.value.value ?? p.definition.default_value,
+                    value: p.definition.type == DataType.Boolean
+                        ? (p.value.value ?? p.definition.default_value) ?? false
+                        : p.value.value ?? p.definition.default_value,
                     isHidden: ["connector.class"].includes(p.definition.name),
+
+                    errors: p.value.errors ?? []
                 } as Property))
                 .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
+
+            // Set last error values, so we know when to show the validation error
+            for (const p of allProps)
+                if (p.errors.length > 0)
+                    p.lastErrorValue = p.value;
 
             // Create groups
             this.allGroups = allProps
@@ -171,7 +166,9 @@ const PropertyGroupComponent = (props: { group: PropertyGroup }) => {
     </div>
 }
 
-const requiredStar = <span style={{ lineHeight: '0px', color: 'red', fontSize: '1.5em', marginRight: '3px', marginTop: '5px', maxHeight: '0px' }}>*</span>;
+const requiredStar = <span style={{
+    lineHeight: '0px', color: 'red', fontSize: '1.5em', marginTop: '3px', maxHeight: '0px', transform: 'translateX(-11px)', width: 0
+}}>*</span>;
 
 const inputSizeToClass = {
     [PropertyWidth.None]: "none",
@@ -231,6 +228,16 @@ const PropertyComponent = observer((props: { property: Property }) => {
             break;
     }
 
+    if (def.type != DataType.Boolean) {
+        const errAr = p.entry.value.errors;
+        const hasError = errAr.length > 0 && (p.value === p.lastErrorValue);
+
+        comp = <div className={'inputWrapper ' + (hasError ? 'hasError' : '')}>
+            {comp}
+            <div className='validationFeedback'>{hasError ? errAr[0] : null}</div>
+        </div>;
+
+    }
 
 
     // Attach tooltip
