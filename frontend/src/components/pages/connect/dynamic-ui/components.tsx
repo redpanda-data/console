@@ -4,12 +4,21 @@ import { Button, Collapse, Input, InputNumber, message, notification, Popover, S
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import { Component } from 'react';
-import { InfoText } from '../../../../utils/tsxUtils';
+import { Component, CSSProperties } from 'react';
+import { appGlobal } from '../../../../state/appGlobal';
+import { api } from '../../../../state/backendApi';
+import { ApiError, ConnectorValidationResult, PropertyWidth } from '../../../../state/restInterfaces';
+import { uiSettings } from '../../../../state/ui';
+import { animProps } from '../../../../utils/animationProps';
+import { Code, findPopupContainer, InfoText } from '../../../../utils/tsxUtils';
+import Card from '../../../misc/Card';
+import { sortField } from '../../../misc/common';
+import { KowlTable } from '../../../misc/KowlTable';
+import { PageComponent, PageInitHelper } from '../../Page';
+import { ClusterStatisticsCard, ConnectorClass, NotConfigured, removeNamespace, TasksColumn, TaskState } from '../helper';
 
 
-import postgresProps from '../../../../assets/postgres.json';
-
+import postgresPropsRaw from '../../../../assets/postgres.json';
 
 // React Editor
 import KowlEditor from '../../../misc/KowlEditor';
@@ -18,6 +27,7 @@ import KowlEditor from '../../../misc/KowlEditor';
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
 export type Monaco = typeof monacoType;
 
+const postgresProps = postgresPropsRaw as ConnectorValidationResult;
 
 type ArrayElement<ArrayType extends readonly unknown[]> =
     ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
@@ -69,8 +79,10 @@ export class DemoPage extends Component<DemoPageProps> {
         autorun(() => {
             const jsonObj = {} as any;
             for (const g of this.allGroups)
-                for (const p of g.properties)
-                    jsonObj[p.name] = p.value;
+                for (const p of g.properties) {
+                    if (p.entry.definition.required || (p.value != null && p.value != p.entry.definition.default_value))
+                        jsonObj[p.name] = p.value;
+                }
             this.jsonText = JSON.stringify(jsonObj, undefined, 4);
         });
 
@@ -108,12 +120,19 @@ export class DemoPage extends Component<DemoPageProps> {
 const PropertyGroupComponent = (props: { group: PropertyGroup }) => {
     const g = props.group;
 
-    return <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5em' }}>
+    return <div className='dynamicInputs'>
         {g.properties.map(p => <PropertyComponent key={p.name} property={p} />)}
     </div>
 }
 
 const requiredStar = <span style={{ lineHeight: '0px', color: 'red', fontSize: '1.5em', marginRight: '3px', marginTop: '5px', maxHeight: '0px' }}>*</span>;
+
+const inputSizeToClass = {
+    [PropertyWidth.None]: "none",
+    [PropertyWidth.Short]: "short",
+    [PropertyWidth.Medium]: "medium",
+    [PropertyWidth.Long]: "long",
+} as const;
 
 const PropertyComponent = observer((props: { property: Property }) => {
     const p = props.property;
@@ -139,9 +158,7 @@ const PropertyComponent = observer((props: { property: Property }) => {
             if (recValues && recValues.length) {
                 const options = recValues.map((x: string) => ({ label: x, value: x }));
                 // Enum
-                comp = <Select style={{ width: 200 }} showSearch
-                    options={options}
-                />
+                comp = <Select showSearch options={options} value={p.value as any} onChange={e => p.value = e} />
             }
             else {
                 // Text or Password
@@ -163,6 +180,9 @@ const PropertyComponent = observer((props: { property: Property }) => {
             comp = <Switch checked={Boolean(p.value)} onChange={e => p.value = e} />
             break;
 
+        case "LIST":
+            comp = <Input readOnly value="(List input will be added soon)" />;
+            break;
     }
 
 
@@ -173,7 +193,7 @@ const PropertyComponent = observer((props: { property: Property }) => {
         name = <InfoText tooltip={def.documentation} iconSize='12px' transform='translateY(1px)' gap='6px' placement='right' maxWidth='450px' align='left' >{name}</InfoText>
 
     // Wrap name and input element
-    return <div>
+    return <div className={inputSizeToClass[def.width]}>
         <div style={{ display: 'flex', width: 'fit-content', alignItems: 'center', marginBottom: '4px' }}>
             {def.required && requiredStar}
             {name}
