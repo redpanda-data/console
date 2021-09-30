@@ -14,6 +14,7 @@
         "array-move": "^3.0.1",
         "customize-cra": "^0.9.1",
         "dayjs": "^1.10.4",
+        "deepmerge": "^4.2.2",
         "framer-motion": "^4.1.11",
         "mobx": "^6.3.0",
         "mobx-react": "^7.1.0",

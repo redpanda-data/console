@@ -15,6 +15,7 @@ import {Select} from 'antd';
 import {HiddenRadioList} from '../../misc/HiddenRadioList';
 import {ConnectorBoxCard, ConnectorPlugin} from './ConnectorBoxCard';
 import {DemoPage} from './dynamic-ui/components';
+import KowlEditor from '../../misc/KowlEditor';
 
 const {Option} = Select;
 
@@ -96,6 +97,7 @@ function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [activeCluster, setActiveCluster] = useState<string | null>(null);
   const [selectedPlugin, setSelectedPlugin] = useState<ConnectorPlugin | null>(null);
+  const [properties, setProperties] = useState('');
 
   const steps: Array<WizardStep> = [
     {
@@ -124,7 +126,7 @@ function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
                   hoverable={false}/>
             </div>
             : null}
-        <DemoPage/>
+        <DemoPage onChange={setProperties}/>
       </>,
       postConditionMet: () => true,
     }, {
@@ -137,7 +139,10 @@ function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
       title: 'Review',
       description: 'Review and optionally patch the created connector config.',
       icon: <SearchOutlined/>,
-      content: 'Review step...',
+      content: <Review
+          connectorPlugin={selectedPlugin}
+          properties={properties}
+          onChange={editorContent => setProperties(String(editorContent))}/>,
       postConditionMet: () => true,
     }];
 
@@ -150,6 +155,37 @@ function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
     getCurrentStep: () => [currentStep, steps[currentStep]],
     getSteps: () => steps,
   }}/>;
+}
+
+interface ReviewProps {
+  connectorPlugin: ConnectorPlugin | null;
+  properties?: string;
+  onChange: (editorContent: string | undefined) => void;
+}
+
+function Review({connectorPlugin, properties, onChange}: ReviewProps) {
+  return <>
+    {connectorPlugin != null
+        ? <>
+          <h2>Connector Plugin</h2>
+          <ConnectorBoxCard
+              connectorPlugin={connectorPlugin}
+              borderStyle="dashed"
+              borderWidth="medium"
+              hoverable={false}/>
+        </>
+        : null
+    }
+    <h2>Connector Properties</h2>
+    <div style={{margin: "0 auto 1.5rem"}}>
+      <KowlEditor
+          language="json"
+          value={properties}
+          onChange={onChange}
+          height="600px"
+      />
+    </div>
+  </>;
 }
 
 export default CreateConnector;

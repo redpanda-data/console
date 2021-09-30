@@ -1,28 +1,16 @@
 /* eslint-disable no-useless-escape */
-import { CheckCircleTwoTone, ExclamationCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch } from 'antd';
-import { motion } from 'framer-motion';
-import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
+import { Collapse, Input, InputNumber, Switch } from 'antd';
+import { autorun, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Component, CSSProperties } from 'react';
-import { appGlobal } from '../../../../state/appGlobal';
-import { api } from '../../../../state/backendApi';
-import { ApiError } from '../../../../state/restInterfaces';
-import { uiSettings } from '../../../../state/ui';
-import { animProps } from '../../../../utils/animationProps';
-import { Code, findPopupContainer, InfoText } from '../../../../utils/tsxUtils';
-import Card from '../../../misc/Card';
-import { sortField } from '../../../misc/common';
-import { KowlTable } from '../../../misc/KowlTable';
-import { PageComponent, PageInitHelper } from '../../Page';
-import { ClusterStatisticsCard, ConnectorClass, NotConfigured, removeNamespace, TasksColumn, TaskState } from '../helper';
+import { Component } from 'react';
+import { InfoText } from '../../../../utils/tsxUtils';
 
 
 import postgresProps from '../../../../assets/postgres.json';
 
 
 // React Editor
-import Editor from "@monaco-editor/react";
+import KowlEditor from '../../../misc/KowlEditor';
 
 // Monaco Type
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
@@ -45,8 +33,12 @@ interface Property {
     value: string | number | boolean | string[];
 }
 
+interface DemoPageProps {
+    onChange: (jsonText: string) => void
+}
+
 @observer
-export class DemoPage extends Component<{}> {
+export class DemoPage extends Component<DemoPageProps> {
 
     @observable allGroups: PropertyGroup[] = [];
     // @observable propertiesMap = new Map<string, Property>();
@@ -76,6 +68,10 @@ export class DemoPage extends Component<{}> {
                     jsonObj[p.name] = p.value;
             this.jsonText = JSON.stringify(jsonObj, undefined, 4);
         });
+
+        autorun(() => {
+            this.props.onChange(this.jsonText)
+        })
 
     }
 
@@ -173,45 +169,19 @@ const DebugEditor = observer((p: { observable: { jsonText: string } }) => {
 
     return <div style={{ marginTop: '1.5em' }}>
         <h4>Debug Editor</h4>
-        <div style={{ border: '1px solid hsl(0deg, 0%, 90%)', borderRadius: '2px' }}>
+        <KowlEditor
+            language='json'
 
-            <Editor
-                language='json'
-
-                value={obs.jsonText}
-                onChange={(v, e) => {
-                    if (v) {
-                        if (!obs.jsonText && !v)
-                            return; // dont replace undefiend with empty (which would trigger our 'autorun')
-                        obs.jsonText = v;
-                    }
-                }}
-
-                options={{
-                    readOnly: false,
-
-                    minimap: {
-                        enabled: false,
-                    },
-                    roundedSelection: false,
-                    padding: {
-                        top: 4,
-                    },
-                    showFoldingControls: 'always',
-                    glyphMargin: false,
-                    scrollBeyondLastLine: false,
-                    lineNumbersMinChars: 4,
-                    scrollbar: {
-                        alwaysConsumeMouseWheel: false,
-                    },
-                    fontSize: 12,
-                    occurrencesHighlight: false,
-                    foldingHighlight: false,
-                    selectionHighlight: false,
-                }}
-
-                height="300px"
-            />
-        </div></div>
+            value={obs.jsonText}
+            onChange={(v, e) => {
+                if (v) {
+                    if (!obs.jsonText && !v)
+                        return; // dont replace undefiend with empty (which would trigger our 'autorun')
+                    obs.jsonText = v;
+                }
+            }}
+            height="300px"
+        />
+        </div>
 
 });
