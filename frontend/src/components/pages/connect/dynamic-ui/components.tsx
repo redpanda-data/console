@@ -236,22 +236,23 @@ const PropertyComponent = observer((props: { property: Property }) => {
     const p = props.property;
     const def = p.entry.definition;
     if (p.isHidden) return null;
+    if (p.entry.value.visible === false) return null;
 
     let comp = <div key={p.name}>
         <div>"{p.name}" (unknown type "{def.type}")</div>
         <div style={{ fontSize: 'smaller' }} className='codeBox'>{JSON.stringify(p.entry, undefined, 4)}</div>
     </div>;
 
+    let v = p.value;
+    if (typeof p.value != 'string')
+        if (typeof p.value == 'number' || typeof p.value == 'boolean')
+            v = String(v);
+        else
+            v = "";
+
     switch (def.type) {
         case "STRING":
         case "CLASS":
-            let v = p.value;
-            if (typeof p.value != 'string')
-                if (typeof p.value == 'number' || typeof p.value == 'boolean')
-                    v = String(v);
-                else
-                    v = "";
-
             const recValues = p.entry.value.recommended_values;
             if (recValues && recValues.length) {
                 const options = recValues.map((x: string) => ({ label: x, value: x }));
@@ -259,10 +260,9 @@ const PropertyComponent = observer((props: { property: Property }) => {
                 comp = <Select showSearch options={options} value={p.value as any} onChange={e => p.value = e} />
             }
             else {
-                // Text or Password
+                // String or class
                 comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
             }
-
             break;
 
         case "PASSWORD":
@@ -279,7 +279,8 @@ const PropertyComponent = observer((props: { property: Property }) => {
             break;
 
         case "LIST":
-            comp = <Input readOnly value="(List input will be added soon)" />;
+            comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+            // comp = <Input readOnly value="(List input will be added soon)" />;
             break;
     }
 
