@@ -2823,3 +2823,38 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 .capitalize {
     text-transform: capitalize;
 }
+
+.dynamicInputs {
+    display: grid;
+    row-gap: 1.5em;
+    column-gap: 1.5em;
+
+    grid-template-columns: 1fr 1fr 1fr;
+    // grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+    grid-auto-rows: repeat(auto);
+
+    max-width: 850px;
+
+
+    .none {
+        opacity: 0.5;
+    }
+
+    .short {
+        grid-column: span 1;
+    }
+
+    .medium {
+        grid-column: span 2;
+    }
+
+    .long {
+        grid-column: span 3;
+    }
+
+
+    .ant-input-number,
+    .ant-select {
+        width: 100%;
+    }
+}

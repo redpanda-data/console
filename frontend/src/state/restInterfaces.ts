@@ -1038,7 +1038,7 @@ export interface ConnectorProperty {
         importance: PropertyImportance;
         documentation: string;
         group: null | string;
-        width: Width;
+        width: PropertyWidth;
         display_name: string;
         dependents: string[];
         order: number;
@@ -1069,7 +1069,7 @@ export enum DataType {
     String = "STRING",
 }
 
-export enum Width {
+export enum PropertyWidth {
     None = "NONE",
     Short = "SHORT",
     Medium = "MEDIUM",
