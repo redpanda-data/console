@@ -43,6 +43,8 @@ interface Property {
     name: string;
     entry: PropertyEntry;
     value: string | number | boolean | string[];
+
+    isHidden: boolean; // currently only used for "connector.class"
 }
 
 @observer
@@ -60,7 +62,8 @@ export class DemoPage extends Component<{}> {
             .map(p => ({
                 name: p.definition.name,
                 entry: p,
-                value: p.value.value ?? p.definition.default_value
+                value: p.value.value ?? p.definition.default_value,
+                isHidden: ["connector.class"].includes(p.definition.name),
             } as Property))
             .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
 
@@ -117,6 +120,7 @@ const requiredStar = <span style={{ lineHeight: '0px', color: 'red', fontSize: '
 const PropertyComponent = observer((props: { property: Property }) => {
     const p = props.property;
     const def = p.entry.definition;
+    if (p.isHidden) return null;
 
     let comp = <div key={p.name}>
         <div>"{p.name}" (unknown type "{def.type}")</div>
