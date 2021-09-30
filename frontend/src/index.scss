@@ -1299,6 +1299,7 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
 
     .ant-collapse-content-box {
         padding: 6px 9px !important;
+        padding-bottom: 2em !important;
     }
 }
 
@@ -2826,8 +2827,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
 .dynamicInputs {
     display: grid;
-    row-gap: 1.5em;
-    column-gap: 1.5em;
+    row-gap: 2em;
+    column-gap: 1.2em;
 
     grid-template-columns: 1fr 1fr 1fr;
     // grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
@@ -2851,6 +2852,78 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
     .long {
         grid-column: span 3;
+    }
+
+    .none,
+    .short,
+    .medium,
+    .long {
+
+        .inputWrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+
+            &::after {
+                @include beforeAfter();
+                pointer-events: none;
+
+                border: 1px solid hsl(0deg, 100%, 65%);
+                box-shadow: 0px 0px 3px 1px #ffaeae;
+                border-radius: 2px;
+
+                opacity: 0;
+                $scaleY: 1.5;
+                $scaleFactor: 20;
+                $scaleX: (($scaleY - 1) / $scaleFactor) + 1;
+
+                transform: scale($scaleX, $scaleY);
+
+                transition: opacity 150ms ease-out,
+                    transform 250ms ease-out;
+            }
+
+            .validationFeedback {
+                position: absolute;
+                z-index: 1;
+                min-width: 10px;
+
+                color: hsl(0deg, 100%, 65%);
+
+                text-align: center;
+
+                font-size: 11px;
+                font-family: Verdana, 'Segoe UI', Tahoma, Geneva, sans-serif;
+                line-height: 1.5;
+
+                // position at top
+                top: 100%;
+                left: 1px;
+                transform: translateY(-30%);
+
+                // animate
+                opacity: 0;
+                transition: opacity 150ms ease-out,
+                    transform 250ms ease-out;
+
+                user-select: none;
+            }
+
+            &.hasError {
+                background: red;
+
+                &::after {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+
+                .validationFeedback {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+
+        }
     }
 
 
