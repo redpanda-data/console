@@ -1,9 +1,9 @@
-import React, {useState} from 'react';
-import {PageComponent, PageInitHelper} from '../Page';
-import {animProps} from '../../../utils/animationProps';
-import {motion} from 'framer-motion';
-import {ApiOutlined, DatabaseOutlined, SearchOutlined, SettingOutlined} from '@ant-design/icons';
-import {Wizard, WizardStep} from '../../misc/Wizard';
+import React, { useState } from 'react';
+import { PageComponent, PageInitHelper } from '../Page';
+import { animProps } from '../../../utils/animationProps';
+import { motion } from 'framer-motion';
+import { ApiOutlined, DatabaseOutlined, SearchOutlined, SettingOutlined } from '@ant-design/icons';
+import { Wizard, WizardStep } from '../../misc/Wizard';
 import Card from '../../misc/Card';
 
 import styles from './CreateConnector.module.scss';
@@ -15,83 +15,91 @@ import {Alert, Select} from 'antd';
 import {HiddenRadioList} from '../../misc/HiddenRadioList';
 import {ConnectorBoxCard, ConnectorPlugin} from './ConnectorBoxCard';
 import {DemoPage} from './dynamic-ui/components';
+import { observer } from 'mobx-react';
+import { api } from '../../../state/backendApi';
+import { appGlobal } from '../../../state/appGlobal';
+import { ClusterConnectors } from '../../../state/restInterfaces';
+import { Select } from 'antd';
+import { HiddenRadioList } from '../../misc/HiddenRadioList';
+import { ConnectorBoxCard, ConnectorPlugin } from './ConnectorBoxCard';
+import { ConfigPage } from './dynamic-ui/components';
 import KowlEditor from '../../misc/KowlEditor';
 import {useHistory} from 'react-router-dom';
 
-const {Option} = Select;
+const { Option } = Select;
 
 interface ConnectorTypeProps {
-  connectClusters: Array<ClusterConnectors>;
-  activeCluster: string | null;
-  onActiveClusterChange: (clusterName: string | null) => void;
-  selectedPlugin: ConnectorPlugin | null;
-  onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void;
+    connectClusters: Array<ClusterConnectors>;
+    activeCluster: string | null;
+    onActiveClusterChange: (clusterName: string | null) => void;
+    selectedPlugin: ConnectorPlugin | null;
+    onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void;
 }
 
 const ConnectorType = observer(({
-                                  connectClusters,
-                                  activeCluster,
-                                  onActiveClusterChange,
-                                  selectedPlugin,
-                                  onPluginSelectionChange,
-                                }: ConnectorTypeProps) => {
-  return (<>
-    <h2>Installation Target</h2>
-    <Select<string>
-        placeholder="Choose Connect Cluster…"
-        onChange={(clusterName) => {
-          api.refreshClusterAdditionalInfo(clusterName, true);
-          onActiveClusterChange(clusterName);
-        }}
-        defaultValue={activeCluster || undefined}
-    >
-      {connectClusters.map(({clusterName}) => <Option key={clusterName} value={clusterName}>{clusterName}</Option>)}
-    </Select>
-    {activeCluster == null ? null : (<>
-      <h2>Connector Type</h2>
+    connectClusters,
+    activeCluster,
+    onActiveClusterChange,
+    selectedPlugin,
+    onPluginSelectionChange,
+}: ConnectorTypeProps) => {
+    return (<>
+        <h2>Installation Target</h2>
+        <Select<string> style={{ minWidth: '300px' }}
+            placeholder="Choose Connect Cluster…"
+            onChange={(clusterName) => {
+                api.refreshClusterAdditionalInfo(clusterName, true);
+                onActiveClusterChange(clusterName);
+            }}
+            defaultValue={activeCluster || undefined}
+        >
+            {connectClusters.map(({ clusterName }) => <Option key={clusterName} value={clusterName}>{clusterName}</Option>)}
+        </Select>
+        {activeCluster == null ? null : (<>
+            <h2>Connector Type</h2>
 
-      <HiddenRadioList<ConnectorPlugin>
-          name={'connector-type'}
-          onChange={onPluginSelectionChange}
-          value={selectedPlugin ?? undefined}
-          options={api.connectAdditionalClusterInfo.get(activeCluster)?.plugins.map(plugin => ({
-            value: plugin,
-            render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin}/>,
-          })) || []}/>
-    </>)}
-  </>);
+            <HiddenRadioList<ConnectorPlugin>
+                name={'connector-type'}
+                onChange={onPluginSelectionChange}
+                value={selectedPlugin ?? undefined}
+                options={api.connectAdditionalClusterInfo.get(activeCluster)?.plugins.map(plugin => ({
+                    value: plugin,
+                    render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
+                })) || []} />
+        </>)}
+    </>);
 });
 
 @observer
 class CreateConnector extends PageComponent {
-  initPage(p: PageInitHelper) {
-    p.title = 'Create Connector';
-    p.addBreadcrumb('Create Connector', '/create-connector');
+    initPage(p: PageInitHelper) {
+        p.title = 'Create Connector';
+        p.addBreadcrumb('Create Connector', '/create-connector');
 
-    this.refreshData(false);
-    appGlobal.onRefresh = () => this.refreshData(true);
-  }
+        this.refreshData(false);
+        appGlobal.onRefresh = () => this.refreshData(true);
+    }
 
-  refreshData(force: boolean) {
-    api.refreshConnectClusters(force);
-  }
+    refreshData(force: boolean) {
+        api.refreshConnectClusters(force);
+    }
 
-  render() {
-    const clusters = api.connectConnectors?.clusters;
-    if (clusters == null) return null;
+    render() {
+        const clusters = api.connectConnectors?.clusters;
+        if (clusters == null) return null;
 
-    return (
-        <motion.div {...animProps} className={styles.motionContainer}>
-          <Card className={styles.wizardView}>
-            <ConnectorWizard connectClusters={clusters}/>
-          </Card>
-        </motion.div>
-    );
-  }
+        return (
+            <motion.div {...animProps} className={styles.motionContainer}>
+                <Card className={styles.wizardView}>
+                    <ConnectorWizard connectClusters={clusters} />
+                </Card>
+            </motion.div>
+        );
+    }
 }
 
 interface ConnectorWizardProps {
-  connectClusters: Array<ClusterConnectors>;
+    connectClusters: Array<ClusterConnectors>;
 }
 
 function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
@@ -126,13 +134,17 @@ function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
         {selectedPlugin != null
             ? <div className={styles.connectorBoxCard}>
               <ConnectorBoxCard
+                  id="selectedConnector"
                   connectorPlugin={selectedPlugin}
                   borderStyle={'dashed'}
                   borderWidth={'medium'}
                   hoverable={false}/>
             </div>
             : null}
-        <DemoPage onChange={setProperties}/>
+        {(activeCluster && selectedPlugin)
+            ? <ConfigPage clusterName={activeCluster!} pluginClassName={selectedPlugin!.class} onChange={setProperties} />
+            : <div>no cluster or plugin selected</div>
+        }
       </>,
       postConditionMet: () => true,
     },

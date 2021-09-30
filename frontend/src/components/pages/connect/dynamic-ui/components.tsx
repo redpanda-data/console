@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, EyeInvisibleOutlined, EyeTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, Select } from 'antd';
+import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, Select, Skeleton, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
@@ -16,7 +16,7 @@ import { sortField } from '../../../misc/common';
 import { KowlTable } from '../../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../../Page';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, removeNamespace, TasksColumn, TaskState } from '../helper';
-
+import { scrollTo } from "../../../../utils/utils";
 
 import postgresPropsRaw from '../../../../assets/postgres.json';
 
@@ -47,54 +47,100 @@ interface Property {
     isHidden: boolean; // currently only used for "connector.class"
 }
 
-interface DemoPageProps {
+interface ConfigPageProps {
+    clusterName: string;
+    pluginClassName: string;
     onChange: (jsonText: string) => void
 }
 
 @observer
-export class DemoPage extends Component<DemoPageProps> {
+export class ConfigPage extends Component<ConfigPageProps> {
 
     @observable allGroups: PropertyGroup[] = [];
-    // @observable propertiesMap = new Map<string, Property>();
     @observable jsonText = "";
+    @observable error: string | undefined = undefined;
+    @observable initPending = true;
 
     constructor(p: any) {
         super(p);
         makeObservable(this);
 
-        const allProps = postgresProps.configs
-            .map(p => ({
-                name: p.definition.name,
-                entry: p,
-                value: p.value.value ?? p.definition.default_value,
-                isHidden: ["connector.class"].includes(p.definition.name),
-            } as Property))
-            .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
+        this.initConfig();
+    }
 
-        this.allGroups = allProps
-            .groupInto(p => p.entry.definition.group)
-            .map(g => ({ groupName: g.key, properties: g.items } as PropertyGroup));
+    async initConfig() {
+        const { clusterName, pluginClassName } = this.props;
 
-        // Create json for use in editor
-        autorun(() => {
-            const jsonObj = {} as any;
-            for (const g of this.allGroups)
-                for (const p of g.properties) {
-                    if (p.entry.definition.required || (p.value != null && p.value != p.entry.definition.default_value))
-                        jsonObj[p.name] = p.value;
-                }
-            this.jsonText = JSON.stringify(jsonObj, undefined, 4);
-        });
+        setTimeout(() => {
+            scrollTo('selectedConnector', 'start', -20);
+        }, 100);
 
-        autorun(() => {
-            this.props.onChange(this.jsonText)
-        })
+        try {
+            // Validate with empty object to get all properties initially
+            const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, {
+                name: "",
+                "connector.class": pluginClassName,
+                "topic": "x",
+                "topics": "y",
+            });
 
+            // Fix missing properties
+            for (const p of validationResult.configs) {
+                const def = p.definition;
+                if (!def.group)
+                    def.group = "Default Group)";
+                if (def.order < 0)
+                    def.order = Number.POSITIVE_INFINITY;
+                if (!def.width || def.width == PropertyWidth.None)
+                    def.width = PropertyWidth.Medium;
+            }
+
+            // Create our own properties
+            const allProps = validationResult.configs
+                .map(p => ({
+                    name: p.definition.name,
+                    entry: p,
+                    value: p.value.value ?? p.definition.default_value,
+                    isHidden: ["connector.class"].includes(p.definition.name),
+                } as Property))
+                .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
+
+            // Create groups
+            this.allGroups = allProps
+                .groupInto(p => p.entry.definition.group)
+                .map(g => ({ groupName: g.key, properties: g.items } as PropertyGroup));
+
+            // Create json for use in editor
+            autorun(() => {
+                const jsonObj = {} as any;
+                for (const g of this.allGroups)
+                    for (const p of g.properties) {
+                        if (p.entry.definition.required || (p.value != null && p.value != p.entry.definition.default_value))
+                            jsonObj[p.name] = p.value;
+                    }
+                this.jsonText = JSON.stringify(jsonObj, undefined, 4);
+                this.props.onChange(this.jsonText);
+            });
+
+        } catch (err: any) {
+            this.error = typeof err == 'object' ? (err.message ?? JSON.stringify(err, undefined, 4)) : JSON.stringify(err, undefined, 4);
+        }
+
+        this.initPending = false;
     }
 
     render() {
+        if (this.error)
+            return <div>
+                <h3>Error</h3>
+                <div className='codeBox'>{this.error}</div>
+            </div>
+
+        if (this.initPending)
+            return <div><Skeleton loading={true} active={true} paragraph={{ rows: 20, width: '100%' }} /></div>
+
         if (this.allGroups.length == 0)
-            return <div>no groups</div>
+            return <div>debug: no groups</div>
 
         // const defaultExpanded = this.allGroups.map(x => x.groupName);
         const defaultExpanded = this.allGroups[0].groupName;
@@ -188,9 +234,13 @@ const PropertyComponent = observer((props: { property: Property }) => {
 
 
     // Attach tooltip
-    let name = <span style={{ fontWeight: 600 }}>{def.display_name}</span>;
+    let name = <Tooltip overlay={def.name} placement='top' trigger="click" mouseLeaveDelay={0} getPopupContainer={findPopupContainer}>
+        <span style={{ fontWeight: 600, cursor: 'pointer' }}>{def.display_name}</span>
+    </Tooltip>;
+
     if (def.documentation)
         name = <InfoText tooltip={def.documentation} iconSize='12px' transform='translateY(1px)' gap='6px' placement='right' maxWidth='450px' align='left' >{name}</InfoText>
+
 
     // Wrap name and input element
     return <div className={inputSizeToClass[def.width]}>
@@ -225,6 +275,6 @@ const DebugEditor = observer((p: { observable: { jsonText: string } }) => {
             }}
             height="300px"
         />
-        </div>
+    </div>
 
 });
