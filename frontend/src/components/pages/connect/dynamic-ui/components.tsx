@@ -172,6 +172,9 @@ const PropertyComponent = observer((props: { property: Property }) => {
             comp = <Switch checked={Boolean(p.value)} onChange={e => p.value = e} />
             break;
 
+        case "LIST":
+            comp = <Input readOnly value="(List input will be added soon)" />;
+            break;
     }
 
 
