@@ -48,7 +48,7 @@ interface WizardState {
 
   canContinue(): boolean;
 
-  next(): void;
+  next(): Promise<any>;
 
   previous(): void;
 
@@ -66,4 +66,5 @@ export interface WizardStep {
   nextButtonLabel?: React.ReactNode;
 
   postConditionMet(): boolean;
+  transitionConditionMet?(): Promise<{conditionMet: boolean}>
 }

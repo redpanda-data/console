@@ -10,12 +10,13 @@ import styles from './CreateConnector.module.scss';
 import {observer} from 'mobx-react';
 import {api} from '../../../state/backendApi';
 import {appGlobal} from '../../../state/appGlobal';
-import {ClusterConnectors} from '../../../state/restInterfaces';
-import {Select} from 'antd';
+import {ClusterConnectors, ConnectorProperty, ConnectorValidationResult} from '../../../state/restInterfaces';
+import {Alert, Select} from 'antd';
 import {HiddenRadioList} from '../../misc/HiddenRadioList';
 import {ConnectorBoxCard, ConnectorPlugin} from './ConnectorBoxCard';
 import {DemoPage} from './dynamic-ui/components';
 import KowlEditor from '../../misc/KowlEditor';
+import {useHistory} from 'react-router-dom';
 
 const {Option} = Select;
 
@@ -94,10 +95,15 @@ interface ConnectorWizardProps {
 }
 
 function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
+  const history = useHistory();
+
   const [currentStep, setCurrentStep] = useState(0);
   const [activeCluster, setActiveCluster] = useState<string | null>(null);
   const [selectedPlugin, setSelectedPlugin] = useState<ConnectorPlugin | null>(null);
   const [properties, setProperties] = useState('');
+  const [invalidValidationResult, setInvalidValidationResult] = useState<ConnectorValidationResult | null>(null);
+  const [validationFailure, setValidationFailure] = useState<unknown>(null);
+  const [creationFailure, setCreationFailure] = useState<unknown>(null);
 
   const steps: Array<WizardStep> = [
     {
@@ -144,15 +150,60 @@ function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
       content: <Review
           connectorPlugin={selectedPlugin}
           properties={properties}
-          onChange={editorContent => setProperties(String(editorContent))}/>,
+          onChange={editorContent => setProperties(String(editorContent))}
+          invalidValidationResult={invalidValidationResult}
+          validationFailure={validationFailure}
+          creationFailure={creationFailure}
+      />,
       postConditionMet: () => true,
+      async transitionConditionMet(): Promise<{ conditionMet: boolean }> {
+        try {
+          const validationResult = await Promise.resolve<ConnectorValidationResult>({
+            name: 'foo',
+            error_count: 0,
+            groups: [],
+            configs: [],
+          });
+
+          if (validationResult.error_count > 0) {
+            setInvalidValidationResult(validationResult);
+            return {conditionMet: false};
+          }
+        } catch (e) {
+          setValidationFailure(e);
+          return {conditionMet: false};
+        }
+
+        try {
+          await Promise.resolve('created');
+        } catch (e) {
+          setCreationFailure(e);
+          return {conditionMet: false};
+        }
+
+        return {conditionMet: true};
+      },
     }];
+
+  const isLast = () => currentStep === steps.length - 1;
 
   return <Wizard state={{
     canContinue: () => steps[currentStep].postConditionMet(),
-    next: () => currentStep < steps.length - 1 ? setCurrentStep(n => n + 1) : undefined,
+    next: async () => {
+      const transitionConditionMet = steps[currentStep].transitionConditionMet;
+      if (transitionConditionMet) {
+        const {conditionMet} = await transitionConditionMet();
+        if (!conditionMet) return;
+      }
+
+      if (isLast()) {
+        return history.push(`/kafka-connect/${activeCluster}`);
+      }
+
+      return currentStep < steps.length - 1 ? setCurrentStep(n => n + 1) : undefined;
+    },
     previous: () => currentStep > 0 ? setCurrentStep(n => n - 1) : undefined,
-    isLast: () => currentStep === steps.length - 1,
+    isLast,
     isFirst: () => currentStep === 0,
     getCurrentStep: () => [currentStep, steps[currentStep]],
     getSteps: () => steps,
@@ -163,9 +214,20 @@ interface ReviewProps {
   connectorPlugin: ConnectorPlugin | null;
   properties?: string;
   onChange: (editorContent: string | undefined) => void;
+  invalidValidationResult: ConnectorValidationResult | null;
+  validationFailure: unknown;
+  creationFailure: unknown;
 }
 
-function Review({connectorPlugin, properties, onChange}: ReviewProps) {
+function Review({
+                  connectorPlugin,
+                  properties,
+                  onChange,
+                  invalidValidationResult,
+                  validationFailure,
+                  creationFailure,
+                }: ReviewProps) {
+
   return <>
     {connectorPlugin != null
         ? <>
@@ -178,6 +240,22 @@ function Review({connectorPlugin, properties, onChange}: ReviewProps) {
         </>
         : null
     }
+
+    {invalidValidationResult != null
+        ? <ValidationDisplay validationResult={invalidValidationResult}/>
+        : null
+    }
+
+    {validationFailure ? <Alert type="error" message={<>
+      <strong>Validation Attempt Failed</strong>
+      <p>{String(validationFailure)}</p>
+    </>}/> : null}
+
+    {creationFailure ? <Alert type="error" message={<>
+      <strong>Creation Attempt Failed</strong>
+      <p>{String(creationFailure)}</p>
+    </>}/> : null}
+
     <h2>Connector Properties</h2>
     <div style={{margin: '0 auto 1.5rem'}}>
       <KowlEditor
@@ -188,6 +266,23 @@ function Review({connectorPlugin, properties, onChange}: ReviewProps) {
       />
     </div>
   </>;
+}
+
+function ValidationDisplay({validationResult}: { validationResult: ConnectorValidationResult }) {
+  return <Alert type="warning" message={<>
+    <strong>Submitted Configuration is Invalid</strong>
+    <ul style={{listStyle: 'none', padding: 0}}>
+      {validationResult.configs.map((connectorProperty) => {
+        return (<li>
+          <p>
+            <span><strong>Property name:</strong> {connectorProperty.value.name}</span><br/>
+            <span><strong>Property value:</strong> {connectorProperty.value.value}</span><br/>
+            <span><strong>Property errors:</strong> {connectorProperty.value.errors.join(', ')}</span>
+          </p>
+        </li>);
+      })}
+    </ul>
+  </>}/>;
 }
 
 export default CreateConnector;
