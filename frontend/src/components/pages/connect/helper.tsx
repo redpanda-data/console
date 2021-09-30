@@ -235,8 +235,10 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
     return <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
         {meta && meta.logo &&
             <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
-                <LayoutBypass height='0px' width='25px' transform='translateY(-1px)' >
-                    {meta.logo}
+                <LayoutBypass width='22px' transform='translateY(-1px)' >
+                    <div style={{ width: '22px', height: '22px' }}>
+                        {meta.logo}
+                    </div>
                 </LayoutBypass>
             </span>
         }
