@@ -47,54 +47,75 @@ interface Property {
     isHidden: boolean; // currently only used for "connector.class"
 }
 
-interface DemoPageProps {
+interface ConfigPageProps {
+    clusterName: string;
+    pluginClassName: string;
     onChange: (jsonText: string) => void
 }
 
 @observer
-export class DemoPage extends Component<DemoPageProps> {
+export class ConfigPage extends Component<ConfigPageProps> {
 
     @observable allGroups: PropertyGroup[] = [];
-    // @observable propertiesMap = new Map<string, Property>();
     @observable jsonText = "";
+    @observable error: string | undefined = undefined;
 
     constructor(p: any) {
         super(p);
         makeObservable(this);
 
-        const allProps = postgresProps.configs
-            .map(p => ({
-                name: p.definition.name,
-                entry: p,
-                value: p.value.value ?? p.definition.default_value,
-                isHidden: ["connector.class"].includes(p.definition.name),
-            } as Property))
-            .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
+        this.initConfig();
+    }
 
-        this.allGroups = allProps
-            .groupInto(p => p.entry.definition.group)
-            .map(g => ({ groupName: g.key, properties: g.items } as PropertyGroup));
+    async initConfig() {
+        const { clusterName, pluginClassName } = this.props;
+        try {
+            // Validate with empty object to get all properties initially
+            const validationResult = await api.validateConnectorConfig(clusterName, "temp", pluginClassName, {
+                name: "n",
+                class: "c"
+            });
 
-        // Create json for use in editor
-        autorun(() => {
-            const jsonObj = {} as any;
-            for (const g of this.allGroups)
-                for (const p of g.properties) {
-                    if (p.entry.definition.required || (p.value != null && p.value != p.entry.definition.default_value))
-                        jsonObj[p.name] = p.value;
-                }
-            this.jsonText = JSON.stringify(jsonObj, undefined, 4);
-        });
+            // Create our own properties
+            const allProps = validationResult.configs
+                .map(p => ({
+                    name: p.definition.name,
+                    entry: p,
+                    value: p.value.value ?? p.definition.default_value,
+                    isHidden: ["connector.class"].includes(p.definition.name),
+                } as Property))
+                .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
 
-        autorun(() => {
-            this.props.onChange(this.jsonText)
-        })
+            // Create groups
+            this.allGroups = allProps
+                .groupInto(p => p.entry.definition.group)
+                .map(g => ({ groupName: g.key, properties: g.items } as PropertyGroup));
 
+            // Create json for use in editor
+            autorun(() => {
+                const jsonObj = {} as any;
+                for (const g of this.allGroups)
+                    for (const p of g.properties) {
+                        if (p.entry.definition.required || (p.value != null && p.value != p.entry.definition.default_value))
+                            jsonObj[p.name] = p.value;
+                    }
+                this.jsonText = JSON.stringify(jsonObj, undefined, 4);
+                this.props.onChange(this.jsonText);
+            });
+
+        } catch (err: any) {
+            this.error = typeof err == 'object' ? (err.message ?? JSON.stringify(err, undefined, 4)) : JSON.stringify(err, undefined, 4);
+        }
     }
 
     render() {
         if (this.allGroups.length == 0)
             return <div>no groups</div>
+        if (this.error)
+            return <div>
+                <h3>Error</h3>
+                <div className='codeBox'>{this.error}</div>
+            </div>
 
         // const defaultExpanded = this.allGroups.map(x => x.groupName);
         const defaultExpanded = this.allGroups[0].groupName;
@@ -225,6 +246,6 @@ const DebugEditor = observer((p: { observable: { jsonText: string } }) => {
             }}
             height="300px"
         />
-        </div>
+    </div>
 
 });

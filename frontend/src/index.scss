@@ -2833,7 +2833,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     // grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
     grid-auto-rows: repeat(auto);
 
-    max-width: 850px;
+    max-width: 950px;
+    align-items: end;
 
 
     .none {

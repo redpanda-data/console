@@ -12,7 +12,7 @@ import {
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
     KafkaConnectors, ConnectClusters,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo, WrappedError, isApiError, AlterPartitionReassignmentsPartitionResponse
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo, WrappedError, isApiError, AlterPartitionReassignmentsPartitionResponse, ConnectorValidationResult
 } from "./restInterfaces";
 import { comparer, computed, observable, runInAction, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -1092,6 +1092,37 @@ const apiStore = {
 
         return tryParseOrUnwrapError<null>(response);
     },
+
+    async validateConnectorConfig(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<ConnectorValidationResult> {
+        // PUT "/kafka-connect/clusters/{clusterName}/connector-plugins/{pluginClassName}/config/validate"
+        const response = await fetch(`./api/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connector-plugins/${encodeURIComponent(pluginClassName)}/config/validate`, {
+            method: 'PUT',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify({
+                connectorName: connectorName,
+                config: config
+            }),
+        });
+        return tryParseOrUnwrapError<ConnectorValidationResult>(response);
+    },
+
+    async createConnector(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<null> {
+        // POST "/kafka-connect/clusters/{clusterName}/connectors"
+        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify({
+                connectorName: connectorName,
+                config: config
+            }),
+        });
+        return tryParseOrUnwrapError<null>(response);
+    },
+
 }
 
 function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {
