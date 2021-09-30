@@ -129,13 +129,15 @@ function ConnectorWizard({connectClusters}: ConnectorWizardProps) {
         <DemoPage onChange={setProperties}/>
       </>,
       postConditionMet: () => true,
-    }, {
-      title: 'Additional Properties',
-      description: 'Add advanced connector configs, SMTs, etc.',
-      icon: <SettingOutlined/>,
-      content: 'More config options...',
-      postConditionMet: () => true,
-    }, {
+    },
+    // {
+    //   title: 'Additional Properties',
+    //   description: 'Add advanced connector configs, SMTs, etc.',
+    //   icon: <SettingOutlined/>,
+    //   content: 'More config options...',
+    //   postConditionMet: () => true,
+    // },
+    {
       title: 'Review',
       description: 'Review and optionally patch the created connector config.',
       icon: <SearchOutlined/>,
