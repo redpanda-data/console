@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
-import { CheckCircleTwoTone, ExclamationCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch } from 'antd';
+import { CheckCircleTwoTone, ExclamationCircleTwoTone, EyeInvisibleOutlined, EyeTwoTone, WarningTwoTone } from '@ant-design/icons';
+import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
@@ -135,6 +135,11 @@ const PropertyComponent = observer((props: { property: Property }) => {
 
             comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
             break;
+
+        case "PASSWORD":
+            comp = <Input.Password value={String(p.value ?? '')} onChange={e => p.value = e.target.value} iconRender={visible => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)} />
+            break;
+
         case "INT":
         case "LONG":
             comp = <InputNumber style={{ display: 'block' }} value={Number(p.value)} onChange={e => p.value = e} />
