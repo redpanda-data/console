@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, EyeInvisibleOutlined, EyeTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, Select } from 'antd';
+import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, Select, Skeleton } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
@@ -59,6 +59,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
     @observable allGroups: PropertyGroup[] = [];
     @observable jsonText = "";
     @observable error: string | undefined = undefined;
+    @observable initPending = true;
 
     constructor(p: any) {
         super(p);
@@ -71,10 +72,16 @@ export class ConfigPage extends Component<ConfigPageProps> {
         const { clusterName, pluginClassName } = this.props;
         try {
             // Validate with empty object to get all properties initially
-            const validationResult = await api.validateConnectorConfig(clusterName, "temp", pluginClassName, {
-                name: "n",
-                class: "c"
+            const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, {
+                name: "",
+                "connector.class": pluginClassName,
+                "topic": "x",
+                "topics": "y",
             });
+
+            // Fix empty groups
+            for (const p of validationResult.configs)
+                p.definition.group = "(Default Group)";
 
             // Create our own properties
             const allProps = validationResult.configs
@@ -106,16 +113,22 @@ export class ConfigPage extends Component<ConfigPageProps> {
         } catch (err: any) {
             this.error = typeof err == 'object' ? (err.message ?? JSON.stringify(err, undefined, 4)) : JSON.stringify(err, undefined, 4);
         }
+
+        this.initPending = false;
     }
 
     render() {
-        if (this.allGroups.length == 0)
-            return <div>no groups</div>
         if (this.error)
             return <div>
                 <h3>Error</h3>
                 <div className='codeBox'>{this.error}</div>
             </div>
+
+        if (this.initPending)
+            return <div><Skeleton loading={true} active={true} paragraph={{ rows: 20, width: '100%' }} /></div>
+
+        if (this.allGroups.length == 0)
+            return <div>debug: no groups</div>
 
         // const defaultExpanded = this.allGroups.map(x => x.groupName);
         const defaultExpanded = this.allGroups[0].groupName;

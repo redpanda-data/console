@@ -1093,17 +1093,14 @@ const apiStore = {
         return tryParseOrUnwrapError<null>(response);
     },
 
-    async validateConnectorConfig(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<ConnectorValidationResult> {
+    async validateConnectorConfig(clusterName: string, pluginClassName: string, config: object): Promise<ConnectorValidationResult> {
         // PUT "/kafka-connect/clusters/{clusterName}/connector-plugins/{pluginClassName}/config/validate"
         const response = await fetch(`./api/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connector-plugins/${encodeURIComponent(pluginClassName)}/config/validate`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
             ],
-            body: JSON.stringify({
-                connectorName: connectorName,
-                config: config
-            }),
+            body: JSON.stringify(config),
         });
         return tryParseOrUnwrapError<ConnectorValidationResult>(response);
     },
