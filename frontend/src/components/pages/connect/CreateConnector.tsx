@@ -28,11 +28,11 @@ import styles from './CreateConnector.module.scss';
 const { Option } = Select;
 
 interface ConnectorTypeProps {
-    connectClusters: Array<ClusterConnectors>;
-    activeCluster: string | null;
-    onActiveClusterChange: (clusterName: string | null) => void;
-    selectedPlugin: ConnectorPlugin | null;
-    onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void;
+  connectClusters: Array<ClusterConnectors>;
+  activeCluster: string | null;
+  onActiveClusterChange: (clusterName: string | null) => void;
+  selectedPlugin: ConnectorPlugin | null;
+  onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void;
 }
 
 const ConnectorType = observer(({
@@ -75,9 +75,9 @@ class CreateConnector extends PageComponent {
     p.title = 'Create Connector';
     p.addBreadcrumb('Create Connector', '/create-connector');
 
-        this.refreshData(false);
-        appGlobal.onRefresh = () => this.refreshData(true);
-    }
+    this.refreshData(false);
+    appGlobal.onRefresh = () => this.refreshData(true);
+  }
 
   refreshData (force: boolean) {
     api.refreshConnectClusters(force);
@@ -98,7 +98,7 @@ class CreateConnector extends PageComponent {
 }
 
 interface ConnectorWizardProps {
-    connectClusters: Array<ClusterConnectors>;
+  connectClusters: Array<ClusterConnectors>;
 }
 
 function ConnectorWizard ({ connectClusters }: ConnectorWizardProps) {
@@ -215,7 +215,7 @@ function ConnectorWizard ({ connectClusters }: ConnectorWizardProps) {
       },
     }];
 
-    const isLast = () => currentStep === steps.length - 1;
+  const isLast = () => currentStep === steps.length - 1;
 
   return <Wizard state={{
     canContinue: () => steps[currentStep].postConditionMet(),
@@ -226,9 +226,9 @@ function ConnectorWizard ({ connectClusters }: ConnectorWizardProps) {
         if (!conditionMet) return;
       }
 
-            if (isLast()) {
-                return history.push(`/kafka-connect/${activeCluster}`);
-            }
+      if (isLast()) {
+        return history.push(`/kafka-connect/${activeCluster}`);
+      }
 
       return currentStep < steps.length - 1
         ? setCurrentStep(n => n + 1)
@@ -315,17 +315,15 @@ function Review ({
 }
 
 function getDataSource (validationResult: ConnectorValidationResult) {
-  return validationResult.configs
-    .filter(connectorProperty => connectorProperty.value.errors.length > 0)
-    .map(cp => cp.value);
+  return validationResult.configs.filter(connectorProperty => connectorProperty.value.errors.length > 0).
+    map(cp => cp.value);
 }
 
 function ValidationDisplay ({ validationResult }: { validationResult: ConnectorValidationResult }) {
   return <Alert style={{ marginTop: '2rem' }} type="warning" message={<>
     <h3>Submitted configuration is invalid</h3>
 
-    <Table pagination={false} size={'small'}
-           dataSource={getDataSource(validationResult)} columns={[
+    <Table pagination={false} size={'small'} dataSource={getDataSource(validationResult)} columns={[
       {
         title: 'Property Name',
         dataIndex: 'name',
