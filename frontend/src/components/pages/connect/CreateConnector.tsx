@@ -120,6 +120,7 @@ function ConnectorWizard({ connectClusters }: ConnectorWizardProps) {
                 {selectedPlugin != null
                     ? <div className={styles.connectorBoxCard}>
                         <ConnectorBoxCard
+                            id="selectedConnector"
                             connectorPlugin={selectedPlugin}
                             borderStyle={'dashed'}
                             borderWidth={'medium'}

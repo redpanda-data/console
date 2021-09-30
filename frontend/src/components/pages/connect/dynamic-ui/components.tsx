@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, EyeInvisibleOutlined, EyeTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, Select, Skeleton } from 'antd';
+import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, Select, Skeleton, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
@@ -16,7 +16,7 @@ import { sortField } from '../../../misc/common';
 import { KowlTable } from '../../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../../Page';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, removeNamespace, TasksColumn, TaskState } from '../helper';
-
+import { scrollTo } from "../../../../utils/utils";
 
 import postgresPropsRaw from '../../../../assets/postgres.json';
 
@@ -70,6 +70,11 @@ export class ConfigPage extends Component<ConfigPageProps> {
 
     async initConfig() {
         const { clusterName, pluginClassName } = this.props;
+
+        setTimeout(() => {
+            scrollTo('selectedConnector', 'start', -20);
+        }, 100);
+
         try {
             // Validate with empty object to get all properties initially
             const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, {
@@ -79,9 +84,16 @@ export class ConfigPage extends Component<ConfigPageProps> {
                 "topics": "y",
             });
 
-            // Fix empty groups
-            for (const p of validationResult.configs)
-                p.definition.group = "(Default Group)";
+            // Fix missing properties
+            for (const p of validationResult.configs) {
+                const def = p.definition;
+                if (!def.group)
+                    def.group = "Default Group)";
+                if (def.order < 0)
+                    def.order = Number.POSITIVE_INFINITY;
+                if (!def.width || def.width == PropertyWidth.None)
+                    def.width = PropertyWidth.Medium;
+            }
 
             // Create our own properties
             const allProps = validationResult.configs
@@ -222,9 +234,13 @@ const PropertyComponent = observer((props: { property: Property }) => {
 
 
     // Attach tooltip
-    let name = <span style={{ fontWeight: 600 }}>{def.display_name}</span>;
+    let name = <Tooltip overlay={def.name} placement='top' trigger="click" mouseLeaveDelay={0} getPopupContainer={findPopupContainer}>
+        <span style={{ fontWeight: 600, cursor: 'pointer' }}>{def.display_name}</span>
+    </Tooltip>;
+
     if (def.documentation)
         name = <InfoText tooltip={def.documentation} iconSize='12px' transform='translateY(1px)' gap='6px' placement='right' maxWidth='450px' align='left' >{name}</InfoText>
+
 
     // Wrap name and input element
     return <div className={inputSizeToClass[def.width]}>
