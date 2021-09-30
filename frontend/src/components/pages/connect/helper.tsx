@@ -113,7 +113,7 @@ const connectorMetadata: ConnectorMetadata[] = [
 
     // WePay Connectors
     {
-        classNamePrefix: "com.wepay.kafka.connect.bigqueryl.",
+        classNamePrefix: "com.wepay.kafka.connect.bigquery.",
         logo: <img src={BigQueryLogo} alt='Google BigQuery logo' className='connectorLogo' />
     } as const,
 
