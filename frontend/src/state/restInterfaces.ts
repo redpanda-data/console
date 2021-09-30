@@ -1020,3 +1020,58 @@ export interface KafkaConnectorInfoWithStatus { // ConnectorInfoWithStatus
 // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
 // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
 // all 4 return either nothing (code 200), or an ApiError
+
+
+export interface ConnectorValidationResult {
+    name: string;
+    error_count: number;
+    groups: string[];
+    configs: ConnectorProperty[];
+}
+
+export interface ConnectorProperty {
+    definition: {
+        name: string;
+        type: DataType;
+        required: boolean;
+        default_value: null | string;
+        importance: PropertyImportance;
+        documentation: string;
+        group: null | string;
+        width: Width;
+        display_name: string;
+        dependents: string[];
+        order: number;
+    };
+    value: {
+        name: string;
+        value: null | string;
+        recommended_values: string[];
+        errors: string[];
+        visible: boolean;
+    };
+}
+
+export enum PropertyImportance {
+    High = "HIGH",
+    Low = "LOW",
+    Medium = "MEDIUM",
+}
+
+export enum DataType {
+    Boolean = "BOOLEAN",
+    Class = "CLASS",
+    Int = "INT",
+    List = "LIST",
+    Long = "LONG",
+    Password = "PASSWORD",
+    Short = "SHORT",
+    String = "STRING",
+}
+
+export enum Width {
+    None = "NONE",
+    Short = "SHORT",
+    Medium = "MEDIUM",
+    Long = "LONG",
+}

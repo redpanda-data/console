@@ -2806,6 +2806,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 .connectorLogo {
     width: 100%;
     height: 100%;
+    object-fit: contain;
 
     transform: translateZ(0); // fixes images becoming blurry when downscaled (for whatever reason)
 }

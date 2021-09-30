@@ -1,6 +1,8 @@
 /* eslint-disable no-useless-escape */
-import { Collapse, Input, InputNumber, Switch } from 'antd';
-import { autorun, makeObservable, observable } from 'mobx';
+import { CheckCircleTwoTone, ExclamationCircleTwoTone, EyeInvisibleOutlined, EyeTwoTone, WarningTwoTone } from '@ant-design/icons';
+import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, Select } from 'antd';
+import { motion } from 'framer-motion';
+import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { InfoText } from '../../../../utils/tsxUtils';
@@ -31,6 +33,8 @@ interface Property {
     name: string;
     entry: PropertyEntry;
     value: string | number | boolean | string[];
+
+    isHidden: boolean; // currently only used for "connector.class"
 }
 
 interface DemoPageProps {
@@ -52,7 +56,8 @@ export class DemoPage extends Component<DemoPageProps> {
             .map(p => ({
                 name: p.definition.name,
                 entry: p,
-                value: p.value.value ?? p.definition.default_value
+                value: p.value.value ?? p.definition.default_value,
+                isHidden: ["connector.class"].includes(p.definition.name),
             } as Property))
             .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
 
@@ -113,6 +118,7 @@ const requiredStar = <span style={{ lineHeight: '0px', color: 'red', fontSize: '
 const PropertyComponent = observer((props: { property: Property }) => {
     const p = props.property;
     const def = p.entry.definition;
+    if (p.isHidden) return null;
 
     let comp = <div key={p.name}>
         <div>"{p.name}" (unknown type "{def.type}")</div>
@@ -129,8 +135,25 @@ const PropertyComponent = observer((props: { property: Property }) => {
                 else
                     v = "";
 
-            comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+            const recValues = p.entry.value.recommended_values;
+            if (recValues && recValues.length) {
+                const options = recValues.map((x: string) => ({ label: x, value: x }));
+                // Enum
+                comp = <Select style={{ width: 200 }} showSearch
+                    options={options}
+                />
+            }
+            else {
+                // Text or Password
+                comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+            }
+
             break;
+
+        case "PASSWORD":
+            comp = <Input.Password value={String(p.value ?? '')} onChange={e => p.value = e.target.value} iconRender={visible => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)} />
+            break;
+
         case "INT":
         case "LONG":
             comp = <InputNumber style={{ display: 'block' }} value={Number(p.value)} onChange={e => p.value = e} />
