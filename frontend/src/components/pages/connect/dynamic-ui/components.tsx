@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, EyeInvisibleOutlined, EyeTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, } from 'antd';
+import { Button, Collapse, Input, InputNumber, message, notification, Popover, Statistic, Switch, Select } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
@@ -137,7 +137,19 @@ const PropertyComponent = observer((props: { property: Property }) => {
                 else
                     v = "";
 
-            comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+            const recValues = p.entry.value.recommended_values;
+            if (recValues && recValues.length) {
+                const options = recValues.map((x: string) => ({ label: x, value: x }));
+                // Enum
+                comp = <Select style={{ width: 200 }} showSearch
+                    options={options}
+                />
+            }
+            else {
+                // Text or Password
+                comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+            }
+
             break;
 
         case "PASSWORD":
@@ -181,7 +193,7 @@ const DebugEditor = observer((p: { observable: { jsonText: string } }) => {
     const obs = p.observable;
 
     return <div style={{ marginTop: '1.5em' }}>
-        <h4>Debug Editor</h4>
+        <h4>Output Preview</h4>
         <div style={{ border: '1px solid hsl(0deg, 0%, 90%)', borderRadius: '2px' }}>
 
             <Editor
@@ -197,7 +209,7 @@ const DebugEditor = observer((p: { observable: { jsonText: string } }) => {
                 }}
 
                 options={{
-                    readOnly: false,
+                    readOnly: true,
 
                     minimap: {
                         enabled: false,
