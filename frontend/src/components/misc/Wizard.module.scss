@@ -30,3 +30,9 @@
 .prevButton {
   margin-right: 15px;
 }
+
+.nextButton,
+.prevButton {
+  display: inline-flex;
+  align-items: center;
+}

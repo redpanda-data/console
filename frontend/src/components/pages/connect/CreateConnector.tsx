@@ -44,7 +44,7 @@ const ConnectorType = observer(({
         }}
         defaultValue={activeCluster || undefined}
     >
-      {connectClusters.map(cluster => <Option value={cluster.clusterName}>{cluster.clusterName}</Option>)}
+      {connectClusters.map(({clusterName}) => <Option key={clusterName} value={clusterName}>{clusterName}</Option>)}
     </Select>
     {activeCluster == null ? null : (<>
       <h2>Connector Type</h2>
@@ -177,7 +177,7 @@ function Review({connectorPlugin, properties, onChange}: ReviewProps) {
         : null
     }
     <h2>Connector Properties</h2>
-    <div style={{margin: "0 auto 1.5rem"}}>
+    <div style={{margin: '0 auto 1.5rem'}}>
       <KowlEditor
           language="json"
           value={properties}

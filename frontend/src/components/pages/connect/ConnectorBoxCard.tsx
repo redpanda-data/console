@@ -18,17 +18,20 @@ export function ConnectorBoxCard(props: ConnectorBoxCardProps) {
 export type ConnectorPlugin = { class: string; type?: string; version?: string };
 
 function ConnectorRadioCardContent({connectorPlugin}: { connectorPlugin: ConnectorPlugin }) {
-  const {friendlyName, logo} = findConnectorMetadata(connectorPlugin.class) ?? {};
+  const {friendlyName, logo, author = 'unknown'} = findConnectorMetadata(connectorPlugin.class) ?? {};
   const displayName = friendlyName ?? removeNamespace(connectorPlugin.class);
+  const type = connectorPlugin.type ?? 'unknown'
+  const version = connectorPlugin.version ?? 'unknown'
+
   return <div className={styles.radioCardContent}>
     <span className={styles.radioCardLogo}>{logo}</span>
     <div className={styles.radioCardInfo}>
       <strong>{displayName} {connectorPlugin.type != null
-          ? <span className={styles.pluginType}>({connectorPlugin.type})</span>
+          ? <span className={styles.pluginType}>({type})</span>
           : null}</strong>
       {connectorPlugin.version != null
           ? <p className={styles.pluginMeta}>
-            Version: {connectorPlugin.version}
+            Version: {version} | Author: {author}
           </p>
           : null}
     </div>
