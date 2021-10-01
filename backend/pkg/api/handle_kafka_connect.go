@@ -234,7 +234,7 @@ func (api *API) handlePutValidateConnectorConfig() http.HandlerFunc {
 			return
 		}
 
-		var req map[string]string
+		var req map[string]interface{}
 		restErr = rest.Decode(w, r, &req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
