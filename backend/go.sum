@@ -55,10 +55,10 @@ github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec/go.mod h1:jMjuTZXRI4
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudhut/common v0.6.0 h1:lGEEsupKfp4vFzbGkUk1rHtTCVfTiOGRnmyFzPb4XaU=
 github.com/cloudhut/common v0.6.0/go.mod h1:jCQsPDIS3LWXCROaTG2N8IRGml1s+7TQsJLOekSlbKI=
-github.com/cloudhut/connect-client v0.0.0-20210928094252-81e47158359e h1:3BU70vy1CnptGZ+IIYvNPIITPOfnhZhQBi/KdOEeQpU=
-github.com/cloudhut/connect-client v0.0.0-20210928094252-81e47158359e/go.mod h1:Kfy2sPCGDgWZGkjyu3ei9uacNA2CMBLU9/PBpCcyiGg=
 github.com/cloudhut/connect-client v0.0.0-20210928114028-224497933949 h1:nX3herOr3c5vldf/Ncv6sfZnPIB0MPzWg2ajFtXzrfw=
 github.com/cloudhut/connect-client v0.0.0-20210928114028-224497933949/go.mod h1:Kfy2sPCGDgWZGkjyu3ei9uacNA2CMBLU9/PBpCcyiGg=
+github.com/cloudhut/connect-client v0.0.0-20211001145352-0603365942de h1:QLcjODsJ/kzwYenNHxtFkS3bCpeOljmvffm+bLshdFU=
+github.com/cloudhut/connect-client v0.0.0-20211001145352-0603365942de/go.mod h1:Kfy2sPCGDgWZGkjyu3ei9uacNA2CMBLU9/PBpCcyiGg=
 github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
 github.com/cockroachdb/datadriven v0.0.0-20190809214429-80d97fb3cbaa/go.mod h1:zn76sxSg3SzpJ0PPJaLDCu+Bu0Lg3sKTORVIj19EIF8=
 github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd/go.mod h1:sE/e/2PUdi/liOCUjSTXgM1o87ZssimdTWN964YiIeI=
@@ -527,6 +527,8 @@ golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4/go.mod h1:p54w0d4576C0XHj96b
 golang.org/x/net v0.0.0-20210825183410-e898025ed96a/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b h1:eB48h3HiRycXNy8E0Gf5e0hv7YT6Kt14L/D73G1fuwo=
 golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
+golang.org/x/net v0.0.0-20210929193557-e81a3d93ecf6 h1:Z04ewVs7JhXaYkmDhBERPi41gnltfQpMWDnTnQbaCqk=
+golang.org/x/net v0.0.0-20210929193557-e81a3d93ecf6/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
