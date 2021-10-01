@@ -1301,6 +1301,40 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
         padding: 6px 9px !important;
         padding-bottom: 2em !important;
     }
+
+    .ant-collapse-item {
+        &>.ant-collapse-header {
+            // background: linear-gradient(to right, #ff220070 20px, transparent 80px);
+            // border-radius: 5px;
+        }
+
+        &>.ant-collapse-header .issuesTag {
+            margin-top: 2px;
+            padding: 0px 6px;
+            border-radius: 4px;
+
+            border: 1px solid red;
+            background: #f20;
+            color: #fff;
+            font-size: 0.75em;
+
+            user-select: none;
+
+            // default hidden
+            opacity: 0;
+            transform: translateX(6px);
+            transition:
+                transform 150ms ease-out,
+                opacity 150ms ease-out;
+        }
+
+        &.hasErrors>.ant-collapse-header .issuesTag {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+
 }
 
 
@@ -2931,4 +2965,60 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     .ant-select {
         width: 100%;
     }
+}
+
+.dynamicInputs>div {
+
+    .importanceTag {
+
+        // Can't find a style that looks good and doesn't overload the UI at the moment.
+        display: none;
+
+        margin-left: auto;
+
+        margin-top: 2px;
+        padding: 1px 6px;
+        border-radius: 4px;
+
+        font-size: 0.7em;
+        font-weight: 500;
+
+        user-select: none;
+        text-transform: capitalize;
+
+        // default hidden
+        // opacity: 0.66;
+        opacity: 1;
+        transition:
+            opacity 300ms ease-out;
+
+        &.high {
+            // background: #f20;
+            // color: #fff;
+            // background: #fff;
+            color: rgba(0, 123, 255, 0.726);
+            background: rgba(0, 123, 255, 0.1);
+
+        }
+
+        &.medium {
+            // background: #f20;
+            // color: #fff;
+        }
+
+        &.low {
+            background: rgba(119, 119, 119, 0.035);
+            color: #777;
+
+            // font-style: italic;
+        }
+    }
+
+    &:hover,
+    &:focus-within {
+        .importanceTag {
+            opacity: 1;
+        }
+    }
+
 }

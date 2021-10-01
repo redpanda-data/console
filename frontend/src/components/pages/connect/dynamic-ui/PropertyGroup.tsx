@@ -2,7 +2,6 @@
 import { PropertyGroup } from './components';
 import { PropertyComponent } from './PropertyComponent';
 
-
 export const PropertyGroupComponent = (props: { group: PropertyGroup }) => {
     const g = props.group;
 

@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { Collapse, Skeleton } from 'antd';
-import { action, autorun, comparer, IReactionDisposer, makeObservable, observable, reaction } from 'mobx';
+import { action, autorun, comparer, has, IReactionDisposer, makeObservable, observable, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { api } from '../../../../state/backendApi';
@@ -68,8 +68,13 @@ export class ConfigPage extends Component<ConfigPageProps> {
             const groupNames = [this.fallbackGroupName, ...validationResult.groups];
             this.allGroups = allProps
                 .groupInto(p => p.entry.definition.group)
-                .map(g => ({ groupName: g.key, properties: g.items } as PropertyGroup))
+                .map(g => (observable({ groupName: g.key, properties: g.items, propertiesWithErrors: [] }) as PropertyGroup))
                 .sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
+
+            // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
+            for (const g of this.allGroups)
+                for (const p of g.properties)
+                    p.propertyGroup = g;
 
             // Update JSON
             this.reactionDisposers.push(reaction(
@@ -136,7 +141,16 @@ export class ConfigPage extends Component<ConfigPageProps> {
                 if (target) {
                     if (target.errors.length == 0 && source.errors.length == 0)
                         continue;
+
+                    // Update with new errors
                     target.errors.updateWith(source.errors);
+
+                    // Add or remove from parent group
+                    const hasErrors = target.errors.length > 0;
+                    if (hasErrors)
+                        target.propertyGroup.propertiesWithErrors.pushDistinct(target);
+                    else
+                        target.propertyGroup.propertiesWithErrors.remove(target);
                 }
             }
 
@@ -172,8 +186,12 @@ export class ConfigPage extends Component<ConfigPageProps> {
             <Collapse defaultActiveKey={defaultExpanded} ghost bordered={false}>
                 {this.allGroups.map(g =>
                     <Collapse.Panel
+                        className={(g.propertiesWithErrors.length > 0) ? 'hasErrors' : ''}
                         key={g.groupName}
-                        header={<div style={{ fontSize: 'larger', fontWeight: 600, fontFamily: 'Open Sans' }}>{g.groupName}</div>}
+                        header={<div style={{ display: 'flex', alignItems: 'center', gap: '1em' }}>
+                            <span style={{ fontSize: 'larger', fontWeight: 600, fontFamily: 'Open Sans' }}>{g.groupName}</span>
+                            <span className='issuesTag'>{g.propertiesWithErrors.length} issues</span>
+                        </div>}
                     >
                         <PropertyGroupComponent group={g} />
                     </Collapse.Panel>
@@ -223,6 +241,8 @@ function createCustomProperties(properties: ConnectorProperty[], fallbackGroupNa
 export interface PropertyGroup {
     groupName: string;
     properties: Property[];
+
+    propertiesWithErrors: Property[];
 }
 
 export interface Property {
@@ -234,6 +254,8 @@ export interface Property {
 
     errors: string[];
     lastErrorValue: any;
+
+    propertyGroup: PropertyGroup;
 }
 
 

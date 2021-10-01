@@ -1053,9 +1053,9 @@ export interface ConnectorProperty {
 }
 
 export enum PropertyImportance {
-    High = "HIGH",
     Low = "LOW",
     Medium = "MEDIUM",
+    High = "HIGH",
 }
 
 export enum DataType {

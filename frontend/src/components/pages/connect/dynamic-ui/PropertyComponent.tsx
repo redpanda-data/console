@@ -72,18 +72,21 @@ export const PropertyComponent = observer((props: { property: Property }) => {
 
     // Attach tooltip
     let name = <Tooltip overlay={def.name} placement='top' trigger="click" mouseLeaveDelay={0} getPopupContainer={findPopupContainer}>
-        <span style={{ fontWeight: 600, cursor: 'pointer' }}>{def.display_name}</span>
+        <span style={{ fontWeight: 600, cursor: 'pointer', color: '#444', fontSize: '12px', paddingLeft: '1px' }}>{def.display_name}</span>
     </Tooltip>;
 
     if (def.documentation)
-        name = <InfoText tooltip={def.documentation} iconSize='12px' transform='translateY(1px)' gap='6px' placement='right' maxWidth='450px' align='left' >{name}</InfoText>
+        name = <InfoText tooltip={def.documentation} iconSize='12px' transform='translateY(1px)' gap='6px' placement='right' maxWidth='450px' align='left' iconColor='#c7c7c7' >{name}</InfoText>
 
 
     // Wrap name and input element
     return <div className={inputSizeToClass[def.width]}>
-        <div style={{ display: 'flex', width: 'fit-content', alignItems: 'center', marginBottom: '4px' }}>
+        {/* width: 'fit-content', */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2px' }}>
             {def.required && requiredStar}
             {name}
+
+            <span className={'importanceTag ' + def.importance.toLowerCase()}>Importance: {def.importance.toLowerCase()}</span>
         </div>
 
         {/* Control */}
