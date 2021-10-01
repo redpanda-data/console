@@ -15,6 +15,7 @@ import KowlEditor from '../../../misc/KowlEditor';
 // Monaco Type
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
 import { toJson } from '../../../../utils/jsonUtils';
+import { IsDev } from '../../../../utils/env';
 export type Monaco = typeof monacoType;
 
 
@@ -203,7 +204,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
                 )}
             </Collapse>
 
-            <DebugEditor observable={this} />
+            {IsDev && <DebugEditor observable={this} />}
         </>;
     }
 }
