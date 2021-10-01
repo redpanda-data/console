@@ -65,9 +65,11 @@ export class ConfigPage extends Component<ConfigPageProps> {
                     p.lastErrorValue = p.value;
 
             // Create groups
+            const groupNames = [this.fallbackGroupName, ...validationResult.groups];
             this.allGroups = allProps
                 .groupInto(p => p.entry.definition.group)
-                .map(g => ({ groupName: g.key, properties: g.items } as PropertyGroup));
+                .map(g => ({ groupName: g.key, properties: g.items } as PropertyGroup))
+                .sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
 
             // Update JSON
             this.reactionDisposers.push(autorun(() => {
