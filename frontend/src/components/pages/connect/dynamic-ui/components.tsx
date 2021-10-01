@@ -131,12 +131,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
                 if (target) {
                     if (target.errors.length == 0 && source.errors.length == 0)
                         continue;
-
-                    // todo: optimize later
-                    if (toJson(source.errors) != toJson(target.errors)) {
-                        const { added, removed } = target.errors.updateWith(source.errors);
-                        console.log(`add/remove "${source.name}"`, { added, removed });
-                    }
+                    target.errors.updateWith(source.errors);
                 }
             }
 
