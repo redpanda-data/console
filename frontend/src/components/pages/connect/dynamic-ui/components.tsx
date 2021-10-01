@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { Collapse, Skeleton } from 'antd';
-import { action, autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
+import { action, autorun, comparer, IReactionDisposer, makeObservable, observable, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { api } from '../../../../state/backendApi';
@@ -72,45 +72,55 @@ export class ConfigPage extends Component<ConfigPageProps> {
                 .sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
 
             // Update JSON
-            this.reactionDisposers.push(autorun(() => {
-                const jsonObj = {} as any;
-                for (const g of this.allGroups)
-                    for (const p of g.properties) {
-                        if (p.entry.definition.required || (p.value != null && p.value != p.entry.definition.default_value))
-                            jsonObj[p.name] = p.value;
-                    }
-                this.jsonText = JSON.stringify(jsonObj, undefined, 4);
-                this.props.onChange(this.jsonText);
-            }, { delay: 100 }));
+            this.reactionDisposers.push(reaction(
+                () => {
+                    return this.getConfigObject();
+                },
+                (config) => {
+                    this.jsonText = JSON.stringify(config, undefined, 4);
+                    this.props.onChange(this.jsonText);
+                },
+                { delay: 100, fireImmediately: true, equals: comparer.structural }
+            ));
 
             // Validate on changes
-            this.reactionDisposers.push(autorun(() => {
-                const config = {} as any;
-
-                for (const g of this.allGroups)
-                    for (const p of g.properties) {
-
-                        // Skip default values
-                        if (p.value == p.entry.definition.default_value)
-                            continue;
-
-                        // Skip empty values for strings
-                        if (StringLikeTypes.includes(p.entry.definition.type))
-                            if (p.value == null || p.value == "")
-                                continue;
-
-                        // Include the value
-                        config[p.name] = p.value;
-                    }
-
-                this.validate(config);
-            }, { delay: 300 }));
+            this.reactionDisposers.push(reaction(
+                () => {
+                    return this.getConfigObject();
+                },
+                (config) => {
+                    this.validate(config);
+                },
+                { delay: 300, fireImmediately: true, equals: comparer.structural }
+            ));
 
         } catch (err: any) {
             this.error = typeof err == 'object' ? (err.message ?? JSON.stringify(err, undefined, 4)) : JSON.stringify(err, undefined, 4);
         }
 
         this.initPending = false;
+    }
+
+    getConfigObject(): object {
+        const config = {} as any;
+
+        for (const g of this.allGroups)
+            for (const p of g.properties) {
+
+                // Skip default values
+                if (p.value == p.entry.definition.default_value)
+                    continue;
+
+                // Skip empty values for strings
+                if (StringLikeTypes.includes(p.entry.definition.type))
+                    if (p.value == null || p.value == "")
+                        continue;
+
+                // Include the value
+                config[p.name] = p.value;
+            }
+
+        return config;
     }
 
     validate = action(async (config: object) => {
