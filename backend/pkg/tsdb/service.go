@@ -20,7 +20,10 @@ type Service struct {
 }
 
 func NewService(cfg Config, logger *zap.Logger, owlSvc *owl.Service) (*Service, error) {
-	tsdbOpts := []tstorage.Option{tstorage.WithTimestampPrecision(tstorage.Seconds)}
+	tsdbOpts := []tstorage.Option{
+		tstorage.WithTimestampPrecision(tstorage.Seconds),
+		tstorage.WithRetention(cfg.Retention),
+	}
 	storage, err := tstorage.NewStorage(tsdbOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tsdb storage: %w", err)
