@@ -621,17 +621,20 @@ const apiStore = {
     },
 
     refreshCluster(force?: boolean) {
-        cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
+        cachedApiRequest<ClusterInfoResponse | ApiError>(`./api/cluster`, force)
             .then(v => {
                 transaction(() => {
-                    // don't assign if the value didn't change
-                    // we'd re-trigger all observers!
-
+                    // root response can fail as well
+                    if ('message' in v) {
+                        return;
+                    }
                     // add 'type' to each synonym entry
                     for (const broker of v.clusterInfo.brokers)
                         if (broker.config && !broker.config.error)
                             prepareSynonyms(broker.config.configs)
 
+                    // don't assign if the value didn't change
+                    // we'd re-trigger all observers!
                     if (!comparer.structural(this.clusterInfo, v.clusterInfo))
                         this.clusterInfo = v.clusterInfo;
 
@@ -1144,6 +1147,8 @@ export const brokerMap = computed(() => {
 // 1. add 'type' to each synonym, so when expanding a config entry (to view its synonyms), we can still see the type
 // 2. remove redundant synonym entries (those that have the same source as the root config entry)
 function prepareSynonyms(configEntries: ConfigEntry[]) {
+    if (!Array.isArray(configEntries)) return;
+
     for (const e of configEntries) {
         if (e.synonyms == undefined)
             continue;
@@ -1179,7 +1184,10 @@ export async function partialTopicConfigs(configKeys: string[], topics?: string[
         ? `topicNames=${topicNames}&configKeys=${keys}`
         : `configKeys=${keys}`;
 
-    const response = await fetch('./api/topics-configs?' + query);
+    const response = await fetch('./api/topics-configs?' + query).catch(e => null);
+    if (response == null)
+        throw response;
+
     return tryParseOrUnwrapError<PartialTopicConfigsResponse>(response);
 }
 

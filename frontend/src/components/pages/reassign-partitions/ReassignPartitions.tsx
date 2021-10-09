@@ -523,8 +523,8 @@ class ReassignPartitions extends PageComponent {
 
             // Update observable
             const changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
-            if (changes.added || changes.removed)
-                if (IsDev) console.log('refreshTopicConfigs updated', changes);
+            // if (changes.added || changes.removed)
+            //     if (IsDev) console.log('refreshTopicConfigs updated', changes);
 
         } catch (err) {
             console.error("error while refreshing topic configs, stopping auto refresh", { error: err });

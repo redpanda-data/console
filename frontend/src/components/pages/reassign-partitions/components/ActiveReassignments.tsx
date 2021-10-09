@@ -9,7 +9,7 @@ import { makePaginationConfig, sortField } from "../../../misc/common";
 import { uiSettings } from "../../../../state/ui";
 import { ColumnProps } from "antd/lib/table";
 import { TopicWithPartitions } from "../Step1.Partitions";
-import { Message, prettyBytesOrNA, prettyMilliseconds } from "../../../../utils/utils";
+import { DebugTimerStore, Message, prettyBytesOrNA, prettyMilliseconds } from "../../../../utils/utils";
 import { BrokerList } from "./BrokerList";
 import { ReassignmentState, ReassignmentTracker } from "../logic/reassignmentTracker";
 import { observer } from "mobx-react";
@@ -17,11 +17,12 @@ import { EllipsisOutlined } from "@ant-design/icons";
 import { strictEqual } from "assert";
 import { reassignmentTracker } from "../ReassignPartitions";
 import { BandwidthSlider } from "./BandwidthSlider";
+import { KowlTable } from "../../../misc/KowlTable";
 
 
 @observer
 export class ActiveReassignments extends Component<{ throttledTopics: string[], onRemoveThrottleFromTopics: () => void }> {
-    pageConfig = makePaginationConfig(uiSettings.reassignment.pageSizeActive ?? 10);
+    pageConfig = { defaultPageSize: 5 };
 
     // When set, a modal will be shown for the reassignment state
     @observable reassignmentDetails: ReassignmentState | null = null;
@@ -72,6 +73,8 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
             ? <>Throttle: Not set (unlimited)</>
             : <>Throttle: {prettyBytesOrNA(minThrottle)}/s</>
 
+        const currentReassignments = reassignmentTracker.trackingReassignments ?? [];
+
         return <>
             {/* Title */}
             <div className='currentReassignments' style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
@@ -83,32 +86,23 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
             </div>
 
             {/* Table */}
-            <ConfigProvider renderEmpty={() =>
-                <div style={{ color: '#00000059', margin: '.4em 0' }}>No reassignments currently in progress</div>
-            }>
-                <Table
-                    style={{ margin: '0', }} size={'middle'}
-                    className='activeReassignments'
+            <KowlTable
+                className='activeReassignments'
 
-                    dataSource={reassignmentTracker.trackingReassignments.slice() ?? []}
-                    columns={columnsActiveReassignments}
+                dataSource={currentReassignments}
+                columns={columnsActiveReassignments}
 
-                    rowKey={r => r.topicName}
-                    onRow={(state, index) => {
-                        return {
-                            onClick: e => this.reassignmentDetails = state,
-                        };
-                    }}
+                rowKey={r => r.topicName}
+                onRow={(state, index) => {
+                    return {
+                        onClick: e => this.reassignmentDetails = state,
+                    };
+                }}
+                pagination={this.pageConfig}
+                observableSettings={uiSettings.reassignment.activeReassignments}
 
-
-                    pagination={this.pageConfig}
-                    onChange={(p) => {
-                        if (p.pageSize) uiSettings.reassignment.pageSizeActive = p.pageSize;
-                        this.pageConfig.current = p.current;
-                        this.pageConfig.pageSize = p.pageSize;
-                    }}
-                />
-            </ConfigProvider>
+                emptyText={<div style={{ color: '#00000059', margin: '.4em 0' }}>No reassignments currently in progress</div>}
+            />
 
             <ReassignmentDetailsDialog state={this.reassignmentDetails} onClose={() => this.reassignmentDetails = null} />
             <ThrottleDialog visible={this.showThrottleDialog} lastKnownMinThrottle={minThrottle} onClose={() => this.showThrottleDialog = false} />
@@ -121,22 +115,6 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
                 </Button>
             }
         </>
-    }
-
-    @computed get topicPartitionsInProgress(): TopicWithPartitions[] {
-        if (api.topics == null) return [];
-        return api.topics.map(topic => {
-            return {
-                ...topic,
-                partitions: api.topicPartitions.get(topic.topicName)!,
-                activeReassignments: this.inProgress.get(topic.topicName) ?? [],
-            }
-        }).filter(t => t.activeReassignments.length > 0);
-    }
-
-    @computed get inProgress(): Map<string, PartitionReassignmentsPartition[]> {
-        const current = api.partitionReassignments ?? [];
-        return current.toMap(x => x.topicName, x => x.partitions);
     }
 
     @computed get throttleSettings(): ({ followerThrottle: number | undefined, leaderThrottle: number | undefined }) {
@@ -221,7 +199,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
                     <ul style={{ marginTop: '0.5em', padding: '0 1.5em' }}>
                         <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
                         <li>Once the reassignment completes you'll have to remove the throttling configuration. <br />
-                        Kowl will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
+                            Kowl will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
                         </li>
                     </ul>
                 </div>
@@ -555,7 +533,7 @@ export class ETACol extends Component<{ state: ReassignmentState }> {
 
         if (state.estimateSpeed == null || state.estimateCompletionTime == null) return "...";
 
-        const remainingMs = state.estimateCompletionTime.getTime() - new Date().getTime();
+        const remainingMs = (state.estimateCompletionTime.getTime() - new Date().getTime()).clamp(0, undefined);
 
         return <span >
             {prettyMilliseconds(remainingMs, { secondsDecimalDigits: 0, unitCount: 2 })}
