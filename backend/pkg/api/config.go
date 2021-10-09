@@ -68,6 +68,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Connect config: %w", err)
 	}
 
+	err = c.TSDB.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate TSDB config: %w", err)
+	}
+
 	return nil
 }
 
@@ -82,6 +87,7 @@ func (c *Config) SetDefaults() {
 	c.Kafka.SetDefaults()
 	c.Owl.SetDefaults()
 	c.Connect.SetDefaults()
+	c.TSDB.SetDefaults()
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.
