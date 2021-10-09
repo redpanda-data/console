@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"github.com/cloudhut/kowl/backend/pkg/tsdb"
 	"go.uber.org/zap"
 )
 
@@ -19,6 +21,7 @@ type API struct {
 	OwlSvc     *owl.Service
 	ConnectSvc *connect.Service
 	GitSvc     *git.Service
+	TsdbSvc    *tsdb.Service
 
 	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
 
@@ -63,12 +66,18 @@ func New(cfg *Config) *API {
 		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
 	}
 
+	tsdbSvc, err := tsdb.NewService(cfg.TSDB, logger, owlSvc)
+	if err != nil {
+		logger.Fatal("failed to create TSDB service", zap.Error(err))
+	}
+
 	return &API{
 		Cfg:        cfg,
 		Logger:     logger,
 		KafkaSvc:   kafkaSvc,
 		OwlSvc:     owlSvc,
 		ConnectSvc: connectSvc,
+		TsdbSvc:    tsdbSvc,
 		Hooks:      newDefaultHooks(),
 		version:    version,
 	}
@@ -84,6 +93,11 @@ func (api *API) Start() {
 	err = api.OwlSvc.Start()
 	if err != nil {
 		api.Logger.Fatal("failed to start owl service", zap.Error(err))
+	}
+
+	err = api.TsdbSvc.Start(context.Background())
+	if err != nil {
+		api.Logger.Fatal("failed to start tsdb service", zap.Error(err))
 	}
 
 	// Server

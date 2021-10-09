@@ -6,6 +6,7 @@ import (
 	"github.com/cloudhut/common/flagext"
 	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"github.com/cloudhut/kowl/backend/pkg/tsdb"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/env"
@@ -31,6 +32,7 @@ type Config struct {
 	Connect connect.Config `yaml:"connect"`
 	REST    rest.Config    `yaml:"server"`
 	Kafka   kafka.Config   `yaml:"kafka"`
+	TSDB    tsdb.Config    `yaml:"tsdb"`
 	Logger  logging.Config `yaml:"logger"`
 }
 

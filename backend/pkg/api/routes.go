@@ -73,6 +73,7 @@ func (api *API) routes() *chi.Mux {
 				r.Delete("/topics/{topicName}", api.handleDeleteTopic())
 				r.Delete("/topics/{topicName}/records", api.handleDeleteTopicRecords())
 				r.Get("/topics/{topicName}/partitions", api.handleGetPartitions())
+				r.Get("/topics/{topicName}/metrics", api.handleGetTopicMetrics())
 				r.Get("/topics/{topicName}/configuration", api.handleGetTopicConfig())
 				r.Get("/topics/{topicName}/consumers", api.handleGetTopicConsumers())
 				r.Get("/topics/{topicName}/documentation", api.handleGetTopicDocumentation())

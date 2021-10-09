@@ -55,10 +55,6 @@ github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec/go.mod h1:jMjuTZXRI4
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudhut/common v0.6.0 h1:lGEEsupKfp4vFzbGkUk1rHtTCVfTiOGRnmyFzPb4XaU=
 github.com/cloudhut/common v0.6.0/go.mod h1:jCQsPDIS3LWXCROaTG2N8IRGml1s+7TQsJLOekSlbKI=
-github.com/cloudhut/connect-client v0.0.0-20210903081017-4a1cfc3eeaf8 h1:rNlWWaHU72oZjySK02WrZbxK7t5nJJ2kAywsVjchYuw=
-github.com/cloudhut/connect-client v0.0.0-20210903081017-4a1cfc3eeaf8/go.mod h1:1f8B88aMS1GTY9KWz+OTKmAJ7vhGZssKzQJsY8nycuc=
-github.com/cloudhut/connect-client v0.0.0-20210915074934-f416b2210fb9 h1:c3X/48XeNpV+Q9Mn2F4E8UgcOL6aLtNINXSWO8/Jyak=
-github.com/cloudhut/connect-client v0.0.0-20210915074934-f416b2210fb9/go.mod h1:1f8B88aMS1GTY9KWz+OTKmAJ7vhGZssKzQJsY8nycuc=
 github.com/cloudhut/connect-client v0.0.0-20210922094230-0acce65efdf3 h1:M6CQLns0SIEPaq7V+rY+y1Jnxc4ZFzD6Nifc4yoVYv8=
 github.com/cloudhut/connect-client v0.0.0-20210922094230-0acce65efdf3/go.mod h1:1f8B88aMS1GTY9KWz+OTKmAJ7vhGZssKzQJsY8nycuc=
 github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
@@ -319,6 +315,8 @@ github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lN
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
+github.com/nakabonne/tstorage v0.2.2 h1:vyBAwAhhZx85m+EuyeIKJq/njHpBuyQGlKO7q6UDxzA=
+github.com/nakabonne/tstorage v0.2.2/go.mod h1:n1v68nvIeUguEaYuSqz1ycmiMkF02CJMKSJV0Of1h4w=
 github.com/nats-io/jwt v0.3.0/go.mod h1:fRYCDE99xlTsqUzISS1Bi75UBJ6ljOJQOAAu5VglpSg=
 github.com/nats-io/jwt v0.3.2/go.mod h1:/euKqTS1ZD+zzjYrY7pseZrTtWQSjujC7xjPc8wL6eU=
 github.com/nats-io/nats-server/v2 v2.1.2/go.mod h1:Afk+wRZqkMQs/p45uXdrVLuab3gwv3Z8C4HTBu8GD/k=
@@ -436,7 +434,6 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/twmb/franz-go v1.0.0 h1:JcsqEImDhr7H/eQx/V58fwzjmVi2FRwz6dyylmdJ0NU=
 github.com/twmb/franz-go v1.0.0/go.mod h1:cdFLk8d/5/ox88y38xgiDKP3Yo338OO0t5QbTEM2K6I=
-github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210901051457-3c197a133ddd h1:o+cb+mqRFpVKrusJy/Ebt4zTWn94nPbI1ooMeNhovqM=
 github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210901051457-3c197a133ddd/go.mod h1:SxG/xJKhgPu25SamAq0rrucfp7lbzCpEXOC+vH/ELrY=
 github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210922170710-c329b1949567 h1:b/Ze4+ZQnNFT7ABtvjYc7+eAXvbGddiptX6VWLzQEog=
 github.com/twmb/franz-go/pkg/kmsg v0.0.0-20210922170710-c329b1949567/go.mod h1:SxG/xJKhgPu25SamAq0rrucfp7lbzCpEXOC+vH/ELrY=
@@ -528,10 +525,6 @@ golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4/go.mod h1:RBQZq4jEuRlivfhVLd
 golang.org/x/net v0.0.0-20210326060303-6b1517762897/go.mod h1:uSPa2vr4CLtc/ILN5odXGNXS6mhrKVzTaCXzk9m6W3k=
 golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4/go.mod h1:p54w0d4576C0XHj96bSt6lcn1PtDYWL6XObtHCRCNQM=
 golang.org/x/net v0.0.0-20210825183410-e898025ed96a/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
-golang.org/x/net v0.0.0-20210903162142-ad29c8ab022f h1:w6wWR0H+nyVpbSAQbzVEIACVyr/h8l/BEkY6Sokc7Eg=
-golang.org/x/net v0.0.0-20210903162142-ad29c8ab022f/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
-golang.org/x/net v0.0.0-20210913180222-943fd674d43e h1:+b/22bPvDYt4NPDcy4xAGCmON713ONAWFeY3Z7I3tR8=
-golang.org/x/net v0.0.0-20210913180222-943fd674d43e/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20210917221730-978cfadd31cf h1:R150MpwJIv1MpS0N/pc+NhTM8ajzvlmxlY5OYsrevXQ=
 golang.org/x/net v0.0.0-20210917221730-978cfadd31cf/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=

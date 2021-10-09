@@ -3,6 +3,7 @@ package api
 import (
 	_ "context"
 	"fmt"
+	"github.com/nakabonne/tstorage"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap/zapcore"
 	"net/http"
@@ -480,6 +481,42 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 		res := response{
 			TopicOffsets: topicOffsets,
 		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handleGetTopicMetrics() http.HandlerFunc {
+	type response struct {
+		TopicSizeSeries []*tstorage.DataPoint `json:"topicSizeSeries"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		topicName := chi.URLParam(r, "topicName")
+		logger := api.Logger.With(zap.String("topic_name", topicName))
+
+		// Check if logged in user is allowed to view partitions for the given topic
+		canView, restErr := api.Hooks.Owl.CanViewTopicConfig(r.Context(), topicName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, logger, restErr)
+			return
+		}
+		if !canView {
+			rest.SendRESTError(w, r, logger, &rest.Error{
+				Err:      fmt.Errorf("requester has no permissions to view topic config for the requested topic"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to view the config for that topic",
+				IsSilent: false,
+			})
+			return
+		}
+
+		datapoints, restErr := api.TsdbSvc.GetTopicSizeTimeseries(topicName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		res := response{TopicSizeSeries: datapoints}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
