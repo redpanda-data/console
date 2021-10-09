@@ -12,7 +12,7 @@ import {
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
     KafkaConnectors, ConnectClusters,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo, WrappedError, isApiError, AlterPartitionReassignmentsPartitionResponse
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo, WrappedError, isApiError, AlterPartitionReassignmentsPartitionResponse, TopicMetricsResponse, MetricDatapoint
 } from "./restInterfaces";
 import { comparer, computed, observable, runInAction, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -192,6 +192,7 @@ const apiStore = {
     topicPartitionErrors: new Map<string, Array<{ id: number, partitionError: string }>>(),
     topicWatermarksErrors: new Map<string, Array<{ id: number, waterMarksError: string }>>(),
     topicConsumers: new Map<string, TopicConsumer[]>(),
+    topicMetrics: new Map<string, MetricDatapoint[]>(),
     topicAcls: new Map<string, AclResponse | null>(),
 
     ACLs: undefined as AclResponse | undefined | null,
@@ -595,6 +596,14 @@ const apiStore = {
 
                 if (partitionErrors > 0 || waterMarkErrors > 0)
                     console.warn(`refreshPartitionsForTopic: response has partition errors (topic=${topicName} partitionErrors=${partitionErrors}, waterMarkErrors=${waterMarkErrors})`);
+            }, addError);
+    },
+
+    refreshMetricsForTopic(topicName: string, force?: boolean) {
+        cachedApiRequest<TopicMetricsResponse>(`./api/topics/${topicName}/metrics`, force)
+            .then(v => {
+                //
+                this.topicMetrics.set(topicName, v.topicSizeSeries);
             }, addError);
     },
 

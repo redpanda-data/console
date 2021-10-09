@@ -114,7 +114,13 @@ export interface DeleteRecordsResponseData {
     ];
 }
 
-
+export interface TopicMetricsResponse {
+    topicSizeSeries: MetricDatapoint[];
+}
+export interface MetricDatapoint {
+    Timestamp: number; // unix timestamp
+    Value: number;
+}
 
 export interface TopicConsumer {
     groupId: string

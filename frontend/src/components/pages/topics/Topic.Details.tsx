@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { Button, Popover, Result, Tooltip, Typography } from 'antd';
 import { motion } from 'framer-motion';
-import { computed, makeObservable, observable } from 'mobx';
+import { computed, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -27,6 +27,8 @@ import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
 import { IsBusiness } from '../../../utils/env';
 import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
+import { ResponsiveLine } from '@nivo/line'
+import { prettyBytes } from '../../../utils/utils';
 
 const { Text } = Typography;
 
@@ -248,6 +250,11 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         </Card>
                     )}
 
+                    {/* Metrics */}
+                    <Card>
+                        <TopicMetrics topicName={topic.topicName} />
+                    </Card>
+
                     {/* Tabs:  Messages, Configuration */}
                     <Card>
                         <Tabs
@@ -312,6 +319,135 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                 }
             />
         );
+    }
+}
+
+
+
+@observer
+class TopicMetrics extends Component<{ topicName: string }> {
+
+    isRequesting = false;
+    timer: number;
+
+    constructor(props: any) {
+        super(props);
+        // makeObservable(this);
+
+        this.timer = setInterval(() => {
+            try {
+                if (this.isRequesting) return;
+                this.isRequesting = true;
+
+                // api.refreshMetricsForTopic(this.props.topicName, true);
+                api.refreshMetricsForTopic("test", true);
+            }
+            catch (err: any) {
+                // nothing we can, or should do at the moment
+            }
+            finally {
+                this.isRequesting = false;
+            }
+        }, 3000) as unknown as number;
+    }
+
+    componentWillUnmount() {
+        clearInterval(this.timer);
+    }
+
+    render() {
+        const metrics = api.topicMetrics.get("test") ?? [];
+        //const metrics = api.topicMetrics.get(this.props.topicName) ?? [];
+
+        const series = [
+            {
+                id: 'size',
+                color: "hsl(205, 70%, 50%)",
+                data: metrics.map(p => ({
+                    x: p.Timestamp,
+                    y: p.Value,
+                })),
+            },
+        ];
+
+        return <div style={{ height: '400px' }}>
+            <ResponsiveLine
+                data={series}
+
+                margin={{ left: 50, top: 10, right: 20, bottom: 30 }}
+                curve="monotoneX"
+
+                xScale={{ type: 'linear', stacked: false, min: 'auto', max: 'auto' }}
+                xFormat={x => new Date(Number(x) * 1000).toLocaleTimeString()}
+                axisBottom={{
+                    format: x => new Date(x * 1000).toLocaleTimeString(),
+                    // tickValues: 8,
+                    legendPosition: 'middle'
+                }}
+
+                yScale={{ type: 'linear', stacked: false, min: 0, max: 'auto' }}
+                yFormat={y => prettyBytes(Number(y))}
+                axisLeft={{
+                    format: y => prettyBytes(Number(y)),
+                    legend: 'Size',
+                    tickValues: 5,
+                    legendOffset: -40,
+                    legendPosition: 'middle'
+                }}
+
+
+                enableArea={true}
+                lineWidth={2}
+                pointSize={5}
+                pointColor={{ theme: 'background' }}
+                pointBorderWidth={1}
+
+                pointBorderColor={{ from: 'serieColor' }}
+                pointLabelYOffset={-12}
+                useMesh={true}
+
+                motionConfig={{
+                    mass: 1,
+                    tension: 500,
+                    friction: 40,
+                }}
+                // enableGridX={false}
+                colors={{
+                    datum: 'color',
+                }}
+
+
+            // gridXValues={[0, 20, 40, 60, 80, 100, 120]}
+            // gridYValues={[0, 500, 1000, 1500, 2000, 2500]}
+
+            // legends={[
+            //     {
+            //         anchor: 'bottom-right',
+            //         direction: 'column',
+            //         justify: false,
+            //         translateX: 140,
+            //         translateY: 0,
+            //         itemsSpacing: 2,
+            //         itemDirection: 'left-to-right',
+            //         itemWidth: 80,
+            //         itemHeight: 12,
+            //         itemOpacity: 0.75,
+            //         symbolSize: 12,
+            //         symbolShape: 'circle',
+            //         symbolBorderColor: 'rgba(0, 0, 0, .5)',
+            //         effects: [
+            //             {
+            //                 on: 'hover',
+            //                 style: {
+            //                     itemBackground: 'rgba(0, 0, 0, .03)',
+            //                     itemOpacity: 1
+            //                 }
+            //             }
+            //         ]
+            //     }
+            // ]}
+            />
+        </div>
     }
 }
 
