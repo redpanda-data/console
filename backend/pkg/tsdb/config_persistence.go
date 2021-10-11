@@ -39,6 +39,8 @@ type PersistenceDiskConfig struct {
 
 func (c *PersistenceDiskConfig) SetDefaults() {
 	c.Enabled = false
+	day := 24 * time.Hour
+	c.Retention = 7 * day
 }
 
 func (c *PersistenceDiskConfig) Validate() error {
