@@ -12,6 +12,7 @@ type PersistenceConfig struct {
 
 func (c *PersistenceConfig) SetDefaults() {
 	c.Enabled = false
+	c.Disk.SetDefaults()
 }
 
 func (c *PersistenceConfig) Validate() error {
