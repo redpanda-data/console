@@ -66,7 +66,7 @@ func New(cfg *Config) *API {
 		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
 	}
 
-	tsdbSvc, err := tsdb.NewService(cfg.TSDB, logger, owlSvc)
+	tsdbSvc, err := tsdb.NewService(cfg.TSDB, logger, owlSvc, kafkaSvc)
 	if err != nil {
 		logger.Fatal("failed to create TSDB service", zap.Error(err))
 	}
