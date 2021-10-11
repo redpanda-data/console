@@ -515,7 +515,7 @@ func (api *API) handleGetTopicMetrics() http.HandlerFunc {
 				Err:      fmt.Errorf("TSDB service is not enabled"),
 				Status:   http.StatusNotFound,
 				Message:  "Time series database service is not enabled",
-				IsSilent: false,
+				IsSilent: true,
 			})
 			return
 		}
