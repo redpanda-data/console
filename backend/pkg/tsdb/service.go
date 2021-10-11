@@ -55,11 +55,6 @@ func (s *Service) Start(ctx context.Context) error {
 		return nil
 	}
 
-	err := s.startBackfillFromKafkaTopic(ctx)
-	if err != nil {
-		s.Logger.Error("failed to backfill time series data", zap.Error(err))
-	}
-
 	go s.startScraping(ctx)
 
 	return nil
@@ -119,32 +114,6 @@ func (s *Service) GetTopicSizeTimeseries(topicName string) ([]*tstorage.DataPoin
 	}
 
 	return datapoints, nil
-}
-
-func (s *Service) startBackfillFromKafkaTopic(ctx context.Context) error {
-	s.Logger.Info("backfilling time series data from Kafka")
-
-	// Generate dummy data
-	// TODO: Actually consume that from Kafka
-	subtractDur := 6 * time.Hour
-	startTimestamp := time.Now().Add(-subtractDur).Unix()
-
-	// Insert a timestamp every 30 seconds until 'now'
-	for ts := startTimestamp; ts < time.Now().Unix(); ts += 30 {
-		err := s.Storage.InsertRows([]tstorage.Row{
-			{
-				Metric:    MetricNameKafkaTopicSize,
-				Labels:    []tstorage.Label{{Name: "topic_name", Value: "test"}},
-				DataPoint: tstorage.DataPoint{Timestamp: ts, Value: 10000},
-			},
-		})
-		if err != nil {
-			s.Logger.Error("failed to add data point", zap.Error(err))
-		}
-	}
-
-	s.Logger.Info("successfully backfilled time series data from Kafka")
-	return nil
 }
 
 func (s *Service) startScraping(ctx context.Context) {
