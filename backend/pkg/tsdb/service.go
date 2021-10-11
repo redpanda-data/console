@@ -24,6 +24,14 @@ type Service struct {
 }
 
 func NewService(cfg Config, logger *zap.Logger, owlSvc *owl.Service, kafkaSvc *kafka.Service) (*Service, error) {
+	// Return dummy struct if not enabled
+	if !cfg.Enabled {
+		return &Service{
+			Cfg:    cfg,
+			Logger: logger,
+		}, nil
+	}
+
 	tsdbOpts := []tstorage.Option{
 		tstorage.WithTimestampPrecision(tstorage.Seconds),
 		tstorage.WithPartitionDuration(cfg.CacheRetention / 2),
@@ -38,8 +46,6 @@ func NewService(cfg Config, logger *zap.Logger, owlSvc *owl.Service, kafkaSvc *k
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tsdb storage: %w", err)
 	}
-	// TODO: Use at the right place - when shutting down the TSDB!
-	defer storage.Close()
 
 	return &Service{
 		Cfg:      cfg,
@@ -58,6 +64,10 @@ func (s *Service) Start(ctx context.Context) error {
 	go s.startScraping(ctx)
 
 	return nil
+}
+
+func (s *Service) IsEnabled() bool {
+	return s.Cfg.Enabled
 }
 
 func (s *Service) insertTopicSize(topicName string, size float64) {
@@ -125,6 +135,7 @@ func (s *Service) startScraping(ctx context.Context) {
 			go s.scrapeTopicDatapoints(ctx)
 		case <-ctx.Done():
 			s.Logger.Info("shutting down time series database scraper due to a cancelled context")
+			s.Storage.Close()
 			return
 		}
 	}

@@ -510,6 +510,16 @@ func (api *API) handleGetTopicMetrics() http.HandlerFunc {
 			return
 		}
 
+		if !api.TsdbSvc.IsEnabled() {
+			rest.SendRESTError(w, r, logger, &rest.Error{
+				Err:      fmt.Errorf("TSDB service is not enabled"),
+				Status:   http.StatusNotFound,
+				Message:  "Time series database service is not enabled",
+				IsSilent: false,
+			})
+			return
+		}
+
 		datapoints, restErr := api.TsdbSvc.GetTopicSizeTimeseries(topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
