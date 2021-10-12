@@ -83,24 +83,8 @@ func (s *Service) insertTopicSize(topicName string, size float64) {
 	})
 }
 
-func (s *Service) insertTopicPartitionSize(topicName string, partitionID int32, size float64) {
-	s.Storage.InsertRows([]tstorage.Row{
-		{
-			Metric: MetricNameKafkaTopicPartitionSize,
-			Labels: []tstorage.Label{
-				{Name: "topic_name", Value: topicName},
-				{Name: "partition_id", Value: strconv.Itoa(int(partitionID))},
-			},
-			DataPoint: tstorage.DataPoint{
-				Value:     size,
-				Timestamp: time.Now().Unix(),
-			},
-		},
-	})
-}
-
-func (s *Service) GetTopicSizeTimeseries(topicName string) ([]*tstorage.DataPoint, *rest.Error) {
-	start := time.Now().Add(-6 * time.Hour).Unix()
+func (s *Service) GetTopicSizeTimeseries(topicName string, dur time.Duration) ([]*tstorage.DataPoint, *rest.Error) {
+	start := time.Now().Add(-dur).Unix()
 	end := time.Now().Unix()
 	labels := []tstorage.Label{{Name: "topic_name", Value: topicName}}
 
@@ -124,6 +108,38 @@ func (s *Service) GetTopicSizeTimeseries(topicName string) ([]*tstorage.DataPoin
 	}
 
 	return datapoints, nil
+}
+
+func (s *Service) insertTopicPartitionLeaderSize(topicName string, partitionID int32, size float64) {
+	s.Storage.InsertRows([]tstorage.Row{
+		{
+			Metric: MetricNameKafkaTopicPartitionLeaderSize,
+			Labels: []tstorage.Label{
+				{Name: "topic_name", Value: topicName},
+				{Name: "partition_id", Value: strconv.Itoa(int(partitionID))},
+			},
+			DataPoint: tstorage.DataPoint{
+				Value:     size,
+				Timestamp: time.Now().Unix(),
+			},
+		},
+	})
+}
+
+func (s *Service) insertTopicPartitionTotalSize(topicName string, partitionID int32, size float64) {
+	s.Storage.InsertRows([]tstorage.Row{
+		{
+			Metric: MetricNameKafkaTopicPartitionTotalSize,
+			Labels: []tstorage.Label{
+				{Name: "topic_name", Value: topicName},
+				{Name: "partition_id", Value: strconv.Itoa(int(partitionID))},
+			},
+			DataPoint: tstorage.DataPoint{
+				Value:     size,
+				Timestamp: time.Now().Unix(),
+			},
+		},
+	})
 }
 
 func (s *Service) startScraping(ctx context.Context) {

@@ -27,7 +27,6 @@ func (s *Service) scrapeTopicDatapoints(ctx context.Context) {
 		}
 
 		var partitionErrors int
-		partitionSizeBytes := make(map[int32]float64)
 		// TODO: Handle cases where one or more replicas are down
 		var topicSizeBytes float64
 
@@ -41,6 +40,7 @@ func (s *Service) scrapeTopicDatapoints(ctx context.Context) {
 				continue
 			}
 
+			var partitionSizeWithReplicas float64
 			for _, logDir := range partition.PartitionLogDirs {
 				errMsg = logDir.Error
 				if errMsg != "" {
@@ -50,22 +50,31 @@ func (s *Service) scrapeTopicDatapoints(ctx context.Context) {
 					partitionErrors++
 					continue
 				}
-				partitionSizeBytes[partition.PartitionID] = float64(logDir.Size)
-				topicSizeBytes += float64(logDir.Size)
+				logDirSize := float64(logDir.Size)
+				isLeader := partition.Leader == logDir.BrokerID
+				if isLeader {
+					s.insertTopicPartitionLeaderSize(detail.TopicName, partition.PartitionID, logDirSize)
+				}
+				partitionSizeWithReplicas += logDirSize
+				topicSizeBytes += logDirSize
+			}
+
+			// We can only be sure to report the correct total partition size if we were able to describe all log dirs
+			// successfully.
+			if partitionErrors == 0 {
+				s.insertTopicPartitionTotalSize(detail.TopicName, partition.PartitionID, partitionSizeWithReplicas)
 			}
 		}
 
-		if partitionErrors > 0 {
-			s.Logger.Info("failed to scrape all topic details, because some partitions had issues",
+		if partitionErrors == 0 {
+			// We only know the actual topic size if we were able to describe all partitions successfully
+			s.insertTopicSize(detail.TopicName, topicSizeBytes)
+		} else {
+			s.Logger.Debug("failed to scrape all topic details, because some partitions had issues",
 				zap.String("topic_name", detail.TopicName),
 				zap.Int("partition_errors", partitionErrors))
 		}
 
-		// Insert collected metrics into Time series database
-		s.insertTopicSize(detail.TopicName, topicSizeBytes)
-		for partitionID, sizeBytes := range partitionSizeBytes {
-			s.insertTopicPartitionSize(detail.TopicName, partitionID, sizeBytes)
-		}
 	}
 
 	s.Logger.Debug("successfully scraped topic datapoints")
