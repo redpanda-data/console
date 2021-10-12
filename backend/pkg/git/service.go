@@ -14,9 +14,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 	"go.uber.org/zap"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -69,18 +67,18 @@ func NewService(cfg Config, logger *zap.Logger, onFilesUpdatedHook func()) (*Ser
 }
 
 // Start all configured git syncs. Initially trigger them once and return an error if there are issues.
-func (c *Service) Start() error {
+func (c *Service) Start(ctx context.Context) error {
 	if !c.Cfg.Enabled {
 		return nil
 	}
 
-	err := c.CloneRepository(context.Background())
+	err := c.CloneRepository(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to clone git repo: %w", err)
 	}
 
 	// Start background sync task
-	go c.SyncRepo()
+	go c.SyncRepo(ctx)
 
 	return nil
 }
@@ -127,7 +125,7 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 // SyncRepo periodically pulls the repository contents to ensure it's always up to date. When changes appear
 // the file cache will be updated. This function will periodically pull the repository until the passed context
 // is done.
-func (c *Service) SyncRepo() {
+func (c *Service) SyncRepo(ctx context.Context) {
 	if c.Cfg.RefreshInterval == 0 {
 		c.logger.Info("refresh interval for sync is set to 0 (disabled)")
 		return
@@ -139,15 +137,11 @@ func (c *Service) SyncRepo() {
 		return
 	}
 
-	// Stop sync when we receive a signal
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
 	ticker := time.NewTicker(c.Cfg.RefreshInterval)
 	for {
 		select {
-		case <-quit:
-			c.logger.Info("stopped sync", zap.String("reason", "received signal"))
+		case <-ctx.Done():
+			c.logger.Info("stopped git sync", zap.String("reason", "received signal"))
 			return
 		case <-ticker.C:
 			err := tree.Pull(&git.PullOptions{Auth: c.auth})

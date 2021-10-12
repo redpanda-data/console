@@ -104,11 +104,11 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 
 // Start starts all the (background) tasks which are required for this service to work properly. If any of these
 // tasks can not be setup an error will be returned which will cause the application to exit.
-func (s *Service) Start() error {
+func (s *Service) Start(ctx context.Context) error {
 	if s.ProtoService == nil {
 		return nil
 	}
-	return s.ProtoService.Start()
+	return s.ProtoService.Start(ctx)
 }
 
 func (s *Service) NewKgoClient(additionalOpts ...kgo.Opt) (*kgo.Client, error) {

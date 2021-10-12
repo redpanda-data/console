@@ -1,21 +1,15 @@
 package proto
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
+	"context"
 	"time"
 )
 
-func triggerRefresh(dur time.Duration, callback func()) {
-	// Stop sync when we receive a signal
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
+func triggerRefresh(ctx context.Context, dur time.Duration, callback func()) {
 	ticker := time.NewTicker(dur)
 	for {
 		select {
-		case <-quit:
+		case <-ctx.Done():
 			return
 		case <-ticker.C:
 			callback()

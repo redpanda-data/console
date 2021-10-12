@@ -2,6 +2,7 @@ package proto
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/filesystem"
@@ -101,9 +102,9 @@ func NewService(cfg Config, logger *zap.Logger, schemaSvc *schema.Service) (*Ser
 	}, nil
 }
 
-func (s *Service) Start() error {
+func (s *Service) Start(ctx context.Context) error {
 	if s.gitSvc != nil {
-		err := s.gitSvc.Start()
+		err := s.gitSvc.Start(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to start git service: %w", err)
 		}
@@ -112,7 +113,7 @@ func (s *Service) Start() error {
 	}
 
 	if s.fsSvc != nil {
-		err := s.fsSvc.Start()
+		err := s.fsSvc.Start(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to start filesystem service: %w", err)
 		}
@@ -121,7 +122,7 @@ func (s *Service) Start() error {
 
 	if s.schemaSvc != nil {
 		// Setup a refresh trigger that calls create proto registry function periodically
-		go triggerRefresh(s.cfg.SchemaRegistry.RefreshInterval, s.tryCreateProtoRegistry)
+		go triggerRefresh(ctx, s.cfg.SchemaRegistry.RefreshInterval, s.tryCreateProtoRegistry)
 	}
 
 	err := s.createProtoRegistry()

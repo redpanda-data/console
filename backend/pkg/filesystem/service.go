@@ -1,16 +1,15 @@
 package filesystem
 
 import (
+	"context"
 	"fmt"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -40,7 +39,7 @@ func NewService(cfg Config, logger *zap.Logger, onFilesUpdatedHook func()) (*Ser
 }
 
 // Start to pull contents from configured paths and setup watchers to support hot reloading upon modified files.
-func (c *Service) Start() error {
+func (c *Service) Start(ctx context.Context) error {
 	if !c.Cfg.Enabled {
 		return nil
 	}
@@ -54,14 +53,10 @@ func (c *Service) Start() error {
 	c.logger.Info("successfully loaded all files from filesystem into cache", zap.Int("loaded_files", loadedFiles))
 
 	go func(refreshInterval time.Duration) {
-		// Stop sync when we receive a signal
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
 		ticker := time.NewTicker(refreshInterval)
 		for {
 			select {
-			case <-quit:
+			case <-ctx.Done():
 				c.logger.Info("stopped sync", zap.String("reason", "received signal"))
 				return
 			case <-ticker.C:

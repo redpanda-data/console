@@ -10,6 +10,9 @@ import (
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/cloudhut/kowl/backend/pkg/tsdb"
 	"go.uber.org/zap"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 // API represents the server and all it's dependencies to serve incoming user requests
@@ -85,17 +88,34 @@ func New(cfg *Config) *API {
 
 // Start the API server and block
 func (api *API) Start() {
-	err := api.KafkaSvc.Start()
+	// Create a context that cancels on signal
+	backgroundCtx, cancel := context.WithCancel(context.Background())
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	defer func() {
+		signal.Stop(quit)
+		cancel()
+	}()
+	go func() {
+		select {
+		case <-quit:
+			cancel()
+		case <-backgroundCtx.Done():
+		}
+	}()
+
+	// Start all created (Background)Services
+	err := api.KafkaSvc.Start(backgroundCtx)
 	if err != nil {
 		api.Logger.Fatal("failed to start kafka service", zap.Error(err))
 	}
 
-	err = api.OwlSvc.Start()
+	err = api.OwlSvc.Start(backgroundCtx)
 	if err != nil {
 		api.Logger.Fatal("failed to start owl service", zap.Error(err))
 	}
 
-	err = api.TsdbSvc.Start(context.Background())
+	err = api.TsdbSvc.Start(backgroundCtx)
 	if err != nil {
 		api.Logger.Fatal("failed to start tsdb service", zap.Error(err))
 	}

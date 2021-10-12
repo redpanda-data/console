@@ -1,6 +1,7 @@
 package owl
 
 import (
+	"context"
 	"fmt"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
@@ -35,9 +36,9 @@ func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service) (*Servi
 
 // Start starts all the (background) tasks which are required for this service to work properly. If any of these
 // tasks can not be setup an error will be returned which will cause the application to exit.
-func (s *Service) Start() error {
+func (s *Service) Start(ctx context.Context) error {
 	if s.gitSvc == nil {
 		return nil
 	}
-	return s.gitSvc.Start()
+	return s.gitSvc.Start(ctx)
 }
