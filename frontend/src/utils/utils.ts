@@ -773,3 +773,16 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
         top: target.getBoundingClientRect().top + mainLayout.scrollTop + (offset ?? 0)
     });
 }
+
+
+// See: https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
+export function decodeBase64(base64: string) {
+    const data = atob(base64);
+    const length = data.length;
+    const bytes = new Uint8Array(length);
+    for (let i = 0; i < length; i++)
+        bytes[i] = data.charCodeAt(i);
+
+    const decoder = new TextDecoder(); // default is utf-8
+    return decoder.decode(bytes);
+}

@@ -16,7 +16,7 @@ import {
 } from "./restInterfaces";
 import { comparer, computed, observable, runInAction, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { TimeSince } from "../utils/utils";
+import { decodeBase64, TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
 import { clone, toJson } from "../utils/jsonUtils";
 import { IsDev, IsBusiness, basePathS } from "../utils/env";
@@ -302,7 +302,7 @@ const apiStore = {
                     const keyData = m.key.payload;
                     if (keyData != null && keyData != undefined && keyData != "" && m.key.encoding == 'binary') {
                         try {
-                            m.key.payload = atob(m.key.payload); // unpack base64 encoded key
+                            m.key.payload = decodeBase64(m.key.payload); // unpack base64 encoded key
                         } catch (error) {
                             // Empty
                             // Only unpack if the key is base64 based
@@ -409,7 +409,7 @@ const apiStore = {
     refreshTopicDocumentation(topicName: string, force?: boolean) {
         cachedApiRequest<TopicDocumentationResponse>(`./api/topics/${topicName}/documentation`, force)
             .then(v => {
-                const text = v.documentation.markdown == null ? null : atob(v.documentation.markdown);
+                const text = v.documentation.markdown == null ? null : decodeBase64(v.documentation.markdown);
                 v.documentation.text = text;
                 this.topicDocumentation.set(topicName, v.documentation);
             }, addError);
