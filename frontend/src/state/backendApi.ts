@@ -785,7 +785,15 @@ const apiStore = {
                 if (schemaDetails && typeof schemaDetails.schema === "string" && schemaDetails.type != SchemaType.PROTOBUF) {
                     schemaDetails.schema = JSON.parse(schemaDetails.schema);
                 }
-                this.schemaDetails = schemaDetails
+
+                if (schemaDetails && schemaDetails.schema) {
+                    if (typeof schemaDetails.schema === "string")
+                        schemaDetails.rawSchema = schemaDetails.schema;
+                    else
+                        schemaDetails.rawSchema = JSON.stringify(schemaDetails.schema);
+                }
+
+                this.schemaDetails = schemaDetails;
             })
             .catch(addError);
     },
