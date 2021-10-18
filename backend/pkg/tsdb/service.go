@@ -84,30 +84,11 @@ func (s *Service) insertTopicSize(topicName string, size float64) {
 }
 
 func (s *Service) GetTopicSizeTimeseries(topicName string, dur time.Duration) ([]*tstorage.DataPoint, *rest.Error) {
+	labels := []tstorage.Label{{Name: "topic_name", Value: topicName}}
 	start := time.Now().Add(-dur).Unix()
 	end := time.Now().Unix()
-	labels := []tstorage.Label{{Name: "topic_name", Value: topicName}}
 
-	datapoints, err := s.Storage.Select(MetricNameKafkaTopicSize, labels, start, end)
-	if err != nil {
-		if err == tstorage.ErrNoDataPoints {
-			return nil, &rest.Error{
-				Err:      fmt.Errorf("no dataoints found for the given topic"),
-				Status:   http.StatusNotFound,
-				Message:  "Could not find any datapoints for the given topic name",
-				IsSilent: true,
-			}
-		}
-
-		return nil, &rest.Error{
-			Err:      err,
-			Status:   http.StatusInternalServerError,
-			Message:  fmt.Sprintf("Failed to get datapoints from TSDB: %v", err.Error()),
-			IsSilent: false,
-		}
-	}
-
-	return datapoints, nil
+	return s.getDatapoints(MetricNameKafkaTopicSize, labels, start, end)
 }
 
 func (s *Service) insertTopicPartitionLeaderSize(topicName string, partitionID int32, size float64) {
@@ -155,4 +136,27 @@ func (s *Service) startScraping(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func (s *Service) getDatapoints(metricName string, labels []tstorage.Label, start, end int64) ([]*tstorage.DataPoint, *rest.Error) {
+	datapoints, err := s.Storage.Select(metricName, labels, start, end)
+	if err != nil {
+		if err == tstorage.ErrNoDataPoints {
+			return nil, &rest.Error{
+				Err:      fmt.Errorf("no dataoints found for the given query"),
+				Status:   http.StatusNotFound,
+				Message:  "Could not find any datapoints for the given query",
+				IsSilent: true,
+			}
+		}
+
+		return nil, &rest.Error{
+			Err:      err,
+			Status:   http.StatusInternalServerError,
+			Message:  fmt.Sprintf("Failed to get datapoints from TSDB: %v", err.Error()),
+			IsSilent: false,
+		}
+	}
+
+	return datapoints, nil
 }
