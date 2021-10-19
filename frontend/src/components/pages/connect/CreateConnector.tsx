@@ -239,6 +239,11 @@ function ConnectorWizard({ connectClusters }: ConnectorWizardProps) {
         isFirst: () => currentStep === 0,
         getCurrentStep: () => [currentStep, steps[currentStep]],
         getSteps: () => steps,
+        setStep: (step) => steps
+            .slice(0, step)
+            .every((wizardStep) => wizardStep.postConditionMet()) 
+                ? setCurrentStep(step)
+                : undefined
     }} />;
 }
 

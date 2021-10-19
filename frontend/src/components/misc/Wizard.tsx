@@ -14,7 +14,10 @@ export function Wizard<State extends WizardState>({state}: { state: State }) {
           title={step.title}
           description={step.description}
           icon={step.icon}
-          children={step.content}/>)}
+          children={step.content}
+          onClick={() => state.setStep(i)}
+          className={styles.step}
+        />)}
     </Steps>
     <div className={styles.content}>{currentStep.content}</div>
     <div className={styles.footer}>
@@ -45,6 +48,8 @@ interface WizardState {
   getCurrentStep(): [number, WizardStep];
 
   getSteps(): Array<WizardStep>;
+
+  setStep(step: number): void;
 
   canContinue(): boolean;
 
