@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	_ "time"
 
 	"go.uber.org/zap"
@@ -520,7 +521,7 @@ func (api *API) handleGetTopicMetrics() http.HandlerFunc {
 			return
 		}
 
-		datapoints, restErr := api.TsdbSvc.GetTopicSizeTimeseries(topicName)
+		datapoints, restErr := api.TsdbSvc.GetTopicSizeTimeseries(topicName, 6*time.Hour)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
