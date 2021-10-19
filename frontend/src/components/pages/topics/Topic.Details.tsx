@@ -339,8 +339,7 @@ class TopicMetrics extends Component<{ topicName: string }> {
                 if (this.isRequesting) return;
                 this.isRequesting = true;
 
-                // api.refreshMetricsForTopic(this.props.topicName, true);
-                api.refreshMetricsForTopic("test", true);
+                api.refreshMetricsForTopic(this.props.topicName, true);
             }
             catch (err: any) {
                 // nothing we can, or should do at the moment
@@ -356,8 +355,7 @@ class TopicMetrics extends Component<{ topicName: string }> {
     }
 
     render() {
-        const metrics = api.topicMetrics.get("test") ?? [];
-        //const metrics = api.topicMetrics.get(this.props.topicName) ?? [];
+        const metrics = api.topicMetrics.get(this.props.topicName) ?? [];
 
         const series = [
             {
@@ -370,11 +368,11 @@ class TopicMetrics extends Component<{ topicName: string }> {
             },
         ];
 
-        return <div style={{ height: '400px' }}>
+        return <div style={{ height: '230px' }}>
             <ResponsiveLine
                 data={series}
 
-                margin={{ left: 50, top: 10, right: 20, bottom: 30 }}
+                margin={{ left: 58, top: 10, right: 20, bottom: 30 }}
                 curve="monotoneX"
 
                 xScale={{ type: 'linear', stacked: false, min: 'auto', max: 'auto' }}
@@ -391,7 +389,7 @@ class TopicMetrics extends Component<{ topicName: string }> {
                     format: y => prettyBytes(Number(y)),
                     legend: 'Size',
                     tickValues: 5,
-                    legendOffset: -40,
+                    legendOffset: -50,
                     legendPosition: 'middle'
                 }}
 
