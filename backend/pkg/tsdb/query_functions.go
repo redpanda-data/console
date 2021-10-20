@@ -24,7 +24,6 @@ func rate(dps []*tstorage.DataPoint, rateDur time.Duration) []*tstorage.DataPoin
 		// between timestamp 1000 and 1030
 		start := dp
 
-		previousValue := start.Value
 		var accumulatedPositiveDeltas float64
 		var accumulatedTimeDeltas float64 // Only time deltas of positive datapoint deltas will be considered
 		upperBoundary := time.Unix(start.Timestamp, 0).Add(rateDur)
@@ -33,22 +32,28 @@ func rate(dps []*tstorage.DataPoint, rateDur time.Duration) []*tstorage.DataPoin
 				break
 			}
 
+			previousValue := dps[j-1].Value
 			if dps[j].Value < previousValue {
 				// This value is lower than the previous one. This may be a counter reset or some other reason
 				// for a drop which we want to ignore in that case
 				continue
 			}
-			accumulatedPositiveDeltas += dps[j].Value - dps[j-1].Value
+
+			accumulatedPositiveDeltas += dps[j].Value - previousValue
 			accumulatedTimeDeltas += float64(dps[j].Timestamp - dps[j-1].Timestamp)
-
-			previousValue = dps[j].Value
 		}
 
-		// If we don't have at least two positive deltas, we can return NaN.
-		perSecondAvg := math.NaN()
-		if accumulatedPositiveDeltas > 0 {
-			perSecondAvg = accumulatedTimeDeltas / accumulatedPositiveDeltas
+		var perSecondAvg float64
+		if accumulatedTimeDeltas == 0 {
+			// If we don't have at least two positive deltas, we can return NaN.
+			perSecondAvg = math.NaN()
+		} else if accumulatedPositiveDeltas == 0 {
+			// We have at least two valid datapoints, but value doesn't seem to change
+			perSecondAvg = 0
+		} else {
+			perSecondAvg = accumulatedPositiveDeltas / accumulatedTimeDeltas
 		}
+
 		res = append(res, &tstorage.DataPoint{
 			Value:     perSecondAvg,
 			Timestamp: start.Timestamp,
