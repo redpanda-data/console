@@ -6,9 +6,7 @@ import (
 	"time"
 )
 
-// Rate calculates the per-second rate regarldess whether it's a counter with resets
-// or gauge. To do so it has to make some assumptions and therefore
-// has to be treated with care.
+// Rate calculates the per-second rate on gauges. Therefore, it only considers positive delta changes.
 func rate(dps []*tstorage.DataPoint, rateDur time.Duration) []*tstorage.DataPoint {
 	// No sense in trying to compute a rate without at least two points
 	if len(dps) < 2 {
