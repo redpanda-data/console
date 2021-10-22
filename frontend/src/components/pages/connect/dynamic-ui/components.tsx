@@ -52,7 +52,12 @@ export class ConfigPage extends Component<ConfigPageProps> {
 
         try {
             // Validate with empty object to get all properties initially
-            const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, { "connector.class": pluginClassName, "name": "", "topic": "x", "topics": "y", });
+            const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, {
+                "connector.class": pluginClassName,
+                "name": "",
+                "topic": "topic",
+                "topics": "topics",
+            });
             const allProps = createCustomProperties(validationResult.configs, this.fallbackGroupName);
 
             // Save props to map, so we can quickly find them to set their validation errors
@@ -75,6 +80,10 @@ export class ConfigPage extends Component<ConfigPageProps> {
             for (const g of this.allGroups)
                 for (const p of g.properties)
                     p.propertyGroup = g;
+
+            // Notify groups about errors in their children
+            for (const g of this.allGroups)
+                g.propertiesWithErrors.push(...g.properties.filter(p => p.errors.length > 0));
 
             // Update JSON
             this.reactionDisposers.push(reaction(
@@ -305,6 +314,7 @@ function createCustomProperties(properties: ConnectorProperty[], fallbackGroupNa
 
             // Fix type of default values
             let defaultValue: any = p.definition.default_value;
+            let initialValue: any = p.value.value;
             if (p.definition.type == DataType.Boolean) {
                 // Boolean
                 // convert 'false' | 'true' to actual boolean values
@@ -313,6 +323,12 @@ function createCustomProperties(properties: ConnectorProperty[], fallbackGroupNa
                         defaultValue = p.definition.default_value = false as any;
                     else if (defaultValue.toLowerCase() == 'true')
                         defaultValue = p.definition.default_value = true as any;
+
+                if (typeof initialValue == 'string')
+                    if (initialValue.toLowerCase() == 'false')
+                        initialValue = p.value.value = false as any;
+                    else if (initialValue.toLowerCase() == 'true')
+                        initialValue = p.value.value = true as any;
             }
             if (p.definition.type == DataType.Int || p.definition.type == DataType.Long || p.definition.type == DataType.Short) {
                 // Number
@@ -321,8 +337,7 @@ function createCustomProperties(properties: ConnectorProperty[], fallbackGroupNa
                     defaultValue = p.definition.default_value = n as any;
             }
 
-
-            let value: any = p.value.value ?? defaultValue;
+            let value: any = initialValue ?? defaultValue;
             if (p.definition.type == DataType.Boolean && value == null)
                 value = false; // use 'false' as default for boolean
 
