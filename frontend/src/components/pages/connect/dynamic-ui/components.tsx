@@ -167,6 +167,9 @@ export class ConfigPage extends Component<ConfigPageProps> {
                 this.propsByName.delete(key);
             }
 
+            // Remove empty groups
+            this.allGroups.removeAll(x => x.properties.length == 0);
+
             // Handle new properties, transfer reported errors and suggested values
             for (const source of srcProps) {
                 const target = this.propsByName.get(source.name);
