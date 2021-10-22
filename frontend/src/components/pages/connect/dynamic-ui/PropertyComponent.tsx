@@ -33,7 +33,12 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             if (recValues && recValues.length) {
                 // Enum (recommended_values)
                 const options = recValues.map((x: string) => ({ label: x, value: x }));
-                comp = <Select showSearch options={options} value={p.value as any} onChange={e => p.value = e} />
+                comp = <Select showSearch
+                    value={p.value as any}
+                    onChange={e => p.value = e}
+                    options={options}
+                    getPopupContainer={findPopupContainer}
+                />
             }
             else {
                 // String, Class
@@ -44,6 +49,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
                         value={String(v)}
                         onChange={e => p.value = e}
                         options={p.suggestedValues.map(x => ({ value: x }))}
+                        getPopupContainer={findPopupContainer}
                     // style={{ width: 200 }}
                     // onSelect={onSelect}
                     // onSearch={onSearch}
