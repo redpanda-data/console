@@ -113,7 +113,15 @@ export class ConfigPage extends Component<ConfigPageProps> {
             for (const p of g.properties) {
 
                 // Skip default values
-                if (p.value == p.entry.definition.default_value)
+                if (p.entry.definition.required == false) {
+                    if (p.value == p.entry.definition.default_value)
+                        continue;
+                    if (p.value === false && !p.entry.definition.default_value)
+                        continue; // skip boolean values that default to false
+                }
+
+                // Skip null/undefined
+                if (p.value === null || p.value === undefined)
                     continue;
 
                 // Skip empty values for strings
@@ -128,21 +136,68 @@ export class ConfigPage extends Component<ConfigPageProps> {
         return config;
     }
 
+    // todo:
+    // The code that handles validation/updating/adding/removing properties really shouldn't be part of this page-component
+    // It's too much code in here, it should be split out into some seperate class or something when we have time...
     validate = action(async (config: object) => {
         const { clusterName, pluginClassName } = this.props;
         try {
-            // Validate with empty object to get all properties initially
+            // Validate the current config
             const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, config);
             const srcProps = createCustomProperties(validationResult.configs, this.fallbackGroupName);
 
-            // Transfer reported errors
+            // Remove properties that don't exist anymore
+            const srcNames = new Set(srcProps.map(x => x.name));
+            const removedProps = [...this.propsByName.keys()].filter(key => !srcNames.has(key));
+            for (const key of removedProps) {
+                // group names might not be accurate so we check all groups
+                for (const g of this.allGroups)
+                    g.properties.removeAll(x => x.name == key);
+
+                // remove from lookup
+                this.propsByName.delete(key);
+            }
+
+            // Handle new properties, transfer reported errors and suggested values
             for (const source of srcProps) {
                 const target = this.propsByName.get(source.name);
-                if (target) {
-                    if (target.errors.length == 0 && source.errors.length == 0)
-                        continue;
 
-                    // Update with new errors
+                // Add new property
+                if (!target) {
+                    this.propsByName.set(source.name, source);
+                    let group = this.allGroups.first(g => g.groupName == source.entry.definition.group);
+                    if (!group) {
+                        // Create new group
+                        group = observable({
+                            groupName: source.entry.definition.group,
+                            properties: [],
+                            propertiesWithErrors: [],
+                        } as PropertyGroup);
+
+                        this.allGroups.push(group);
+
+                        // Sort groups
+                        const groupNames = [this.fallbackGroupName, ...validationResult.groups];
+                        this.allGroups.sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
+                    }
+
+                    group.properties.push(source);
+                    source.propertyGroup = group;
+
+                    // Sort properties within group
+                    group.properties.sort((a, b) => a.entry.definition.order - b.entry.definition.order);
+
+                    continue;
+                }
+
+                // Update: recommended values
+                const suggestedSrc = source.entry.value.recommended_values;
+                const suggestedTar = target.entry.value.recommended_values;
+                if (!suggestedSrc.isEqual(suggestedTar))
+                    suggestedTar.updateWith(suggestedSrc);
+
+                // Update: errors
+                if (!target.errors.isEqual(source.errors)) {
                     target.errors.updateWith(source.errors);
 
                     // Add or remove from parent group
@@ -203,7 +258,30 @@ export class ConfigPage extends Component<ConfigPageProps> {
     }
 }
 
+const hiddenProperties = [
+    "connector.class" // user choses that in the first page of the wizard
+];
 
+const converters = [
+    "io.confluent.connect.avro.AvroConverter",
+    "io.confluent.connect.protobuf.ProtobufConverter",
+    "org.apache.kafka.connect.storage.StringConverter",
+    "org.apache.kafka.connect.json.JsonConverter",
+    "io.confluent.connect.json.JsonSchemaConverter",
+    "org.apache.kafka.connect.converters.ByteArrayConverter",
+];
+const suggestedValues: { [key: string]: string[] } = {
+    "key.converter": converters,
+    "value.converter": converters,
+    "header.converter": converters,
+    "config.action.reload": [
+        "restart",
+        "none"
+    ]
+};
+
+// Creates our Property objects, while fixing some issues with the source data
+// like: missing value, propertyWidth, group, ...
 function createCustomProperties(properties: ConnectorProperty[], fallbackGroupName: string): Property[] {
 
     // Fix missing properties
@@ -222,16 +300,41 @@ function createCustomProperties(properties: ConnectorProperty[], fallbackGroupNa
 
     // Create our own properties
     const allProps = properties
-        .map(p => observable({
-            name: p.definition.name,
-            entry: p,
-            value: p.definition.type == DataType.Boolean
-                ? (p.value.value ?? p.definition.default_value) ?? false
-                : p.value.value ?? p.definition.default_value,
-            isHidden: ["connector.class"].includes(p.definition.name),
+        .map(p => {
+            const name = p.definition.name;
 
-            errors: p.value.errors ?? []
-        } as Property))
+            // Fix type of default values
+            let defaultValue: any = p.definition.default_value;
+            if (p.definition.type == DataType.Boolean) {
+                // Boolean
+                // convert 'false' | 'true' to actual boolean values
+                if (typeof defaultValue == 'string')
+                    if (defaultValue.toLowerCase() == 'false')
+                        defaultValue = p.definition.default_value = false as any;
+                    else if (defaultValue.toLowerCase() == 'true')
+                        defaultValue = p.definition.default_value = true as any;
+            }
+            if (p.definition.type == DataType.Int || p.definition.type == DataType.Long || p.definition.type == DataType.Short) {
+                // Number
+                const n = Number.parseFloat(defaultValue);
+                if (Number.isFinite(n))
+                    defaultValue = p.definition.default_value = n as any;
+            }
+
+
+            let value: any = p.value.value ?? defaultValue;
+            if (p.definition.type == DataType.Boolean && value == null)
+                value = false; // use 'false' as default for boolean
+
+            return observable({
+                name: name,
+                entry: p,
+                value: value,
+                isHidden: hiddenProperties.includes(name),
+                suggestedValues: suggestedValues[name],
+                errors: p.value.errors ?? []
+            } as Property);
+        })
         .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
 
     return allProps;
@@ -248,9 +351,10 @@ export interface PropertyGroup {
 export interface Property {
     name: string;
     entry: ConnectorProperty;
-    value: string | number | boolean | string[];
+    value: null | string | number | boolean | string[];
 
     isHidden: boolean; // currently only used for "connector.class"
+    suggestedValues: undefined | string[]; // values that are not listed in entry.value.recommended_values
 
     errors: string[];
     lastErrorValue: any;

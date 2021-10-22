@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
-import { Input, InputNumber, Switch, Select, Tooltip } from 'antd';
+import { Input, InputNumber, Switch, Select, Tooltip, AutoComplete } from 'antd';
 import { observer } from 'mobx-react';
 import { DataType, PropertyWidth } from '../../../../state/restInterfaces';
 import { findPopupContainer, InfoText } from '../../../../utils/tsxUtils';
@@ -19,24 +19,41 @@ export const PropertyComponent = observer((props: { property: Property }) => {
     </div>;
 
     let v = p.value;
-    if (typeof p.value != 'string')
+    if (typeof p.value != 'string') {
         if (typeof p.value == 'number' || typeof p.value == 'boolean')
             v = String(v);
         else
             v = "";
+    }
 
     switch (def.type) {
         case "STRING":
         case "CLASS":
             const recValues = p.entry.value.recommended_values;
             if (recValues && recValues.length) {
+                // Enum (recommended_values)
                 const options = recValues.map((x: string) => ({ label: x, value: x }));
-                // Enum
                 comp = <Select showSearch options={options} value={p.value as any} onChange={e => p.value = e} />
             }
             else {
-                // String or class
-                comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+                // String, Class
+                // Maybe we have some suggestions
+                if (p.suggestedValues && p.suggestedValues.length > 0) {
+                    // Input with suggestions
+                    comp = <AutoComplete
+                        value={String(v)}
+                        onChange={e => p.value = e}
+                        options={p.suggestedValues.map(x => ({ value: x }))}
+                    // style={{ width: 200 }}
+                    // onSelect={onSelect}
+                    // onSearch={onSearch}
+                    // placeholder="input here"
+                    />
+                }
+                else {
+                    // Input
+                    comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+                }
             }
             break;
 
@@ -46,6 +63,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
 
         case "INT":
         case "LONG":
+        case "SHORT":
             comp = <InputNumber style={{ display: 'block' }} value={Number(p.value)} onChange={e => p.value = e} />
             break;
 
@@ -55,7 +73,6 @@ export const PropertyComponent = observer((props: { property: Property }) => {
 
         case "LIST":
             comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
-            // comp = <Input readOnly value="(List input will be added soon)" />;
             break;
     }
 

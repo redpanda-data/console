@@ -59,6 +59,9 @@ declare global {
          * It is strongly reccomended to wrap calls to this in a mobx transaction() or similar.
          */
         updateWith<T>(this: T[], newData: T[]): { removed: number, added: number };
+
+
+        isEqual(this: string[], other: string[]): boolean;
     }
 }
 
@@ -237,6 +240,20 @@ Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { 
         this.push(a);
 
     return { removed: removed.length, added: added.length };
+};
+
+Array.prototype.isEqual = function isEqual(this: string[], other: string[]): boolean {
+    if (this.length == 0 && other.length == 0)
+        return true;
+
+    if (this.length != other.length)
+        return false;
+
+    for (let i = 0; i < this.length; i++)
+        if (this[i] !== other[i])
+            return false;
+
+    return true;
 };
 
 
