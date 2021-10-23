@@ -60,3 +60,92 @@ func rate(dps []*tstorage.DataPoint, rateDur time.Duration) []*tstorage.DataPoin
 
 	return res
 }
+
+// scaleDown reduces the number of datapoints so that it can be processed by the chart library in the frontend.
+// To do so it tries to remove data points until it reaches the number of desired datapoints.
+func scaleDown(dps []*tstorage.DataPoint, limit int) []*tstorage.DataPoint {
+	if len(dps) < limit {
+		return dps
+	}
+	maxDistance := 1 * time.Minute
+
+	startTs := dps[0].Timestamp
+	endTs := dps[len(dps)-1].Timestamp
+
+	// Find the closest datapoint for each ts, so that we will end up with datapoints distributed along our time axis
+	// as good as possible without interpolating the datapoints.
+	lastUsedIdx := 0
+	distributedTimestamps := createTimestamps(startTs, endTs, limit)
+	res := make([]*tstorage.DataPoint, 0, limit)
+	for _, ts := range distributedTimestamps {
+		// If this desired timestamp is already after the current datapoint's timestamp, we can be sure that
+		// this will be the best datapoint as upcoming datapoints can only be further away than the current datapoint.
+		if ts <= dps[lastUsedIdx].Timestamp {
+			if isTimestampInRange(ts, dps[lastUsedIdx].Timestamp, maxDistance) {
+				res = append(res, dps[lastUsedIdx])
+			}
+			continue
+		}
+
+		// Check if the next datapoint's timestamp is closer to our target
+		closest := dps[lastUsedIdx]
+		currentDiff := abs(closest.Timestamp - ts)
+		for j := lastUsedIdx + 1; j < len(dps); j++ {
+			jDiff := abs(dps[j].Timestamp - ts)
+			if jDiff < currentDiff {
+				closest = dps[j]
+				currentDiff = jDiff
+				lastUsedIdx++
+				continue
+			}
+			// It could only become worse after this, because the datapoints are ordered strictly chronologically
+			break
+		}
+		if isTimestampInRange(ts, closest.Timestamp, maxDistance) {
+			res = append(res, closest)
+		}
+	}
+
+	return res
+}
+
+func isTimestampInRange(a, b int64, dist time.Duration) bool {
+	diff := abs(a - b)
+	if diff > int64(dist.Seconds()) {
+		// The diff between point a and b is too large. The timestamp is not in range
+		return false
+	}
+	return true
+}
+
+// createTimestamps is a helper function that creates numbers with the same distance to each other within the
+// boundary from start to end.
+// The start and end number have to be the first/last number in the returned slice.
+// Count has to be at least 2.
+func createTimestamps(start, end int64, count int) []int64 {
+	timestamps := make([]int64, count)
+
+	timestamps[0] = start
+	previousTs := start
+	for i := 1; i < count; i++ {
+		if previousTs > end {
+			// If this iteration timestamp is higher than the end timestamp we will not find any dps anymore.
+			break
+		}
+
+		toFind := count - i
+		stepSize := (end - previousTs) / int64(toFind)
+		newTs := previousTs + stepSize
+		timestamps[i] = newTs
+		previousTs = newTs
+	}
+
+	return timestamps
+}
+
+func abs(x int64) int64 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
