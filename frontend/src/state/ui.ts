@@ -166,7 +166,10 @@ const uiSettings = observable({
 
     reassignment: { // partition reassignment
         // Active
-        pageSizeActive: 5,
+        activeReassignments: {
+            quickSearch: '',
+            pageSize: 5,
+        },
 
         // Select
         quickSearch: '',

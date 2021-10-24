@@ -16,7 +16,7 @@ import {
 } from "./restInterfaces";
 import { comparer, computed, observable, runInAction, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { TimeSince } from "../utils/utils";
+import { decodeBase64, TimeSince } from "../utils/utils";
 import { LazyMap } from "../utils/LazyMap";
 import { clone, toJson } from "../utils/jsonUtils";
 import { IsDev, IsBusiness, basePathS } from "../utils/env";
@@ -303,7 +303,7 @@ const apiStore = {
                     const keyData = m.key.payload;
                     if (keyData != null && keyData != undefined && keyData != "" && m.key.encoding == 'binary') {
                         try {
-                            m.key.payload = atob(m.key.payload); // unpack base64 encoded key
+                            m.key.payload = decodeBase64(m.key.payload); // unpack base64 encoded key
                         } catch (error) {
                             // Empty
                             // Only unpack if the key is base64 based
@@ -410,7 +410,7 @@ const apiStore = {
     refreshTopicDocumentation(topicName: string, force?: boolean) {
         cachedApiRequest<TopicDocumentationResponse>(`./api/topics/${topicName}/documentation`, force)
             .then(v => {
-                const text = v.documentation.markdown == null ? null : atob(v.documentation.markdown);
+                const text = v.documentation.markdown == null ? null : decodeBase64(v.documentation.markdown);
                 v.documentation.text = text;
                 this.topicDocumentation.set(topicName, v.documentation);
             }, addError);
@@ -630,17 +630,20 @@ const apiStore = {
     },
 
     refreshCluster(force?: boolean) {
-        cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
+        cachedApiRequest<ClusterInfoResponse | ApiError>(`./api/cluster`, force)
             .then(v => {
                 transaction(() => {
-                    // don't assign if the value didn't change
-                    // we'd re-trigger all observers!
-
+                    // root response can fail as well
+                    if ('message' in v) {
+                        return;
+                    }
                     // add 'type' to each synonym entry
                     for (const broker of v.clusterInfo.brokers)
                         if (broker.config && !broker.config.error)
                             prepareSynonyms(broker.config.configs)
 
+                    // don't assign if the value didn't change
+                    // we'd re-trigger all observers!
                     if (!comparer.structural(this.clusterInfo, v.clusterInfo))
                         this.clusterInfo = v.clusterInfo;
 
@@ -791,7 +794,15 @@ const apiStore = {
                 if (schemaDetails && typeof schemaDetails.schema === "string" && schemaDetails.type != SchemaType.PROTOBUF) {
                     schemaDetails.schema = JSON.parse(schemaDetails.schema);
                 }
-                this.schemaDetails = schemaDetails
+
+                if (schemaDetails && schemaDetails.schema) {
+                    if (typeof schemaDetails.schema === "string")
+                        schemaDetails.rawSchema = schemaDetails.schema;
+                    else
+                        schemaDetails.rawSchema = JSON.stringify(schemaDetails.schema);
+                }
+
+                this.schemaDetails = schemaDetails;
             })
             .catch(addError);
     },
@@ -1153,6 +1164,8 @@ export const brokerMap = computed(() => {
 // 1. add 'type' to each synonym, so when expanding a config entry (to view its synonyms), we can still see the type
 // 2. remove redundant synonym entries (those that have the same source as the root config entry)
 function prepareSynonyms(configEntries: ConfigEntry[]) {
+    if (!Array.isArray(configEntries)) return;
+
     for (const e of configEntries) {
         if (e.synonyms == undefined)
             continue;
@@ -1188,7 +1201,10 @@ export async function partialTopicConfigs(configKeys: string[], topics?: string[
         ? `topicNames=${topicNames}&configKeys=${keys}`
         : `configKeys=${keys}`;
 
-    const response = await fetch('./api/topics-configs?' + query);
+    const response = await fetch('./api/topics-configs?' + query).catch(e => null);
+    if (response == null)
+        throw response;
+
     return tryParseOrUnwrapError<PartialTopicConfigsResponse>(response);
 }
 

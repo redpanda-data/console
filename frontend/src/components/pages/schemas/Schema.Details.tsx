@@ -1,4 +1,4 @@
-import { Col, Descriptions, Row, Select, Statistic, Table, Tag } from 'antd';
+import { Button, Col, Descriptions, Dropdown, message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
 import Card from '../../misc/Card';
 import { observer } from 'mobx-react';
 import React from 'react';
@@ -13,6 +13,9 @@ import { sortField } from '../../misc/common';
 import { JsonField, JsonFieldType, JsonSchema, Schema, SchemaField, SchemaType } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { title } from 'process';
+import { ClipboardCopyIcon } from '@heroicons/react/outline';
+import { NoClipboardPopover } from '../../misc/NoClipboardPopover';
+import { isClipboardAvailable } from '../../../utils/featureDetection';
 
 export interface SchemaDetailsProps {
     subjectName: string;
@@ -30,26 +33,26 @@ function convertJsonField(name: string, field: JsonField): SchemaField {
     switch (field.type) {
         case JsonFieldType.ARRAY: {
             let items = undefined;
-            if ( field.items){
-              const jsonField = convertJsonField(name, field.items);
-              items = jsonField.type;
+            if (field.items) {
+                const jsonField = convertJsonField(name, field.items);
+                items = jsonField.type;
             }
 
             return {
-              name,
-              type: {
-                type: field.type,
-                items,
-              }
+                name,
+                type: {
+                    type: field.type,
+                    items,
+                }
             };
         }
         case JsonFieldType.OBJECT: {
             let fields: Record<string, unknown> | undefined = undefined;
-            if ( field.properties) {
+            if (field.properties) {
                 fields = {};
-                for ( const name in field.properties) {
+                for (const name in field.properties) {
                     const jsonField = convertJsonField(name, field.properties[name]);
-                    fields[name] = jsonField.type; 
+                    fields[name] = jsonField.type;
                 }
             }
             return {
@@ -61,16 +64,16 @@ function convertJsonField(name: string, field: JsonField): SchemaField {
             };
         }
         case undefined: {
-          if ( field.properties ) {
-              return convertJsonField(name, { ...field, type: JsonFieldType.OBJECT }); 
-          }
-          if ( field.items) {
-              return convertJsonField(name, { ...field, type: JsonFieldType.ARRAY });  
-          }
-          break;
+            if (field.properties) {
+                return convertJsonField(name, { ...field, type: JsonFieldType.OBJECT });
+            }
+            if (field.items) {
+                return convertJsonField(name, { ...field, type: JsonFieldType.ARRAY });
+            }
+            break;
         }
         default: {
-           break;
+            break;
         }
     }
     return {
@@ -104,30 +107,37 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
     }
 
     render() {
-        if (!api.schemaDetails) return DefaultSkeleton;
+        const schemaDetails = api.schemaDetails;
+        if (!schemaDetails) return DefaultSkeleton;
 
         const {
             schemaId,
             version,
             compatibility,
             type: schemaType,
-            schema
-        } = api.schemaDetails;
-        let { type, name, namespace, doc, fields }  = schema as Schema;
-        if (  schemaType === SchemaType.JSON ) {
+            schema,
+            rawSchema
+        } = schemaDetails;
+
+        let { type, name, namespace, doc, fields } = schema as Schema;
+        if (schemaType === SchemaType.JSON) {
             const jsonSchema = schema as JsonSchema;
-            ({type, title: name, description: doc, $id: namespace} = jsonSchema);
+            ({ type, title: name, description: doc, $id: namespace } = jsonSchema);
             fields = [];
-            if ( jsonSchema.properties ) {
+            if (jsonSchema.properties) {
                 for (const p in jsonSchema.properties) {
                     const property = jsonSchema.properties[p];
-                    fields.push ( convertJsonField(p, property) );
+                    fields.push(convertJsonField(p, property));
                 }
             }
         }
 
-        const versions = api.schemaDetails?.registeredVersions ?? [];
+        // Create the object that will be shown in the JSON Viewer
+        // From this new "display object" we can remove the 'rawSchema' that we added
+        const jsonViewObject = Object.assign({}, schemaDetails);
+        delete (jsonViewObject as any)['rawSchema'];
 
+        const versions = schemaDetails.registeredVersions ?? [];
         const defaultVersion = this.props.query.version ?? (versions.length > 0 ? versions[versions.length - 1] : 'latest');
 
         return (
@@ -170,15 +180,31 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                         </Label>
                     </div>
 
-                    <div style={{ marginBottom: '1.5em' }}>
+                    <div style={{ marginBottom: '1.5em', display: 'flex', gap: '1em' }}>
                         <OptionGroup label=''
                             options={{
                                 "Show Fields": 'fields',
-                                "Show raw JSON": 'json',
+                                "Show JSON": 'json',
                             }}
                             value={uiSettings.schemaDetails.viewMode}
                             onChange={s => uiSettings.schemaDetails.viewMode = s}
                         />
+
+                        <NoClipboardPopover placement='top'>
+                            <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
+                                <Tooltip overlay='Copy raw JSON to clipboard'>
+                                    <Button
+                                        disabled={!isClipboardAvailable}
+                                        icon={<ClipboardCopyIcon style={{ width: '18px', color: '#555' }} />}
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(rawSchema);
+                                            message.success("Schema copied to clipboard", 1.2);
+                                        }}
+                                    />
+                                </Tooltip>
+                            </div>
+                        </NoClipboardPopover>
+
                     </div>
 
                     <div>
@@ -186,7 +212,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                             <KowlJsonView
                                 shouldCollapse={false}
                                 collapsed={false}
-                                src={api.schemaDetails || {}}
+                                src={jsonViewObject}
                                 style={{
                                     border: 'solid thin lightgray',
                                     borderRadius: '.25em',
