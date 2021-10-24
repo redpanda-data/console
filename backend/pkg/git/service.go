@@ -161,7 +161,7 @@ func (c *Service) SyncRepo() {
 
 			// Update cache with new markdowns
 			empty := make(map[string]filesystem.File)
-			files, err := c.readFiles(c.memFs, empty, ".", 5)
+			files, err := c.readFiles(c.memFs, empty, c.Cfg.Repository.BaseDirectory, 5)
 			if err != nil {
 				c.logger.Error("failed to read files after pulling", zap.Error(err))
 				continue
