@@ -157,6 +157,7 @@ func (s *Service) getDatapoints(metricName string, labels []tstorage.Label, star
 			IsSilent: false,
 		}
 	}
+	scaledDatapoints := scaleDown(datapoints, 100)
 
-	return datapoints, nil
+	return scaledDatapoints, nil
 }
