@@ -372,7 +372,7 @@ class TopicMetrics extends Component<{ topicName: string }> {
             <ResponsiveLine
                 data={series}
 
-                margin={{ left: 58, top: 10, right: 20, bottom: 30 }}
+                margin={{ left: 68, top: 10, right: 20, bottom: 30 }}
                 curve="monotoneX"
 
                 xScale={{ type: 'linear', stacked: false, min: 'auto', max: 'auto' }}
@@ -389,7 +389,7 @@ class TopicMetrics extends Component<{ topicName: string }> {
                     format: y => prettyBytes(Number(y)),
                     legend: 'Size',
                     tickValues: 5,
-                    legendOffset: -50,
+                    legendOffset: -60,
                     legendPosition: 'middle'
                 }}
 
