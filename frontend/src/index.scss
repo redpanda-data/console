@@ -2893,83 +2893,107 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         grid-column: span 3;
     }
 
-    .none,
-    .short,
-    .medium,
-    .long {
-
-        .inputWrapper {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-
-            &::after {
-                @include beforeAfter();
-                pointer-events: none;
-
-                border: 1px solid hsl(0deg, 100%, 65%);
-                box-shadow: 0px 0px 3px 1px #ffaeae;
-                border-radius: 2px;
-
-                opacity: 0;
-                $scaleY: 1.5;
-                $scaleFactor: 20;
-                $scaleX: (($scaleY - 1) / $scaleFactor) + 1;
-
-                transform: scale($scaleX, $scaleY);
-
-                transition: opacity 150ms ease-out,
-                    transform 250ms ease-out;
-            }
-
-            .validationFeedback {
-                position: absolute;
-                z-index: 1;
-                min-width: 10px;
-
-                color: hsl(0deg, 100%, 65%);
-
-                word-break: break-all;
-
-                font-size: 11px;
-                font-family: Verdana, 'Segoe UI', Tahoma, Geneva, sans-serif;
-                line-height: 1.5;
-
-                // position at top
-                top: 100%;
-                left: 1px;
-                transform: translateY(-30%);
-
-                // animate
-                opacity: 0;
-                transition: opacity 150ms ease-out,
-                    transform 250ms ease-out;
-
-                user-select: none;
-            }
-
-            &.hasError {
-                background: red;
-
-                &::after {
-                    transform: scale(1);
-                    opacity: 1;
-                }
-
-                .validationFeedback {
-                    transform: translateY(0);
-                    opacity: 1;
-                }
-            }
-
-        }
-    }
-
 
     .ant-input-number,
     .ant-select {
         width: 100%;
     }
+}
+
+.inputWrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+
+    &::after {
+        @include beforeAfter();
+        pointer-events: none;
+
+        border: 1px solid hsl(0deg, 100%, 65%);
+        box-shadow: 0px 0px 3px 1px #ffaeae;
+        border-radius: 2px;
+
+        opacity: 0;
+        $scaleY: 1.5;
+        $scaleFactor: 20;
+        $scaleX: (($scaleY - 1) / $scaleFactor) + 1;
+
+        transform: scale($scaleX, $scaleY);
+
+        transition: opacity 150ms ease-out,
+            transform 250ms ease-out;
+    }
+
+    .validationFeedback {
+        position: absolute;
+        z-index: 1;
+        min-width: 10px;
+
+        // position at top
+        top: 100%;
+        left: 0px;
+        transform: translateY(-30%);
+        padding: 3px 4px 2px 4px;
+
+        // style
+        background: hsla(0deg, 100%, 87%, 0.80);
+        color: hsl(0deg, 100%, 50%);
+
+        border-radius: 0px 0px 2px 2px;
+
+        font-size: 11px;
+        font-family: Verdana, 'Segoe UI', Tahoma, Geneva, sans-serif;
+        line-height: 1.5;
+        word-break: break-all;
+
+        // animate
+        opacity: 0;
+        transition: opacity 150ms ease-out,
+            transform 250ms ease-out;
+
+        user-select: none;
+
+
+        // Single line, unless clicked
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+
+        &:active {
+            white-space: normal;
+            overflow: visible;
+        }
+
+        .errorCount {
+            display: inline-block;
+            padding: 0px 4px;
+            padding-bottom: 1px;
+            margin-inline-end: 4px;
+
+            transform: translateY(-1px);
+
+            background: hsl(5deg, 100%, 50%);
+            color: white;
+            border-radius: 16px;
+            font-size: 10px;
+        }
+    }
+
+    &.hasError {
+        background: red;
+
+        &::after {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .validationFeedback {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
 }
 
 .dynamicInputs>div {
@@ -3026,4 +3050,136 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         }
     }
 
+}
+
+
+.stringList {
+    display: flex;
+    flex-direction: column;
+    // gap: .5em;
+
+    .createEntryRow {
+        display: flex;
+        gap: .5em;
+        align-items: center;
+        height: 29px;
+
+        margin: 6px 0px;
+
+        &>input,
+        &>button {
+            height: 100%;
+        }
+    }
+
+    .reorderableList {
+
+        .draggableItem {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+
+            background: hsl(0deg, 0%, 97%);
+
+            height: 32px;
+            // padding: 0px 4px;
+            border-radius: 3px;
+            overflow: hidden;
+
+            margin-bottom: 4px;
+
+            .dragHandle {
+                display: inline-flex;
+                align-self: stretch;
+
+                place-items: center;
+                width: 28px;
+                margin-left: 2px;
+                padding-top: 1px;
+                color: hsl(0deg, 0%, 70%);
+
+                transform: scale(0.8);
+            }
+
+            input {
+                height: 28px;
+                // margin-right: 4px;
+            }
+
+
+            // Normal
+            .ghostInput:not(:focus-within) {
+
+                border-color: transparent;
+                background-color: transparent;
+
+                transition:
+                    border-color 350ms ease-out,
+                    background-color 100ms ease-out;
+            }
+
+            // Hover
+            .ghostInput:hover:not(:focus-within) {
+                cursor: pointer;
+                border-radius: 2px;
+            }
+
+            // Active
+            .ghostInput {
+
+                transition:
+                    border-color 80ms ease-out,
+                    background-color 80ms ease-out;
+            }
+
+
+            .deleteButton {
+                display: inline-flex;
+                align-self: stretch;
+                place-items: center;
+                width: 32px;
+                // margin-right: 4px;
+                padding-right: 2px;
+
+                color: hsl(0deg, 0%, 70%);
+                cursor: pointer;
+
+                opacity: 0; // only visible on hover
+                transition: opacity 300ms;
+
+                &>svg {
+                    transform: scale(1.1);
+                }
+
+                &:hover {
+                    color: hsl(0, 0%, 45%);
+                    background: hsl(0, 0%, 95%);
+                }
+            }
+
+            &:hover>.deleteButton {
+                opacity: 1;
+                transition: opacity 120ms;
+            }
+        }
+
+
+
+    }
+}
+
+.ant-btn[disabled] {
+    cursor: default !important;
+}
+
+.inputHintTooltip>.ant-tooltip-content {
+    .ant-tooltip-arrow {
+        display: none;
+    }
+
+    .ant-tooltip-inner {
+        padding: 4px 8px;
+        background-color: hsla(210deg, 14%, 25%, 90%);
+        box-shadow: 0 3px 6px 0px rgba(0, 0, 0, 0.12), 0 2px 10px 0 rgba(0, 0, 0, 0.19);
+    }
 }

@@ -83,7 +83,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
 
             // Notify groups about errors in their children
             for (const g of this.allGroups)
-                g.propertiesWithErrors.push(...g.properties.filter(p => p.errors.length > 0));
+                g.propertiesWithErrors.push(...g.properties.filter(p => p.showErrors));
 
             // Update JSON
             this.reactionDisposers.push(reaction(
@@ -210,7 +210,23 @@ export class ConfigPage extends Component<ConfigPageProps> {
 
                 // Update: errors
                 if (!target.errors.isEqual(source.errors)) {
+
+                    if (source.errors.length > 0)
+                        target.lastErrors = [...source.errors]; // create copy, so 'updateWith' won't modify this array as well
+
+                    // Update
                     target.errors.updateWith(source.errors);
+
+                    target.showErrors = target.errors.length > 0;
+
+                    // Show first error
+                    target.currentErrorIndex = 0;
+                    if (target.errors.length > 1) {
+                        // Skip over simple / unhelpful messages
+                        const betterStartValue = target.errors.findIndex(x => !x.includes('which has no default value'));
+                        if (betterStartValue > -1)
+                            target.currentErrorIndex = betterStartValue;
+                    }
 
                     // Add or remove from parent group
                     const hasErrors = target.errors.length > 0;
@@ -350,7 +366,13 @@ function createCustomProperties(properties: ConnectorProperty[], fallbackGroupNa
                 value: value,
                 isHidden: hiddenProperties.includes(name),
                 suggestedValues: suggestedValues[name],
-                errors: p.value.errors ?? []
+                errors: p.value.errors ?? [],
+
+                lastErrors: [],
+                showErrors: p.value.errors.length > 0,
+                currentErrorIndex: 0,
+                lastErrorValue: undefined as any,
+                propertyGroup: undefined as any,
             } as Property);
         })
         .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
@@ -374,8 +396,13 @@ export interface Property {
     isHidden: boolean; // currently only used for "connector.class"
     suggestedValues: undefined | string[]; // values that are not listed in entry.value.recommended_values
 
-    errors: string[];
-    lastErrorValue: any;
+
+    errors: string[];  // current errors
+
+    showErrors: boolean; // true = property has errors currently
+    lastErrors: string[];// previous errors, used so we can fade/animate them out when they get fixed
+    currentErrorIndex: number; // since we can only display one error at a time, we use this to cycle through
+    lastErrorValue: any; // the 'value' the property had at the last validation check (used so we can immediately hide the reported error once the user changes the value)
 
     propertyGroup: PropertyGroup;
 }

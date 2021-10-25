@@ -50,11 +50,12 @@ const ConnectorType = observer(({
                 api.refreshClusterAdditionalInfo(clusterName, true);
                 onActiveClusterChange(clusterName);
             }}
-            defaultValue={activeCluster || undefined}
+            value={activeCluster ?? undefined}
         >
             {connectClusters.map(({ clusterName }) => <Option key={clusterName} value={clusterName}>{clusterName}</Option>)}
         </Select>
-        {activeCluster == null ? null : (<>
+
+        {activeCluster && <>
             <h2>Connector Type</h2>
 
             <HiddenRadioList<ConnectorPlugin>
@@ -65,7 +66,7 @@ const ConnectorType = observer(({
                     value: plugin,
                     render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
                 })) || []} />
-        </>)}
+        </>}
     </>);
 });
 
@@ -241,9 +242,9 @@ function ConnectorWizard({ connectClusters }: ConnectorWizardProps) {
         getSteps: () => steps,
         setStep: (step) => steps
             .slice(0, step)
-            .every((wizardStep) => wizardStep.postConditionMet()) 
-                ? setCurrentStep(step)
-                : undefined
+            .every((wizardStep) => wizardStep.postConditionMet())
+            ? setCurrentStep(step)
+            : undefined
     }} />;
 }
 

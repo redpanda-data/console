@@ -5,6 +5,7 @@ import { observer } from 'mobx-react';
 import { DataType, PropertyWidth } from '../../../../state/restInterfaces';
 import { findPopupContainer, InfoText } from '../../../../utils/tsxUtils';
 import { Property } from './components';
+import { CommaSeparatedStringList, List } from './List';
 
 
 export const PropertyComponent = observer((props: { property: Property }) => {
@@ -13,7 +14,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
     if (p.isHidden) return null;
     if (p.entry.value.visible === false) return null;
 
-    let comp = <div key={p.name}>
+    let inputComp = <div key={p.name}>
         <div>"{p.name}" (unknown type "{def.type}")</div>
         <div style={{ fontSize: 'smaller' }} className='codeBox'>{JSON.stringify(p.entry, undefined, 4)}</div>
     </div>;
@@ -33,11 +34,12 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             if (recValues && recValues.length) {
                 // Enum (recommended_values)
                 const options = recValues.map((x: string) => ({ label: x, value: x }));
-                comp = <Select showSearch
+                inputComp = <Select
                     value={p.value as any}
                     onChange={e => p.value = e}
                     options={options}
                     getPopupContainer={findPopupContainer}
+                    {...{ spellCheck: false }}
                 />
             }
             else {
@@ -45,75 +47,81 @@ export const PropertyComponent = observer((props: { property: Property }) => {
                 // Maybe we have some suggestions
                 if (p.suggestedValues && p.suggestedValues.length > 0) {
                     // Input with suggestions
-                    comp = <AutoComplete
+                    inputComp = <AutoComplete
                         value={String(v)}
                         onChange={e => p.value = e}
                         options={p.suggestedValues.map(x => ({ value: x }))}
                         getPopupContainer={findPopupContainer}
-                    // style={{ width: 200 }}
-                    // onSelect={onSelect}
-                    // onSearch={onSearch}
-                    // placeholder="input here"
+                        {...{ spellCheck: false }}
                     />
                 }
                 else {
                     // Input
-                    comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+                    inputComp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
                 }
             }
             break;
 
         case "PASSWORD":
-            comp = <Input.Password value={String(p.value ?? '')} onChange={e => p.value = e.target.value} iconRender={visible => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)} />
+            inputComp = <Input.Password value={String(p.value ?? '')} onChange={e => p.value = e.target.value} iconRender={visible => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)} />
             break;
 
         case "INT":
         case "LONG":
         case "SHORT":
-            comp = <InputNumber style={{ display: 'block' }} value={Number(p.value)} onChange={e => p.value = e} />
+            inputComp = <InputNumber style={{ display: 'block' }} value={Number(p.value)} onChange={e => p.value = e} />
             break;
 
         case "BOOLEAN":
-            comp = <Switch checked={Boolean(p.value)} onChange={e => p.value = e} />
+            inputComp = <Switch checked={Boolean(p.value)} onChange={e => p.value = e} />
             break;
 
         case "LIST":
-            comp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+            if (p.name == 'transforms') {
+                inputComp = <CommaSeparatedStringList defaultValue={String(v)} onChange={x => p.value = x} />
+            } else {
+                inputComp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+            }
+
             break;
     }
 
-    if (def.type != DataType.Boolean) {
-        const errAr = p.errors;
-        const hasError = errAr.length > 0 && (p.value === p.lastErrorValue);
+    // if (def.type != DataType.Boolean) {
+    //     const errAr = p.errors;
 
-        comp = <div className={'inputWrapper ' + (hasError ? 'hasError' : '')}>
-            {comp}
-            <div className='validationFeedback'>{hasError ? errAr[0] : null}</div>
-        </div>;
-    }
+    //     const err = errAr.length > 0 && (p.value === p.lastErrorValue)
+    //         ? errAr.first(x => !x.includes('which has no default value')) ?? errAr[0]
+    //         : null;
+
+    //     inputComp = <div className={'inputWrapper ' + (err ? 'hasError' : '')}>
+    //         {inputComp}
+    //         <div className='validationFeedback'>
+    //             {errAr.length > 1 && <span className='errorCount'>{errAr.length} Errors</span>}
+    //             {err}
+    //         </div>
+    //     </div>;
+    // }
+    inputComp = <ErrorWrapper property={p} input={inputComp} />;
 
 
-    // Attach tooltip
-    let name = <Tooltip overlay={def.name} placement='top' trigger="click" mouseLeaveDelay={0} getPopupContainer={findPopupContainer}>
+    // Tooltip 'raw name'
+    const title = <Tooltip overlay={`${def.name} (${def.type})`} placement='top' trigger="click" mouseLeaveDelay={0} getPopupContainer={findPopupContainer}>
         <span style={{ fontWeight: 600, cursor: 'pointer', color: '#444', fontSize: '12px', paddingLeft: '1px' }}>{def.display_name}</span>
     </Tooltip>;
 
-    if (def.documentation)
-        name = <InfoText tooltip={def.documentation} iconSize='12px' transform='translateY(1px)' gap='6px' placement='right' maxWidth='450px' align='left' iconColor='#c7c7c7' >{name}</InfoText>
-
+    // Tooltip 'documentation'
+    const docuIcon = def.documentation &&
+        <InfoText tooltip={def.documentation} iconSize='12px' transform='translateY(1px)' gap='6px' placement='right' maxWidth='450px' align='left' iconColor='#c7c7c7' />
 
     // Wrap name and input element
     return <div className={inputSizeToClass[def.width]}>
-        {/* width: 'fit-content', */}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2px' }}>
             {def.required && requiredStar}
-            {name}
-
-            <span className={'importanceTag ' + def.importance.toLowerCase()}>Importance: {def.importance.toLowerCase()}</span>
+            {title}
+            {docuIcon}
+            {/* <span className={'importanceTag ' + def.importance.toLowerCase()}>Importance: {def.importance.toLowerCase()}</span> */}
         </div>
-
-        {/* Control */}
-        {comp}
+        {inputComp}
     </div>
 });
 
@@ -129,3 +137,30 @@ const inputSizeToClass = {
     [PropertyWidth.Medium]: "medium",
     [PropertyWidth.Long]: "long",
 } as const;
+
+
+const ErrorWrapper = observer(function (props: { property: Property, input: JSX.Element }) {
+    const { property, input } = props;
+    const errors = property.errors;
+
+    if (errors.length == 0)
+        return input; // no errors
+
+    // if (property.value === property.lastErrorValue)
+    //     return input; // value changed
+
+    // Try to skip obvious errors
+    const error = errors[(property.currentErrorIndex % errors.length)];
+
+    const cycleError = !error
+        ? undefined
+        : () => property.currentErrorIndex++;
+
+    return <div className={'inputWrapper ' + ((error && property.showErrors) ? 'hasError' : '')}>
+        {input}
+        <div className='validationFeedback' onClick={cycleError}>
+            {errors.length > 1 && <span className='errorCount'>{errors.length} Errors</span>}
+            {error}
+        </div>
+    </div>
+})
