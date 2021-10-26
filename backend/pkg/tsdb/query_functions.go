@@ -2,7 +2,6 @@ package tsdb
 
 import (
 	"github.com/nakabonne/tstorage"
-	"math"
 	"time"
 )
 
@@ -43,9 +42,11 @@ func rate(dps []*tstorage.DataPoint, rateDur time.Duration) []*tstorage.DataPoin
 
 		var perSecondAvg float64
 		if accumulatedTimeDeltas == 0 {
-			// If we don't have at least two positive deltas, we can return NaN.
-			perSecondAvg = math.NaN()
-		} else if accumulatedPositiveDeltas == 0 {
+			// If we don't have at least two positive deltas, we can skip this point
+			continue
+		}
+
+		if accumulatedPositiveDeltas == 0 {
 			// We have at least two valid datapoints, but value doesn't seem to change
 			perSecondAvg = 0
 		} else {
@@ -63,8 +64,8 @@ func rate(dps []*tstorage.DataPoint, rateDur time.Duration) []*tstorage.DataPoin
 
 // scaleDown reduces the number of datapoints so that it can be processed by the chart library in the frontend.
 // To do so it tries to remove data points until it reaches the number of desired datapoints.
-func scaleDown(dps []*tstorage.DataPoint, limit int) []*tstorage.DataPoint {
-	if len(dps) < limit {
+func scaleDown(dps []*tstorage.DataPoint, limit int64) []*tstorage.DataPoint {
+	if int64(len(dps)) < limit {
 		return dps
 	}
 	maxDistance := 1 * time.Minute
@@ -122,19 +123,19 @@ func isTimestampInRange(a, b int64, dist time.Duration) bool {
 // boundary from start to end.
 // The start and end number have to be the first/last number in the returned slice.
 // Count has to be at least 2.
-func createTimestamps(start, end int64, count int) []int64 {
+func createTimestamps(start, end int64, count int64) []int64 {
 	timestamps := make([]int64, count)
 
 	timestamps[0] = start
 	previousTs := start
-	for i := 1; i < count; i++ {
+	for i := 1; int64(i) < count; i++ {
 		if previousTs > end {
 			// If this iteration timestamp is higher than the end timestamp we will not find any dps anymore.
 			break
 		}
 
-		toFind := count - i
-		stepSize := (end - previousTs) / int64(toFind)
+		toFind := count - int64(i)
+		stepSize := (end - previousTs) / toFind
 		newTs := previousTs + stepSize
 		timestamps[i] = newTs
 		previousTs = newTs
