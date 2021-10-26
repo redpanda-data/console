@@ -29,6 +29,7 @@ func (s *Service) scrapeTopicDatapoints(ctx context.Context) {
 		var partitionErrors int
 		// TODO: Handle cases where one or more replicas are down
 		var topicSizeBytes float64
+		var highWaterMarkSum float64
 
 		for _, partition := range detail.Partitions {
 			errMsg = partition.PartitionError
@@ -39,8 +40,10 @@ func (s *Service) scrapeTopicDatapoints(ctx context.Context) {
 				partitionErrors++
 				continue
 			}
+			highWaterMarkSum += float64(partition.High)
 
 			var partitionSizeWithReplicas float64
+			var logDirErrors int
 			for _, logDir := range partition.PartitionLogDirs {
 				errMsg = logDir.Error
 				if errMsg != "" {
@@ -48,6 +51,7 @@ func (s *Service) scrapeTopicDatapoints(ctx context.Context) {
 						zap.String("topic_name", detail.TopicName),
 						zap.Int32("partition_id", partition.PartitionID))
 					partitionErrors++
+					logDirErrors++
 					continue
 				}
 				logDirSize := float64(logDir.Size)
@@ -61,14 +65,15 @@ func (s *Service) scrapeTopicDatapoints(ctx context.Context) {
 
 			// We can only be sure to report the correct total partition size if we were able to describe all log dirs
 			// successfully.
-			if partitionErrors == 0 {
+			if logDirErrors == 0 {
 				s.insertTopicPartitionTotalSize(detail.TopicName, partition.PartitionID, partitionSizeWithReplicas)
 			}
 		}
 
 		if partitionErrors == 0 {
-			// We only know the actual topic size if we were able to describe all partitions successfully
+			// We only know the summed topic metrics if we were able to describe all partitions successfully
 			s.insertTopicSize(detail.TopicName, topicSizeBytes)
+			s.insertTopicHighWaterMarkSum(detail.TopicName, highWaterMarkSum)
 		} else {
 			s.Logger.Debug("failed to scrape all topic details, because some partitions had issues",
 				zap.String("topic_name", detail.TopicName),

@@ -88,7 +88,22 @@ func (s *Service) GetTopicSizeTimeseries(topicName string, dur time.Duration) ([
 	start := time.Now().Add(-dur).Unix()
 	end := time.Now().Unix()
 
-	return s.getDatapoints(MetricNameKafkaTopicSize, labels, start, end)
+	return s.getDatapoints(MetricNameKafkaTopicSize, labels, start, end, 100)
+}
+
+func (s *Service) GetMessagesInPerSecondTimeseries(topicName string, dur time.Duration) ([]*tstorage.DataPoint, *rest.Error) {
+	labels := []tstorage.Label{{Name: "topic_name", Value: topicName}}
+	start := time.Now().Add(-dur).Unix()
+	end := time.Now().Unix()
+
+	dps, restErr := s.getDatapoints(MetricNameKafkaTopicHighWaterMarkSum, labels, start, end, -1)
+	if restErr != nil {
+		return nil, restErr
+	}
+
+	perSecondDps := rate(dps, 1*time.Minute)
+
+	return scaleDown(perSecondDps, 100), nil
 }
 
 func (s *Service) insertTopicPartitionLeaderSize(topicName string, partitionID int32, size float64) {
@@ -101,6 +116,20 @@ func (s *Service) insertTopicPartitionLeaderSize(topicName string, partitionID i
 			},
 			DataPoint: tstorage.DataPoint{
 				Value:     size,
+				Timestamp: time.Now().Unix(),
+			},
+		},
+	})
+}
+
+func (s *Service) insertTopicHighWaterMarkSum(topicName string, highWaterMarkSum float64) {
+	s.Storage.InsertRows([]tstorage.Row{
+		{
+			Metric: MetricNameKafkaTopicHighWaterMarkSum,
+			Labels: []tstorage.Label{
+				{Name: "topic_name", Value: topicName}},
+			DataPoint: tstorage.DataPoint{
+				Value:     highWaterMarkSum,
 				Timestamp: time.Now().Unix(),
 			},
 		},
@@ -138,7 +167,7 @@ func (s *Service) startScraping(ctx context.Context) {
 	}
 }
 
-func (s *Service) getDatapoints(metricName string, labels []tstorage.Label, start, end int64) ([]*tstorage.DataPoint, *rest.Error) {
+func (s *Service) getDatapoints(metricName string, labels []tstorage.Label, start, end, limit int64) ([]*tstorage.DataPoint, *rest.Error) {
 	datapoints, err := s.Storage.Select(metricName, labels, start, end)
 	if err != nil {
 		if err == tstorage.ErrNoDataPoints {
@@ -157,7 +186,9 @@ func (s *Service) getDatapoints(metricName string, labels []tstorage.Label, star
 			IsSilent: false,
 		}
 	}
-	scaledDatapoints := scaleDown(datapoints, 100)
+	if limit > 0 {
+		return scaleDown(datapoints, limit), nil
+	}
 
-	return scaledDatapoints, nil
+	return datapoints, nil
 }
