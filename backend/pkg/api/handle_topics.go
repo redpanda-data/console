@@ -488,7 +488,8 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 
 func (api *API) handleGetTopicMetrics() http.HandlerFunc {
 	type response struct {
-		TopicSizeSeries []*tstorage.DataPoint `json:"topicSizeSeries"`
+		TopicSizeSeries   []*tstorage.DataPoint `json:"topicSizeSeries"`
+		MessageThroughput []*tstorage.DataPoint `json:"messagesInPerSecond"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -527,7 +528,13 @@ func (api *API) handleGetTopicMetrics() http.HandlerFunc {
 			return
 		}
 
-		res := response{TopicSizeSeries: datapoints}
+		messagesPerSec, restErr := api.TsdbSvc.GetMessagesInPerSecondTimeseries(topicName, 6*time.Hour)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		res := response{TopicSizeSeries: datapoints, MessageThroughput: messagesPerSec}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
