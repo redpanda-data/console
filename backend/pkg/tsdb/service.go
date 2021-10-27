@@ -3,12 +3,10 @@ package tsdb
 import (
 	"context"
 	"fmt"
-	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/nakabonne/tstorage"
 	"go.uber.org/zap"
-	"net/http"
 	"strconv"
 	"time"
 )
@@ -83,7 +81,7 @@ func (s *Service) insertTopicSize(topicName string, size float64) {
 	})
 }
 
-func (s *Service) GetTopicSizeTimeseries(topicName string, dur time.Duration) ([]*tstorage.DataPoint, *rest.Error) {
+func (s *Service) GetTopicSizeTimeseries(topicName string, dur time.Duration) ([]*tstorage.DataPoint, error) {
 	labels := []tstorage.Label{{Name: "topic_name", Value: topicName}}
 	start := time.Now().Add(-dur).Unix()
 	end := time.Now().Unix()
@@ -91,14 +89,14 @@ func (s *Service) GetTopicSizeTimeseries(topicName string, dur time.Duration) ([
 	return s.getDatapoints(MetricNameKafkaTopicSize, labels, start, end, 100)
 }
 
-func (s *Service) GetMessagesInPerSecondTimeseries(topicName string, dur time.Duration) ([]*tstorage.DataPoint, *rest.Error) {
+func (s *Service) GetMessagesInPerSecondTimeseries(topicName string, dur time.Duration) ([]*tstorage.DataPoint, error) {
 	labels := []tstorage.Label{{Name: "topic_name", Value: topicName}}
 	start := time.Now().Add(-dur).Unix()
 	end := time.Now().Unix()
 
-	dps, restErr := s.getDatapoints(MetricNameKafkaTopicHighWaterMarkSum, labels, start, end, -1)
-	if restErr != nil {
-		return nil, restErr
+	dps, err := s.getDatapoints(MetricNameKafkaTopicHighWaterMarkSum, labels, start, end, -1)
+	if err != nil {
+		return nil, err
 	}
 
 	perSecondDps := rate(dps, 1*time.Minute)
@@ -167,24 +165,14 @@ func (s *Service) startScraping(ctx context.Context) {
 	}
 }
 
-func (s *Service) getDatapoints(metricName string, labels []tstorage.Label, start, end, limit int64) ([]*tstorage.DataPoint, *rest.Error) {
+func (s *Service) getDatapoints(metricName string, labels []tstorage.Label, start, end, limit int64) ([]*tstorage.DataPoint, error) {
 	datapoints, err := s.Storage.Select(metricName, labels, start, end)
 	if err != nil {
 		if err == tstorage.ErrNoDataPoints {
-			return nil, &rest.Error{
-				Err:      fmt.Errorf("no dataoints found for the given query"),
-				Status:   http.StatusNotFound,
-				Message:  "Could not find any datapoints for the given query",
-				IsSilent: true,
-			}
+			return nil, tstorage.ErrNoDataPoints
 		}
 
-		return nil, &rest.Error{
-			Err:      err,
-			Status:   http.StatusInternalServerError,
-			Message:  fmt.Sprintf("Failed to get datapoints from TSDB: %v", err.Error()),
-			IsSilent: false,
-		}
+		return nil, fmt.Errorf("failed to get datapoints from TSDB: %v", err.Error())
 	}
 	if limit > 0 {
 		return scaleDown(datapoints, limit), nil

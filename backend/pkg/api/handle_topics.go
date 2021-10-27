@@ -3,14 +3,11 @@ package api
 import (
 	_ "context"
 	"fmt"
-	"github.com/nakabonne/tstorage"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap/zapcore"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
-	_ "time"
 
 	"go.uber.org/zap"
 
@@ -487,11 +484,6 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 }
 
 func (api *API) handleGetTopicMetrics() http.HandlerFunc {
-	type response struct {
-		TopicSizeSeries   []*tstorage.DataPoint `json:"topicSizeSeries"`
-		MessageThroughput []*tstorage.DataPoint `json:"messagesInPerSecond"`
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		topicName := chi.URLParam(r, "topicName")
 		logger := api.Logger.With(zap.String("topic_name", topicName))
@@ -522,19 +514,7 @@ func (api *API) handleGetTopicMetrics() http.HandlerFunc {
 			return
 		}
 
-		datapoints, restErr := api.TsdbSvc.GetTopicSizeTimeseries(topicName, 6*time.Hour)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		messagesPerSec, restErr := api.TsdbSvc.GetMessagesInPerSecondTimeseries(topicName, 6*time.Hour)
-		if restErr != nil {
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		res := response{TopicSizeSeries: datapoints, MessageThroughput: messagesPerSec}
+		res := api.TsdbSvc.GetTopicMetrics(r.Context(), topicName)
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
