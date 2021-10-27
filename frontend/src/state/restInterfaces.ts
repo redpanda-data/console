@@ -116,6 +116,10 @@ export interface DeleteRecordsResponseData {
 
 export interface TopicMetricsResponse {
     topicSizeSeries: MetricDatapoint[];
+    topicSizeSeriesError?: string;
+
+    messagesInPerSecond: MetricDatapoint[];
+    messagesInPerSecondError?: string;
 }
 export interface MetricDatapoint {
     Timestamp: number; // unix timestamp

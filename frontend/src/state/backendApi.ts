@@ -192,7 +192,7 @@ const apiStore = {
     topicPartitionErrors: new Map<string, Array<{ id: number, partitionError: string }>>(),
     topicWatermarksErrors: new Map<string, Array<{ id: number, waterMarksError: string }>>(),
     topicConsumers: new Map<string, TopicConsumer[]>(),
-    topicMetrics: new Map<string, MetricDatapoint[]>(),
+    topicMetrics: new Map<string, TopicMetricsResponse>(),
     topicAcls: new Map<string, AclResponse | null>(),
 
     ACLs: undefined as AclResponse | undefined | null,
@@ -602,8 +602,8 @@ const apiStore = {
     refreshMetricsForTopic(topicName: string, force?: boolean) {
         cachedApiRequest<TopicMetricsResponse>(`./api/topics/${topicName}/metrics`, force)
             .then(v => {
-                //
-                this.topicMetrics.set(topicName, v.topicSizeSeries);
+                if (!v) return;
+                this.topicMetrics.set(topicName, v);
             }, addError);
     },
 
