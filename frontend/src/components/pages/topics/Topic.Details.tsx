@@ -370,15 +370,17 @@ class TopicMetrics extends Component<{ topicName: string }> {
                 y: p.Value,
             })) ?? [],
         }];
+        const allZeroA = seriesA[0].data.all(p => p.y == 0);
 
         const seriesB = [{
-            id: 'size',
+            id: 'messages / sec',
             color: "hsl(20, 70%, 50%)",
             data: metrics?.messagesInPerSecond.map(p => ({
                 x: p.Timestamp,
                 y: p.Value,
             })) ?? [],
         }];
+        const allZeroB = seriesB[0].data.all(p => p.y == 0);
 
         return <div className='graphContainer'>
             <div className='graphSlot'>
@@ -396,7 +398,7 @@ class TopicMetrics extends Component<{ topicName: string }> {
                         legendPosition: 'middle'
                     }}
 
-                    yScale={{ type: 'linear', stacked: false, min: 0, max: 'auto' }}
+                    yScale={{ type: 'linear', stacked: false, min: 0, max: allZeroA ? 100 : 'auto' }}
                     yFormat={y => prettyBytes(Number(y))}
                     axisLeft={{
                         format: y => prettyBytes(Number(y)),
@@ -443,11 +445,11 @@ class TopicMetrics extends Component<{ topicName: string }> {
                         legendPosition: 'middle'
                     }}
 
-                    yScale={{ type: 'linear', stacked: false, min: 0, max: 'auto' }}
+                    yScale={{ type: 'linear', stacked: false, min: 0, max: allZeroB ? 100 : 'auto' }}
                     yFormat={y => prettyBytes(Number(y))}
                     axisLeft={{
                         format: y => prettyBytes(Number(y)),
-                        legend: 'Size',
+                        legend: 'Messages / Second',
                         tickValues: 5,
                         legendOffset: -60,
                         legendPosition: 'middle'
