@@ -2813,12 +2813,15 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     height: 200px;
     display: flex;
     flex-direction: row;
-    gap: 1em;
+    gap: .5em;
+    width: 100%;
 }
 
 .graphSlot {
-    width: 100%;
     // background: hsla(0, 0%, 0%, 0.05);
-    border: 1px solid hsl(0deg 0% 95%);
+    // border: 1px solid hsl(0deg 0% 95%);
     border-radius: 3px;
+
+    min-width: 10px;
+    flex-grow: 1;
 }
