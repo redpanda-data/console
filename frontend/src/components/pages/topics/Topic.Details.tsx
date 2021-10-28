@@ -28,7 +28,8 @@ import { IsBusiness } from '../../../utils/env';
 import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
 import { ResponsiveLine } from '@nivo/line'
-import { prettyBytes } from '../../../utils/utils';
+import { prettyBytes, prettyNumber } from '../../../utils/utils';
+import { DatumValue, ValueFormat } from '@nivo/core';
 
 const { Text } = Typography;
 
@@ -362,123 +363,87 @@ class TopicMetrics extends Component<{ topicName: string }> {
     render() {
         const metrics = api.topicMetrics.get(this.props.topicName);
 
-        const seriesA = [{
-            id: 'size',
-            color: "hsl(205, 70%, 50%)",
-            data: metrics?.topicSizeSeries.map(p => ({
-                x: p.Timestamp,
-                y: p.Value,
-            })) ?? [],
-        }];
-        const allZeroA = seriesA[0].data.all(p => p.y == 0);
+        const sizes = metrics?.topicSizeSeries.map(p => ({
+            x: p.Timestamp,
+            y: p.Value,
+        })) ?? [];
 
-        const seriesB = [{
-            id: 'messages / sec',
-            color: "hsl(20, 70%, 50%)",
-            data: metrics?.messagesInPerSecond.map(p => ({
-                x: p.Timestamp,
-                y: p.Value,
-            })) ?? [],
-        }];
-        const allZeroB = seriesB[0].data.all(p => p.y == 0);
+        const mps = metrics?.messagesInPerSecond.map(p => ({
+            x: p.Timestamp,
+            y: p.Value,
+        })) ?? []
 
         return <div className='graphContainer'>
             <div className='graphSlot'>
-                <ResponsiveLine
-                    data={seriesA}
-
-                    margin={{ left: 68, top: 10, right: 20, bottom: 30 }}
-                    curve="monotoneX"
-
-                    xScale={{ type: 'linear', stacked: false, min: 'auto', max: 'auto' }}
-                    xFormat={x => new Date(Number(x) * 1000).toLocaleTimeString()}
-                    axisBottom={{
-                        format: x => new Date(x * 1000).toLocaleTimeString(),
-                        // tickValues: 8,
-                        legendPosition: 'middle'
-                    }}
-
-                    yScale={{ type: 'linear', stacked: false, min: 0, max: allZeroA ? 100 : 'auto' }}
-                    yFormat={y => prettyBytes(Number(y))}
-                    axisLeft={{
-                        format: y => prettyBytes(Number(y)),
-                        legend: 'Size',
-                        tickValues: 5,
-                        legendOffset: -60,
-                        legendPosition: 'middle'
-                    }}
-
-
-                    enableArea={true}
-                    lineWidth={2}
-                    pointSize={5}
-                    pointColor={{ theme: 'background' }}
-                    pointBorderWidth={1}
-
-                    pointBorderColor={{ from: 'serieColor' }}
-                    pointLabelYOffset={-12}
-                    useMesh={true}
-
-                    motionConfig={{
-                        mass: 1,
-                        tension: 500,
-                        friction: 40,
-                    }}
-                    // enableGridX={false}
-                    colors={{
-                        datum: 'color',
-                    }}
-                />
+                <LineGraph id='size' data={sizes} color="hsl(205, 70%, 50%)" yScaleText='Size' yFormat={y => prettyBytes(Number(y))} />
             </div>
             <div className='graphSlot'>
-                <ResponsiveLine
-                    data={seriesB}
-
-                    margin={{ left: 68, top: 10, right: 20, bottom: 30 }}
-                    curve="monotoneX"
-
-                    xScale={{ type: 'linear', stacked: false, min: 'auto', max: 'auto' }}
-                    xFormat={x => new Date(Number(x) * 1000).toLocaleTimeString()}
-                    axisBottom={{
-                        format: x => new Date(x * 1000).toLocaleTimeString(),
-                        // tickValues: 8,
-                        legendPosition: 'middle'
-                    }}
-
-                    yScale={{ type: 'linear', stacked: false, min: 0, max: allZeroB ? 100 : 'auto' }}
-                    yFormat={y => prettyBytes(Number(y))}
-                    axisLeft={{
-                        format: y => prettyBytes(Number(y)),
-                        legend: 'Messages / Second',
-                        tickValues: 5,
-                        legendOffset: -60,
-                        legendPosition: 'middle'
-                    }}
-
-
-                    enableArea={true}
-                    lineWidth={2}
-                    pointSize={5}
-                    pointColor={{ theme: 'background' }}
-                    pointBorderWidth={1}
-
-                    pointBorderColor={{ from: 'serieColor' }}
-                    pointLabelYOffset={-12}
-                    useMesh={true}
-
-                    motionConfig={{
-                        mass: 1,
-                        tension: 500,
-                        friction: 40,
-                    }}
-                    // enableGridX={false}
-                    colors={{
-                        datum: 'color',
-                    }}
-                />
+                <LineGraph id='mps' data={mps} color="hsl(20, 80%, 50%)" yScaleText='Messages / Second' yFormat={y => prettyNumber(Number(y), 2, true)} />
             </div>
         </div>
     }
+}
+
+const LineGraph = function (p: {
+    id: string;
+    color: string;
+    data: {
+        x: number;
+        y: number;
+    }[];
+
+    yScaleText: string;
+    yFormat: ValueFormat<DatumValue>,
+}) {
+    const data = p.data;
+    const allZeroValue = data.length == 0 || data.all(p => p.y == 0);
+
+    return <ResponsiveLine
+        data={[p]}
+
+        margin={{ left: 68, top: 10, right: 20, bottom: 30 }}
+        curve="monotoneX"
+
+        xScale={{ type: 'linear', stacked: false, min: 'auto', max: 'auto' }}
+        xFormat={x => new Date(Number(x) * 1000).toLocaleTimeString()}
+        axisBottom={{
+            format: x => new Date(x * 1000).toLocaleTimeString(),
+            tickValues: 4,
+            legendPosition: 'middle'
+        }}
+
+        yScale={{ type: 'linear', stacked: false, min: 0, max: allZeroValue ? 100 : 'auto' }}
+        yFormat={p.yFormat}
+        axisLeft={{
+            format: p.yFormat,
+            legend: p.yScaleText,
+            tickValues: 5,
+            legendOffset: -60,
+            legendPosition: 'middle'
+        }}
+
+        enableArea={true}
+        lineWidth={2}
+
+        enablePoints={false}
+        pointSize={4}
+        pointColor={{ theme: 'background' }}
+        pointBorderWidth={1}
+        pointBorderColor={{ from: 'serieColor' }}
+
+        pointLabelYOffset={-12}
+        useMesh={true}
+
+        motionConfig={{
+            mass: 1,
+            tension: 500,
+            friction: 40,
+        }}
+
+        colors={{
+            datum: 'color',
+        }}
+    />
 }
 
 export default TopicDetails;

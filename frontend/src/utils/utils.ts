@@ -562,20 +562,62 @@ export const prettyMilliseconds = function (n: number, options?: prettyMilliseco
     return prettyMillisecondsOriginal(n, options);
 }
 
-const between = (min: number, max: number) => (num: number) => num >= min && num < max;
-const isK = between(1000, 1000000);
-const isM = between(1000000, 1000000000);
 
-const isInfinite = (num: number) => !isFinite(num);
-const toK = (num: number) => `${(num / 1000).toFixed(1)}k`;
-const toM = (num: number) => `${(num / 1000000).toFixed(1)}m`;
-const toG = (num: number) => `${(num / 1000000000).toFixed(1)}g`;
 
-export function prettyNumber(num: number) {
-    if (isNaN(num) || isInfinite(num) || num < 1000) return String(num);
-    if (isK(num)) return toK(num);
-    if (isM(num)) return toM(num);
-    return toG(num);
+
+// canTrimDecimalPart:
+//  true : 1.000 -> "1"
+//  false: 1.000 -> "1.0"
+export function prettyNumber(num: number, decimals: number = 1, canTrimDecimalPart: boolean = true) {
+    if (!Number.isFinite(num)) return String(num);
+    if (num == 0 && decimals <= 0) return '0';
+
+    let suffix: 'k' | 'm' | 'g' | '' = '';
+    const k = 1000;
+    const m = k * 1000;
+    const g = m * 1000;
+
+    if (num >= g) {
+        suffix = 'g';
+        num /= g;
+    } else if (num >= m) {
+        suffix = 'm';
+        num /= m;
+    } else if (num >= k) {
+        suffix = 'k';
+        num /= k;
+    }
+
+    let s = num.toFixed(decimals);
+    if (decimals == 0)
+        return s + suffix;
+
+    s = trimZeroes(s, canTrimDecimalPart);
+    return s + suffix;
+}
+
+// canTrimDecimalPart:
+//  true : 1.000 -> "1"   (remove decimal part completely when possible)
+//  false: 1.000 -> "1.0" (don't remove ".0")
+export function trimZeroes(s: string, canTrimDecimalPart: boolean) {
+    const dot = s.indexOf('.');
+
+    if (!s.endsWith('0'))
+        return s; // cant trim anything
+
+    // find the "final" zero, the first zero after which only zeroes follow
+    let finalZero = s.length - 1;
+    while ((finalZero - 1) > dot && s[finalZero - 1] == '0')
+        finalZero--;
+
+    const isDotZero = (dot + 1) == finalZero;
+
+    if (canTrimDecimalPart && isDotZero) {
+        return s.substr(0, dot); // remove decimal part
+    }
+
+    // remove everything after first zero
+    return s.substr(0, finalZero + 1);
 }
 
 export function fromDecimalSeparated(str: string): number {

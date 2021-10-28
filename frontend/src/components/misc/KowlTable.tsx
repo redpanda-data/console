@@ -184,7 +184,7 @@ export class KowlTable<T extends object = any> extends Component<{
                 const { data, filterActive, query, dataLength } = cur;
                 const a = clone(data);
 
-                console.warn('UpdateDisplayData', { 'data': clone(a), "newLength": dataLength });
+                // console.warn('UpdateDisplayData', { 'data': clone(a), "newLength": dataLength });
                 if (data == null) {
                     return;
                 }
