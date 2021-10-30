@@ -150,6 +150,22 @@ func (s *Service) insertTopicPartitionTotalSize(topicName string, partitionID in
 	})
 }
 
+func (s *Service) insertConsumerGroupSummedTopicLag(consumerGroup, topicName string, lag int64) {
+	s.Storage.InsertRows([]tstorage.Row{
+		{
+			Metric: MetricNameKafkaConsumerGroupSummedTopicLag,
+			Labels: []tstorage.Label{
+				{Name: "consumer_group", Value: consumerGroup},
+				{Name: "topic_name", Value: topicName},
+			},
+			DataPoint: tstorage.DataPoint{
+				Value:     float64(lag),
+				Timestamp: time.Now().Unix(),
+			},
+		},
+	})
+}
+
 func (s *Service) startScraping(ctx context.Context) {
 	s.Logger.Info("started time series database scraper")
 	t := time.NewTicker(15 * time.Second)
@@ -157,6 +173,7 @@ func (s *Service) startScraping(ctx context.Context) {
 		select {
 		case <-t.C:
 			go s.scrapeTopicDatapoints(ctx)
+			go s.scrapeConsumerGroups(ctx)
 		case <-ctx.Done():
 			s.Logger.Info("shutting down time series database scraper due to a cancelled context")
 			s.Storage.Close()
