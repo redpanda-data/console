@@ -2,14 +2,13 @@ package api
 
 import (
 	"fmt"
+	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/go-chi/chi"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"net/http"
-
-	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 )
 
 // GetConsumerGroupsResponse represents the data which is returned for listing topics
@@ -87,6 +86,32 @@ func (api *API) handleGetConsumerGroup() http.HandlerFunc {
 		}
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+func (api *API) handleGetConsumerGroupMetrics() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		groupID := chi.URLParam(r, "groupId")
+
+		canSee, restErr := api.Hooks.Owl.CanSeeConsumerGroup(r.Context(), groupID)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canSee {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to view consumer group"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to view this consumer group",
+				InternalLogs: []zapcore.Field{zap.String("group_id", groupID)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		groupMetrics := api.TsdbSvc.GetConsumerGroupMetrics(r.Context(), groupID)
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, groupMetrics)
 	}
 }
 
