@@ -363,12 +363,12 @@ class TopicMetrics extends Component<{ topicName: string }> {
     render() {
         const metrics = api.topicMetrics.get(this.props.topicName);
 
-        const sizes = metrics?.topicSizeSeries.map(p => ({
+        const sizes = metrics?.topicSizeSeries?.map(p => ({
             x: p.Timestamp,
             y: p.Value,
         })) ?? [];
 
-        const mps = metrics?.messagesInPerSecond.map(p => ({
+        const mps = metrics?.messagesInPerSecond?.map(p => ({
             x: p.Timestamp,
             y: p.Value,
         })) ?? []
