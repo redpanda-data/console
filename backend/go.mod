@@ -28,7 +28,7 @@ require (
 	github.com/linkedin/goavro/v2 v2.10.0
 	github.com/mitchellh/copystructure v1.1.2 // indirect
 	github.com/mitchellh/mapstructure v1.4.1
-	github.com/nakabonne/tstorage v0.3.0
+	github.com/nakabonne/tstorage v0.3.4
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/common v0.20.0 // indirect
