@@ -1,12 +1,48 @@
 /* eslint-disable no-useless-escape */
+import { Collapse } from 'antd';
 import { observer } from 'mobx-react';
 import { PropertyGroup } from './components';
 import { PropertyComponent } from './PropertyComponent';
 
-export const PropertyGroupComponent = observer((props: { group: PropertyGroup }) => {
+export const PropertyGroupComponent = observer((props: { group: PropertyGroup, allGroups: PropertyGroup[] }) => {
     const g = props.group;
 
-    return <div className='dynamicInputs'>
-        {g.properties.map(p => <PropertyComponent key={p.name} property={p} />)}
-    </div>
+    if (g.groupName == "Transforms") {
+        // Transforms + its sub groups
+
+        const subGroups = props.allGroups
+            .filter(g => g.groupName.startsWith("Transforms: "))
+            .sort((a, b) => props.allGroups.indexOf(a) - props.allGroups.indexOf(b));
+
+        return <div className='dynamicInputs'>
+            {g.properties.map(p => <PropertyComponent key={p.name} property={p} />)}
+
+            <div style={{ gridColumn: 'span 4', paddingLeft: '8px' }}>
+
+                <Collapse ghost bordered={false}>
+                    {subGroups.map(subGroup =>
+                        <Collapse.Panel
+                            className={(subGroup.propertiesWithErrors.length > 0) ? 'hasErrors' : ''}
+                            key={subGroup.groupName}
+                            header={<div style={{ display: 'flex', alignItems: 'center', gap: '1em' }}>
+                                <span style={{ fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans' }}>{subGroup.groupName}</span>
+                                <span className='issuesTag'>{subGroup.propertiesWithErrors.length} issues</span>
+                            </div>}
+                        >
+                            <PropertyGroupComponent group={subGroup} allGroups={props.allGroups} />
+                        </Collapse.Panel>
+                    )}
+                </Collapse>
+
+            </div>
+        </div>
+
+    }
+    else {
+        // Normal group
+        return <div className='dynamicInputs'>
+            {g.properties.map(p => <PropertyComponent key={p.name} property={p} />)}
+        </div>
+    }
+
 });

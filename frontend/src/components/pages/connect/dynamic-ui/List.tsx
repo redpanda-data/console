@@ -3,8 +3,9 @@ import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } 
 import arrayMove from "array-move";
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable } from "mobx";
 import { observer } from "mobx-react";
-import { ThreeBarsIcon, XIcon } from "@primer/octicons-v2-react";
+
 import { Button, Input, Tooltip, Typography } from "antd";
+import { ThreeBarsIcon, XIcon } from "@primer/octicons-react";
 
 
 @observer
@@ -36,7 +37,6 @@ export class CommaSeparatedStringList extends Component<{
         this.reactionDisposer = autorun(() => {
             const list = this.commaSeperatedList;
             this.props.onChange(list);
-
         });
     }
 

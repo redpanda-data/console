@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-escape */
 import { Collapse, Skeleton } from 'antd';
-import { action, autorun, comparer, has, IReactionDisposer, makeObservable, observable, reaction } from 'mobx';
+import { action, autorun, comparer, IReactionDisposer, makeObservable, observable, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { api } from '../../../../state/backendApi';
@@ -18,6 +18,7 @@ export interface ConfigPageProps {
     onChange: (jsonText: string) => void
 }
 
+
 @observer
 export class ConfigPage extends Component<ConfigPageProps> {
 
@@ -25,8 +26,8 @@ export class ConfigPage extends Component<ConfigPageProps> {
     propsByName = new Map<string, Property>();
     @observable jsonText = "";
     @observable error: string | undefined = undefined;
-    @observable initPending = true;
 
+    @observable initPending = true;
     fallbackGroupName: string = "";
     reactionDisposers: IReactionDisposer[] = [];
 
@@ -41,6 +42,10 @@ export class ConfigPage extends Component<ConfigPageProps> {
     componentWillUnmount() {
         for (const r of this.reactionDisposers)
             r();
+
+        lastConfigPage.clusterName = this.props.clusterName;
+        lastConfigPage.pluginClassName = this.props.pluginClassName;
+        lastConfigPage.component = this;
     }
 
     @action.bound async initConfig() {
@@ -49,6 +54,24 @@ export class ConfigPage extends Component<ConfigPageProps> {
         setTimeout(() => {
             scrollTo('selectedConnector', 'start', -20);
         }, 100);
+
+        if (lastConfigPage.component && lastConfigPage.clusterName == clusterName && lastConfigPage.pluginClassName == pluginClassName) {
+            // Restore state from previous page
+            try {
+                const last = lastConfigPage.component;
+                this.allGroups = last.allGroups;
+                this.propsByName = last.propsByName;
+                this.jsonText = last.jsonText;
+
+                this.validate(this.getConfigObject());
+                this.initPending = false;
+                console.log('wizard state restored from last page');
+                return;
+            } catch {
+                // restore failed, continue to init normally
+                console.log('failed to restore wizard state, initializing normally');
+            }
+        }
 
         try {
             // Validate with empty object to get all properties initially
@@ -109,7 +132,9 @@ export class ConfigPage extends Component<ConfigPageProps> {
             ));
 
         } catch (err: any) {
-            this.error = typeof err == 'object' ? (err.message ?? JSON.stringify(err, undefined, 4)) : JSON.stringify(err, undefined, 4);
+            this.error = typeof err == 'object'
+                ? (err.message ?? JSON.stringify(err, undefined, 4))
+                : JSON.stringify(err, undefined, 4);
         }
 
         this.initPending = false;
@@ -261,13 +286,11 @@ export class ConfigPage extends Component<ConfigPageProps> {
         if (this.allGroups.length == 0)
             return <div>debug: no groups</div>
 
-        // const defaultExpanded = this.allGroups.map(x => x.groupName);
         const defaultExpanded = this.allGroups[0].groupName;
 
-        // render components dynamically
         return <>
             <Collapse defaultActiveKey={defaultExpanded} ghost bordered={false}>
-                {this.allGroups.map(g =>
+                {this.allGroups.filter(g => !g.groupName.startsWith('Transforms: ')).map(g =>
                     <Collapse.Panel
                         className={(g.propertiesWithErrors.length > 0) ? 'hasErrors' : ''}
                         key={g.groupName}
@@ -276,7 +299,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
                             <span className='issuesTag'>{g.propertiesWithErrors.length} issues</span>
                         </div>}
                     >
-                        <PropertyGroupComponent group={g} />
+                        <PropertyGroupComponent group={g} allGroups={this.allGroups} />
                     </Collapse.Panel>
                 )}
             </Collapse>
@@ -414,3 +437,10 @@ const StringLikeTypes = [
     DataType.List,
     DataType.Password
 ];
+
+
+const lastConfigPage = {
+    component: null as ConfigPage | null,
+    clusterName: "" as string,
+    pluginClassName: "" as string,
+};
