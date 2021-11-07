@@ -42,10 +42,6 @@ export class ConfigPage extends Component<ConfigPageProps> {
     componentWillUnmount() {
         for (const r of this.reactionDisposers)
             r();
-
-        lastConfigPage.clusterName = this.props.clusterName;
-        lastConfigPage.pluginClassName = this.props.pluginClassName;
-        lastConfigPage.component = this;
     }
 
     @action.bound async initConfig() {
@@ -54,24 +50,6 @@ export class ConfigPage extends Component<ConfigPageProps> {
         setTimeout(() => {
             scrollTo('selectedConnector', 'start', -20);
         }, 100);
-
-        if (lastConfigPage.component && lastConfigPage.clusterName == clusterName && lastConfigPage.pluginClassName == pluginClassName) {
-            // Restore state from previous page
-            try {
-                const last = lastConfigPage.component;
-                this.allGroups = last.allGroups;
-                this.propsByName = last.propsByName;
-                this.jsonText = last.jsonText;
-
-                this.validate(this.getConfigObject());
-                this.initPending = false;
-                console.log('wizard state restored from last page');
-                return;
-            } catch {
-                // restore failed, continue to init normally
-                console.log('failed to restore wizard state, initializing normally');
-            }
-        }
 
         try {
             // Validate with empty object to get all properties initially
@@ -174,6 +152,8 @@ export class ConfigPage extends Component<ConfigPageProps> {
     // The code that handles validation/updating/adding/removing properties really shouldn't be part of this page-component
     // It's too much code in here, it should be split out into some seperate class or something when we have time...
     validate = action(async (config: object) => {
+
+
         const { clusterName, pluginClassName } = this.props;
         try {
             // Validate the current config
@@ -304,7 +284,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
                 )}
             </Collapse>
 
-            {IsDev && <DebugEditor observable={this} />}
+            {/* {IsDev && <DebugEditor observable={this} />} */}
         </>;
     }
 }
@@ -437,10 +417,3 @@ const StringLikeTypes = [
     DataType.List,
     DataType.Password
 ];
-
-
-const lastConfigPage = {
-    component: null as ConfigPage | null,
-    clusterName: "" as string,
-    pluginClassName: "" as string,
-};
