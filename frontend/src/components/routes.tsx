@@ -135,11 +135,6 @@ function EmitRouteViews(entries: IRouteEntry[]): JSX.Element[] {
 }
 
 
-
-// const Route = (p: {} & RouteProps) => <ReactRouterRoute {...p} {...props}/>
-let routeCounter = 0;
-export function routeCount(): number { return routeCounter++; }
-
 export const RouteView = (() =>
     <AnimatePresence exitBeforeEnter>
         <Switch>
@@ -273,9 +268,9 @@ export const APP_ROUTES: IRouteEntry[] = [
     ),
 
     MakeRoute<{}>('/kafka-connect', KafkaConnectOverview, 'Kafka Connect', <span className='menuIcon anticon'><LinkIcon /></span>, true),
-    MakeRoute<{}>('/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
     MakeRoute<{ clusterName: string }>('/kafka-connect/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string, connector: string }>('/kafka-connect/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
+    MakeRoute<{}>('/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className='menuIcon anticon'><BeakerIcon /></span>, false,
         routeVisibility(true,
