@@ -251,8 +251,8 @@ func (api *API) handlePutValidateConnectorConfig() http.HandlerFunc {
 }
 
 type createConnectorRequest struct {
-	ConnectorName string            `json:"connectorName"`
-	Config        map[string]string `json:"config"`
+	ConnectorName string                 `json:"connectorName"`
+	Config        map[string]interface{} `json:"config"`
 }
 
 func (c *createConnectorRequest) OK() error {

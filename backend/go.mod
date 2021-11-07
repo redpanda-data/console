@@ -9,13 +9,13 @@ require (
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/cloudhut/common v0.6.0
-	github.com/cloudhut/connect-client v0.0.0-20211001145352-0603365942de
+	github.com/cloudhut/connect-client v0.0.0-20211107210247-06467fa92a27
 	github.com/dop251/goja v0.0.0-20210406175830-1b11a6af686d
 	github.com/gliderlabs/ssh v0.3.2 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-git/go-billy/v5 v5.3.1
 	github.com/go-git/go-git/v5 v5.4.2
-	github.com/go-resty/resty/v2 v2.6.0
+	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
@@ -38,7 +38,7 @@ require (
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20210929193557-e81a3d93ecf6 // indirect
+	golang.org/x/net v0.0.0-20211105192438-b53810dc28af // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210903071746-97244b99971b // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
