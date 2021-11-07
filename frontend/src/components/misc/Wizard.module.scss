@@ -10,33 +10,33 @@
 //}
 
 .steps {
-  margin-bottom: 35px;
+    margin-bottom: 35px;
 }
 
 .step {
-  cursor: pointer;
+    cursor: default;
 }
 
 .content {
-  margin-bottom: 35px;
+    margin-bottom: 35px;
 }
 
 .footer {
-  margin: 0;
-  display: flex;
-  justify-content: space-between;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
 }
 
 .nextButton {
-  margin-left: auto;
+    margin-left: auto;
 }
 
 .prevButton {
-  margin-right: 15px;
+    margin-right: 15px;
 }
 
 .nextButton,
 .prevButton {
-  display: inline-flex;
-  align-items: center;
+    display: inline-flex;
+    align-items: center;
 }
