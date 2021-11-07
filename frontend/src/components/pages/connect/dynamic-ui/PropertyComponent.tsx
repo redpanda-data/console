@@ -57,7 +57,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
                 }
                 else {
                     // Input
-                    inputComp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} />
+                    inputComp = <Input value={String(v)} onChange={e => p.value = e.target.value} defaultValue={def.default_value ?? undefined} spellCheck={false} />
                 }
             }
             break;
@@ -141,26 +141,25 @@ const inputSizeToClass = {
 
 const ErrorWrapper = observer(function (props: { property: Property, input: JSX.Element }) {
     const { property, input } = props;
-    const errors = property.errors;
+    const showErrors = property.errors.length > 0;
 
-    if (errors.length == 0)
-        return input; // no errors
+    const errors = showErrors
+        ? property.errors
+        : property.lastErrors;
 
-    // if (property.value === property.lastErrorValue)
-    //     return input; // value changed
+    const errorToShow = showErrors
+        ? errors[(property.currentErrorIndex % errors.length)]
+        : undefined;
 
-    // Try to skip obvious errors
-    const error = errors[(property.currentErrorIndex % errors.length)];
+    const cycleError = showErrors
+        ? () => property.currentErrorIndex++
+        : undefined
 
-    const cycleError = !error
-        ? undefined
-        : () => property.currentErrorIndex++;
-
-    return <div className={'inputWrapper ' + ((error && property.showErrors) ? 'hasError' : '')}>
+    return <div className={'inputWrapper ' + ((errorToShow) ? 'hasError' : '')}>
         {input}
         <div className='validationFeedback' onClick={cycleError}>
             {errors.length > 1 && <span className='errorCount'>{errors.length} Errors</span>}
-            {error}
+            {errorToShow}
         </div>
     </div>
 })
