@@ -5,7 +5,7 @@ import styles from './KowlTable.module.scss';
 import { ColumnFilterItem, ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from "antd/lib/table/interface";
 import { uiState } from "../../state/uiState";
 import { DEFAULT_TABLE_PAGE_SIZE } from "./common";
-import { action, autorun, comparer, computed, IReactionDisposer, IReactionPublic, makeObservable, observable, reaction, transaction } from "mobx";
+import { action, autorun, comparer, computed, IReactionDisposer, IReactionPublic, isObservable, makeObservable, observable, reaction, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
 import { clone, toJson } from "../../utils/jsonUtils";
 import { SearchOutlined } from "@ant-design/icons";
@@ -61,7 +61,9 @@ export class KowlTable<T extends object = any> extends Component<{
     rowClassName?: string | ((record: T, index: number) => string) | undefined,
 
     expandable?: ExpandableConfig<T>,
-    className?: string
+    className?: string,
+
+    emptyText?: React.ReactNode | (() => React.ReactNode),
 
 }> {
 
@@ -171,17 +173,28 @@ export class KowlTable<T extends object = any> extends Component<{
         });
 
         // update display data
-        ar(() => ({ data: this.props.dataSource, filterActive: this.filterActive, query: this.observableSettings?.quickSearch }), (prev, cur, count) => {
-            const { data, filterActive, query } = cur;
-            // console.warn('update DisplayData', { data, filterActive, query, "this.displayData": this.displayData });
-            if (!data) return;
+        ar(
+            () => ({
+                data: isObservable(this.props.dataSource) ? clone(this.props.dataSource) : this.props.dataSource,
+                dataLength: this.props.dataSource?.length ?? -1,
+                filterActive: this.filterActive,
+                query: this.observableSettings?.quickSearch
+            }),
+            (prev, cur, count) => {
+                const { data, filterActive, query, dataLength } = cur;
+                const a = clone(data);
 
-            if (filterActive) {
-                this.displayData = data.filter(this.onFilter);
-            } else {
-                this.displayData = data;
-            }
-        }, 150);
+                console.warn('UpdateDisplayData', { 'data': clone(a), "newLength": dataLength });
+                if (data == null) {
+                    return;
+                }
+
+                if (filterActive) {
+                    this.displayData = data.filter(this.onFilter);
+                } else {
+                    this.displayData = data;
+                }
+            }, 300);
     }
 
     componentWillUnmount() {
@@ -347,6 +360,8 @@ export class KowlTable<T extends object = any> extends Component<{
         // trigger mobx update
         const unused1 = pagination.pageSize;
         const unused2 = pagination.current;
+        const unused3 = this.currentDataSource?.length;
+        const unused4 = this.displayData?.length;
 
         return <Table<T>
             style={{ margin: '0', padding: '0' }}
@@ -374,6 +389,8 @@ export class KowlTable<T extends object = any> extends Component<{
                     sorter
                 })
             }}
+
+            locale={p.emptyText ? { emptyText: p.emptyText } : undefined}
         />
     }
 
@@ -590,8 +607,8 @@ function filterIcon(filterActive: boolean) {
 
 // like structural comparer, but ignores functions
 function customComparerIsSame<T>(a: T, b: T, remainingDepth?: number): boolean {
-    if (remainingDepth == undefined) remainingDepth = 5;
-    if (remainingDepth != undefined && remainingDepth <= 0) return true;
+    if (remainingDepth === undefined)
+        remainingDepth = 5;
 
 
     if (a === undefined && b === undefined) return true;
@@ -608,11 +625,14 @@ function customComparerIsSame<T>(a: T, b: T, remainingDepth?: number): boolean {
         // primitive
         return a == b;
 
-    // react object
-    const tt = (a as any)['$$typeof'];
-    if (tt == Symbol('react.element'))
-        // ignore changes to react components
-        return true;
+    // its an object, but if we already compared too much, dont descend any deeper
+    if (remainingDepth != undefined && remainingDepth <= 0)
+        return a === b;
+
+    // react object?
+    const isReactObject = (a as any)['$$typeof'] == Symbol('react.element');
+    if (isReactObject)
+        return true;    // ignore changes to react components
 
     // normal object
     const aKeys = Object.keys(a);

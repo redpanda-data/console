@@ -57,19 +57,18 @@ export class BrokerList extends Component<BrokerListProps> {
             const isRemoving = removedIds.includes(id);
             if (isRemoving) classNames += ' removed';
 
-            const tag = <div className={classNames} style={{}}>
-                <span>{id.toString()}</span>
+            const tag = <div className={classNames}>
+                <span>{id ?? '?'}</span>
             </div>;
             if (!broker) return tag;
 
-
             const additionalContent: JSX.Element[] = [];
-            if (id == leaderId) additionalContent.push(<div style={{ marginTop: '5px' }}>
+            if (id == leaderId) additionalContent.push(<div key='leader' style={{ marginTop: '5px' }}>
                 <ChevronRightIcon className='svgCenter' height='15px' style={{ marginLeft: '-4px', marginRight: '-2px' }} />
                 This broker is the leader for this partition
             </div>);
-            if (isAdding) additionalContent.push(<div style={{ color: 'hsl(102deg, 80%, 45%)', marginTop: '5px' }}>Partitions are currently being transferred to this broker.</div>);
-            if (isRemoving) additionalContent.push(<div style={{ color: 'hsl(38deg, 100%, 50%)', marginTop: '5px' }}>Once the assignment completes, the partitions of the reassignment will be removed from the broker.</div>);
+            if (isAdding) additionalContent.push(<div key='added' style={{ color: 'hsl(102deg, 80%, 45%)', marginTop: '5px' }}>Partitions are currently being transferred to this broker.</div>);
+            if (isRemoving) additionalContent.push(<div key='removed' style={{ color: 'hsl(38deg, 100%, 50%)', marginTop: '5px' }}>Once the assignment completes, the partitions of the reassignment will be removed from the broker.</div>);
 
             return <BrokerTooltip broker={broker} tooltipSuffix={additionalContent}>{tag}</BrokerTooltip>
         });
@@ -90,10 +89,10 @@ function BrokerTooltip(p: { broker: Broker, children?: React.ReactElement, toolt
     const id = broker.brokerId;
 
     const tooltipContentEntries = [
-        <b style={{ borderBottom: '1px solid', width: '100%', display: 'block', marginBottom: '5px', }}>Broker ID {id}</b>,
-        <div>{broker.address}</div>,
-        <>{broker.rack && <div>{broker.rack}</div>}</>,
-        <>{p.tooltipSuffix || null}</>
+        <b key={1} style={{ borderBottom: '1px solid', width: '100%', display: 'block', marginBottom: '5px', }}>Broker ID {id}</b>,
+        <div key={2} >{broker.address}</div>,
+        <React.Fragment key={3} >{broker.rack && <div>{broker.rack}</div>}</React.Fragment>,
+        <React.Fragment key={4} >{p.tooltipSuffix || null}</React.Fragment>
     ];
 
     const tooltipContent = <div style={{ textAlign: 'left', maxWidth: '300px' }}>

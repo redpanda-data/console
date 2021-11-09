@@ -1,4 +1,4 @@
-# Kowl - Apache Kafka Web UI
+# Kowl - A Web UI for Apache Kafka
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/cloudhut/kowl/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cloudhut/kowl)](https://goreportcard.com/report/github.com/cloudhut/kowl)
@@ -15,7 +15,8 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 - **Message viewer:** Explore your topics' messages in our message viewer through ad-hoc queries and dynamic filters. Find any message you want using JavaScript functions to filter messages. Supported encodings are: JSON, Avro, Protobuf, XML, MessagePack, Text and Binary (hex view). The used enconding (except Protobuf) is recognized automatically.
 - **Consumer groups:** List all your active consumer groups along with their active group offsets, edit group offsets (by group, topic or partition) or delete a consumer group.
 - **Topic overview:** Browse through the list of your Kafka topics, check their configuration, space usage, list all consumers who consume a single topic or watch partition details (such as low and high water marks, message count, ...), embed topic documentation from a git repository and more.
-- **Cluster overview:** List ACLs, available brokers, their space usage, arack id and other information to get a high level overview of your brokers in your cluster.
+- **Cluster overview:** List ACLs, available brokers, their space usage, rack id and other information to get a high level overview of your brokers in your cluster.
+- **Schema Registry:** List all Avro, Protobuf or JSON schemas within your schema registry.
 - **Kafka connect:** Manage connectors from multiple connect clusters, patch configs, view their current state or restart tasks.
 
 **A roadmap** is maintained using [milestones](https://github.com/cloudhut/kowl/milestones).
@@ -23,9 +24,11 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 |  | Kowl | Kowl Business |
 | :-- | :-: | :-: |
 | **Topic Overview** | :white_check_mark: | :white_check_mark: |
-| **Consumer Group Overview** | :white_check_mark: | :white_check_mark: |
+| **Consumer Group Management** | :white_check_mark: | :white_check_mark: |
 | **Broker/Cluster Overview** | :white_check_mark: | :white_check_mark: |
-| **Message viewer** | :white_check_mark: | :white_check_mark: |
+| **Message viewer** | :white_check_mark: | :white_check_mark: |v
+| **Kafka Connect** | :white_check_mark: | :white_check_mark: |
+| **Schema Registry** | :white_check_mark: | :white_check_mark: |
 | **Login System (Google, GitHub, Okta)** | :x: | :white_check_mark: |
 | **RBAC permissions with group syncing** | :x: | :white_check_mark: |
 | **Screenshots** | Preview .gif in README | https://cloudhut.dev/ |

@@ -420,7 +420,7 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		// Apparently a slash prepends the filepath on some OS (not windows). Hence let's try to remove the prefix if it
 		// exists, so that there's no filename mismatch because of that.
 		trimmedFilepath := strings.TrimPrefix(file.Path, "/")
-		filesStr[file.Path] = string(file.Payload)
+		filesStr[trimmedFilepath] = string(file.Payload)
 		filePaths = append(filePaths, trimmedFilepath)
 	}
 

@@ -69,7 +69,9 @@ func (c *Service) readFiles(fs billy.Filesystem, res map[string]filesystem.File,
 
 		key := trimmedFilename
 		if c.Cfg.IndexByFullFilepath {
-			key = filePath
+			pathWithoutBasepath := strings.Trim(path.Clean(strings.Replace(filePath, c.Cfg.Repository.BaseDirectory, "", 1)), "\\")
+			key = pathWithoutBasepath
+			filePath = pathWithoutBasepath
 		}
 		res[key] = filesystem.File{
 			Path:            filePath,

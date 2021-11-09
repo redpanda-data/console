@@ -678,6 +678,11 @@ export interface SchemaDetails {
     type: SchemaType;
     schema: Schema | JsonSchema;
     registeredVersions: number[];
+
+    // added by frontend:
+    // 'schema' is (in some cases, like JSON schema) converted from string to object
+    // however, we want to keep the original
+    rawSchema: string;
 }
 
 export interface Schema {
