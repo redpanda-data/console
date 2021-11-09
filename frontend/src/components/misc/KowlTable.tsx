@@ -182,9 +182,12 @@ export class KowlTable<T extends object = any> extends Component<{
             }),
             (prev, cur, count) => {
                 const { data, filterActive, query, dataLength } = cur;
+                // Clone ensures re-render on every change; which (for now) is somewhat wasteful
+                // since many tables already use observer components.
+                // However, in order for us to (eventually) be able to fully eliminate those redundant updates,
+                // we'll also have to consider the effects of sorters and filters (a change in some nested property might end up changing the order of entries in the table...)
                 const a = clone(data);
 
-                console.warn('UpdateDisplayData', { 'data': clone(a), "newLength": dataLength });
                 if (data == null) {
                     return;
                 }
@@ -382,12 +385,7 @@ export class KowlTable<T extends object = any> extends Component<{
             expandable={p.expandable}
             footer={this.renderFooter}
             onChange={(pagination: TablePaginationConfig, filters: Record<string, FilterValue | null>, sorter: SorterResult<T> | SorterResult<T>[], extra: TableCurrentDataSource<T>) => {
-                console.log('table onChange', {
-                    extra,
-                    pagination,
-                    filters,
-                    sorter
-                })
+                //
             }}
 
             locale={p.emptyText ? { emptyText: p.emptyText } : undefined}
