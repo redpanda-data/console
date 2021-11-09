@@ -160,7 +160,7 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 }
 
 type putConnectorConfigRequest struct {
-	Config map[string]string `json:"config"`
+	Config map[string]interface{} `json:"config"`
 }
 
 func (c *putConnectorConfigRequest) OK() error {
