@@ -17,7 +17,7 @@ func (s *Service) ValidateConnectorConfig(ctx context.Context, clusterName strin
 		return con.ConnectorValidationResult{}, restErr
 	}
 
-	cValidationResult, err := c.Client.ValidateConnectorConfig(ctx, pluginClassName, options)
+	cValidationResult, err := c.Client.PutValidateConnectorConfig(ctx, pluginClassName, options)
 	if err != nil {
 		return con.ConnectorValidationResult{}, &rest.Error{
 			Err:          fmt.Errorf("failed to validate connector config: %w", err),
