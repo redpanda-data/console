@@ -18,7 +18,7 @@ RUN CGO_ENABLED=0 go build -o ./bin/kowl ./cmd/api
 ############################################################
 # Frontend Build
 ############################################################
-FROM node:12-alpine as frontendBuilder
+FROM node:17-alpine as frontendBuilder
 
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
