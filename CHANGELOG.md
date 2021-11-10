@@ -4,9 +4,15 @@
 
 - [FEATURE] Add support for deleting topics
 - [FEATURE] Add support for deleting records within topics (only possible on topics with cleanup.policy=delete due to limitations in Kafka)
-- [FEATURE] Add support for managing multiple Kafka connect clusters via Kowl (creating connectors is yet to be added)
+- [FEATURE] Add support for managing multiple Kafka connect clusters via Kowl
+- [FEATURE] Create new Kafka connectors via a setup wizard
+- [ENHANCEMENT] Highlight leader broker for each partition in the topic's partition table
+- [ENHANCEMENT] Embed quicksearch on topic list into table headers (experimental)
+- [ENHANCEMENT] List respective ACLs on topic & consumer group detail page
+- [ENHANCEMENT] Add Kafka 3.0 support
 - [ENHANCEMENT] Broker lists (for example in a topic's 'Partitions' tab) now show which broker is leading the partition
 - [ENHANCEMENT] You can now configure the `baseDirectory` for all Git file providers (e.g. topic docs or protobuf source)
+- [BUGFIX] Broker page does no longer show an error if a broker failed to respond to a DescribeConfigs request
 
 ## 1.4.0 / 2021-05-27
 
