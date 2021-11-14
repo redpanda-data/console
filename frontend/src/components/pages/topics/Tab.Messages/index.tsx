@@ -1413,7 +1413,7 @@ function renderEmptyIcon(tooltipText?: string) {
 }
 
 function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction>) {
-    return allowedActions.includes('deleteTopicRecords')
+    return allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
 function DeleteRecordsButton({
