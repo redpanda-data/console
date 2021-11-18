@@ -80,6 +80,6 @@ COPY --from=frontendBuilder /app/build/ /app/build
 
 # Add github.com to known SSH hosts by default (required for pulling topic docs & proto files from a Git repo)
 RUN apk update && apk add --no-cache openssh
-RUN ssh-keyscan -t rsa github.com >> /etc/ssh/ssh_known_hosts
+RUN ssh-keyscan github.com >> /etc/ssh/ssh_known_hosts
 
 ENTRYPOINT ["./kowl"]
