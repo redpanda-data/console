@@ -33,7 +33,7 @@ func (c *Config) Validate() error {
 		return nil
 	}
 
-	if c.Timeout == 0 {
+	if c.Timeout <= 5 {
 		c.Timeout = 5
 	}
 
