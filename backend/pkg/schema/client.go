@@ -36,7 +36,7 @@ func newClient(cfg Config) (*Client, error) {
 		SetHeader("User-Agent", "Kowl").
 		SetHeader("Accept", "application/vnd.schemaregistry.v1+json").
 		SetError(&RestError{}).
-		SetTimeout(5 * time.Second)
+		SetTimeout(time.Duration(cfg.Timeout) * time.Second)
 
 	// Configure credentials
 	if cfg.Username != "" {

@@ -65,6 +65,7 @@ kafka:
   #   username: # Basic auth username
   #   password: # Basic auth password
   #   bearerToken:
+  #   timeout: 5 # timeout in seconds to wait for schema downloading
   #   tls:
   #     enabled: false # Enable Client certificate connexion to the schemaRegistry
   #     caFilepath: # Path to a custom CA file. If not specified the system's / trusted root ca is used.

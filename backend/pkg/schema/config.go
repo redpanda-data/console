@@ -17,6 +17,9 @@ type Config struct {
 
 	// TLS / Custom CA
 	TLS TLSConfig `yaml:"tls"`
+
+	// Timeouts
+	Timeout int `yaml:"timeout"`
 }
 
 // RegisterFlags registers all nested config flags.
@@ -28,6 +31,10 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 func (c *Config) Validate() error {
 	if c.Enabled == false {
 		return nil
+	}
+
+	if c.Timeout == 0 {
+		c.Timeout = 5
 	}
 
 	if len(c.URLs) == 0 {
