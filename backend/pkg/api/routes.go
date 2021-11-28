@@ -69,6 +69,7 @@ func (api *API) routes() *chi.Mux {
 				// Topics
 				r.Get("/topics-configs", api.handleGetTopicsConfigs())
 				r.Get("/topics-offsets", api.handleGetTopicsOffsets())
+				r.Post("/topics-records", api.handlePublishTopicsRecords())
 				r.Get("/topics", api.handleGetTopics())
 				r.Delete("/topics/{topicName}", api.handleDeleteTopic())
 				r.Delete("/topics/{topicName}/records", api.handleDeleteTopicRecords())
@@ -83,7 +84,7 @@ func (api *API) routes() *chi.Mux {
 				r.Patch("/consumer-groups/{groupId}", api.handlePatchConsumerGroup())
 				r.Delete("/consumer-groups/{groupId}", api.handleDeleteConsumerGroupOffsets())
 
-				// Operations
+				// Bulk Operations
 				r.Get("/operations/topic-details", api.handleGetAllTopicDetails())
 				r.Get("/operations/reassign-partitions", api.handleGetPartitionReassignments())
 				r.Patch("/operations/reassign-partitions", api.handlePatchPartitionAssignments())
