@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.5.0 / 2021-11-10
+## Master / unreleased
 
 - [FEATURE] Add support for deleting topics
 - [FEATURE] Add support for deleting records within topics (only possible on topics with cleanup.policy=delete due to limitations in Kafka)
