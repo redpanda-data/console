@@ -44,7 +44,7 @@ setImmediate(() => {
 
         if (features.length > 0) {
             const names = features.map(f => `"${f.method} ${f.endpoint}"\n`).join("");
-            featureErrors.push("Backend reported new/unknown endpoints for endpointCompatibility:\n" + names);
+            console.warn("Backend reported new/unknown endpoints for endpointCompatibility:\n" + names);
         }
     });
 });
