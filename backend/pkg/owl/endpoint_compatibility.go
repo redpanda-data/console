@@ -18,6 +18,10 @@ type EndpointCompatibilityEndpoint struct {
 	IsSupported bool   `json:"isSupported"`
 }
 
+// GetEndpointCompatibility requests API versions from brokers in order to figure out what Kowl endpoints
+// can be offered to the frontend. If the broker does not support certain features which are required for a
+// Kowl endpoint we can let the frontend know in advance, so that these features will be rendered as
+// disabled.
 func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompatibility, error) {
 	versionsRes, err := s.kafkaSvc.GetAPIVersions(ctx)
 	if err != nil {
