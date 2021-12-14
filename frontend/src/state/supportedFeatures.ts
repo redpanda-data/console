@@ -22,6 +22,7 @@ export class Feature {
     static readonly PatchReassignments: FeatureEntry = { endpoint: "/api/operations/reassign-partitions", method: 'PATCH' };
     static readonly PatchGroup: FeatureEntry = { endpoint: "/api/consumer-groups/{groupId}", method: 'PATCH' };
     static readonly DeleteGroup: FeatureEntry = { endpoint: "/api/consumer-groups/{groupId}", method: 'DELETE' };
+    static readonly DeleteRecords: FeatureEntry = { endpoint: "/api/topics/{topicName}/records", method: 'DELETE' };
 }
 
 // As soon as the supported endpoints are available we should check if
@@ -39,13 +40,14 @@ setImmediate(() => {
         removeMatch(Feature.PatchReassignments);
         removeMatch(Feature.PatchGroup);
         removeMatch(Feature.DeleteGroup);
+        removeMatch(Feature.DeleteRecords);
 
         if (features.length > 0) {
             const names = features.map(f => `"${f.method} ${f.endpoint}"\n`).join("");
             featureErrors.push("Backend reported new/unknown endpoints for endpointCompatibility:\n" + names);
         }
     });
-})
+});
 
 export function isSupported(f: FeatureEntry): boolean {
     const c = api.endpointCompatibility;
@@ -67,6 +69,7 @@ class SupportedFeatures {
     @computed get patchReassignments(): boolean { return isSupported(Feature.PatchReassignments); }
     @computed get patchGroup(): boolean { return isSupported(Feature.PatchGroup); }
     @computed get deleteGroup(): boolean { return isSupported(Feature.DeleteGroup); }
+    @computed get deleteRecords(): boolean { return isSupported(Feature.DeleteRecords); }
 }
 
 const features = new SupportedFeatures();
