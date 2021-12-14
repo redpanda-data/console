@@ -48,6 +48,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Requests: []kmsg.Request{&kmsg.DescribeGroupsRequest{}, &kmsg.ListGroupsRequest{}},
 		},
 		{
+			URL:      "/api/topics/{topicName}/records",
+			Method:   "DELETE",
+			Requests: []kmsg.Request{&kmsg.DeleteRecordsRequest{}},
+		},
+		{
 			URL:      "/api/consumer-groups/{groupId}",
 			Method:   "PATCH",
 			Requests: []kmsg.Request{&kmsg.OffsetCommitRequest{}},
