@@ -3,6 +3,7 @@ package owl
 import (
 	"context"
 	"fmt"
+	"github.com/cloudhut/kowl/backend/pkg/schema"
 
 	"go.uber.org/zap"
 )
@@ -34,10 +35,13 @@ func (s *Service) GetSchemaDetails(_ context.Context, subject string, version st
 
 	cfgRes, err := s.kafkaSvc.SchemaService.GetSubjectConfig(subject)
 	if err != nil {
-		s.logger.Error("failed to get compatibility for given subject", zap.Error(err))
+		s.logger.Debug("failed to get compatibility for given subject", zap.Error(err))
 		cfgRes, err = s.kafkaSvc.SchemaService.GetConfig()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get compatibility for given subject: %w", err)
+			s.logger.Warn("failed to get subject and global compatibility for given subject",
+				zap.String("subject", subject),
+				zap.Error(err))
+			cfgRes = &schema.ConfigResponse{Compatibility: "UNKNOWN"}
 		}
 	}
 
