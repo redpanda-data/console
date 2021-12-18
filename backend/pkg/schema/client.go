@@ -32,7 +32,7 @@ func newClient(cfg Config) (*Client, error) {
 	registryUrl := cfg.URLs[0] // Array length is checked in config validate()
 
 	client := resty.New().
-		SetHostURL(registryUrl).
+		SetBaseURL(registryUrl).
 		SetHeader("User-Agent", "Kowl").
 		SetHeader("Accept", "application/vnd.schemaregistry.v1+json").
 		SetError(&RestError{}).
