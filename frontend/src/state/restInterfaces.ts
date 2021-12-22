@@ -465,6 +465,7 @@ export interface UserData {
     seat: Seat;
     canManageKowl: boolean;
     canListAcls: boolean;
+    canListQuotas: boolean;
     canReassignPartitions: boolean;
     canPatchConfigs: boolean;
 }
@@ -642,6 +643,36 @@ export interface AclRule {
     permissionType: string;
 }
 
+export interface QuotaResponse {
+    error?: string;
+    items: QuotaResponseItem[];
+}
+
+export interface QuotaResponseItem {
+    entityType: 'client-id' | 'user' | 'ip';
+    entityName?: string;
+    settings: QuotaResponseSetting[];
+}
+
+export enum QuotaType {
+    // A rate representing the upper bound (bytes/sec) for producer traffic
+    PRODUCER_BYTE_RATE = 'producer_byte_rate',
+    // A rate representing the upper bound (bytes/sec) for consumer traffic.
+    CONSUMER_BYTE_RATE = 'consumer_byte_rate',
+    // A percentage representing the upper bound of time spent for processing requests.
+    REQUEST_PERCENTAGE = 'request_percentage',
+    // The rate at which mutations are accepted for the create "topics request,
+    // the create partitions request and the delete topics request. The rate is accumulated by
+    // the number of partitions created or deleted.
+    CONTROLLER_MUTATION_RATE = 'controller_mutation_rate',
+    // An int representing the upper bound of connections accepted for the specified IP.
+    CONNECTION_CREATION_RATE = 'connection_creation_rate'
+}
+
+export interface QuotaResponseSetting {
+    key: QuotaType;
+    value: number;
+}
 
 export interface SchemaOverviewResponse {
     schemaOverview: SchemaOverview;

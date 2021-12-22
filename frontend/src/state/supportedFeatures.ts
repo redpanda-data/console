@@ -23,6 +23,7 @@ export class Feature {
     static readonly PatchGroup: FeatureEntry = { endpoint: "/api/consumer-groups/{groupId}", method: 'PATCH' };
     static readonly DeleteGroup: FeatureEntry = { endpoint: "/api/consumer-groups/{groupId}", method: 'DELETE' };
     static readonly DeleteRecords: FeatureEntry = { endpoint: "/api/topics/{topicName}/records", method: 'DELETE' };
+    static readonly GetQuotas: FeatureEntry = { endpoint: "/api/quotas", method: 'GET' };
 }
 
 // As soon as the supported endpoints are available we should check if
@@ -41,6 +42,7 @@ setImmediate(() => {
         removeMatch(Feature.PatchGroup);
         removeMatch(Feature.DeleteGroup);
         removeMatch(Feature.DeleteRecords);
+        removeMatch(Feature.GetQuotas)
 
         if (features.length > 0) {
             const names = features.map(f => `"${f.method} ${f.endpoint}"\n`).join("");
@@ -70,6 +72,7 @@ class SupportedFeatures {
     @computed get patchGroup(): boolean { return isSupported(Feature.PatchGroup); }
     @computed get deleteGroup(): boolean { return isSupported(Feature.DeleteGroup); }
     @computed get deleteRecords(): boolean { return isSupported(Feature.DeleteRecords); }
+    @computed get getQuotas(): boolean { return isSupported(Feature.GetQuotas); }
 }
 
 const features = new SupportedFeatures();
