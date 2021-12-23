@@ -165,6 +165,9 @@ func (s *Service) convertGroupMembers(members []kmsg.DescribeGroupsResponseGroup
 		} else {
 			for _, topic := range memberAssignments.Topics {
 				partitionIDs := topic.Partitions
+				if partitionIDs == nil {
+					partitionIDs = make([]int32, 0)
+				}
 				sort.Slice(partitionIDs, func(i, j int) bool { return partitionIDs[i] < partitionIDs[j] })
 				a := GroupMemberAssignment{
 					TopicName:    topic.Topic,
