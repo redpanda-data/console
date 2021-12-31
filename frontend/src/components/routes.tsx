@@ -18,7 +18,7 @@ import { api } from "../state/backendApi";
 import SchemaList from "./pages/schemas/Schema.List";
 import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
 import AclList from "./pages/acls/Acl.List";
-import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, BeakerIcon, LinkIcon } from '@heroicons/react/outline'
+import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, BeakerIcon, LinkIcon, ScaleIcon } from '@heroicons/react/outline'
 import ReassignPartitions from "./pages/reassign-partitions/ReassignPartitions";
 import { Feature, FeatureEntry, isSupported } from "../state/supportedFeatures";
 import { UserPermissions } from "../state/restInterfaces";
@@ -26,6 +26,7 @@ import KafkaConnectOverview from "./pages/connect/Overview";
 import KafkaConnectorDetails from "./pages/connect/Connector.Details";
 import KafkaClusterDetails from "./pages/connect/Cluster.Details";
 import CreateConnector from "./pages/connect/CreateConnector";
+import QuotasList from "./pages/quotas/Quotas.List";
 
 
 //
@@ -265,6 +266,10 @@ export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/acls', AclList, 'Access Control List', <span className='menuIcon anticon'><ShieldCheckIcon /></span>, true,
         routeVisibility(true, [], ['canListAcls'])
+    ),
+
+    MakeRoute<{}>('/quotas', QuotasList, 'Quotas', <span className='menuIcon anticon'><ScaleIcon /></span>, true,
+        routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
     MakeRoute<{}>('/kafka-connect', KafkaConnectOverview, 'Kafka Connect', <span className='menuIcon anticon'><LinkIcon /></span>, true),

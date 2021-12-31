@@ -72,6 +72,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Method:   "PATCH",
 			Requests: []kmsg.Request{&kmsg.IncrementalAlterConfigsRequest{}, &kmsg.AlterPartitionAssignmentsRequest{}},
 		},
+		{
+			URL:      "/api/quotas",
+			Method:   "GET",
+			Requests: []kmsg.Request{&kmsg.DescribeClientQuotasRequest{}},
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))

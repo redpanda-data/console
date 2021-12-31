@@ -368,6 +368,7 @@ export default class App extends Component {
                     api.userData = {
                         canManageKowl: false,
                         canListAcls: true,
+                        canListQuotas: true,
                         canPatchConfigs: true,
                         canReassignPartitions: true,
                         seat: null as any,

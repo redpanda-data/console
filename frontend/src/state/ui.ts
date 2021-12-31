@@ -205,6 +205,11 @@ const uiSettings = observable({
 
     aclSearchParams: clone(AclRequestDefault) as AclRequest,
 
+    quotasList: {
+        pageSize: DEFAULT_TABLE_PAGE_SIZE,
+        quickSearch: '',
+    },
+
     schemaList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
         quickSearch: ''
