@@ -33,6 +33,19 @@ func (s *Service) ProduceRecords(
 ) ([]ProduceRecordResponse, error) {
 	additionalKgoOpts := []kgo.Opt{
 		kgo.ProducerBatchCompression(compressionTypeToKgoCodec(compressionType)...),
+
+		// Use custom partitioner that treats
+		// - PartitionID = -1 just like the kgo.StickyKeyPartitioner() would do (round robin batch-wise)
+		// - PartitionID >= 0 Use the partitionID as specified in the record struct
+		kgo.RecordPartitioner(kgo.BasicConsistentPartitioner(func(topic string) func(*kgo.Record, int) int {
+			s := kgo.StickyKeyPartitioner(nil).ForTopic(topic)
+			return func(r *kgo.Record, n int) int {
+				if r.Partition == -1 {
+					return s.Partition(r, n)
+				}
+				return int(r.Partition)
+			}
+		})),
 	}
 	if useTransactions {
 		additionalKgoOpts = append(additionalKgoOpts, kgo.TransactionalID(uuid.New().String()))

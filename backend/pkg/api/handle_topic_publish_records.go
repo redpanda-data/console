@@ -13,7 +13,7 @@ type recordsRequest struct {
 	Headers []recordsRequestHeader `json:"headers"`
 
 	// PartitionID into which the record(s) shall be produced to. May be -1 for auto partitioning.
-	PartitionID int32 `json:"partitionID"`
+	PartitionID int32 `json:"partitionId"`
 }
 
 func (r *recordsRequest) KgoRecordHeaders() []kgo.RecordHeader {
