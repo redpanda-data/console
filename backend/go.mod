@@ -33,13 +33,13 @@ require (
 	github.com/prometheus/common v0.20.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	github.com/twmb/franz-go v1.2.3
-	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20211104051938-70808186d5f7
+	github.com/twmb/franz-go v1.2.7-0.20211220220402-01f57f21a037
+	github.com/twmb/franz-go/pkg/kmsg v0.0.0-20211220220402-01f57f21a037
 	github.com/vmihailenco/msgpack/v5 v5.3.1
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20211105192438-b53810dc28af // indirect
+	golang.org/x/net v0.0.0-20211123203042-d83791d6bcd9
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210903071746-97244b99971b // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect

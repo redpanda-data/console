@@ -2,6 +2,10 @@
 
 ## Master / unreleased
 
+- [FEATURE] Add Quotas pages that lists all kinds of configured Kafka Quotas (requires Kafka v2.6+)
+
+## 1.5.0 / 2021-11-10
+
 - [FEATURE] Add support for deleting topics
 - [FEATURE] Add support for deleting records within topics (only possible on topics with cleanup.policy=delete due to limitations in Kafka)
 - [FEATURE] Add support for managing multiple Kafka connect clusters via Kowl

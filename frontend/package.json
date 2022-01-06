@@ -24,6 +24,7 @@
         "monaco-editor": "^0.31.1",
         "monaco-proto-lint": "0.0.1",
         "monaco-yaml": "^3.2.1",
+        "npm-force-resolutions": "^0.0.10",
         "pretty-bytes": "^5.6.0",
         "pretty-ms": "^7.0.1",
         "prismjs": "^1.24.0",
@@ -54,7 +55,8 @@
         "buildLocalTest": "cross-env REACT_APP_BUSINESS=true REACT_APP_KOWL_GIT_SHA=abc123 REACT_APP_KOWL_GIT_REF=local REACT_APP_KOWL_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true react-app-rewired build",
         "test": "react-app-rewired test",
         "eject": "react-scripts eject",
-        "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts"
+        "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
+        "preinstall": "npx npm-force-resolutions"
     },
     "devDependencies": {
         "@babel/plugin-proposal-logical-assignment-operators": "^7.16.5",
@@ -90,5 +92,8 @@
             "last 1 firefox version",
             "last 1 safari version"
         ]
+    },
+    "resolutions": {
+        "immer": "9.0.7"
     }
 }

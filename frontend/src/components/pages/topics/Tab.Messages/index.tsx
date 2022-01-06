@@ -1237,7 +1237,8 @@ class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
 
 
 const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
-    <Popover key={title} trigger='click' title={popTitle} content={content}>
+    <Popover key={title} trigger='click' title={popTitle} content={content} overlayClassName='noArrow' overlayStyle={{ maxWidth: '600px' }}
+    >
         <Button type='link' size='small' style={{ fontSize: '1.2em' }}>{title}</Button>
     </Popover>
 );
@@ -1259,11 +1260,13 @@ const helpEntries = [
         <li><span className='codeBox'>partitionId</span> (number)</li>
         <li><span className='codeBox'>key</span> (string)</li>
         <li><span className='codeBox'>value</span> (object)</li>
+        <li><span className='codeBox'>headers</span> (object)</li>
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>offset &gt; 10000</span></li>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>value != null</span> Skips tombstone messages</li>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>if (key == 'example') return true</span></li>
+        <li style={{ margin: '1em 0' }}><span className='codeBox'>headers.myVersionHeader &amp;&amp; (headers.myVersionHeader &gt;&eq; 2)</span> Only messages that have a header entry like {'{key: "myVersionHeader", "value:" 12345}'}</li>
         <li style={{ margin: '1em 0' }}><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
         <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} alt="Filter Example 1" loading='lazy' /></div></li>
         <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} alt="Filter Example 2" loading='lazy' /></div></li>

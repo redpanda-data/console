@@ -78,6 +78,9 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/topics/{topicName}/consumers", api.handleGetTopicConsumers())
 				r.Get("/topics/{topicName}/documentation", api.handleGetTopicDocumentation())
 
+				// Quotas
+				r.Get("/quotas", api.handleGetQuotas())
+
 				// Consumer Groups
 				r.Get("/consumer-groups", api.handleGetConsumerGroups())
 				r.Get("/consumer-groups/{groupId}", api.handleGetConsumerGroup())

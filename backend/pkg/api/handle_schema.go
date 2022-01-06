@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/go-chi/chi"
@@ -27,7 +28,7 @@ func (api *API) handleGetSchemaOverview() http.HandlerFunc {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      err,
 				Status:   http.StatusServiceUnavailable,
-				Message:  "Schema overview request has failed. Look into the server logs for more details.",
+				Message:  fmt.Sprintf("Schema overview request has failed: %v", err.Error()),
 				IsSilent: false,
 			})
 			return

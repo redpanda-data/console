@@ -11,8 +11,10 @@ import {
     AlterConfigOperation, ResourceConfig, PartialTopicConfigsResponse, GetConsumerGroupResponse, EditConsumerGroupOffsetsRequest,
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
-    KafkaConnectors, ConnectClusters,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo, WrappedError, isApiError, AlterPartitionReassignmentsPartitionResponse, ConnectorValidationResult, PublishRecordsRequest, ProduceRecordsResponse
+    KafkaConnectors,
+    PublishRecordsRequest, ProduceRecordsResponse, GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry,
+    PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, WrappedError,
+    isApiError, ConnectorValidationResult, QuotaResponse
 } from "./restInterfaces";
 import { comparer, computed, observable, runInAction, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -195,6 +197,8 @@ const apiStore = {
     topicAcls: new Map<string, AclResponse | null>(),
 
     ACLs: undefined as AclResponse | undefined | null,
+
+    Quotas: undefined as QuotaResponse | undefined | null,
 
     consumerGroups: new Map<string, GroupDescription>(),
     consumerGroupAcls: new Map<string, AclResponse | null>(),
@@ -612,6 +616,11 @@ const apiStore = {
         const query = aclRequestToQuery(request);
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.ACLs = v ?? null, addError);
+    },
+
+    refreshQuotas(force?: boolean) {
+        cachedApiRequest<QuotaResponse | null>(`./api/quotas`, force)
+            .then(v => this.Quotas = v ?? null, addError);
     },
 
     refreshSupportedEndpoints(force?: boolean) {

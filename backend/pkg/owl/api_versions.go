@@ -14,7 +14,9 @@ type APIVersion struct {
 	MinVersion int16  `json:"minVersion"`
 }
 
-// GetTopicDetails returns the partition in the topic along with their watermarks
+// GetAPIVersions asks the brokers for the supported Kafka API requests and their supported
+// versions. This will be used by the frontend to figure out what functionality is available
+// or should be rendered as not available.
 func (s *Service) GetAPIVersions(ctx context.Context) ([]APIVersion, error) {
 	versionsRes, err := s.kafkaSvc.GetAPIVersions(ctx)
 	if err != nil {

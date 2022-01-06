@@ -23,7 +23,7 @@ type RouteHooks interface {
 	// ConfigAPIRouter allows you to modify the router responsible for all /api routes
 	ConfigAPIRouter(router chi.Router)
 
-	// ConfigAPIRouter allows you to modify the router responsible for all websocket routes
+	// ConfigWsRouter allows you to modify the router responsible for all websocket routes
 	ConfigWsRouter(router chi.Router)
 
 	// ConfigRouter allows you to modify the router responsible for all non /api and non /admin routes.
@@ -48,6 +48,9 @@ type OwlHooks interface {
 
 	// ACL Hooks
 	CanListACLs(ctx context.Context) (bool, *rest.Error)
+
+	// Quotas Hookas
+	CanListQuotas(ctx context.Context) (bool, *rest.Error)
 
 	// ConsumerGroup Hooks
 	CanSeeConsumerGroup(ctx context.Context, groupName string) (bool, *rest.Error)
@@ -116,6 +119,9 @@ func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string,
 }
 func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *owl.ListMessageRequest) {}
 func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanListQuotas(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
 func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
