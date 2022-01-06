@@ -117,8 +117,8 @@ export interface DeleteRecordsResponseData {
 
 
 export interface TopicConsumer {
-    groupId: string
-    summedLag: number
+    groupId: string;
+    summedLag: number;
 }
 
 export interface GetTopicConsumersResponse {
@@ -128,7 +128,16 @@ export interface GetTopicConsumersResponse {
 
 
 export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'consumerOffsets' | 'binary' | 'msgpack';
-export type CompressionType = 'uncompressed' | 'gzip' | 'snappy' | 'lz4' | 'zstd' | 'unknown';
+export enum CompressionType {
+    Unknown = "unknown",
+
+    Uncompressed = "uncompressed",
+    GZip = "gzip",
+    Snappy = "snappy",
+    LZ4 = "lz4",
+    ZStd = "zstd"
+}
+
 export interface Payload {
     payload: any, // json obj
     encoding: MessageDataType, // actual format of the message (before the backend converted it to json)
@@ -147,7 +156,7 @@ export interface TopicMessage {
     headers: {
         key: string,
         value: Payload,
-    }[]
+    }[];
     key: Payload,
     value: Payload,
 
@@ -175,7 +184,7 @@ export interface GetTopicMessagesResponse {
 export interface KafkaError {
     code: number,
     message: string,
-    description: string
+    description: string;
 }
 
 export interface ConfigEntry {
@@ -201,12 +210,12 @@ interface ConfigEntrySynonym {
 }
 
 export interface TopicDescription {
-    topicName: string
-    configEntries: ConfigEntry[]
-    error: KafkaError | null
+    topicName: string;
+    configEntries: ConfigEntry[];
+    error: KafkaError | null;
 }
 export interface TopicConfigResponse {
-    topicDescription: TopicDescription
+    topicDescription: TopicDescription;
 }
 export interface PartialTopicConfigsResponse {
     topicDescriptions: TopicDescription[];
@@ -232,7 +241,6 @@ export interface TopicDocumentationResponse {
 export interface GroupMemberAssignment {
     topicName: string;
     partitionIds: number[];
-
 }
 export interface GroupMemberDescription {
     id: string; // unique ID assigned to the member after login
@@ -240,6 +248,9 @@ export interface GroupMemberDescription {
     clientHost: string; // address/host of the connection
     assignments: GroupMemberAssignment[]; // topics+partitions that the worker is assigned to
 
+    // added by frontend:
+    hasMissingPartitionIds: boolean;
+    hasMissingAssignments: boolean;
 }
 
 
@@ -301,7 +312,7 @@ export interface EditConsumerGroupOffsetsTopic {
 
 export interface EditConsumerGroupOffsetsResponse {
     error: string | undefined;
-    topics: EditConsumerGroupOffsetsResponseTopic[]
+    topics: EditConsumerGroupOffsetsResponseTopic[];
 }
 
 export interface EditConsumerGroupOffsetsResponseTopic {
@@ -327,7 +338,7 @@ export interface DeleteConsumerGroupOffsetsTopic {
 }
 
 export interface DeleteConsumerGroupOffsetsResponse {
-    topics: DeleteConsumerGroupOffsetsResponseTopic[]
+    topics: DeleteConsumerGroupOffsetsResponseTopic[];
 }
 
 export interface DeleteConsumerGroupOffsetsResponseTopic {
@@ -380,7 +391,7 @@ export interface TopicLag {
     partitionsWithOffset: number; // number of partitions that have an active offset in this group
 
     // only lists partitions that have a commited offset (independent of whether or not a member is currently assigned to it)
-    partitionLags: PartitionLag[]
+    partitionLags: PartitionLag[];
 }
 
 export interface PartitionLag {
@@ -661,7 +672,7 @@ export interface SchemaOverviewRequestError {
 }
 
 export interface SchemaDetailsResponse {
-    schemaDetails: SchemaDetails
+    schemaDetails: SchemaDetails;
 }
 
 export enum SchemaType {
@@ -840,7 +851,7 @@ export interface ResourceConfig {
     // config options can only be defined on a per broker basis.
     //
     // If the type is broker logger, this must be a broker ID.
-    resourceName: string
+    resourceName: string;
 
     // key/value config pairs to set on the resource.
     configs: IncrementalAlterConfigsRequestResourceConfig[];
@@ -1079,4 +1090,56 @@ export enum PropertyWidth {
     Short = "SHORT",
     Medium = "MEDIUM",
     Long = "LONG",
+}
+
+
+export enum CompressionTypeNum {
+    None = 0,
+    GZip = 1,
+    Snappy = 2,
+    LZ4 = 3,
+    ZStd = 4,
+}
+
+
+export interface PublishRecordsRequest {
+    // TopicNames is a list of topic names into which the records shall be produced to.
+    topicNames: string[];
+
+    // CompressionType that shall be used when producing the records to Kafka.
+    compressionType: CompressionTypeNum;
+
+    // UseTransactions indicates whether we should produce the records transactional. If only one record shall
+    // be produced this option should always be false.
+    useTransactions: boolean;
+
+    // Records contains one or more records (key, value, headers) that shall be produced.
+    records: PublishRecord[];
+}
+
+export interface PublishRecord {
+    key: string;// base64
+    value: string; // base64
+
+    headers: {
+        key: string;// base64
+        value: string;// base64
+    }[];
+
+    partitionId: number; // -1 for automatic
+}
+
+export interface ProduceRecordsResponse {
+    records: ProduceRecordsResponse[];
+    // Error indicates that producing for all records have failed. E.g. because creating a transaction has failed
+    // when transactions were enabled. Another option could be that the Kafka client creation has failed because
+    // brokers are temporarily offline.
+    error?: string;
+}
+
+export interface ProduceRecordResponse {
+    topicName: string;
+    partitionId: number;
+    offset: number;
+    error?: string;
 }

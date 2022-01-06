@@ -12,7 +12,7 @@ import {
     EditConsumerGroupOffsetsTopic, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
     DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, TopicOffset,
     KafkaConnectors, ConnectClusters,
-    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo, WrappedError, isApiError, AlterPartitionReassignmentsPartitionResponse, ConnectorValidationResult
+    GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo, WrappedError, isApiError, AlterPartitionReassignmentsPartitionResponse, ConnectorValidationResult, PublishRecordsRequest, ProduceRecordsResponse
 } from "./restInterfaces";
 import { comparer, computed, observable, runInAction, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
@@ -28,7 +28,7 @@ import { Features } from "./supportedFeatures";
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
-const REST_DEBUG_BASE_URL = null// || "http://localhost:9090"; // only uncommented using "npm run build && serve -s build"
+const REST_DEBUG_BASE_URL = null;// || "http://localhost:9090"; // only uncommented using "npm run build && serve -s build"
 
 export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T | null> {
 
@@ -189,8 +189,8 @@ const apiStore = {
     topicDocumentation: new Map<string, TopicDocumentation>(),
     topicPermissions: new Map<string, TopicPermissions | null>(),
     topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
-    topicPartitionErrors: new Map<string, Array<{ id: number, partitionError: string }>>(),
-    topicWatermarksErrors: new Map<string, Array<{ id: number, waterMarksError: string }>>(),
+    topicPartitionErrors: new Map<string, Array<{ id: number, partitionError: string; }>>(),
+    topicWatermarksErrors: new Map<string, Array<{ id: number, waterMarksError: string; }>>(),
     topicConsumers: new Map<string, TopicConsumer[]>(),
     topicAcls: new Map<string, AclResponse | null>(),
 
@@ -220,7 +220,7 @@ const apiStore = {
 
     messageSearchPhase: null as string | null,
     messagesFor: '', // for what topic?
-    messages: [] as TopicMessage[],
+    messages: observable([] as TopicMessage[], { deep: false }),
     messagesElapsedMs: null as null | number,
     messagesBytesConsumed: 0,
     messagesTotalConsumed: 0,
@@ -250,21 +250,21 @@ const apiStore = {
             if (ws !== currentWS) return; // newer request has taken over
             // reset state for new request
             this.messagesFor = searchRequest.topicName;
-            this.messages = [];
+            this.messages.length = 0;
             this.messagesElapsedMs = null;
             // send new request
             currentWS.send(JSON.stringify(searchRequest));
-        }
+        };
         currentWS.onclose = ev => {
             if (ws !== currentWS) return;
             api.stopMessageSearch();
             // double assignment makes sense: when the phase changes to null, some observing components will play a "fade out" animation, using the last (non-null) value
-            console.debug(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''))
-        }
+            console.debug(`ws closed: code=${ev.code} wasClean=${ev.wasClean}` + (ev.reason ? ` reason=${ev.reason}` : ''));
+        };
 
         const onMessageHandler = (msgEvent: MessageEvent) => {
             if (ws !== currentWS) return;
-            const msg = JSON.parse(msgEvent.data)
+            const msg = JSON.parse(msgEvent.data);
 
             switch (msg.type) {
                 case 'phase':
@@ -293,7 +293,7 @@ const apiStore = {
                         message: "Backend Error",
                         description: msg.message,
                         duration: 5,
-                    })
+                    });
                     break;
 
                 case 'message':
@@ -332,7 +332,6 @@ const apiStore = {
                     break;
             }
         };
-        //currentWS.onmessage = m => transaction(() => onMessageHandler(m));
         currentWS.onmessage = onMessageHandler;
     },
 
@@ -430,7 +429,7 @@ const apiStore = {
         const partitions = (partitionId != undefined) ? [{ partitionId, offset }] : this.topicPartitions?.get(topicName)?.map(partition => ({ partitionId: partition.id, offset }));
 
         if (!partitions || partitions.length === 0) {
-            addError(new Error(`Topic ${topicName} doesn't have partitions.`))
+            addError(new Error(`Topic ${topicName} doesn't have partitions.`));
             return;
         }
 
@@ -451,7 +450,7 @@ const apiStore = {
         return this.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, partitions);
     },
 
-    async deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName: string, pairs: Array<{ partitionId: number, offset: number }>) {
+    async deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName: string, pairs: Array<{ partitionId: number, offset: number; }>) {
         return rest<DeleteRecordsResponseData>(`./api/topics/${topicName}/records`, REST_TIMEOUT_SEC, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
@@ -475,8 +474,8 @@ const apiStore = {
 
                     const errors: {
                         topicName: string,
-                        partitionErrors: { partitionId: number, error: string }[],
-                        waterMarkErrors: { partitionId: number, error: string }[],
+                        partitionErrors: { partitionId: number, error: string; }[],
+                        waterMarkErrors: { partitionId: number, error: string; }[],
                     }[] = [];
 
                     for (const t of response.topics) {
@@ -521,7 +520,7 @@ const apiStore = {
                                 topicName: t.topicName,
                                 partitionErrors: partitionErrors,
                                 waterMarkErrors: waterMarkErrors,
-                            })
+                            });
                         }
                     }
 
@@ -535,7 +534,7 @@ const apiStore = {
         cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
             .then(response => {
                 if (response?.partitions) {
-                    const partitionErrors: Array<{ id: number, partitionError: string }> = [], waterMarksErrors: Array<{ id: number, waterMarksError: string }> = [];
+                    const partitionErrors: Array<{ id: number, partitionError: string; }> = [], waterMarksErrors: Array<{ id: number, waterMarksError: string; }> = [];
 
 
                     // Add some local/cached properties to make working with the data easier
@@ -555,13 +554,13 @@ const apiStore = {
 
                     if (partitionErrors.length == 0 && waterMarksErrors.length == 0) {
                         // Set partitions
-                        this.topicPartitionErrors.delete(topicName)
-                        this.topicWatermarksErrors.delete(topicName)
+                        this.topicPartitionErrors.delete(topicName);
+                        this.topicWatermarksErrors.delete(topicName);
                         this.topicPartitions.set(topicName, response.partitions);
                     } else {
-                        this.topicPartitionErrors.set(topicName, partitionErrors)
-                        this.topicWatermarksErrors.set(topicName, waterMarksErrors)
-                        console.error(`refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`)
+                        this.topicPartitionErrors.set(topicName, partitionErrors);
+                        this.topicWatermarksErrors.set(topicName, waterMarksErrors);
+                        console.error(`refreshPartitionsForTopic: response has partition errors (t=${topicName} p=${partitionErrors.length}, w=${waterMarksErrors.length})`);
                     }
 
                 } else {
@@ -599,9 +598,9 @@ const apiStore = {
     },
 
     refreshTopicAcls(topicName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName })
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName });
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
-            .then(v => this.topicAcls.set(topicName, v))
+            .then(v => this.topicAcls.set(topicName, v));
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
@@ -631,7 +630,7 @@ const apiStore = {
                     // add 'type' to each synonym entry
                     for (const broker of v.clusterInfo.brokers)
                         if (broker.config && !broker.config.error)
-                            prepareSynonyms(broker.config.configs)
+                            prepareSynonyms(broker.config.configs);
 
                     // don't assign if the value didn't change
                     // we'd re-trigger all observers!
@@ -640,7 +639,7 @@ const apiStore = {
 
                     for (const b of v.clusterInfo.brokers)
                         if (b.config.error)
-                            this.brokerConfigs.set(b.brokerId, b.config.error)
+                            this.brokerConfigs.set(b.brokerId, b.config.error);
                         else
                             this.brokerConfigs.set(b.brokerId, b.config.configs);
                 });
@@ -683,9 +682,9 @@ const apiStore = {
     },
 
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName })
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName });
         cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
-            .then(v => this.consumerGroupAcls.set(groupName, v))
+            .then(v => this.consumerGroupAcls.set(groupName, v));
     },
 
     async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]):
@@ -843,8 +842,8 @@ const apiStore = {
     async setThrottledReplicas(
         topicReplicas: {
             topicName: string,
-            leaderReplicas: { brokerId: number, partitionId: number }[],
-            followerReplicas: { brokerId: number, partitionId: number }[]
+            leaderReplicas: { brokerId: number, partitionId: number; }[],
+            followerReplicas: { brokerId: number, partitionId: number; }[];
         }[]): Promise<PatchConfigsResponse> {
 
         const configRequest: PatchConfigsRequest = { resources: [] };
@@ -1131,7 +1130,18 @@ const apiStore = {
         return tryParseOrUnwrapError<null>(response);
     },
 
-}
+    async publishRecords(request: PublishRecordsRequest): Promise<ProduceRecordsResponse> {
+        // POST "/topics-records"
+        const response = await fetch(`./api/topics-records`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify(request),
+        });
+        return tryParseOrUnwrapError<ProduceRecordsResponse>(response);
+    },
+};
 
 function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {
     const allowedActions = cluster.allowedActions ?? ['all'];

@@ -587,12 +587,6 @@ export function toDecimalSeparated(num: number): string {
     return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-export function keepInRange(num: number, min: number, max: number) {
-    if (num < min) return min;
-    else if (num > max) return max;
-    else return num;
-}
-
 /**
  * random digits and letters (entropy: 53bit)
  */
@@ -785,4 +779,11 @@ export function decodeBase64(base64: string) {
 
     const decoder = new TextDecoder(); // default is utf-8
     return decoder.decode(bytes);
+}
+
+export function delay(timeoutMs: number): Promise<void> {
+
+    return new Promise((resolve, _) => {
+        setTimeout(resolve, timeoutMs);
+    });
 }

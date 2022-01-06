@@ -1,0 +1,74 @@
+.headersEditor>table {
+    width: 100%;
+    margin-top: 1em;
+    margin-bottom: 1.5em;
+
+    thead>tr> {
+
+        th {
+            background: #fafafa;
+            font-weight: 500;
+            color: #444;
+        }
+
+        th.index {
+            min-width: 24px;
+        }
+
+        th.name {
+            width: 35%;
+        }
+
+        th.value {
+            width: 100%;
+        }
+
+        th.actions {
+            min-width: 100px;
+        }
+    }
+
+    thead>tr {
+        border-radius: 50px;
+        background: red;
+    }
+
+
+    th,
+    td {
+        $padSides: 8px;
+
+        padding: $padSides 10px;
+
+        // Move sides in
+        &:first-child {
+            padding-left: $padSides*2.5;
+        }
+
+        &:last-child {
+            padding-left: $padSides*2.5;
+        }
+
+        // Align index
+        &:nth-child(1) {
+            text-align: center;
+            font-size: 1.0em;
+            font-weight: 500;
+        }
+
+
+        // Border below every line
+        border-bottom: 1px solid #eee;
+    }
+
+    td {
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    th:not(:last-child, :first-child) {
+        border-right: 1px solid #eee;
+    }
+
+    tbody>tr {}
+}

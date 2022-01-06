@@ -151,7 +151,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         // clear messages from different topic if we have some
         if (api.messagesFor != '' && api.messagesFor != topicName) {
-            api.messages = [];
+            api.messages.length = 0;
             api.messagesFor = '';
         }
     }

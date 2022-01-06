@@ -1,25 +1,30 @@
 import React from 'react';
-import Editor, {EditorProps} from '@monaco-editor/react';
-import {editor} from 'monaco-editor';
+import Editor, { EditorProps, Monaco } from '@monaco-editor/react';
+import { editor } from 'monaco-editor';
 import merge from 'deepmerge';
 
+type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
+
+export type { IStandaloneCodeEditor, Monaco }
+
 export default function KowlEditor(props: EditorProps) {
-  const {options, ...rest} = props
+  const { options, ...rest } = props
 
   const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
-    readOnly: false,
-
     minimap: {
       enabled: false,
     },
     roundedSelection: false,
     padding: {
-      top: 4,
+      top: 0,
     },
     showFoldingControls: 'always',
     glyphMargin: false,
     scrollBeyondLastLine: false,
+    cursorBlinking: 'phase',
     lineNumbersMinChars: 4,
+    lineDecorationsWidth: 0,
+    overviewRulerBorder: false,
     scrollbar: {
       alwaysConsumeMouseWheel: false,
     },
@@ -27,12 +32,14 @@ export default function KowlEditor(props: EditorProps) {
     occurrencesHighlight: false,
     foldingHighlight: false,
     selectionHighlight: false,
+    renderLineHighlight: 'all',
   };
 
   return (<div style={{ border: '1px solid hsl(0deg, 0%, 90%)', borderRadius: '2px' }}>
     <Editor
-        options={merge(defaultOptions, options ?? {})}
-        {...rest}
+      defaultValue={'\n'.repeat(100)}
+      options={Object.assign({}, defaultOptions, options ?? {})}
+      {...rest}
     />
   </div>)
 }

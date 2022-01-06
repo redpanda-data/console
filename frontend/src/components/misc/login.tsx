@@ -18,11 +18,11 @@ const iconMap = new Map([
 
 interface Provider {
     displayName: string,
-    url: string
+    url: string;
 }
 interface ProvidersResponse {
-    providers: Provider[]
-    loginTitle: string
+    providers: Provider[];
+    loginTitle: string;
 }
 
 async function getProviders() {
@@ -56,7 +56,7 @@ class Login extends Component {
             this.providersResponse = await getProviders();
         } catch (err) {
             this.providersResponse = null;
-            this.providersError = err.toString();
+            this.providersError = (err as Error)?.message ?? String(err);
         }
     }
 
