@@ -274,7 +274,7 @@ export class PublishMessagesModalContent extends Component<Props> {
             return <KowlEditor key={tab} {...common} value={r.key} onChange={x => r.key = x ?? ''} />;
 
         if (tab === 'value')
-            return <KowlEditor key={tab} {...common} value={r.value} onChange={x => r.value = x ?? ''} />;
+            return <KowlEditor key={tab} {...common} value={r.value} onChange={x => r.value = x ?? ''} language="json" />;
 
         return <></>;
     }
