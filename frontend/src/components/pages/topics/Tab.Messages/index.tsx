@@ -28,7 +28,7 @@ import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
 import { editQuery } from "../../../../utils/queryHelper";
-import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
+import { Code, Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
 import { cullText, delay, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
 import { clone, toJson } from "../../../../utils/jsonUtils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
@@ -129,14 +129,22 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 value: btoa(state.value),
             };
 
-            await api.publishRecords({
+            const produceResponse = await api.publishRecords({
                 compressionType: CompressionTypeNum.None,
                 records: [record],
                 topicNames: state.topics,
                 useTransactions: false,
             });
 
-            return <div>'onOk' completed successfully</div>;
+            console.log('produce response', produceResponse);
+
+            if (produceResponse.error)
+                throw new Error(produceResponse.error);
+            if (produceResponse.records.length == 1)
+                return <>Record published on partition <span className='codeBox'>{produceResponse.records[0].partitionId}</span> with offset <span className='codeBox'>{produceResponse.records[0].offset}</span></>
+
+            return <>{produceResponse.records.length} records published successfully</>;
+
         },
         onComplete: () => {
             this.props.refreshTopicData(true);

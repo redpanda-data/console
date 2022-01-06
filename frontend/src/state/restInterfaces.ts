@@ -1161,7 +1161,7 @@ export interface PublishRecord {
 }
 
 export interface ProduceRecordsResponse {
-    records: ProduceRecordsResponse[];
+    records: ProduceRecordResponse[];
     // Error indicates that producing for all records have failed. E.g. because creating a transaction has failed
     // when transactions were enabled. Another option could be that the Kafka client creation has failed because
     // brokers are temporarily offline.

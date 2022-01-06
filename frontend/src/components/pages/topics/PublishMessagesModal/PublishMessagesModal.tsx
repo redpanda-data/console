@@ -98,7 +98,6 @@ export function createAutoModal<TShowArg, TModalState>(options: {
             <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="success"
                 title="Success"
                 subTitle={<>
-                    {"Record was produced on partition 1 with offset 235"}
                     {response}
                 </>}
                 extra={<Button type="primary" size='large' style={{ width: '16rem' }} onClick={() => state.visible = false}>Close</Button>}
@@ -260,23 +259,14 @@ export class PublishMessagesModalContent extends Component<Props> {
 
         if (tab === 'headers')
             return <HeadersEditor items={r.headers} />
-        // return <KowlEditor key={tab} {...common}
-        //     path={headerSchemaUri}
-        //     language="json"
-        //     onMount={(e, m) => { setHeaderSchema(e, m); setTheme(e, m); }}
-
-        //     value={r.headersJson}
-        //     onChange={txt => r.headersJson = txt ?? ''}
-        //     theme="kowl"
-        // />;
 
         if (tab === 'key')
-            return <KowlEditor key={tab} {...common} value={r.key} onChange={x => r.key = x ?? ''} />;
+            return <KowlEditor key={tab} {...common} value={r.key} onChange={x => r.key = x ?? ''} />
 
         if (tab === 'value')
-            return <KowlEditor key={tab} {...common} value={r.value} onChange={x => r.value = x ?? ''} language="json" />;
+            return <KowlEditor key={tab} {...common} value={r.value} onChange={x => r.value = x ?? ''} language="json" />
 
-        return <></>;
+        return <></>
     }
 
     tabs: Tab[] = [
