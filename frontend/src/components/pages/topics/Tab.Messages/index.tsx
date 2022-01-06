@@ -1474,13 +1474,15 @@ function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction>) {
 }
 
 function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions: Array<TopicAction>, onClick: () => void,) {
-    const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions);
+    const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
 
     let errorText: string | undefined;
     if (isCompacted)
         errorText = "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
     else if (!hasDeleteRecordsPrivilege(allowedActions))
         errorText = "You're not permitted to delete records on this topic.";
+    else if (!isSupported(Feature.DeleteRecords))
+        errorText = "The cluster doesn't support deleting records.";
 
 
     let content: JSX.Element | string = "Delete Records";
