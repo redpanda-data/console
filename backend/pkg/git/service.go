@@ -150,7 +150,11 @@ func (c *Service) SyncRepo() {
 			c.logger.Info("stopped sync", zap.String("reason", "received signal"))
 			return
 		case <-ticker.C:
-			err := tree.Pull(&git.PullOptions{Auth: c.auth})
+			var referenceName plumbing.ReferenceName
+			if c.Cfg.Repository.Branch != "" {
+				referenceName = plumbing.NewBranchReferenceName(c.Cfg.Repository.Branch)
+			}
+			err := tree.Pull(&git.PullOptions{Auth: c.auth, ReferenceName: referenceName})
 			if err != nil {
 				if err == git.NoErrAlreadyUpToDate {
 					continue
