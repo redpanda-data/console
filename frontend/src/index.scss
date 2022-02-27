@@ -1286,7 +1286,17 @@ svg {
 
 // arrows are not centered by default (maybe it has something to do with the font size of the title, or other elements in there?)
 div.ant-collapse.ant-collapse-borderless>div>div>span {
-    padding: 9px 0 0 !important;
+    // top: 0px;
+    padding: 0px 0 0 !important;
+}
+
+.ant-collapse > .ant-collapse-item > .ant-collapse-header .ant-collapse-arrow {
+    top: 2px;
+}
+
+.subjectListExpander .ant-collapse-header .ant-collapse-arrow {
+    // top: 0px;
+    // padding-top:0px;
 }
 
 .ant-collapse.ant-collapse-ghost {
