@@ -3,17 +3,19 @@ package api
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/cloudhut/common/flagext"
 	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
-	"os"
-	"strings"
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
@@ -146,6 +148,20 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to unmarshal environment variables into config struct: %w", err)
 	}
+
+	// Lowercase the keys that are stored internally within Koanf and reload them. This is a workaround because
+	// internally keys are stored case sensitive. This causes the problem that environment variables can't match
+	// the exact key and therefore will not be unmarshalled as expected anymore. Example:
+	// YAML path: owl.topicDocumentation.git.basicAuth.password
+	// ENV path: OWL_TOPICDOCUMENTATION_GIT_BASICAUTH_PASSWORD => owl.topicdocumentation.git.basicauth.password
+	// Internal key: owl.topicDocumentation.git.basicAuth.password
+	// See issue: https://github.com/cloudhut/kowl/issues/305
+	keys := make(map[string]interface{}, len(k.Keys()))
+	for _, key := range k.Keys() {
+		keys[strings.ToLower(key)] = k.Get(key)
+	}
+	k.Delete("")
+	k.Load(confmap.Provider(keys, "."), nil)
 
 	unmarshalCfg.DecoderConfig.ErrorUnused = false
 	err = k.UnmarshalWithConf("", &cfg, unmarshalCfg)
