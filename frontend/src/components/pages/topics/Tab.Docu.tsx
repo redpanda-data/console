@@ -56,6 +56,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
                 margin: null,
                 padding: null,
             }}
+            PreTag="div"
             language={match[1]}
             children={String(children).replace(/\n$/, '')} {...props} />
           ) : (
