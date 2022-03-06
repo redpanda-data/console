@@ -1,7 +1,16 @@
 # See: https://github.com/cloudhut/kowl/tree/master/docs/config for reference config files.
 kafka:
   brokers:
-    - kafka1:19092
+    - broker:29092
+  schemaRegistry:
+    enabled: true
+    urls: ["http://schema-registry:8081"]
+
+connect:
+  enabled: true
+  clusters:
+    - name: connect
+      url: http://connect:8083
 
 # server:
   # listenPort: 8080
