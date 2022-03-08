@@ -59,7 +59,7 @@ RUN npm run build
 ############################################################
 # Final Image
 ############################################################
-FROM alpine:3.13
+FROM alpine:3
 
 # Embed env vars in final image as well (so the backend can read them)
 ARG KOWL_GIT_SHA
