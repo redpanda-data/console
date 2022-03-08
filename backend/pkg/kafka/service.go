@@ -37,6 +37,7 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	hooksChildLogger := logger.With(zap.String("source", "kafka_client_hooks"))
 	clientHooks := newClientHooks(hooksChildLogger, "kowl")
 
+	logger.Debug("creating new kafka client", zap.Any("config", cfg.RedactedConfig()))
 	kgoOpts, err := NewKgoConfig(&cfg, logger, clientHooks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
@@ -112,7 +113,6 @@ func (s *Service) Start() error {
 }
 
 func (s *Service) NewKgoClient(additionalOpts ...kgo.Opt) (*kgo.Client, error) {
-	s.Logger.Debug("creating new kafka client", zap.Any("config", s.Config))
 	kgoOpts, err := NewKgoConfig(&s.Config, s.Logger, s.KafkaClientHooks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
