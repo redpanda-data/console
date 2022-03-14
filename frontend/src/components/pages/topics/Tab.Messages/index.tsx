@@ -941,7 +941,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 }
             }
 
-            return <code><span className='cellDiv' style={{ fontSize: '95%' }}><pre style="margin-bottom: 0em;">{text}</pre></span></code>;
+            return <code><span className='cellDiv' style={{ fontSize: '95%' }}><pre style={{marginBottom: '0em'}}>{text}</pre></span></code>;
         }
         catch (e) {
             return <span style={{ color: 'red' }}>Error in RenderPreview: {((e as Error).message ?? String(e))}</span>;
