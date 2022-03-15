@@ -34,16 +34,8 @@ export function injectFindFunc(fullFilterCode: string) {
 }
 
 export function sanitizeString(input: string) {
-    return input.split('')
-        .map((char: string) => {
-            const code = char.charCodeAt(0);
-            if (code > 0 && code < 128) {
-                return char;
-            } else if (code >= 128 && code <= 255) {
-                //Hex escape encoding
-                return `/x${code.toString(16)}`.replace('/', '\\');
-            }
-            return '';
-        })
-        .join('');
+    return encodeURIComponent(input).replace(/%([0-9A-F]{2})/g,
+        function toSolidBytes(match, p1) {
+            return String.fromCharCode(parseInt('0x' + p1, 16));
+        });
 }
