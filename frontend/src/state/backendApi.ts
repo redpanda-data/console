@@ -14,6 +14,7 @@ import {
     KafkaConnectors, ConnectClusters,
     GetTopicOffsetsByTimestampResponse, BrokerConfigResponse, ConfigEntry, PatchConfigsRequest, DeleteRecordsResponseData, ClusterAdditionalInfo, ClusterConnectors, ClusterConnectorInfo, WrappedError, isApiError, AlterPartitionReassignmentsPartitionResponse, ConnectorValidationResult, QuotaResponse
 } from "./restInterfaces";
+import JSONBig from 'json-bigint';
 import { comparer, computed, observable, runInAction, transaction } from "mobx";
 import fetchWithTimeout from "../utils/fetchWithTimeout";
 import { decodeBase64, TimeSince } from "../utils/utils";
@@ -266,7 +267,7 @@ const apiStore = {
 
         const onMessageHandler = (msgEvent: MessageEvent) => {
             if (ws !== currentWS) return;
-            const msg = JSON.parse(msgEvent.data)
+            const msg = JSONBig({ storeAsString: true }).parse(msgEvent.data)
 
             switch (msg.type) {
                 case 'phase':

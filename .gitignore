@@ -20,3 +20,4 @@ requests.txt
 .prettierrc
 
 docker-compose.yml
+/frontend/target
