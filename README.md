@@ -86,6 +86,11 @@ We use Discord to communicate. If you are looking for more interactive discussio
 
 <a href="https://www.rewe-digital.com/" target="_blank"><img src="./docs/assets/sponsors/rewe-digital-logo.png" width="150" /></a>
 
+## Companies that use Kowl
+
+- REWE Digital [https://www.rewe-digital.com/]
+- Redpanda Data [https://redpanda.com/]
+
 ## License
 
 Kowl is distributed under the [Apache 2.0 License](https://github.com/cloudhut/kowl/blob/master/LICENSE).
