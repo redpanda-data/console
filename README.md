@@ -90,6 +90,7 @@ We use Discord to communicate. If you are looking for more interactive discussio
 
 - REWE Digital [https://www.rewe-digital.com/]
 - Redpanda Data [https://redpanda.com/]
+- OPT-NC (Office des Postes et Télécommunications de Nouvelle-Calédonie) [https://office.opt.nc/]
 
 ## License
 
