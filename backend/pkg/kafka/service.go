@@ -58,10 +58,11 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 		if err == nil {
 			break
 		}
-		logger.Warn(fmt.Sprintf("Failed to test Kafka connection, going to retry in '%v's",
+		logger.Warn(fmt.Sprintf("Failed to test Kafka connection, going to retry in %vs",
 			backoffDuration.Seconds()), zap.Int("remaining_retries", retries))
 		time.Sleep(backoffDuration)
 		backoffDuration *= 2
+		retries--
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to test kafka connection: %w", err)
