@@ -78,7 +78,7 @@ We maintain a docker-compose file that launches zookeeper, kafka and kowl: [/doc
 
 ## Chat with us
 
-We use Discord to communicate. If you are looking for more interactive discussions or support, you are invited to join our Discord server: https://discord.gg/KQj7P6v
+Please join our `#kowl` [Community Slack](https://redpanda.com/slack)
 
 ## Sponsors
 
