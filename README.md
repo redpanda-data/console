@@ -32,9 +32,7 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 | **Login System (Google, GitHub, Okta)** | :x: | :white_check_mark: |
 | **RBAC permissions with group syncing** | :x: | :white_check_mark: |
 | **Screenshots** | Preview .gif in README | https://cloudhut.dev/ |
-| **Price** | Always free / Open source | Free during beta\* |
 
-\*If you want to participate in the free beta sign in here: https://license.cloudhut.dev/ . You'll get a forever free license for 2 seats. If you need more than 2 seats, just drop us an email at info@cloudhut.dev
 
 ## Getting Started
 
