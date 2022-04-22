@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { KafkaError, ConfigEntry, Topic } from '../../../state/restInterfaces';
-import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result } from 'antd';
+import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result, Statistic } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import topicConfigInfo from '../../../assets/topicConfigInfo.json';
@@ -117,6 +117,14 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
 
 const TopicConfigList = observer(({ configEntries }: { configEntries: ConfigEntry[] }) => {
     return <ConfigList configEntries={configEntries} valueDisplay={uiSettings.topicList.valueDisplay} />;
+
+
+    // return <ConfigList
+    //     configEntries={configEntries}
+    //     valueDisplay={uiSettings.topicList.valueDisplay}
+    //     renderTooltip={(e, content) =>
+    //         FavoritePopover(e, content)}
+    // />;
 });
 
 const ConfigDisplaySettings = observer(() => (

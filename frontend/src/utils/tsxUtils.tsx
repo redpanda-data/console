@@ -14,16 +14,16 @@ import { TooltipPlacement } from "antd/lib/tooltip";
 import { InfoIcon } from "@primer/octicons-react";
 
 
-
-const thousandsSeperator = (1234).toLocaleString()[1];
-const decimalSeperator = (0.123).toLocaleString()[1];
+const defaultLocale = 'en'
+const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
+const decimalSeperator = (0.123).toLocaleString(defaultLocale)[1];
 
 const nbsp = '\xA0'; // non breaking space
 
 export function numberToThousandsString(n: number): JSX.Element {
     if (typeof n !== 'number') return <>{n}</>
 
-    const parts = n.toLocaleString().split(thousandsSeperator);
+    const parts = n.toLocaleString(defaultLocale).split(thousandsSeperator);
     const separator = nbsp;
 
     const result: JSX.Element[] = [];
