@@ -1,17 +1,14 @@
-import { Alert, Button, Modal, ModalProps as AntdModalProps, Result, Select } from "antd";
-import { action, computed, makeObservable, observable, transaction } from "mobx";
+import { EditorProps, Monaco } from '@monaco-editor/react';
+import { Button, Modal, ModalProps as AntdModalProps, Result, Select } from "antd";
+import { action, computed, observable } from "mobx";
 import { Observer, observer } from "mobx-react";
-import React, { Component, PropsWithChildren } from "react";
+import React, { Component } from "react";
 import { api } from "../../../../state/backendApi";
-import { CompressionType, PublishRecord, Topic } from "../../../../state/restInterfaces";
+import { CompressionType } from "../../../../state/restInterfaces";
 import { toJson } from "../../../../utils/jsonUtils";
 import { Code, Label } from "../../../../utils/tsxUtils";
-import { delay } from "../../../../utils/utils";
 import KowlEditor, { IStandaloneCodeEditor } from "../../../misc/KowlEditor";
 import Tabs, { Tab } from "../../../misc/tabs/Tabs";
-import { EditorProps, Monaco } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
-import { CloseOutlined } from "@ant-design/icons";
 import HeadersEditor from "./Headers";
 
 type AutoModalProps = Omit<AntdModalProps, 'visible' | 'afterClose' | 'onCancel' | 'onOk' | 'modalRender'>;

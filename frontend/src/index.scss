@@ -1290,7 +1290,7 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     padding: 0px 0 0 !important;
 }
 
-.ant-collapse > .ant-collapse-item > .ant-collapse-header .ant-collapse-arrow {
+.ant-collapse>.ant-collapse-item>.ant-collapse-header .ant-collapse-arrow {
     top: 2px;
 }
 
@@ -3221,5 +3221,5 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 }
 
 .noArrow .ant-popover-arrow {
-    display:none;
+    display: none;
 }
