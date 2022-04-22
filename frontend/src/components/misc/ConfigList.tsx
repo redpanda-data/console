@@ -10,22 +10,20 @@ import { sortField } from './common';
 import styles from './ConfigList.module.scss';
 import { KowlColumnType, KowlTable } from './KowlTable';
 
-export function ConfigList({ configEntries, valueDisplay }: { configEntries: ConfigEntry[]; valueDisplay: ValueDisplay }) {
+export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { configEntries: ConfigEntry[]; valueDisplay: ValueDisplay, renderTooltip?: (e: ConfigEntry, content: JSX.Element) => JSX.Element }) {
+
     const columns: KowlColumnType<ConfigEntry>[] = [
         {
             title: 'Configuration',
             dataIndex: 'name',
-            render: (text: string, record: Partial<ConfigEntry>) => (
-                <div className={styles.name}>
-                    <Tooltip overlay={text} getPopupContainer={findPopupContainer} mouseEnterDelay={0.25}>
-                        <span className={styles.nameText}>{text}</span>
-                    </Tooltip>
+            render: (text: string, record: ConfigEntry) => {
+                const content = <div className={styles.name}>
                     {(record.isSensitive || record.isExplicitlySet || record.isReadOnly) && <span className={styles.configFlags}>
-
+                        <span className={styles.nameText}>{text}</span>
                         {/*
-                        {record.isExplicitlySet && <Tooltip overlay="Value was set explicitly">
-                            <EditTwoTone twoToneColor="#1890ff" />
-                        </Tooltip>} */}
+                {record.isExplicitlySet && <Tooltip overlay="Value was set explicitly">
+                    <EditTwoTone twoToneColor="#1890ff" />
+                </Tooltip>} */}
 
                         {record.isSensitive && <Tooltip overlay="Value has been redacted because it's sensitive">
                             <EyeInvisibleTwoTone twoToneColor="#1890ff" />
@@ -34,7 +32,14 @@ export function ConfigList({ configEntries, valueDisplay }: { configEntries: Con
                     </span>}
 
                 </div>
-            )
+
+                if (renderTooltip)
+                    return renderTooltip(record, content);
+
+                return <Tooltip overlay={text} getPopupContainer={findPopupContainer} mouseEnterDelay={0.25}>
+                    {content}
+                </Tooltip>
+            }
         },
         {
             title: 'Value',
