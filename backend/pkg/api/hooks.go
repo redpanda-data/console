@@ -2,8 +2,9 @@ package api
 
 import (
 	"context"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"net/http"
+
+	"github.com/cloudhut/kowl/backend/pkg/owl"
 
 	"github.com/cloudhut/common/rest"
 
@@ -35,6 +36,7 @@ type RouteHooks interface {
 type OwlHooks interface {
 	// Topic Hooks
 	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanDeleteTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
@@ -86,6 +88,9 @@ func (*defaultHooks) ConfigRouter(_ chi.Router)    {}
 
 // Owl Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanCreateTopic(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
 func (*defaultHooks) CanDeleteTopic(_ context.Context, _ string) (bool, *rest.Error) {
