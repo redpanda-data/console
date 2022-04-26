@@ -20,7 +20,7 @@ import Editor from 'react-simple-code-editor';
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api } from "../../../../state/backendApi";
-import { CompressionType, CompressionTypeNum, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from "../../../../state/restInterfaces";
+import { CompressionType, CompressionTypeNum, compressionTypeToNum, EncodingType, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from "../../../../state/restInterfaces";
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import { ColumnList, FilterEntry, PreviewTagV2, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
@@ -38,10 +38,10 @@ import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
-import { createAutoModal, ModalContentProps, PublishMessagesModalContent } from '../PublishMessagesModal/PublishMessagesModal';
+import { PublishMessageModalProps, PublishMessagesModalContent } from '../PublishMessagesModal/PublishMessagesModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
-
+import createAutoModal from '../../../../utils/createAutoModal';
 
 
 const { Text } = Typography;
@@ -82,83 +82,17 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     @observable deleteRecordsModalVisible = false;
     @observable deleteRecordsModalAlive = false;
 
-    @observable publishRecordsModalVisible = false;
-
-    publishRecordsModal = createAutoModal({
-        modalProps: {
-            title: 'Publish a new record',
-            width: '80%',
-            style: { minWidth: '690px', maxWidth: '800px' },
-            bodyStyle: { paddingTop: '1em' },
-            centered: true,
-
-            okText: 'Publish',
-
-            closable: false,
-            keyboard: false,
-            maskClosable: false,
-        },
-        onCreate: (showArg: { topicName: string; }) => {
-            return observable({
-                topics: [showArg.topicName],
-                partition: -1, // -1 = auto
-                compressionType: CompressionType.Uncompressed,
-
-                key: "test key",
-                value:
-                    `{
-    "exampleValue": 123,
-    "name": "abc"
-}
-`,
-                headers: [{ key: 'h1', value: 'v1' }],
-                isTombstone: false
-            } as ModalContentProps['state']);
-        },
-        isOkEnabled: s => s.topics.length > 0,
-        onOk: async state => {
-            // console.log('test onOk');
-            // if (Math.random() < 0.999999) throw new Error('example error');
-            await delay(300);
-
-            const record: PublishRecord = {
-                headers: state.headers.filter(h => h.key && h.value).map(h => ({ key: h.key, value: btoa(h.value) })),
-                key: btoa(state.key),
-                partitionId: state.partition,
-                value: btoa(state.value),
-            };
-
-            const produceResponse = await api.publishRecords({
-                compressionType: CompressionTypeNum.None,
-                records: [record],
-                topicNames: state.topics,
-                useTransactions: false,
-            });
-
-            console.log('produce response', produceResponse);
-
-            if (produceResponse.error)
-                throw new Error(produceResponse.error);
-            if (produceResponse.records.length == 1)
-                return <>Record published on partition <span className='codeBox'>{produceResponse.records[0].partitionId}</span> with offset <span className='codeBox'>{produceResponse.records[0].offset}</span></>
-
-            return <>{produceResponse.records.length} records published successfully</>;
-
-        },
-        onComplete: () => {
-            this.props.refreshTopicData(true);
-            this.searchFunc('auto');
-        },
-        content: (state) => <PublishMessagesModalContent state={state} />,
-    });
-
-
-
-
+    PublishRecordsModal;
+    showPublishRecordsModal;
 
     constructor(props: TopicMessageViewProps) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
+
+        const m = createPublishRecordsModal(this);
+        this.PublishRecordsModal = m.Component;
+        this.showPublishRecordsModal = m.show;
+
         makeObservable(this);
     }
 
@@ -243,7 +177,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 )
             }
 
-            {this.publishRecordsModal.Comp}
+            <this.PublishRecordsModal />
         </>;
     }
     SearchControlsBar = observer(() => {
@@ -331,7 +265,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 {/* Topic Actions */}
                 <div className={styles.topicActionsWrapper}>
                     <Dropdown trigger={['click']} overlay={<Menu>
-                        <Menu.Item key="1" onClick={() => this.publishRecordsModal.show({ topicName: this.props.topic.topicName })}>
+                        <Menu.Item key="1" onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}>
                             Publish Message
                         </Menu.Item>
                         {DeleteRecordsMenuItem("2", isCompacted, topic.allowedActions ?? [], () => this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true)}
@@ -1518,3 +1452,82 @@ function copyMessage(record: TopicMessage, field: "jsonKey" | "jsonValue" | "tim
     }
 }
 
+function createPublishRecordsModal(parent: TopicMessageView) {
+    return createAutoModal({
+        modalProps: {
+            title: 'Produce Message',
+            width: '80%',
+            style: { minWidth: '690px', maxWidth: '1000px' },
+            bodyStyle: { paddingTop: '1em' },
+            centered: true,
+
+            okText: 'Publish',
+
+            closable: false,
+            keyboard: false,
+            maskClosable: false,
+        },
+        onCreate: (showArg: { topicName: string; }) => {
+            return observable({
+                topics: [showArg.topicName],
+                partition: -1, // -1 = auto
+                compressionType: CompressionType.Uncompressed,
+                encodingType: uiState.topicSettings.produceRecordEncoding || 'json',
+
+                key: "",
+                value: "",
+                headers: [{ key: '', value: '' }],
+            } as PublishMessageModalProps['state']);
+        },
+        isOkEnabled: s => s.topics.length === 1,
+        onOk: async state => {
+
+            if (state.encodingType === 'json')
+                // try parsing just to make sure its actually json
+                JSON.parse(state.value);
+
+            const convert: { [key in EncodingType]: (x: string) => string | null } = {
+                'none': x => null,
+                'base64': x => x.trim(),
+                'json': x => btoa(x.trim()),
+                'utf8': x => btoa(x),
+            };
+            const value = convert[state.encodingType](state.value);
+
+            const record: PublishRecord = {
+                headers: state.headers.filter(h => h.key && h.value).map(h => ({ key: h.key, value: btoa(h.value) })),
+                key: btoa(state.key),
+                partitionId: state.partition,
+                value: value,
+            };
+
+            const result = await api.publishRecords({
+                compressionType: compressionTypeToNum(state.compressionType),
+                records: [record],
+                topicNames: state.topics,
+                useTransactions: false,
+            });
+
+
+            const errors = [
+                result.error,
+                ...result.records.filter(x => x.error).map(r => `Topic "${r.topicName}": \n${r.error}`)
+            ].filterFalsy();
+
+            if (errors.length)
+                throw new Error(errors.join('\n\n'));
+
+            if (result.records.length == 1)
+                return <>Record published on partition <span className='codeBox'>{result.records[0].partitionId}</span> with offset <span className='codeBox'>{result.records[0].offset}</span></>
+            return <>{result.records.length} records published successfully</>;
+
+        },
+        onSuccess: (state, result) => {
+            uiState.topicSettings.produceRecordEncoding = state.encodingType;
+            parent.props.refreshTopicData(true);
+            parent.searchFunc('auto');
+        },
+        content: (state) => <PublishMessagesModalContent state={state} />,
+    })
+
+}

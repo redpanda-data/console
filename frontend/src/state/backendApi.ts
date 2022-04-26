@@ -17,6 +17,10 @@ const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
 const REST_DEBUG_BASE_URL = null;// || "http://localhost:9090"; // only uncommented using "npm run build && serve -s build"
 
+/*
+    - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
+    - 2xx does not mean complete success, for some endpoints (e.g.: broker log dirs) we can get partial responses (array with some result entries and some error entries)
+*/
 export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T | null> {
 
     if (REST_DEBUG_BASE_URL) {

@@ -4,7 +4,6 @@
     margin-bottom: 1.5em;
 
     thead>tr> {
-
         th {
             background: #fafafa;
             font-weight: 500;
@@ -28,47 +27,89 @@
         }
     }
 
-    thead>tr {
-        border-radius: 50px;
-        background: red;
+    thead {
+        display: none;
     }
-
 
     th,
     td {
-        $padSides: 8px;
-
-        padding: $padSides 10px;
+        // $padSides: 8px;
+        // padding: $padSides 10px;
 
         // Move sides in
-        &:first-child {
-            padding-left: $padSides*2.5;
-        }
+        // &:first-child {
+        //     padding-left: $padSides*2.5;
+        // }
 
-        &:last-child {
-            padding-left: $padSides*2.5;
-        }
+        // &:last-child {
+        //     padding-left: $padSides*2.5;
+        // }
+        padding: 0;
 
-        // Align index
+        // index
         &:nth-child(1) {
             text-align: center;
-            font-size: 1.0em;
-            font-weight: 500;
-        }
+            // font-size: 1.0em;
+            // font-weight: 500;
+            }
+            }
 
-
-        // Border below every line
-        border-bottom: 1px solid #eee;
+    th,
+    tr:not(:last-child) {
+        // border-bottom: 1px solid #eee;
     }
 
     td {
-        padding-top: 12px;
-        padding-bottom: 12px;
+        // padding-top: 12px;
+        // padding-bottom: 12px;
+        padding-top: 4px;
+        padding-bottom: 4px;
     }
 
     th:not(:last-child, :first-child) {
         border-right: 1px solid #eee;
     }
 
-    tbody>tr {}
+    .iconButton {
+        color: hsl(0, 0%, 35%);
+    }
+    
+    .index {
+        padding: 4px;
+        padding-top: 5px;
+        font-size: 11px;
+        color: hsl(0, 0%, 45%);
+    
+        &::after {
+            content: '.';
+        }
+    }
+    
+    .name {
+        width: 33%;
+    
+        >input {
+    
+            &:hover,
+            &:focus-within {
+                z-index: 1;
+            }
+        }
+    }
+    
+    .value>input {
+        margin-left: -1px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    
+        &:hover,
+        &:focus-within {
+            z-index: 1;
+        }
+    }
+    
+    .actions {
+        padding-left: 4px;
+        width: 70px;
+    }
 }

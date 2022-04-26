@@ -1132,6 +1132,27 @@ export enum CompressionTypeNum {
     ZStd = 4,
 }
 
+export function compressionTypeToNum(type: CompressionType) {
+    switch (type) {
+        case CompressionType.GZip: return CompressionTypeNum.GZip;
+        case CompressionType.Snappy: return CompressionTypeNum.Snappy;
+        case CompressionType.LZ4: return CompressionTypeNum.LZ4;
+        case CompressionType.ZStd: return CompressionTypeNum.ZStd;
+
+        case CompressionType.Uncompressed:
+        case CompressionType.Unknown:
+        default:
+            return CompressionTypeNum.None;
+    }
+}
+
+// For UI only
+export type EncodingType =
+    | "none"   // use null as value, aka tombstone
+    | "utf8"   // use text as it is, use utf8 to get bytes
+    | "base64" // text is base64, so server should just use base64decode to get the bytes
+    | "json"   // parse the text as json, stringify it again to reduce whitespace, use utf8 to get bytes
+
 
 export interface PublishRecordsRequest {
     // TopicNames is a list of topic names into which the records shall be produced to.
@@ -1150,7 +1171,7 @@ export interface PublishRecordsRequest {
 
 export interface PublishRecord {
     key: string;// base64
-    value: string; // base64
+    value: null | string; // base64
 
     headers: {
         key: string;// base64

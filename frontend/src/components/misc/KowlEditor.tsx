@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { CSSProperties } from 'react';
 import Editor, { EditorProps, Monaco } from '@monaco-editor/react';
 import { editor } from 'monaco-editor';
 import merge from 'deepmerge';
@@ -7,16 +7,17 @@ type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 
 export type { IStandaloneCodeEditor, Monaco }
 
-export default function KowlEditor(props: EditorProps) {
-  const { options, ...rest } = props
+export type KowlEditorProps = EditorProps & {
 
-  const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
+};
+
+const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
     minimap: {
-      enabled: false,
+        enabled: false,
     },
     roundedSelection: false,
     padding: {
-      top: 0,
+        top: 0,
     },
     showFoldingControls: 'always',
     glyphMargin: false,
@@ -26,20 +27,29 @@ export default function KowlEditor(props: EditorProps) {
     lineDecorationsWidth: 0,
     overviewRulerBorder: false,
     scrollbar: {
-      alwaysConsumeMouseWheel: false,
+        alwaysConsumeMouseWheel: false,
     },
     fontSize: 12,
     occurrencesHighlight: false,
     foldingHighlight: false,
     selectionHighlight: false,
     renderLineHighlight: 'all',
-  };
+} as const;
 
-  return (<div style={{ border: '1px solid hsl(0deg, 0%, 90%)', borderRadius: '2px' }}>
-    <Editor
-      defaultValue={'\n'.repeat(100)}
-      options={Object.assign({}, defaultOptions, options ?? {})}
-      {...rest}
+export default function KowlEditor(props: KowlEditorProps) {
+    const { options: givenOptions, ...rest } = props
+    const options = Object.assign({}, defaultOptions, givenOptions ?? {});
+
+
+    return <Editor
+        loading={<LoadingPlaceholder />}
+        wrapperProps={{ className: 'kowlEditor' }}
+        defaultValue={'\n'.repeat(2)}
+        options={options}
+        {...rest}
     />
-  </div>)
 }
+
+const LoadingPlaceholder = () => <div className='editorLoading'>
+    Loading Editor...
+</div>

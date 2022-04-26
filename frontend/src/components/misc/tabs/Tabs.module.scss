@@ -1,7 +1,15 @@
 @use "sass:selector";
 @use "sass:string";
 
+.wrapper {
+    display: flex;
+    flex-direction: column;
+}
 
+.content {
+    flex-grow: 1;
+    position: relative;
+}
 
 ul.navigationList {
     list-style: none;
@@ -22,13 +30,15 @@ ul.navigationList {
         border-bottom: solid 2px transparent;
         transform: translateY(1px);
         padding: 9px;
-        color: rgba(0, 0, 0, 0.85);
+        color: rgba(0, 0, 0, 0.8);
         cursor: pointer;
 
 
+        transition: background-color 0.2s ease-out,
+        color .2s ease-out;
         &.default:hover {
-
             color: rgb(24, 144, 255);
+            background: hsla(0, 0%, 50%, 0.03);
         }
 
         &.active {

@@ -20,9 +20,12 @@ interface TabsProps {
 
     // The wrapper around the whole tabs control, header bar and content.
     wrapperStyle?: CSSProperties;
-    //
+    // nav bar
     barStyle?: CSSProperties;
+    // tab header buttons
     tabButtonStyle?: CSSProperties;
+    // the '<article>' element the content is rendered in
+    contentStyle?: CSSProperties;
 }
 
 function renderContent(tabs: Array<Tab>, key: string) {
@@ -50,7 +53,7 @@ export default function Tabs(props: TabsProps) {
 
     const [selectedTab, setSelectedTab] = useState(selectedTabKey || props.defaultSelectedTabKey || props.tabs[0].key);
     return (
-        <div style={props.wrapperStyle} >
+        <div className={styles.wrapper} style={props.wrapperStyle} >
             <nav>
                 <ul className={styles.navigationList} style={props.barStyle}>
                     {tabs.map((tab) => {
@@ -70,7 +73,7 @@ export default function Tabs(props: TabsProps) {
                     {extra && <li className={styles.extra}>{extra}</li>}
                 </ul>
             </nav>
-            <article>{renderContent(tabs, selectedTab)}</article>
+            <article className={styles.content} style={props.contentStyle}>{renderContent(tabs, selectedTab)}</article>
         </div>
     );
 }
