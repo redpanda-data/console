@@ -3,7 +3,7 @@ import { assignDeep, randomId } from "../utils/utils";
 import { touch, clone } from "../utils/jsonUtils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
 import { TopicTabId } from "../components/pages/topics/Topic.Details";
-import { AclRequest, AclRequestDefault } from "./restInterfaces";
+import { AclRequest, AclRequestDefault, EncodingType } from "./restInterfaces";
 import { TableSettings } from "../components/misc/KowlTable";
 import { ConnectTabKeys } from "../components/pages/connect/Overview";
 
@@ -130,6 +130,7 @@ export class TopicDetailsSettings {
     @observable partitionPageSize = 20;
     @observable aclPageSize = 20;
 
+    @observable produceRecordEncoding = 'json' as EncodingType;
 
     @observable quickSearch = '';
 

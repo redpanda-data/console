@@ -1,24 +1,27 @@
-import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, EllipsisOutlined, FilterOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, DownOutlined, EllipsisOutlined, FilterOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
 import { Alert, Button, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu, message, Modal, Popover, Radio, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
 import { ColumnProps } from "antd/lib/table";
 import { SortOrder } from "antd/lib/table/interface";
 import Paragraph from "antd/lib/typography/Paragraph";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from "mobx";
 import { observer } from "mobx-react";
+import * as moment from 'moment';
 import Prism, { languages as PrismLanguages } from "prismjs";
 import 'prismjs/components/prism-javascript';
 import "prismjs/components/prism-js-extras";
 import 'prismjs/prism.js';
 import 'prismjs/themes/prism.css';
 import queryString from 'query-string';
-import React, { Component, CSSProperties, ReactNode } from "react";
+import React, { Component, ReactNode } from "react";
 import { CollapsedFieldProps } from 'react-json-view';
 import Editor from 'react-simple-code-editor';
-import { format as formatUrl, parse as parseUrl } from "url";
+import filterExample1 from '../../../../assets/filter-example-1.png';
+import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api } from "../../../../state/backendApi";
-import { Payload, Topic, TopicAction, TopicMessage } from "../../../../state/restInterfaces";
+import { CompressionType, CompressionTypeNum, compressionTypeToNum, EncodingType, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from "../../../../state/restInterfaces";
+import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import { ColumnList, FilterEntry, PreviewTagV2, TopicOffsetOrigin } from "../../../../state/ui";
 import { uiState } from "../../../../state/uiState";
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
@@ -27,20 +30,18 @@ import { IsDev } from "../../../../utils/env";
 import { isClipboardAvailable } from "../../../../utils/featureDetection";
 import { FilterableDataSource } from "../../../../utils/filterableDataSource";
 import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
+import { toJson } from "../../../../utils/jsonUtils";
 import { editQuery } from "../../../../utils/queryHelper";
 import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { cullText, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
-import { clone, toJson } from "../../../../utils/jsonUtils";
+import { cullText, delay, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
-import styles from './styles.module.scss';
-import filterExample1 from '../../../../assets/filter-example-1.png';
-import filterExample2 from '../../../../assets/filter-example-2.png';
-import { getPreviewTags, PreviewSettings } from './PreviewSettings';
-import * as moment from 'moment';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
-
+import { PublishMessageModalProps, PublishMessagesModalContent } from '../PublishMessagesModal/PublishMessagesModal';
+import { getPreviewTags, PreviewSettings } from './PreviewSettings';
+import styles from './styles.module.scss';
+import createAutoModal from '../../../../utils/createAutoModal';
 
 
 const { Text } = Typography;
@@ -78,12 +79,20 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     @observable downloadMessages: TopicMessage[] | null;
     @observable expandedKeys: React.Key[] = [];
 
-    @observable deleteRecordsModalVisible = false
-    @observable deleteRecordsModalAlive = false
+    @observable deleteRecordsModalVisible = false;
+    @observable deleteRecordsModalAlive = false;
+
+    PublishRecordsModal;
+    showPublishRecordsModal;
 
     constructor(props: TopicMessageViewProps) {
         super(props);
         this.executeMessageSearch = this.executeMessageSearch.bind(this); // needed because we must pass the function directly as 'submit' prop
+
+        const m = createPublishRecordsModal(this);
+        this.PublishRecordsModal = m.Component;
+        this.showPublishRecordsModal = m.show;
+
         makeObservable(this);
     }
 
@@ -157,12 +166,18 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     <DeleteRecordsModal
                         topic={this.props.topic}
                         visible={this.deleteRecordsModalVisible}
-                        onCancel={() => this.hideDeleteRecordsModal()}
-                        onFinish={() => this.finishDeleteRecordsModal()}
-                        afterClose={() => console.log('after close', this.deleteRecordsModalAlive = false)}
+                        onCancel={() => this.deleteRecordsModalVisible = false}
+                        onFinish={() => {
+                            this.deleteRecordsModalVisible = false;
+                            this.props.refreshTopicData(true);
+                            this.searchFunc('auto');
+                        }}
+                        afterClose={() => this.deleteRecordsModalAlive = false}
                     />
                 )
             }
+
+            <this.PublishRecordsModal />
         </>;
     }
     SearchControlsBar = observer(() => {
@@ -247,9 +262,17 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     </div>
                 </Label>
 
-                {/* Delete Records */}
-                <div className={styles.deleteButtonWrapper}>
-                    <DeleteRecordsButton allowedActions={topic.allowedActions || []} isCompacted={isCompacted} onClick={() => this.showDeleteRecordsModal()} />
+                {/* Topic Actions */}
+                <div className={styles.topicActionsWrapper}>
+                    <Dropdown trigger={['click']} overlay={<Menu>
+                        <Menu.Item key="1" onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}>
+                            Publish Message
+                        </Menu.Item>
+                        {DeleteRecordsMenuItem("2", isCompacted, topic.allowedActions ?? [], () => this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true)}
+                    </Menu>}>
+                        <Button style={{ minWidth: '120px' }}>Actions<DownOutlined /></Button>
+                    </Dropdown>
+
                 </div>
 
                 {/* Quick Search */}
@@ -299,20 +322,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         </React.Fragment>;
     });
 
-    showDeleteRecordsModal() {
-        this.deleteRecordsModalAlive = true;
-        this.deleteRecordsModalVisible = true;
-    }
-
-    hideDeleteRecordsModal() {
-        this.deleteRecordsModalVisible = false;
-    }
-
-    finishDeleteRecordsModal() {
-        this.hideDeleteRecordsModal();
-        this.props.refreshTopicData(true);
-    }
-
     searchFunc = (source: 'auto' | 'manual') => {
 
         // need to do this first, so we trigger mobx
@@ -336,7 +345,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         } finally {
             this.currentSearchRun = null;
         }
-    }
+    };
 
     cancelSearch = () => api.stopMessageSearch();
 
@@ -392,22 +401,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             </span>
         </>;
 
-        const copyDropdown = (record: TopicMessage) => (
-            <Menu>
-                <Menu.Item key="0" onClick={() => this.copyMessage(record, 'jsonKey')}>
-                    Copy Key
-                </Menu.Item>
-                <Menu.Item key="2" onClick={() => this.copyMessage(record, 'jsonValue')}>
-                    Copy Value
-                </Menu.Item>
-                <Menu.Item key="4" onClick={() => this.copyMessage(record, 'timestamp')}>
-                    Copy Epoch Timestamp
-                </Menu.Item>
-                <Menu.Item key="5" onClick={() => this.downloadMessages = [record]}>
-                    Save to File
-                </Menu.Item>
-            </Menu>
-        );
+
 
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
@@ -444,7 +438,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 render: (text, record) => !record.isValueNull && (
                     <NoClipboardPopover placement='left'>
                         <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                            <Dropdown disabled={!isClipboardAvailable} overlayClassName='disableAnimation' overlay={copyDropdown(record)} trigger={['click']}>
+                            <Dropdown disabled={!isClipboardAvailable} overlayClassName='disableAnimation' overlay={this.copyDropdown(record)} trigger={['click']}>
                                 <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle', pointerEvents: isClipboardAvailable ? 'auto' : 'none' }} type='link'
                                     icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
                             </Dropdown>
@@ -543,7 +537,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
             </ConfigProvider>
         </>;
-    })
+    });
 
 
     @action toggleRecordExpand(r: TopicMessage) {
@@ -560,37 +554,30 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return ta.localeCompare(tb);
     }
 
-    // we can only write text to the clipboard, so rawKey/rawValue have been removed for now
-    copyMessage(record: TopicMessage, field: "jsonKey" | "jsonValue" | "timestamp") {
-        switch (field) {
-            case "jsonKey":
-                typeof record.key.payload === 'string'
-                    ? navigator.clipboard.writeText(record.key.payload as string)
-                    : navigator.clipboard.writeText(JSON.stringify(record.key.payload, null, 4));
-                message.success('Key copied to clipboard', 5);
-                break;
-            case "jsonValue":
-                typeof record.value.payload === 'string'
-                    ? navigator.clipboard.writeText(record.value.payload as string)
-                    : navigator.clipboard.writeText(JSON.stringify(record.value.payload, null, 4));
-                message.success('Value copied to clipboard', 5);
-                break;
-            case "timestamp":
-                navigator.clipboard.writeText(record.timestamp.toString());
-                message.success('Epoch Timestamp copied to clipboard', 5);
-                break;
-            default:
-            // empty
-        }
-    }
+    copyDropdown = (record: TopicMessage) => (
+        <Menu>
+            <Menu.Item key="0" onClick={() => copyMessage(record, 'jsonKey')}>
+                Copy Key
+            </Menu.Item>
+            <Menu.Item key="2" onClick={() => copyMessage(record, 'jsonValue')}>
+                Copy Value
+            </Menu.Item>
+            <Menu.Item key="4" onClick={() => copyMessage(record, 'timestamp')}>
+                Copy Epoch Timestamp
+            </Menu.Item>
+            <Menu.Item key="5" onClick={() => this.downloadMessages = [record]}>
+                Save to File
+            </Menu.Item>
+        </Menu>
+    );
 
     copyLinkToMessage(record: TopicMessage) {
         const searchParams = { o: record.offset, p: record.partitionID, s: 1 };
         const query = queryString.stringify(searchParams);
-        const url = parseUrl(window.location.href);
+        const url = new URL(window.location.href);
         url.search = query;
 
-        const newUrl = formatUrl(url);
+        const newUrl = url.href;
         console.log("copied url: " + newUrl);
 
         //navigator.clipboard.writeText(record.valueJson);
@@ -706,11 +693,11 @@ function ${name}() {
         <Text type='secondary' strong style={{ fontSize: '125%' }}>No messages</Text>
         <br />
         <span>Either the selected topic/partition did not contain any messages</span>
-    </>} />
+    </>} />;
 }
 
 @observer
-class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, onClose: () => void }> {
+class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, onClose: () => void; }> {
     @observable isOpen = false;
     @observable format = 'json' as 'json' | 'csv';
 
@@ -802,7 +789,7 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
 
 
 @observer
-class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[] }> {
+class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; }> {
     render() {
         const value = this.props.msg.key.payload;
         const text = typeof value === 'string' ? value : toJson(value);
@@ -896,7 +883,7 @@ class DateTimePickerExtraFooter extends Component {
 
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[] }> {
+class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; }> {
     render() {
         const msg = this.props.msg;
         const value = msg.value.payload;
@@ -1023,7 +1010,7 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
     }
 }
 
-const MessageMetaData = observer((props: { msg: TopicMessage }) => {
+const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
     const msg = props.msg;
     const data = {
         "Key": `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
@@ -1044,7 +1031,7 @@ const MessageMetaData = observer((props: { msg: TopicMessage }) => {
     </div>;
 });
 
-const MessageHeaders = observer((props: { msg: TopicMessage }) => {
+const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
 
     return <div className='messageHeaders'>
         <div>
@@ -1098,7 +1085,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage }) => {
 
 
 @observer
-class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
+class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void; }> {
 
     render() {
 
@@ -1146,7 +1133,7 @@ class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDi
 }
 
 @observer
-class ColumnOptions extends Component<{ tags: ColumnList[] }> {
+class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
 
     defaultColumnList: ColumnList[] = [
         { title: 'Offset', dataIndex: 'offset' },
@@ -1186,7 +1173,7 @@ class ColumnOptions extends Component<{ tags: ColumnList[] }> {
                 .filter(columnList => !!columnList) as ColumnList[];
             uiState.topicSettings.previewColumnFields = columnsSelected;
         }
-    }
+    };
 }
 
 
@@ -1419,32 +1406,128 @@ function hasDeleteRecordsPrivilege(allowedActions: Array<TopicAction>) {
     return allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
-function DeleteRecordsButton({
-    isCompacted,
-    allowedActions,
-    onClick,
-}: {
-    isCompacted: boolean;
-    allowedActions: Array<TopicAction>;
-    onClick: () => void;
-}) {
-    if (isCompacted) {
-        return (
-            <Tooltip placement="top" title="Records on Topics with the `compact` cleanup policy cannot be deleted.">
-                <Button disabled>Delete Records</Button>
-            </Tooltip>
-        );
-    } else if (hasDeleteRecordsPrivilege(allowedActions)) {
-        return (
-            <Button type="default" danger onClick={onClick} disabled={isCompacted}>
-                Delete Records
-            </Button>
-        );
-    } else {
-        return (
-            <Tooltip placement="top" title="You're not permitted to delete records on this topic.">
-                <Button disabled>Delete Records</Button>
-            </Tooltip>
-        );
+function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions: Array<TopicAction>, onClick: () => void,) {
+    const isEnabled = !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
+
+    let errorText: string | undefined;
+    if (isCompacted)
+        errorText = "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
+    else if (!hasDeleteRecordsPrivilege(allowedActions))
+        errorText = "You're not permitted to delete records on this topic.";
+    else if (!isSupported(Feature.DeleteRecords))
+        errorText = "The cluster doesn't support deleting records.";
+
+
+    let content: JSX.Element | string = "Delete Records";
+    if (errorText)
+        content = <Tooltip placement="top" title="Records on Topics with the 'compact' cleanup policy cannot be deleted.">{content}</Tooltip>;
+
+    return <Menu.Item key={key} disabled={!isEnabled} onClick={onClick}>{content}</Menu.Item>;
+}
+
+
+
+
+// we can only write text to the clipboard, so rawKey/rawValue have been removed for now
+function copyMessage(record: TopicMessage, field: "jsonKey" | "jsonValue" | "timestamp") {
+    switch (field) {
+        case "jsonKey":
+            typeof record.key.payload === 'string'
+                ? navigator.clipboard.writeText(record.key.payload as string)
+                : navigator.clipboard.writeText(JSON.stringify(record.key.payload, null, 4));
+            message.success('Key copied to clipboard', 5);
+            break;
+        case "jsonValue":
+            typeof record.value.payload === 'string'
+                ? navigator.clipboard.writeText(record.value.payload as string)
+                : navigator.clipboard.writeText(JSON.stringify(record.value.payload, null, 4));
+            message.success('Value copied to clipboard', 5);
+            break;
+        case "timestamp":
+            navigator.clipboard.writeText(record.timestamp.toString());
+            message.success('Epoch Timestamp copied to clipboard', 5);
+            break;
+        default:
+        // empty
     }
+}
+
+function createPublishRecordsModal(parent: TopicMessageView) {
+    return createAutoModal({
+        modalProps: {
+            title: 'Produce Message',
+            width: '80%',
+            style: { minWidth: '690px', maxWidth: '1000px' },
+            bodyStyle: { paddingTop: '1em' },
+            centered: true,
+
+            okText: 'Publish',
+
+            closable: false,
+            keyboard: false,
+            maskClosable: false,
+        },
+        onCreate: (showArg: { topicName: string; }) => {
+            return observable({
+                topics: [showArg.topicName],
+                partition: -1, // -1 = auto
+                compressionType: CompressionType.Uncompressed,
+                encodingType: uiState.topicSettings.produceRecordEncoding || 'json',
+
+                key: "",
+                value: "",
+                headers: [{ key: '', value: '' }],
+            } as PublishMessageModalProps['state']);
+        },
+        isOkEnabled: s => s.topics.length === 1,
+        onOk: async state => {
+
+            if (state.encodingType === 'json')
+                // try parsing just to make sure its actually json
+                JSON.parse(state.value);
+
+            const convert: { [key in EncodingType]: (x: string) => string | null } = {
+                'none': x => null,
+                'base64': x => x.trim(),
+                'json': x => btoa(x.trim()),
+                'utf8': x => btoa(x),
+            };
+            const value = convert[state.encodingType](state.value);
+
+            const record: PublishRecord = {
+                headers: state.headers.filter(h => h.key && h.value).map(h => ({ key: h.key, value: btoa(h.value) })),
+                key: btoa(state.key),
+                partitionId: state.partition,
+                value: value,
+            };
+
+            const result = await api.publishRecords({
+                compressionType: compressionTypeToNum(state.compressionType),
+                records: [record],
+                topicNames: state.topics,
+                useTransactions: false,
+            });
+
+
+            const errors = [
+                result.error,
+                ...result.records.filter(x => x.error).map(r => `Topic "${r.topicName}": \n${r.error}`)
+            ].filterFalsy();
+
+            if (errors.length)
+                throw new Error(errors.join('\n\n'));
+
+            if (result.records.length == 1)
+                return <>Record published on partition <span className='codeBox'>{result.records[0].partitionId}</span> with offset <span className='codeBox'>{result.records[0].offset}</span></>
+            return <>{result.records.length} records published successfully</>;
+
+        },
+        onSuccess: (state, result) => {
+            uiState.topicSettings.produceRecordEncoding = state.encodingType;
+            parent.props.refreshTopicData(true);
+            parent.searchFunc('auto');
+        },
+        content: (state) => <PublishMessagesModalContent state={state} />,
+    })
+
 }

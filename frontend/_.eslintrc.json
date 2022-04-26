@@ -1,0 +1,152 @@
+{
+    "root": true,
+    "env": {
+        "browser": true,
+        "es6": true
+    },
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+    },
+    "plugins": [
+        "react",
+        "@typescript-eslint",
+        "mobx" // eslint-plugin-mobx
+    ],
+    "parser": "@typescript-eslint/parser",
+    "extends": [
+        "react-app",
+        "plugin:@typescript-eslint/recommended",
+
+        "plugin:jsonc/base", // ... Configuration to enable correct JSON parsing.
+        "plugin:jsonc/recommended-with-json", // ... Recommended configuration for JSON.
+        "plugin:jsonc/recommended-with-jsonc",
+        "plugin:mobx/recommended"
+    ],
+    "overrides": [
+        {
+            "files": [ "*.json", "*.jsonc" ],
+            "parser": "jsonc-eslint-parser"
+        }
+    ],
+    "parserOptions": {
+        "ecmaFeatures": {
+            "jsx": true
+        },
+        "ecmaVersion": 2019,
+        "sourceType": "module"
+    },
+    "settings": {
+
+        "import/extensions": [
+            // ".js",
+            // ".jsx",
+            ".ts", ".tsx"
+        ],
+        "import/resolver": {
+            "node": {
+                "extensions": [
+                    // ".js",
+                    // ".jsx",
+                    // ".json",
+                    ".ts", ".tsx"
+                ]
+            }
+        }
+    },
+    "rules": {
+        "no-useless-constructor": "off",
+        "no-constant-condition": "off", // while(true) { if(x)  break;  } is much clearer
+        "no-this-before-super": "warn",
+        "constructor-super": "warn",
+        "valid-typeof": "warn",
+        // "semi": [ "warn", "always", { "omitLastInOneLineBlock": false } ],
+        "semi": "off",
+        "eqeqeq": "off",
+        "semi-spacing": [
+            "warn", {
+                "before": false,
+                "after": true
+            }
+        ],
+        "no-extra-semi": "warn",
+        "no-extend-native": "off", // extensions are on purpose
+        "@typescript-eslint/no-useless-constructor": "off",
+        "@typescript-eslint/no-inferrable-types": "off", // extra type defs help to alert against updated apis
+        "@typescript-eslint/ban-types": "off", // will be fixed later
+        "@typescript-eslint/no-unused-vars": "off", // keep imports
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/no-non-null-assertion": "off", // override is sometimes needed
+        "react/jsx-filename-extension": [
+            "error", {
+                "extensions": [ ".jsx", ".tsx" ]
+            }
+        ],
+        // "mobx/exhaustive-make-observable": "warn",
+        // "mobx/unconditional-make-observable": "error",
+        // "mobx/missing-make-observable": "error",
+        // "mobx/missing-observer": "warn",
+        // "mobx/no-anonymous-observer": "warn",
+        "no-mixed-operators": [
+            "warn", {
+                // "groups": [ [ "&&", "??" ], [ "||", "??" ] ],
+                "allowSamePrecedence": false
+            }
+        ],
+        "react/jsx-no-target-blank": "off",
+        "no-useless-concat": "off",
+        "prefer-const": "warn",
+
+
+        //
+        // JSON
+        "jsonc/no-comments": "off",
+        "jsonc/no-dupe-keys": "error",
+        "jsonc/array-bracket-newline": "off",
+        "jsonc/array-bracket-spacing": "off",
+        "jsonc/array-element-newline": [ "off",  {
+            "ArrayExpression": { "minItems": 5 },
+            "ArrayPattern": { "minItems": 5 }
+        }
+        ],
+
+        // never, always, always-multiline, only-multiline
+        "jsonc/comma-dangle": [ "warn", { "arrays": "never",  "objects": "never" } ],
+        "jsonc/comma-style": [ "warn", "last" ],
+        "jsonc/indent": [ "error", 4, {
+            "VariableDeclarator": "first",
+            "ObjectExpression": 1 ,
+            "MemberExpression": 1 ,
+            "FunctionDeclaration": {"parameters": "first"} ,
+            "CallExpression": {"arguments": "first"},
+            "ArrayExpression": "first"
+        } ],
+        "jsonc/key-spacing": "off",
+        // "jsonc/key-spacing": [
+        //     "warn", {
+        //         // "beforeColon": false,
+        //         // "afterColon": true,
+        //         "singleLine": { // objects with props all on the same line
+        //             "beforeColon": false,
+        //             "afterColon": false
+        //         },
+        //         "multiLine": { // props of an object that is defined over multiple lines
+        //             // "beforeColon": true,
+        //             // "afterColon": true,
+        //             "align": "value"
+        //         },
+        //         "align": { // when multiline encounters groups of lines that have no empty lines between them
+        //             "on": "value", // value/colon
+        //             "mode": "strict" // (strict: exactly one)  (minimum: align with others)
+        //         }
+        //     }
+        // ],
+        "jsonc/quote-props": [
+            "error", "always", // always, as-needed(disallow where not needed), consistent(all or none), consistent-as-needed (enforce quotes where needed, enforce none where not needed)
+            {}
+        ],
+        "jsonc/quotes": [ "error", "double", {"avoidEscape": false} ]
+
+    }
+}

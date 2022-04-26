@@ -133,7 +133,6 @@ class TopicList extends PageComponent {
                                                     event.stopPropagation();
                                                     this.topicToDelete = record.topicName;
                                                 }}
-                                                danger
                                             >
                                                 <TrashIcon />
                                             </Button>

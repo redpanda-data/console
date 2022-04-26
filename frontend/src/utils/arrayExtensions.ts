@@ -172,17 +172,11 @@ Array.prototype.maxBy = function maxBy<T>(this: T[], selector: (x: T) => number)
 };
 
 Array.prototype.any = function any<T>(this: T[], selector: (x: T) => boolean) {
-    for (const e of this)
-        if (selector(e))
-            return true;
-    return false;
+    return this.some(selector);
 };
 
 Array.prototype.all = function all<T>(this: T[], selector: (x: T) => boolean) {
-    for (const e of this)
-        if (!selector(e))
-            return false;
-    return true;
+    return this.every(selector);
 };
 
 Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) => K): Map<K, T[]> {

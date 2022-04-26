@@ -4,7 +4,7 @@ import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
 import { DeleteRecordsResponseData, Partition, Topic, TopicOffset } from '../../../../state/restInterfaces';
 import { RadioOptionGroup } from '../../../../utils/tsxUtils';
-import { fromDecimalSeparated, keepInRange, prettyNumber, toDecimalSeparated } from '../../../../utils/utils';
+import { prettyNumber } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 
 import styles from './DeleteRecordsModal.module.scss';
@@ -133,22 +133,22 @@ const SelectOffsetStep = ({
     const upperOption =
         partitionInfo === 'allPartitions'
             ? {
-                  value: 'highWatermark' as OffsetOption,
-                  title: 'High Watermark',
-                  subTitle: 'Delete records until high watermark across all partitions in this topic.',
-              }
+                value: 'highWatermark' as OffsetOption,
+                title: 'High Watermark',
+                subTitle: 'Delete records until high watermark across all partitions in this topic.',
+            }
             : {
-                  value: 'manualOffset' as OffsetOption,
-                  title: 'Manual Offset',
-                  subTitle: `Delete records until specified offset across all selected partitions (ID: ${partitionInfo[1]}) in this topic.`,
-                  content: (
-                      <ManualOffsetContent
-                          topicName={topicName}
-                          partitionInfo={partitionInfo}
-                          onOffsetSpecified={onOffsetSpecified}
-                      />
-                  ),
-              };
+                value: 'manualOffset' as OffsetOption,
+                title: 'Manual Offset',
+                subTitle: `Delete records until specified offset across all selected partitions (ID: ${partitionInfo[1]}) in this topic.`,
+                content: (
+                    <ManualOffsetContent
+                        topicName={topicName}
+                        partitionInfo={partitionInfo}
+                        onOffsetSpecified={onOffsetSpecified}
+                    />
+                ),
+            };
 
     return (
         <>
@@ -256,7 +256,7 @@ const ManualOffsetContent = observer(
                     min={min}
                     max={max}
                     onChange={updateOffsetFromSlider}
-                    
+
                     className={styles.slider}
                 />
                 <Input
@@ -264,7 +264,7 @@ const ManualOffsetContent = observer(
                     value={sliderValue}
                     onChange={(e) => {
                         const { value } = e.target;
-                        if(!DIGITS_ONLY_REGEX.test(value)) return;
+                        if (!DIGITS_ONLY_REGEX.test(value)) return;
                         updateOffsetFromSlider(Number(value))
                     }}
                     onBlur={() => {
@@ -277,16 +277,16 @@ const ManualOffsetContent = observer(
                         }
                     }}
 
-                    // onChange={(e) => {
-                    //     const { value } = e.target;
-                    //     if (!SLIDER_INPUT_REGEX.test(value)) return;
-                    //     const rangedValue = keepInRange(
-                    //         fromDecimalSeparated(value),
-                    //         min || 0,
-                    //         max || Number.MAX_SAFE_INTEGER
-                    //     );
-                    //     updateOffsetFromSlider(rangedValue);
-                    // }}
+                // onChange={(e) => {
+                //     const { value } = e.target;
+                //     if (!SLIDER_INPUT_REGEX.test(value)) return;
+                //     const rangedValue = keepInRange(
+                //         fromDecimalSeparated(value),
+                //         min || 0,
+                //         max || Number.MAX_SAFE_INTEGER
+                //     );
+                //     updateOffsetFromSlider(rangedValue);
+                // }}
                 />
             </div>
         );
@@ -471,11 +471,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                                 Errors have occurred when processing your request. Please contact your Kafka
                                 Administrator.
                             </p>
-                            <ul>
-                                {errors.map((error) => (
-                                    <li>{error}</li>
-                                ))}
-                            </ul>
+                            <ul>{errors.map((e, i) => <li key={String(i)}>{e}</li>)}</ul>
                         </>
                     }
                 />

@@ -30,3 +30,5 @@ yarn-error.log*
 notes.md
 
 **/utils/interpreter/compiled
+
+.env

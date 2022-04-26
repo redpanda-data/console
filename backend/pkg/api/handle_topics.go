@@ -3,12 +3,13 @@ package api
 import (
 	_ "context"
 	"fmt"
-	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap/zapcore"
 	"net/http"
 	"strconv"
 	"strings"
 	_ "time"
+
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.uber.org/zap/zapcore"
 
 	"go.uber.org/zap"
 
