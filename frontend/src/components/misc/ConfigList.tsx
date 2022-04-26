@@ -17,28 +17,28 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
             title: 'Configuration',
             dataIndex: 'name',
             render: (text: string, record: ConfigEntry) => {
-                const content = <div className={styles.name}>
-                    {(record.isSensitive || record.isExplicitlySet || record.isReadOnly) && <span className={styles.configFlags}>
-                        <span className={styles.nameText}>{text}</span>
-                        {/*
-                {record.isExplicitlySet && <Tooltip overlay="Value was set explicitly">
-                    <EditTwoTone twoToneColor="#1890ff" />
-                </Tooltip>} */}
 
-                        {record.isSensitive && <Tooltip overlay="Value has been redacted because it's sensitive">
-                            <EyeInvisibleTwoTone twoToneColor="#1890ff" />
-                        </Tooltip>}
+                let name = <div style={{ display: 'flex' }} className={styles.nameText}>{text}</div>;
+                if (renderTooltip) name = renderTooltip(record, name);
 
-                    </span>}
+                const explicitSet = record.isExplicitlySet && (
+                    <Tooltip overlay="Value was set explicitly">
+                        <EditTwoTone twoToneColor="#1890ff" />
+                    </Tooltip>
+                );
+                const sensitive = record.isSensitive && (
+                    <Tooltip overlay="Value has been redacted because it's sensitive">
+                        <EyeInvisibleTwoTone twoToneColor="#1890ff" />
+                    </Tooltip>
+                );
 
-                </div>
-
-                if (renderTooltip)
-                    return renderTooltip(record, content);
-
-                return <Tooltip overlay={text} getPopupContainer={findPopupContainer} mouseEnterDelay={0.25}>
-                    {content}
-                </Tooltip>
+                return <div className={styles.name}>
+                    {name}
+                    <span className={styles.configFlags}>
+                        {/* {explicitSet} */}
+                        {sensitive}
+                    </span>
+                </div>;
             }
         },
         {

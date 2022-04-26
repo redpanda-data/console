@@ -116,15 +116,11 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
 
 
 const TopicConfigList = observer(({ configEntries }: { configEntries: ConfigEntry[] }) => {
-    return <ConfigList configEntries={configEntries} valueDisplay={uiSettings.topicList.valueDisplay} />;
-
-
-    // return <ConfigList
-    //     configEntries={configEntries}
-    //     valueDisplay={uiSettings.topicList.valueDisplay}
-    //     renderTooltip={(e, content) =>
-    //         FavoritePopover(e, content)}
-    // />;
+    return <ConfigList
+        configEntries={configEntries}
+        valueDisplay={uiSettings.topicList.valueDisplay}
+        renderTooltip={(e, content) => FavoritePopover(e, content)}
+    />
 });
 
 const ConfigDisplaySettings = observer(() => (
@@ -174,9 +170,10 @@ export const FavoritePopover = (configEntry: ConfigEntry, children: React.ReactN
     const popupContent = (
         <div>
             <Paragraph style={{ maxWidth: '400px' }}>
-                <b>Description</b>
-                <br />
-                <Text>{infoEntry ? infoEntry.Description : "Config property '" + name + "' unknown"}</Text>
+                {infoEntry
+                    ? <div className='configPropDescription'>{infoEntry.Description}</div>
+                    : <div className='configPropDescription unknownConfigProp'>No description available, unknown property</div>
+                }
             </Paragraph>
 
             <Checkbox children="Show this setting in 'Quick Info'" checked={isFav} onChange={() => toggleFav()} />
@@ -188,11 +185,7 @@ export const FavoritePopover = (configEntry: ConfigEntry, children: React.ReactN
             key={configEntry.name}
             placement="right"
             trigger="click"
-            title={
-                <>
-                    Config <Text code>{name}</Text>
-                </>
-            }
+            title={<code>{name}</code>}
             content={popupContent}
         >
             <div className="hoverLink" style={{ display: 'flex', verticalAlign: 'middle', cursor: 'pointer' }}>

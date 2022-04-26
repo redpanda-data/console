@@ -3282,3 +3282,19 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         color: hsl(0deg 0% 80%);
     }
 }
+.configPropDescription {
+    font-style: italic;
+    font-size: 12px;
+    padding-left: 1em;
+    padding-right: 2em;
+    border-left: 3px solid hsl(0deg 0% 85%);
+    color: hsl(208deg 3% 50%);
+    background: #f7f7f7;
+
+    &.unknownConfigProp {
+        opacity: 0.7;
+        background: hsl(0deg 100% 97%);
+        color: hsl(0deg 50% 59%);
+        border-color: hsl(0deg 100% 85%);
+    }
+}
