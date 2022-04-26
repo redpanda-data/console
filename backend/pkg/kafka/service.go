@@ -37,6 +37,7 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	hooksChildLogger := logger.With(zap.String("source", "kafka_client_hooks"))
 	clientHooks := newClientHooks(hooksChildLogger, "kowl")
 
+	logger.Debug("creating new kafka client", zap.Any("config", cfg.RedactedConfig()))
 	kgoOpts, err := NewKgoConfig(&cfg, logger, clientHooks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
@@ -46,7 +47,23 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kafka client: %w", err)
 	}
-	err = testConnection(logger, kafkaClient, time.Second*15)
+
+	// Ensure Kafka connection works, otherwise fail fast. Allow up to 5 retries with exponentially increasing backoff.
+	// Retries with backoff is very helpful in environments where Kowl concurrently starts with the Kafka target, such
+	// as a docker-compose demo.
+	retries := 5
+	backoffDuration := 1 * time.Second
+	for retries > 0 {
+		err = testConnection(logger, kafkaClient, time.Second*15)
+		if err == nil {
+			break
+		}
+		logger.Warn(fmt.Sprintf("Failed to test Kafka connection, going to retry in %vs",
+			backoffDuration.Seconds()), zap.Int("remaining_retries", retries))
+		time.Sleep(backoffDuration)
+		backoffDuration *= 2
+		retries--
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to test kafka connection: %w", err)
 	}
@@ -112,7 +129,6 @@ func (s *Service) Start() error {
 }
 
 func (s *Service) NewKgoClient(additionalOpts ...kgo.Opt) (*kgo.Client, error) {
-	// Kafka client
 	kgoOpts, err := NewKgoConfig(&s.Config, s.Logger, s.KafkaClientHooks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)

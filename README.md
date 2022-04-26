@@ -1,12 +1,11 @@
-# Kowl - A Web UI for Apache Kafka
+# Kowl – A UI for Data Streaming
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/cloudhut/kowl/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cloudhut/kowl)](https://goreportcard.com/report/github.com/cloudhut/kowl)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cloudhut/kowl?sort=semver)
-[![Discord Chat](https://img.shields.io/badge/discord-online-brightgreen.svg)](https://discord.gg/KQj7P6v)
 [![Docker Repository on Quay](https://img.shields.io/badge/docker%20image-ready-green "Docker Repository on Quay")](https://quay.io/repository/cloudhut/kowl)
 
-Kowl (previously known as Kafka Owl) is a web application that helps you to explore messages in your Apache Kafka cluster and get better insights on what is actually happening in your Kafka cluster in the most comfortable way:
+Kowl is a web application that helps you manage and debug your Kafka/Redpanda workloads effortlessly.
 
 ![preview](docs/assets/preview.gif)
 
@@ -21,26 +20,11 @@ Kowl (previously known as Kafka Owl) is a web application that helps you to expl
 
 **A roadmap** is maintained using [milestones](https://github.com/cloudhut/kowl/milestones).
 
-|  | Kowl | Kowl Business |
-| :-- | :-: | :-: |
-| **Topic Overview** | :white_check_mark: | :white_check_mark: |
-| **Consumer Group Management** | :white_check_mark: | :white_check_mark: |
-| **Broker/Cluster Overview** | :white_check_mark: | :white_check_mark: |
-| **Message viewer** | :white_check_mark: | :white_check_mark: |v
-| **Kafka Connect** | :white_check_mark: | :white_check_mark: |
-| **Schema Registry** | :white_check_mark: | :white_check_mark: |
-| **Login System (Google, GitHub, Okta)** | :x: | :white_check_mark: |
-| **RBAC permissions with group syncing** | :x: | :white_check_mark: |
-| **Screenshots** | Preview .gif in README | https://cloudhut.dev/ |
-| **Price** | Always free / Open source | Free during beta\* |
-
-\*If you want to participate in the free beta sign in here: https://license.cloudhut.dev/ . You'll get a forever free license for 2 seats. If you need more than 2 seats, just drop us an email at info@cloudhut.dev
-
 ## Getting Started
 
 ### Prerequisites
 
-- Kafka Cluster (v1.0.0+) connectivity
+- Redpanda or any Kafka deployment (v1.0.0+) compatible
 - At least one OAuth app for SSO (Kowl business only)
 - Internet connectivity to validate license (Kowl business only)
 
@@ -50,17 +34,17 @@ We offer pre built docker images for Kowl (Business), a Helm chart and a Terrafo
 
 ### Quick Start
 
-Do you just want to test Kowl against one of your Kafka clusters without spending too much time on the test setup? Here are some docker commands that allow you to run it locally against an existing Kafka cluster:
+Do you just want to test Kowl against one of your Kafka clusters without spending too much time on the test setup? Here are some docker commands that allow you to run it locally against an existing Redpanda or Kafka cluster:
 
-#### Kafka is running locally
+#### Redpanda/Kafka is running locally
 
-Since Kowl runs in it's own container (which has it's own network scope), we have to use `host.docker.internal` as bootstrap server. That DNS resolves to the host system's ip address. However since Kafka brokers send a list of all brokers' DNS when a client has connected, you have to make sure your advertised listener is connected accordingly, e.g.: `PLAINTEXT://host.docker.internal:9092`
+Since Kowl runs in its own container (which has its own network scope), we have to use host.docker.internal as a bootstrap server. That DNS resolves to the host system's ip address. However since the brokers send a list of all brokers' DNS when a client has connected, you have to make sure your advertised listener is connected accordingly, e.g.: `PLAINTEXT://host.docker.internal:9092`
 
 ```shell
 docker run -p 8080:8080 -e KAFKA_BROKERS=host.docker.internal:9092 quay.io/cloudhut/kowl:master
 ```
 
-Docker supports the `--network=host` option only on Linux. So Linux users use `localhost:9092` as advertised listener and use the host network namespace instead. Kowl will then be ran as it would be executed on the host machine.
+Docker supports the `--network=host` option only on Linux. So Linux users use `localhost:9092` as an advertised listener and use the host network namespace instead. Kowl will then be run as it would be executed on the host machine.
 
 ```shell
 docker run --network=host -p 8080:8080 -e KAFKA_BROKERS=localhost:9092 quay.io/cloudhut/kowl:master
@@ -76,15 +60,27 @@ docker run -p 8080:8080 -e KAFKA_BROKERS=pkc-4r000.europe-west1.gcp.confluent.cl
 
 #### I don't have a running Kafka cluster to test against
 
-We maintain a docker-compose file that launches zookeeper, kafka and kowl: [/docs/local](./docs/local).
+We maintain a docker-compose file that launches Redpanda and Kowl: [/docs/local](./docs/local).
 
-## Chat with us
+# Community
 
-We use Discord to communicate. If you are looking for more interactive discussions or support, you are invited to join our Discord server: https://discord.gg/KQj7P6v
+[Slack](https://redpanda.com/slack) is the main way the community interacts with one another in real time :)
+
+[GitHub Issues](https://github.com/redpanda-data/kowl/issues) can be used for issues, questions and feature requests.
+
+[Code of conduct](https://github.com/redpanda-data/redpanda/blob/dev/CODE_OF_CONDUCT.md) code of conduct for the community
+
+[Contributing docs](./CONTRIBUTING.md)
 
 ## Sponsors
 
 <a href="https://www.rewe-digital.com/" target="_blank"><img src="./docs/assets/sponsors/rewe-digital-logo.png" width="150" /></a>
+
+## Companies that use Kowl
+
+- REWE Digital [https://www.rewe-digital.com/]
+- Redpanda Data [https://redpanda.com/]
+- OPT-NC (Office des Postes et Télécommunications de Nouvelle-Calédonie) [https://office.opt.nc/]
 
 ## License
 

@@ -1,7 +1,7 @@
 ############################################################
 # Backend Build
 ############################################################
-FROM golang:1.17.7-alpine as builder
+FROM golang:1.17.8-alpine as builder
 RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificates
 
 WORKDIR /app
@@ -59,7 +59,7 @@ RUN npm run build
 ############################################################
 # Final Image
 ############################################################
-FROM alpine:3.13
+FROM alpine:3
 
 # Embed env vars in final image as well (so the backend can read them)
 ARG KOWL_GIT_SHA

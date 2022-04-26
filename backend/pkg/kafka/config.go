@@ -72,3 +72,23 @@ func (c *Config) SetDefaults() {
 	c.Protobuf.SetDefaults()
 	c.MessagePack.SetDefaults()
 }
+
+// RedactedConfig returns a copy of the config object which redacts sensitive fields. This is useful if you
+// want to log the entire config object but without sensitive fields.
+func (c Config) RedactedConfig() Config {
+	c.TLS.Passphrase = redactString(c.TLS.Passphrase)
+	c.SASL.Password = redactString(c.SASL.Password)
+	c.SASL.GSSAPIConfig.Password = redactString(c.SASL.GSSAPIConfig.Password)
+	c.SASL.OAUth.Token = redactString(c.SASL.OAUth.Token)
+	c.SASL.AWSMskIam.SecretKey = redactString(c.SASL.AWSMskIam.SecretKey)
+	c.SASL.AWSMskIam.SessionToken = redactString(c.SASL.AWSMskIam.SessionToken)
+
+	return c
+}
+
+func redactString(in string) string {
+	if in == "" {
+		return in
+	}
+	return "<redacted>"
+}
