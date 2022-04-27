@@ -1,6 +1,5 @@
 # Kowl – A UI for Data Streaming
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/cloudhut/kowl/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cloudhut/kowl)](https://goreportcard.com/report/github.com/cloudhut/kowl)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/cloudhut/kowl?sort=semver)
 [![Docker Repository on Quay](https://img.shields.io/badge/docker%20image-ready-green "Docker Repository on Quay")](https://quay.io/repository/cloudhut/kowl)
@@ -81,7 +80,3 @@ We maintain a docker-compose file that launches Redpanda and Kowl: [/docs/local]
 - REWE Digital [https://www.rewe-digital.com/]
 - Redpanda Data [https://redpanda.com/]
 - OPT-NC (Office des Postes et Télécommunications de Nouvelle-Calédonie) [https://office.opt.nc/]
-
-## License
-
-Kowl is distributed under the [Apache 2.0 License](https://github.com/cloudhut/kowl/blob/master/LICENSE).
