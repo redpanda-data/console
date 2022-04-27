@@ -70,7 +70,7 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
                 },
                 {
                     title: 'Brokers',
-                    render: (v, r) => r.replicas && <BrokerList brokerIds={r.replicas} leaderId={r.replicas.length > 0 ? r.replicas[0] : -1} />
+                    render: (v, r) => <BrokerList partition={r} />
                 }
             ]} />
 
