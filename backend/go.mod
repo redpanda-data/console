@@ -17,7 +17,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/jarcoal/httpmock v1.0.8
@@ -33,13 +33,14 @@ require (
 	github.com/prometheus/common v0.20.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/stretchr/testify v1.7.0
-	github.com/twmb/franz-go v1.4.2
+	github.com/twmb/franz-go v1.5.0
 	github.com/twmb/franz-go/pkg/kmsg v1.0.0
+	github.com/twmb/franz-go/pkg/sasl/kerberos v1.0.0
 	github.com/vmihailenco/msgpack/v5 v5.3.1
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.1 // indirect
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
+	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/genproto v0.0.0-20210416161957-9910b6c460de // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
