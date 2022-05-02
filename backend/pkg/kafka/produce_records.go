@@ -3,9 +3,9 @@ package kafka
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"sync"
 )
 
 const (
@@ -68,12 +68,9 @@ func (s *Service) ProduceRecords(
 		}
 	}
 
-	mu := sync.Mutex{}
 	recordResponses := make([]ProduceRecordResponse, 0)
 	for _, r := range records {
 		client.Produce(ctx, r, func(producedRecord *kgo.Record, err error) {
-			mu.Lock()
-			defer mu.Unlock()
 			recordResponses = append(recordResponses, ProduceRecordResponse{
 				TopicName:   producedRecord.Topic,
 				PartitionID: producedRecord.Partition,
