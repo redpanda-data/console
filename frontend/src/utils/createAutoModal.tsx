@@ -6,7 +6,10 @@ import React, { Component, ReactElement } from "react";
 import { toJson } from './jsonUtils';
 import { Code } from './tsxUtils';
 
-export type AutoModalProps = Omit<AntdModalProps, 'visible' | 'afterClose' | 'onCancel' | 'onOk' | 'modalRender'>;
+export type AutoModalProps = Omit<AntdModalProps, 'visible' | 'onCancel' | 'onOk' | 'afterClose' | 'modalRender'> & {
+    // skipSuccess?: boolean,
+    successTitle?: string,
+};
 
 export type AutoModal<TArg> = {
     show: (arg: TArg) => void;
@@ -105,13 +108,21 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
         }
         else {
             // Object
-            content = toJson(err);
+            content = toJson(err, 4);
         }
 
         return <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="error"
             title={title}
-            subTitle={content}
-        >muh content</Result>
+        >
+            <code style={{
+                fontSize: '12px',
+                color: 'hsl(0deg 0% 25%)',
+                margin: '0em 3em',
+                marginTop: '1em'
+            }}>
+                {content}
+            </code>
+        </Result>
     };
 
     const renderSuccess = (response: JSX.Element | null | undefined) => {
@@ -122,10 +133,8 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 
         return <>
             <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="success"
-                title="Success"
-                subTitle={<>
-                    {response}
-                </>}
+                title={options.modalProps.successTitle ?? "Success"}
+                subTitle={response}
                 extra={<Button type="primary" size='large' style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
             />
         </>;

@@ -148,7 +148,7 @@ export function ObjToKv(obj: any): { key: string, value: any }[] {
 }
 
 const style_flexColumn: CSSProperties = { display: 'flex', flexDirection: 'column' };
-export const Label = (p: { text: string, textSuffix?: React.ReactNode, className?: string, style?: CSSProperties, children?: React.ReactNode }) => {
+export const Label = (p: { text: string, textSuffix?: React.ReactNode, className?: string, style?: CSSProperties, children?: React.ReactNode, required?: boolean }) => {
     const [id] = useState(() => simpleUniqueId(p.text));
 
     const child: React.ReactNode = p.children ?? <React.Fragment />;
@@ -159,9 +159,17 @@ export const Label = (p: { text: string, textSuffix?: React.ReactNode, className
 
     const divStyle = p.style ? { ...p.style, ...style_flexColumn } : p.style;
 
+    const labelClasses = ['labelText'];
+    if (p.required) labelClasses.push('required');
+
+    // <label className="label">
+    //     <span className="title">{p.text}</span>
+    //     {p.children}
+    // </label>
+
     return <>
         <div className={p.className} style={divStyle}>
-            <div className='labelText'>
+            <div className={labelClasses.join(' ')}>
                 <label htmlFor={id}>{p.text} {p.textSuffix}</label>
             </div>
             <div>
@@ -183,7 +191,6 @@ export function findPopupContainer(current: HTMLElement): HTMLElement {
         container = p;
     }
 
-    return current;
 }
 
 export const InfoText = (p: {

@@ -13,8 +13,9 @@ export function isApiError(obj: any): obj is ApiError {
     return false;
 }
 
-export class WrappedError extends Error {
+export class WrappedApiError extends Error {
     statusCode: number;
+    message: string;
     path: string;
 
     constructor(response: Response, apiError: ApiError) {
@@ -1194,4 +1195,19 @@ export interface ProduceRecordResponse {
     partitionId: number;
     offset: number;
     error?: string;
+}
+
+export interface CreateTopicRequest {
+    topicName: string;
+    partitionCount: number; // -1 for default
+    replicationFactor: number; // -1 for default
+    configs: { name: string, value: string }[];
+}
+
+
+export interface CreateTopicResponse {
+    topicName: string;
+    partitionCount: number;
+    replicationFactor: number;
+    configs: { name: string, value: string }[];
 }

@@ -95,7 +95,8 @@
         // ],
         "react/jsx-no-target-blank": "off",
         "no-useless-concat": "off",
-        "prefer-const": "warn"
+        "prefer-const": "warn",
+        "@typescript-eslint/no-empty-function": "off"
     },
     "parser": "@typescript-eslint/parser"
 }

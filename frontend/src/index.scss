@@ -854,9 +854,13 @@ tr td:nth-last-child(1) {
 }
 
 .iconButton {
+    // svg[width] {
+    //     transform: scale(1);
+    // }
     transition-duration: 100ms;
     transition-timing-function: ease-out;
     transition-delay: 0ms;
+    color: hsl(0, 0%, 45%);
 }
 
 .disableAnimation {
@@ -922,6 +926,7 @@ th.msgTableActionColumn .ant-table-filter-trigger-container {
         color: hsl(0, 0%, 35%);
     }
 }
+
 .fill {
     width: 100%;
     height: 100%;
@@ -972,7 +977,7 @@ tr.consumerGroupNoMemberAssigned {
     margin-left: 1px;
     line-height: 1.5;
     color: rgba(0, 0, 0, 0.45);
-    font-size: 0.7em;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     /* background: linear-gradient(90deg, rgba(0, 0, 0, 20%) 5%, rgba(0, 0, 0, 0) 100%) bottom no-repeat;
@@ -1389,15 +1394,6 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
     background-color: rgba(255, 187, 0, 0.185);
 }
 
-/* .tableRowHighlightSpecial td:first-child::before {
-    content: ' ';
-    position: absolute;
-    top: 0px;
-    bottom: 0px;
-    left: -30px;
-    width: 30px;
-    background: red;
-} */
 .popoverSmall {
     .ant-popover-inner-content {
         /* reduced from 12 16 */
@@ -3229,6 +3225,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 .noArrow .ant-popover-arrow {
     display: none;
 }
+
 .publishMessagesModal {}
 
 .kowlEditor {
@@ -3282,6 +3279,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         color: hsl(0deg 0% 80%);
     }
 }
+
 .configPropDescription {
     font-style: italic;
     font-size: 12px;
@@ -3297,4 +3295,62 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         color: hsl(0deg 50% 59%);
         border-color: hsl(0deg 100% 85%);
     }
+}
+.inputGroup {
+    display: inline-flex;
+    flex-grow: 1;
+
+    >input.ant-input,
+    >div.ant-select,
+    >.ant-btn-default,
+    >.ant-btn-primary {
+        margin-right: -1px;
+        flex-grow: 1;
+        width: auto;
+
+        &:not(:first-child) {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        &:not(:last-child) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        &:hover,
+        &:focus-within {
+            z-index: 1;
+        }
+    }
+}
+
+.labelText {
+    width: 100%;
+    // display: inline-block;
+    // padding-bottom: 3px;
+    // padding-left: 1px;
+    position: relative;
+
+    &.required label::before {
+        @include beforeAfter();
+        content: '*';
+        width: 5px;
+        font-size: 16px;
+        color: red;
+        top: -2px;
+        left: -9px;
+    }
+}
+
+.createTopicModal {
+    .labelText {
+        // color: rgb(0 0 0 / 60%);
+        font-size: 10px;
+    }
+}
+
+.ant-select-selection-placeholder,
+input::placeholder {
+    font-style: italic;
 }
