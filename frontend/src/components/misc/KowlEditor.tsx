@@ -1,7 +1,6 @@
 import React, { CSSProperties } from 'react';
 import Editor, { EditorProps, Monaco } from '@monaco-editor/react';
 import { editor } from 'monaco-editor';
-import merge from 'deepmerge';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 
