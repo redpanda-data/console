@@ -26,33 +26,27 @@ import { ServerVersionInfo, uiState } from "./uiState";
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
-const REST_DEBUG_BASE_URL = null;// || "http://localhost:9090"; // only uncommented using "npm run build && serve -s build"
 
 /*
     - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
     - 2xx does not mean complete success, for some endpoints (e.g.: broker log dirs) we can get partial responses (array with some result entries and some error entries)
 */
-export async function rest<T>(url: string, timeoutSec: number = REST_TIMEOUT_SEC, requestInit?: RequestInit): Promise<T | null> {
-
-    if (REST_DEBUG_BASE_URL) {
-        url = REST_DEBUG_BASE_URL + url;
-        if (!requestInit) requestInit = {};
-        requestInit.mode = "no-cors";
-        requestInit.cache = "no-cache";
-    }
-
-    const res = await fetchWithTimeout(url, timeoutSec * 1000, requestInit);
+export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T | null> {
+    const res = await fetchWithTimeout(url, REST_TIMEOUT_SEC * 1000, requestInit);
 
     if (res.status == 401) { // Unauthorized
         await handle401(res);
+        return null;
     }
     if (res.status == 403) { // Forbidden
         return null;
     }
 
-    processVersionInfo(res);
+    const text = await res.text();
 
-    return tryParseOrUnwrapError<T>(res);
+    processVersionInfo(res.headers);
+
+    return parseOrUnwrap<T>(res, text);
 }
 
 async function handle401(res: Response) {
@@ -79,9 +73,9 @@ async function handle401(res: Response) {
     appGlobal.history.push('/login');
 }
 
-function processVersionInfo(res: Response) {
+function processVersionInfo(headers: Headers) {
     try {
-        for (const [k, v] of res.headers) {
+        for (const [k, v] of headers) {
             if (k.toLowerCase() == 'app-version') {
                 const serverVersion = JSON.parse(v) as ServerVersionInfo;
                 if (typeof serverVersion === 'object')
@@ -405,7 +399,7 @@ const apiStore = {
             ]
         });
 
-        const r = await tryParseOrUnwrapError<GetTopicOffsetsByTimestampResponse>(response);
+        const r = await parseOrUnwrap<GetTopicOffsetsByTimestampResponse>(response, null);
         return r.topicOffsets;
     },
 
@@ -426,7 +420,7 @@ const apiStore = {
     },
 
     async deleteTopic(topicName: string) {
-        return rest(`./api/topics/${encodeURIComponent(topicName)}`, REST_TIMEOUT_SEC, { method: 'DELETE' }).catch(addError);
+        return rest(`./api/topics/${encodeURIComponent(topicName)}`, { method: 'DELETE' }).catch(addError);
     },
 
     async deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
@@ -455,7 +449,7 @@ const apiStore = {
     },
 
     async deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName: string, pairs: Array<{ partitionId: number, offset: number; }>) {
-        return rest<DeleteRecordsResponseData>(`./api/topics/${topicName}/records`, REST_TIMEOUT_SEC, {
+        return rest<DeleteRecordsResponseData>(`./api/topics/${topicName}/records`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ partitions: pairs })
@@ -629,13 +623,9 @@ const apiStore = {
     },
 
     refreshCluster(force?: boolean) {
-        cachedApiRequest<ClusterInfoResponse | ApiError>(`./api/cluster`, force)
+        cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
             .then(v => {
                 transaction(() => {
-                    // root response can fail as well
-                    if ('message' in v) {
-                        return;
-                    }
                     // add 'type' to each synonym entry
                     for (const broker of v.clusterInfo.brokers)
                         if (broker.config && !broker.config.error)
@@ -643,6 +633,7 @@ const apiStore = {
 
                     // don't assign if the value didn't change
                     // we'd re-trigger all observers!
+                    // TODO: it would probably be easier to just annotate 'clusterInfo' with a structural comparer
                     if (!comparer.structural(this.clusterInfo, v.clusterInfo))
                         this.clusterInfo = v.clusterInfo;
 
@@ -656,16 +647,14 @@ const apiStore = {
     },
 
     refreshBrokerConfig(brokerId: number, force?: boolean) {
-        cachedApiRequest<BrokerConfigResponse | ApiError>(`./api/brokers/${brokerId}/config`, force).then(v => {
-            if ('message' in v) {
-                // error
-                this.brokerConfigs.set(brokerId, v.message);
-            } else {
-                // success
+        cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force)
+            .then(v => {
                 prepareSynonyms(v.brokerConfigs);
                 this.brokerConfigs.set(brokerId, v.brokerConfigs);
-            }
-        }).catch(addError);
+            })
+            .catch(err => {
+                this.brokerConfigs.set(brokerId, String(err));
+            });
     },
 
     refreshConsumerGroup(groupId: string, force?: boolean) {
@@ -711,8 +700,7 @@ const apiStore = {
             body: toJson(request),
         });
 
-        const r = await tryParseOrUnwrapError<EditConsumerGroupOffsetsResponse>(response);
-        if (r.error) throw Error(r.error);
+        const r = await parseOrUnwrap<EditConsumerGroupOffsetsResponse>(response, null);
         return r.topics;
     },
 
@@ -731,7 +719,7 @@ const apiStore = {
             body: toJson(request),
         });
 
-        const r = await tryParseOrUnwrapError<DeleteConsumerGroupOffsetsResponse>(response);
+        const r = await parseOrUnwrap<DeleteConsumerGroupOffsetsResponse>(response, null);
         return r.topics;
     },
 
@@ -824,8 +812,7 @@ const apiStore = {
             ],
             body: toJson(request),
         });
-
-        return await tryParseOrUnwrapError<AlterPartitionReassignmentsResponse>(response);
+        return await parseOrUnwrap<AlterPartitionReassignmentsResponse>(response, null);
     },
 
     async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number): Promise<PatchConfigsResponse> {
@@ -935,8 +922,7 @@ const apiStore = {
             ],
             body: toJson(request),
         });
-
-        return await tryParseOrUnwrapError<PatchConfigsResponse>(response);
+        return await parseOrUnwrap<PatchConfigsResponse>(response, null);
     },
 
 
@@ -1052,7 +1038,7 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        return tryParseOrUnwrapError<null>(response);
+        return parseOrUnwrap<null>(response, null);
     },
 
     async pauseConnector(clusterName: string, connector: string): Promise<null> {
@@ -1063,7 +1049,7 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        return tryParseOrUnwrapError<null>(response);
+        return parseOrUnwrap<null>(response, null);
     },
 
     async resumeConnector(clusterName: string, connector: string): Promise<null> {
@@ -1074,7 +1060,7 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        return tryParseOrUnwrapError<null>(response);
+        return parseOrUnwrap<null>(response, null);
     },
 
     async restartConnector(clusterName: string, connector: string): Promise<null> {
@@ -1085,7 +1071,7 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        return tryParseOrUnwrapError<null>(response);
+        return parseOrUnwrap<null>(response, null);
     },
 
     async updateConnector(clusterName: string, connector: string, config: object): Promise<null> {
@@ -1097,7 +1083,7 @@ const apiStore = {
             ],
             body: JSON.stringify({ config: config }),
         });
-        return tryParseOrUnwrapError<null>(response);
+        return parseOrUnwrap<null>(response, null);
     },
 
     async restartTask(clusterName: string, connector: string, taskID: number): Promise<null> {
@@ -1109,7 +1095,7 @@ const apiStore = {
             ]
         });
 
-        return tryParseOrUnwrapError<null>(response);
+        return parseOrUnwrap<null>(response, null);
     },
 
     async validateConnectorConfig(clusterName: string, pluginClassName: string, config: object): Promise<ConnectorValidationResult> {
@@ -1121,7 +1107,7 @@ const apiStore = {
             ],
             body: JSON.stringify(config),
         });
-        return tryParseOrUnwrapError<ConnectorValidationResult>(response);
+        return parseOrUnwrap<ConnectorValidationResult>(response, null);
     },
 
     async createConnector(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<null> {
@@ -1136,7 +1122,7 @@ const apiStore = {
                 config: config
             }),
         });
-        return tryParseOrUnwrapError<null>(response);
+        return parseOrUnwrap<null>(response, null);
     },
 
     async publishRecords(request: PublishRecordsRequest): Promise<ProduceRecordsResponse> {
@@ -1148,8 +1134,20 @@ const apiStore = {
             ],
             body: JSON.stringify(request),
         });
-        return tryParseOrUnwrapError<ProduceRecordsResponse>(response);
+        return parseOrUnwrap<ProduceRecordsResponse>(response, null);
     },
+
+    async createTopic(request: CreateTopicRequest): Promise<CreateTopicResponse> {
+        // POST "/topics"
+        const response = await fetch(`./api/topics`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify(request),
+        });
+        return parseOrUnwrap<CreateTopicResponse>(response, null);
+    }
 };
 
 function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {
@@ -1239,11 +1237,8 @@ export async function partialTopicConfigs(configKeys: string[], topics?: string[
         ? `topicNames=${topicNames}&configKeys=${keys}`
         : `configKeys=${keys}`;
 
-    const response = await fetch('./api/topics-configs?' + query).catch(e => null);
-    if (response == null)
-        throw response;
-
-    return tryParseOrUnwrapError<PartialTopicConfigsResponse>(response);
+    const response = await fetch('./api/topics-configs?' + query);
+    return parseOrUnwrap<PartialTopicConfigsResponse>(response, null);
 }
 
 export interface MessageSearchRequest {
@@ -1254,20 +1249,26 @@ export interface MessageSearchRequest {
     filterInterpreterCode: string, // js code, base64 encoded
 }
 
-async function tryParseOrUnwrapError<T>(response: Response): Promise<T> {
-    // network error => .text() will throw
-    const text = await response.text();
-
-    // kowl error    => status won't be ok
-    if (!response.ok)
-        throw new Error(text);
-
-    // invalid JSON  => parse will throw
-    const obj = JSON.parse(text);
+async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
+    let obj: undefined | any = undefined;
+    if (text === null) {
+        if (response.bodyUsed)
+            throw new Error(`response content already consumed`);
+        text = await response.text();
+    }
+    try {
+        obj = JSON.parse(text);
+    } catch { }
 
     // backend error => content will be ApiError
     if (isApiError(obj))
         throw new WrappedError(response, obj);
+
+    // server/proxy error?
+    if (!response.ok) {
+        text = text?.trim() ?? '';
+        throw new Error(`${response.status} (${text ?? response.statusText})`);
+    }
 
     return obj as T;
 }
@@ -1279,10 +1280,3 @@ function addError(err: Error) {
 
 type apiStoreType = typeof apiStore;
 export const api = observable(apiStore, { messages: observable.shallow }) as apiStoreType;
-
-/*
-autorun(r => {
-    console.log(toJson(api))
-    touch(api)
-}, { delay: 50, name: 'api observer' });
-*/
