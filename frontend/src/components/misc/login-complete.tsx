@@ -1,8 +1,6 @@
 import { Component } from "react";
-import { observer } from "mobx-react";
-import React from "react";
-import { Layout, Spin } from "antd";
-import { api, rest } from "../../state/backendApi";
+import { Spin } from "antd";
+import { api } from "../../state/backendApi";
 import { ApiError, UserData } from "../../state/restInterfaces";
 import { appGlobal } from "../../state/appGlobal";
 import fetchWithTimeout from "../../utils/fetchWithTimeout";

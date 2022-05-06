@@ -14,20 +14,20 @@
 
     <script>
         {
-            baseUrl = "__BASE_PATH_REPLACE_MARKER__";
-            window["BASE_URL"] = baseUrl;
+            basePath = "__BASE_PATH_REPLACE_MARKER__";
+            window["BASE_URL"] = basePath;
 
             window.__getLocation = function () {
                 return window.location;
             };
             let l = window.__getLocation();
             let base = document.createElement('base');
-            if (!baseUrl.startsWith('__BASE')) {
-                base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + baseUrl;
+            if (!basePath.startsWith('__BASE')) {
+                base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + basePath;
             } else {
                 base.href = l.protocol + '//' + l.hostname + (l.port ? (':' + l.port) : '') + '/';
             }
-            document.getElementsByTagName('head')[0].appendChild(base);
+            document.head.appendChild(base);
         }
     </script>
 
