@@ -6,9 +6,9 @@
     "homepage": ".",
     "engineStrict": true,
     "scripts": {
-        "start": "cross-env BROWSER=none SKIP_PREFLIGHT_CHECK=true  react-app-rewired start",
-        "start2": "cross-env REACT_APP_BUSINESS=true NODE_OPTIONS=--openssl-legacy-provider react-app-rewired start",
-        "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider react-app-rewired build",
+        "start": "cross-env SKIP_PREFLIGHT_CHECK=true react-app-rewired start",
+        "start2": "cross-env REACT_APP_BUSINESS=true react-app-rewired start",
+        "build": "react-app-rewired build -- --profile",
         "buildLocalTest": "cross-env REACT_APP_BUSINESS=true REACT_APP_KOWL_GIT_SHA=abc123 REACT_APP_KOWL_GIT_REF=local REACT_APP_KOWL_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true react-app-rewired build",
         "test": "react-app-rewired test",
         "eject": "react-scripts eject",
