@@ -20,7 +20,7 @@ import { LazyMap } from "../utils/LazyMap";
 import { ObjToKv } from "../utils/tsxUtils";
 import { decodeBase64, TimeSince } from "../utils/utils";
 import { appGlobal } from "./appGlobal";
-import { AclRequest, AclRequestDefault, AclResourceType, AclResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedError } from "./restInterfaces";
+import { AclRequest, AclRequestDefault, AclResourceType, AclResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError } from "./restInterfaces";
 import { Features } from "./supportedFeatures";
 import { ServerVersionInfo, uiState } from "./uiState";
 
@@ -1260,9 +1260,15 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
         obj = JSON.parse(text);
     } catch { }
 
-    // backend error => content will be ApiError
+    // api error?
     if (isApiError(obj))
-        throw new WrappedError(response, obj);
+        throw new WrappedApiError(response, obj);
+
+    // server/proxy error?
+    if (!response.ok) {
+        text = text?.trim() ?? '';
+        throw new Error(`${response.status} (${text ?? response.statusText})`);
+    }
 
     // server/proxy error?
     if (!response.ok) {

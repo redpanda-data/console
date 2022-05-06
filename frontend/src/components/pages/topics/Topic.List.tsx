@@ -17,7 +17,7 @@ import { autorun, computed, IReactionDisposer, makeObservable, observable } from
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { Topic, TopicAction, TopicActions } from '../../../state/restInterfaces';
+import { CreateTopicRequest, Topic, TopicAction, TopicActions } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
@@ -29,6 +29,8 @@ import SearchBar from '../../misc/SearchBar';
 import { PageComponent, PageInitHelper } from '../Page';
 import { useState } from 'react';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
+import createAutoModal from '../../../utils/createAutoModal';
+import { CreateTopicModalContent, CreateTopicModalState } from './CreateTopicModal/CreateTopicModal';
 
 @observer
 class TopicList extends PageComponent {
@@ -36,9 +38,16 @@ class TopicList extends PageComponent {
     quickSearchReaction: IReactionDisposer;
     @observable topicToDelete: null | string = null;
 
+    CreateTopicModal;
+    showCreateTopicModal;
+
     constructor(p: any) {
         super(p);
         makeObservable(this);
+
+        const m = makeCreateTopicModal(this);
+        this.CreateTopicModal = m.Component;
+        this.showCreateTopicModal = m.show;
     }
 
     initPage(p: PageInitHelper): void {
@@ -111,13 +120,22 @@ class TopicList extends PageComponent {
                 </Card>
 
                 <Card>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                            onClick={() => this.showCreateTopicModal()}
+                            style={{ minWidth: '160px', marginBottom: '12px' }}
+                        >
+                            Create Topic
+                        </Button>
+                        <this.CreateTopicModal />
+                    </div>
                     <KowlTable
                         dataSource={topics}
                         rowKey={(x) => x.topicName}
                         columns={[
                             { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', defaultSortOrder: 'ascend' },
                             { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
-                            { title: 'Replication', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
+                            { title: 'Replicas', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
                             {
                                 title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1,
                                 filterType: {
@@ -182,6 +200,7 @@ class TopicList extends PageComponent {
         );
     }
 }
+export default TopicList;
 
 const iconAllowed = (
     <span style={{ color: 'green' }}>
@@ -319,4 +338,66 @@ function hasDeletePrivilege(allowedActions?: Array<TopicAction>) {
     return Boolean(allowedActions?.includes('all') || allowedActions?.includes('deleteTopic'));
 }
 
-export default TopicList;
+
+function makeCreateTopicModal(parent: TopicList) {
+    return createAutoModal<void, CreateTopicModalState>({
+        modalProps: {
+            title: 'Create Topic',
+            width: '80%',
+            style: { minWidth: '600px', maxWidth: '1000px' },
+            bodyStyle: { paddingTop: '1em' },
+            centered: true,
+
+            okText: 'Create',
+            successTitle: 'Topic created!',
+
+            closable: false,
+            keyboard: false,
+            maskClosable: false,
+        },
+        onCreate: () => observable({
+            topicName: '',
+
+            retentionTimeMs: undefined,
+            retentionSize: undefined,
+            partitions: undefined,
+
+            cleanupPolicy: 'delete',
+            minInSyncReplicas: 1,
+            replicationFactor: 1,
+
+            additionalConfig: [],
+        }),
+        isOkEnabled: state => /\S+/.test(state.topicName),
+        onOk: async state => {
+
+            if (!state.topicName) throw new Error('"Topic Name" must be set');
+            if (!state.cleanupPolicy) throw new Error('"Cleanup Policy" must be set');
+
+            const result = await api.createTopic({
+                topicName: state.topicName,
+                partitionCount: state.partitions ?? -1,
+                replicationFactor: state.replicationFactor ?? -1,
+                configs: state.additionalConfig,
+            });
+
+            return <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'auto auto',
+                justifyContent: 'center',
+                justifyItems: 'end',
+                columnGap: '8px',
+                rowGap: '4px'
+            }}>
+                <span>Name:</span><span style={{ justifySelf: 'start' }}>{result.topicName}</span>
+                <span>Partitions:</span><span style={{ justifySelf: 'start' }}>{result.partitionCount}</span>
+                <span>Replication Factor:</span><span style={{ justifySelf: 'start' }}>{result.replicationFactor}</span>
+            </div>
+        },
+        onSuccess: (state, result) => {
+            parent.refreshData(true);
+        },
+        content: (state) => <CreateTopicModalContent state={state} />,
+    })
+
+}

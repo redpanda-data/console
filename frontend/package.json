@@ -5,6 +5,10 @@
     "proxy": "http://localhost:9090",
     "homepage": ".",
     "engineStrict": true,
+    "engines": {
+        "node": "16.13.2",
+        "npm": "8.3.2"
+    },
     "scripts": {
         "start": "cross-env SKIP_PREFLIGHT_CHECK=true react-app-rewired start",
         "start2": "cross-env REACT_APP_BUSINESS=true react-app-rewired start",
