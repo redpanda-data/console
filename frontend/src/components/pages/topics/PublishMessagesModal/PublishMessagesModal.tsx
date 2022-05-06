@@ -139,29 +139,30 @@ export class PublishMessagesModalContent extends Component<Props> {
         return partitions;
     }
 
-    Editor = ({ tab }: { tab: 'headers' | 'key' | 'value' }): JSX.Element => {
+    renderEditor(tab: 'headers' | 'key' | 'value') {
         const common = { path: tab, onMount: setTheme } as EditorProps;
         const r = this.props.state;
 
-        const valueLanguage = tab !== 'value' && r.encodingType === 'json'
-            ? 'json' : undefined;
+        const valueLanguage = (tab !== 'value' && r.encodingType === 'json')
+            ? 'json'
+            : undefined;
 
         if (tab === 'headers')
-            return <HeadersEditor items={r.headers} />
+            return <><HeadersEditor items={r.headers} /></>
 
         if (tab === 'key')
-            return <KowlEditor key={tab} {...common} value={r.key} onChange={x => r.key = x ?? ''} />
+            return <><KowlEditor key={tab} {...common} value={r.key} onChange={x => r.key = x ?? ''} /></>
 
         if (tab === 'value')
-            return <KowlEditor key={tab} {...common} value={r.value} onChange={x => r.value = x ?? ''} language={valueLanguage} />
+            return <><KowlEditor key={tab} {...common} value={r.value} onChange={x => r.value = x ?? ''} language={valueLanguage} /></>
 
         return <></>
     }
 
     tabs: Tab[] = [
-        { key: 'headers', title: 'Headers', content: <this.Editor tab='headers' /> },
-        { key: 'key', title: 'Key', content: <this.Editor tab='key' /> },
-        { key: 'value', title: 'Value', content: <this.Editor tab='value' /> }
+        { key: 'headers', title: 'Headers', content: () => this.renderEditor('headers') },
+        { key: 'key', title: 'Key', content: () => this.renderEditor('key') },
+        { key: 'value', title: 'Value', content: () => this.renderEditor('value') }
     ];
 }
 

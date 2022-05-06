@@ -28,18 +28,19 @@ interface TabsProps {
     contentStyle?: CSSProperties;
 }
 
-function renderContent(tabs: Array<Tab>, key: string) {
+function renderContent(tabs: Array<Tab>, key: string): JSX.Element {
     const tab = tabs.find((tab) => tab.key === key);
-    return (typeof tab?.content === 'function') ? tab.content() : tab?.content;
-}
+    if (!tab || !tab.content) return <></>;
+    let content = tab.content;
 
-// function classNames(obj: { [className: string]: boolean | null | undefined }) {
-//     let str = '';
-//     for (const [name, active] of Object.entries(obj))
-//         if (active)
-//             str += name + ' ';
-//     return str;
-// }
+    if (typeof content === 'function' && content.length === 0)
+        content = content();
+    if (React.isValidElement(content))
+        return content;
+
+    console.error('tabs.renderContent: invalid element', { content });
+    return <></>;
+}
 
 function getClass(active: boolean, disabled: boolean | undefined) {
     if (active) return styles.active;

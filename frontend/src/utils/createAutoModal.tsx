@@ -95,33 +95,33 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
     const renderError = (err: any) => {
         let content;
         let title = 'Error';
+        const codeBoxStyle = { fontSize: '12px', fontFamily: 'monospace', color: 'hsl(0deg 0% 25%)', margin: '0em 1em' };
+
         if (React.isValidElement(err))
             // JSX
             content = err;
-        else if (typeof content === 'string')
+        else if (typeof err === 'string')
             // String
-            content = <Code>{err}</Code>
+            content = <div style={codeBoxStyle}>{err}</div>;
         else if (err instanceof Error) {
             // Error
             title = err.name;
-            content = err.message;
+            content = <div style={codeBoxStyle}>
+                <div style={{ fontSize: '1.1em', fontWeight: 600 }}>{err.name}</div>
+                {err.message}
+            </div>;
         }
         else {
             // Object
-            content = toJson(err, 4);
+            content = <div style={codeBoxStyle}>
+                {toJson(err, 4)}
+            </div>;
         }
 
         return <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="error"
             title={title}
         >
-            <code style={{
-                fontSize: '12px',
-                color: 'hsl(0deg 0% 25%)',
-                margin: '0em 3em',
-                marginTop: '1em'
-            }}>
-                {content}
-            </code>
+            {content}
         </Result>
     };
 
