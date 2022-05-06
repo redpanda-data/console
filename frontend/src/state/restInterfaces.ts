@@ -15,11 +15,10 @@ export interface ApiError {
 }
 
 export function isApiError(obj: any): obj is ApiError {
-    if (!obj || typeof obj != 'object')
-        return false;
-
-    if (typeof obj.statusCode == 'number' && typeof obj.message == 'string')
-        return true;
+    if (obj && typeof obj === 'object')
+        if (typeof obj.statusCode === 'number')
+            if (typeof obj.message === 'string')
+                return true;
 
     return false;
 }
@@ -459,7 +458,7 @@ export interface EndpointCompatibilityEntry {
 }
 
 // Response when requesting configuration of a single broker
-export interface BrokerConfigResponse { // | ApiError
+export interface BrokerConfigResponse {
     brokerConfigs: ConfigEntry[];
 }
 
