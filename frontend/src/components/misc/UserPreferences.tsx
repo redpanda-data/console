@@ -12,13 +12,13 @@
 import React, { Component, ReactNode } from 'react';
 import { observer } from "mobx-react";
 import { Menu, Select, Avatar, Popconfirm, Dropdown, Button, Modal, Input, message, Checkbox, InputNumber } from 'antd';
-import { uiSettings } from '../../state/ui';
+import { clearSettings, uiSettings } from '../../state/ui';
 import { RenderTrap, Spacer } from './common';
 import { api } from '../../state/backendApi';
 import Icon, { UserOutlined } from '@ant-design/icons';
 import { IsBusiness } from '../../utils/env';
 import { Label } from '../../utils/tsxUtils';
-import { makeObservable, observable } from 'mobx';
+import { makeObservable, observable, transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
 
 const { Option } = Select;
@@ -27,10 +27,10 @@ type Action = () => void;
 const settingsTabs: { name: string, component: () => ReactNode }[] = [
     { name: "Statistics Bar", component: () => <StatsBarTab /> },
     { name: "Json Viewer", component: () => <JsonViewerTab /> },
+    { name: "Import/Export", component: () => <ImportExportTab /> },
 
     // pagination position
     // { name: "Message Search", component: () => <MessageSearchTab /> },
-    // { name: "Import/Export", component: () => <ImportExportTab /> },
 ];
 
 
@@ -165,35 +165,69 @@ class ImportExportTab extends Component {
     render() {
         return <>
             <Label text='Import'>
-                <Input
-                    style={{ padding: '2px 8px' }}
-                    placeholder='paste exported preferences string here'
-                    value={this.importCode}
-                    onChange={e => {
-                        // todo
-                    }}
-                    onPaste={p => console.log('onPaste event', p)}
-                    onPasteCapture={p => console.log('onPasteCapture event', p)}
-                    size='small' />
+                <div style={{ display: 'flex' }}>
+                    <Input
+                        style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }} spellCheck={false}
+                        placeholder='Paste a previously exported settings string...'
+                        value={this.importCode}
+                        onChange={e => this.importCode = e.target.value}
+                        size='small'
+                    />
+                    <Button onClick={() => {
+                        try {
+                            const data = JSON.parse(this.importCode);
+                            const skipped: string[] = [];
+                            transaction(() => {
+                                for (const k in data) {
+                                    if (!Reflect.has(uiSettings, k))
+                                        skipped.push(k);
+                                    else
+                                        (uiSettings as any)[k] = data[k];
+                                }
+                            });
+                            if (skipped.length > 0)
+                                message.warn('Some properties were skipped during import:\n' + skipped.join(', '));
+                            else
+                                message.success('Settings imported successfully');
+                            this.importCode = "";
+                        } catch (e) {
+                            message.error('Unable to import settings. See console for more information.');
+                            console.error('unable to import settings', { error: e });
+                        }
+
+                    }}>Import</Button>
+                </div>
             </Label>
 
             <Label text='Export'>
-                <Button onClick={() => { message.success('Preferences copied to clipboard!'); }}>
+                <Button onClick={() => {
+                    try {
+                        navigator.clipboard.writeText(JSON.stringify(uiSettings));
+                        message.success('Preferences copied to clipboard!');
+                    } catch (e) {
+                        message.error('Unable to copy settings to clipboard. See console for more information.');
+                        console.error('unable to copy settings to clipboard', { error: e });
+                    }
+                }}>
                     Export User Preferences
                 </Button>
             </Label>
 
             <Label text='Reset'>
-                <div>
+                <>
                     <div>
-                        <Input style={{ maxWidth: '360px', marginRight: '8px' }}
+                        <Input style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }} spellCheck={false}
                             placeholder='type "reset" here to confirm and enable the button'
                             value={this.resetConfirm}
                             onChange={str => this.resetConfirm = str.target.value} />
-                        <Button onClick={() => { message.success('Preferences copied to clipboard!'); }} danger disabled={this.resetConfirm != 'reset'}>Reset</Button>
+                        <Button onClick={() => {
+                            clearSettings();
+                            message.success('All settings have been reset to their defaults');
+                            this.resetConfirm = '';
+                        }} danger disabled={this.resetConfirm != 'reset'}>Reset</Button>
                     </div>
                     <span className='smallText'>Clear all your user settings, resetting them to the default values</span>
-                </div>
+                </>
             </Label>
         </>;
     }
