@@ -1,4 +1,4 @@
-import { observable, autorun, makeObservable } from "mobx";
+import { observable, autorun, makeObservable, transaction } from "mobx";
 import { assignDeep, randomId } from "../utils/utils";
 import { touch, clone } from "../utils/jsonUtils";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
@@ -136,7 +136,7 @@ export class TopicDetailsSettings {
 
 }
 
-const uiSettings = observable({
+const defaultUiSettings = {
     sideBarOpen: true,
     selectedClusterIndex: 0,
     perTopicSettings: [] as TopicDetailsSettings[], // don't use directly, instead use uiState.topicDetails
@@ -254,9 +254,19 @@ const uiSettings = observable({
     userDefaults: {
         paginationPosition: 'bottomRight' as ('bottomRight' | 'topRight'),
     }
-});
+};
+Object.freeze(defaultUiSettings);
+
+const uiSettings = observable(clone(defaultUiSettings));
 export { uiSettings };
 
+export function clearSettings() {
+    transaction(() => {
+        for (const k in uiSettings)
+            delete (uiSettings as any)[k];
+        assignDeep(uiSettings, clone(defaultUiSettings));
+    });
+}
 
 
 //
@@ -306,7 +316,6 @@ function isPreviewTagV1(tag: PreviewTag | PreviewTagV2): tag is PreviewTag {
 
 // Auto save (timed)
 autorun(() => {
-    touch(uiSettings);
     const json = JSON.stringify(uiSettings);
     localStorage.setItem(settingsName, json);
     //console.log('settings: ' + json);
