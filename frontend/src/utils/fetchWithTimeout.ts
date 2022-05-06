@@ -19,13 +19,26 @@ export class RestTimeoutError extends Error {
 }
 
 export default function fetchWithTimeout(url: RequestInfo, timeoutMs: number, options?: RequestInit): Promise<Response> {
+    return new Promise<Response>((resolve, reject) => {
+        let hasSettled = false;
+        fetch(url, options).then(
+            result => {
+                hasSettled = true;
+                resolve(result);
+            },
+            err => {
+                hasSettled = true;
+                reject(err);
+            });
 
-    const requestPromise = fetch(url, options);
-    const timeoutPromise = new Promise<Response>((_, reject) => {
         setTimeout(() => {
-            reject(new RestTimeoutError("Request timed out after " + (timeoutMs / 1000).toFixed(1) + " sec: " + url));
+            // no need to construct an error when already settled
+            if (hasSettled) return;
+
+            const timeStr = timeoutMs < 1000
+                ? `${timeoutMs} ms`
+                : `${timeoutMs / 1000} sec`;
+            reject(new RestTimeoutError(`Request timed out after ${timeStr}: ${url}`));
         }, timeoutMs);
     });
-
-    return Promise.race([requestPromise, timeoutPromise]);
 }
