@@ -12,10 +12,10 @@ package connect
 import (
 	"context"
 	"crypto/tls"
-	"go.uber.org/zap"
 	"sync"
 	"sync/atomic"
-	"time"
+
+	"go.uber.org/zap"
 
 	con "github.com/cloudhut/connect-client"
 )
@@ -42,7 +42,7 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 			zap.String("cluster_name", clusterCfg.Name),
 			zap.String("cluster_address", clusterCfg.URL))
 
-		opts := []con.ClientOption{con.WithTimeout(60 * time.Second), con.WithUserAgent("Kowl")}
+		opts := []con.ClientOption{con.WithTimeout(cfg.ReadTimeout), con.WithUserAgent("Kowl")}
 
 		opts = append(opts, con.WithHost(clusterCfg.URL))
 		// TLS Config
@@ -77,7 +77,7 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 	}
 
 	// 2. Test connectivity against each cluster concurrently
-	shortCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	shortCtx, cancel := context.WithTimeout(context.Background(), cfg.ConnectTimeout)
 	defer cancel()
 	svc.TestConnectivity(shortCtx)
 
