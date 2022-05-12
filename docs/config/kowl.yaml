@@ -128,6 +128,9 @@ kafka:
 #       username:
 #       password: # This can be set via the via the --connect.clusters.i.password flag as well (i to be replaced with the array index)
 #       token: # This can be set via the via the --connect.clusters.i.token flag as well (i to be replaced with the array index)
+#   connectTimeout: 15s # used to test cluster connectivity
+#   readTimeout: 60s    # overall REST timeout
+#   requestTimeout: 6s  # timeout for REST requests
 
 # owl:
 #   # Config to use for embedded topic documentation, see /docs/features/topic-documentation.md for more details

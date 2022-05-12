@@ -28,7 +28,7 @@ func (c *Config) SetDefaults() {
 		cluster.SetDefaults()
 	}
 	c.ConnectTimeout = 15 * time.Second
-	c.ReadTimeout = 50 * time.Second
+	c.ReadTimeout = 60 * time.Second
 	c.RequestTimeout = 6 * time.Second
 }
 
