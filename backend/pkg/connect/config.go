@@ -22,9 +22,9 @@ const (
 )
 
 type Config struct {
-	ConnectTimeout time.Duration   `yaml:"connect_timeout"` // used for connectivity test
-	ReadTimeout    time.Duration   `yaml:"read_timeout"`    // overall REST/HTTP read timeout
-	RequestTimeout time.Duration   `yaml:"request_timeout"` // timeout for REST requests to Kafka Connect
+	ConnectTimeout time.Duration   `yaml:"connectTimeout"` // used for connectivity test
+	ReadTimeout    time.Duration   `yaml:"readTimeout"`    // overall REST/HTTP read timeout
+	RequestTimeout time.Duration   `yaml:"requestTimeout"` // timeout for REST requests to Kafka Connect
 	Enabled        bool            `yaml:"enabled"`
 	Clusters       []ConfigCluster `yaml:"clusters"`
 }
