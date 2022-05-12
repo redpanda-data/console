@@ -15,27 +15,21 @@ import (
 	"time"
 )
 
-const (
-	defaultConnectTimeout = 15 * time.Second
-	defaultReadTimeout    = 60 * time.Second
-	defaultRequestTimeout = 6 * time.Second
-)
-
 type Config struct {
+	Enabled        bool            `yaml:"enabled"`
+	Clusters       []ConfigCluster `yaml:"clusters"`
 	ConnectTimeout time.Duration   `yaml:"connectTimeout"` // used for connectivity test
 	ReadTimeout    time.Duration   `yaml:"readTimeout"`    // overall REST/HTTP read timeout
 	RequestTimeout time.Duration   `yaml:"requestTimeout"` // timeout for REST requests to Kafka Connect
-	Enabled        bool            `yaml:"enabled"`
-	Clusters       []ConfigCluster `yaml:"clusters"`
 }
 
 func (c *Config) SetDefaults() {
 	for _, cluster := range c.Clusters {
 		cluster.SetDefaults()
 	}
-	c.ConnectTimeout = defaultConnectTimeout
-	c.ReadTimeout = defaultReadTimeout
-	c.RequestTimeout = defaultRequestTimeout
+	c.ConnectTimeout = 15 * time.Second
+	c.ReadTimeout = 50 * time.Second
+	c.RequestTimeout = 6 * time.Second
 }
 
 // RegisterFlags registers all nested config flags.
