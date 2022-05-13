@@ -329,12 +329,14 @@ autorun(() => {
     const json = JSON.stringify(uiSettings);
     localStorage.setItem(settingsName, json);
     //console.log('settings: ' + json);
-}, { delay: 1000 });
+}, { delay: 5000 });
 
 // Auto save (on exit)
-window.addEventListener('beforeunload', () => {
+window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState == 'visible')
+        return; // only save on close, minimize, tab-switch
+
     const json = JSON.stringify(uiSettings);
     localStorage.setItem(settingsName, json);
-    //console.log('settings (unload): ' + json);
 });
 

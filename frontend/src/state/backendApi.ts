@@ -101,13 +101,17 @@ class CacheEntry {
         this.timeSinceRequestStarted.reset();
 
         this.isPending = true;
+        this.error = null;
         this.promise = promise;
 
         promise.then(result => {
             this.timeSinceLastResult.reset();
             this.lastResult = result;
+        }).catch(err => {
+            this.lastResult = undefined;
+            this.error = err;
         }).finally(() => {
-            this.lastRequestTime = this.timeSinceRequestStarted.value;
+            this.lastRequestDurationMs = this.timeSinceRequestStarted.value;
             const index = api.activeRequests.indexOf(this);
             if (index > -1) {
                 api.activeRequests.splice(index, 1);
@@ -118,17 +122,18 @@ class CacheEntry {
         api.activeRequests.push(this);
     }
 
+    error: any | null = null;
     lastResult: any | undefined; // set automatically
     isPending: boolean; // set automatically
 
     private timeSinceRequestStarted = new TimeSince(); // set automatically
-    private lastRequestTime: number; // set automatically
+    private lastRequestDurationMs: number; // set automatically
     /** How long (in seconds) the last request took (or is currently taking so far) */
     get requestTime() {
         if (this.isPending) {
             return this.timeSinceRequestStarted.value / 1000;
         }
-        return this.lastRequestTime / 1000;
+        return this.lastRequestDurationMs / 1000;
     }
 
     constructor(url: string) {

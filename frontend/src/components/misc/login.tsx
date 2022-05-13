@@ -27,17 +27,26 @@ const iconMap = new Map([
     ["okta", <span style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{OktaLogo}</span>],
 ]);
 
-interface Provider {
-    displayName: string,
-    url: string;
-}
 interface ProvidersResponse {
     providers: Provider[];
     loginTitle: string;
 }
+interface Provider {
+    displayName: string,
+    url: string;
+}
 
-async function getProviders() {
-    const response = await fetch('./auth/providers', {
+type Prompt =
+    | 'none'
+    | 'consent'
+    | 'select_account';
+
+async function getProviders(prompt?: Prompt) {
+    let url = './auth/providers';
+    if (prompt)
+        url += `?prompt=${prompt}`;
+
+    const response = await fetch(url, {
         method: 'GET',
         cache: 'no-cache',
         mode: 'no-cors'
@@ -125,28 +134,8 @@ class Login extends Component {
                                 <span style={{ fontSize: '0.66em' }}>to access KOWL</span>
                             </div>
                             <div className='loginButtonList'>
-                                {ar?.map(p => (
-                                    <div key={p.displayName} className='loginButton2' onClick={() => window.location.replace(p.url)}>
-                                        {iconMap.get(p.displayName.toLowerCase())}
-                                        <span>
-                                            {p.displayName}
-                                        </span>
-                                    </div>
-                                ))
-                                    || (this.providersError && <div style={{
-                                        fontSize: '15px',
-                                        color: 'rgb(202, 0, 0)',
-                                        width: '66%',
-                                        margin: 'auto',
-                                        fontWeight: 'bold',
-                                        fontFamily: 'sans-serif',
-                                        background: 'rgba(0,0,0, 0.33)',
-                                        borderRadius: '3px',
-                                        padding: '1em',
-                                    }}>
-                                        <div>Unable to fetch providers</div>
-                                        <div style={{ fontSize: '0.9em' }}>{this.providersError}</div>
-                                    </div>)
+                                {ar?.map(p => <LoginProviderButton provider={p} />)
+                                    || (this.providersError && <ProvidersError error={this.providersError} />)
                                     || <div style={{ fontSize: '14px', marginTop: '32px', color: '#ddd' }}><Spin size='large' /><br />Retreiving login method from backend...</div>}
                             </div>
                         </div>
@@ -161,3 +150,28 @@ class Login extends Component {
 }
 export default Login;
 
+function LoginProviderButton(props: { provider: Provider }): JSX.Element {
+    const p = props.provider;
+
+    return <div key={p.displayName} className='loginButton2' onClick={() => window.location.replace(p.url)}>
+        {iconMap.get(p.displayName.toLowerCase())}
+        <span>{p.displayName}</span>
+    </div>
+}
+
+function ProvidersError(p: { error: string }) {
+    return <div style={{
+        fontSize: '15px',
+        color: 'rgb(202, 0, 0)',
+        width: '66%',
+        margin: 'auto',
+        fontWeight: 'bold',
+        fontFamily: 'sans-serif',
+        background: 'rgba(0,0,0, 0.33)',
+        borderRadius: '3px',
+        padding: '1em',
+    }}>
+        <div>Unable to fetch providers</div>
+        <div style={{ fontSize: '0.9em' }}>{p.error}</div>
+    </div>
+}

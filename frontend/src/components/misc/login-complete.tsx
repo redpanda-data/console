@@ -35,7 +35,7 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
             if (queryObj.error) errorString += `Error: ${queryObj.error}\n`;
             if (queryObj.error_description) errorString += `Description: ${queryObj.error_description}\n`;
             uiState.loginError = errorString.trim();
-            appGlobal.history.push(basePathS + '/login');
+            appGlobal.history.replace(basePathS + '/login');
             return;
         }
 
