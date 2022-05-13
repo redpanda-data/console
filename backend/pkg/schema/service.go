@@ -115,11 +115,11 @@ func (s *Service) addReferences(schema SchemaVersionedResponse, schemaRepository
 	for _, ref := range schema.References {
 		refSubject, exists := schemaRepository[ref.Subject]
 		if !exists {
-			return fmt.Errorf("failed to resolve reference. Reference with subject '%' does not exist", ref.Subject)
+			return fmt.Errorf("failed to resolve reference. Reference with subject '%s' does not exist", ref.Subject)
 		}
 		refSchema, exists := refSubject[ref.Version]
 		if !exists {
-			return fmt.Errorf("failed to resolve reference. Reference with subject '%', version '%d' does not exist", ref.Subject, ref.Version)
+			return fmt.Errorf("failed to resolve reference. Reference with subject '%s', version '%d' does not exist", ref.Subject, ref.Version)
 		}
 		// The reference name is the name that has been used for the import in the proto schema (e.g. 'customer.proto')
 		schemasByPath[ref.Name] = refSchema.Schema
