@@ -12,17 +12,24 @@ package connect
 import (
 	"flag"
 	"fmt"
+	"time"
 )
 
 type Config struct {
-	Enabled  bool            `yaml:"enabled"`
-	Clusters []ConfigCluster `yaml:"clusters"`
+	Enabled        bool            `yaml:"enabled"`
+	Clusters       []ConfigCluster `yaml:"clusters"`
+	ConnectTimeout time.Duration   `yaml:"connectTimeout"` // used for connectivity test
+	ReadTimeout    time.Duration   `yaml:"readTimeout"`    // overall REST/HTTP read timeout
+	RequestTimeout time.Duration   `yaml:"requestTimeout"` // timeout for REST requests to Kafka Connect
 }
 
 func (c *Config) SetDefaults() {
 	for _, cluster := range c.Clusters {
 		cluster.SetDefaults()
 	}
+	c.ConnectTimeout = 15 * time.Second
+	c.ReadTimeout = 60 * time.Second
+	c.RequestTimeout = 6 * time.Second
 }
 
 // RegisterFlags registers all nested config flags.

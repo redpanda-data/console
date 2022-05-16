@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	con "github.com/cloudhut/connect-client"
 	"github.com/cloudhut/kowl/backend/pkg/connect"
@@ -32,7 +31,7 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
 		connectors, err := api.ConnectSvc.GetAllClusterConnectors(ctx)
@@ -75,7 +74,7 @@ func (api *API) handleGetClusterConnectors() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clusterName := chi.URLParam(r, "clusterName")
 
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
 		canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
@@ -139,7 +138,7 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 		clusterName := chi.URLParam(r, "clusterName")
 		connector := chi.URLParam(r, "connector")
 
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
 		canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
@@ -318,7 +317,7 @@ func (api *API) handleDeleteConnector() http.HandlerFunc {
 		clusterName := chi.URLParam(r, "clusterName")
 		connector := chi.URLParam(r, "connector")
 
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
 		canDelete, restErr := api.Hooks.Owl.CanDeleteConnectCluster(r.Context(), clusterName)
@@ -352,7 +351,7 @@ func (api *API) handlePauseConnector() http.HandlerFunc {
 		clusterName := chi.URLParam(r, "clusterName")
 		connector := chi.URLParam(r, "connector")
 
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
 		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
@@ -386,7 +385,7 @@ func (api *API) handleResumeConnector() http.HandlerFunc {
 		clusterName := chi.URLParam(r, "clusterName")
 		connector := chi.URLParam(r, "connector")
 
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
 		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
@@ -420,7 +419,7 @@ func (api *API) handleRestartConnector() http.HandlerFunc {
 		clusterName := chi.URLParam(r, "clusterName")
 		connector := chi.URLParam(r, "connector")
 
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
 		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
@@ -465,7 +464,7 @@ func (api *API) handleRestartConnectorTask() http.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
 		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
