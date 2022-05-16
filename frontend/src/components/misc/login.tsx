@@ -14,10 +14,9 @@ import { Spin, Modal } from 'antd';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 
-import SvgLoginWave from '../../assets/login_wave.svg';
-import PngLogo from '../../assets/logo2.png';
+import SvgLogo from '../../assets/redpanda_console_horizontal.svg';
 import { uiState } from '../../state/uiState';
-import Icon, { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
+import { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
 import OktaLogo from '../../utils/svg/OktaLogo';
 
 
@@ -102,36 +101,22 @@ class Login extends Component {
 
                 <div className='loginLeft'>
                     <div className='loginLogo' style={{ height: '60px', marginBottom: 'auto', marginTop: '2rem' }}>
-                        <img src={PngLogo} style={{ height: '100%', filter: 'brightness(0.45) sepia(1) saturate(1.5) hue-rotate(165deg)' }} alt="" />
-                        <span style={{ textTransform: 'uppercase', color: '#498FC2', letterSpacing: 12, fontSize: '1.75rem', paddingLeft: '20px' }}>Kowl</span>
+                        <img src={SvgLogo} style={{ width: '100%' }} alt="Redpanda Console Logo" />
                     </div>
 
                     <div style={{ justifySelf: 'center', marginBottom: 'auto' }}>
                         <p style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{this.providersResponse?.loginTitle ?? "Howdy!"}</p>
-                        <p style={{ width: '230px' }}>Login with an OAuth provider to continue</p>
+                        <p style={{ width: '230px', lineHeight: '1.2em' }}>Login with an OAuth provider to continue</p>
                     </div>
                 </div>
 
                 <div className='loginRight'>
-                    <div style={{ float: 'left', height: '100%', width: '120px', overflow: 'hidden' }}>
-                        <img src={SvgLoginWave} style={{ width: 'auto', height: 'calc(100% + 1px)', transform: 'translateX(-1px)' }} alt="" />
-                        {/* <embed style={{ height:'100%'}} type="image/svg+xml" src={SvgLoginWave} /> */}
-                    </div>
                     <div className="loginContainerRight">
-
-                        <img src={PngLogo} style={{
-                            position: 'absolute',
-                            alignSelf: 'center',
-                            zIndex: -5,
-                            marginTop: '60px', height: '165px',
-                            filter: 'brightness(0.1) sepia(1) saturate(6) hue-rotate(180deg)',
-                            opacity: 0.7
-                        }} alt="" />
 
                         <div style={{ marginTop: 'auto' }}>
                             <div style={{ fontSize: '22px', fontWeight: 600, textTransform: 'uppercase' }}>
                                 <span>Sign in</span><br />
-                                <span style={{ fontSize: '0.66em' }}>to access KOWL</span>
+                                <span style={{ fontSize: '0.66em' }}>to access Redpanda Console</span>
                             </div>
                             <div className='loginButtonList'>
                                 {ar?.map(p => <LoginProviderButton provider={p} />)
@@ -140,7 +125,7 @@ class Login extends Component {
                             </div>
                         </div>
 
-                        <div style={{ marginTop: 'auto', fontWeight: 'normal' }}>Copyright © 2020-{new Date().getFullYear()} CloudHut. All rights reserved.</div>
+                        <div style={{ marginTop: 'auto', fontWeight: 'normal' }}>Copyright © {new Date().getFullYear()} Redpanda Data, Inc. All rights reserved.</div>
                     </div>
                 </div>
 
