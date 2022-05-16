@@ -526,7 +526,8 @@ td.ant-table-column-sort {
     /* or 107% */
     display: flex;
     align-items: center;
-    color: #498FC2;
+    // color: #498FC2;
+    color: gray;
 }
 
 .loginContainerRight {
@@ -545,15 +546,15 @@ td.ant-table-column-sort {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-left: 4rem;
-    width: 294px;
+    padding: 2rem 4rem;
+    width: 360px;
 }
 
 .loginRight {
     position: relative;
     height: 100%;
-    background: linear-gradient(338.72deg, #0a64a7 0%, #08273e 94.27%) no-repeat;
-    opacity: 0.8;
+    background: linear-gradient(338.72deg, #65686a 0%, #262e34 94.27%) no-repeat;
+    // opacity: 0.8;
     flex-grow: 1;
     /* background      : url('assets/pattern.png') repeat-x;
     background-position: bottom; */
@@ -600,8 +601,8 @@ td.ant-table-column-sort {
     height: 85px;
     font-size: 1.5em;
     font-weight: bold;
-    color: rgb(23, 23, 23);
-    background: #3a618899;
+    color: rgb(255, 255, 255);
+    background: #F15D61;
     border-radius: 2px;
     display: flex;
     place-content: center;
@@ -611,19 +612,19 @@ td.ant-table-column-sort {
 
 .loginButton2 i {
     font-size: 28px;
-    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    transition: all 0.3s ease;
 }
 
 .loginButton2:hover {
     color: #fff;
-    background: hsla(5, 100%, 64%, 1);
-    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    background: #cd3e43;
+    transition: all 0.3s ease;
 }
 
 .loginButton2:hover i {
     font-size: 45px;
     color: #fff;
-    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    transition: all 0.3s ease;
 }
 
 
