@@ -329,7 +329,7 @@ autorun(() => {
     const json = JSON.stringify(uiSettings);
     localStorage.setItem(settingsName, json);
     //console.log('settings: ' + json);
-}, { delay: 5000 });
+}, { delay: 2000 });
 
 // Auto save (on exit)
 window.addEventListener("visibilitychange", () => {
@@ -340,3 +340,19 @@ window.addEventListener("visibilitychange", () => {
     localStorage.setItem(settingsName, json);
 });
 
+// When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
+// So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
+window.addEventListener('storage', e => {
+    if (e.newValue == null) return;
+    try {
+        const newSettings = JSON.parse(e.newValue);
+        if (!newSettings) return;
+        transaction(() => {
+            // Applying changes here will of course trigger the auto-save, but that's fine.
+            // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
+            assignDeep(uiSettings, newSettings);
+        })
+    } catch (err) {
+        console.error('error applying settings update from another tab', { storageEvent: e, error: err, });
+    }
+});
