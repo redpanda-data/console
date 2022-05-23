@@ -1207,17 +1207,48 @@ export interface ProduceRecordResponse {
     error?: string;
 }
 
+
+type WellKnownTopicConfigEntries =
+    | { name: 'cleanup.policy', value: 'compact' | 'delete' }
+    | { name: 'compression.type', value: string }
+    | { name: 'delete.retention.ms', value: string }
+    | { name: 'file.delete.delay.ms', value: string }
+    | { name: 'flush.messages', value: string }
+    | { name: 'flush.ms', value: string }
+    | { name: 'follower.replication.throttled.replicas', value: string }
+    | { name: 'index.interval.bytes', value: string }
+    | { name: 'leader.replication.throttled.replicas', value: string }
+    | { name: 'max.compaction.lag.ms', value: string }
+    | { name: 'max.message.bytes', value: string }
+    | { name: 'message.format.version', value: string }
+    | { name: 'message.timestamp.difference.max.ms', value: string }
+    | { name: 'message.timestamp.type', value: string }
+    | { name: 'min.cleanable.dirty.ratio', value: string }
+    | { name: 'min.compaction.lag.ms', value: string }
+    | { name: 'min.insync.replicas', value: string }
+    | { name: 'preallocate', value: string }
+    | { name: 'retention.bytes', value: string }
+    | { name: 'retention.ms', value: string }
+    | { name: 'segment.bytes', value: string }
+    | { name: 'segment.index.bytes', value: string }
+    | { name: 'segment.jitter.ms', value: string }
+    | { name: 'segment.ms', value: string }
+    | { name: 'unclean.leader.election.enable', value: string }
+    | { name: 'message.downconversion.enable', value: string }
+    ;
+
+export type TopicConfigEntry = WellKnownTopicConfigEntries | { name: string; value: string; };
+
 export interface CreateTopicRequest {
     topicName: string;
     partitionCount: number; // -1 for default
     replicationFactor: number; // -1 for default
-    configs: { name: string, value: string }[];
+    configs: TopicConfigEntry[];
 }
-
 
 export interface CreateTopicResponse {
     topicName: string;
     partitionCount: number;
     replicationFactor: number;
-    configs: { name: string, value: string }[];
+    configs: TopicConfigEntry[];
 }

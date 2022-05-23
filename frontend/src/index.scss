@@ -3366,3 +3366,68 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 input::placeholder {
     font-style: italic;
 }
+.numericInput {
+    $numericInputBtnSize: 26px;
+    padding-right: 0;
+
+    .ant-input-suffix, .ant-input-prefix {
+        // min-width: 18px;
+
+        .btnWrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1px;
+            gap: 1px;
+
+            user-select: none;
+        }
+
+        .stepBtn {
+            width: $numericInputBtnSize;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: rgb(0 0 0 / 40%);
+
+            cursor: pointer;
+
+            > svg {
+                transform: scale(0.8) translate(1px, 0);
+            }
+
+            transition: all ease-out 150ms;
+
+            &:hover {
+                color: #40a9ff;
+
+                &::after {
+                    background: hsl(207deg 7% 76% / 14%);
+                }
+            }
+
+            // larger hit-test
+            &::after {
+                content: ' ';
+                position: absolute;
+                inset: -6px 0;
+                border-radius: 2px;
+                // background: #ff000030;
+                // background: #40a9ff30;
+            }
+        }
+    }
+
+    .ant-input-affix-wrapper-disabled,
+    &.ant-input-affix-wrapper-disabled,
+    &:not(:hover) {
+        .stepBtn {
+            opacity: 0;
+            pointer-events: none;
+            cursor: default;
+        }
+    }
+
+}

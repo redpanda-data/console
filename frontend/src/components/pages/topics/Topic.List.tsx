@@ -11,13 +11,13 @@
 
 import React from 'react';
 import { TrashIcon } from '@heroicons/react/outline';
-import { Alert, Button, Checkbox, Col, Modal, notification, Popover, Row, Statistic, Table, Tooltip } from 'antd';
+import { Alert, Button, Modal, notification, Popover, Row, Statistic, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
-import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
+import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { CreateTopicRequest, Topic, TopicAction, TopicActions } from '../../../state/restInterfaces';
+import { Topic, TopicAction, TopicActions } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
@@ -25,12 +25,12 @@ import { DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/
 import Card from '../../misc/Card';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
-import SearchBar from '../../misc/SearchBar';
 import { PageComponent, PageInitHelper } from '../Page';
 import { useState } from 'react';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
 import createAutoModal from '../../../utils/createAutoModal';
-import { CreateTopicModalContent, CreateTopicModalState } from './CreateTopicModal/CreateTopicModal';
+import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
+import { UInt64Max } from '../../../utils/utils';
 
 @observer
 class TopicList extends PageComponent {
@@ -340,6 +340,60 @@ function hasDeletePrivilege(allowedActions?: Array<TopicAction>) {
 
 
 function makeCreateTopicModal(parent: TopicList) {
+    api.refreshCluster(); // get brokers (includes configs) to display default values
+    const tryGetBrokerConfig = (configName: string): string | undefined => {
+        return api.clusterInfo?.brokers?.find(_ => true)
+            ?.config.configs
+            .find(x => x.name === configName)?.value ?? undefined;
+    };
+
+    const getRetentionTimeFinalValue = (value: number | undefined, unit: RetentionTimeUnit) => {
+        if (unit == 'default')
+            return undefined;
+
+        if (value == undefined)
+            throw new Error(`unexpected: value for retention time is 'undefined' but unit is set to ${unit}`);
+
+        if (unit == 'ms')
+            return value;
+        if (unit == 'seconds')
+            return value * 1000;
+        if (unit == 'minutes')
+            return value * 1000 * 60;
+        if (unit == 'hours')
+            return value * 1000 * 60 * 60;
+        if (unit == 'days')
+            return value * 1000 * 60 * 60 * 24;
+        if (unit == 'months')
+            return value * 1000 * 60 * 60 * 24 * (365 / 12);
+        if (unit == 'years')
+            return value * 1000 * 60 * 60 * 24 * 365;
+
+        if (unit == 'infinite')
+            return UInt64Max;
+    };
+    const getRetentionSizeFinalValue = (value: number | undefined, unit: RetentionSizeUnit) => {
+        if (unit == 'default')
+            return undefined;
+
+        if (value == undefined)
+            throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
+
+        if (unit == 'bytes')
+            return value;
+        if (unit == 'kB')
+            return value * 1024;
+        if (unit == 'MB')
+            return value * 1024 * 1024;
+        if (unit == 'GB')
+            return value * 1024 * 1024 * 1024;
+        if (unit == 'TB')
+            return value * 1024 * 1024 * 1024 * 1024;
+
+        if (unit == 'infinite')
+            return UInt64Max;
+    };
+
     return createAutoModal<void, CreateTopicModalState>({
         modalProps: {
             title: 'Create Topic',
@@ -358,26 +412,57 @@ function makeCreateTopicModal(parent: TopicList) {
         onCreate: () => observable({
             topicName: '',
 
-            retentionTimeMs: undefined,
-            retentionSize: undefined,
-            partitions: undefined,
+            // todo: get 'log.retention.bytes' and 'log.retention.ms' from any broker and show it for "default"
 
+            retentionTimeMs: 1,
+            retentionTimeUnit: 'default',
+
+            retentionSize: 1,
+            retentionSizeUnit: 'default',
+
+            partitions: undefined,
             cleanupPolicy: 'delete',
-            minInSyncReplicas: 1,
-            replicationFactor: 1,
+            minInSyncReplicas: undefined,
+            replicationFactor: undefined,
 
             additionalConfig: [],
+
+            defaults: {
+                get retentionTime() { return tryGetBrokerConfig('log.retention.ms'); },
+                get retentionBytes() { return tryGetBrokerConfig('log.retention.bytes'); },
+                get replicationFactor() { return tryGetBrokerConfig('default.replication.factor'); },
+                get partitions() { return tryGetBrokerConfig('num.partitions'); },
+                get cleanupPolicy() { return tryGetBrokerConfig('log.cleanup.policy'); },
+                get minInSyncReplicas() {
+                    return "1"; // todo, what is the name of the default value? is it the same for apache and redpanda?
+                },
+            }
         }),
-        isOkEnabled: state => /\S+/.test(state.topicName),
+        isOkEnabled: state => /^\S+$/.test(state.topicName),
         onOk: async state => {
 
             if (!state.topicName) throw new Error('"Topic Name" must be set');
             if (!state.cleanupPolicy) throw new Error('"Cleanup Policy" must be set');
 
+            const setVal = (name: string, value: string | number | undefined) => {
+                if (value === undefined) return;
+                state.additionalConfig.removeAll(x => x.name === name);
+                state.additionalConfig.push({ name, value: String(value) });
+            };
+
+            if (state.retentionTimeUnit != 'default')
+                setVal('retention.ms', getRetentionTimeFinalValue(state.retentionTimeMs, state.retentionTimeUnit));
+            if (state.retentionTimeUnit != 'default')
+                setVal('retention.bytes', getRetentionSizeFinalValue(state.retentionSize, state.retentionSizeUnit));
+            if (state.minInSyncReplicas != undefined)
+                setVal('min.insync.replicas', state.minInSyncReplicas);
+
+            setVal('cleanup.policy', state.cleanupPolicy);
+
             const result = await api.createTopic({
                 topicName: state.topicName,
-                partitionCount: state.partitions ?? -1,
-                replicationFactor: state.replicationFactor ?? -1,
+                partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
+                replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
                 configs: state.additionalConfig,
             });
 
@@ -390,14 +475,14 @@ function makeCreateTopicModal(parent: TopicList) {
                 rowGap: '4px'
             }}>
                 <span>Name:</span><span style={{ justifySelf: 'start' }}>{result.topicName}</span>
-                <span>Partitions:</span><span style={{ justifySelf: 'start' }}>{result.partitionCount}</span>
-                <span>Replication Factor:</span><span style={{ justifySelf: 'start' }}>{result.replicationFactor}</span>
+                <span>Partitions:</span><span style={{ justifySelf: 'start' }}>{String(result.partitionCount).replace('-1', '(Default)')}</span>
+                <span>Replication Factor:</span><span style={{ justifySelf: 'start' }}>{String(result.replicationFactor).replace('-1', '(Default)')}</span>
             </div>
         },
         onSuccess: (state, result) => {
             parent.refreshData(true);
         },
         content: (state) => <CreateTopicModalContent state={state} />,
-    })
+    });
 
 }

@@ -1,33 +1,50 @@
-import { TrashIcon } from '@primer/octicons-react';
-import { Button, Input, InputNumber, InputNumberProps, Select } from "antd";
+import { DashIcon, PlusIcon, TrashIcon } from '@primer/octicons-react';
+import { Button, Input, Select } from "antd";
 import { observer } from "mobx-react";
-import { Component, useState } from "react";
+import { Component, MouseEvent, useEffect, useState } from "react";
+import { TopicConfigEntry } from '../../../../state/restInterfaces';
 import { Label } from "../../../../utils/tsxUtils";
+import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 
 export type { Props as CreateTopicModalProps };
-export type { State as CreateTopicModalState };
+export type { CreateTopicModalState };
 
-type State = Props['state'];
+type CreateTopicModalState = {
+    topicName: string; // required
+
+    partitions?: number;
+    replicationFactor?: number;
+    minInSyncReplicas?: number;
+
+    cleanupPolicy: 'delete' | 'compact';  // required
+
+    retentionTimeMs: number;
+    retentionTimeUnit: RetentionTimeUnit
+
+    retentionSize: number;
+    retentionSizeUnit: RetentionSizeUnit,
+
+    additionalConfig: TopicConfigEntry[];
+
+    defaults: {
+        readonly retentionTime: string | undefined;
+        readonly retentionBytes: string | undefined;
+        readonly replicationFactor: string | undefined;
+        readonly partitions: string | undefined;
+        readonly cleanupPolicy: string | undefined;
+        readonly minInSyncReplicas: string | undefined;
+    }
+};
 
 type Props = {
-    state: {
-        topicName: string; // required
-
-        partitions?: number;
-        replicationFactor?: number;
-        minInSyncReplicas?: number;
-
-        cleanupPolicy: 'delete' | 'compact';  // required
-        retentionTimeMs?: number;
-        retentionSize?: number;
-
-        additionalConfig: { name: string; value: string }[];
-    }
+    state: CreateTopicModalState
 };
 
 
 @observer
 export class CreateTopicModalContent extends Component<Props> {
+
+
     render() {
         const state = this.props.state;
 
@@ -40,18 +57,32 @@ export class CreateTopicModalContent extends Component<Props> {
 
                 <div style={{ display: 'flex', gap: '2em' }}>
                     <Label text="Partitions" style={{ flexBasis: '160px' }}>
-                        <NumInput placeholder='12 (default)' value={state.partitions} onChange={e => state.partitions = e} min={1} />
+                        <NumInput
+                            value={state.partitions} onChange={e => state.partitions = e}
+                            placeholder={state.defaults.partitions}
+                            min={1}
+                        />
                     </Label>
                     <Label text="Replication Factor" style={{ flexBasis: '160px' }}>
-                        <NumInput placeholder='1 (default)' value={state.replicationFactor} onChange={e => state.replicationFactor = e} min={1} />
+                        <NumInput
+                            value={state.replicationFactor}
+                            onChange={e => state.replicationFactor = e}
+                            min={1}
+                            placeholder={state.defaults.replicationFactor}
+                        />
                     </Label>
                     <Label text="Min In-Sync Replicas" style={{ flexBasis: '160px' }}>
-                        <NumInput placeholder='1 (default)' value={state.minInSyncReplicas} onChange={e => state.minInSyncReplicas = e} min={1} />
+                        <NumInput
+                            value={state.minInSyncReplicas}
+                            onChange={e => state.minInSyncReplicas = e}
+                            min={1}
+                            placeholder={state.defaults.minInSyncReplicas}
+                        />
                     </Label>
                 </div>
 
                 <div style={{ display: 'flex', gap: '2em' }}>
-                    <Label text="Cleanup Policy" required style={{ flexBasis: '350px' }}>
+                    <Label text="Cleanup Policy" required style={{ flexBasis: '160px' }}>
                         <Select options={[
                             { value: 'delete' },
                             { value: 'compact' },
@@ -60,11 +91,19 @@ export class CreateTopicModalContent extends Component<Props> {
                             onChange={e => state.cleanupPolicy = e}
                             style={{ width: '100%' }} />
                     </Label>
-                    <Label text="Retention Time" style={{ flexBasis: '220px' }}>
-                        <NumInput placeholder='7 days (default)' value={state.retentionTimeMs} onChange={e => state.retentionTimeMs = e} min={1} />
+                    <Label text="Retention Time (ms)" style={{ flexBasis: '220px', flexGrow: 1 }}>
+                        <RetentionTimeSelect
+                            value={state.retentionTimeMs} onChangeValue={x => state.retentionTimeMs = x}
+                            unit={state.retentionTimeUnit} onChangeUnit={x => state.retentionTimeUnit = x}
+                            defaultConfigValue={state.defaults.retentionTime}
+                        />
                     </Label>
-                    <Label text="Retention Size" style={{ flexBasis: '220px' }}>
-                        <NumInput placeholder='10 GB (default)' value={state.retentionSize} onChange={e => state.retentionSize = e} min={1} />
+                    <Label text="Retention Size (bytes)" style={{ flexBasis: '220px', flexGrow: 1 }}>
+                        <RetentionSizeSelect
+                            value={state.retentionSize} onChangeValue={x => state.retentionSize = x}
+                            unit={state.retentionSizeUnit} onChangeUnit={x => state.retentionSizeUnit = x}
+                            defaultConfigValue={state.defaults.retentionBytes}
+                        />
                     </Label>
                 </div>
 
@@ -85,51 +124,229 @@ export class CreateTopicModalContent extends Component<Props> {
 }
 
 
-const NumInput = (
-    p: Pick<InputNumberProps<number | string>, 'value' | 'min' | 'max'> & {
-        placeholder?: string,
-        onChange: (n: number | undefined) => void,
-    },
-) => {
-    let { value, min, max, onChange, ...props } = p;
-    const [isValid, setValid] = useState(true);
+function NumInput(p: {
+    value: number | undefined, onChange: (n: number | undefined) => void,
+    placeholder?: string,
+    min?: number, max?: number,
+    disabled?: boolean,
+    addonBefore?: React.ReactNode; addonAfter?: React.ReactNode;
+}) {
+    // We need to keep track of intermediate values.
+    // Otherwise, typing '2e' for example, would be rejected.
+    // But the user might still add '5', and '2e5' is a valid number.
+    const [editValue, setEditValue] = useState((p.value == null) ? undefined : String(p.value));
+    useEffect(() => setEditValue((p.value == null) ? undefined : String(p.value)), [p.value]);
 
-    const errorStatus = { status: !isValid ? 'error' : undefined };
+    const commit = (x: number | undefined) => {
+        if (p.disabled) return;
+        if (x != null && p.min != null && x < p.min) x = p.min;
+        if (x != null && p.max != null && x > p.max) x = p.max;
+        setEditValue(x == undefined ? x : String(x));
+        p.onChange?.(x);
+    };
 
-    return <InputNumber<string>
+    const changeBy = (dx: number) => commit((p.value ?? 0) + dx);
+    const increment = (e: MouseEvent) => { changeBy(+1); e.preventDefault(); }
+    const decrement = (e: MouseEvent) => { changeBy(-1); e.preventDefault(); }
+
+    return <Input
+        className='numericInput'
         style={{ minWidth: '150px', width: '100%' }}
-        precision={0}
+        spellCheck={false}
+        placeholder={p.placeholder}
+        disabled={p.disabled}
 
-
-        {...props}
-
-        defaultValue={coerceValue(p.value)}
-        min={coerceValue(min)}
-        max={coerceValue(max)}
+        value={(p.disabled && p.placeholder && p.value == null) ? undefined : editValue}
         onChange={e => {
-            let ok = false;
-            if (typeof e === 'string' || typeof e === 'number') {
-                const n = Number(e);
-                if (!Number.isNaN(n)) {
-                    p.onChange?.(n);
-                    ok = true;
-                }
-            }
-            setValid(ok);
+            setEditValue(e.target.value);
+            const n = Number(e.target.value);
+            if (e.target.value != '' && !Number.isNaN(n))
+                p.onChange?.(n);
+            else
+                p.onChange?.(undefined);
         }}
 
-        {...errorStatus}
+        onWheel={e => changeBy(-Math.sign(e.deltaY))}
 
-        stringMode={true}
-        // upHandler={null}
-        // downHandler={null}
-        keyboard
+        suffix={!p.disabled &&
+            <span className='btnWrapper' unselectable='on'>
+                <span className='stepBtn dec' onMouseDownCapture={decrement}><DashIcon size={16} /></span>
+                <span className='stepBtn inc' onMouseDownCapture={increment}><PlusIcon size={16} /></span>
+            </span>
+        }
+
+        onBlur={() => {
+            let s = editValue;
+            if (s == undefined || s == '') {
+                // still a valid value, meaning "default"
+                commit(undefined);
+                return;
+            }
+
+            let n = Number(s);
+            if (!Number.isFinite(n)) {
+                commit(undefined);
+                return;
+            }
+            commit(n);
+        }}
+
+        addonBefore={p.addonBefore}
+        addonAfter={p.addonAfter}
     />
 };
 
 
-const coerceValue = (x: number | string | null | undefined): string | undefined => {
-    if (typeof x === 'number') return String(x);
-    if (x == null) return undefined;
-    return x;
+export type RetentionTimeUnit = keyof typeof timeFactors;
+const timeFactors = {
+    'default': -1,
+    'infinite': Number.POSITIVE_INFINITY,
+
+    'ms': 1,
+    'seconds': 1000,
+    'minutes': 1000 * 60,
+    'hours': 1000 * 60 * 60,
+    'days': 1000 * 60 * 60 * 24,
+    'months': 1000 * 60 * 60 * 24 * (365 / 12),
+    'years': 1000 * 60 * 60 * 24 * 365,
+} as const;
+
+function RetentionTimeSelect(p: {
+    value: number,
+    unit: RetentionTimeUnit,
+    onChangeValue: (v: number) => void,
+    onChangeUnit: ((u: RetentionTimeUnit) => void),
+    defaultConfigValue?: string | undefined,
+}) {
+    const { value, unit } = p;
+    const numDisabled = unit == 'default' || unit == 'infinite';
+
+    let placeholder: string | undefined;
+    if (unit == 'default' && p.defaultConfigValue != null) {
+        if (Number.isFinite(Number(p.defaultConfigValue)))
+            placeholder = prettyMilliseconds(p.defaultConfigValue, { showLargeAsInfinite: true, showNullAs: 'default', verbose: true, unitCount: 2 });
+        else placeholder = 'default';
+    }
+    if (unit == 'infinite')
+        placeholder = 'Infinite';
+
+    return <NumInput
+        value={numDisabled ? undefined : value}
+        onChange={x => p.onChangeValue(x ?? -1)}
+        min={0}
+        placeholder={placeholder}
+        disabled={numDisabled}
+
+        addonAfter={<Select
+            style={{ minWidth: '90px' }}
+            value={unit}
+            onChange={u => {
+                if (u == 'default') {
+                    // * -> default
+                    // save as milliseconds
+                    p.onChangeValue(value * timeFactors[unit]);
+                } else {
+                    // * -> real
+                    // convert to new unit
+                    const factor = unit == 'default' ? 1 : timeFactors[unit];
+                    const ms = value * factor;
+                    let newValue = ms / timeFactors[u];
+                    if (Number.isNaN(newValue))
+                        newValue = 0;
+                    if (/\.\d{4,}/.test(String(newValue)))
+                        newValue = Math.round(newValue);
+                    p.onChangeValue(newValue);
+                }
+                p.onChangeUnit(u);
+            }}
+            options={
+                Object.entries(timeFactors).map(([name, value]) => {
+                    const isSpecial = name == 'default' || name == 'infinite';
+                    return {
+                        value: name,
+                        label: isSpecial ? titleCase(name) : name,
+                        style: isSpecial ? { fontStyle: 'italic' } : undefined,
+                    };
+                })
+            }
+        />}
+    />
 };
+
+
+export type RetentionSizeUnit = keyof typeof sizeFactors;
+const sizeFactors = {
+    'default': -1,
+    'infinite': Number.POSITIVE_INFINITY,
+
+    'bytes': 1,
+    'kB': 1024,
+    'MB': 1024 * 1024,
+    'GB': 1024 * 1024 * 1024,
+    'TB': 1024 * 1024 * 1024 * 1024,
+} as const;
+
+function RetentionSizeSelect(p: {
+    value: number,
+    unit: RetentionSizeUnit,
+    onChangeValue: (v: number) => void,
+    onChangeUnit: (u: RetentionSizeUnit) => void,
+    defaultConfigValue?: string | undefined,
+}) {
+    const { value, unit } = p;
+    const numDisabled = unit == 'default' || unit == 'infinite';
+
+    let placeholder: string | undefined;
+    if (unit == 'default') {
+        if (p.defaultConfigValue != null && p.defaultConfigValue != '' && Number.isFinite(Number(p.defaultConfigValue))) {
+            placeholder = prettyBytes(p.defaultConfigValue, { showLargeAsInfinite: true, showNullAs: 'default' });
+        } else {
+            placeholder = 'default';
+        }
+    }
+    if (unit == 'infinite')
+        placeholder = 'Infinite';
+
+    return <NumInput
+        value={numDisabled ? undefined : value}
+        onChange={x => p.onChangeValue(x ?? -1)}
+        min={0}
+        placeholder={placeholder}
+        disabled={numDisabled}
+
+        addonAfter={<Select
+            style={{ minWidth: '90px' }}
+            value={unit}
+            onChange={u => {
+                if (u == 'default') {
+                    // * -> default
+                    // save as milliseconds
+                    p.onChangeValue(value * sizeFactors[unit]);
+                } else {
+                    // * -> real
+                    // convert to new unit
+                    const factor = unit == 'default' ? 1 : sizeFactors[unit];
+                    const ms = value * factor;
+                    let newValue = ms / sizeFactors[u];
+                    if (Number.isNaN(newValue))
+                        newValue = 0;
+                    if (/\.\d{4,}/.test(String(newValue)))
+                        newValue = Math.round(newValue);
+                    p.onChangeValue(newValue);
+                }
+                p.onChangeUnit(u);
+            }}
+            options={
+                Object.entries(sizeFactors).map(([name, value]) => {
+                    const isSpecial = name == 'default' || name == 'infinite';
+                    return {
+                        value: name,
+                        label: isSpecial ? titleCase(name) : name,
+                        style: isSpecial ? { fontStyle: 'italic' } : undefined,
+                    };
+                })
+            }
+        />}
+    />
+};
+

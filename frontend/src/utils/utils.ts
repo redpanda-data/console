@@ -516,9 +516,28 @@ export const prettyBytesOrNA = function (n: number) {
     if (!isFinite(n) || n < 0) return "N/A";
     return prettyBytes(n);
 }
-export const prettyBytes = function (n: number) {
+
+export type PrettyValueOptions = {
+    /** Show 'Infinite' for greater or equal to 2^64-1 */
+    showLargeAsInfinite?: boolean;
+    /** A fallback to show when the value is `undefined` or `null` */
+    showNullAs?: string;
+};
+export const UInt64Max = "18446744073709551615"; // can't be represented in js, would be rounded up to 18446744073709552000
+function isUInt64Maximum(str: string) {
+    if (str == UInt64Max)
+        return true;
+    if (str == String(Number(UInt64Max)))
+        return true;
+    return false;
+}
+
+export const prettyBytes = function (n: number | string | null | undefined, options?: PrettyValueOptions) {
     if (typeof n === 'undefined' || n === null)
-        return "N/A"; // null, undefined -> N/A
+        return options?.showNullAs ?? "N/A"; // null, undefined -> N/A
+
+    if (options?.showLargeAsInfinite && isUInt64Maximum(String(n)))
+        return 'Infinite';
 
     if (typeof n !== 'number') {
         if (typeof n === 'string') {
@@ -543,9 +562,12 @@ export const prettyBytes = function (n: number) {
     return prettyBytesOriginal(n);
 }
 
-export const prettyMilliseconds = function (n: number, options?: prettyMillisecondsOriginal.Options) {
+export const prettyMilliseconds = function (n: number | string, options?: prettyMillisecondsOriginal.Options & PrettyValueOptions) {
     if (typeof n === 'undefined' || n === null)
-        return "N/A"; // null, undefined -> N/A
+        return options?.showNullAs ?? "N/A"; // null, undefined -> N/A
+
+    if (options?.showLargeAsInfinite && isUInt64Maximum(String(n)))
+        return 'Infinite';
 
     if (typeof n !== 'number') {
         if (typeof n === 'string') {
@@ -790,6 +812,15 @@ export function decodeBase64(base64: string) {
 
     const decoder = new TextDecoder(); // default is utf-8
     return decoder.decode(bytes);
+}
+
+export function encodeBase64(rawData: string) {
+    // first we use encodeURIComponent to get percent-encoded UTF-8,
+    // then we convert the percent encodings into raw bytes which
+    // can be fed into btoa.
+    return btoa(encodeURIComponent(rawData).replace(/%([0-9A-F]{2})/g, function (match, p1) {
+        return String.fromCharCode(parseInt(p1, 16))
+    }))
 }
 
 export function delay(timeoutMs: number): Promise<void> {

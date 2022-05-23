@@ -72,7 +72,11 @@ export function formatConfigValue(name: string, value: string | null | undefined
 
     // Bytes
     if (name.endsWith('.bytes') || name.endsWith('.buffer.size') || name.endsWith('.replication.throttled.rate') || name.endsWith('.reassignment.throttled.rate')) {
-        if (num < 0 || num >= Number.MAX_VALUE) return 'Infinite' + suffix;
+        const uint64Max = "18446744073709551615"; // can't be represented in js, would be rounded up to 18446744073709552000
+        const uint64Exp = 1.844674407370955e19; // barely below the point where the number would be rounded up
+        if (value == uint64Max || num >= uint64Exp)
+            return 'Infinite' + suffix;
+
         return prettyBytesOrNA(num) + suffix;
     }
 
