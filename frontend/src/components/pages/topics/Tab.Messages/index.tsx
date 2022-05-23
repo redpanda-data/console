@@ -1490,7 +1490,7 @@ function createPublishRecordsModal(parent: TopicMessageView) {
                 headers: [{ key: '', value: '' }],
             } as PublishMessageModalProps['state']);
         },
-        isOkEnabled: s => s.topics.length === 1,
+        isOkEnabled: s => s.topics.length >= 1,
         onOk: async state => {
 
             if (state.encodingType === 'json')
