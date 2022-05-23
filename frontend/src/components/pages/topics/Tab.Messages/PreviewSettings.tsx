@@ -356,8 +356,14 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
             });
     }
 
-    // order results by their path
+    // order results by the tag they were created from, and then their path
     results.sort((a, b) => {
+        if (a.tag != b.tag) {
+            const indexA = tags.indexOf(a.tag);
+            const indexB = tags.indexOf(b.tag);
+            return indexA - indexB;
+        }
+
         // first sort by path length
         const pathLengthDiff = a.prop.path.length - b.prop.path.length;
         if (pathLengthDiff != 0) return pathLengthDiff;
