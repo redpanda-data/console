@@ -130,7 +130,7 @@ const TopicConfigList = observer(({ configEntries }: { configEntries: ConfigEntr
     return <ConfigList
         configEntries={configEntries}
         valueDisplay={uiSettings.topicList.valueDisplay}
-        renderTooltip={(e, content) => FavoritePopover(e, content)}
+        renderTooltip={(e, content) => <FavoritePopover configEntry={e} children={content} />}
     />
 });
 
@@ -170,7 +170,8 @@ const ConfigDisplaySettings = observer(() => (
 
 const markerIcon = <HighlightTwoTone twoToneColor="#1890ff" style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
 
-export const FavoritePopover = (configEntry: ConfigEntry, children: React.ReactNode) => {
+export const FavoritePopover = observer((p: { configEntry: ConfigEntry, children: React.ReactNode }) => {
+    const { configEntry, children } = p;
     const name = configEntry.name;
     const favs = uiState.topicSettings.favConfigEntries;
     const isFav = favs.includes(name);
@@ -205,7 +206,7 @@ export const FavoritePopover = (configEntry: ConfigEntry, children: React.ReactN
             </div>
         </Popover>
     );
-};
+});
 
 export function DataValue(name: string, value: string, isDefault: boolean, formatType: 'friendly' | 'raw' | 'both') {
     value = formatConfigValue(name, value, formatType);

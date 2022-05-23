@@ -50,7 +50,13 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
             .map(favName => configEntries!.find(e => e.name === favName))
             .filter(e => e != null)
             .map(configEntry =>
-                FavoritePopover(configEntry!, <Statistic key={(configEntry!.name)} title={(configEntry!.name)} value={formatConfigValue(configEntry!.name, configEntry?.value, uiSettings.topicList.valueDisplay)} />)
+                <FavoritePopover configEntry={configEntry!}>
+                    <Statistic
+                        key={(configEntry!.name)}
+                        title={(configEntry!.name)}
+                        value={formatConfigValue(configEntry!.name, configEntry?.value, uiSettings.topicList.valueDisplay)}
+                    />
+                </FavoritePopover>
             );
 
         if (configStats.length > 0)
