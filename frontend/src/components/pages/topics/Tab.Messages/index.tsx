@@ -44,7 +44,7 @@ import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelp
 import { toJson } from "../../../../utils/jsonUtils";
 import { editQuery } from "../../../../utils/queryHelper";
 import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { cullText, delay, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
+import { cullText, delay, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
 import { makePaginationConfig, range, sortField } from "../../../misc/common";
 import { KowlJsonView } from "../../../misc/KowlJsonView";
 import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
@@ -635,7 +635,7 @@ function ${name}() {
             startOffset: searchParams.startOffset,
             startTimestamp: searchParams.startTimestamp,
             maxResults: searchParams.maxResults,
-            filterInterpreterCode: btoa(sanitizeString(filterCode)),
+            filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
         };
 
         // if (typeof searchParams.startTimestamp != 'number' || searchParams.startTimestamp == 0)
@@ -1500,14 +1500,14 @@ function createPublishRecordsModal(parent: TopicMessageView) {
             const convert: { [key in EncodingType]: (x: string) => string | null } = {
                 'none': x => null,
                 'base64': x => x.trim(),
-                'json': x => btoa(x.trim()),
-                'utf8': x => btoa(x),
+                'json': x => encodeBase64(x.trim()),
+                'utf8': x => encodeBase64(x),
             };
             const value = convert[state.encodingType](state.value);
 
             const record: PublishRecord = {
-                headers: state.headers.filter(h => h.key && h.value).map(h => ({ key: h.key, value: btoa(h.value) })),
-                key: btoa(state.key),
+                headers: state.headers.filter(h => h.key && h.value).map(h => ({ key: h.key, value: encodeBase64(h.value) })),
+                key: encodeBase64(state.key),
                 partitionId: state.partition,
                 value: value,
             };

@@ -316,7 +316,7 @@ const apiStore = {
                     m.valueJson = JSON.stringify(m.value.payload);
 
                     if (m.value.encoding == 'binary') {
-                        m.value.payload = atob(m.value.payload);
+                        m.value.payload = decodeBase64(m.value.payload);
 
                         const str = m.value.payload as string;
                         let hex = '';

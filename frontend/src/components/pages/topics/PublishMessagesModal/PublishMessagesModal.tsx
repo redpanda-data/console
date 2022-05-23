@@ -154,7 +154,7 @@ export class PublishMessagesModalContent extends Component<Props> {
         const common = { path: tab, onMount: setTheme } as EditorProps;
         const r = this.props.state;
 
-        const valueLanguage = (tab !== 'value' && r.encodingType === 'json')
+        const valueLanguage = (r.encodingType === 'json')
             ? 'json'
             : undefined;
 
