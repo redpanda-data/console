@@ -38,6 +38,7 @@ require (
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.0.0
 	github.com/vmihailenco/msgpack/v5 v5.3.1
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
+	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
