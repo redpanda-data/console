@@ -11,6 +11,13 @@
 
 @use 'sass:math';
 
+$color-brand-primary: #2f2c2c;
+$color-brand-secondary: #F15D61;
+$color-brand-tertiary: #D85556;
+$color-brand-accent: #ED6338;
+$color-brand-muted: #828080;
+$color-brand-neutral: #F3F3F3;
+
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
@@ -56,6 +63,26 @@ h2 {
 
 .scroll-on-hover-y:hover {
     overflow-y: auto;
+    overflow-y: overlay;
+
+    // scrollbar-width: 8px;
+    &::-webkit-scrollbar {
+        display: block;
+        width: 6px;
+        // height: 8px;
+
+        // background-color: transparent;
+        background-color: hsl(0, 0%, 85%);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: hsl(0, 0%, 55%);
+        border-radius: 1px;
+    }
+
+    &::-webkit-scrollbar-button {
+        display: none;
+    }
 }
 
 .cell {
@@ -138,6 +165,25 @@ h2 {
 // allow copy tooltip to attach to this
 .ant-tabs-tabpane {
     position: relative;
+}
+
+.dataRefreshButton {
+    height: 32px;
+    display: inline-flex;
+    margin-left: 10px;
+
+    background: hsl(14, 66%, 92%);
+    color: hsl(14, 100%, 50%);
+
+    border-radius: 30px;
+    place-content: center;
+    place-items: center;
+    white-space: nowrap;
+
+    .hoverButton {
+        color: hsl(14, 100%, 50%);
+        background: transparent;
+    }
 }
 
 .hoverButton {
@@ -383,6 +429,9 @@ td.ant-table-column-sort {
 .ant-pagination-item-active a {
     font-weight: bold;
     cursor: default;
+    // does not fit well
+    // color: $color-brand-secondary;
+    color: hsl(357deg 95% 72%);
 }
 
 .fadeIn3d {
@@ -430,6 +479,50 @@ td.ant-table-column-sort {
 }
 
 
+#mainLayout {
+    // border-left: 1px solid #ddd;
+    background: #f3f3f3;
+}
+
+.sider {
+    box-shadow: 0px 0px 6px 0px #00000024;
+}
+
+.sideBar {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    height: 100vh;
+    background: #F3F3F3;
+
+    img[alt="logo"] {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        max-height: 100px;
+
+        margin: auto;
+
+        padding: 20px;
+        // padding-bottom: 26px;
+
+        transition: all 200ms;
+    }
+
+    .titleText {
+        position: absolute;
+        transition: all 200ms;
+        width: 100%;
+        font-family: 'Kumbh Sans', sans-serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 6px;
+        transform: translateX(4px);
+        font-size: 1.8rem;
+        text-align: center;
+        color: hsl(14deg 1% 55% / 55%);
+    }
+}
 
 .sideBarToggle {
     display: flex;
@@ -437,17 +530,17 @@ td.ant-table-column-sort {
     justify-content: center;
     padding: 0;
     height: 40px;
-    background: rgba(0, 0, 0, 0.25);
+    background: hsl(0deg 0% 91%);
     cursor: pointer;
 
     .icon {
-        font-size: 19px;
-        color: hsl(217deg, 20%, 45%);
+        font-size: 20px;
+        color: hsl(0deg 0% 60%);
         transition: color 100ms;
     }
 
     &:hover .icon {
-        color: hsl(217deg, 38%, 70%);
+        color: hsl(0deg 0% 30%);
     }
 }
 
@@ -637,6 +730,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
     flex-direction: column;
     gap: 6px;
 
+    $baseColor: #828080;
     font-family: 'Poppins', sans-serif;
 
     li.ant-menu-item {
@@ -657,7 +751,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 
         a {
             display: flex; // fix vertical alignment of menu items in sidebar
-            color: hsl(218deg, 16%, 66%);
+            color: $baseColor;
 
             gap: 10px;
             transition:
@@ -698,30 +792,33 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
                 color: unset; // remove antd default
             }
 
+        }
+        
+        &:not(&-disabled), &:not(&-selected), &:not(&-active), &:not([class*="disabled"]) {
             &:hover {
-                color: hsl(218deg, 16%, 90%);
+                background: hsl(0deg 0% 92%);
             }
         }
 
         &-selected {
-            background-color: hsl(220deg, 35%, 13%);
+            background: $color-brand-secondary;
+            font-weight: 500;
 
-            a,
-            .menuIcon {
-                color: hsl(216deg, 13%, 90%);
+            a, .menuIcon {
+                color: hsl(216deg, 0%, 96%);
             }
         }
+
 
         &-disabled {
             cursor: default;
             user-select: none;
-            opacity: .5;
+            opacity: .35;
 
             a {
-                color: hsl(205deg, 50%, 70%) !important;
+                color: $baseColor  !important;
             }
         }
-
     }
 
     // we don't need a clearfix in our menu
@@ -1029,6 +1126,15 @@ tr.consumerGroupNoMemberAssigned {
 .ant-table-column-has-sorters:hover .ant-table-column-sorter {
     color: hsla(0, 0%, 50%, 0.85);
 }
+
+.ant-table-column-sorter-up, .ant-table-column-sorter-down {
+    &.active {
+        // does not fit well
+        // color: $color-brand-secondary;
+        color: hsl(357deg 84% 75%);
+    }
+}
+
 
 .messagesSpecialIconButton {
     padding: 0px 15px;
@@ -2476,28 +2582,29 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     justify-content: center;
     align-items: center;
 
-    gap: 8px;
+    gap: 10px;
     padding: 0;
     padding-top: 3em;
-    padding-bottom: 1em;
+    padding-bottom: 8px;
     margin-top: auto;
 
     color: hsl(216deg, 11%, 66%);
 
     .links {
         display: flex;
-        justify-content: center;
-        align-items: flex-start;
+        grid-gap: 1em;
         gap: 1em;
-        font-size: 20px;
+        font-size: 27px;
 
         a {
-            width: 32px;
-            height: 32px;
+            display: flex;
+            align-items: center;
+            width: auto;
+            height: 1em;
+            aspect-ratio: 1;
         }
 
         .anticon {
-            padding: 6px;
             cursor: pointer;
 
             color: hsl(216deg, 11%, 66%);
@@ -2505,6 +2612,11 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
             &:hover {
                 color: hsl(216deg, 11%, 50%);
             }
+        }
+
+        .anticon-github{
+            // github is the only logo that doesn't have built-in padding, looks out of place
+            font-size: calc(100% - 1px);
         }
     }
 
@@ -2518,10 +2630,11 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
         .versionGitData {
             font-family: monospace;
+            text-transform: uppercase;
+            font-size: 110%;
         }
 
-        font-family: "Poppins",
-        sans-serif;
+        font-family: "Kumbh Sans", sans-serif;
         font-size: 12px;
         // font-weight: 600;
         line-height: normal;

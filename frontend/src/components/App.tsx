@@ -18,14 +18,16 @@ import { RenderTrap, DebugDisplay, UpdatePopup } from './misc/common';
 import { DebugTimerStore, prettyMilliseconds } from '../utils/utils';
 import { toJson } from "../utils/jsonUtils";
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
-import { NavLink, Switch, Route } from 'react-router-dom';
+import { NavLink, Switch, Route, Link } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
 import { MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
 
-import logo2 from '../assets/logo2.png';
+import PandaFaceOpen from '../assets/redpanda/PandaFaceOpen.png';
+import RedpandaConsoleLogo from '../assets/redpanda/redpandaConsole.svg';
+import VSymbolLogo from '../assets/redpanda/v_symbol.svg';
 import { ErrorBoundary } from './misc/ErrorBoundary';
 import { IsDev, AppName, IsBusiness, basePathS } from '../utils/env';
 import { UserProfile } from './misc/UserButton';
@@ -34,7 +36,7 @@ import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
-import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined, TwitterOutlined, LinkedinFilled } from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined, TwitterOutlined, LinkedinFilled, SlackSquareOutlined } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
 import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
@@ -99,52 +101,16 @@ const VersionInfo = () => {
 
 };
 const SideBar = observer(() =>
-    <Layout style={{
-        display: 'flex', flex: 1, flexDirection: 'column',
-        height: '100vh',
-        background: 'hsl(217deg, 27%, 20%)'
-    }}>
-        <RenderTrap name='SideBarContent' />
-
+    <Layout className='sideBar' >
         {/* Logo */}
-        <div style={{ background: 'rgba(0,0,0, 0)', padding: '1px' }}>
-
-            <div style={{ position: 'relative' }}>
-
+        <div>
+            <Link to='/'>
                 {/* Logo Image */}
-                <img src={logo2} alt="logo" style={{
-                    height: uiSettings.sideBarOpen ? '130px' : '65px',
-                    transition: 'all 200ms',
-                    width: 'auto', display: 'block', margin: 'auto', cursor: 'pointer',
-                    opacity: 0.8, mixBlendMode: 'overlay',
-                    marginTop: uiSettings.sideBarOpen ? '3em' : '.5em'
-                }}
-                    onClick={() => { appGlobal.history.push('/'); }}
-                />
-
-                {/* Title Text */}
-                <div style={{
-                    position: 'absolute',
-                    transition: 'all 200ms',
-                    width: '100%',
-                    top: uiSettings.sideBarOpen ? '-40px' : '-80px',
-                    opacity: uiSettings.sideBarOpen ? 1 : 0,
-
-                    fontFamily: "'Quicksand', sans-serif",
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '6px',
-                    transform: 'translateX(4px)',
-                    fontSize: '1.8rem',
-                    textAlign: 'center',
-                    color: 'hsl(217deg, 26%, 38%)',
-                }}>
-                    Kowl
-                </div>
-
-                {/* Separator Line */}
-                <div style={{ position: 'relative', borderTop: '0px solid hsla(0deg, 0%, 100%, 0.13)', margin: '.5em 1em', marginTop: '1em' }} />
-            </div>
+                {uiSettings.sideBarOpen
+                    ? <img src={RedpandaConsoleLogo} alt="logo" />
+                    : <img src={VSymbolLogo} alt="logo" />
+                }
+            </Link>
         </div>
 
         {/* Menu */}
@@ -166,10 +132,13 @@ const SideBar = observer(() =>
 
 const sideBarWidthDefault = '230px';
 const AppSide = observer(() => (
-    <Sider collapsible collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth}
+    <Sider
+        collapsible
+        collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth}
         trigger={null}
         width={sideBarWidthDefault}
-        style={{ background: 'white', cursor: 'default' }}
+        className='sider'
+        style={{ cursor: 'default' }}
     >
         <SideBar />
     </Sider>
@@ -197,25 +166,13 @@ const DataRefreshButton = observer(() => {
         : "";
 
     // maybe we need to use the same 'no vertical expansion' trick:
-    return <div style={{
-        height: '32px',
-        display: 'inline-flex',
-        marginLeft: '10px',
-
-        background: 'hsl(216, 66%, 92%)',
-        color: 'hsl(205, 100%, 50%)',
-
-        borderRadius: '30px',
-        placeContent: 'center',
-        placeItems: 'center',
-        whiteSpace: 'nowrap',
-    }}>
+    return <div className='dataRefreshButton'>
         {
             api.activeRequests.length == 0
                 ?
                 <>
                     <Popover title='Force Refresh' content={refreshTextFunc} placement='rightTop' overlayClassName='popoverSmall' >
-                        <Button icon={< SyncIcon size={16} />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
+                        <Button icon={< SyncIcon size={16} />} shape='circle' className='hoverButton' onClick={() => appGlobal.onRefresh()} />
                     </Popover>
                     {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
                 </>
@@ -266,23 +223,20 @@ const AppPageHeader = observer(() => {
 });
 
 const AppFooter = () => {
-    const discordIcon = <svg viewBox="0 0 245 240" height="1em" fill="currentColor"><path d="M104.4 103.9c-5.7 0-10.2 5-10.2 11.1s4.6 11.1 10.2 11.1c5.7 0 10.2-5 10.2-11.1.1-6.1-4.5-11.1-10.2-11.1zM140.9 103.9c-5.7 0-10.2 5-10.2 11.1s4.6 11.1 10.2 11.1c5.7 0 10.2-5 10.2-11.1s-4.5-11.1-10.2-11.1z" /><path d="M189.5 20h-134C44.2 20 35 29.2 35 40.6v135.2c0 11.4 9.2 20.6 20.5 20.6h113.4l-5.3-18.5 12.8 11.9 12.1 11.2 21.5 19V40.6c0-11.4-9.2-20.6-20.5-20.6zm-38.6 130.6s-3.6-4.3-6.6-8.1c13.1-3.7 18.1-11.9 18.1-11.9-4.1 2.7-8 4.6-11.5 5.9-5 2.1-9.8 3.5-14.5 4.3-9.6 1.8-18.4 1.3-25.9-.1-5.7-1.1-10.6-2.7-14.7-4.3-2.3-.9-4.8-2-7.3-3.4-.3-.2-.6-.3-.9-.5-.2-.1-.3-.2-.4-.3-1.8-1-2.8-1.7-2.8-1.7s4.8 8 17.5 11.8c-3 3.8-6.7 8.3-6.7 8.3-22.1-.7-30.5-15.2-30.5-15.2 0-32.2 14.4-58.3 14.4-58.3 14.4-10.8 28.1-10.5 28.1-10.5l1 1.2c-18 5.2-26.3 13.1-26.3 13.1s2.2-1.2 5.9-2.9c10.7-4.7 19.2-6 22.7-6.3.6-.1 1.1-.2 1.7-.2 6.1-.8 13-1 20.2-.2 9.5 1.1 19.7 3.9 30.1 9.6 0 0-7.9-7.5-24.9-12.7l1.4-1.6s13.7-.3 28.1 10.5c0 0 14.4 26.1 14.4 58.3 0 0-8.5 14.5-30.6 15.2z" /></svg>;
 
     return <Footer className="footer">
         {/* Social Media Links */}
         <div className="links">
-            <a href="https://github.com/cloudhut/kowl" title="Visit Kowl's GitHub repository" target='_blank' rel='noopener'>
+            <a href="https://github.com/cloudhut/kowl" title="Visit Redpanda Console's GitHub repository" target='_blank' rel='noopener'>
                 <GithubFilled />
             </a>
-            <a href="https://discord.gg/KQj7P6v" target='_blank' rel='noopener'>
-                <span role='img' className='anticon' style={{ fontSize: '120%' }}>
-                    {discordIcon}
-                </span>
+            <a href="https://redpanda.com/slack" title="Slack" target='_blank' rel='noopener'>
+                <SlackSquareOutlined />
             </a>
-            <a href="https://twitter.com/cloudhut_kowl" target='_blank' rel='noopener'>
+            <a href="https://twitter.com/redpandadata" title="Twitter" target='_blank' rel='noopener'>
                 <TwitterOutlined />
             </a>
-            <a href="https://www.linkedin.com/company/kowl" target='_blank' rel='noopener'>
+            <a href="https://www.linkedin.com/company/vectorized-io" title="LinkedIn" target='_blank' rel='noopener'>
                 <LinkedinFilled />
             </a>
         </div>
@@ -295,7 +249,7 @@ const AppFooter = () => {
 };
 
 const AppContent = observer(() =>
-    <Layout className='overflowYOverlay' style={{ borderLeft: '1px solid #ddd' }} id="mainLayout">
+    <Layout className='overflowYOverlay' id="mainLayout">
 
         <RenderTrap name='AppContentLayout' />
 

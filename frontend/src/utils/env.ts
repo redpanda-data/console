@@ -48,7 +48,7 @@ export const IsProd = !isDev; // todo: rename IsProd IsDev
 export const IsDev = isDev;
 
 export const IsBusiness = Boolean(env.REACT_APP_BUSINESS);
-export const AppName = IsBusiness ? 'Kowl Business' : 'Kowl';
+export const AppName = IsBusiness ? 'Redpanda Console Business' : 'Redpanda Console';
 
 const basePathRaw: string = (window as any)["BASE_URL"];
 const basePath = (typeof basePathRaw === 'string' && !basePathRaw.startsWith('__BASE_PATH'))
