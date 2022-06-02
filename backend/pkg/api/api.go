@@ -10,12 +10,15 @@
 package api
 
 import (
+	"time"
+
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/cloudhut/kowl/backend/pkg/console"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/cloudhut/kowl/backend/pkg/version"
 	"go.uber.org/zap"
 )
 
@@ -30,32 +33,15 @@ type API struct {
 	GitSvc     *git.Service
 
 	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Console Business)
-
-	version versionInfo
 }
 
 // New creates a new API instance
 func New(cfg *Config) *API {
 	logger := logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
 
-	version := loadVersionInfo(logger)
-
-	// Print startup message
-	if version.isBusiness {
-		logger.Info("started "+version.productName,
-			zap.String("version", version.gitRef),
-			zap.String("git_sha", version.gitSha),
-			zap.String("built", version.timestampFriendly),
-			zap.String("version_business", version.gitRefBusiness),
-			zap.String("git_sha_business", version.gitShaBusiness),
-		)
-	} else {
-		logger.Info("started "+version.productName,
-			zap.String("version", version.gitRef),
-			zap.String("git_sha", version.gitSha),
-			zap.String("built", version.timestampFriendly),
-		)
-	}
+	logger.Info("started Redpanda Console",
+		zap.String("version", version.Version),
+		zap.String("built_at", version.BuiltAt.Format(time.RFC3339)))
 
 	kafkaSvc, err := kafka.NewService(cfg.Kafka, logger, cfg.MetricsNamespace)
 	if err != nil {
@@ -79,7 +65,6 @@ func New(cfg *Config) *API {
 		ConsoleSvc: consoleSvc,
 		ConnectSvc: connectSvc,
 		Hooks:      newDefaultHooks(),
-		version:    version,
 	}
 }
 
