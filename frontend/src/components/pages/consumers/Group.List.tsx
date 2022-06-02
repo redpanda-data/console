@@ -28,7 +28,7 @@ import Card from "../../misc/Card";
 import { editQuery } from "../../../utils/queryHelper";
 import { uiState } from "../../../state/uiState";
 import { DefaultSkeleton, Label, OptionGroup } from "../../../utils/tsxUtils";
-import { BrokerList } from "../reassign-partitions/components/BrokerList";
+import { BrokerList } from "../../misc/BrokerList";
 import { ShortNum } from "../../misc/ShortNum";
 import { KowlTable } from "../../misc/KowlTable";
 

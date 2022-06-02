@@ -11,10 +11,10 @@
 
 import React, { Component } from "react";
 import { Tag, Popover, Tooltip } from "antd";
-import { LazyMap } from "../../../../utils/LazyMap";
-import { Broker, Partition } from "../../../../state/restInterfaces";
-import { api, brokerMap } from "../../../../state/backendApi";
-import { findPopupContainer, QuickTable } from "../../../../utils/tsxUtils";
+import { LazyMap } from "../../utils/LazyMap";
+import { Broker, Partition } from "../../state/restInterfaces";
+import { api, brokerMap } from "../../state/backendApi";
+import { findPopupContainer, QuickTable } from "../../utils/tsxUtils";
 import { observer } from "mobx-react";
 import { ChevronRightIcon } from "@heroicons/react/solid";
 

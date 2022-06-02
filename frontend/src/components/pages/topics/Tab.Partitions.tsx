@@ -20,7 +20,7 @@ import { MotionAlways } from "../../../utils/animationProps";
 import '../../../utils/arrayExtensions';
 import { uiState } from "../../../state/uiState";
 import { numberToThousandsString, DefaultSkeleton, InfoText, findPopupContainer, LayoutBypass } from "../../../utils/tsxUtils";
-import { BrokerList } from "../reassign-partitions/components/BrokerList";
+import { BrokerList } from "../../misc/BrokerList";
 import { WarningTwoTone } from "@ant-design/icons";
 
 
