@@ -10,18 +10,19 @@
 package api
 
 import (
-	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"net/http"
+
+	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kowl/backend/pkg/console"
 )
 
 func (api *API) handleGetEndpoints() http.HandlerFunc {
 	type response struct {
-		EndpointCompatibility owl.EndpointCompatibility `json:"endpointCompatibility"`
+		EndpointCompatibility console.EndpointCompatibility `json:"endpointCompatibility"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		endpointCompatibility, err := api.OwlSvc.GetEndpointCompatibility(r.Context())
+		endpointCompatibility, err := api.ConsoleSvc.GetEndpointCompatibility(r.Context())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

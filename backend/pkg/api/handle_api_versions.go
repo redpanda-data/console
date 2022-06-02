@@ -10,18 +10,19 @@
 package api
 
 import (
-	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"net/http"
+
+	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kowl/backend/pkg/console"
 )
 
 func (api *API) handleGetAPIVersions() http.HandlerFunc {
 	type response struct {
-		APIVersions []owl.APIVersion `json:"apiVersions"`
+		APIVersions []console.APIVersion `json:"apiVersions"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		versions, err := api.OwlSvc.GetAPIVersions(r.Context())
+		versions, err := api.ConsoleSvc.GetAPIVersions(r.Context())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

@@ -13,19 +13,19 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"github.com/cloudhut/kowl/backend/pkg/console"
 
 	"github.com/cloudhut/common/rest"
 
 	"github.com/go-chi/chi"
 )
 
-// Hooks are a way to extend the Kafka Owl functionality from the outside. By default all hooks have no
-// additional functionality. In order to run your own Hooks you must construct an Hooks instance and
+// Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
+// additional functionality. In order to run your own Hooks you must construct a Hooks instance and
 // run attach them to your own instance of Api.
 type Hooks struct {
-	Route RouteHooks
-	Owl   OwlHooks
+	Route   RouteHooks
+	Console ConsoleHooks
 }
 
 // RouteHooks allow you to modify the Router
@@ -41,8 +41,9 @@ type RouteHooks interface {
 	ConfigRouter(router chi.Router)
 }
 
-// OwlHooks include all functions which allow you to modify
-type OwlHooks interface {
+// ConsoleHooks include all functions which allow you to intercept the requests at various
+// endpoints where RBAC rules may be applied.
+type ConsoleHooks interface {
 	// Topic Hooks
 	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
@@ -55,7 +56,7 @@ type OwlHooks interface {
 	CanUseMessageSearchFilters(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
-	PrintListMessagesAuditLog(r *http.Request, req *owl.ListMessageRequest)
+	PrintListMessagesAuditLog(r *http.Request, req *console.ListMessageRequest)
 
 	// ACL Hooks
 	CanListACLs(ctx context.Context) (bool, *rest.Error)
@@ -86,8 +87,8 @@ type defaultHooks struct{}
 func newDefaultHooks() *Hooks {
 	d := &defaultHooks{}
 	return &Hooks{
-		Route: d,
-		Owl:   d,
+		Route:   d,
+		Console: d,
 	}
 }
 
@@ -96,7 +97,7 @@ func (*defaultHooks) ConfigAPIRouter(_ chi.Router) {}
 func (*defaultHooks) ConfigWsRouter(_ chi.Router)  {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)    {}
 
-// Owl Hooks
+// Console Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
@@ -131,7 +132,7 @@ func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string,
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
 }
-func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *owl.ListMessageRequest) {}
+func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *console.ListMessageRequest) {}
 func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }

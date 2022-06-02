@@ -13,9 +13,9 @@ import (
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/cloudhut/kowl/backend/pkg/connect"
+	"github.com/cloudhut/kowl/backend/pkg/console"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/kafka"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"go.uber.org/zap"
 )
 
@@ -25,11 +25,11 @@ type API struct {
 
 	Logger     *zap.Logger
 	KafkaSvc   *kafka.Service
-	OwlSvc     *owl.Service
+	ConsoleSvc *console.Service
 	ConnectSvc *connect.Service
 	GitSvc     *git.Service
 
-	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
+	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Console Business)
 
 	version versionInfo
 }
@@ -62,7 +62,7 @@ func New(cfg *Config) *API {
 		logger.Fatal("failed to create kafka service", zap.Error(err))
 	}
 
-	owlSvc, err := owl.NewService(cfg.Owl, logger, kafkaSvc)
+	consoleSvc, err := console.NewService(cfg.Console, logger, kafkaSvc)
 	if err != nil {
 		logger.Fatal("failed to create owl service", zap.Error(err))
 	}
@@ -76,7 +76,7 @@ func New(cfg *Config) *API {
 		Cfg:        cfg,
 		Logger:     logger,
 		KafkaSvc:   kafkaSvc,
-		OwlSvc:     owlSvc,
+		ConsoleSvc: consoleSvc,
 		ConnectSvc: connectSvc,
 		Hooks:      newDefaultHooks(),
 		version:    version,
@@ -90,9 +90,9 @@ func (api *API) Start() {
 		api.Logger.Fatal("failed to start kafka service", zap.Error(err))
 	}
 
-	err = api.OwlSvc.Start()
+	err = api.ConsoleSvc.Start()
 	if err != nil {
-		api.Logger.Fatal("failed to start owl service", zap.Error(err))
+		api.Logger.Fatal("failed to start console service", zap.Error(err))
 	}
 
 	// Server

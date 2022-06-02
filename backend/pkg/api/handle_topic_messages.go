@@ -17,14 +17,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"github.com/cloudhut/kowl/backend/pkg/console"
 
 	"github.com/cloudhut/common/rest"
 )
 
 // GetTopicMessagesResponse is a wrapper for an array of TopicMessage
 type GetTopicMessagesResponse struct {
-	KafkaMessages *owl.ListMessageResponse `json:"kafkaMessages"`
+	KafkaMessages *console.ListMessageResponse `json:"kafkaMessages"`
 }
 
 // ListMessageRequest represents a search message request with all search parameter. This must be public as it's
@@ -117,7 +117,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		// Check if logged in user is allowed to list messages for the given request
-		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req.TopicName)
+		canViewMessages, restErr := api.Hooks.Console.CanViewTopicMessages(r.Context(), req.TopicName)
 		if restErr != nil {
 			wsClient.writeJSON(restErr)
 			return
@@ -128,7 +128,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		if len(req.FilterInterpreterCode) > 0 {
-			canUseMessageSearchFilters, restErr := api.Hooks.Owl.CanUseMessageSearchFilters(r.Context(), req.TopicName)
+			canUseMessageSearchFilters, restErr := api.Hooks.Console.CanUseMessageSearchFilters(r.Context(), req.TopicName)
 			if restErr != nil {
 				sendError(restErr.Message)
 				return
@@ -142,7 +142,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		interpreterCode, _ := req.DecodeInterpreterCode() // Error has been checked in validation function
 
 		// Request messages from kafka and return them once we got all the messages or the context is done
-		listReq := owl.ListMessageRequest{
+		listReq := console.ListMessageRequest{
 			TopicName:             req.TopicName,
 			PartitionID:           req.PartitionID,
 			StartOffset:           req.StartOffset,
@@ -150,11 +150,11 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			MessageCount:          req.MaxResults,
 			FilterInterpreterCode: interpreterCode,
 		}
-		api.Hooks.Owl.PrintListMessagesAuditLog(r, &listReq)
+		api.Hooks.Console.PrintListMessagesAuditLog(r, &listReq)
 
 		// Use 30min duration if we want to search a whole topic or forward messages as they arrive
 		duration := 45 * time.Second
-		if listReq.FilterInterpreterCode != "" || listReq.StartOffset == owl.StartOffsetNewest {
+		if listReq.FilterInterpreterCode != "" || listReq.StartOffset == console.StartOffsetNewest {
 			duration = 30 * time.Minute
 		}
 		childCtx, cancel := context.WithTimeout(ctx, duration)
@@ -171,7 +171,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 		progress.Start()
 
-		err = api.OwlSvc.ListMessages(childCtx, listReq, progress)
+		err = api.ConsoleSvc.ListMessages(childCtx, listReq, progress)
 		if err != nil {
 			progress.OnError(err.Error())
 		}
