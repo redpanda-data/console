@@ -61,9 +61,9 @@ async function handle401(res: Response) {
         console.log("unauthorized message: " + text);
 
         const err = obj as ApiError;
-        uiState.loginError = String(err.message);
+        window.alert(String(err.message));
     } catch (err) {
-        uiState.loginError = String(err);
+        window.alert(String(err));
     }
 
     // Save current location url
