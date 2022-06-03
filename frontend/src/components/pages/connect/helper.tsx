@@ -340,7 +340,7 @@ export function NotConfigured() {
                         </p>
                     </div>
 
-                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/kowl/blob/master/docs/config/kowl.yaml">
+                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/console/blob/master/docs/config/kowl.yaml">
                         <Button type="primary">Redpanda Console Config Documentation</Button>
                     </a>
                 </Empty>

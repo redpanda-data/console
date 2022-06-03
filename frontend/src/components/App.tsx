@@ -213,7 +213,7 @@ const AppFooter = () => {
     return <Footer className="footer">
         {/* Social Media Links */}
         <div className="links">
-            <a href="https://github.com/redpanda-data/kowl" title="Visit Redpanda Console's GitHub repository" target='_blank' rel='noopener'>
+            <a href="https://github.com/redpanda-data/console" title="Visit Redpanda Console's GitHub repository" target='_blank' rel='noopener'>
                 <GithubFilled />
             </a>
             <a href="https://redpanda.com/slack" title="Slack" target='_blank' rel='noopener'>
