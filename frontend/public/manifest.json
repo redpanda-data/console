@@ -3,9 +3,9 @@
     "short_name": "RP Console",
     "icons": [
         {
-            "src": "favicon.png",
+            "src": "favicon_for_light_bg.png",
             "type": "image/png",
-            "sizes": "200x200"
+            "sizes": "384x384"
         }
     ],
     "start_url": ".",
