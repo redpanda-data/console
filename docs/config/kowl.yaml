@@ -63,8 +63,8 @@ kafka:
   #   enabled: false
   #   urls: [] # Url with scheme is required, e.g. ["http://localhost:8081"]
   #   username: # Basic auth username
-  #   password: # Basic auth password
-  #   bearerToken:
+  #   password: # Basic auth password. This can be set via the --schema.registry.password flag as well
+  #   bearerToken: # This can be set via the --schema.registry.token flag as well
   #   tls:
   #     enabled: false # Enable Client certificate connexion to the schemaRegistry
   #     caFilepath: # Path to a custom CA file. If not specified the system's / trusted root ca is used.
