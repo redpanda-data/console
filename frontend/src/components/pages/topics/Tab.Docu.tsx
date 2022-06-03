@@ -96,19 +96,19 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
 }
 
 const errorNotConfigured = renderDocuError('Not Configured', <>
-    <p>Topic Documentation is not configured in Kowl.</p>
-    <p>Provide the connection credentials in the Kowl config, to fetch and display docmentation for the topics.</p>
+    <p>Topic Documentation is not configured in Redpanda Console.</p>
+    <p>Provide the connection credentials in the Redpanda Console config, to fetch and display docmentation for the topics.</p>
 </>);
 const errorNotFound = renderDocuError('Not Found', <>
     <p>No documentation file was found for this topic.</p>
     <ul style={{ listStyle: 'none' }}>
-        <li>Ensure the Git connection to the documentation repository is configured correctly in the Kowl backend.</li>
+        <li>Ensure the Git connection to the documentation repository is configured correctly in the Redpanda Console backend.</li>
         <li>Ensure that a markdown file (named just like the topic) exists in the repository.</li>
     </ul>
 </>);
 const errorEmpty = renderDocuError('Empty', <>
     <p>The documentation file is empty.</p>
-    <p>In case you just changed the file, keep in mind that Kowl will only<br />
+    <p>In case you just changed the file, keep in mind that Redpanda Console will only<br />
         periodically check the documentation repo for changes (every minute by default).</p>
 </>);
 
@@ -125,8 +125,8 @@ function renderDocuError(title: string, body: JSX.Element) {
                 </div>
 
                 {/* todo: fix link once we have a better guide */}
-                <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
-                    <Button type="primary">Kowl Documentation</Button>
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/kowl/blob/master/docs/config/kowl.yaml">
+                    <Button type="primary">Redpanda Console Documentation</Button>
                 </a>
             </Empty>
         </motion.div>

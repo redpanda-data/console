@@ -178,7 +178,7 @@ export class ErrorBoundary extends React.Component {
         return <Layout style={{ minHeight: '100vh', overflow: 'visible', padding: '2rem 4rem' }}>
             <div>
                 <h1>Rendering Error!</h1>
-                <p>Please report this at <a style={{ textDecoration: 'underline', fontWeight: 'bold' }} href="https://github.com/cloudhut/kowl/issues">our GitHub Repo</a></p>
+                <p>Please report this at <a style={{ textDecoration: 'underline', fontWeight: 'bold' }} href="https://github.com/redpanda-data/kowl/issues">our GitHub Repo</a></p>
                 <Space size={'large'} style={{ marginTop: '0', marginBottom: '2rem' }}>
                     <Button icon={<CloseOutlined />} type='primary' size='large' style={{ width: '16rem' }} onClick={() => this.dismiss()}>
                         Dismiss

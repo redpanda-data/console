@@ -441,13 +441,13 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                         );
                     } else {
                         setErrors([
-                            'No partition offset was specified, this should not happen. Please contact your Kowl administrator.',
+                            'No partition offset was specified, this should not happen. Please contact your administrator.',
                         ]);
                     }
                 }
             });
         } else {
-            setErrors(['Something went wrong, please contact your Kowl administrator.']);
+            setErrors(['Something went wrong, please contact your administrator.']);
         }
     };
 

@@ -116,7 +116,7 @@ export class UserPreferencesDialog extends Component<{ visible: boolean, onClose
 class StatsBarTab extends Component {
     render() {
         return <div>
-            <p>Controls on what pages kowl shows the statistics bar</p>
+            <p>Controls on what pages Redpanda Console shows the statistics bar</p>
             <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
                 <Label text='Topic Details' >
                     <Checkbox children='Enabled' checked={uiSettings.topicDetailsShowStatisticsBar} onChange={e => uiSettings.topicDetailsShowStatisticsBar = e.target.checked} />

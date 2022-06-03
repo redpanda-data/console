@@ -51,15 +51,15 @@ function renderNotConfigured() {
                         <h2>Not Configured</h2>
 
                         <p>
-                            Schema Registry is not configured in Kowl.
+                            Schema Registry is not configured in Redpanda Console.
                             <br />
-                            To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Kowl config.
+                            To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Redpanda Console config.
                         </p>
                     </div>
 
                     {/* todo: fix link once we have a better guide */}
-                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
-                        <Button type="primary">Kowl Config Documentation</Button>
+                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/kowl/blob/master/docs/config/kowl.yaml">
+                        <Button type="primary">Redpanda Console Config Documentation</Button>
                     </a>
                 </Empty>
             </Card>

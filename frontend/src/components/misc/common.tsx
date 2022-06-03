@@ -176,7 +176,7 @@ export class UpdatePopup extends Component {
         updateDialogOpen = true;
         setImmediate(() => {
             Modal.info({
-                title: 'Kowl has been updated',
+                title: 'Redpanda Console has been updated',
                 content: <div>The page must be reloaded to apply the newest version of the frontend.</div>,
                 mask: true,
                 maskClosable: false,
@@ -248,7 +248,7 @@ export class UpdatePopup extends Component {
             style={{ minWidth: '700px' }}
         >
             <p>
-                The Kowl backend server is running a different version than the frontend.<br />
+                The Redpanda Console backend server is running a different version than the frontend.<br />
                 It is reccommended to reload the page to update the frontend.
             </p>
 

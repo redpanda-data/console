@@ -45,7 +45,7 @@ const siderCollapsedWidth = 80;
 
 const VersionInfo = () => {
     // Local Development Mode
-    //   Kowl - DEV
+    //   DEV
     if (IsDev) return <>
         <div className='versionTitle'>{AppName} DEV</div>
         <div className='versionDate'>Built {new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}</div>
@@ -53,7 +53,7 @@ const VersionInfo = () => {
     </>;
 
     // Continuous Delivery Mode
-    //   Kowl Business - CI
+    //   Business - CI
     //   b27c2a3f f3acf4b7
     if (env.REACT_APP_BUILT_FROM_PUSH) return <>
         <div className='versionTitle'>{AppName} CI</div>
@@ -74,7 +74,7 @@ const VersionInfo = () => {
     </>;
 
     // Release
-    //   Kowl Business v1.2.3
+    //   Business v1.2.3
     //   b27c2a3f f3acf4b7
     return <>
         <div className='versionTitle'>{AppName} - {IsBusiness ? env.REACT_APP_CONSOLE_BUSINESS_GIT_REF : env.REACT_APP_CONSOLE_GIT_REF}</div>

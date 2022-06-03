@@ -706,7 +706,7 @@ function ${name}() {
         <span>
             The selected topic/partition does not contain any messages.<br />
             If you have any filters active, check if they actually match the messages you are looking for.<br />
-            If you are using live tailing (StartOffset = 'Newest'), make sure messages are being sent to the topic <i>while</i> kowl is waiting for messages.</span>
+            If you are using live tailing (StartOffset = 'Newest'), make sure messages are being sent to the topic <i>while</i> Redpanda Console is waiting for messages.</span>
     </>} />;
 }
 

@@ -77,7 +77,7 @@ export class SettingsPage extends PageComponent {
     showDeleteConfirm() {
         Modal.confirm({
             title: 'Delete user settings?',
-            content: 'This will remove all local Kowl settings in the browser (clears "localStorage")',
+            content: 'This will remove all local Redpanda Console settings in the browser (clears "localStorage")',
             okText: 'Yes, reset my settings!', okType: 'default',
             cancelText: "No, don't do anything.",
             width: 700,

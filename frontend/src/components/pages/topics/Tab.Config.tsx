@@ -106,7 +106,7 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
                         title="Kafka Error"
                         subTitle={
                             <>
-                                Kowl received the following error while fetching the configuration for topic <Text code>{topicName}</Text> from Kafka:
+                                Redpanda Console received the following error while fetching the configuration for topic <Text code>{topicName}</Text> from Kafka:
                             </>
                         }
                     ></Result>

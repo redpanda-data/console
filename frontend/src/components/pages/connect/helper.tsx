@@ -334,14 +334,14 @@ export function NotConfigured() {
                         <h2>Not Configured</h2>
 
                         <p>
-                            Kafka Connect is not configured in Kowl.
+                            Kafka Connect is not configured in Redpanda Console.
                             <br />
-                            Setup the connection details to your Kafka Connect cluster in your Kowl config, to view and control all your connectors and tasks.
+                            Setup the connection details to your Kafka Connect cluster in your Redpanda Console config, to view and control all your connectors and tasks.
                         </p>
                     </div>
 
-                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
-                        <Button type="primary">Kowl Config Documentation</Button>
+                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/kowl/blob/master/docs/config/kowl.yaml">
+                        <Button type="primary">Redpanda Console Config Documentation</Button>
                     </a>
                 </Empty>
             </Card>

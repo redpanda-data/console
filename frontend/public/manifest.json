@@ -1,6 +1,6 @@
 {
-    "short_name": "Kowl",
-    "name": "Kowl",
+    "name": "Redpanda Console",
+    "short_name": "RP Console",
     "icons": [
         {
             "src": "favicon.png",

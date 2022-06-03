@@ -65,7 +65,7 @@ class TopicTab {
         }
 
         if (!topic) return true; // no data yet
-        if (!topic.allowedActions || topic.allowedActions[0] == 'all') return true; // kowl free version
+        if (!topic.allowedActions || topic.allowedActions[0] == 'all') return true; // Redpanda Console free version
 
         return topic.allowedActions.includes(this.requiredPermission);
     }
@@ -142,7 +142,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                 return undefined;
             }]),
             new TopicTab(topic, 'documentation', 'seeTopic', 'Documentation', (t) => <TopicDocumentation topic={t} />, [
-                t => t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured in Kowl') : null,
+                t => t.documentation == 'NOT_CONFIGURED' ? mkDocuTip('Topic documentation is not configured') : null,
                 t => t.documentation == 'NOT_EXISTENT' ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon) : null,
             ]),
         ];
