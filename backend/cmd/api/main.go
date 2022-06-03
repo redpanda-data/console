@@ -12,7 +12,7 @@ package main
 import (
 	"go.uber.org/zap"
 
-	"github.com/cloudhut/kowl/backend/pkg/api"
+	"github.com/redpanda-data/console/backend/pkg/api"
 )
 
 func main() {

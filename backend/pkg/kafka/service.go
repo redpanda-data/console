@@ -17,9 +17,9 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kversion"
 
-	"github.com/cloudhut/kowl/backend/pkg/msgpack"
-	"github.com/cloudhut/kowl/backend/pkg/proto"
-	"github.com/cloudhut/kowl/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/msgpack"
+	"github.com/redpanda-data/console/backend/pkg/proto"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 

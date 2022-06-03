@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 

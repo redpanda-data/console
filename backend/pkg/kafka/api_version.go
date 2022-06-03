@@ -12,7 +12,7 @@ package kafka
 import (
 	"context"
 
-	"github.com/cloudhut/kowl/backend/pkg/version"
+	"github.com/redpanda-data/console/backend/pkg/version"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 

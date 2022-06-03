@@ -18,15 +18,15 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/cloudhut/kowl/backend/pkg/proto"
+	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/twmb/franz-go/pkg/kbin"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/vmihailenco/msgpack/v5"
 
 	xj "github.com/basgys/goxml2json"
-	kmsgpack "github.com/cloudhut/kowl/backend/pkg/msgpack"
-	"github.com/cloudhut/kowl/backend/pkg/schema"
+	kmsgpack "github.com/redpanda-data/console/backend/pkg/msgpack"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // deserializer can deserialize messages from various formats (json, xml, avro, ..) into a Go native form.

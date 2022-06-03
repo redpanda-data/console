@@ -12,8 +12,8 @@ package console
 import (
 	"fmt"
 
-	"github.com/cloudhut/kowl/backend/pkg/git"
-	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/git"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"go.uber.org/zap"
 )
 

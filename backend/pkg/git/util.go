@@ -11,11 +11,12 @@ package git
 
 import (
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/filesystem"
-	"github.com/go-git/go-billy/v5"
-	"go.uber.org/zap"
 	"path"
 	"strings"
+
+	"github.com/go-git/go-billy/v5"
+	"github.com/redpanda-data/console/backend/pkg/filesystem"
+	"go.uber.org/zap"
 )
 
 func readFile(fileName string, fs billy.Filesystem, maxSize int64) ([]byte, error) {

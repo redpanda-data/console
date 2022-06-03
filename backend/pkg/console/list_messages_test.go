@@ -16,7 +16,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/stretchr/testify/assert"
 )
 

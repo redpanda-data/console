@@ -14,8 +14,8 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/console"
 	"github.com/go-chi/chi"
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 func (api *API) handleGetSchemaOverview() http.HandlerFunc {

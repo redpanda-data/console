@@ -16,19 +16,19 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/flagext"
-	"github.com/cloudhut/kowl/backend/pkg/connect"
-	"github.com/cloudhut/kowl/backend/pkg/console"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/mitchellh/mapstructure"
+	"github.com/redpanda-data/console/backend/pkg/connect"
+	"github.com/redpanda-data/console/backend/pkg/console"
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 // Config holds all (subdependency)Configs needed to run the API

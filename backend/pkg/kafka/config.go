@@ -13,9 +13,9 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/cloudhut/kowl/backend/pkg/msgpack"
-	"github.com/cloudhut/kowl/backend/pkg/proto"
-	"github.com/cloudhut/kowl/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/msgpack"
+	"github.com/redpanda-data/console/backend/pkg/proto"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // Config required for opening a connection to Kafka
