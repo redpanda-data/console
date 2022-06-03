@@ -14,11 +14,11 @@ import (
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/connect"
-	"github.com/cloudhut/kowl/backend/pkg/console"
-	"github.com/cloudhut/kowl/backend/pkg/git"
-	"github.com/cloudhut/kowl/backend/pkg/kafka"
-	"github.com/cloudhut/kowl/backend/pkg/version"
+	"github.com/redpanda-data/console/backend/pkg/connect"
+	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/git"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/version"
 	"go.uber.org/zap"
 )
 

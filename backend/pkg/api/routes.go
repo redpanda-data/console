@@ -14,10 +14,10 @@ import (
 
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/version"
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redpanda-data/console/backend/pkg/version"
 	"go.uber.org/zap"
 )
 

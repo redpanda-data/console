@@ -16,8 +16,8 @@ import (
 	"strconv"
 
 	con "github.com/cloudhut/connect-client"
-	"github.com/cloudhut/kowl/backend/pkg/connect"
 	"github.com/go-chi/chi"
+	"github.com/redpanda-data/console/backend/pkg/connect"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 

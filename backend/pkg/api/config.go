@@ -16,19 +16,19 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/flagext"
-	"github.com/cloudhut/kowl/backend/pkg/connect"
-	"github.com/cloudhut/kowl/backend/pkg/console"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/mitchellh/mapstructure"
+	"github.com/redpanda-data/console/backend/pkg/connect"
+	"github.com/redpanda-data/console/backend/pkg/console"
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
@@ -84,7 +84,7 @@ func (c *Config) Validate() error {
 func (c *Config) SetDefaults() {
 	c.ServeFrontend = true
 	c.FrontendPath = "./build"
-	c.MetricsNamespace = "kowl"
+	c.MetricsNamespace = "console"
 
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
@@ -170,7 +170,10 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 		keys[strings.ToLower(key)] = k.Get(key)
 	}
 	k.Delete("")
-	k.Load(confmap.Provider(keys, "."), nil)
+	err = k.Load(confmap.Provider(keys, "."), nil)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to unmarshal confmap variables into config struct: %w", err)
+	}
 
 	unmarshalCfg.DecoderConfig.ErrorUnused = false
 	err = k.UnmarshalWithConf("", &cfg, unmarshalCfg)

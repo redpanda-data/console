@@ -13,7 +13,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/cloudhut/kowl/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/console"
 
 	"github.com/cloudhut/common/rest"
 

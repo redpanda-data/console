@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cloudhut/kowl/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 	"golang.org/x/sync/errgroup"
 )
 

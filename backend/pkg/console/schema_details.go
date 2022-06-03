@@ -13,7 +13,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cloudhut/kowl/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 
 	"go.uber.org/zap"
 )

@@ -13,16 +13,17 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/filesystem"
-	"github.com/cloudhut/kowl/backend/pkg/git"
-	"github.com/cloudhut/kowl/backend/pkg/schema"
+	"strings"
+	"sync"
+
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
+	"github.com/redpanda-data/console/backend/pkg/filesystem"
+	"github.com/redpanda-data/console/backend/pkg/git"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 	"go.uber.org/zap"
-	"strings"
-	"sync"
 )
 
 type RecordPropertyType int
@@ -371,7 +372,7 @@ func (s *Service) createProtoRegistry() error {
 	for _, descriptor := range fileDescriptors {
 		registry.AddFile("", descriptor)
 	}
-	s.logger.Info("registered proto types in Kowl's local proto registry", zap.Int("registered_types", len(fileDescriptors)))
+	s.logger.Info("registered proto types in Console's local proto registry", zap.Int("registered_types", len(fileDescriptors)))
 
 	s.registryMutex.Lock()
 	defer s.registryMutex.Unlock()

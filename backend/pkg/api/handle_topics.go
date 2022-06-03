@@ -23,8 +23,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/console"
 	"github.com/go-chi/chi"
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 func (api *API) handleGetTopics() http.HandlerFunc {
@@ -111,7 +111,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("expected exactly one topic detail in response, but got '%d'", len(topicDetails)),
 				Status:   http.StatusInternalServerError,
-				Message:  "Internal server error in Kowl, please file a issue in GitHub if you face this issue. The backend logs will contain more information.",
+				Message:  "Internal server error in RP Console, please file a issue in GitHub if you face this issue. The backend logs will contain more information.",
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, logger, restErr)
