@@ -6,7 +6,7 @@
     "homepage": ".",
     "engines": {
         "node": "16.13.2",
-        "npm": "8.3.2"
+        "npm": "^8"
     },
     "scripts": {
         "start": "cross-env SKIP_PREFLIGHT_CHECK=true                         react-app-rewired start",
