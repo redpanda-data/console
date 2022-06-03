@@ -140,34 +140,34 @@ export function range(start: number, end: number): number[] {
 
 let updateDialogOpen = false;
 
-
+/*
+* TODO:
+* Reloading the page does not ensure we'll get the update!
+* If there are multiple backend instances, we might get connected to an old instance again when we trigger a reload.
+*/
 @observer
 export class UpdatePopup extends Component {
     render() {
+        if (IsDev) return null;
+
         if (updateDialogOpen) return null;
 
-        const serverVersion = uiState.serverVersion;
-        if (!serverVersion) return null; // server version not known yet
-        if (serverVersion.sha == 'dev' || serverVersion.branch == 'dev') return null; // don't show popup in dev
-        if (uiState.updatePromtHiddenUntil !== undefined)
-            if (new Date().getTime() < uiState.updatePromtHiddenUntil)
-                return null; // not yet
+        const serverTimestamp = uiState.serverBuildTimestamp;
+        if (serverTimestamp == null) return null;
 
         const curTimestamp = Number(env.REACT_APP_BUILD_TIMESTAMP);
-        const serverTimestamp = Number(serverVersion.ts);
 
         if (!curTimestamp || !Number.isFinite(curTimestamp)) return null;
-        if (!serverTimestamp || !Number.isFinite(curTimestamp)) return null;
+        if (!serverTimestamp || !Number.isFinite(serverTimestamp)) return null;
 
-        // don't downgrade
-        if (serverTimestamp < curTimestamp) return null;
-        // version already matches
-        if (serverTimestamp == curTimestamp) return null;
+        if (serverTimestamp < curTimestamp)
+            return null; // don't downgrade
+        if (serverTimestamp == curTimestamp)
+            return null; // version already matches
 
         console.log('frontend update available', {
             serverTimestamp: serverTimestamp,
             serverDate: new Date(serverTimestamp * 1000),
-            serverVersionInfo: clone(serverVersion),
             localTimestamp: curTimestamp,
             localDate: new Date(curTimestamp * 1000),
             localVersion: clone(env),
@@ -194,10 +194,10 @@ export class UpdatePopup extends Component {
         return null;
 
         /*
-        const curSha = (!!env.REACT_APP_KOWL_GIT_SHA ? env.REACT_APP_KOWL_GIT_SHA : '(dev)');
-        const curRef = env.REACT_APP_KOWL_GIT_REF;
-        const curShaBusiness = env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
-        const curRefBusiness = env.REACT_APP_KOWL_BUSINESS_GIT_REF;
+        const curSha = (!!env.REACT_APP_APP_GIT_SHA ? env.REACT_APP_APP_GIT_SHA : '(dev)');
+        const curRef = env.REACT_APP_APP_GIT_REF;
+        const curShaBusiness = env.REACT_APP_APP_BUSINESS_GIT_SHA;
+        const curRefBusiness = env.REACT_APP_APP_BUSINESS_GIT_REF;
         const curTimestamp = env.REACT_APP_BUILD_TIMESTAMP;
         const isFree = !serverVersion.shaBusiness;
 

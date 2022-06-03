@@ -76,13 +76,16 @@ async function handle401(res: Response) {
 function processVersionInfo(headers: Headers) {
     try {
         for (const [k, v] of headers) {
-            if (k.toLowerCase() == 'app-version') {
-                const serverVersion = JSON.parse(v) as ServerVersionInfo;
-                if (typeof serverVersion === 'object')
-                    if (uiState.serverVersion == null || (serverVersion.ts != uiState.serverVersion.ts))
-                        uiState.serverVersion = serverVersion;
-                break;
+            if (k.toLowerCase() != 'app-build-timestamp')
+                continue;
+
+            const serverBuildTimestamp = Number(v);
+            if (v != null && v != '' && Number.isFinite(serverBuildTimestamp)) {
+                if (uiState.serverBuildTimestamp != serverBuildTimestamp)
+                    uiState.serverBuildTimestamp = serverBuildTimestamp;
             }
+
+            return;
         }
     } catch { } // Catch malformed json (old versions where info is not sent as json yet)
 }
