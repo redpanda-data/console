@@ -33,14 +33,14 @@ RUN npm install
 # ENV values are persistet in the built image, ARG instructions are not!
 
 # git sha of the commit
-ARG KOWL_GIT_SHA
-RUN test -n "$KOWL_GIT_SHA" || (echo "KOWL_GIT_SHA must be set" && false)
-ENV REACT_APP_KOWL_GIT_SHA ${KOWL_GIT_SHA}
+ARG CONSOLE_GIT_SHA
+RUN test -n "$CONSOLE_GIT_SHA" || (echo "CONSOLE_GIT_SHA must be set" && false)
+ENV REACT_APP_CONSOLE_GIT_SHA ${CONSOLE_GIT_SHA}
 
 # name of the git branch
-ARG KOWL_GIT_REF
-RUN test -n "$KOWL_GIT_REF" || (echo "KOWL_GIT_REF must be set" && false)
-ENV REACT_APP_KOWL_GIT_REF ${KOWL_GIT_REF}
+ARG CONSOLE_GIT_REF
+RUN test -n "$CONSOLE_GIT_REF" || (echo "CONSOLE_GIT_REF must be set" && false)
+ENV REACT_APP_CONSOLE_GIT_REF ${CONSOLE_GIT_REF}
 
 # timestamp in unix seconds when the image was built
 ARG BUILD_TIMESTAMP
@@ -62,11 +62,11 @@ RUN npm run build
 FROM alpine:3
 
 # Embed env vars in final image as well (so the backend can read them)
-ARG KOWL_GIT_SHA
-ENV REACT_APP_KOWL_GIT_SHA ${KOWL_GIT_SHA}
+ARG CONSOLE_GIT_SHA
+ENV REACT_APP_CONSOLE_GIT_SHA ${CONSOLE_GIT_SHA}
 
-ARG KOWL_GIT_REF
-ENV REACT_APP_KOWL_GIT_REF ${KOWL_GIT_REF}
+ARG CONSOLE_GIT_REF
+ENV REACT_APP_CONSOLE_GIT_REF ${CONSOLE_GIT_REF}
 
 ARG BUILD_TIMESTAMP
 ENV REACT_APP_BUILD_TIMESTAMP ${BUILD_TIMESTAMP}

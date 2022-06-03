@@ -58,8 +58,8 @@ const VersionInfo = () => {
     if (env.REACT_APP_BUILT_FROM_PUSH) return <>
         <div className='versionTitle'>{AppName} CI</div>
         <div>
-            <span>{env.REACT_APP_KOWL_GIT_REF != 'master' && env.REACT_APP_KOWL_GIT_REF + "-"}</span>
-            <span>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 7)}</span>
+            <span>{env.REACT_APP_CONSOLE_GIT_REF != 'master' && env.REACT_APP_CONSOLE_GIT_REF + "-"}</span>
+            <span>{env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7)}</span>
         </div>
 
         <div className='versionDate'>
@@ -67,9 +67,9 @@ const VersionInfo = () => {
         </div>
 
         {IsBusiness && <div className='versionGitData'>
-            <span>{env.REACT_APP_KOWL_BUSINESS_GIT_REF != 'master' &&
-                env.REACT_APP_KOWL_BUSINESS_GIT_REF + "-"}</span>
-            <span>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 7)}</span>
+            <span>{env.REACT_APP_CONSOLE_BUSINESS_GIT_REF != 'master' &&
+                env.REACT_APP_CONSOLE_BUSINESS_GIT_REF + "-"}</span>
+            <span>{env.REACT_APP_CONSOLE_BUSINESS_GIT_SHA.slice(0, 7)}</span>
         </div>}
     </>;
 
@@ -77,12 +77,12 @@ const VersionInfo = () => {
     //   Kowl Business v1.2.3
     //   b27c2a3f f3acf4b7
     return <>
-        <div className='versionTitle'>{AppName} - {IsBusiness ? env.REACT_APP_KOWL_BUSINESS_GIT_REF : env.REACT_APP_KOWL_GIT_REF}</div>
+        <div className='versionTitle'>{AppName} - {IsBusiness ? env.REACT_APP_CONSOLE_BUSINESS_GIT_REF : env.REACT_APP_CONSOLE_GIT_REF}</div>
         <div className='versionDate'>
             (built {getBuildDate()?.toDateString()})
         </div>
-        <div className='versionGitData'>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 7)}</div>
-        {IsBusiness && <div className='versionGitData'>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 7)}</div>}
+        <div className='versionGitData'>{env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7)}</div>
+        {IsBusiness && <div className='versionGitData'>{env.REACT_APP_CONSOLE_BUSINESS_GIT_SHA.slice(0, 7)}</div>}
     </>;
 
 };
@@ -250,6 +250,7 @@ const AppContent = observer(() =>
             <AppFooter />
         </Content>
 
+        {/* Currently disabled, read todo comment on UpdatePopup */}
         {/* <UpdatePopup /> */}
         {renderErrorModals()}
 

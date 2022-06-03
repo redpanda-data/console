@@ -58,8 +58,8 @@ jobs:
           context: .
           push: true
           build-args: |
-            KOWL_GIT_SHA=${{ github.sha }}
-            KOWL_GIT_REF=${{ steps.extract_ref.outputs.ref }}
+            CONSOLE_GIT_SHA=${{ github.sha }}
+            CONSOLE_GIT_REF=${{ steps.extract_ref.outputs.ref }}
             BUILD_TIMESTAMP=${{ steps.set_timestamp.outputs.time }}
             BUILT_FROM_PUSH=${{ github.event.action != 'published' }}
           tags: ${{ steps.meta.outputs.tags }}

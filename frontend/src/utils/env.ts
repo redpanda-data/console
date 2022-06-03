@@ -19,12 +19,12 @@ import './extensions';
 const envNames = [
     'NODE_ENV',
 
-    'REACT_APP_KOWL_GIT_SHA',
-    'REACT_APP_KOWL_GIT_REF', // 'master' or 'v1.2.3'
+    'REACT_APP_CONSOLE_GIT_SHA',
+    'REACT_APP_CONSOLE_GIT_REF', // 'master' or 'v1.2.3'
     'REACT_APP_BUILD_TIMESTAMP',
 
-    'REACT_APP_KOWL_BUSINESS_GIT_SHA',
-    'REACT_APP_KOWL_BUSINESS_GIT_REF',
+    'REACT_APP_CONSOLE_BUSINESS_GIT_SHA',
+    'REACT_APP_CONSOLE_BUSINESS_GIT_REF',
 
     'REACT_APP_BUILT_FROM_PUSH', // was built by 'image-on-push'?
     'REACT_APP_BUSINESS', // is business version?
@@ -73,7 +73,7 @@ const envVarDebugAr: { name: string, value: string }[] = [];
 
 const addProp = (key: string, value: any) => {
     if (value === undefined || value === null || value === "") return;
-    key = key.removePrefix("REACT_APP_KOWL_").removePrefix("REACT_APP_");
+    key = key.removePrefix("REACT_APP_CONSOLE_").removePrefix("REACT_APP_");
     envVarDebugObj[key] = value;
     envVarDebugAr.push({ name: key, value: value });
 }

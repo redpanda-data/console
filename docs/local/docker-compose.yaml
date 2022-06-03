@@ -21,10 +21,10 @@ services:
     image: quay.io/cloudhut/kowl:master-1d07695
     restart: on-failure
     entrypoint: /bin/sh
-    command: -c "echo \"$$KOWL_CONFIG_FILE\" > /tmp/config.yml; /app/kowl"
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/kowl"
     environment:
       CONFIG_FILEPATH: /tmp/config.yml
-      KOWL_CONFIG_FILE: |
+      CONSOLE_CONFIG_FILE: |
         kafka:
           brokers: ["redpanda:29092"]
           schemaRegistry:
