@@ -13,6 +13,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
+	"sync"
+
 	"github.com/cloudhut/kowl/backend/pkg/filesystem"
 	"github.com/cloudhut/kowl/backend/pkg/git"
 	"github.com/cloudhut/kowl/backend/pkg/schema"
@@ -21,8 +24,6 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
 	"go.uber.org/zap"
-	"strings"
-	"sync"
 )
 
 type RecordPropertyType int
@@ -371,7 +372,7 @@ func (s *Service) createProtoRegistry() error {
 	for _, descriptor := range fileDescriptors {
 		registry.AddFile("", descriptor)
 	}
-	s.logger.Info("registered proto types in Kowl's local proto registry", zap.Int("registered_types", len(fileDescriptors)))
+	s.logger.Info("registered proto types in Console's local proto registry", zap.Int("registered_types", len(fileDescriptors)))
 
 	s.registryMutex.Lock()
 	defer s.registryMutex.Unlock()

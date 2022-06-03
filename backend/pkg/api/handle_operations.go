@@ -66,7 +66,7 @@ func (api *API) handleGetPartitionReassignments() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Check if logged in user (Kowl business) is allowed to list reassignments
+		// 1. Check if logged in user (Console Business) is allowed to list reassignments
 		isAllowed, restErr := api.Hooks.Console.CanPatchPartitionReassignments(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -145,7 +145,8 @@ func (api *API) handlePatchPartitionAssignments() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged in user is allowed to reassign partitions (always true for Kowl, but not for Kowl Business)
+		// 2. Check if logged in user is allowed to reassign partitions (always true for Console OSS, but not
+		// for RP Console Business)
 		isAllowed, restErr := api.Hooks.Console.CanPatchPartitionReassignments(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)

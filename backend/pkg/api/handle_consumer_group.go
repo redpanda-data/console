@@ -146,7 +146,8 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged in user is allowed to edit Consumer Group (always true for Kowl, but not for Kowl Business)
+		// 2. Check if logged-in user is allowed to edit
+		// Consumer Group (always true for Console OSS, but not for Console Business)
 		canEdit, restErr := api.Hooks.Console.CanEditConsumerGroup(r.Context(), req.GroupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -229,7 +230,8 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged in user is allowed to delete Consumer Group (always true for Kowl, but not for Kowl Business)
+		// 2. Check if logged in user is allowed to delete Consumer Group (always true for Console OSS, but not for
+		// Console Business)
 		canDelete, restErr := api.Hooks.Console.CanDeleteConsumerGroup(r.Context(), req.GroupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)

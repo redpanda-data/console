@@ -21,10 +21,9 @@ import (
 // Config required for opening a connection to Kafka
 type Config struct {
 	// General
-	Brokers        []string `yaml:"brokers"`
-	ClientID       string   `yaml:"clientId"`
-	ClusterVersion string   `yaml:"clusterVersion"`
-	RackID         string   `yaml:"rackId"`
+	Brokers  []string `yaml:"brokers"`
+	ClientID string   `yaml:"clientId"`
+	RackID   string   `yaml:"rackId"`
 
 	// Schema Registry
 	Schema      schema.Config  `yaml:"schemaRegistry"`
@@ -74,8 +73,7 @@ func (c *Config) Validate() error {
 
 // SetDefaults for Kafka config
 func (c *Config) SetDefaults() {
-	c.ClientID = "kowl"
-	c.ClusterVersion = "1.0.0"
+	c.ClientID = "redpanda-console"
 
 	c.SASL.SetDefaults()
 	c.Protobuf.SetDefaults()

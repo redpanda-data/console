@@ -44,7 +44,7 @@ type Service struct {
 func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Service, error) {
 	// Kafka client
 	hooksChildLogger := logger.With(zap.String("source", "kafka_client_hooks"))
-	clientHooks := newClientHooks(hooksChildLogger, "kowl")
+	clientHooks := newClientHooks(hooksChildLogger, metricsNamespace)
 
 	logger.Debug("creating new kafka client", zap.Any("config", cfg.RedactedConfig()))
 	kgoOpts, err := NewKgoConfig(&cfg, logger, clientHooks)
@@ -58,8 +58,8 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 	}
 
 	// Ensure Kafka connection works, otherwise fail fast. Allow up to 5 retries with exponentially increasing backoff.
-	// Retries with backoff is very helpful in environments where Kowl concurrently starts with the Kafka target, such
-	// as a docker-compose demo.
+	// Retries with backoff is very helpful in environments where Console concurrently starts with the Kafka target,
+	// such as a docker-compose demo.
 	retries := 5
 	backoffDuration := 1 * time.Second
 	for retries > 0 {

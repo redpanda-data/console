@@ -84,7 +84,7 @@ func (c *Config) Validate() error {
 func (c *Config) SetDefaults() {
 	c.ServeFrontend = true
 	c.FrontendPath = "./build"
-	c.MetricsNamespace = "kowl"
+	c.MetricsNamespace = "console"
 
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
@@ -170,7 +170,10 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 		keys[strings.ToLower(key)] = k.Get(key)
 	}
 	k.Delete("")
-	k.Load(confmap.Provider(keys, "."), nil)
+	err = k.Load(confmap.Provider(keys, "."), nil)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to unmarshal confmap variables into config struct: %w", err)
+	}
 
 	unmarshalCfg.DecoderConfig.ErrorUnused = false
 	err = k.UnmarshalWithConf("", &cfg, unmarshalCfg)
