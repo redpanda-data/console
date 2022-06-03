@@ -21,7 +21,7 @@ const envNames = [
 
     'REACT_APP_KOWL_GIT_SHA',
     'REACT_APP_KOWL_GIT_REF', // 'master' or 'v1.2.3'
-    'REACT_APP_KOWL_TIMESTAMP',
+    'REACT_APP_BUILD_TIMESTAMP',
 
     'REACT_APP_KOWL_BUSINESS_GIT_SHA',
     'REACT_APP_KOWL_BUSINESS_GIT_REF',
@@ -60,7 +60,7 @@ export const basePathE = basePathNo ? basePathNo + '/' : '';
 
 
 export function getBuildDate(): Date | undefined {
-    const timestamp = +env.REACT_APP_KOWL_TIMESTAMP;
+    const timestamp = +env.REACT_APP_BUILD_TIMESTAMP;
     if (timestamp == 0) return undefined;
     return new Date(timestamp * 1000);
 }

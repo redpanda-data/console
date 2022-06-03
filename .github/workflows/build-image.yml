@@ -45,7 +45,7 @@ jobs:
             type=sha,prefix=master-,format=short
             type=semver,pattern={{raw}},enable=${{ github.event.action == 'published' }}
 
-      # Use Buildx with moby/buildkit to utilize registry caching and more 
+      # Use Buildx with moby/buildkit to utilize registry caching and more
       # advanced building techniques (e.g. concurrent multistage builds)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -60,7 +60,7 @@ jobs:
           build-args: |
             KOWL_GIT_SHA=${{ github.sha }}
             KOWL_GIT_REF=${{ steps.extract_ref.outputs.ref }}
-            KOWL_TIMESTAMP=${{ steps.set_timestamp.outputs.time }}
+            BUILD_TIMESTAMP=${{ steps.set_timestamp.outputs.time }}
             BUILT_FROM_PUSH=${{ github.event.action != 'published' }}
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha

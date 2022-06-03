@@ -43,9 +43,9 @@ RUN test -n "$KOWL_GIT_REF" || (echo "KOWL_GIT_REF must be set" && false)
 ENV REACT_APP_KOWL_GIT_REF ${KOWL_GIT_REF}
 
 # timestamp in unix seconds when the image was built
-ARG KOWL_TIMESTAMP
-RUN test -n "$KOWL_TIMESTAMP" || (echo "KOWL_TIMESTAMP must be set" && false)
-ENV REACT_APP_KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
+ARG BUILD_TIMESTAMP
+RUN test -n "$BUILD_TIMESTAMP" || (echo "BUILD_TIMESTAMP must be set" && false)
+ENV REACT_APP_BUILD_TIMESTAMP ${BUILD_TIMESTAMP}
 
 # whether the image was build in response to a push (as opposed to an intentional "release")
 ARG BUILT_FROM_PUSH
@@ -68,8 +68,8 @@ ENV REACT_APP_KOWL_GIT_SHA ${KOWL_GIT_SHA}
 ARG KOWL_GIT_REF
 ENV REACT_APP_KOWL_GIT_REF ${KOWL_GIT_REF}
 
-ARG KOWL_TIMESTAMP
-ENV REACT_APP_KOWL_TIMESTAMP ${KOWL_TIMESTAMP}
+ARG BUILD_TIMESTAMP
+ENV REACT_APP_BUILD_TIMESTAMP ${BUILD_TIMESTAMP}
 
 WORKDIR /app
 

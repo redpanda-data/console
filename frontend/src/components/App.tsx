@@ -250,7 +250,7 @@ const AppContent = observer(() =>
             <AppFooter />
         </Content>
 
-        <UpdatePopup />
+        {/* <UpdatePopup /> */}
         {renderErrorModals()}
 
     </Layout>

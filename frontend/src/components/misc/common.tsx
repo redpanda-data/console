@@ -153,7 +153,7 @@ export class UpdatePopup extends Component {
             if (new Date().getTime() < uiState.updatePromtHiddenUntil)
                 return null; // not yet
 
-        const curTimestamp = Number(env.REACT_APP_KOWL_TIMESTAMP);
+        const curTimestamp = Number(env.REACT_APP_BUILD_TIMESTAMP);
         const serverTimestamp = Number(serverVersion.ts);
 
         if (!curTimestamp || !Number.isFinite(curTimestamp)) return null;
@@ -198,7 +198,7 @@ export class UpdatePopup extends Component {
         const curRef = env.REACT_APP_KOWL_GIT_REF;
         const curShaBusiness = env.REACT_APP_KOWL_BUSINESS_GIT_SHA;
         const curRefBusiness = env.REACT_APP_KOWL_BUSINESS_GIT_REF;
-        const curTimestamp = env.REACT_APP_KOWL_TIMESTAMP;
+        const curTimestamp = env.REACT_APP_BUILD_TIMESTAMP;
         const isFree = !serverVersion.shaBusiness;
 
         const tableCurrent = {} as { [key: string]: any };
