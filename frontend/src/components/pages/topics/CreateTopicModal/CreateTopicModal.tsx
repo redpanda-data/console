@@ -43,7 +43,7 @@ type Props = {
 
 @observer
 export class CreateTopicModalContent extends Component<Props> {
-
+    
 
     render() {
         const state = this.props.state;
@@ -194,7 +194,7 @@ function NumInput(p: {
         addonBefore={p.addonBefore}
         addonAfter={p.addonAfter}
     />
-};
+}
 
 
 export type RetentionTimeUnit = keyof typeof timeFactors;
@@ -271,7 +271,7 @@ function RetentionTimeSelect(p: {
             }
         />}
     />
-};
+}
 
 
 export type RetentionSizeUnit = keyof typeof sizeFactors;
@@ -348,5 +348,5 @@ function RetentionSizeSelect(p: {
             }
         />}
     />
-};
+}
 

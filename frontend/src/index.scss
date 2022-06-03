@@ -115,7 +115,7 @@ h2 {
         @include beforeAfter;
         left: unset;
         width: 30px;
-
+        
         background: linear-gradient(to right, transparent, white);
     }
 }
