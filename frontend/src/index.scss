@@ -183,6 +183,10 @@ h2 {
     .hoverButton {
         color: hsl(14, 100%, 50%);
         background: transparent;
+        
+        &:hover{
+            border-color: hsl(14, 100%, 50%);
+        }
     }
 }
 
@@ -217,8 +221,8 @@ h2 {
     border-radius: 100%;
 
     border: 2px solid transparent;
-    border-bottom-color: hsl(205, 100%, 50%);
-    border-top-color: hsl(205, 100%, 50%);
+    border-bottom-color: hsl(14deg, 100%, 50%);
+    border-top-color: hsl(14deg, 100%, 50%);
     animation:
         rotateIn 1.2s cubic-bezier(0.25, 0.80, 0.9, 0.9) 0s 1,
         rotate 0.7s linear 1.2s infinite,
@@ -876,8 +880,17 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 
 .ant-btn-primary,
 .ant-switch-checked {
-    background-color: hsla(209, 66%, 55%, 1);
+    // background-color: hsla(209, 66%, 55%, 1);
+    background-color: hsl(0deg 84% 65%);
     border-color: transparent;
+}
+
+.ant-btn-primary:hover {
+    background-color: hsl(0deg 100% 68%);
+    border-color: hsl(0deg 100% 65%);
+}
+.ant-btn-primary:active {
+    border-color: hsl(0deg 100% 45%);
 }
 
 .ant-tabs-nav .ant-tabs-tab-active {
