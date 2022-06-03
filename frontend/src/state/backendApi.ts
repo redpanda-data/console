@@ -418,7 +418,7 @@ const apiStore = {
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
-        if (!IsBusiness) return; // permissions endpoint only exists in kowl-business
+        if (!IsBusiness) return; // permissions endpoint only exists in business version
         if (this.userData?.user?.providerID == -1) return; // debug user
         cachedApiRequest<TopicPermissions | null>(`./api/permissions/topics/${topicName}`, force)
             .then(x => this.topicPermissions.set(topicName, x), addError);
@@ -623,7 +623,7 @@ const apiStore = {
     },
 
     refreshSupportedEndpoints(force?: boolean) {
-        cachedApiRequest<EndpointCompatibilityResponse>(`./api/kowl/endpoints`, force)
+        cachedApiRequest<EndpointCompatibilityResponse>(`./api/console/endpoints`, force)
             .then(v => this.endpointCompatibility = v.endpointCompatibility, addError);
     },
 

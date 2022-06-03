@@ -11,7 +11,7 @@
 
 
 //
-// We know what features the cluster supports by calling './api/kowl/endpoints'.
+// We know what features the cluster supports by calling './api/console/endpoints'.
 // That only tells us the actual routes we can use though.
 // This file translates supported routes to specific frontend features.
 // That way we can easily check if (for example) "partition reassignment" should be visible/allowed.
