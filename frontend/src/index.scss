@@ -793,8 +793,8 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             }
 
         }
-        
-        &:not(&-disabled), &:not(&-selected), &:not(&-active), &:not([class*="disabled"]) {
+                
+        &:not(&-disabled):not(&-selected):not([class*="disabled"]) {
             &:hover {
                 background: hsl(0deg 0% 92%);
             }
