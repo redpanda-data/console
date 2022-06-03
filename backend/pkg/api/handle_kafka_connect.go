@@ -55,7 +55,7 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 
 			// Attach allowed actions for each cluster
 			var restErr *rest.Error
-			shard.AllowedActions, restErr = api.Hooks.Owl.AllowedConnectClusterActions(r.Context(), clusterName)
+			shard.AllowedActions, restErr = api.Hooks.Console.AllowedConnectClusterActions(r.Context(), clusterName)
 			if restErr != nil {
 				api.Logger.Error("failed to check view connect cluster permissions", zap.Error(restErr.Err))
 				continue
@@ -77,7 +77,7 @@ func (api *API) handleGetClusterConnectors() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
-		canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
+		canSee, restErr := api.Hooks.Console.CanViewConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -107,7 +107,7 @@ func (api *API) handleGetClusterInfo() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clusterName := chi.URLParam(r, "clusterName")
 
-		canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
+		canSee, restErr := api.Hooks.Console.CanViewConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -141,7 +141,7 @@ func (api *API) handleGetConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
-		canSee, restErr := api.Hooks.Owl.CanViewConnectCluster(r.Context(), clusterName)
+		canSee, restErr := api.Hooks.Console.CanViewConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -189,7 +189,7 @@ func (api *API) handlePutConnectorConfig() http.HandlerFunc {
 		clusterName := chi.URLParam(r, "clusterName")
 		connectorName := chi.URLParam(r, "connector")
 
-		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		canEdit, restErr := api.Hooks.Console.CanEditConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -226,7 +226,7 @@ func (api *API) handlePutValidateConnectorConfig() http.HandlerFunc {
 		clusterName := chi.URLParam(r, "clusterName")
 		pluginClassName := chi.URLParam(r, "pluginClassName")
 
-		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		canEdit, restErr := api.Hooks.Console.CanEditConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -279,7 +279,7 @@ func (api *API) handleCreateConnector() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		clusterName := chi.URLParam(r, "clusterName")
 
-		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		canEdit, restErr := api.Hooks.Console.CanEditConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -320,7 +320,7 @@ func (api *API) handleDeleteConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
-		canDelete, restErr := api.Hooks.Owl.CanDeleteConnectCluster(r.Context(), clusterName)
+		canDelete, restErr := api.Hooks.Console.CanDeleteConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -354,7 +354,7 @@ func (api *API) handlePauseConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
-		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		canEdit, restErr := api.Hooks.Console.CanEditConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -388,7 +388,7 @@ func (api *API) handleResumeConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
-		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		canEdit, restErr := api.Hooks.Console.CanEditConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -422,7 +422,7 @@ func (api *API) handleRestartConnector() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
-		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		canEdit, restErr := api.Hooks.Console.CanEditConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -467,7 +467,7 @@ func (api *API) handleRestartConnectorTask() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), api.ConnectSvc.Cfg.RequestTimeout)
 		defer cancel()
 
-		canEdit, restErr := api.Hooks.Owl.CanEditConnectCluster(r.Context(), clusterName)
+		canEdit, restErr := api.Hooks.Console.CanEditConnectCluster(r.Context(), clusterName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

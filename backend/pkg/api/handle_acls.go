@@ -11,12 +11,13 @@ package api
 
 import (
 	"fmt"
-	"github.com/gorilla/schema"
-	"github.com/twmb/franz-go/pkg/kmsg"
 	"net/http"
 
+	"github.com/gorilla/schema"
+	"github.com/twmb/franz-go/pkg/kmsg"
+
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"github.com/cloudhut/kowl/backend/pkg/console"
 )
 
 type getAclsOverviewRequest struct {
@@ -78,7 +79,7 @@ func (g *getAclsOverviewRequest) ToKafkaRequest() kmsg.DescribeACLsRequest {
 func (api *API) handleGetACLsOverview() http.HandlerFunc {
 	// response represents the data which is returned for listing ACLs
 	type response struct {
-		*owl.AclOverview
+		*console.AclOverview
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +112,7 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 		}
 
 		// Check if logged in user is allowed to list ACLs
-		isAllowed, restErr := api.Hooks.Owl.CanListACLs(r.Context())
+		isAllowed, restErr := api.Hooks.Console.CanListACLs(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -126,7 +127,7 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			return
 		}
 
-		aclOverview, err := api.OwlSvc.ListAllACLs(r.Context(), req.ToKafkaRequest())
+		aclOverview, err := api.ConsoleSvc.ListAllACLs(r.Context(), req.ToKafkaRequest())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

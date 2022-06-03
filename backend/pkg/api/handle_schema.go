@@ -11,22 +11,23 @@ package api
 
 import (
 	"fmt"
-	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
-	"github.com/go-chi/chi"
 	"net/http"
+
+	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kowl/backend/pkg/console"
+	"github.com/go-chi/chi"
 )
 
 func (api *API) handleGetSchemaOverview() http.HandlerFunc {
 	type response struct {
-		SchemaOverview *owl.SchemaOverview `json:"schemaOverview"`
-		IsConfigured   bool                `json:"isConfigured"`
+		SchemaOverview *console.SchemaOverview `json:"schemaOverview"`
+		IsConfigured   bool                    `json:"isConfigured"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		overview, err := api.OwlSvc.GetSchemaOverview(r.Context())
+		overview, err := api.ConsoleSvc.GetSchemaOverview(r.Context())
 		if err != nil {
-			if err == owl.ErrSchemaRegistryNotConfigured {
+			if err == console.ErrSchemaRegistryNotConfigured {
 				rest.SendResponse(w, r, api.Logger, http.StatusOK, &response{
 					SchemaOverview: nil,
 					IsConfigured:   false,
@@ -52,16 +53,16 @@ func (api *API) handleGetSchemaOverview() http.HandlerFunc {
 
 func (api *API) handleGetSchemaDetails() http.HandlerFunc {
 	type response struct {
-		SchemaDetails *owl.SchemaDetails `json:"schemaDetails"`
-		IsConfigured  bool               `json:"isConfigured"`
+		SchemaDetails *console.SchemaDetails `json:"schemaDetails"`
+		IsConfigured  bool                   `json:"isConfigured"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		subject := chi.URLParam(r, "subject")
 		version := chi.URLParam(r, "version")
-		schemaDetails, err := api.OwlSvc.GetSchemaDetails(r.Context(), subject, version)
+		schemaDetails, err := api.ConsoleSvc.GetSchemaDetails(r.Context(), subject, version)
 		if err != nil {
-			if err == owl.ErrSchemaRegistryNotConfigured {
+			if err == console.ErrSchemaRegistryNotConfigured {
 				rest.SendResponse(w, r, api.Logger, http.StatusOK, &response{
 					SchemaDetails: nil,
 					IsConfigured:  false,

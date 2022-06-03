@@ -14,6 +14,7 @@ import (
 
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kowl/backend/pkg/version"
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -65,7 +66,7 @@ func (api *API) routes() *chi.Mux {
 
 		// API routes
 		router.Group(func(r chi.Router) {
-			r.Use(createSetVersionInfoHeader(api.version))
+			r.Use(createSetVersionInfoHeader(version.BuiltAt))
 			api.Hooks.Route.ConfigAPIRouter(r)
 
 			r.Route("/api", func(r chi.Router) {
@@ -121,8 +122,8 @@ func (api *API) routes() *chi.Mux {
 				r.Post("/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart", api.handleRestartConnector())
 				r.Post("/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart", api.handleRestartConnectorTask())
 
-				// Kowl
-				r.Get("/kowl/endpoints", api.handleGetEndpoints())
+				// Console Endpoints
+				r.Get("/console/endpoints", api.handleGetEndpoints())
 			})
 		})
 

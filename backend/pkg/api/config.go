@@ -17,7 +17,7 @@ import (
 
 	"github.com/cloudhut/common/flagext"
 	"github.com/cloudhut/kowl/backend/pkg/connect"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"github.com/cloudhut/kowl/backend/pkg/console"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -38,7 +38,7 @@ type Config struct {
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 	FrontendPath     string `yaml:"frontendPath"`  // path to frontend files (index.html), set to './build' by default
 
-	Owl     owl.Config     `yaml:"owl"`
+	Console console.Config `yaml:"console"`
 	Connect connect.Config `yaml:"connect"`
 	REST    rest.Config    `yaml:"server"`
 	Kafka   kafka.Config   `yaml:"kafka"`
@@ -51,7 +51,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 
 	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
-	c.Owl.RegisterFlags(f)
+	c.Console.RegisterFlags(f)
 	c.Connect.RegisterFlags(f)
 }
 
@@ -67,9 +67,9 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Kafka config: %w", err)
 	}
 
-	err = c.Owl.Validate()
+	err = c.Console.Validate()
 	if err != nil {
-		return fmt.Errorf("failed to validate Owl config: %w", err)
+		return fmt.Errorf("failed to validate Console config: %w", err)
 	}
 
 	err = c.Connect.Validate()
@@ -89,7 +89,7 @@ func (c *Config) SetDefaults() {
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
 	c.Kafka.SetDefaults()
-	c.Owl.SetDefaults()
+	c.Console.SetDefaults()
 	c.Connect.SetDefaults()
 }
 
@@ -161,9 +161,9 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 	// Lowercase the keys that are stored internally within Koanf and reload them. This is a workaround because
 	// internally keys are stored case sensitive. This causes the problem that environment variables can't match
 	// the exact key and therefore will not be unmarshalled as expected anymore. Example:
-	// YAML path: owl.topicDocumentation.git.basicAuth.password
-	// ENV path: OWL_TOPICDOCUMENTATION_GIT_BASICAUTH_PASSWORD => owl.topicdocumentation.git.basicauth.password
-	// Internal key: owl.topicDocumentation.git.basicAuth.password
+	// YAML path: console.topicDocumentation.git.basicAuth.password
+	// ENV path: CONSOLE_TOPICDOCUMENTATION_GIT_BASICAUTH_PASSWORD => console.topicdocumentation.git.basicauth.password
+	// Internal key: console.topicDocumentation.git.basicAuth.password
 	// See issue: https://github.com/cloudhut/kowl/issues/305
 	keys := make(map[string]interface{}, len(k.Keys()))
 	for _, key := range k.Keys() {

@@ -11,16 +11,17 @@ package api
 
 import (
 	"fmt"
-	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
-	"github.com/go-chi/chi"
 	"net/http"
 	"strconv"
+
+	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/kowl/backend/pkg/console"
+	"github.com/go-chi/chi"
 )
 
 func (api *API) handleBrokerConfig() http.HandlerFunc {
 	type response struct {
-		BrokerConfigs []owl.BrokerConfigEntry `json:"brokerConfigs"`
+		BrokerConfigs []console.BrokerConfigEntry `json:"brokerConfigs"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +49,7 @@ func (api *API) handleBrokerConfig() http.HandlerFunc {
 			return
 		}
 
-		cfgs, restErr := api.OwlSvc.GetBrokerConfig(r.Context(), int32(brokerID))
+		cfgs, restErr := api.ConsoleSvc.GetBrokerConfig(r.Context(), int32(brokerID))
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

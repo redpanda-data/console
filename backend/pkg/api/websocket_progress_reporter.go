@@ -11,18 +11,19 @@ package api
 
 import (
 	"context"
-	"github.com/cloudhut/kowl/backend/pkg/kafka"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
-	"go.uber.org/zap"
 	"sync"
 	"time"
+
+	"github.com/cloudhut/kowl/backend/pkg/console"
+	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"go.uber.org/zap"
 )
 
 // progressReport is in charge of sending status updates and messages regularly to the frontend.
 type progressReporter struct {
 	ctx       context.Context
 	logger    *zap.Logger
-	request   *owl.ListMessageRequest
+	request   *console.ListMessageRequest
 	websocket *websocketClient
 
 	statsMutex       *sync.RWMutex

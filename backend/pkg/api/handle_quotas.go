@@ -11,16 +11,17 @@ package api
 
 import (
 	"fmt"
-	"github.com/cloudhut/common/rest"
 	"net/http"
+
+	"github.com/cloudhut/common/rest"
 )
 
 func (api *API) handleGetQuotas() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		quotas := api.OwlSvc.DescribeQuotas(r.Context())
+		quotas := api.ConsoleSvc.DescribeQuotas(r.Context())
 
 		// Check if logged in user is allowed to list Quotas
-		isAllowed, restErr := api.Hooks.Owl.CanListQuotas(r.Context())
+		isAllowed, restErr := api.Hooks.Console.CanListQuotas(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

@@ -16,18 +16,18 @@ import (
 	"github.com/cloudhut/kowl/backend/pkg/console"
 )
 
-func (api *API) handleGetAPIVersions() http.HandlerFunc {
+func (api *API) handleGetEndpoints() http.HandlerFunc {
 	type response struct {
-		APIVersions []console.APIVersion `json:"apiVersions"`
+		EndpointCompatibility console.EndpointCompatibility `json:"endpointCompatibility"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		versions, err := api.ConsoleSvc.GetAPIVersions(r.Context())
+		endpointCompatibility, err := api.ConsoleSvc.GetEndpointCompatibility(r.Context())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
 				Status:   http.StatusInternalServerError,
-				Message:  "Could not get Kafka API versions",
+				Message:  "Could not get cluster config",
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -35,7 +35,7 @@ func (api *API) handleGetAPIVersions() http.HandlerFunc {
 		}
 
 		response := response{
-			APIVersions: versions,
+			EndpointCompatibility: endpointCompatibility,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
