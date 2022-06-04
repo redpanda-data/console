@@ -10,8 +10,6 @@
 // Package version provides the binary's version information that is injected via build flags.
 package version
 
-import "time"
-
 var (
 	// ------------------------------------------------------------------------
 	// Below parameters are set at build time using ldflags.
@@ -25,5 +23,5 @@ var (
 	Version = "development"
 	// BuiltAt is a timestamp in UNIX epoch format that indicates when the
 	// binary was built.
-	BuiltAt = time.Unix(0, 10)
+	BuiltAt = "<not set>"
 )

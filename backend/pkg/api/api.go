@@ -10,8 +10,6 @@
 package api
 
 import (
-	"time"
-
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/redpanda-data/console/backend/pkg/connect"
@@ -41,7 +39,7 @@ func New(cfg *Config) *API {
 
 	logger.Info("started Redpanda Console",
 		zap.String("version", version.Version),
-		zap.String("built_at", version.BuiltAt.Format(time.RFC3339)))
+		zap.String("built_at", version.BuiltAt))
 
 	kafkaSvc, err := kafka.NewService(cfg.Kafka, logger, cfg.MetricsNamespace)
 	if err != nil {

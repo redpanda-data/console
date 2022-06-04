@@ -126,10 +126,11 @@ func ensurePrefixFormat(path string) string {
 // Creates a middleware that adds the build timestamp as a header to each response.
 // The frontend uses this object to detect if the backend server has been updated,
 // and therefore knows when the Single Page Application should be reloaded as well.
-func createSetVersionInfoHeader(builtAt time.Time) func(next http.Handler) http.Handler {
-	buildTimestamp := builtAt
-	if buildTimestamp.IsZero() {
-		buildTimestamp = time.Now()
+func createSetVersionInfoHeader(builtAt string) func(next http.Handler) http.Handler {
+	buildTimestamp := time.Now()
+	// Try to parse given string from ldflags as a timestamp
+	if timestampInt, err := strconv.Atoi(builtAt); err == nil {
+		buildTimestamp = time.Unix(int64(timestampInt), 0)
 	}
 
 	return func(next http.Handler) http.Handler {
