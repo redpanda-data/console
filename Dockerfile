@@ -2,6 +2,10 @@
 # Backend Build
 ############################################################
 FROM golang:1.18-alpine as builder
+
+ARG BUILD_TIMESTAMP
+ARG VERSION
+
 RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificates
 
 WORKDIR /app
@@ -11,14 +15,23 @@ COPY ./backend/go.sum .
 RUN go mod download
 
 COPY ./backend .
-RUN CGO_ENABLED=0 go build -o ./bin/kowl ./cmd/api
-# Compiled backend binary is in '/app/bin/' named 'kowl'
+RUN CGO_ENABLED=0 go build \
+-ldflags="-w -s \
+    -X version.Version=$VERSION \
+    -X version.BuiltAt=$BUILD_TIMESTAMP" \
+    -o ./bin/console ./cmd/api
+# Compiled backend binary is in '/app/bin/' named 'console'
 
 
 ############################################################
 # Frontend Build
 ############################################################
-FROM node:16.3.0-alpine as frontendBuilder
+FROM node:16.3-alpine as frontendBuilder
+
+ARG GIT_SHA
+ARG GIT_REF
+ARG BUILD_TIMESTAMP
+ARG BUILT_FROM_PUSH
 
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
@@ -33,22 +46,18 @@ RUN npm install
 # ENV values are persistet in the built image, ARG instructions are not!
 
 # git sha of the commit
-ARG CONSOLE_GIT_SHA
-RUN test -n "$CONSOLE_GIT_SHA" || (echo "CONSOLE_GIT_SHA must be set" && false)
-ENV REACT_APP_CONSOLE_GIT_SHA ${CONSOLE_GIT_SHA}
+RUN test -n "$GIT_SHA" || (echo "GIT_SHA must be set" && false)
+ENV REACT_APP_CONSOLE_GIT_SHA ${GIT_SHA}
 
 # name of the git branch
-ARG CONSOLE_GIT_REF
-RUN test -n "$CONSOLE_GIT_REF" || (echo "CONSOLE_GIT_REF must be set" && false)
-ENV REACT_APP_CONSOLE_GIT_REF ${CONSOLE_GIT_REF}
+RUN test -n "$GIT_REF" || (echo "GIT_REF must be set" && false)
+ENV REACT_APP_CONSOLE_GIT_REF ${GIT_REF}
 
 # timestamp in unix seconds when the image was built
-ARG BUILD_TIMESTAMP
 RUN test -n "$BUILD_TIMESTAMP" || (echo "BUILD_TIMESTAMP must be set" && false)
 ENV REACT_APP_BUILD_TIMESTAMP ${BUILD_TIMESTAMP}
 
 # whether the image was build in response to a push (as opposed to an intentional "release")
-ARG BUILT_FROM_PUSH
 ENV REACT_APP_BUILT_FROM_PUSH ${BUILT_FROM_PUSH}
 
 COPY ./frontend ./
@@ -61,20 +70,10 @@ RUN npm run build
 ############################################################
 FROM alpine:3
 
-# Embed env vars in final image as well (so the backend can read them)
-ARG CONSOLE_GIT_SHA
-ENV REACT_APP_CONSOLE_GIT_SHA ${CONSOLE_GIT_SHA}
-
-ARG CONSOLE_GIT_REF
-ENV REACT_APP_CONSOLE_GIT_REF ${CONSOLE_GIT_REF}
-
-ARG BUILD_TIMESTAMP
-ENV REACT_APP_BUILD_TIMESTAMP ${BUILD_TIMESTAMP}
-
 WORKDIR /app
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /app/bin/kowl /app/kowl
+COPY --from=builder /app/bin/console /app/console
 
 COPY --from=frontendBuilder /app/build/ /app/build
 
@@ -82,4 +81,4 @@ COPY --from=frontendBuilder /app/build/ /app/build
 RUN apk update && apk add --no-cache openssh
 RUN ssh-keyscan github.com >> /etc/ssh/ssh_known_hosts
 
-ENTRYPOINT ["./kowl"]
+ENTRYPOINT ["./console"]
