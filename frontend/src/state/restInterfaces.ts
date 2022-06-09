@@ -25,11 +25,11 @@ export function isApiError(obj: any): obj is ApiError {
 
 export class WrappedApiError extends Error {
     statusCode: number;
-    message: string;
     path: string;
 
     constructor(response: Response, apiError: ApiError) {
         super(apiError.message);
+        Object.setPrototypeOf(this, WrappedApiError.prototype);
 
         this.statusCode = apiError.statusCode;
 

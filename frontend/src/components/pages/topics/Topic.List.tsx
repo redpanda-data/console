@@ -398,9 +398,8 @@ function makeCreateTopicModal(parent: TopicList) {
         modalProps: {
             title: 'Create Topic',
             width: '80%',
-            style: { minWidth: '600px', maxWidth: '1000px' },
+            style: { minWidth: '600px', maxWidth: '1000px', top: '50px' },
             bodyStyle: { paddingTop: '1em' },
-            centered: true,
 
             okText: 'Create',
             successTitle: 'Topic created!',
@@ -463,7 +462,7 @@ function makeCreateTopicModal(parent: TopicList) {
                 topicName: state.topicName,
                 partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
                 replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
-                configs: state.additionalConfig,
+                configs: state.additionalConfig.filter(x => x.name.length > 0),
             });
 
             return <div style={{

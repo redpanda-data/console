@@ -59,7 +59,6 @@ const HeaderComp = observer((p: { list: Header[], header: Header, index: number 
                 className="iconButton"
                 onClick={(event) => {
                     event.stopPropagation();
-                    console.log('remove', { p, indexOfCur: p.list.indexOf(p.header), passedIndex: index });
                     p.list.remove(p.header);
                 }}>
                 <TrashIcon size={20} />

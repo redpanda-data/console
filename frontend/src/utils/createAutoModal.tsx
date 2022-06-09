@@ -117,10 +117,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
         else if (err instanceof Error) {
             // Error
             title = err.name;
-            content = <div style={codeBoxStyle}>
-                <div style={{ fontSize: '1.1em', fontWeight: 600 }}>{err.name}</div>
-                {err.message}
-            </div>;
+            content = <div style={codeBoxStyle}>{err.message}</div>;
         }
         else {
             // Object

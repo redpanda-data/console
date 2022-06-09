@@ -83,6 +83,29 @@ export const animProps_modalPage = {
     exit: { opacity: 0, x: '-1em', height: 'auto', },
 };
 
+const logoRotation = 60;
+export const animProps_logo = {
+    transition: {
+        transition: 'circOut',
+        duration: 0.15,
+    },
+    initial: {
+        opacity: 0,
+        transform: `perspective(1000px) rotateX(-${logoRotation}deg)`,
+        position: 'static' as PositionProp
+    },
+    animate: {
+        opacity: 1,
+        transform: 'perspective(1000px) rotateX(0deg)',
+        position: 'static' as PositionProp
+    },
+    exit: {
+        opacity: 0,
+        transform: `perspective(1000px) rotateX(${logoRotation}deg)`,
+        position: 'absolute' as PositionProp, width: 'auto'
+    },
+};
+
 
 export const MotionAlways: FC = (p: { children?: React.ReactNode, style?: CSSProperties }) =>
     <motion.div key={alwaysChanging()} {...animProps} style={p.style} >

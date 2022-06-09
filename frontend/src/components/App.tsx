@@ -20,7 +20,7 @@ import { toJson } from "../utils/jsonUtils";
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route, Link } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { MotionDiv } from '../utils/animationProps';
+import { animProps, animProps_logo, animProps_modalPage, animProps_span_messagesStatus, MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
@@ -36,6 +36,7 @@ import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
 import { renderErrorModals } from './misc/ErrorModal';
 import { SyncIcon, ChevronRightIcon } from '@primer/octicons-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -92,10 +93,12 @@ const SideBar = observer(() =>
         <div>
             <Link to='/'>
                 {/* Logo Image */}
+                <AnimatePresence initial={false} presenceAffectsLayout >
                 {uiSettings.sideBarOpen
-                    ? <img src={RedpandaConsoleLogo} alt="logo" />
-                    : <img src={VSymbolLogo} alt="logo" />
+                        ? <motion.img alt="logo" key="logoExpanded" src={RedpandaConsoleLogo} {...animProps_logo} />
+                        : <motion.img alt="logo" key="logoCollapsed" src={VSymbolLogo}   {...animProps_logo} />
                 }
+                </AnimatePresence>
             </Link>
         </div>
 
