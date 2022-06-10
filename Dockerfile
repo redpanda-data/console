@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 go build \
 ############################################################
 # Frontend Build
 ############################################################
-FROM node:16.3-alpine as frontendBuilder
+FROM node:16.13-alpine as frontendBuilder
 
 ARG GIT_SHA
 ARG GIT_REF
