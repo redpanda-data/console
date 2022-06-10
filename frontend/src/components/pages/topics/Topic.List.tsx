@@ -17,7 +17,7 @@ import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { Topic, TopicAction, TopicActions } from '../../../state/restInterfaces';
+import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
@@ -31,6 +31,7 @@ import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-reac
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import { UInt64Max } from '../../../utils/utils';
+import { inferTopicConfigType } from '../../../utils/topicConfigInfo';
 
 @observer
 class TopicList extends PageComponent {
@@ -443,11 +444,21 @@ function makeCreateTopicModal(parent: TopicList) {
             if (!state.topicName) throw new Error('"Topic Name" must be set');
             if (!state.cleanupPolicy) throw new Error('"Cleanup Policy" must be set');
 
+            const config: TopicConfigEntry[] = [];
             const setVal = (name: string, value: string | number | undefined) => {
                 if (value === undefined) return;
-                state.additionalConfig.removeAll(x => x.name === name);
-                state.additionalConfig.push({ name, value: String(value) });
+                config.removeAll(x => x.name === name);
+
+                if (inferTopicConfigType(name) == 'number' && typeof value != 'number')
+                    value = Number(value);
+                else
+                    value = String(value);
+
+                config.push({ name, value });
             };
+
+            for (const x of state.additionalConfig)
+                setVal(x.name, x.value);
 
             if (state.retentionTimeUnit != 'default')
                 setVal('retention.ms', getRetentionTimeFinalValue(state.retentionTimeMs, state.retentionTimeUnit));
@@ -462,7 +473,7 @@ function makeCreateTopicModal(parent: TopicList) {
                 topicName: state.topicName,
                 partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
                 replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
-                configs: state.additionalConfig.filter(x => x.name.length > 0),
+                configs: config.filter(x => x.name.length > 0),
             });
 
             return <div style={{
