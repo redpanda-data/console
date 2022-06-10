@@ -49,8 +49,8 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
         const configStats = uiState.topicSettings.favConfigEntries
             .map(favName => configEntries!.find(e => e.name === favName))
             .filter(e => e != null)
-            .map(configEntry =>
-                <FavoritePopover configEntry={configEntry!}>
+            .map((configEntry, i) =>
+                <FavoritePopover configEntry={configEntry!} key={configEntry?.name ?? i}>
                     <Statistic
                         key={(configEntry!.name)}
                         title={(configEntry!.name)}
