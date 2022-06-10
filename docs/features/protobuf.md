@@ -5,11 +5,11 @@ path: /docs/features/protobuf
 
 # Protobuf Deserialization
 
-If you have one or more topics with Protobuf serialized messages you can configure Kowl to deserialize
+If you have one or more topics with Protobuf serialized messages you can configure Redpanda Console to deserialize
 the binary content into JSON, so that it will be human readable and can also be used in the filter engine
 like a JavaScript object.
 
-To deserialize the binary content Kowl needs access to the used .proto files, as well as a mapping what
+To deserialize the binary content Console needs access to the used .proto files, as well as a mapping what
 Prototype (not file!) to use for each Kafka topic. The .proto files can be provided via the schema registry,
 local filesystem or a Git repository that is cloned and periodically pulled again to make sure it'll 
 remain up to date. Messages that have been serialized using Confluent's KafkaProtobufSerializer can
@@ -31,7 +31,7 @@ kafka:
   schemaRegistry:
     enabled: true
     urls: ["https://my-schema-registry.com"]
-    username: kowl
+    username: console
     password: redacted # Or set via flags/env variable
   protobuf:
     enabled: true
@@ -63,7 +63,7 @@ kafka:
 ### Git repository
 
 If you want to provide the files via a git repository, put all of your required .proto files in there.
-It doesn't matter in what directory as Kowl will search for all files with the file extension `.proto`
+It doesn't matter in what directory as Console will search for all files with the file extension `.proto`
 in your repository up to a directory depth of 5 levels. All files with other file extensions will be ignored.
 
 ```yaml
@@ -127,4 +127,4 @@ mappings:
 
 ### Full configuration
 
-Take a look at the reference config how to configure Protobuf in Kowl: [/docs/config/kowl.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml)
+Take a look at the reference config how to configure Protobuf in Console: [/docs/config/console.yaml](https://github.com/redpanda-data/console/blob/master/docs/config/console.yaml)
