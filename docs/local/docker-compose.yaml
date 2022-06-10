@@ -1,7 +1,7 @@
 version: '2'
 services:
   redpanda:
-    image: vectorized/redpanda:v21.11.11
+    image: vectorized/redpanda:v22.1.3
     command:
       - redpanda start
       - --smp 1
@@ -18,7 +18,7 @@ services:
       - 29092:29092
 
   kowl:
-    image: quay.io/cloudhut/kowl:master-1d07695
+    image: docker.redpanda.com/vectorized/console:master-0a8fce8
     restart: on-failure
     entrypoint: /bin/sh
     command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/kowl"
