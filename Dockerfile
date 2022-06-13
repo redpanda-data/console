@@ -62,8 +62,8 @@ COPY --from=frontendBuilder /app/build/ ./pkg/embed/frontend
 
 RUN CGO_ENABLED=0 go build \
 -ldflags="-w -s \
-    -X version.Version=$VERSION \
-    -X version.BuiltAt=$BUILD_TIMESTAMP" \
+    -X github.com/redpanda-data/console/backend/pkg/version.Version=$VERSION \
+    -X github.com/redpanda-data/console/backend/pkg/version.BuiltAt=$BUILD_TIMESTAMP" \
     -o ./bin/console ./cmd/api
 # Compiled backend binary is in '/app/bin/' named 'console'
 
