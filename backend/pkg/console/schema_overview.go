@@ -65,12 +65,11 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 	g.Go(func() error {
 		mode, err := s.kafkaSvc.SchemaService.GetMode()
 		if err != nil {
+			// Some schema registry implementations do not support this endpoint. In order to not render an
+			// error notification we will report a mode without an error message.
 			ch <- chResponse{
-				Mode: mode,
-				Error: &SchemaOverviewRequestError{
-					RequestDescription: "schema registry mode",
-					ErrorMessage:       fmt.Sprintf("failed to get schema registry mode: %s", err.Error()),
-				},
+				Mode:  &schema.ModeResponse{Mode: "unknown"},
+				Error: nil,
 			}
 			return nil
 		}

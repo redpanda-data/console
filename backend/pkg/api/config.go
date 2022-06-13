@@ -36,7 +36,6 @@ type Config struct {
 	ConfigFilepath   string
 	MetricsNamespace string `yaml:"metricsNamespace"`
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
-	FrontendPath     string `yaml:"frontendPath"`  // path to frontend files (index.html), set to './build' by default
 
 	Console console.Config `yaml:"console"`
 	Connect connect.Config `yaml:"connect"`
@@ -83,7 +82,6 @@ func (c *Config) Validate() error {
 // SetDefaults for all root and child config structs
 func (c *Config) SetDefaults() {
 	c.ServeFrontend = true
-	c.FrontendPath = "./build"
 	c.MetricsNamespace = "console"
 
 	c.Logger.SetDefaults()
