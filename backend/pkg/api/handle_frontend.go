@@ -14,32 +14,38 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/redpanda-data/console/backend/pkg/embed"
 	"go.uber.org/zap"
 )
 
-// createFrontendHandlers creates two handlers: one to handle the '/' route and one to handle any other route
-func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.HandlerFunc, handleFrontendResources http.HandlerFunc) {
-	indexPath := frontendDir + "/index.html"
-	indexOriginal, err := ioutil.ReadFile(indexPath)
-	if err != nil {
-		api.Logger.Fatal("cannot load frontend index file", zap.String("directory", frontendDir), zap.Error(err))
-		return nil, nil
-	}
-
+// handleFrontendIndex takes care of delivering the index.html file from the SPA. It has some
+// special handling because we have a feature for URL rewrite (e.g. reverse proxy that wants to
+// serve RP console under a different URL).
+//
+// This handler is called for all frontend resources that would return 404, so that an
+// index.html file is served if an unknown URL is entered in the browser. All API requests
+// that target /api/* are excluded from this behaviour.
+func (api *API) handleFrontendIndex() http.HandlerFunc {
 	basePathMarker := []byte(`__BASE_PATH_REPLACE_MARKER__`)
 
-	//
-	// 1. handler for '/' returning index.html
-	//
-	handleIndex = func(w http.ResponseWriter, r *http.Request) {
-		var index []byte
+	// Load index.html file
+	indexFilepath := "frontend/index.html"
+	indexOriginal, err := embed.FrontendFiles.ReadFile(indexFilepath)
+	if err != nil {
+		api.Logger.Fatal("failed to load index.html from embedded filesystem",
+			zap.String("index_filepath", indexFilepath), zap.Error(err))
+	}
 
+	return func(w http.ResponseWriter, r *http.Request) {
+		index := indexOriginal
+		// If there's an active URL rewrite we need to replace the marker in the index.html with the
+		// used base path so that the frontend knows what base URL to use for all subsequent requests.
 		if basePath, ok := r.Context().Value(BasePathCtxKey).(string); ok && len(basePath) > 0 {
 
 			// prefix must end with slash! otherwise the last segment gets cut off: 'a/b/c' -> "can't find host/a/b/resouce"
@@ -49,9 +55,6 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 			// If we're running under a prefix, we need to let the frontend know
 			// https://github.com/cloudhut/kowl/issues/107
 			index = bytes.ReplaceAll(indexOriginal, basePathMarker, []byte(basePath))
-		} else {
-			// no change
-			index = indexOriginal
 		}
 
 		hash := hashData(index)
@@ -68,23 +71,29 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 			return
 		}
 
-		_, err := w.Write(index)
-		if err != nil {
+		if _, err := w.Write(index); err != nil {
 			api.Logger.Error("failed to write index file to response writer", zap.Error(err))
 		}
 	}
+}
 
-	//
-	// 2. handler for any other path, returning the static file or fallback to index
-	//
-	root := http.Dir(frontendDir)
-	fs := http.StripPrefix("/", http.FileServer(root))
+func (api *API) handleFrontendResources() http.HandlerFunc {
+	handleIndex := api.handleFrontendIndex()
 
-	// pre calculate hashes for all files in the given directory
-	fileHashes := hashFilesInDirectory(frontendDir)
+	fsys, err := fs.Sub(embed.FrontendFiles, "frontend")
+	if err != nil {
+		api.Logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
+	}
 
-	handleFrontendResources = func(w http.ResponseWriter, r *http.Request) {
-		f, err := root.Open(r.URL.Path)
+	httpFs := http.FS(fsys)
+	fsHandler := http.StripPrefix("/", http.FileServer(httpFs))
+	fileHashes, err := getHashes(fsys)
+	if err != nil {
+		api.Logger.Fatal("failed to calculate file hashes", zap.Error(err))
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		f, err := httpFs.Open(r.URL.Path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				api.Logger.Debug("requested file not found", zap.String("requestURI", r.RequestURI), zap.String("path", r.URL.Path))
@@ -103,8 +112,8 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 		}
 
 		// Set Cache-Control and ETag
-		hash, hashFound := fileHashes[r.URL.Path]
 		w.Header().Set("Cache-Control", "public, max-age=900, must-revalidate") // 900s = 15min
+		hash, hashFound := fileHashes[r.URL.Path]
 		if hashFound {
 			w.Header().Set("ETag", hash)
 			clientEtag := r.Header.Get("If-None-Match")
@@ -115,48 +124,31 @@ func (api *API) createFrontendHandlers(frontendDir string) (handleIndex http.Han
 			}
 		}
 
-		fs.ServeHTTP(w, r)
+		fsHandler.ServeHTTP(w, r)
 	}
-
-	return
 }
 
-// hashFilesInDirectory takes a directory, goes through all files
+// getHashes takes a filesystem, goes through all files
 // in it recursively and calculates a sha256 for each one.
 // It returns a map from file path to sha256 (already pre formatted in hex).
-func hashFilesInDirectory(directory string) map[string]string {
-	// expand directory name in case it contains '..' or something
-	absDir, err := filepath.Abs(directory)
-	if err != nil {
-		panic(fmt.Errorf("hashFilesInDirectory cannot build absolute path from '%v'", directory))
-	}
-
+func getHashes(fsys fs.FS) (map[string]string, error) {
 	fileHashes := make(map[string]string)
-	err = filepath.Walk(absDir, func(path string, info os.FileInfo, err error) error {
-		// ignore base directory, replace backslash with forward slash
-		filePath := strings.TrimPrefix(path, absDir)
-		filePath = strings.ReplaceAll(filePath, "\\", "/")
-
+	err := fs.WalkDir(fsys, ".", func(path string, info fs.DirEntry, err error) error {
 		if !info.IsDir() {
-			fileHashes[filePath] = hashFile(path)
+			fileBytes, err := fs.ReadFile(fsys, path)
+			if err != nil {
+				return fmt.Errorf("failed to open file %q: %w", path, err)
+			}
+
+			fileHashes[path] = hashData(fileBytes)
 		}
 		return nil
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("Could not construct eTagCache, error while scanning files in directory '%v': %v", directory, err))
+		return nil, fmt.Errorf("Could not construct eTagCache, error while scanning files in directory: %w", err)
 	}
-
-	return fileHashes
-}
-
-func hashFile(filePath string) string {
-	fileData, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		panic(fmt.Errorf("Could read file to calculate sha256 for file '%v': %v", filePath, err))
-	}
-
-	return hashData(fileData)
+	return fileHashes, nil
 }
 
 // hashData takes a byte array, calculates its sha256, and returns the hash as a hex encoded string
