@@ -18,10 +18,10 @@ services:
       - 29092:29092
 
   kowl:
-    image: docker.redpanda.com/vectorized/console:master-0a8fce8
+    image: docker.redpanda.com/vectorized/console:master-217260f
     restart: on-failure
     entrypoint: /bin/sh
-    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/kowl"
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
     environment:
       CONFIG_FILEPATH: /tmp/config.yml
       CONSOLE_CONFIG_FILE: |
