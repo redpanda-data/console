@@ -21,7 +21,7 @@ import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../sta
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
-import { DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
@@ -276,7 +276,7 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
         onFinish();
         cleanup();
         notification['success']({
-            message: `Topic \`${topicToDelete}\` deleted successfully`,
+            message: <>Topic <Code>{topicToDelete}</Code> deleted successfully</>,
         });
     };
 
@@ -310,7 +310,8 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
             <>
                 {error && <Alert type="error" message={`An error occurred: ${typeof error === 'string' ? error : error.message}`} />}
                 <p>
-                    Are you sure you want to delete topic <strong>{topicToDelete}</strong>? This action is irrevocable.
+                    Are you sure you want to delete topic <Code>{topicToDelete}</Code>?<br />
+                    This action cannot be undone.
                 </p>
             </>
         </Modal>

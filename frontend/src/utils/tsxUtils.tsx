@@ -17,7 +17,7 @@ import { MessageType } from "antd/lib/message";
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 import { TimestampDisplayFormat } from "../state/ui";
 import { observer } from "mobx-react";
-import { AnimatePresence, motion, transform } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { animProps, animProps_radioOptionGroup, MotionDiv } from "./animationProps";
 import { SizeType } from "antd/lib/config-provider/SizeContext";
 import { makeObservable, observable } from "mobx";
@@ -491,7 +491,7 @@ export const Ellipsis = (p: { children?: React.ReactNode, className?: string }) 
 }
 
 export const Code = (p: { children?: React.ReactNode, nowrap?: boolean }) => {
-    const className = p.nowrap ? 'codeBox nowrap' : 'codebox';
+    const className = p.nowrap ? 'codeBox nowrap' : 'codeBox';
     return <span className={className}>{p.children}</span>
 }
 
