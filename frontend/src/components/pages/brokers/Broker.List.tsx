@@ -9,25 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from "react";
-import { observer } from "mobx-react";
-import { Empty, Table, Statistic, Row, Tooltip, Space } from "antd";
-import { ColumnProps } from "antd/lib/table";
-import { PageComponent, PageInitHelper } from "../Page";
-import { api } from "../../../state/backendApi";
-import { uiSettings } from "../../../state/ui";
-import { makePaginationConfig, sortField } from "../../misc/common";
-import { Broker, ConfigEntry } from "../../../state/restInterfaces";
-import { motion } from "framer-motion";
-import { animProps } from "../../../utils/animationProps";
-import { observable, computed, makeObservable } from "mobx";
-import { prettyBytesOrNA } from "../../../utils/utils";
-import { appGlobal } from "../../../state/appGlobal";
-import Card from "../../misc/Card";
+import React, { Component } from 'react';
+import { observer } from 'mobx-react';
+import { Empty, Statistic, Row, Tooltip, Space } from 'antd';
+import { ColumnProps } from 'antd/lib/table';
+import { PageComponent, PageInitHelper } from '../Page';
+import { api } from '../../../state/backendApi';
+import { uiSettings } from '../../../state/ui';
+import { makePaginationConfig, sortField } from '../../misc/common';
+import { Broker, ConfigEntry } from '../../../state/restInterfaces';
+import { motion } from 'framer-motion';
+import { animProps } from '../../../utils/animationProps';
+import { observable, computed, makeObservable } from 'mobx';
+import { prettyBytesOrNA } from '../../../utils/utils';
+import { appGlobal } from '../../../state/appGlobal';
+import Card from '../../misc/Card';
 import { CrownOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, findPopupContainer, OptionGroup } from "../../../utils/tsxUtils";
-import { ConfigList } from "../../misc/ConfigList";
-import { KowlTable } from "../../misc/KowlTable";
+import { DefaultSkeleton, findPopupContainer, OptionGroup } from '../../../utils/tsxUtils';
+import { ConfigList } from '../../misc/ConfigList';
+import { KowlTable } from '../../misc/KowlTable';
 
 
 
@@ -69,7 +69,7 @@ class BrokerList extends PageComponent {
         const renderIdColumn = (text: string, record: Broker) => {
             if (record.brokerId != info.controllerId) return text;
             return <>{text}
-                <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'} getPopupContainer={findPopupContainer} placement='right'>
+                <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'} getPopupContainer={findPopupContainer} placement="right">
                     <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
                 </Tooltip>
             </>
@@ -88,9 +88,9 @@ class BrokerList extends PageComponent {
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
                     <Row> {/* type="flex" */}
-                        <Statistic title='ControllerID' value={info.controllerId} />
-                        <Statistic title='Broker Count' value={brokers.length} />
-                        <Statistic title='Kafka Version' value={info.kafkaVersion} />
+                        <Statistic title="ControllerID" value={info.controllerId} />
+                        <Statistic title="Broker Count" value={brokers.length} />
+                        <Statistic title="Kafka Version" value={info.kafkaVersion} />
                     </Row>
                 </Card>
 
@@ -183,24 +183,24 @@ class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
 
 
 const DetailsDisplaySettings = observer(() =>
-    <div style={{ marginLeft: '1px', marginBottom: '1em' }} className='brokerConfigViewSettings'>
+    <div style={{ marginLeft: '1px', marginBottom: '1em' }} className="brokerConfigViewSettings">
         <Row>
-            <Space size='middle'>
+            <Space size="middle">
 
-                <OptionGroup label='Formatting'
+                <OptionGroup label="Formatting"
                     options={{
-                        "Friendly": 'friendly',
-                        "Raw": 'raw'
+                        'Friendly': 'friendly',
+                        'Raw': 'raw'
                     }}
                     value={uiSettings.brokerList.valueDisplay}
                     onChange={s => uiSettings.brokerList.valueDisplay = s}
                 />
 
-                <OptionGroup label='Sort'
+                <OptionGroup label="Sort"
                     options={{
-                        "Changed First": 'changedFirst',
-                        "Alphabetical": 'alphabetical',
-                        "None": 'default',
+                        'Changed First': 'changedFirst',
+                        'Alphabetical': 'alphabetical',
+                        'None': 'default',
                     }}
                     value={uiSettings.brokerList.propsOrder}
                     onChange={s => uiSettings.brokerList.propsOrder = s}

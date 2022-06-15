@@ -9,17 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import React from "react";
-import { ConfigEntry, Topic } from "../../../state/restInterfaces";
-import { Row, Statistic } from "antd";
-import { observer } from "mobx-react";
-import { api } from "../../../state/backendApi";
+import React from 'react';
+import { ConfigEntry, Topic } from '../../../state/restInterfaces';
+import { Row, Statistic } from 'antd';
+import { observer } from 'mobx-react';
+import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
-import { uiState } from "../../../state/uiState";
-import { FavoritePopover } from "./Tab.Config";
-import { uiSettings } from "../../../state/ui";
-import { prettyBytesOrNA } from "../../../utils/utils";
-import { formatConfigValue } from "../../../utils/formatters/ConfigValueFormatter";
+import { uiState } from '../../../state/uiState';
+import { FavoritePopover } from './Tab.Config';
+import { uiSettings } from '../../../state/ui';
+import { prettyBytesOrNA } from '../../../utils/utils';
+import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 
 const StatsSeparator = () => <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
 
@@ -30,18 +30,18 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
     const statsAr = [] as JSX.Element[];
 
     // Size
-    const size = <Statistic key='size' title='Size' value={topic
+    const size = <Statistic key="size" title="Size" value={topic
         ? prettyBytesOrNA(topic.logDirSummary.totalSizeBytes)
-        : "..."} />
+        : '...'} />
     statsAr.push(size);
 
     // Messages
     const partitions = api.topicPartitions.get(topic.topicName);
     let messageSum: null | string;
     if (partitions === undefined) messageSum = '...'; // no response yet
-    else if (partitions === null) messageSum = "N/A"; // explicit null -> not allowed
+    else if (partitions === null) messageSum = 'N/A'; // explicit null -> not allowed
     else messageSum = partitions.sum(p => (p.waterMarkHigh - p.waterMarkLow)).toString();
-    statsAr.push(<Statistic key='msgs' title='Messages' value={messageSum} />);
+    statsAr.push(<Statistic key="msgs" title="Messages" value={messageSum} />);
 
     // Config Entries / Seperator
     const configEntries = filterTopicConfig(api.topicConfig.get(topic.topicName)?.configEntries);

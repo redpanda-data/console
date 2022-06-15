@@ -10,13 +10,11 @@
  */
 
 import React from 'react';
-import { observer } from "mobx-react";
+import { observer } from 'mobx-react';
 import { Result } from 'antd';
 import { Button } from 'antd';
 import { api } from '../../state/backendApi';
 import { CloseCircleOutlined } from '@ant-design/icons'
-import { toJson } from "../../utils/jsonUtils";
-import { makeObservable } from 'mobx';
 
 
 @observer

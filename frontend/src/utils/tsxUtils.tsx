@@ -9,20 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState, Component, CSSProperties, ReactNode } from "react";
-import { toJson } from "./jsonUtils";
-import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from "./utils";
+import React, { useState, Component, CSSProperties, ReactNode } from 'react';
+import { toJson } from './jsonUtils';
+import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
 import { Radio, message, Progress, Skeleton, Tooltip } from 'antd';
-import { MessageType } from "antd/lib/message";
-import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
-import { TimestampDisplayFormat } from "../state/ui";
-import { observer } from "mobx-react";
-import { AnimatePresence, motion, transform } from "framer-motion";
-import { animProps, animProps_radioOptionGroup, MotionDiv } from "./animationProps";
-import { SizeType } from "antd/lib/config-provider/SizeContext";
-import { makeObservable, observable } from "mobx";
-import { TooltipPlacement } from "antd/lib/tooltip";
-import { InfoIcon } from "@primer/octicons-react";
+import { MessageType } from 'antd/lib/message';
+import { CopyOutlined, DownloadOutlined } from '@ant-design/icons';
+import { TimestampDisplayFormat } from '../state/ui';
+import { observer } from 'mobx-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { animProps, animProps_radioOptionGroup, MotionDiv } from './animationProps';
+import { SizeType } from 'antd/lib/config-provider/SizeContext';
+import { makeObservable, observable } from 'mobx';
+import { TooltipPlacement } from 'antd/lib/tooltip';
+import { InfoIcon } from '@primer/octicons-react';
 
 
 const defaultLocale = 'en'
@@ -46,7 +46,7 @@ export function numberToThousandsString(n: number): JSX.Element {
 
         // Add a dot
         if (!last)
-            result.push(<span key={i + '.'} className='noSelect nbspSeparator'>{separator}</span>);
+            result.push(<span key={i + '.'} className="noSelect nbspSeparator">{separator}</span>);
     }
 
     return <>{result}</>
@@ -120,16 +120,16 @@ export function QuickTable(data: { key: any, value: any }[] | { [key: string]: a
     const o = Object.assign({} as QuickTableOptions, DefaultQuickTableOptions, options);
 
     const showVerticalGutter = (typeof o.gapHeight === 'number' && o.gapHeight > 0) || typeof o.gapHeight === 'string';
-    const classNames = [o.tableClassName, "quickTable"].joinStr(" ");
+    const classNames = [o.tableClassName, 'quickTable'].joinStr(' ');
 
     return <table className={classNames} style={o.tableStyle}>
         <tbody>
             {entries.map((obj, i) =>
                 <React.Fragment key={i}>
                     <tr>
-                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className='keyCell'>{React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}</td>
+                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className="keyCell">{React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}</td>
                         <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
-                        <td style={{ textAlign: o.valueAlign, ...o.valueStyle }} className='valueCell'>{React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}</td>
+                        <td style={{ textAlign: o.valueAlign, ...o.valueStyle }} className="valueCell">{React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}</td>
                     </tr>
 
                     {showVerticalGutter && (i < entries.length - 1) &&
@@ -144,7 +144,7 @@ export function QuickTable(data: { key: any, value: any }[] | { [key: string]: a
 }
 
 export function toSafeString(x: any): string {
-    if (typeof x === 'undefined' || x === null) return "";
+    if (typeof x === 'undefined' || x === null) return '';
     if (typeof x === 'string') return x;
     if (typeof x === 'boolean' || typeof x === 'number') return String(x);
     return toJson(x);
@@ -293,7 +293,7 @@ export class RadioOptionGroup<T> extends Component<{
         const p = this.props;
 
         const radioGroup = (
-            <Radio.Group className='radioOptionGroup' value={p.value} onChange={e => p.onChange(e.target.value)}>
+            <Radio.Group className="radioOptionGroup" value={p.value} onChange={e => p.onChange(e.target.value)}>
                 {p.options.map(kv =>
                     <Radio key={kv.key ?? kv.value} value={kv.value} disabled={p.disabled}>
                         <div style={{ fontWeight: 500, display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
@@ -366,7 +366,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
         this.customRender();
     }
 
-    lastPropsJson = "";
+    lastPropsJson = '';
     lastProps = {};
     componentDidUpdate() {
 
@@ -395,10 +395,10 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
     customRender() {
         const content = <div style={{ marginBottom: '0.2em' }} className={this.showWaitingText ? 'waitingForMessagesBox waitingForMessagesText' : ''}>
             <div style={StatusIndicator.progressStyle}>
-                <Progress percent={this.props.fillFactor * 100} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
+                <Progress percent={this.props.fillFactor * 100} showInfo={false} status="active" size="small" style={{ lineHeight: 1 }} />
             </div>
             <div style={StatusIndicator.statusBarStyle}>
-                <div>{this.showWaitingText ? "Kafka is waiting for new messages..." : this.props.statusText}</div>
+                <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
                 <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
             </div>
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
@@ -442,7 +442,7 @@ export class LayoutBypass extends Component<{ width?: string, height?: string, j
             style = Object.assign({}, style, p);
         }
 
-        return <span className='verticalCenter' style={style}>
+        return <span className="verticalCenter" style={style}>
             <span style={p.positionContentAbsolute ? { position: 'absolute' } : undefined}>
                 {this.props.children}
             </span>

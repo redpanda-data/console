@@ -9,12 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { observable, computed, makeObservable } from "mobx";
-import { PageDefinition } from "../components/routes";
-import { clone } from "../utils/jsonUtils";
-import { api } from "./backendApi";
-import { AclRequest, AclRequestDefault } from "./restInterfaces";
-import { uiSettings, TopicDetailsSettings as TopicSettings } from "./ui";
+import { observable, computed, makeObservable } from 'mobx';
+import { PageDefinition } from '../components/routes';
+import { api } from './backendApi';
+import { uiSettings, TopicDetailsSettings as TopicSettings } from './ui';
 
 
 export interface BreadcrumbEntry {

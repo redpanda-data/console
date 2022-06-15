@@ -11,18 +11,18 @@
 
 /*eslint block-scoped-var: "error"*/
 
-import { notification } from "antd";
-import { comparer, computed, observable, transaction } from "mobx";
-import { basePathS, IsBusiness, IsDev } from "../utils/env";
-import fetchWithTimeout from "../utils/fetchWithTimeout";
-import { toJson } from "../utils/jsonUtils";
-import { LazyMap } from "../utils/LazyMap";
-import { ObjToKv } from "../utils/tsxUtils";
-import { decodeBase64, TimeSince } from "../utils/utils";
-import { appGlobal } from "./appGlobal";
-import { AclRequest, AclRequestDefault, AclResourceType, AclResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError } from "./restInterfaces";
-import { Features } from "./supportedFeatures";
-import { ServerVersionInfo, uiState } from "./uiState";
+import { notification } from 'antd';
+import { comparer, computed, observable, transaction } from 'mobx';
+import { basePathS, IsBusiness, IsDev } from '../utils/env';
+import fetchWithTimeout from '../utils/fetchWithTimeout';
+import { toJson } from '../utils/jsonUtils';
+import { LazyMap } from '../utils/LazyMap';
+import { ObjToKv } from '../utils/tsxUtils';
+import { decodeBase64, TimeSince } from '../utils/utils';
+import { appGlobal } from './appGlobal';
+import { AclRequest, AclRequestDefault, AclResourceType, AclResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError } from './restInterfaces';
+import { Features } from './supportedFeatures';
+import { uiState } from './uiState';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -58,7 +58,7 @@ async function handle401(res: Response) {
     try {
         const text = await res.text();
         const obj = JSON.parse(text);
-        console.log("unauthorized message: " + text);
+        console.log('unauthorized message: ' + text);
 
         const err = obj as ApiError;
         window.alert(String(err.message));
@@ -239,7 +239,7 @@ const apiStore = {
         const host = IsDev ? 'localhost:9090' : window.location.host;
         const url = protocol + host + basePathS + '/api/topics/' + searchRequest.topicName + '/messages';
 
-        console.debug("connecting to \"" + url + "\"");
+        console.debug('connecting to "' + url + '"');
 
         // Abort previous connection
         if (currentWS != null)
@@ -248,7 +248,7 @@ const apiStore = {
 
         currentWS = new WebSocket(url);
         const ws = currentWS;
-        this.messageSearchPhase = "Connecting";
+        this.messageSearchPhase = 'Connecting';
         this.messagesBytesConsumed = 0;
         this.messagesTotalConsumed = 0;
 
@@ -286,17 +286,17 @@ const apiStore = {
                     this.messagesElapsedMs = msg.elapsedMs;
                     this.messagesBytesConsumed = msg.bytesConsumed;
                     // this.MessageSearchCancelled = msg.isCancelled;
-                    this.messageSearchPhase = "Done";
+                    this.messageSearchPhase = 'Done';
                     this.messageSearchPhase = null;
                     break;
 
                 case 'error':
                     // error doesn't neccesarily mean the whole request is done
-                    console.info("ws backend error: " + msg.message);
+                    console.info('ws backend error: ' + msg.message);
                     const notificationKey = `errorNotification-${Date.now()}`;
                     notification['error']({
                         key: notificationKey,
-                        message: "Backend Error",
+                        message: 'Backend Error',
                         description: msg.message,
                         duration: 5,
                     });
@@ -306,7 +306,7 @@ const apiStore = {
                     const m = msg.message as TopicMessage;
 
                     const keyData = m.key.payload;
-                    if (keyData != null && keyData != undefined && keyData != "" && m.key.encoding == 'binary') {
+                    if (keyData != null && keyData != undefined && keyData != '' && m.key.encoding == 'binary') {
                         try {
                             m.key.payload = decodeBase64(m.key.payload); // unpack base64 encoded key
                         } catch (error) {
@@ -348,7 +348,7 @@ const apiStore = {
         }
 
         if (this.messageSearchPhase != null) {
-            this.messageSearchPhase = "Done";
+            this.messageSearchPhase = 'Done';
             this.messagesBytesConsumed = 0;
             this.messagesTotalConsumed = 0;
             this.messageSearchPhase = null;
@@ -458,8 +458,8 @@ const apiStore = {
 
     async deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName: string, pairs: Array<{ partitionId: number, offset: number; }>) {
         return rest<DeleteRecordsResponseData>(`./api/topics/${topicName}/records`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ partitions: pairs })
         }).catch(addError);
     },
@@ -470,8 +470,8 @@ const apiStore = {
             topics = topics.sort().map(t => encodeURIComponent(t));
 
         const url = topics == 'all'
-            ? `./api/operations/topic-details`
-            : `./api/operations/topic-details?topicNames=${topics.joinStr(",")}`;
+            ? './api/operations/topic-details'
+            : `./api/operations/topic-details?topicNames=${topics.joinStr(',')}`;
 
         return cachedApiRequest<GetAllPartitionsResponse | null>(url, force)
             .then(response => {
@@ -553,7 +553,7 @@ const apiStore = {
                         if (partitionErrors.length || waterMarksErrors.length) continue;
 
                         // replicaSize
-                        const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                        const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == '') && e.size >= 0);
                         const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
                         p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
                     }
@@ -590,7 +590,7 @@ const apiStore = {
                     }
 
                     // replicaSize
-                    const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == "") && e.size >= 0);
+                    const validLogDirs = p.partitionLogDirs.filter(e => (e.error == null || e.error == '') && e.size >= 0);
                     const replicaSize = validLogDirs.length > 0 ? validLogDirs.max(e => e.size) : 0;
                     p.replicaSize = replicaSize >= 0 ? replicaSize : 0;
                 }
@@ -621,17 +621,17 @@ const apiStore = {
     },
 
     refreshQuotas(force?: boolean) {
-        cachedApiRequest<QuotaResponse | null>(`./api/quotas`, force)
+        cachedApiRequest<QuotaResponse | null>('./api/quotas', force)
             .then(v => this.Quotas = v ?? null, addError);
     },
 
     refreshSupportedEndpoints(force?: boolean) {
-        cachedApiRequest<EndpointCompatibilityResponse>(`./api/console/endpoints`, force)
+        cachedApiRequest<EndpointCompatibilityResponse>('./api/console/endpoints', force)
             .then(v => this.endpointCompatibility = v.endpointCompatibility, addError);
     },
 
     refreshCluster(force?: boolean) {
-        cachedApiRequest<ClusterInfoResponse>(`./api/cluster`, force)
+        cachedApiRequest<ClusterInfoResponse>('./api/cluster', force)
             .then(v => {
                 transaction(() => {
                     // add 'type' to each synonym entry
@@ -733,7 +733,7 @@ const apiStore = {
 
 
     refreshAdminInfo(force?: boolean) {
-        cachedApiRequest<AdminInfo | null>(`./api/admin`, force)
+        cachedApiRequest<AdminInfo | null>('./api/admin', force)
             .then(info => {
                 if (info == null) {
                     this.adminInfo = null;
@@ -752,13 +752,13 @@ const apiStore = {
                 // resolve role of each binding
                 for (const binding of info.roleBindings) {
                     binding.resolvedRole = info.roles.first(r => r.name == binding.roleName)!;
-                    if (binding.resolvedRole == null) console.error("could not resolve roleBinding to role: " + toJson(binding));
+                    if (binding.resolvedRole == null) console.error('could not resolve roleBinding to role: ' + toJson(binding));
                 }
 
                 // resolve bindings, and roles of each user
                 for (const user of info.users) {
                     user.bindings = user.bindingIds.map(id => info.roleBindings.first(rb => rb.ephemeralId == id)!);
-                    if (user.bindings.any(b => b == null)) console.error("one or more rolebindings could not be resolved for user: " + toJson(user));
+                    if (user.bindings.any(b => b == null)) console.error('one or more rolebindings could not be resolved for user: ' + toJson(user));
 
                     user.grantedRoles = [];
                     for (const roleName in user.audits)
@@ -786,12 +786,12 @@ const apiStore = {
 
         return rq
             .then(({ schemaDetails }) => {
-                if (schemaDetails && typeof schemaDetails.schema === "string" && schemaDetails.type != SchemaType.PROTOBUF) {
+                if (schemaDetails && typeof schemaDetails.schema === 'string' && schemaDetails.type != SchemaType.PROTOBUF) {
                     schemaDetails.schema = JSON.parse(schemaDetails.schema);
                 }
 
                 if (schemaDetails && schemaDetails.schema) {
-                    if (typeof schemaDetails.schema === "string")
+                    if (typeof schemaDetails.schema === 'string')
                         schemaDetails.rawSchema = schemaDetails.schema;
                     else
                         schemaDetails.rawSchema = JSON.stringify(schemaDetails.schema);
@@ -859,9 +859,9 @@ const apiStore = {
                 configs: [],
             };
 
-            const leaderReplicas = t.leaderReplicas.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
+            const leaderReplicas = t.leaderReplicas.map(e => `${e.partitionId}:${e.brokerId}`).join(',');
             res.configs.push({ name: 'leader.replication.throttled.replicas', op: AlterConfigOperation.Set, value: leaderReplicas });
-            const followerReplicas = t.followerReplicas.map(e => `${e.partitionId}:${e.brokerId}`).join(",");
+            const followerReplicas = t.followerReplicas.map(e => `${e.partitionId}:${e.brokerId}`).join(',');
             res.configs.push({ name: 'follower.replication.throttled.replicas', op: AlterConfigOperation.Set, value: followerReplicas });
 
             // individual request for each topic
@@ -1135,7 +1135,7 @@ const apiStore = {
 
     async publishRecords(request: PublishRecordsRequest): Promise<ProduceRecordsResponse> {
         // POST "/topics-records"
-        const response = await fetch(`./api/topics-records`, {
+        const response = await fetch('./api/topics-records', {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1147,7 +1147,7 @@ const apiStore = {
 
     async createTopic(request: CreateTopicRequest): Promise<CreateTopicResponse> {
         // POST "/topics"
-        const response = await fetch(`./api/topics`, {
+        const response = await fetch('./api/topics', {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1170,7 +1170,7 @@ function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {
         if (connector.config)
             connector.jsonConfig = JSON.stringify(connector.config, undefined, 4);
         else
-            connector.jsonConfig = "";
+            connector.jsonConfig = '';
 }
 
 function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
@@ -1261,7 +1261,7 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
     let obj: undefined | any = undefined;
     if (text === null) {
         if (response.bodyUsed)
-            throw new Error(`response content already consumed`);
+            throw new Error('response content already consumed');
         text = await response.text();
     }
     try {

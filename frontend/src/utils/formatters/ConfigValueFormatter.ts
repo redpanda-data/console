@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { prettyBytesOrNA, prettyMilliseconds } from "../utils";
+import { prettyBytesOrNA, prettyMilliseconds } from '../utils';
 
 export function formatConfigValue(name: string, value: string | null | undefined, formatType: 'friendly' | 'raw' | 'both'): string {
     let suffix: string;
 
-    if (value == null) return "";
+    if (value == null) return '';
 
     switch (formatType) {
         case 'friendly':
@@ -32,7 +32,7 @@ export function formatConfigValue(name: string, value: string | null | undefined
     //
     // String
     //
-    if (value && (name == "advertised.listeners" || name == "listener.security.protocol.map" || name == "listeners")) {
+    if (value && (name == 'advertised.listeners' || name == 'listener.security.protocol.map' || name == 'listeners')) {
         const listeners = value.split(',');
         return listeners.join('\n');
     }
@@ -42,7 +42,7 @@ export function formatConfigValue(name: string, value: string | null | undefined
     // Numeric
     //
     const num = Number(value);
-    if (value == null || value == "" || value == "0" || Number.isNaN(num))
+    if (value == null || value == '' || value == '0' || Number.isNaN(num))
         return value;
 
     // Special cases
@@ -56,15 +56,15 @@ export function formatConfigValue(name: string, value: string | null | undefined
     // Time
     const timeExtensions: [string, number][] = [
         // name ending -> conversion to milliseconds
-        [".ms", 1],
-        [".seconds", 1000],
-        [".minutes", 60 * 1000],
-        [".hours", 60 * 60 * 1000],
-        [".days", 24 * 60 * 60 * 1000],
+        ['.ms', 1],
+        ['.seconds', 1000],
+        ['.minutes', 60 * 1000],
+        ['.hours', 60 * 60 * 1000],
+        ['.days', 24 * 60 * 60 * 1000],
     ];
     for (const [ext, msFactor] of timeExtensions) {
         if (!name.endsWith(ext)) continue;
-        if (num > Number.MAX_SAFE_INTEGER || num == -1) return "Infinite" + suffix;
+        if (num > Number.MAX_SAFE_INTEGER || num == -1) return 'Infinite' + suffix;
 
         const ms = num * msFactor;
         return prettyMilliseconds(ms, { verbose: true }) + suffix;
@@ -72,7 +72,7 @@ export function formatConfigValue(name: string, value: string | null | undefined
 
     // Bytes
     if (name.endsWith('.bytes') || name.endsWith('.buffer.size') || name.endsWith('.replication.throttled.rate') || name.endsWith('.reassignment.throttled.rate')) {
-        const uint64Max = "18446744073709551615"; // can't be represented in js, would be rounded up to 18446744073709552000
+        const uint64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
         const uint64Exp = 1.844674407370955e19; // barely below the point where the number would be rounded up
         if (value == uint64Max || num >= uint64Exp)
             return 'Infinite' + suffix;

@@ -53,7 +53,7 @@ export interface Topic {
     partitionCount: number;
     replicationFactor: number;
     cleanupPolicy: string;
-    documentation: "UNKNOWN" | "NOT_CONFIGURED" | "NOT_EXISTENT" | "AVAILABLE";
+    documentation: 'UNKNOWN' | 'NOT_CONFIGURED' | 'NOT_EXISTENT' | 'AVAILABLE';
     logDirSummary: TopicLogDirSummary;
     allowedActions: TopicAction[] | undefined;
 }
@@ -140,13 +140,13 @@ export interface GetTopicConsumersResponse {
 
 export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'consumerOffsets' | 'binary' | 'msgpack';
 export enum CompressionType {
-    Unknown = "unknown",
+    Unknown = 'unknown',
 
-    Uncompressed = "uncompressed",
-    GZip = "gzip",
-    Snappy = "snappy",
-    LZ4 = "lz4",
-    ZStd = "zstd"
+    Uncompressed = 'uncompressed',
+    GZip = 'gzip',
+    Snappy = 'snappy',
+    LZ4 = 'lz4',
+    ZStd = 'zstd'
 }
 
 export interface Payload {
@@ -635,10 +635,10 @@ export interface AclRequest {
 
 export const AclRequestDefault = {
     resourceType: AclResourceType.AclResourceAny,
-    resourceName: "",
+    resourceName: '',
     resourcePatternTypeFilter: AclResourcePatternTypeFilter.AclPatternAny,
-    principal: "",
-    host: "",
+    principal: '',
+    host: '',
     operation: AclOperation.AclOperationAny,
     permissionType: AclPermissionType.AclPermissionAny,
 } as const;
@@ -718,9 +718,9 @@ export interface SchemaDetailsResponse {
 }
 
 export enum SchemaType {
-    AVRO = "AVRO",
-    JSON = "JSON",
-    PROTOBUF = "PROTOBUF",
+    AVRO = 'AVRO',
+    JSON = 'JSON',
+    PROTOBUF = 'PROTOBUF',
 }
 
 export interface SchemaDetails {
@@ -747,13 +747,13 @@ export interface Schema {
 }
 
 export enum JsonFieldType {
-    STRING = "string",
-    NUMBER = "number",
-    INTEGER = "integer",
-    OBJECT = "object",
-    ARRAY = "array",
-    BOOLEAN = "boolean",
-    NULL = "null"
+    STRING = 'string',
+    NUMBER = 'number',
+    INTEGER = 'integer',
+    OBJECT = 'object',
+    ARRAY = 'array',
+    BOOLEAN = 'boolean',
+    NULL = 'null'
 }
 
 export interface JsonSchema {
@@ -1111,27 +1111,27 @@ export interface ConnectorProperty {
 }
 
 export enum PropertyImportance {
-    Low = "LOW",
-    Medium = "MEDIUM",
-    High = "HIGH",
+    Low = 'LOW',
+    Medium = 'MEDIUM',
+    High = 'HIGH',
 }
 
 export enum DataType {
-    Boolean = "BOOLEAN",
-    Class = "CLASS",
-    Int = "INT",
-    List = "LIST",
-    Long = "LONG",
-    Password = "PASSWORD",
-    Short = "SHORT",
-    String = "STRING",
+    Boolean = 'BOOLEAN',
+    Class = 'CLASS',
+    Int = 'INT',
+    List = 'LIST',
+    Long = 'LONG',
+    Password = 'PASSWORD',
+    Short = 'SHORT',
+    String = 'STRING',
 }
 
 export enum PropertyWidth {
-    None = "NONE",
-    Short = "SHORT",
-    Medium = "MEDIUM",
-    Long = "LONG",
+    None = 'NONE',
+    Short = 'SHORT',
+    Medium = 'MEDIUM',
+    Long = 'LONG',
 }
 
 
@@ -1159,10 +1159,10 @@ export function compressionTypeToNum(type: CompressionType) {
 
 // For UI only
 export type EncodingType =
-    | "none"   // use null as value, aka tombstone
-    | "utf8"   // use text as it is, use utf8 to get bytes
-    | "base64" // text is base64, so server should just use base64decode to get the bytes
-    | "json"   // parse the text as json, stringify it again to reduce whitespace, use utf8 to get bytes
+    | 'none'   // use null as value, aka tombstone
+    | 'utf8'   // use text as it is, use utf8 to get bytes
+    | 'base64' // text is base64, so server should just use base64decode to get the bytes
+    | 'json'   // parse the text as json, stringify it again to reduce whitespace, use utf8 to get bytes
 
 
 export interface PublishRecordsRequest {

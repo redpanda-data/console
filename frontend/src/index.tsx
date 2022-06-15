@@ -9,22 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import React from "react";
-import ReactDOM from "react-dom";
+import React from 'react';
+import ReactDOM from 'react-dom';
 import {
     BrowserRouter,
     withRouter,
     RouteComponentProps
-} from "react-router-dom";
-import { configure, when } from "mobx";
+} from 'react-router-dom';
+import { configure, when } from 'mobx';
 
-import "antd/dist/antd.css";
-import "./index.scss";
+import 'antd/dist/antd.css';
+import './index.scss';
 
-import App from "./components/App";
-import { appGlobal } from "./state/appGlobal";
-import { basePathS, IsBusiness } from "./utils/env";
-import { api } from "./state/backendApi";
+import App from './components/App';
+import { appGlobal } from './state/appGlobal';
+import { basePathS, IsBusiness } from './utils/env';
+import { api } from './state/backendApi';
 
 import './assets/fonts/open-sans.css';
 import './assets/fonts/poppins.css';
@@ -60,5 +60,5 @@ ReactDOM.render(
         <HistorySetter />
         <App />
     </BrowserRouter>,
-    document.getElementById("root")
+    document.getElementById('root')
 );

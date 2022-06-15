@@ -15,7 +15,8 @@
         "test": "react-app-rewired test",
         "eject": "react-scripts eject",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
-        "preinstall": "npx npm-force-resolutions"
+        "preinstall": "npx npm-force-resolutions",
+        "lint": "eslint --ext .ts,.tsx ./src  --cache"
     },
     "dependencies": {
         "@ant-design/icons": "^4.6.4",
@@ -75,6 +76,7 @@
         "@typescript-eslint/eslint-plugin": "^4.22.0",
         "@typescript-eslint/parser": "^4.22.0",
         "cross-env": "^7.0.3",
+        "eslint-plugin-unused-imports": "^1.1.5",
         "react-app-rewired": "^2.1.8",
         "sass": "^1.45.0",
         "ts-node": "^10.4.0",

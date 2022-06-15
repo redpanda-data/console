@@ -3,10 +3,10 @@ import topicConfigInfo from '../assets/topicConfigInfo.json';
 
 function isNumericType(typeName: string) {
     switch (typeName.toLowerCase()) {
-        case "short":
-        case "long":
-        case "int":
-        case "double":
+        case 'short':
+        case 'long':
+        case 'int':
+        case 'double':
             return true;
 
         default:

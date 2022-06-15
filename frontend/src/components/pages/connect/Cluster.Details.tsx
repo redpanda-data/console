@@ -10,23 +10,18 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { CheckCircleTwoTone, ExclamationCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
-import { Button, message, notification, Popover, Statistic } from 'antd';
 import { motion } from 'framer-motion';
-import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { CSSProperties } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { ApiError } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
-import { Code, findPopupContainer } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
-import { ClusterStatisticsCard, ConnectorClass, NotConfigured, removeNamespace, TasksColumn, TaskState } from './helper';
+import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TasksColumn, TaskState } from './helper';
 
 
 @observer
@@ -42,7 +37,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     initPage(p: PageInitHelper): void {
         const clusterName = this.props.clusterName;
         p.title = clusterName;
-        p.addBreadcrumb("Kafka Connect", `/kafka-connect`);
+        p.addBreadcrumb('Kafka Connect', '/kafka-connect');
         p.addBreadcrumb(clusterName, `/kafka-connect/${clusterName}`);
 
         this.refreshData(false);
@@ -83,7 +78,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     title: 'Connector', dataIndex: 'name',
                                     width: '35%',
                                     render: (_, r) => (
-                                        <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
+                                        <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
                                             onClick={() => appGlobal.history.push(`/kafka-connect/${clusterName}/${r.name}`)}>
                                             {r.name}
                                         </span>
@@ -130,7 +125,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 defaultPageSize: 10,
                             }}
 
-                            className='connectorsTable'
+                            className="connectorsTable"
                         />
                     </div>
 
@@ -175,7 +170,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                 defaultPageSize: 10,
                             }}
 
-                            className='pluginsTable'
+                            className="pluginsTable"
                         />
 
                     </div>

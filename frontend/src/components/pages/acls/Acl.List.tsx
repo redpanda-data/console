@@ -9,25 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { } from "react";
-import { observer } from "mobx-react";
-import { Empty, Table, Select, Input, Button, Alert } from "antd";
-import { ColumnProps } from "antd/lib/table";
-import { PageComponent, PageInitHelper } from "../Page";
-import { api } from "../../../state/backendApi";
-import { uiSettings } from "../../../state/ui";
-import { makePaginationConfig, sortField } from "../../misc/common";
-import { AclRequestDefault, AclResource, AclRule, Broker } from "../../../state/restInterfaces";
-import { motion } from "framer-motion";
-import { animProps } from "../../../utils/animationProps";
-import { comparer, computed, makeObservable, observable } from "mobx";
-import { containsIgnoreCase } from "../../../utils/utils";
-import { appGlobal } from "../../../state/appGlobal";
-import Card from "../../misc/Card";
-import { DefaultSkeleton, Label } from "../../../utils/tsxUtils";
-import { toJson } from "../../../utils/jsonUtils";
-import { KowlTable } from "../../misc/KowlTable";
-import { LockIcon } from "@primer/octicons-react";
+import React, { } from 'react';
+import { observer } from 'mobx-react';
+import { Empty, Select, Input, Button, Alert } from 'antd';
+import { ColumnProps } from 'antd/lib/table';
+import { PageComponent, PageInitHelper } from '../Page';
+import { api } from '../../../state/backendApi';
+import { uiSettings } from '../../../state/ui';
+import { sortField } from '../../misc/common';
+import { AclRequestDefault, AclResource, AclRule, Broker } from '../../../state/restInterfaces';
+import { motion } from 'framer-motion';
+import { animProps } from '../../../utils/animationProps';
+import { comparer, computed, makeObservable, observable } from 'mobx';
+import { containsIgnoreCase } from '../../../utils/utils';
+import { appGlobal } from '../../../state/appGlobal';
+import Card from '../../misc/Card';
+import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
+import { toJson } from '../../../utils/jsonUtils';
+import { KowlTable } from '../../misc/KowlTable';
+import { LockIcon } from '@primer/octicons-react';
 
 
 type AclRuleFlat = AclResource & AclRule
@@ -41,8 +41,8 @@ type AclRuleFlat = AclResource & AclRule
 class AclList extends PageComponent {
 
     @observable filteredBrokers: Broker[];
-    @observable resourceTypeFilter: string = "";
-    @observable filterText = "";
+    @observable resourceTypeFilter: string = '';
+    @observable filterText = '';
 
     constructor(p: any) {
         super(p);
@@ -123,7 +123,7 @@ class AclList extends PageComponent {
 
         const filtered = this.flatResourceList
             // filter by category
-            .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
+            .filter(res => (this.resourceTypeFilter == '') || (this.resourceTypeFilter == res.resourceType))
             // filter by name
             .filter(this.isFilterMatch)
             .sort((a, b) => a.resourceName.localeCompare(b.resourceName))
@@ -159,7 +159,7 @@ class AclList extends PageComponent {
 
         return (
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <Label text='Resource Type'>
+                <Label text="Resource Type">
                     <Select
                         options={this.availableResourceTypes}
                         value={this.resourceTypeFilter}
@@ -167,10 +167,10 @@ class AclList extends PageComponent {
                             this.resourceTypeFilter = val;
                         }}
                         style={{ width: '11em' }}
-                        size='middle' />
+                        size="middle" />
                 </Label>
 
-                <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px', marginLeft: 'auto' }}
+                <Input allowClear={true} placeholder="Quick Search" style={{ width: '250px', marginLeft: 'auto' }}
                     onChange={x => this.filterText = x.target.value}
                     value={this.filterText}
                 />
@@ -179,7 +179,7 @@ class AclList extends PageComponent {
     })
 }
 
-type FlatResource = AclList["flatResourceList"][0];
+type FlatResource = AclList['flatResourceList'][0];
 
 export default AclList;
 
@@ -197,7 +197,7 @@ const PermissionDenied = <>
         <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
             <Empty description={null}>
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <h2><span><LockIcon verticalAlign='middle' size={20} /></span> Permission Denied</h2>
+                    <h2><span><LockIcon verticalAlign="middle" size={20} /></span> Permission Denied</h2>
                     <p>
                         You are not allowed to view this page.
                         <br />

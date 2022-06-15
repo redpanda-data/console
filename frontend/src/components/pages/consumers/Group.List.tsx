@@ -9,28 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
-import React from "react";
-import { Table, Empty, Skeleton, Row, Statistic, Tag, Input, Divider, Checkbox } from "antd";
-import { observer } from "mobx-react";
+import React from 'react';
+import { Row, Statistic, Tag, Input } from 'antd';
+import { observer } from 'mobx-react';
 
-import { api } from "../../../state/backendApi";
-import { PageComponent, PageInitHelper } from "../Page";
-import { GroupMemberDescription, GroupDescription } from "../../../state/restInterfaces";
-import { motion } from "framer-motion";
-import { animProps } from "../../../utils/animationProps";
-import { makePaginationConfig, sortField } from "../../misc/common";
-import { uiSettings } from "../../../state/ui";
-import { appGlobal } from "../../../state/appGlobal";
-import { GroupState } from "./Group.Details";
-import { observable, autorun, IReactionDisposer } from "mobx";
-import { containsIgnoreCase } from "../../../utils/utils";
-import Card from "../../misc/Card";
-import { editQuery } from "../../../utils/queryHelper";
-import { uiState } from "../../../state/uiState";
-import { DefaultSkeleton, Label, OptionGroup } from "../../../utils/tsxUtils";
-import { BrokerList } from "../../misc/BrokerList";
-import { ShortNum } from "../../misc/ShortNum";
-import { KowlTable } from "../../misc/KowlTable";
+import { api } from '../../../state/backendApi';
+import { PageComponent, PageInitHelper } from '../Page';
+import { GroupMemberDescription, GroupDescription } from '../../../state/restInterfaces';
+import { motion } from 'framer-motion';
+import { animProps } from '../../../utils/animationProps';
+import { makePaginationConfig, sortField } from '../../misc/common';
+import { uiSettings } from '../../../state/ui';
+import { appGlobal } from '../../../state/appGlobal';
+import { GroupState } from './Group.Details';
+import { autorun, IReactionDisposer } from 'mobx';
+import { containsIgnoreCase } from '../../../utils/utils';
+import Card from '../../misc/Card';
+import { editQuery } from '../../../utils/queryHelper';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { BrokerList } from '../../misc/BrokerList';
+import { ShortNum } from '../../misc/ShortNum';
+import { KowlTable } from '../../misc/KowlTable';
 
 
 @observer
@@ -50,15 +49,15 @@ class GroupList extends PageComponent {
     componentDidMount() {
         // 1. use 'q' parameter for quick search (if it exists)
         editQuery(query => {
-            if (query["q"])
-                uiSettings.consumerGroupList.quickSearch = String(query["q"]);
+            if (query['q'])
+                uiSettings.consumerGroupList.quickSearch = String(query['q']);
         });
 
         // 2. whenever the quick search box changes, update the url
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
                 const q = String(uiSettings.consumerGroupList.quickSearch);
-                if (q) query["q"] = q;
+                if (q) query['q'] = q;
             });
         });
     }
@@ -81,7 +80,7 @@ class GroupList extends PageComponent {
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
                 <Card>
                     <Row>
-                        <Statistic title='Total Groups' value={groups.length} />
+                        <Statistic title="Total Groups" value={groups.length} />
                         <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
                         {stateGroups.map(g =>
                             <Statistic style={{ marginRight: '1.5rem' }} key={g.key} title={g.key} value={g.items.length} />
@@ -139,7 +138,7 @@ class GroupList extends PageComponent {
     }
 
     SearchBar = observer(() => {
-        return <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: '350px' }}
+        return <Input allowClear={true} placeholder="Quick Search" size="large" style={{ width: '350px' }}
             onChange={e => uiSettings.consumerGroupList.quickSearch = e.target.value}
             value={uiSettings.consumerGroupList.quickSearch}
         />

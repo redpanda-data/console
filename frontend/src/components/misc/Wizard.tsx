@@ -12,7 +12,7 @@
 import styles from './Wizard.module.scss';
 import { Button, Steps } from 'antd';
 import React from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
+import { ChevronRightIcon } from '@primer/octicons-react';
 
 const { Step } = Steps;
 

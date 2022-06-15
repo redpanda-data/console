@@ -9,21 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, ReactNode } from "react";
-import React from "react";
-import { RoleBinding, Subject } from "../../../state/restInterfaces";
-import { Collapse } from "antd";
+import { Component, ReactNode } from 'react';
+import React from 'react';
+import { RoleBinding, Subject } from '../../../state/restInterfaces';
+import { Collapse } from 'antd';
 import '../../../utils/arrayExtensions';
-import { QuickTable, ObjToKv } from "../../../utils/tsxUtils";
+import { QuickTable, ObjToKv } from '../../../utils/tsxUtils';
 
 export class RoleBindingComponent extends Component<{ binding: RoleBinding }>{
     render() {
         const binding = this.props.binding;
 
         const rows: [any, any][] = [
-            [<span className='resourceLabel'>Binding</span>, <span className='roleBindingId'>{binding.ephemeralId}</span>],
+            [<span className="resourceLabel">Binding</span>, <span className="roleBindingId">{binding.ephemeralId}</span>],
             [<span className="resourceLabelSub">Metadata</span>, QuickTable(ObjToKv(binding.metadata), { tableStyle: { width: 'auto', fontFamily: 'monospace', fontSize: '80%' }, gapWidth: '6px' })],
-            [<span className="resourceLabelSub">Subjects</span>, <Expander title='click to expand' className='subjectListExpander'>{binding.subjects.map(s => <SubjectComponent key={s.name + s.providerName} subject={s} />)}</Expander>]
+            [<span className="resourceLabelSub">Subjects</span>, <Expander title="click to expand" className="subjectListExpander">{binding.subjects.map(s => <SubjectComponent key={s.name + s.providerName} subject={s} />)}</Expander>]
         ];
 
         const t = QuickTable(rows, {

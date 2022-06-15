@@ -13,10 +13,10 @@
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { Input, InputNumber, Switch, Select, Tooltip, AutoComplete } from 'antd';
 import { observer } from 'mobx-react';
-import { DataType, PropertyWidth } from '../../../../state/restInterfaces';
+import { PropertyWidth } from '../../../../state/restInterfaces';
 import { findPopupContainer, InfoText } from '../../../../utils/tsxUtils';
 import { Property } from './components';
-import { CommaSeparatedStringList, List } from './List';
+import { CommaSeparatedStringList } from './List';
 
 
 export const PropertyComponent = observer((props: { property: Property }) => {
@@ -27,7 +27,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
 
     let inputComp = <div key={p.name}>
         <div>"{p.name}" (unknown type "{def.type}")</div>
-        <div style={{ fontSize: 'smaller' }} className='codeBox'>{JSON.stringify(p.entry, undefined, 4)}</div>
+        <div style={{ fontSize: 'smaller' }} className="codeBox">{JSON.stringify(p.entry, undefined, 4)}</div>
     </div>;
 
     let v = p.value;
@@ -35,12 +35,12 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         if (typeof p.value == 'number' || typeof p.value == 'boolean')
             v = String(v);
         else
-            v = "";
+            v = '';
     }
 
     switch (def.type) {
-        case "STRING":
-        case "CLASS":
+        case 'STRING':
+        case 'CLASS':
             const recValues = p.entry.value.recommended_values;
             if (recValues && recValues.length) {
                 // Enum (recommended_values)
@@ -73,21 +73,21 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             }
             break;
 
-        case "PASSWORD":
+        case 'PASSWORD':
             inputComp = <Input.Password value={String(p.value ?? '')} onChange={e => p.value = e.target.value} iconRender={visible => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)} />
             break;
 
-        case "INT":
-        case "LONG":
-        case "SHORT":
+        case 'INT':
+        case 'LONG':
+        case 'SHORT':
             inputComp = <InputNumber style={{ display: 'block' }} value={Number(p.value)} onChange={e => p.value = e} />
             break;
 
-        case "BOOLEAN":
+        case 'BOOLEAN':
             inputComp = <Switch checked={Boolean(p.value)} onChange={e => p.value = e} />
             break;
 
-        case "LIST":
+        case 'LIST':
             if (p.name == 'transforms') {
                 inputComp = <CommaSeparatedStringList defaultValue={String(v)} onChange={x => p.value = x} />
             } else {
@@ -116,13 +116,13 @@ export const PropertyComponent = observer((props: { property: Property }) => {
 
 
     // Tooltip 'raw name'
-    const title = <Tooltip overlay={`${def.name} (${def.type})`} placement='top' trigger="click" mouseLeaveDelay={0} getPopupContainer={findPopupContainer}>
+    const title = <Tooltip overlay={`${def.name} (${def.type})`} placement="top" trigger="click" mouseLeaveDelay={0} getPopupContainer={findPopupContainer}>
         <span style={{ fontWeight: 600, cursor: 'pointer', color: '#444', fontSize: '12px', paddingLeft: '1px' }}>{def.display_name}</span>
     </Tooltip>;
 
     // Tooltip 'documentation'
     const docuIcon = def.documentation &&
-        <InfoText tooltip={def.documentation} iconSize='12px' transform='translateY(1px)' gap='6px' placement='right' maxWidth='450px' align='left' iconColor='#c7c7c7' />
+        <InfoText tooltip={def.documentation} iconSize="12px" transform="translateY(1px)" gap="6px" placement="right" maxWidth="450px" align="left" iconColor="#c7c7c7" />
 
     // Wrap name and input element
     return <div className={inputSizeToClass[def.width]}>
@@ -143,10 +143,10 @@ const requiredStar = <span style={{
 
 
 const inputSizeToClass = {
-    [PropertyWidth.None]: "none",
-    [PropertyWidth.Short]: "short",
-    [PropertyWidth.Medium]: "medium",
-    [PropertyWidth.Long]: "long",
+    [PropertyWidth.None]: 'none',
+    [PropertyWidth.Short]: 'short',
+    [PropertyWidth.Medium]: 'medium',
+    [PropertyWidth.Long]: 'long',
 } as const;
 
 
@@ -168,8 +168,8 @@ const ErrorWrapper = observer(function (props: { property: Property, input: JSX.
 
     return <div className={'inputWrapper ' + ((errorToShow) ? 'hasError' : '')}>
         {input}
-        <div className='validationFeedback' onClick={cycleError}>
-            {errors.length > 1 && <span className='errorCount'>{errors.length} Errors</span>}
+        <div className="validationFeedback" onClick={cycleError}>
+            {errors.length > 1 && <span className="errorCount">{errors.length} Errors</span>}
             {errorToShow}
         </div>
     </div>
