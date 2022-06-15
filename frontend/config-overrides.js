@@ -9,13 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-const { override, addBabelPlugins } = require('customize-cra');
+const { override, addBabelPlugins, addBabelPreset } = require('customize-cra');
 
 
 module.exports = override(
+
+    addBabelPreset("@babel/preset-env"),
+
     addBabelPlugins(
         "@babel/plugin-proposal-nullish-coalescing-operator",
-        "@babel/plugin-proposal-logical-assignment-operators"
+        "@babel/plugin-proposal-logical-assignment-operators",
+        "@babel/plugin-proposal-numeric-separator",
     ),
 
     (webpackConfig) => {
