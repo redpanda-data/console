@@ -1237,7 +1237,7 @@ type WellKnownTopicConfigEntries =
     | { name: 'message.downconversion.enable', value: string }
     ;
 
-export type TopicConfigEntry = WellKnownTopicConfigEntries | { name: string; value: string | number; };
+export type TopicConfigEntry = WellKnownTopicConfigEntries | { name: string; value: string; };
 
 export interface CreateTopicRequest {
     topicName: string;

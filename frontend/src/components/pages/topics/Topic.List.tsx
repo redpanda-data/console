@@ -31,7 +31,6 @@ import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-reac
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import { UInt64Max } from '../../../utils/utils';
-import { inferTopicConfigType } from '../../../utils/topicConfigInfo';
 
 @observer
 class TopicList extends PageComponent {
@@ -448,13 +447,7 @@ function makeCreateTopicModal(parent: TopicList) {
             const setVal = (name: string, value: string | number | undefined) => {
                 if (value === undefined) return;
                 config.removeAll(x => x.name === name);
-
-                if (inferTopicConfigType(name) == 'number' && typeof value != 'number')
-                    value = Number(value);
-                else
-                    value = String(value);
-
-                config.push({ name, value });
+                config.push({ name, value: String(value) });
             };
 
             for (const x of state.additionalConfig)
