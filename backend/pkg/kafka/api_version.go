@@ -20,7 +20,7 @@ import (
 func (s *Service) GetAPIVersions(ctx context.Context) (*kmsg.ApiVersionsResponse, error) {
 	req := kmsg.NewApiVersionsRequest()
 	req.ClientSoftwareVersion = version.Version
-	req.ClientSoftwareName = "RP Console"
+	req.ClientSoftwareName = "RPConsole"
 
 	return req.RequestWith(ctx, s.KafkaClient)
 }
