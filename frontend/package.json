@@ -16,12 +16,13 @@
         "eject": "react-scripts eject",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
         "preinstall": "npx npm-force-resolutions",
-        "lint": "eslint --ext .ts,.tsx ./src  --cache"
+        "lint": "eslint --ext .ts,.tsx ./src  --cache",
+        "prepare": "node scripts/fetch-monaco.mjs"
     },
     "dependencies": {
         "@ant-design/icons": "^4.6.4",
         "@heroicons/react": "^1.0.1",
-        "@monaco-editor/react": "^4.3.1",
+        "@monaco-editor/react": "^4.4.5",
         "@primer/octicons-react": "^15.2.0",
         "antd": "^4.15.3",
         "array-move": "^3.0.1",
@@ -31,9 +32,9 @@
         "mobx": "^6.3.9",
         "mobx-react": "^7.2.1",
         "moment": "^2.29.1",
-        "monaco-editor": "^0.31.1",
         "monaco-proto-lint": "0.0.1",
         "monaco-yaml": "^3.2.1",
+        "node-fetch": "^3.2.6",
         "npm-force-resolutions": "^0.0.10",
         "pretty-bytes": "^5.6.0",
         "pretty-ms": "^7.0.1",
@@ -79,6 +80,7 @@
         "eslint-plugin-unused-imports": "^1.1.5",
         "react-app-rewired": "^2.1.8",
         "sass": "^1.45.0",
+        "tar-stream": "^2.2.0",
         "ts-node": "^10.4.0",
         "typescript": "^4.5.4"
     },

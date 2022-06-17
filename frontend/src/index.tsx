@@ -8,8 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-
-import React from 'react';
+import { loader } from '@monaco-editor/react';
 import ReactDOM from 'react-dom';
 import {
     BrowserRouter,
@@ -31,6 +30,8 @@ import './assets/fonts/poppins.css';
 import './assets/fonts/quicksand.css';
 import './assets/fonts/kumbh-sans.css';
 
+loader.config({ paths: { vs: '/static/js/vendor/monaco/package/min/vs' } });
+
 const HistorySetter = withRouter((p: RouteComponentProps) => {
     appGlobal.history = p.history;
     return <></>;
@@ -48,11 +49,14 @@ configure({
 if (!IsBusiness) {
     api.refreshSupportedEndpoints(true);
 } else {
-    when(() => Boolean(api.userData), () => {
-        setImmediate(() => {
-            api.refreshSupportedEndpoints(true);
-        });
-    });
+    when(
+        () => Boolean(api.userData),
+        () => {
+            setImmediate(() => {
+                api.refreshSupportedEndpoints(true);
+            });
+        }
+    );
 }
 
 ReactDOM.render(
