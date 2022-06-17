@@ -17,5 +17,5 @@ If there are still open questions after reading this documentation don't hesitat
     - [Kafka Connect](./features/kafka-connect.md)
     - [Topic Documentation](./features/topic-documentation.md)
     - [Protobuf](./features/protobuf.md)
-- Reference Configs
-    - [console.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/console.yaml)
+- Reference Config
+    - [console.yaml](./config/console.yaml)
