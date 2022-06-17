@@ -1434,7 +1434,7 @@ function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions
 
     let content: JSX.Element | string = "Delete Records";
     if (errorText)
-        content = <Tooltip placement="top" title="Records on Topics with the 'compact' cleanup policy cannot be deleted.">{content}</Tooltip>;
+        content = <Tooltip placement="top" title={errorText}>{content}</Tooltip>;
 
     return <Menu.Item key={key} disabled={!isEnabled} onClick={onClick}>{content}</Menu.Item>;
 }
