@@ -17,7 +17,7 @@ services:
       - 9092:9092
       - 29092:29092
 
-  kowl:
+  console:
     image: docker.redpanda.com/vectorized/console:master-217260f
     restart: on-failure
     entrypoint: /bin/sh
