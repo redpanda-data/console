@@ -6,7 +6,7 @@ path: /docs
 # Documentation
 
 In this folder you'll find documentation about how to configure Redpanda Console.
-If there are still open questions after reading this documentation please don't hesitate to submit an issue.
+If there are still open questions after reading this documentation don't hesitate to submit an issue.
 
 - Getting started
     - [Installation](./installation.md)
@@ -14,6 +14,8 @@ If there are still open questions after reading this documentation please don't 
     - [Terraform Module](https://github.com/cloudhut/terraform-modules)
 - Features
     - [Hosting](./features/hosting.md)
+    - [Kafka Connect](./features/kafka-connect.md)
     - [Topic Documentation](./features/topic-documentation.md)
+    - [Protobuf](./features/protobuf.md)
 - Reference Configs
-    - [kowl.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml)
+    - [console.yaml](https://github.com/cloudhut/kowl/blob/master/docs/config/console.yaml)
