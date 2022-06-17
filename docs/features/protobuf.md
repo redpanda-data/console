@@ -43,7 +43,8 @@ kafka:
 ### Local Filesystem
 
 Put all of your required .proto files into a git repository. It doesn't matter in what directory you put them,
-but the files' extension must be `.proto`. You can configure Kowl to search one or more paths for proto files:
+but the files' extension must be `.proto`. You can configure Redpanda Console to search one or more paths for 
+proto files:
 
 ```yaml
 kafka:
@@ -78,7 +79,7 @@ kafka:
       enabled: true
       refreshInterval: 5m
       repository:
-        url: https://github.com/cloudhut/owlshop-protos.git
+        url: https://github.com/redpanda-data/owlshop-protos.git
       basicAuth:
         enabled: true
         username: token # Uses an API token via basic auth
