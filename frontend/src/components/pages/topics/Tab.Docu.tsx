@@ -9,21 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from "react";
-import { Topic } from "../../../state/restInterfaces";
-import "../../../utils/arrayExtensions";
-import { api } from "../../../state/backendApi";
+import React, { Component } from 'react';
+import { Topic } from '../../../state/restInterfaces';
+import '../../../utils/arrayExtensions';
+import { api } from '../../../state/backendApi';
 import {Prism as SyntaxHighlighter} from 'react-syntax-highlighter'
 import {vs} from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import { uriTransformer as baseUriTransformer } from 'react-markdown';
-import { DefaultSkeleton } from "../../../utils/tsxUtils";
-import { motion } from "framer-motion";
-import { animProps } from "../../../utils/animationProps";
-import { Button, Empty } from "antd";
-import { observer } from "mobx-react";
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { motion } from 'framer-motion';
+import { animProps } from '../../../utils/animationProps';
+import { Button, Empty } from 'antd';
+import { observer } from 'mobx-react';
 
 
 // Test for link sanitizer
@@ -34,9 +34,9 @@ My nonsuspious link
 */
 
 const allowedProtocols = [
-    "http://",
-    "https://",
-    "mailto://",
+    'http://',
+    'https://',
+    'mailto://',
 ];
 
 function sanitizeUrl(uri: string, children?: any, title?: string | null): string {
@@ -50,7 +50,7 @@ function sanitizeUrl(uri: string, children?: any, title?: string | null): string
             return uri;
         }
 
-    return ""; // didn't match any allowed protocol, remove the link
+    return ''; // didn't match any allowed protocol, remove the link
 }
 
 @observer
@@ -62,7 +62,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
           return !inline && match ? (
             <SyntaxHighlighter style={vs}
             customStyle={{
-                "background-color": null,
+                'background-color': null,
                 border: null,
                 margin: null,
                 padding: null,
@@ -89,7 +89,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
         if (markdown === '')
             return errorEmpty;
 
-        return <div className='topicDocumentation'>
+        return <div className="topicDocumentation">
             <ReactMarkdown components={this.components} remarkPlugins={[remarkGfm, remarkEmoji]} children={markdown} skipHtml={false} transformLinkUri={sanitizeUrl} />
         </div>
     }

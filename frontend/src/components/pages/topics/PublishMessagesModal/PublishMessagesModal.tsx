@@ -10,16 +10,16 @@
  */
 
 import { EditorProps, Monaco } from '@monaco-editor/react';
-import { Select, Tooltip } from "antd";
-import { action, computed } from "mobx";
-import { observer } from "mobx-react";
-import { Component } from "react";
-import { api } from "../../../../state/backendApi";
-import { CompressionType, EncodingType } from "../../../../state/restInterfaces";
-import { Label } from "../../../../utils/tsxUtils";
-import KowlEditor, { IStandaloneCodeEditor } from "../../../misc/KowlEditor";
-import Tabs, { Tab } from "../../../misc/tabs/Tabs";
-import HeadersEditor from "./Headers";
+import { Select, Tooltip } from 'antd';
+import { action, computed } from 'mobx';
+import { observer } from 'mobx-react';
+import { Component } from 'react';
+import { api } from '../../../../state/backendApi';
+import { CompressionType, EncodingType } from '../../../../state/restInterfaces';
+import { Label } from '../../../../utils/tsxUtils';
+import KowlEditor, { IStandaloneCodeEditor } from '../../../misc/KowlEditor';
+import Tabs, { Tab } from '../../../misc/tabs/Tabs';
+import HeadersEditor from './Headers';
 
 export type { Props as PublishMessageModalProps };
 type Props = {
@@ -46,7 +46,7 @@ type EncodingOption = {
     tooltip: string, // React.ReactNode | (() => React.ReactNode),
 };
 const encodingOptions: EncodingOption[] = [
-    { value: 'none', label: 'None (Tombstone)', tooltip: "Message value will be null" },
+    { value: 'none', label: 'None (Tombstone)', tooltip: 'Message value will be null' },
     { value: 'utf8', label: 'Text', tooltip: 'Text in the editor will be encoded to UTF-8 bytes' },
     { value: 'base64', label: 'Binary (Base64)', tooltip: 'Message value is binary, represented as a base64 string in the editor' },
     { value: 'json', label: 'JSON', tooltip: 'Syntax higlighting for JSON, otherwise the same as raw' }
@@ -61,9 +61,9 @@ export class PublishMessagesModalContent extends Component<Props> {
         return <div className="publishMessagesModal" >
 
             <div style={{ display: 'flex', gap: '1em', flexWrap: 'wrap' }}>
-                <Label text='Topics'>
+                <Label text="Topics">
                     <Select style={{ minWidth: '300px' }}
-                        mode='multiple'
+                        mode="multiple"
                         allowClear showArrow showSearch
                         options={this.availableTopics}
                         value={this.props.state.topics}
@@ -77,7 +77,7 @@ export class PublishMessagesModalContent extends Component<Props> {
                     />
                 </Label>
 
-                <Label text='Partition'>
+                <Label text="Partition">
                     <Select style={{ minWidth: '140px' }}
                         disabled={this.availablePartitions.length <= 1}
                         options={this.availablePartitions}
@@ -89,7 +89,7 @@ export class PublishMessagesModalContent extends Component<Props> {
                     />
                 </Label>
 
-                <Label text='Compression Type'>
+                <Label text="Compression Type">
                     <Select style={{ minWidth: '160px' }}
                         options={this.availableCompressionTypes}
                         value={this.props.state.compressionType}
@@ -101,7 +101,7 @@ export class PublishMessagesModalContent extends Component<Props> {
                     <Select<EncodingType> value={this.props.state.encodingType} onChange={e => this.props.state.encodingType = e} style={{ minWidth: '150px' }} virtual={false}>
                         {encodingOptions.map(x =>
                             <Select.Option key={x.value} value={x.value}>
-                                <Tooltip overlay={x.tooltip} mouseEnterDelay={0} mouseLeaveDelay={0} placement='right'>
+                                <Tooltip overlay={x.tooltip} mouseEnterDelay={0} mouseLeaveDelay={0} placement="right">
                                     <div>{x.label}</div>
                                 </Tooltip>
                             </Select.Option>)}
@@ -109,7 +109,7 @@ export class PublishMessagesModalContent extends Component<Props> {
                 </Label>
             </div>
 
-            <Tabs tabs={this.tabs} defaultSelectedTabKey='value'
+            <Tabs tabs={this.tabs} defaultSelectedTabKey="value"
                 wrapperStyle={{ marginTop: '1em', minHeight: '320px' }}
                 tabButtonStyle={{ maxWidth: '150px' }}
                 barStyle={{ marginBottom: '.5em' }}
@@ -182,19 +182,19 @@ function setTheme(editor: IStandaloneCodeEditor, monaco: Monaco) {
         base: 'vs',
         inherit: true,
         colors: {
-            "editor.background": "#fcfcfc",
-            "editor.foreground": "#ff0000",
+            'editor.background': '#fcfcfc',
+            'editor.foreground': '#ff0000',
 
-            "editorGutter.background": "#00000018",
+            'editorGutter.background': '#00000018',
 
-            "editor.lineHighlightBackground": "#aaaaaa20",
-            "editor.lineHighlightBorder": "#00000000",
-            "editorLineNumber.foreground": "#8c98a8",
+            'editor.lineHighlightBackground': '#aaaaaa20',
+            'editor.lineHighlightBorder': '#00000000',
+            'editorLineNumber.foreground': '#8c98a8',
 
-            "scrollbarSlider.background": '#ff0000',
+            'scrollbarSlider.background': '#ff0000',
             // "editorOverviewRuler.border": "#0000",
-            "editorOverviewRuler.background": "#606060",
-            "editorOverviewRuler.currentContentForeground": "#ff0000"
+            'editorOverviewRuler.background': '#606060',
+            'editorOverviewRuler.currentContentForeground': '#ff0000'
             //         background: #0001;
             // border-left: 1px solid #0002;
         },

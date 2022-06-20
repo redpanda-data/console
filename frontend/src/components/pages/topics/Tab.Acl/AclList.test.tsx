@@ -68,5 +68,5 @@ it('informs user about missing authorizer config in Kafka cluster', () => {
     });
 
     const { getByText } = render(<AclList acl={store} />);
-    expect(getByText("There's no authorizer configured in your Kafka cluster")).toBeInTheDocument();
+    expect(getByText('There\'s no authorizer configured in your Kafka cluster')).toBeInTheDocument();
 });

@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import React from "react";
-import { ParsedQuery } from "query-string";
-import { uiState } from "../../state/uiState";
+import React from 'react';
+import { ParsedQuery } from 'query-string';
+import { uiState } from '../../state/uiState';
 
 
 //

@@ -55,7 +55,7 @@ interface ConnectorMetadata {
     readonly author?: string;
 }
 
-const fallbackConnector: ConnectorMetadata = { logo: <QuestionMarkCircleIcon className='connectorLogo' style={{ transform: 'translateY(2px) scale(1.15)' }} color='#a9a9a9' /> };
+const fallbackConnector: ConnectorMetadata = { logo: <QuestionMarkCircleIcon className="connectorLogo" style={{ transform: 'translateY(2px) scale(1.15)' }} color="#a9a9a9" /> };
 
 // Order of entries matters:
 // - first step is checking if there is any exact match for 'className'
@@ -63,131 +63,131 @@ const fallbackConnector: ConnectorMetadata = { logo: <QuestionMarkCircleIcon cla
 const connectorMetadata: ConnectorMetadata[] = [
     // Confluent Connectors
     {
-        classNamePrefix: "io.confluent.connect.hdfs.",
-        logo: <img src={HdfsLogo} alt='HDFS logo' className='connectorLogo' />,
-        author: "Confluent"
+        classNamePrefix: 'io.confluent.connect.hdfs.',
+        logo: <img src={HdfsLogo} alt="HDFS logo" className="connectorLogo" />,
+        author: 'Confluent'
     } as const,
     {
-        classNamePrefix: "io.confluent.connect.s3.",
-        logo: <img src={AmazonS3} alt='Amazon S3 logo' className='connectorLogo' />,
-        author: "Confluent"
+        classNamePrefix: 'io.confluent.connect.s3.',
+        logo: <img src={AmazonS3} alt="Amazon S3 logo" className="connectorLogo" />,
+        author: 'Confluent'
     } as const,
     {
-        classNamePrefix: "io.confluent.connect.jms.",
-        logo: <img src={JdbcLogo} alt='JMS logo' className='connectorLogo' />,
-        author: "Confluent"
+        classNamePrefix: 'io.confluent.connect.jms.',
+        logo: <img src={JdbcLogo} alt="JMS logo" className="connectorLogo" />,
+        author: 'Confluent'
     } as const,
     {
-        classNamePrefix: "io.confluent.connect.jdbc.",
-        logo: <img src={JdbcLogo} alt='JDBC logo' className='connectorLogo' />,
-        author: "Confluent"
+        classNamePrefix: 'io.confluent.connect.jdbc.',
+        logo: <img src={JdbcLogo} alt="JDBC logo" className="connectorLogo" />,
+        author: 'Confluent'
     } as const,
     {
-        classNamePrefix: "io.confluent.connect.salesforce.",
-        logo: <img src={SalesforceLogo} alt='Salesforce logo' className='connectorLogo' />,
-        author: "Confluent"
+        classNamePrefix: 'io.confluent.connect.salesforce.',
+        logo: <img src={SalesforceLogo} alt="Salesforce logo" className="connectorLogo" />,
+        author: 'Confluent'
     } as const,
     {
-        classNamePrefix: "io.confluent.connect.servicenow.",
-        logo: <img src={ServicenowLogo} alt='Servicenow logo' className='connectorLogo' />,
-        author: "Confluent"
+        classNamePrefix: 'io.confluent.connect.servicenow.',
+        logo: <img src={ServicenowLogo} alt="Servicenow logo" className="connectorLogo" />,
+        author: 'Confluent'
     } as const,
     {
-        classNamePrefix: "io.confluent.connect.elasticsearch.",
-        logo: <img src={ElasticLogo} alt='Elastic logo' className='connectorLogo' />,
-        author: "Confluent"
+        classNamePrefix: 'io.confluent.connect.elasticsearch.',
+        logo: <img src={ElasticLogo} alt="Elastic logo" className="connectorLogo" />,
+        author: 'Confluent'
     } as const,
     {
-        classNamePrefix: "io.confluent.connect.gcp.pubsub.",
-        logo: <img src={PubSubLogo} alt='Google PubSub logo' className='connectorLogo' />,
-        author: "Confluent"
+        classNamePrefix: 'io.confluent.connect.gcp.pubsub.',
+        logo: <img src={PubSubLogo} alt="Google PubSub logo" className="connectorLogo" />,
+        author: 'Confluent'
     } as const,
     {
-        classNamePrefix: "io.confluent.connect.cassandra.",
-        logo: <img src={CassandraLogo} alt='Cassandra logo' className='connectorLogo' />,
-        author: "Confluent"
+        classNamePrefix: 'io.confluent.connect.cassandra.',
+        logo: <img src={CassandraLogo} alt="Cassandra logo" className="connectorLogo" />,
+        author: 'Confluent'
     } as const,
 
     // Debezium Connectors
     {
-        classNamePrefix: "io.debezium.connector.sqlserver.",
-        logo: <img src={MsSqlLogo} alt='MSSQL logo' className='connectorLogo' />,
-        author: "Debezium"
+        classNamePrefix: 'io.debezium.connector.sqlserver.',
+        logo: <img src={MsSqlLogo} alt="MSSQL logo" className="connectorLogo" />,
+        author: 'Debezium'
     } as const,
     {
-        classNamePrefix: "io.debezium.connector.mysql.",
-        logo: <img src={MySqlLogo} alt='MySQL logo' className='connectorLogo' />,
-        author: "Debezium"
+        classNamePrefix: 'io.debezium.connector.mysql.',
+        logo: <img src={MySqlLogo} alt="MySQL logo" className="connectorLogo" />,
+        author: 'Debezium'
     } as const,
     {
-        classNamePrefix: "io.debezium.connector.mongodb.",
-        logo: <img src={MongoDBLogo} alt='MongoDB logo' className='connectorLogo' />,
-        author: "Debezium"
+        classNamePrefix: 'io.debezium.connector.mongodb.',
+        logo: <img src={MongoDBLogo} alt="MongoDB logo" className="connectorLogo" />,
+        author: 'Debezium'
     } as const,
     {
-        classNamePrefix: "io.debezium.connector.postgresql.",
-        logo: <img src={PostgresqlLogo} alt='PostgreSQL logo' className='connectorLogo' />,
-        author: "Debezium"
+        classNamePrefix: 'io.debezium.connector.postgresql.',
+        logo: <img src={PostgresqlLogo} alt="PostgreSQL logo" className="connectorLogo" />,
+        author: 'Debezium'
     } as const,
     {
-        classNamePrefix: "io.debezium.connector.cassandra.",
-        logo: <img src={CassandraLogo} alt='Cassandra logo' className='connectorLogo' />,
-        author: "Debezium"
+        classNamePrefix: 'io.debezium.connector.cassandra.',
+        logo: <img src={CassandraLogo} alt="Cassandra logo" className="connectorLogo" />,
+        author: 'Debezium'
     } as const,
     {
-        classNamePrefix: "io.debezium.connector.db2.",
-        logo: <img src={DB2Logo} alt='IBM DB2 logo' className='connectorLogo' />,
-        author: "Debezium"
+        classNamePrefix: 'io.debezium.connector.db2.',
+        logo: <img src={DB2Logo} alt="IBM DB2 logo" className="connectorLogo" />,
+        author: 'Debezium'
     } as const,
 
     // Stream Reactor / Lenses
     {
-        classNamePrefix: "com.datamountaineer.streamreactor.connect.cassandra.",
-        logo: <img src={CassandraLogo} alt='Cassandra logo' className='connectorLogo' />,
-        author: "Lenses"
+        classNamePrefix: 'com.datamountaineer.streamreactor.connect.cassandra.',
+        logo: <img src={CassandraLogo} alt="Cassandra logo" className="connectorLogo" />,
+        author: 'Lenses'
     } as const,
 
     // WePay Connectors
     {
-        classNamePrefix: "com.wepay.kafka.connect.bigquery.",
-        logo: <img src={BigQueryLogo} alt='Google BigQuery logo' className='connectorLogo' />,
-        author: "WePay"
+        classNamePrefix: 'com.wepay.kafka.connect.bigquery.',
+        logo: <img src={BigQueryLogo} alt="Google BigQuery logo" className="connectorLogo" />,
+        author: 'WePay'
     } as const,
 
     // Snowflake Connectors
     {
-        classNamePrefix: "com.snowflake.kafka.connector",
-        logo: <img src={SnowflakeLogo} alt='Snowflake logo' className='connectorLogo' />,
-        author: "Snowflake"
+        classNamePrefix: 'com.snowflake.kafka.connector',
+        logo: <img src={SnowflakeLogo} alt="Snowflake logo" className="connectorLogo" />,
+        author: 'Snowflake'
     } as const,
 
     // Community Connector
     {
-        classNamePrefix: "com.github.jcustenborder.kafka.connect.twitter",
-        logo: <img src={TwitterLogo} alt='Twitter logo' className='connectorLogo' />,
-        author: "Jcustenborder"
+        classNamePrefix: 'com.github.jcustenborder.kafka.connect.twitter',
+        logo: <img src={TwitterLogo} alt="Twitter logo" className="connectorLogo" />,
+        author: 'Jcustenborder'
     } as const,
     {
-        classNamePrefix: "streams.kafka.connect.sink.Neo4jSinkConnector",
-        logo: <img src={Neo4jLogo} alt='Neo4j logo' className='connectorLogo' />,
-        author: "Neo4j Streams"
+        classNamePrefix: 'streams.kafka.connect.sink.Neo4jSinkConnector',
+        logo: <img src={Neo4jLogo} alt="Neo4j logo" className="connectorLogo" />,
+        author: 'Neo4j Streams'
     } as const,
 
     // Fallbacks with a very generous classname prefix (usually just the maintainers' logo)
     {
-        classNamePrefix: "io.debezium.",
-        logo: <img src={DebeziumLogo} alt='Debezium logo' className='connectorLogo' />,
-        author: "Debezium",
+        classNamePrefix: 'io.debezium.',
+        logo: <img src={DebeziumLogo} alt="Debezium logo" className="connectorLogo" />,
+        author: 'Debezium',
     } as const,
     {
-        classNamePrefix: "io.confluent.",
-        logo: <img src={ConfluentLogo} alt='Confluent logo' className='connectorLogo' />,
-        author: "Confluent",
+        classNamePrefix: 'io.confluent.',
+        logo: <img src={ConfluentLogo} alt="Confluent logo" className="connectorLogo" />,
+        author: 'Confluent',
     } as const,
     {
-        classNamePrefix: "org.apache.kafka.",
-        logo: <img src={ApacheLogo} alt='Apache Software Foundation logo' className='connectorLogo' />,
-        author: "Apache Software Foundation"
+        classNamePrefix: 'org.apache.kafka.',
+        logo: <img src={ApacheLogo} alt="Apache Software Foundation logo" className="connectorLogo" />,
+        author: 'Apache Software Foundation'
     } as const,
 ];
 
@@ -246,7 +246,7 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
     return <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
         {meta && meta.logo &&
             <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
-                <LayoutBypass width='22px' transform='translateY(-1px)' >
+                <LayoutBypass width="22px" transform="translateY(-1px)" >
                     <div style={{ width: '22px', height: '22px' }}>
                         {meta.logo}
                     </div>
@@ -254,7 +254,7 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
             </span>
         }
 
-        <Popover placement='right' overlayClassName='popoverSmall'
+        <Popover placement="right" overlayClassName="popoverSmall"
             getPopupContainer={findPopupContainer}
             content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
                 {c}
@@ -459,7 +459,7 @@ export class ConfirmModal<T> extends Component<{
                 <span>Error</span>
                 <span style={{ fontSize: '75%', opacity: 0.7 }}>- {apiErr.statusCode}</span>
             </div>,
-            content: <div className='codeBox' style={{ mixBlendMode: 'multiply' }}>{apiErr.message}</div>
+            content: <div className="codeBox" style={{ mixBlendMode: 'multiply' }}>{apiErr.message}</div>
         };
     }
 }
@@ -527,7 +527,7 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     const state = task.state;
 
     const iconWrapper = (icon: JSX.Element) => <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle' }}>
-        <LayoutBypass width='17px'>
+        <LayoutBypass width="17px">
             {icon}
         </LayoutBypass>
     </span>
@@ -538,7 +538,7 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     if (state == ConnectorState.Paused) icon = iconWrapper(pauseIcon);
     if (state == ConnectorState.Unassigned) icon = iconWrapper(waitIcon);
 
-    let stateContent = <span style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }} className='capitalize'>
+    let stateContent = <span style={{ display: 'flex', alignItems: 'center', gap: '4px', height: 'auto' }} className="capitalize">
         {icon}
         {String(state).toLowerCase()}
     </span>;
@@ -547,7 +547,7 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     let errBtn: JSX.Element | undefined = undefined;
     let modal: JSX.Element | undefined = undefined;
     if (task.taskId != null && task.trace) {
-        errBtn = <LayoutBypass height='12px' width='autos'>
+        errBtn = <LayoutBypass height="12px" width="autos">
             <Button danger onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
                 {stateContent}
                 <span>(Show Error)</span>
@@ -559,11 +559,11 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
             bodyStyle={{ paddingBottom: '8px', paddingTop: '14px' }}
             centered
             closable={false} maskClosable={true}
-            okText='Close' width='60%'
+            okText="Close" width="60%"
         >
             <>
                 <h3>{`Error trace of task ${task.taskId}`}</h3>
-                <div className='codeBox' style={{ whiteSpace: 'pre', overflow: 'scroll', width: '100%', padding: '10px 8px' }}>{err}</div>
+                <div className="codeBox" style={{ whiteSpace: 'pre', overflow: 'scroll', width: '100%', padding: '10px 8px' }}>{err}</div>
             </>
         </Modal>;
 
@@ -574,10 +574,10 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
 });
 
 
-export const okIcon = <CheckCircleTwoTone twoToneColor='#52c41a' />;
-export const warnIcon = <WarningTwoTone twoToneColor='orange' />;
-export const errIcon = <ExclamationCircleTwoTone twoToneColor='orangered' />;
-const waitIcon = <HourglassTwoTone twoToneColor='#888' />;
+export const okIcon = <CheckCircleTwoTone twoToneColor="#52c41a" />;
+export const warnIcon = <WarningTwoTone twoToneColor="orange" />;
+export const errIcon = <ExclamationCircleTwoTone twoToneColor="orangered" />;
+const waitIcon = <HourglassTwoTone twoToneColor="#888" />;
 const pauseIcon = <span style={{ color: '#555' }}><PauseCircleOutlined /></span>;
 
 export const mr05: CSSProperties = { marginRight: '.5em' };

@@ -9,19 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { ReactNode, Component, CSSProperties } from "react";
-import { Button, Checkbox, Input, Menu, Pagination, Table } from "antd";
-import { ColumnType } from "antd/lib/table";
+import React, { Component } from 'react';
+import { Checkbox, Input, Pagination, Table } from 'antd';
+import { ColumnType } from 'antd/lib/table';
 import styles from './KowlTable.module.scss';
-import { ColumnFilterItem, ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from "antd/lib/table/interface";
-import { uiState } from "../../state/uiState";
-import { DEFAULT_TABLE_PAGE_SIZE } from "./common";
-import { action, autorun, comparer, computed, IReactionDisposer, IReactionPublic, isObservable, makeObservable, observable, reaction, transaction, untracked } from "mobx";
-import { observer } from "mobx-react";
-import { clone, toJson } from "../../utils/jsonUtils";
-import { SearchOutlined } from "@ant-design/icons";
-import Highlighter from "react-highlight-words";
-import { findPopupContainer } from "../../utils/tsxUtils";
+import { ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from 'antd/lib/table/interface';
+import { DEFAULT_TABLE_PAGE_SIZE } from './common';
+import { action, computed, IReactionDisposer, IReactionPublic, isObservable, makeObservable, observable, reaction } from 'mobx';
+import { observer } from 'mobx-react';
+import { clone } from '../../utils/jsonUtils';
+import { SearchOutlined } from '@ant-design/icons';
+import Highlighter from 'react-highlight-words';
+import { findPopupContainer } from '../../utils/tsxUtils';
 
 type EnumFilter = {
     type: 'enum',
@@ -337,7 +336,7 @@ export class KowlTable<T extends object = any> extends Component<{
                     return <>
                         <div style={{ minWidth: '200px' }}>
                             {p.filters?.map(f =>
-                                <li key={f.text + String(f.value)} className='ant-dropdown-menu-item' style={{ position: 'relative' }}>
+                                <li key={f.text + String(f.value)} className="ant-dropdown-menu-item" style={{ position: 'relative' }}>
                                     <Checkbox
                                         className={'filterCheckbox ' + optionClass}
                                         checked={p.selectedKeys.includes(f.value as React.Key)}
@@ -381,7 +380,7 @@ export class KowlTable<T extends object = any> extends Component<{
             style={{ margin: '0', padding: '0' }}
             size="middle"
             showSorterTooltip={false}
-            className={styles.kowlTable + " " + (p.className ?? '')}
+            className={styles.kowlTable + ' ' + (p.className ?? '')}
 
             dataSource={this.displayData}
             columns={this.customColumns}
@@ -464,16 +463,16 @@ export class KowlTable<T extends object = any> extends Component<{
             showTotal={() => {
                 let text: string;
                 if (sourceTotal == 0)
-                    text = "";
+                    text = '';
                 else if (usingFilters)
                     if (currentView.length == 0)
-                        text = `No matches`;
+                        text = 'No matches';
                     else
                         text = `Showing ${filteredTotal} matches (out of ${sourceTotal} total)`;
                 else
                     text = `Total ${sourceTotal} items`;
 
-                return <span className='paginationTotal'>{text}</span>
+                return <span className="paginationTotal">{text}</span>
             }}
             pageSize={pagination.pageSize}
             pageSizeOptions={pagination.pageSizeOptions}
@@ -573,7 +572,7 @@ export class SearchTitle extends Component<{
 
                         if (focusInside) {
                             // Most likely a click on the "clear" button
-                            props.observableSettings.quickSearch = "";
+                            props.observableSettings.quickSearch = '';
                             this.hideSearchBar();
                         } else {
                             setTimeout(this.hideSearchBar);

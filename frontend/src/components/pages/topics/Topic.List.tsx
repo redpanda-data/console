@@ -332,7 +332,7 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
         </Tooltip>
     );
 
-    return <>{hasDeletePrivilege(topic.allowedActions) ? deleteButton : wrap(deleteButton, "You don't have 'deleteTopic' permission for this topic.")}</>;
+    return <>{hasDeletePrivilege(topic.allowedActions) ? deleteButton : wrap(deleteButton, 'You don\'t have \'deleteTopic\' permission for this topic.')}</>;
 }
 
 function hasDeletePrivilege(allowedActions?: Array<TopicAction>) {
@@ -434,7 +434,7 @@ function makeCreateTopicModal(parent: TopicList) {
                 get partitions() { return tryGetBrokerConfig('num.partitions'); },
                 get cleanupPolicy() { return tryGetBrokerConfig('log.cleanup.policy'); },
                 get minInSyncReplicas() {
-                    return "1"; // todo, what is the name of the default value? is it the same for apache and redpanda?
+                    return '1'; // todo, what is the name of the default value? is it the same for apache and redpanda?
                 },
             }
         }),

@@ -9,24 +9,24 @@
  * by the Apache License, Version 2.0
  */
 
-import { observer } from "mobx-react";
-import { Empty, Button, Alert } from "antd";
-import { ColumnProps } from "antd/lib/table";
-import { PageComponent, PageInitHelper } from "../Page";
-import { api } from "../../../state/backendApi";
-import { uiSettings } from "../../../state/ui";
-import { sortField } from "../../misc/common";
-import { motion } from "framer-motion";
-import { animProps } from "../../../utils/animationProps";
-import { computed, makeObservable } from "mobx";
-import { appGlobal } from "../../../state/appGlobal";
-import Card from "../../misc/Card";
-import { DefaultSkeleton } from "../../../utils/tsxUtils";
-import { KowlTable } from "../../misc/KowlTable";
-import { LockIcon, SkipIcon } from "@primer/octicons-react";
-import { toJson } from "../../../utils/jsonUtils";
-import { prettyBytes, prettyNumber } from "../../../utils/utils";
-import { QuotaType } from "../../../state/restInterfaces";
+import { observer } from 'mobx-react';
+import { Empty, Button, Alert } from 'antd';
+import { ColumnProps } from 'antd/lib/table';
+import { PageComponent, PageInitHelper } from '../Page';
+import { api } from '../../../state/backendApi';
+import { uiSettings } from '../../../state/ui';
+import { sortField } from '../../misc/common';
+import { motion } from 'framer-motion';
+import { animProps } from '../../../utils/animationProps';
+import { computed, makeObservable } from 'mobx';
+import { appGlobal } from '../../../state/appGlobal';
+import Card from '../../misc/Card';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { KowlTable } from '../../misc/KowlTable';
+import { LockIcon, SkipIcon } from '@primer/octicons-react';
+import { toJson } from '../../../utils/jsonUtils';
+import { prettyBytes, prettyNumber } from '../../../utils/utils';
+import { QuotaType } from '../../../state/restInterfaces';
 
 @observer
 class QuotasList extends PageComponent {
@@ -103,7 +103,7 @@ const PermissionDenied = <>
         <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
             <Empty description={null}>
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <h2><span><LockIcon verticalAlign='middle' size={20} /></span> Permission Denied</h2>
+                    <h2><span><LockIcon verticalAlign="middle" size={20} /></span> Permission Denied</h2>
                     <p>
                         You are not allowed to view this page.
                         <br />

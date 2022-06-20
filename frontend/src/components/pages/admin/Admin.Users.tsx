@@ -9,20 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from "react";
-import React from "react";
-import { UserDetails } from "../../../state/restInterfaces";
-import { Table, Skeleton, Select, Input, Typography, Collapse, Tooltip } from "antd";
-import { observer } from "mobx-react";
-import { api, } from "../../../state/backendApi";
-import { sortField } from "../../misc/common";
-import { motion } from "framer-motion";
-import { animProps, MotionAlways, MotionDiv } from "../../../utils/animationProps";
+import { Component } from 'react';
+import React from 'react';
+import { UserDetails } from '../../../state/restInterfaces';
+import { Table, Select, Input, Typography, Collapse, Tooltip } from 'antd';
+import { observer } from 'mobx-react';
+import { api, } from '../../../state/backendApi';
+import { sortField } from '../../misc/common';
+import { MotionDiv } from '../../../utils/animationProps';
 import '../../../utils/arrayExtensions';
-import { RoleComponent } from "./Admin.Roles";
-import { UserOutlined } from "@ant-design/icons";
-import { makeObservable, observable } from "mobx";
-import { DefaultSkeleton } from "../../../utils/tsxUtils";
+import { RoleComponent } from './Admin.Roles';
+import { UserOutlined } from '@ant-design/icons';
+import { makeObservable, observable } from 'mobx';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -82,7 +81,7 @@ export class AdminUsers extends Component<{}> {
 
         return <MotionDiv>
             <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>
-                <Input placeholder='Quick Search' allowClear={true} size='middle'
+                <Input placeholder="Quick Search" allowClear={true} size="middle"
                     style={{ width: '300px', padding: '2px 8px', whiteSpace: 'nowrap' }}
                     value={this.quickSearch}
                     onChange={e => this.quickSearch = e.target.value}

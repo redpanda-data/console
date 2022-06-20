@@ -18,14 +18,14 @@ import { PropertyComponent } from './PropertyComponent';
 export const PropertyGroupComponent = observer((props: { group: PropertyGroup, allGroups: PropertyGroup[] }) => {
     const g = props.group;
 
-    if (g.groupName == "Transforms") {
+    if (g.groupName == 'Transforms') {
         // Transforms + its sub groups
 
         const subGroups = props.allGroups
-            .filter(g => g.groupName.startsWith("Transforms: "))
+            .filter(g => g.groupName.startsWith('Transforms: '))
             .sort((a, b) => props.allGroups.indexOf(a) - props.allGroups.indexOf(b));
 
-        return <div className='dynamicInputs'>
+        return <div className="dynamicInputs">
             {g.properties.map(p => <PropertyComponent key={p.name} property={p} />)}
 
             <div style={{ gridColumn: 'span 4', paddingLeft: '8px' }}>
@@ -37,7 +37,7 @@ export const PropertyGroupComponent = observer((props: { group: PropertyGroup, a
                             key={subGroup.groupName}
                             header={<div style={{ display: 'flex', alignItems: 'center', gap: '1em' }}>
                                 <span style={{ fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans' }}>{subGroup.groupName}</span>
-                                <span className='issuesTag'>{subGroup.propertiesWithErrors.length} issues</span>
+                                <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
                             </div>}
                         >
                             <PropertyGroupComponent group={subGroup} allGroups={props.allGroups} />
@@ -51,7 +51,7 @@ export const PropertyGroupComponent = observer((props: { group: PropertyGroup, a
     }
     else {
         // Normal group
-        return <div className='dynamicInputs'>
+        return <div className="dynamicInputs">
             {g.properties.map(p => <PropertyComponent key={p.name} property={p} />)}
         </div>
     }

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { CSSProperties } from 'react';
+import React from 'react';
 import Editor, { EditorProps, Monaco } from '@monaco-editor/react';
 import { editor } from 'monaco-editor';
 
@@ -60,6 +60,6 @@ export default function KowlEditor(props: KowlEditorProps) {
     />
 }
 
-const LoadingPlaceholder = () => <div className='editorLoading'>
+const LoadingPlaceholder = () => <div className="editorLoading">
     Loading Editor...
 </div>

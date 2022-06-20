@@ -16,7 +16,7 @@ export function toJson(obj: any, space?: string | number | undefined): string {
     try {
         return JSON.stringify(obj,
             (key: string, value: any) => {
-                if (typeof value === "object" && value !== null) {
+                if (typeof value === 'object' && value !== null) {
                     if (seen.has(value)) {
                         return;
                     }

@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { observable, autorun, makeObservable, transaction } from "mobx";
-import { assignDeep, randomId } from "../utils/utils";
-import { clone } from "../utils/jsonUtils";
-import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
-import { TopicTabId } from "../components/pages/topics/Topic.Details";
-import { AclRequest, AclRequestDefault, EncodingType } from "./restInterfaces";
-import { ConnectTabKeys } from "../components/pages/connect/Overview";
+import { observable, autorun, makeObservable, transaction } from 'mobx';
+import { assignDeep, randomId } from '../utils/utils';
+import { clone } from '../utils/jsonUtils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../components/misc/common';
+import { TopicTabId } from '../components/pages/topics/Topic.Details';
+import { AclRequest, AclRequestDefault, EncodingType } from './restInterfaces';
+import { ConnectTabKeys } from '../components/pages/connect/Overview';
 
 const settingsName = 'uiSettings-v3';
 
@@ -332,7 +332,7 @@ autorun(() => {
 }, { delay: 2000 });
 
 // Auto save (on exit)
-window.addEventListener("visibilitychange", () => {
+window.addEventListener('visibilitychange', () => {
     if (document.visibilityState == 'visible')
         return; // only save on close, minimize, tab-switch
 

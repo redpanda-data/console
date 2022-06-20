@@ -1,9 +1,9 @@
-import { DashIcon, PlusIcon, TrashIcon, XIcon } from '@primer/octicons-react';
-import { Button, Input, Select } from "antd";
-import { observer } from "mobx-react";
-import { Component, MouseEvent, useEffect, useState } from "react";
+import { DashIcon, PlusIcon, XIcon } from '@primer/octicons-react';
+import { Button, Input, Select } from 'antd';
+import { observer } from 'mobx-react';
+import { Component, MouseEvent, useEffect, useState } from 'react';
 import { TopicConfigEntry } from '../../../../state/restInterfaces';
-import { Label } from "../../../../utils/tsxUtils";
+import { Label } from '../../../../utils/tsxUtils';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import './CreateTopicModal.scss';
 
@@ -52,8 +52,8 @@ export class CreateTopicModalContent extends Component<Props> {
         return <div className="createTopicModal" >
 
             <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
-                <Label text='Topic Name'>
-                    <Input value={state.topicName} onChange={e => state.topicName = e.target.value} width='100%' autoFocus />
+                <Label text="Topic Name">
+                    <Input value={state.topicName} onChange={e => state.topicName = e.target.value} width="100%" autoFocus />
                 </Label>
 
                 <div style={{ display: 'flex', gap: '2em' }}>
@@ -145,7 +145,7 @@ function NumInput(p: {
     const decrement = (e: MouseEvent) => { changeBy(-1); e.preventDefault(); }
 
     return <Input
-        className='numericInput'
+        className="numericInput"
         style={{ minWidth: '150px', width: '100%' }}
         spellCheck={false}
         placeholder={p.placeholder}
@@ -164,9 +164,9 @@ function NumInput(p: {
         onWheel={e => changeBy(-Math.sign(e.deltaY))}
 
         suffix={!p.disabled &&
-            <span className='btnWrapper' unselectable='on'>
-                <span className='stepBtn dec' onMouseDownCapture={decrement}><DashIcon size={16} /></span>
-                <span className='stepBtn inc' onMouseDownCapture={increment}><PlusIcon size={16} /></span>
+            <span className="btnWrapper" unselectable="on">
+                <span className="stepBtn dec" onMouseDownCapture={decrement}><DashIcon size={16} /></span>
+                <span className="stepBtn inc" onMouseDownCapture={increment}><PlusIcon size={16} /></span>
             </span>
         }
 
@@ -348,13 +348,13 @@ function RetentionSizeSelect(p: {
 
 const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => {
 
-    return <div className='keyValuePairEditor'>
+    return <div className="keyValuePairEditor">
         {p.entries.map((x, i) => <KeyValuePair key={String(i)} entries={p.entries} entry={x} />)}
 
         <Button
-            type='dashed'
-            className='addButton'
-            onClick={() => { p.entries.push({ name: "", value: "" }) }}
+            type="dashed"
+            className="addButton"
+            onClick={() => { p.entries.push({ name: '', value: '' }) }}
         >
             <PlusIcon />
 
@@ -366,9 +366,9 @@ const KeyValuePairEditor = observer((p: { entries: TopicConfigEntry[] }) => {
 const KeyValuePair = observer((p: { entries: TopicConfigEntry[], entry: TopicConfigEntry }) => {
     const { entry } = p;
 
-    return <div className='inputGroup' style={{ width: '100%' }}>
-        <Input placeholder='Property Name...' style={{ flexBasis: '30%' }} spellCheck={false} value={entry.name} onChange={e => entry.name = e.target.value} />
-        <Input placeholder='Property Value...' style={{ flexBasis: '60%' }} spellCheck={false} value={entry.value} onChange={e => p.entry.value = e.target.value} />
+    return <div className="inputGroup" style={{ width: '100%' }}>
+        <Input placeholder="Property Name..." style={{ flexBasis: '30%' }} spellCheck={false} value={entry.name} onChange={e => entry.name = e.target.value} />
+        <Input placeholder="Property Value..." style={{ flexBasis: '60%' }} spellCheck={false} value={entry.value} onChange={e => p.entry.value = e.target.value} />
         <Button className="iconButton deleteButton"
             onClick={(event) => {
                 event.stopPropagation();

@@ -11,7 +11,7 @@
 
 import React, { Component } from 'react';
 import { KafkaError, ConfigEntry, Topic } from '../../../state/restInterfaces';
-import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result, Statistic } from 'antd';
+import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import topicConfigInfo from '../../../assets/topicConfigInfo.json';
@@ -26,7 +26,6 @@ import { appGlobal } from '../../../state/appGlobal';
 import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { ConfigList } from '../../misc/ConfigList';
-import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
 
 const { Text } = Typography;
 
@@ -183,8 +182,8 @@ export const FavoritePopover = observer((p: { configEntry: ConfigEntry, children
         <div>
             <Paragraph style={{ maxWidth: '400px' }}>
                 {infoEntry
-                    ? <div className='configPropDescription'>{infoEntry.Description}</div>
-                    : <div className='configPropDescription unknownConfigProp'>No description available, unknown property</div>
+                    ? <div className="configPropDescription">{infoEntry.Description}</div>
+                    : <div className="configPropDescription unknownConfigProp">No description available, unknown property</div>
                 }
             </Paragraph>
 

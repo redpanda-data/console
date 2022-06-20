@@ -9,14 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from "react";
-import { Tag, Popover, Tooltip } from "antd";
-import { LazyMap } from "../../utils/LazyMap";
-import { Broker, Partition } from "../../state/restInterfaces";
-import { api, brokerMap } from "../../state/backendApi";
-import { findPopupContainer, QuickTable } from "../../utils/tsxUtils";
-import { observer } from "mobx-react";
-import { ChevronRightIcon } from "@heroicons/react/solid";
+import React, { Component } from 'react';
+import { Tooltip } from 'antd';
+import { Broker, Partition } from '../../state/restInterfaces';
+import { api, brokerMap } from '../../state/backendApi';
+import { findPopupContainer } from '../../utils/tsxUtils';
+import { observer } from 'mobx-react';
+import { ChevronRightIcon } from '@heroicons/react/solid';
 
 type BrokerListProps =
     { brokerIds: number[]; addedIds?: number[], removedIds?: number[], leaderId?: number; } |
@@ -58,7 +57,7 @@ export class BrokerList extends Component<BrokerListProps> {
             const broker = brokers?.get(id);
 
             let classNames = 'broker-tag';
-            if (id == leaderId) classNames += " leader";
+            if (id == leaderId) classNames += ' leader';
             if (offlineIds.includes(id)) classNames += ' offline';
             if (brokers && !broker) classNames += ' missing';
 
@@ -74,19 +73,19 @@ export class BrokerList extends Component<BrokerListProps> {
             if (!broker) return tag;
 
             const additionalContent: JSX.Element[] = [];
-            if (id == leaderId) additionalContent.push(<div key='leader' style={{ marginTop: '5px' }}>
-                <ChevronRightIcon className='svgCenter' height='15px' style={{ marginLeft: '-4px', marginRight: '-2px' }} />
+            if (id == leaderId) additionalContent.push(<div key="leader" style={{ marginTop: '5px' }}>
+                <ChevronRightIcon className="svgCenter" height="15px" style={{ marginLeft: '-4px', marginRight: '-2px' }} />
                 This broker is the leader for this partition
             </div>);
-            if (isAdding) additionalContent.push(<div key='added' style={{ color: 'hsl(102deg, 80%, 45%)', marginTop: '5px' }}>Partitions are currently being transferred to this broker.</div>);
-            if (isRemoving) additionalContent.push(<div key='removed' style={{ color: 'hsl(38deg, 100%, 50%)', marginTop: '5px' }}>Once the assignment completes, the partitions of the reassignment will be removed from the broker.</div>);
+            if (isAdding) additionalContent.push(<div key="added" style={{ color: 'hsl(102deg, 80%, 45%)', marginTop: '5px' }}>Partitions are currently being transferred to this broker.</div>);
+            if (isRemoving) additionalContent.push(<div key="removed" style={{ color: 'hsl(38deg, 100%, 50%)', marginTop: '5px' }}>Once the assignment completes, the partitions of the reassignment will be removed from the broker.</div>);
 
             return <BrokerTooltip broker={broker} tooltipSuffix={additionalContent}>{tag}</BrokerTooltip>
         });
 
         return (
             <span style={{ cursor: 'pointer' }}>
-                <span className='brokerTagList'>
+                <span className="brokerTagList">
                     {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
                 </span>
             </span>
@@ -110,7 +109,7 @@ function BrokerTooltip(p: { broker: Broker, children?: React.ReactElement, toolt
         {tooltipContentEntries.map((e, i) => <React.Fragment key={i}>{e}</React.Fragment>)}
     </div>
 
-    return <Tooltip overlay={tooltipContent} placement='top' getPopupContainer={findPopupContainer}>
+    return <Tooltip overlay={tooltipContent} placement="top" getPopupContainer={findPopupContainer}>
         {p.children}
     </Tooltip>
 }

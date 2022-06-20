@@ -34,7 +34,6 @@ import { TopicConsumers } from './Tab.Consumers';
 import { TopicDocumentation } from './Tab.Docu';
 import { TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
-import DeleteRecordsModal from './DeleteRecordsModal/DeleteRecordsModal';
 import { IsBusiness } from '../../../utils/env';
 import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
@@ -113,8 +112,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         const topic = () => this.topic;
 
-        const mkDocuTip = (text: string, icon?: JSX.Element) => <Tooltip overlay={text} placement='left'><span>{icon ?? null}Documentation</span></Tooltip>
-        const warnIcon = <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}><WarningOutlined color='hsl(22deg 29% 85%)' /></span>;
+        const mkDocuTip = (text: string, icon?: JSX.Element) => <Tooltip overlay={text} placement="left"><span>{icon ?? null}Documentation</span></Tooltip>
+        const warnIcon = <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}><WarningOutlined color="hsl(22deg 29% 85%)" /></span>;
 
         this.topicTabs = [
             new TopicTab(topic, 'messages', 'viewMessages', 'Messages', (t) => <TopicMessageView topic={t} refreshTopicData={(force: boolean) => this.refreshData(force)} />),
@@ -136,7 +135,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
             }, [(t) => {
                 if (IsBusiness)
                     if (api.userData != null && !api.userData.canListAcls)
-                        return <Popover content={`You need the cluster-permission 'viewAcl' to view this tab`}>
+                        return <Popover content={'You need the cluster-permission \'viewAcl\' to view this tab'}>
                             <div> <LockIcon size={16} /> ACL</div>
                         </Popover>
                 return undefined;
