@@ -160,9 +160,7 @@ func testConnection(logger *zap.Logger, client *kgo.Client, timeout time.Duratio
 
 	logger.Info("connecting to Kafka seed brokers, trying to fetch cluster metadata")
 
-	req := kmsg.MetadataRequest{
-		Topics: nil,
-	}
+	req := kmsg.NewMetadataRequest()
 	res, err := req.RequestWith(ctx, client)
 	if err != nil {
 		return fmt.Errorf("failed to request metadata: %w", err)
