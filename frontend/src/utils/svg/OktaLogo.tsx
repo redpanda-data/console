@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import React from "react";
+import React from 'react';
 
 
 export default <svg viewBox="0 0 260 260" focusable={false}>
 
-    <g transform="translate(0,260) scale(0.100000,-0.100000)" fill='currentColor' stroke="none">
+    <g transform="translate(0,260) scale(0.100000,-0.100000)" fill="currentColor" stroke="none">
         <path d="M311 2393 c-13 -3 -45 -26 -71 -52 -68 -68 -71 -86 -72 -480 0 -402
 -1 -404 -106 -508 l-65 -65 49 -43 c27 -23 65 -69 84 -101 l35 -58 2 -351 c1
 -215 7 -368 13 -397 7 -26 26 -63 46 -86 48 -56 99 -74 204 -70 l84 3 2 43 c0

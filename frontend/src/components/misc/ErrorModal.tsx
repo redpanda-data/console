@@ -11,12 +11,9 @@
 
 import React from 'react';
 import { Component } from 'react';
-import { Modal, Radio, Select } from 'antd';
-import { observer } from 'mobx-react';
-import { action, makeObservable, observable, transaction } from 'mobx';
-import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
-import { PencilIcon, TrashIcon, XCircleIcon } from '@heroicons/react/solid';
-import { toJson } from '../../utils/jsonUtils';
+import { Modal } from 'antd';
+import { action, observable } from 'mobx';
+import { XCircleIcon } from '@heroicons/react/solid';
 
 
 class ErrorModal extends Component<ErrorModalProps> {
@@ -53,8 +50,8 @@ class ErrorModal extends Component<ErrorModalProps> {
             centered={true}
             maskClosable={false}
             closeIcon={<></>}
-            transitionName={p.animate ? undefined : ""}
-            maskTransitionName={p.animate ? undefined : ""}
+            transitionName={p.animate ? undefined : ''}
+            maskTransitionName={p.animate ? undefined : ''}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2em' }}>
                 {/* Header */}

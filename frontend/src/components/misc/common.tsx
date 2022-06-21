@@ -9,21 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { FC, Props, CSSProperties, Component } from "react";
-import { PropsWithChildren } from "react";
-import { TablePaginationConfig } from "antd/lib/table";
-import { uiSettings } from "../../state/ui";
-import { CompareFn } from "antd/lib/table/interface";
-import Draggable from "react-draggable";
-import { observer } from "mobx-react";
-import { Grid, Modal, Tag } from "antd";
-import { uiState } from "../../state/uiState";
-import { hoursToMilliseconds, prettyBytesOrNA, prettyMilliseconds } from "../../utils/utils";
-import env, { IsBusiness, IsDev } from "../../utils/env";
-import { LayoutBypass, QuickTable } from "../../utils/tsxUtils";
-import { clone, toJson } from "../../utils/jsonUtils";
-import { TopicLogDirSummary } from "../../state/restInterfaces";
-import { AlertIcon } from "@primer/octicons-react";
+import React, { FC, CSSProperties, Component } from 'react';
+import { PropsWithChildren } from 'react';
+import { TablePaginationConfig } from 'antd/lib/table';
+import { CompareFn } from 'antd/lib/table/interface';
+import Draggable from 'react-draggable';
+import { observer } from 'mobx-react';
+import { Grid, Modal, Tag } from 'antd';
+import { uiState } from '../../state/uiState';
+import { prettyBytesOrNA, prettyMilliseconds } from '../../utils/utils';
+import env, { IsDev } from '../../utils/env';
+import { LayoutBypass } from '../../utils/tsxUtils';
+import { clone } from '../../utils/jsonUtils';
+import { TopicLogDirSummary } from '../../state/restInterfaces';
+import { AlertIcon } from '@primer/octicons-react';
 
 const { useBreakpoint } = Grid;
 
@@ -67,9 +66,9 @@ const dragBoxStyle: CSSProperties = {
 export const DebugDisplay = observer(() => {
     const screens = useBreakpoint();
 
-    return <Draggable bounds="parent" handle='.title'>
+    return <Draggable bounds="parent" handle=".title">
         <div style={dragBoxStyle}>
-            <div className='title' style={{ textAlign: 'center', padding: '6px', paddingBottom: '6px', borderBottom: '1px solid #aaa6', cursor: 'default', userSelect: 'none' }}>Debug</div>
+            <div className="title" style={{ textAlign: 'center', padding: '6px', paddingBottom: '6px', borderBottom: '1px solid #aaa6', cursor: 'default', userSelect: 'none' }}>Debug</div>
             <div style={{ padding: '8px', }}>
                 Breakpoints:{' '}
                 {Object.entries(screens)
@@ -282,7 +281,7 @@ function formatTimestamp(unixTimestampSeconds: number | string | null | undefine
 
     try {
         const date = new Date(timestampMs);
-        return <><span className='codeBox'>{date.toUTCString()}</span> <span style={{ fontSize: '85%' }}>({prettyMilliseconds(Date.now() - date.getTime(), { compact: true })} ago)</span></>
+        return <><span className="codeBox">{date.toUTCString()}</span> <span style={{ fontSize: '85%' }}>({prettyMilliseconds(Date.now() - date.getTime(), { compact: true })} ago)</span></>
     }
     catch (ex) {
         console.error('failed to parse/format the timestamp: ' + String(unixTimestampSeconds));
@@ -312,7 +311,7 @@ export function WarningToolip(p: { content: React.ReactNode, position: 'top' | '
     };
 
     return <LayoutBypass>
-        <div className='tooltip' style={{
+        <div className="tooltip" style={{
             color: 'hsl(33deg, 90%, 65%)',
             borderRadius: '25px',
             display: 'inline-flex',
@@ -323,7 +322,7 @@ export function WarningToolip(p: { content: React.ReactNode, position: 'top' | '
 
         }}>
             <AlertIcon />
-            <span className='tooltiptext' style={p.position == 'left' ? styleLeft : undefined}>{p.content}</span>
+            <span className="tooltiptext" style={p.position == 'left' ? styleLeft : undefined}>{p.content}</span>
         </div>
     </LayoutBypass>
 }

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { CSSProperties, useCallback, useEffect, useState } from 'react';
+import React, { CSSProperties, useState } from 'react';
 import styles from './Tabs.module.scss';
 
 export interface Tab {

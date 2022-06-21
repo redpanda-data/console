@@ -9,15 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import React from "react";
-import { Section } from "../misc/common";
-import { PageComponent, PageInitHelper } from "./Page";
+import React from 'react';
+import { PageComponent, PageInitHelper } from './Page';
 
-import { motion, AnimatePresence } from "framer-motion"
-import { animProps, MotionDiv } from "../../utils/animationProps";
-import { observer } from "mobx-react";
-import { Checkbox } from "antd";
-import { makeObservable, observable } from "mobx";
+import { motion, AnimatePresence } from 'framer-motion'
+import { animProps, MotionDiv } from '../../utils/animationProps';
+import { observer } from 'mobx-react';
+import { Checkbox } from 'antd';
+import { makeObservable, observable } from 'mobx';
 
 @observer
 export class UrlTestPage extends PageComponent {
@@ -59,11 +58,11 @@ export class UrlTestPage extends PageComponent {
 
                         {this.test
 
-                            ? <motion.div key='a' {...animProps} style={{ padding: '2em 3em', borderRadius: '6px', background: '#f008' }}>
+                            ? <motion.div key="a" {...animProps} style={{ padding: '2em 3em', borderRadius: '6px', background: '#f008' }}>
                                 <h3>The first test container</h3>
                             </motion.div>
 
-                            : <motion.div key='b' {...animProps} style={{ padding: '2em 3em', borderRadius: '6px', background: '#f608' }} >
+                            : <motion.div key="b" {...animProps} style={{ padding: '2em 3em', borderRadius: '6px', background: '#f608' }} >
                                 <h3>Another one! (This is the second container)</h3>
                             </motion.div>
 

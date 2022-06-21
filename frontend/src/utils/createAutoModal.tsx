@@ -9,13 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { EditorProps, Monaco } from '@monaco-editor/react';
-import { Button, Modal, ModalProps as AntdModalProps, Result, Select, Tooltip } from "antd";
-import { action, computed, observable } from "mobx";
-import { Observer, observer } from "mobx-react";
-import React, { Component, ReactElement } from "react";
+import { Button, Modal, ModalProps as AntdModalProps, Result } from 'antd';
+import { action, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import React from 'react';
 import { toJson } from './jsonUtils';
-import { Code } from './tsxUtils';
 
 export type AutoModalProps = Omit<AntdModalProps, 'visible' | 'onCancel' | 'onOk' | 'afterClose' | 'modalRender'> & {
     // skipSuccess?: boolean,
@@ -141,9 +139,9 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 
         return <>
             <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="success"
-                title={options.modalProps.successTitle ?? "Success"}
+                title={options.modalProps.successTitle ?? 'Success'}
                 subTitle={response}
-                extra={<Button type="primary" size='large' style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
+                extra={<Button type="primary" size="large" style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
             />
         </>;
     };
@@ -182,5 +180,5 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 }
 
 const styleHidden = { style: { display: 'none' } };
-const propsOnError = { cancelButtonProps: styleHidden, okText: "Back" } as AntdModalProps;
+const propsOnError = { cancelButtonProps: styleHidden, okText: 'Back' } as AntdModalProps;
 const propsOnSuccess = { footer: null, title: null } as AntdModalProps; //  cancelButtonProps: styleHidden, okButtonProps: styleHidden,

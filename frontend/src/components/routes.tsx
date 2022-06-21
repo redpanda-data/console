@@ -9,34 +9,34 @@
  * by the Apache License, Version 2.0
  */
 
-import { Menu, Tooltip } from "antd";
-import { Link, Switch } from "react-router-dom";
-import React from "react";
-import { Section } from "./misc/common";
-import { Route, Redirect } from "react-router";
-import { queryToObj } from "../utils/queryHelper";
-import { PageComponentType, PageProps } from "./pages/Page";
-import TopicList from "./pages/topics/Topic.List";
-import TopicDetails from "./pages/topics/Topic.Details";
-import { observer } from "mobx-react";
-import GroupList from "./pages/consumers/Group.List";
-import GroupDetails from "./pages/consumers/Group.Details";
-import BrokerList from "./pages/brokers/Broker.List";
-import { AnimatePresence } from "framer-motion";
-import { uiState } from "../state/uiState";
-import AdminPage from "./pages/admin/AdminPage";
-import { api } from "../state/backendApi";
-import SchemaList from "./pages/schemas/Schema.List";
-import SchemaDetailsView, { SchemaDetailsProps } from "./pages/schemas/Schema.Details";
-import AclList from "./pages/acls/Acl.List";
-import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, BeakerIcon, LinkIcon, ScaleIcon } from '@heroicons/react/outline'
-import { Feature, FeatureEntry, isSupported } from "../state/supportedFeatures";
-import { UserPermissions } from "../state/restInterfaces";
-import KafkaConnectOverview from "./pages/connect/Overview";
-import KafkaConnectorDetails from "./pages/connect/Connector.Details";
-import KafkaClusterDetails from "./pages/connect/Cluster.Details";
-import CreateConnector from "./pages/connect/CreateConnector";
-import QuotasList from "./pages/quotas/Quotas.List";
+import { Menu, Tooltip } from 'antd';
+import { Link, Switch } from 'react-router-dom';
+import React from 'react';
+import { Section } from './misc/common';
+import { Route, Redirect } from 'react-router';
+import { queryToObj } from '../utils/queryHelper';
+import { PageComponentType, PageProps } from './pages/Page';
+import TopicList from './pages/topics/Topic.List';
+import TopicDetails from './pages/topics/Topic.Details';
+import { observer } from 'mobx-react';
+import GroupList from './pages/consumers/Group.List';
+import GroupDetails from './pages/consumers/Group.Details';
+import BrokerList from './pages/brokers/Broker.List';
+import { AnimatePresence } from 'framer-motion';
+import { uiState } from '../state/uiState';
+import AdminPage from './pages/admin/AdminPage';
+import { api } from '../state/backendApi';
+import SchemaList from './pages/schemas/Schema.List';
+import SchemaDetailsView, { SchemaDetailsProps } from './pages/schemas/Schema.Details';
+import AclList from './pages/acls/Acl.List';
+import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon } from '@heroicons/react/outline'
+import { Feature, FeatureEntry, isSupported } from '../state/supportedFeatures';
+import { UserPermissions } from '../state/restInterfaces';
+import KafkaConnectOverview from './pages/connect/Overview';
+import KafkaConnectorDetails from './pages/connect/Connector.Details';
+import KafkaClusterDetails from './pages/connect/Cluster.Details';
+import CreateConnector from './pages/connect/CreateConnector';
+import QuotasList from './pages/quotas/Quotas.List';
 
 
 //
@@ -66,7 +66,7 @@ export function isSeparator(x: IRouteEntry): x is SeparatorEntry { return (x as 
 
 export const RouteMenu = observer(() =>
     <Menu mode="inline"
-        theme='dark'
+        theme="dark"
         selectedKeys={uiState.selectedMenuKeys}
         style={{ border: 0, background: 'none' }}
     >
@@ -98,7 +98,7 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
             // {/*  */}
             return <Menu.Item key={entry.path} disabled={isDisabled}>
                 <Tooltip
-                    overlayClassName='menu-permission-tooltip'
+                    overlayClassName="menu-permission-tooltip"
                     overlay={disabledText}
                     align={{ points: ['cc', 'cc'], offset: [0, 0] }}
                     trigger={isDisabled ? 'hover' : 'none'}
@@ -114,7 +114,7 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArr
             </Menu.Item>
         }
         else if (isSeparator(entry)) {
-            return <div key={index} className='menu-divider' />
+            return <div key={index} className="menu-divider" />
         }
         else {
             // Group
@@ -151,7 +151,7 @@ export const RouteView = (() =>
         <Switch>
             {/* Index */}
             {/* <Route exact path='/' component={IndexPage} /> */}
-            <Route exact path='/' render={() => <Redirect to='/topics' />} />
+            <Route exact path="/" render={() => <Redirect to="/topics" />} />
 
             {/* Emit all <Route/> elements */}
             {EmitRouteViews(APP_ROUTES)}
@@ -159,7 +159,7 @@ export const RouteView = (() =>
             <Route render={rp => {
                 uiState.pageTitle = '404';
                 return (
-                    <Section title='404'>
+                    <Section title="404">
                         <div><h4>Path:</h4> <span>{rp.location.pathname}</span></div>
                         <div><h4>Query:</h4> <pre>{JSON.stringify(rp.location.search, null, 4)}</pre></div>
                     </Section>
@@ -171,8 +171,8 @@ export const RouteView = (() =>
 )
 
 enum DisabledReasons {
-    "notSupported", // kafka cluster version too low
-    "noPermission", // user doesn't have permissions to use the feature
+    'notSupported', // kafka cluster version too low
+    'noPermission', // user doesn't have permissions to use the feature
 }
 
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
@@ -261,33 +261,33 @@ function routeVisibility(
 //
 export const APP_ROUTES: IRouteEntry[] = [
 
-    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span className='menuIcon anticon'><ChipIcon /></span>),
+    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span className="menuIcon anticon"><ChipIcon /></span>),
 
-    MakeRoute<{}>('/topics', TopicList, 'Topics', <span className='menuIcon anticon'><CollectionIcon /></span>),
+    MakeRoute<{}>('/topics', TopicList, 'Topics', <span className="menuIcon anticon"><CollectionIcon /></span>),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
-    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span className='menuIcon anticon'><CubeTransparentIcon /></span>),
+    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span className="menuIcon anticon"><CubeTransparentIcon /></span>),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
-    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span className='menuIcon anticon'><FilterIcon /></span>, undefined,
+    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span className="menuIcon anticon"><FilterIcon /></span>, undefined,
         routeVisibility(true, [Feature.ConsumerGroups])
     ),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-    MakeRoute<{}>('/acls', AclList, 'Access Control List', <span className='menuIcon anticon'><ShieldCheckIcon /></span>, true,
+    MakeRoute<{}>('/acls', AclList, 'Access Control List', <span className="menuIcon anticon"><ShieldCheckIcon /></span>, true,
         routeVisibility(true, [], ['canListAcls'])
     ),
 
-    MakeRoute<{}>('/quotas', QuotasList, 'Quotas', <span className='menuIcon anticon'><ScaleIcon /></span>, true,
+    MakeRoute<{}>('/quotas', QuotasList, 'Quotas', <span className="menuIcon anticon"><ScaleIcon /></span>, true,
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/kafka-connect', KafkaConnectOverview, 'Kafka Connect', <span className='menuIcon anticon'><LinkIcon /></span>, true),
+    MakeRoute<{}>('/kafka-connect', KafkaConnectOverview, 'Kafka Connect', <span className="menuIcon anticon"><LinkIcon /></span>, true),
     MakeRoute<{ clusterName: string }>('/kafka-connect/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string, connector: string }>('/kafka-connect/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
     MakeRoute<{}>('/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', <span className='menuIcon anticon'><CogIcon /></span>, false,
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', <span className="menuIcon anticon"><CogIcon /></span>, false,
         routeVisibility(() => api.userData?.canManageKowl ?? false)
     ),
 

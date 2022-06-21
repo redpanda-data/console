@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { FC, CSSProperties } from "react";
-import { Transition, motion } from "framer-motion";
-import { alwaysChanging } from "./utils";
+import React, { FC, CSSProperties } from 'react';
+import { Transition, motion } from 'framer-motion';
+import { alwaysChanging } from './utils';
 
-export type PositionProp = "static" | "absolute" | "initial" | "inherit" | "-moz-initial" | "revert" | "unset" | "-webkit-sticky" | "fixed" | "relative" | "sticky" | undefined;
+export type PositionProp = 'static' | 'absolute' | 'initial' | 'inherit' | '-moz-initial' | 'revert' | 'unset' | '-webkit-sticky' | 'fixed' | 'relative' | 'sticky' | undefined;
 
 const time = 0.25; // 0.15
 const dist = 2;

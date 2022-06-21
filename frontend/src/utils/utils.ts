@@ -9,15 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, } from "react";
-import { autorun, IReactionDisposer, makeObservable, observable } from "mobx";
-import prettyBytesOriginal from "pretty-bytes";
+import { Component, } from 'react';
+import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
+import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
 import queryString from 'query-string';
-import { editQuery } from "./queryHelper";
-import { message } from "antd";
-import { MessageType } from "antd/lib/message";
-import { TopicMessage } from "../state/restInterfaces";
+import { editQuery } from './queryHelper';
+import { message } from 'antd';
+import { MessageType } from 'antd/lib/message';
+import { TopicMessage } from '../state/restInterfaces';
 
 
 
@@ -200,7 +200,7 @@ export const alwaysChanging = () => refreshCounter = (refreshCounter + 1) % 1000
 export function assignDeep(target: any, source: any) {
     for (const key in source) {
         if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
-        if (key === "__proto__" || key === "constructor") continue;
+        if (key === '__proto__' || key === 'constructor') continue;
 
         const value = source[key];
         const existing = key in target ? target[key] : undefined;
@@ -329,7 +329,7 @@ export function collectElements2(
             const currentObj = foundProp.value;
 
             switch (segment) {
-                case "**":
+                case '**':
                     // And all their nested objects are a result
                     const allNested = collectElements(currentObj, (key, path, value) => {
                         return typeof value == 'object';
@@ -350,7 +350,7 @@ export function collectElements2(
 
                     break;
 
-                case "*":
+                case '*':
                     // Explore all properties
                     for (const key in currentObj) {
                         const value = currentObj[key];
@@ -392,7 +392,7 @@ export function collectElements2(
 
 export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
     const ctx: GetAllKeysContext = {
-        currentFullPath: "",
+        currentFullPath: '',
         currentPath: [],
         results: [],
         existingPaths: new Set<string>(),
@@ -404,7 +404,7 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
         getAllKeysRecursive(ctx, payload);
 
         ctx.currentPath = [];
-        ctx.currentFullPath = "";
+        ctx.currentFullPath = '';
     }
 
     // console.log('getAllMessageKeys', ctx.results);
@@ -439,7 +439,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
 
         ctx.currentPath.push(key);
         const currentFullPath = isArray
-            ? pathToHere + `[*]`
+            ? pathToHere + '[*]'
             : pathToHere + `.${key}`;
         ctx.currentFullPath = currentFullPath;
 
@@ -513,7 +513,7 @@ export function groupConsecutive(ar: number[]): number[][] {
 }
 
 export const prettyBytesOrNA = function (n: number) {
-    if (!isFinite(n) || n < 0) return "N/A";
+    if (!isFinite(n) || n < 0) return 'N/A';
     return prettyBytes(n);
 }
 
@@ -523,7 +523,7 @@ export type PrettyValueOptions = {
     /** A fallback to show when the value is `undefined` or `null` */
     showNullAs?: string;
 };
-export const UInt64Max = "18446744073709551615"; // can't be represented in js, would be rounded up to 18446744073709552000
+export const UInt64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
 function isUInt64Maximum(str: string) {
     if (str == UInt64Max)
         return true;
@@ -534,7 +534,7 @@ function isUInt64Maximum(str: string) {
 
 export const prettyBytes = function (n: number | string | null | undefined, options?: PrettyValueOptions) {
     if (typeof n === 'undefined' || n === null)
-        return options?.showNullAs ?? "N/A"; // null, undefined -> N/A
+        return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
 
     if (options?.showLargeAsInfinite && isUInt64Maximum(String(n)))
         return 'Infinite';
@@ -542,8 +542,8 @@ export const prettyBytes = function (n: number | string | null | undefined, opti
     if (typeof n !== 'number') {
         if (typeof n === 'string') {
             // string
-            if (n === "")
-                return "N/A"; // empty -> N/A
+            if (n === '')
+                return 'N/A'; // empty -> N/A
 
             n = parseFloat(String(n));
 
@@ -554,7 +554,7 @@ export const prettyBytes = function (n: number | string | null | undefined, opti
         }
         else {
             // something else: object, function, ...
-            return "NaN";
+            return 'NaN';
         }
     }
 
@@ -564,7 +564,7 @@ export const prettyBytes = function (n: number | string | null | undefined, opti
 
 export const prettyMilliseconds = function (n: number | string, options?: prettyMillisecondsOriginal.Options & PrettyValueOptions) {
     if (typeof n === 'undefined' || n === null)
-        return options?.showNullAs ?? "N/A"; // null, undefined -> N/A
+        return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
 
     if (options?.showLargeAsInfinite && isUInt64Maximum(String(n)))
         return 'Infinite';
@@ -572,8 +572,8 @@ export const prettyMilliseconds = function (n: number | string, options?: pretty
     if (typeof n !== 'number') {
         if (typeof n === 'string') {
             // string
-            if (n === "")
-                return "N/A"; // empty -> N/A
+            if (n === '')
+                return 'N/A'; // empty -> N/A
 
             n = parseFloat(String(n));
 
@@ -584,11 +584,11 @@ export const prettyMilliseconds = function (n: number | string, options?: pretty
         }
         else {
             // something else: object, function, ...
-            return "NaN";
+            return 'NaN';
         }
     }
     else {
-        if (!isFinite(n)) return "N/A";
+        if (!isFinite(n)) return 'N/A';
     }
 
     // n is a finite number
@@ -721,7 +721,7 @@ export class Message {
     private hideFunc: MessageType;
     private duration: number | undefined;
 
-    constructor(private text: string, private type: NoticeType = 'loading', private suffix: string = "") {
+    constructor(private text: string, private type: NoticeType = 'loading', private suffix: string = '') {
         this.key = randomId();
         if (type == 'loading')
             this.duration = 0; // loading stays open until changed

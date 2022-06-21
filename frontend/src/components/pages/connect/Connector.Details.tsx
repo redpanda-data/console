@@ -14,7 +14,7 @@ import { Button, message, Tooltip } from 'antd';
 import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
-import { Component, CSSProperties } from 'react';
+import { Component } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectorInfo } from '../../../state/restInterfaces';
@@ -30,42 +30,12 @@ import { PageComponent, PageInitHelper } from '../Page';
 import './helper';
 
 // React Editor
-import Editor from "@monaco-editor/react";
+import Editor from '@monaco-editor/react';
 
 // Monaco Type
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
 import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, okIcon, TaskState, warnIcon } from './helper';
 export type Monaco = typeof monacoType;
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-// const monacoProtoLint = require('monaco-proto-lint');
-
-// const protoLangConf: monacoType.languages.LanguageConfiguration = {
-//     indentationRules: {
-//         // ^.*\{[^}'']*$
-//         increaseIndentPattern: /^.*\{[^}'']*$/,
-//         // ^(.*\*/)?\s*\}.*$
-//         decreaseIndentPattern: /^(.*\*\/)?\s*\}.*$/,
-//     },
-//     wordPattern: /(-?\d*\.\d\w*)|([^`~!@#%^&*()\-=+[{\]}\\|;:'",.<>/?\s]+)(\.proto){0,1}/g,
-//     comments: {
-//         lineComment: '//',
-//         blockComment: ['/*', '*/']
-//     },
-//     brackets: [
-//         ['{', '}'],
-//         ['[', ']'],
-//         ['(', ')'],
-//         ['<', '>'],
-//     ],
-//     folding: {
-//         markers: {
-//             start: new RegExp("^\\s*<!--\\s*#?region\\b.*-->"),
-//             end: new RegExp("^\\s*<!--\\s*#?endregion\\b.*-->")
-//         },
-//         offSide: true,
-//     }
-// }
 
 
 function onBeforeEditorMount(m: Monaco) {
@@ -98,7 +68,7 @@ type RestartingTaskData = { clusterName: string; connectorName: string; taskId: 
 class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connector: string }> {
 
     @observable placeholder = 5;
-    @observable currentConfig: string = "";
+    @observable currentConfig: string = '';
 
     autoRunDisposer: IReactionDisposer | undefined;
     showConfigUpdated = false;
@@ -136,7 +106,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
         const clusterName = this.props.clusterName;
         const connector = this.props.connector;
         p.title = connector;
-        p.addBreadcrumb("Kafka Connect", `/kafka-connect`);
+        p.addBreadcrumb('Kafka Connect', '/kafka-connect');
         p.addBreadcrumb(clusterName, `/kafka-connect/${clusterName}`);
         p.addBreadcrumb(connector, `/kafka-connect/${clusterName}/${connector}`);
 
@@ -165,9 +135,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
         const settings = uiSettings.kafkaConnect;
         const cluster = api.connectConnectors?.clusters?.first(c => c.clusterName == clusterName);
-        if (!cluster) return "cluster not found";
+        if (!cluster) return 'cluster not found';
         const connector = cluster?.connectors.first(c => c.name == connectorName);
-        if (!connector) return "connector not found";
+        if (!connector) return 'connector not found';
 
         const state = connector.state.toLowerCase();
         const isRunning = state == 'running';
@@ -193,9 +163,9 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
                         <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '.5em', fontSize: '12px' }}>
                             <Tooltip
-                                placement="top" trigger={!canEdit ? "hover" : "none"} mouseLeaveDelay={0}
+                                placement="top" trigger={!canEdit ? 'hover' : 'none'} mouseLeaveDelay={0}
                                 getPopupContainer={findPopupContainer}
-                                overlay={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
+                                overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                             >
                                 <Button disabled={!canEdit} onClick={() => this.pausingConnector = connector}>
                                     {isRunning ? 'Pause' : 'Resume'}
@@ -203,16 +173,16 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
                             </Tooltip>
                             <Tooltip
-                                placement="top" trigger={!canEdit ? "hover" : "none"} mouseLeaveDelay={0}
+                                placement="top" trigger={!canEdit ? 'hover' : 'none'} mouseLeaveDelay={0}
                                 getPopupContainer={findPopupContainer}
-                                overlay={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
+                                overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                             >
                                 <Button disabled={!canEdit} onClick={() => this.restartingConnector = connector}>Restart</Button>
                             </Tooltip>
                             <Tooltip
-                                placement="top" trigger={!canEdit ? "hover" : "none"} mouseLeaveDelay={0}
+                                placement="top" trigger={!canEdit ? 'hover' : 'none'} mouseLeaveDelay={0}
                                 getPopupContainer={findPopupContainer}
-                                overlay={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
+                                overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                             >
                                 <Button danger disabled={!canEdit} onClick={() => this.deletingConnector = connectorName}
                                     style={{ marginLeft: '1em', minWidth: '8em' }}
@@ -235,7 +205,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                 // theme='myCoolTheme'
                                 // language='mySpecialLanguage'
 
-                                language='json'
+                                language="json"
                                 value={this.currentConfig}
                                 onChange={(v, e) => {
                                     if (v) {
@@ -281,11 +251,11 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
                             <Tooltip
-                                placement="top" trigger={!canEdit ? "hover" : "none"} mouseLeaveDelay={0}
+                                placement="top" trigger={!canEdit ? 'hover' : 'none'} mouseLeaveDelay={0}
                                 getPopupContainer={findPopupContainer}
-                                overlay={"You don't have 'canEditConnectCluster' permissions for this connect cluster"}
+                                overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                             >
-                                <Button type='primary' ghost style={{ width: '200px' }} disabled={(() => {
+                                <Button type="primary" ghost style={{ width: '200px' }} disabled={(() => {
                                     if (!canEdit) return true;
 
                                     if (!this.currentConfig) return true;
@@ -298,7 +268,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                     try {
                                         newConfigObj = JSON.parse(this.currentConfig);
                                     } catch (ex: any) {
-                                        message.error("Config is not valid json!", 3);
+                                        message.error('Config is not valid json!', 3);
                                         return;
                                     }
 
@@ -341,7 +311,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                                     />
                                 },
                             ]}
-                            rowKey='taskId'
+                            rowKey="taskId"
 
                             search={{
                                 searchColumnIndex: 0,

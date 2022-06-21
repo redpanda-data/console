@@ -9,32 +9,29 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, CSSProperties } from "react";
-import { Table, Row, Statistic, Skeleton, Tag, Badge, Typography, Tree, Button, List, Collapse, Col, Checkbox, Card as AntCard, Input, Space, Tooltip, Popover, Empty, Modal, Select } from "antd";
-import { observer } from "mobx-react";
+import React, { Component } from 'react';
+import { Table, Row, Statistic, Tag, Button, Collapse, Tooltip, Popover, Empty } from 'antd';
+import { observer } from 'mobx-react';
 
-import { api } from "../../../state/backendApi";
-import { PageComponent, PageInitHelper } from "../Page";
-import { makePaginationConfig, sortField } from "../../misc/common";
-import { MotionDiv } from "../../../utils/animationProps";
-import { GroupDescription, } from "../../../state/restInterfaces";
-import { action, computed, makeObservable, observable, transaction } from "mobx";
-import { appGlobal } from "../../../state/appGlobal";
-import Card from "../../misc/Card";
+import { api } from '../../../state/backendApi';
+import { PageComponent, PageInitHelper } from '../Page';
+import { makePaginationConfig, sortField } from '../../misc/common';
+import { MotionDiv } from '../../../utils/animationProps';
+import { GroupDescription, } from '../../../state/restInterfaces';
+import { action, computed, makeObservable, observable } from 'mobx';
+import { appGlobal } from '../../../state/appGlobal';
+import Card from '../../misc/Card';
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
-import { TablePaginationConfig } from "antd/lib/table";
-import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString, InfoText } from "../../../utils/tsxUtils";
-import { uiSettings } from "../../../state/ui";
-import { HideStatisticsBarButton } from "../../misc/HideStatisticsBarButton";
-import { PencilIcon, TrashIcon, XCircleIcon } from '@heroicons/react/solid';
-import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
-import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } from "./Modals";
-import { AnimatePresence, AnimateSharedLayout, motion } from "framer-motion";
-import ReactCSSTransitionReplace from 'react-css-transition-replace';
-import { ShortNum } from "../../misc/ShortNum";
-import Tabs from "../../misc/tabs/Tabs";
-import AclList from "../topics/Tab.Acl/AclList";
-import { SkipIcon } from "@primer/octicons-react";
+import { TablePaginationConfig } from 'antd/lib/table';
+import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString } from '../../../utils/tsxUtils';
+import { uiSettings } from '../../../state/ui';
+import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
+import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
+import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } from './Modals';
+import { ShortNum } from '../../misc/ShortNum';
+import Tabs from '../../misc/tabs/Tabs';
+import AclList from '../topics/Tab.Acl/AclList';
+import { SkipIcon } from '@primer/octicons-react';
 
 
 @observer
@@ -155,12 +152,12 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                     {/* View Buttons */}
                     <Tabs
                         tabs={[{
-                            key: "partitions",
-                            title: "Partitions",
+                            key: 'partitions',
+                            title: 'Partitions',
                             content: this.renderPartitions(group)
                         }, {
-                            key: "acl",
-                            title: "ACL",
+                            key: 'acl',
+                            title: 'ACL',
                             content: <AclList acl={api.consumerGroupAcls.get(group.groupId)} />
                         }]}
                     />
@@ -279,16 +276,16 @@ class GroupByTopics extends Component<{
                         </EditDisabledTooltip>
 
                         {/* InfoTags */}
-                        <Tooltip placement='top' title='Summed lag of all partitions of the topic' mouseEnterDelay={0}
+                        <Tooltip placement="top" title="Summed lag of all partitions of the topic" mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer} >
-                            <Tag style={{ margin: '0', marginLeft: '8px' }} color='blue'>lag: {numberToThousandsString(totalLagAll)}</Tag>
+                            <Tag style={{ margin: '0', marginLeft: '8px' }} color="blue">lag: {numberToThousandsString(totalLagAll)}</Tag>
                         </Tooltip>
-                        <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0}
+                        <Tooltip placement="top" title="Number of assigned partitions" mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer}>
-                            <Tag color='blue'>assigned partitions: {partitionsAssigned}</Tag>
+                            <Tag color="blue">assigned partitions: {partitionsAssigned}</Tag>
                         </Tooltip>
                         <Button
-                            size='small'
+                            size="small"
                             style={{ marginLeft: 'auto' }}
                             onClick={() => appGlobal.history.push('/topics/' + g.topicName)}
                         >View Topic</Button>
@@ -296,7 +293,7 @@ class GroupByTopics extends Component<{
                 }>
 
                 <Table
-                    size='middle'
+                    size="middle"
                     showSorterTooltip={false}
                     pagination={this.pageConfig}
                     onChange={(pagination) => {
@@ -414,20 +411,20 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                     header={
                         <div>
                             <span style={{ fontWeight: 600, fontSize: '1.1em' }}>{renderMergedID(m.id, m.clientId)}</span>
-                            <Tooltip placement='top' title='Host of the member' mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag style={{ marginLeft: '1em' }} color='blue'>host: {m.clientHost}</Tag>
+                            <Tooltip placement="top" title="Host of the member" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
+                                <Tag style={{ marginLeft: '1em' }} color="blue">host: {m.clientHost}</Tag>
                             </Tooltip>
-                            <Tooltip placement='top' title='Number of assigned partitions' mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag color='blue'>partitions: {totalPartitions}</Tag>
+                            <Tooltip placement="top" title="Number of assigned partitions" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
+                                <Tag color="blue">partitions: {totalPartitions}</Tag>
                             </Tooltip>
-                            <Tooltip placement='top' title='Summed lag over all assigned partitions of all topics' mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag color='blue'>lag: {totalLag}</Tag>
+                            <Tooltip placement="top" title="Summed lag over all assigned partitions of all topics" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
+                                <Tag color="blue">lag: {totalLag}</Tag>
                             </Tooltip>
                         </div>
                     }>
 
                     <Table
-                        size='small'
+                        size="small"
                         pagination={this.pageConfig}
                         dataSource={assignmentsFlat}
                         rowKey={r => r.topicName + r.partitionId}
@@ -435,7 +432,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                             {
                                 width: 130, title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'),
                                 render: (_, record) => <div
-                                    className='hoverLink'
+                                    className="hoverLink"
                                     onClick={() => appGlobal.history.push('/topics/' + record.topicName)}>
                                     {record.topicName}
                                 </div>
@@ -472,14 +469,14 @@ const renderMergedID = (id?: string, clientId?: string) => {
     if (clientId && id?.startsWith(clientId)) { // should always be true...
         const suffix = id.substring(clientId.length);
 
-        return <span className='consumerGroupCompleteID'>
-            <span className='consumerGroupName'>{clientId}</span>
-            <span className='consumerGroupSuffix'>{suffix}</span>
+        return <span className="consumerGroupCompleteID">
+            <span className="consumerGroupName">{clientId}</span>
+            <span className="consumerGroupSuffix">{suffix}</span>
         </span>
     }
     // A client might be connected but it hasn't any assignments yet because it just joined the group
     else if (clientId) {
-        return <span className='consumerGroupCompleteID'>{clientId ?? id ?? ''}</span>
+        return <span className="consumerGroupCompleteID">{clientId ?? id ?? ''}</span>
     }
 
     return null
@@ -488,11 +485,11 @@ const renderMergedID = (id?: string, clientId?: string) => {
 
 
 const stateIcons = new Map<string, JSX.Element>([
-    ['stable', <CheckCircleTwoTone twoToneColor='#52c41a' />],
-    ['completingrebalance', <HourglassTwoTone twoToneColor='#52c41a' />],
-    ['preparingrebalance', <HourglassTwoTone twoToneColor='orange' />],
-    ['empty', <WarningTwoTone twoToneColor='orange' />],
-    ['dead', <FireTwoTone twoToneColor='orangered' />],
+    ['stable', <CheckCircleTwoTone twoToneColor="#52c41a" />],
+    ['completingrebalance', <HourglassTwoTone twoToneColor="#52c41a" />],
+    ['preparingrebalance', <HourglassTwoTone twoToneColor="orange" />],
+    ['empty', <WarningTwoTone twoToneColor="orange" />],
+    ['dead', <FireTwoTone twoToneColor="orangered" />],
     ['unknown', <QuestionCircleOutlined />],
 ]);
 const makeStateEntry = (iconName: string, displayName: string, description: string): [any, any] => [
@@ -501,12 +498,12 @@ const makeStateEntry = (iconName: string, displayName: string, description: stri
 ]
 
 const consumerGroupStateTable = QuickTable([
-    makeStateEntry('stable', "Stable", "Consumer group has members which have been assigned partitions"),
-    makeStateEntry('completingrebalance', "Completing Rebalance", "Kafka is assigning partitions to group members"),
-    makeStateEntry('preparingrebalance', "Preparing Rebalance", "A reassignment of partitions is required, members have been asked to stop consuming"),
-    makeStateEntry('empty', "Empty", "Consumer group exists, but does not have any members"),
-    makeStateEntry('dead', "Dead", "Consumer group does not have any members and it's metadata has been removed"),
-    makeStateEntry('unknown', "Unknown", "Group state is not known"),
+    makeStateEntry('stable', 'Stable', 'Consumer group has members which have been assigned partitions'),
+    makeStateEntry('completingrebalance', 'Completing Rebalance', 'Kafka is assigning partitions to group members'),
+    makeStateEntry('preparingrebalance', 'Preparing Rebalance', 'A reassignment of partitions is required, members have been asked to stop consuming'),
+    makeStateEntry('empty', 'Empty', 'Consumer group exists, but does not have any members'),
+    makeStateEntry('dead', 'Dead', 'Consumer group does not have any members and it\'s metadata has been removed'),
+    makeStateEntry('unknown', 'Unknown', 'Group state is not known'),
 ], {
     gapHeight: '.5em',
     gapWidth: '.5em',
@@ -517,7 +514,7 @@ export const GroupState = (p: { group: GroupDescription }) => {
     const state = p.group.state.toLowerCase();
     const icon = stateIcons.get(state);
 
-    return <Popover content={consumerGroupStateTable} placement='right'>
+    return <Popover content={consumerGroupStateTable} placement="right">
         <span>
             {icon}
             <span> {p.group.state}</span>
@@ -528,7 +525,7 @@ const ProtocolType = (p: { group: GroupDescription }) => {
     const protocol = p.group.protocolType;
     if (protocol == 'consumer') return null;
 
-    return <Statistic title='Protocol' value={protocol} />
+    return <Statistic title="Protocol" value={protocol} />
 }
 
 const EditDisabledTooltip = (p: { group: GroupDescription, children: [editButton: JSX.Element, deleteButton: JSX.Element] }): JSX.Element => {
@@ -552,21 +549,21 @@ const EditDisabledTooltip = (p: { group: GroupDescription, children: [editButton
     let editButtonMessage = null as string | null;
     let deleteButtonMessage = null as string | null;
 
-    if (group.noEditPerms) editButtonMessage = "You don't have 'editConsumerGroup' permissions for this group";
-    if (group.noDeletePerms) deleteButtonMessage = "You don't have 'deleteConsumerGroup' permissions for this group";
+    if (group.noEditPerms) editButtonMessage = 'You don\'t have \'editConsumerGroup\' permissions for this group';
+    if (group.noDeletePerms) deleteButtonMessage = 'You don\'t have \'deleteConsumerGroup\' permissions for this group';
 
     if (group.isInUse) {
-        if (editButtonMessage == null) editButtonMessage = "Consumer groups with active members cannot be edited";
-        if (deleteButtonMessage == null) deleteButtonMessage = "Consumer groups with active members cannot be deleted";
+        if (editButtonMessage == null) editButtonMessage = 'Consumer groups with active members cannot be edited';
+        if (deleteButtonMessage == null) deleteButtonMessage = 'Consumer groups with active members cannot be deleted';
     }
 
     if (group.noEditSupport)
         if (editButtonMessage == null)
-            editButtonMessage = "This cluster does not support editting group offsets";
+            editButtonMessage = 'This cluster does not support editting group offsets';
 
     if (group.noDeleteSupport)
         if (deleteButtonMessage == null)
-            deleteButtonMessage = "This cluster does not support deleting group offsets";
+            deleteButtonMessage = 'This cluster does not support deleting group offsets';
 
     return <>
         {editButtonMessage != null ? wrap(editButton, editButtonMessage) : editButton}

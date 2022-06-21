@@ -10,8 +10,6 @@
 package api
 
 import (
-	"path/filepath"
-
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
@@ -128,17 +126,9 @@ func (api *API) routes() *chi.Mux {
 		})
 
 		if api.Cfg.ServeFrontend {
-			// Check if the frontend directory 'build' exists
-			frontendDir, err := filepath.Abs(api.Cfg.FrontendPath)
-			if err != nil {
-				api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", frontendDir), zap.Error(err))
-			}
-
 			// SPA Files
 			router.Group(func(r chi.Router) {
-				handleIndex, handleResources := api.createFrontendHandlers(frontendDir)
-				r.Get("/", handleIndex)
-				r.Get("/*", handleResources)
+				r.Get("/*", api.handleFrontendResources())
 			})
 		} else {
 			api.Logger.Info("no static files will be served as serving the frontend has been disabled")

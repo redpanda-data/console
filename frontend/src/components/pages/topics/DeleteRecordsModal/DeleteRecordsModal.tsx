@@ -13,7 +13,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Input, Modal, notification, Select, Slider, Spin } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
-import { DeleteRecordsResponseData, Partition, Topic, TopicOffset } from '../../../../state/restInterfaces';
+import { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/restInterfaces';
 import { RadioOptionGroup } from '../../../../utils/tsxUtils';
 import { prettyNumber } from '../../../../utils/utils';
 import { range } from '../../../misc/common';

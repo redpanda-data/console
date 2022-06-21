@@ -5,17 +5,17 @@ path: /docs/features/kafka-connect
 
 # Kafka Connect
 
-Kowl provides a user interface that enables you to manage multiple Kafka connect clusters
+Console provides a user interface that enables you to manage multiple Kafka connect clusters
 via a user interface. You can inspect the configured connectors, configure them, restart/pause/resume
 connectors and also delete them if desired. If you have more than one cluster configured some requests
-(such as listing connectors) will query all configured connect clusters and Kowl will aggregate the results
+(such as listing connectors) will query all configured connect clusters and Console will aggregate the results
 so that you can see them in one spot.
 
 ## Configuration
 
 Below sample configuration can be put at the root level. For each cluster you have to provide at
 least a unique name, the HTTP address of the cluster, and the authentication settings if required.
-All available configuration options can be found in the [reference config](/docs/config/kowl.yaml).
+All available configuration options can be found in the [reference config](/docs/config/console.yaml).
 
 ```yaml
 connect:

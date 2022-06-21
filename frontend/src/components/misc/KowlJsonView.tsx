@@ -14,7 +14,6 @@ import { observer } from 'mobx-react';
 import React, { useState } from 'react';
 import JsonView, { ReactJsonViewProps } from 'react-json-view';
 import { uiSettings } from '../../state/ui';
-import { findPopupContainer } from '../../utils/tsxUtils';
 import styles from './KowlJsonView.module.scss';
 const { setTimeout } = window;
 
@@ -104,7 +103,7 @@ export const KowlJsonView = observer((props: ReactJsonViewProps) => {
                         if (ctrlDown) {
                             if (navigator?.clipboard) {
                                 navigator.clipboard.writeText(String(e.value));
-                                message.success(<span>Copied value of <span className='codeBox'>{e.name}</span></span>, 0.8);
+                                message.success(<span>Copied value of <span className="codeBox">{e.name}</span></span>, 0.8);
                             }
                         }
                     }}

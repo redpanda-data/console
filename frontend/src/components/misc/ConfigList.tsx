@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { EditTwoTone, EyeInvisibleTwoTone, InfoCircleFilled, LockOutlined, LockTwoTone } from '@ant-design/icons';
-import { Popover, Table, Tooltip } from 'antd';
-import React, { useState } from 'react';
+import { EditTwoTone, EyeInvisibleTwoTone, InfoCircleFilled } from '@ant-design/icons';
+import { Tooltip } from 'antd';
+import React from 'react';
 import { ConfigEntry } from '../../state/restInterfaces';
 import { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
@@ -107,7 +107,7 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
             }}
 
             expandable={{
-                childrenColumnName: "synonyms",
+                childrenColumnName: 'synonyms',
                 indentSize: 20,
             }}
             search={{

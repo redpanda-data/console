@@ -9,25 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { CheckCircleTwoTone, WarningTwoTone } from '@ant-design/icons';
-import {Button, Checkbox, Col, Empty, Popover, Row, Statistic, Table, Tooltip} from 'antd';
+import {Button, Tooltip} from 'antd';
 import { motion } from 'framer-motion';
-import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import React, { Component, CSSProperties } from 'react';
+import React, { Component } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { TopicActions, Topic, ConnectClusterShard, ClusterConnectors, ClusterConnectorInfo } from '../../../state/restInterfaces';
+import { ClusterConnectors } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
-import { clone } from '../../../utils/jsonUtils';
-import { editQuery } from '../../../utils/queryHelper';
-import { Code, DefaultSkeleton, findPopupContainer, LayoutBypass, QuickTable } from '../../../utils/tsxUtils';
-import { prettyBytesOrNA } from '../../../utils/utils';
+import { Code, DefaultSkeleton, findPopupContainer } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
-import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
+import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
-import SearchBar from '../../misc/SearchBar';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
@@ -85,7 +79,7 @@ class TabClusters extends Component {
         if (clusters == null) return null;
 
         return (<>
-          <div style={{display: 'flex', marginBottom: "15px"}}><Link style={{marginLeft: 'auto'}} to={'/create-connector'}><Button type={'primary'}>Create Connector</Button></Link></div>
+          <div style={{display: 'flex', marginBottom: '15px'}}><Link style={{marginLeft: 'auto'}} to={'/create-connector'}><Button type={'primary'}>Create Connector</Button></Link></div>
 
           <KowlTable<ClusterConnectors>
             dataSource={clusters}
@@ -101,7 +95,7 @@ class TabClusters extends Component {
                             </Tooltip>
                         }
 
-                        return <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
+                        return <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
                             onClick={() => appGlobal.history.push(`/kafka-connect/${r.clusterName}`)}>
                             {r.clusterName}
                         </span>
@@ -135,7 +129,7 @@ class TabClusters extends Component {
             pagination={{
                 defaultPageSize: 10,
             }}
-            rowKey='clusterName'
+            rowKey="clusterName"
           />
         </>)
     }
@@ -155,7 +149,7 @@ class TabConnectors extends Component {
                     width: '35%',
                     render: (_, r) => (
                         <Tooltip placement="topLeft" title={r.name} getPopupContainer={findPopupContainer}>
-                            <span className='hoverLink' style={{ display: 'inline-block', width: '100%' }}
+                            <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
                                 onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
                                 {r.name}
                             </span>
@@ -207,7 +201,7 @@ class TabConnectors extends Component {
             pagination={{
                 defaultPageSize: 10,
             }}
-            className='connectorsTable'
+            className="connectorsTable"
         />
     }
 }
@@ -235,7 +229,7 @@ class TabTasks extends Component {
                     width: '35%',
                     sorter: sortField('connectorName'), defaultSortOrder: 'ascend',
                     render: (_, r) => (
-                        <span className='hoverLink' onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.connectorName}`)}>
+                        <span className="hoverLink" onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.connectorName}`)}>
                             {r.connectorName}
                         </span>
                     )
@@ -274,7 +268,7 @@ class TabTasks extends Component {
             pagination={{
                 defaultPageSize: 10,
             }}
-            className='tasksTable'
+            className="tasksTable"
         />
     }
 }

@@ -9,27 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import { FilterOutlined } from "@ant-design/icons";
-import { AutoComplete, Button, Checkbox, Input, Modal, Popover, Typography } from "antd";
-import Item from "antd/lib/list/Item";
-import Paragraph from "antd/lib/typography/Paragraph";
-import { arrayMoveMutable } from "array-move";
-import { AnimatePresence, motion } from "framer-motion";
-import { computed, makeObservable, observable } from "mobx";
-import { observer } from "mobx-react";
-import React from "react";
-import { Component } from "react";
-import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } from "react-beautiful-dnd";
-import { api } from "../../../../state/backendApi";
-import { PreviewTagV2 } from "../../../../state/ui";
-import { uiState } from "../../../../state/uiState";
-import { MotionDiv } from "../../../../utils/animationProps";
-import { IsDev } from "../../../../utils/env";
-import { clone, toJson } from "../../../../utils/jsonUtils";
-import { Code, Label, OptionGroup, QuickTable, toSafeString } from "../../../../utils/tsxUtils";
-import { getAllMessageKeys, randomId, collectElements2, CollectedProperty } from "../../../../utils/utils";
+import { FilterOutlined } from '@ant-design/icons';
+import { AutoComplete, Button, Checkbox, Input, Modal, Popover, Typography } from 'antd';
+import { arrayMoveMutable } from 'array-move';
+import { computed, makeObservable } from 'mobx';
+import { observer } from 'mobx-react';
+import React from 'react';
+import { Component } from 'react';
+import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } from 'react-beautiful-dnd';
+import { api } from '../../../../state/backendApi';
+import { PreviewTagV2 } from '../../../../state/ui';
+import { uiState } from '../../../../state/uiState';
+import { IsDev } from '../../../../utils/env';
+import { Code, Label, OptionGroup, toSafeString } from '../../../../utils/tsxUtils';
+import { getAllMessageKeys, randomId, collectElements2, CollectedProperty } from '../../../../utils/utils';
 import globExampleImg from '../../../../assets/globExample.png';
-import { InfoIcon, ThreeBarsIcon, GearIcon, XIcon } from "@primer/octicons-react";
+import { InfoIcon, ThreeBarsIcon, GearIcon, XIcon } from '@primer/octicons-react';
 
 const { Text } = Typography;
 
@@ -39,17 +34,17 @@ const globHelp = <div>
         <div style={{ flexGrow: 1 }}>
             <h3>Glob Pattern Examples</h3>
             <div className="globHelpGrid">
-                <div className='h'>Pattern</div>
-                <div className='h'>Result</div>
-                <div className='h'>Reason / Explanation</div>
+                <div className="h">Pattern</div>
+                <div className="h">Result</div>
+                <div className="h">Reason / Explanation</div>
 
-                <div className='titleRowSeparator' />
+                <div className="titleRowSeparator" />
 
                 {/* Example */}
                 <div className="c1"><Code>id</Code></div>
                 <div className="c2">id: 1111</div>
                 <div className="c3">There is only one 'id' property at the root of the object</div>
-                <div className='rowSeparator' />
+                <div className="rowSeparator" />
 
                 {/* Example */}
                 <div className="c1 "><Code>*.id</Code></div>
@@ -58,7 +53,7 @@ const globHelp = <div>
                     <div>key.with.dots.id: 3333</div>
                 </div >
                 <div className="c3">Star only seraches in direct children. Here, only 2 children contain an 'id' prop</div>
-                <div className='rowSeparator' />
+                <div className="rowSeparator" />
 
                 {/* Example */}
                 <div className="c1"><Code>**.id</Code></div>
@@ -66,7 +61,7 @@ const globHelp = <div>
                     (all ID properties)
                 </div >
                 <div className="c3">Double-star searches everywhere</div>
-                <div className='rowSeparator' />
+                <div className="rowSeparator" />
 
                 {/* Example */}
                 <div className="c1"><Code>customer.*Na*</Code></div>
@@ -75,19 +70,19 @@ const globHelp = <div>
                     <div>customer.lastName: Example</div>
                 </div >
                 <div className="c3">In the direct child named 'customer', find all properties that contain 'Na'</div>
-                <div className='rowSeparator' />
+                <div className="rowSeparator" />
 
                 {/* Example */}
                 <div className="c1"><Code>key.with.dots.id</Code></div>
                 <div className="c2">(no results!)</div>
                 <div className="c3">There is no property named 'key'!</div>
-                <div className='rowSeparator' />
+                <div className="rowSeparator" />
 
                 {/* Example */}
                 <div className="c1"><Code>"key.with.dots".id</Code></div>
                 <div className="c2">key.with.dots.id: 3333</div>
                 <div className="c3">To find properties with special characters in their name, use single or double-quotes</div>
-                <div className='rowSeparator' />
+                <div className="rowSeparator" />
 
             </div>
         </div>
@@ -149,7 +144,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
             <div>
                 <span style={{ display: 'inline-flex' }}>
                     When viewing large messages we're often only interested in a few specific fields.
-                    Add <Popover trigger={['click']} placement='bottom' content={globHelp}>
+                    Add <Popover trigger={['click']} placement="bottom" content={globHelp}>
                         <span style={{
                             display: 'inline-flex', gap: '2px', margin: '0 0.6ch',
                             color: 'hsl(205deg, 100%, 50%)',
@@ -206,16 +201,16 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>Settings</h3>
                 <div className="previewTagsSettings" >
-                    <OptionGroup label='Matching' options={{ 'Ignore Case': false, 'Case Sensitive': true }} size='small'
+                    <OptionGroup label="Matching" options={{ 'Ignore Case': false, 'Case Sensitive': true }} size="small"
                         value={uiState.topicSettings.previewTagsCaseSensitive}
                         onChange={e => uiState.topicSettings.previewTagsCaseSensitive = e}
                     />
-                    <OptionGroup label='Multiple Results' options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
+                    <OptionGroup label="Multiple Results" options={{ 'First result': 'showOnlyFirst', 'Show All': 'showAll' }}
                         value={uiState.topicSettings.previewMultiResultMode}
                         onChange={e => uiState.topicSettings.previewMultiResultMode = e}
                     />
 
-                    <OptionGroup label='Wrapping' options={{ 'Single Line': 'single', 'Wrap': 'wrap', 'Rows': 'rows' }}
+                    <OptionGroup label="Wrapping" options={{ 'Single Line': 'single', 'Wrap': 'wrap', 'Rows': 'rows' }}
                         value={uiState.topicSettings.previewDisplayMode}
                         onChange={e => uiState.topicSettings.previewDisplayMode = e}
                     />
@@ -233,7 +228,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
             centered={false}
 
 
-            okText='Close'
+            okText="Close"
             cancelButtonProps={{ style: { display: 'none' } }}
             onOk={() => this.props.setShowDialog(false)}
             onCancel={() => this.props.setShowDialog(false)}
@@ -272,12 +267,12 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
             {/* Settings */}
             <Popover
                 trigger={['click']}
-                placement='bottomLeft'
+                placement="bottomLeft"
                 arrowPointAtCenter={true}
                 content={<div style={{ display: 'flex', flexDirection: 'column', gap: '.3em' }} >
 
                     <Label text="Display Name" style={{ marginBottom: '.5em' }}>
-                        <Input size='small' style={{ flexGrow: 1, flexBasis: '50px' }}
+                        <Input size="small" style={{ flexGrow: 1, flexBasis: '50px' }}
                             value={tag.customName}
                             onChange={e => tag.customName = e.target.value}
                             autoComplete={randomId()}
@@ -309,7 +304,7 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
 
                 notFoundContent="None"
 
-                {...{ spellCheck: "false" }}
+                {...{ spellCheck: 'false' }}
             />
 
             {/* Remove */}
@@ -388,8 +383,8 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
             ? tag.customName
             : r.fullPath;
 
-        ar.push(<span className='previewTag'>
-            <span className='path'>{displayName}</span>
+        ar.push(<span className="previewTag">
+            <span className="path">{displayName}</span>
             <span>{toSafeString(r.prop.value)}</span>
         </span >);
     }
@@ -397,7 +392,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
     return ar;
 }
 
-const splitChars = ["'", "\"", "."];
+const splitChars = ['\'', '"', '.'];
 // Splits a given path into its path segments.
 // Path segments are seperated by the dot-character.
 // This function also supports quotes, so that the dot can still be used (the path segment just needs to be wrapped in quotes then).
@@ -415,15 +410,15 @@ function parseJsonPath(str: string): string[] | string {
         let end: number;
         let match: string;
         switch (c) {
-            case "'":
-            case "\"":
+            case '\'':
+            case '"':
                 // A quote is opened
                 // Find the closing quote and collect everything in-between
 
                 start = pos + 1; // start just after the quote
                 end = str.indexOf(c, start); // and collect until the closing quote
 
-                if (end == -1) return "missing closing quote, quote was opened at index " + (start - 1);
+                if (end == -1) return 'missing closing quote, quote was opened at index ' + (start - 1);
                 match = str.slice(start, end);
 
                 if (match.length > 0)
@@ -432,14 +427,14 @@ function parseJsonPath(str: string): string[] | string {
                 pos = end == -1 ? str.length : end + 1; // continue after the end of our string and the closing quote
                 break;
 
-            case ".":
+            case '.':
                 // A dot, skip over it
 
-                if (pos == 0) return "pattern cannot start with a dot";
+                if (pos == 0) return 'pattern cannot start with a dot';
                 pos++;
-                if (pos >= str.length) return "pattern can not end with a dot";
+                if (pos >= str.length) return 'pattern can not end with a dot';
                 c = str[pos];
-                if (c == '.') return "pattern cannot contain more than one dot in a row";
+                if (c == '.') return 'pattern cannot contain more than one dot in a row';
                 break;
 
             default:
@@ -475,8 +470,8 @@ function parseJsonPath(str: string): string[] | string {
     //
 
     for (const segment of result) {
-        if (segment != "**" && segment.includes("**"))
-            return "path segment '**' must not have anything before or after it (except for dots of course)";
+        if (segment != '**' && segment.includes('**'))
+            return 'path segment \'**\' must not have anything before or after it (except for dots of course)';
     }
 
     return result;
@@ -503,41 +498,41 @@ function indexOfMany(str: string, matches: string[], position: number): number {
 if (IsDev) {
     const tests = [
         // simple case
-        { input: `abc`, output: [`abc`] },
+        { input: 'abc', output: ['abc'] },
 
         // single quotes, double quotes
-        { input: `"xx"."yy"`, output: [`xx`, `yy`] },
-        { input: `'xx'.'yy'`, output: [`xx`, `yy`] },
-        { input: `".".'.'`, output: [`.`, `.`] },
+        { input: '"xx"."yy"', output: ['xx', 'yy'] },
+        { input: '\'xx\'.\'yy\'', output: ['xx', 'yy'] },
+        { input: '".".\'.\'', output: ['.', '.'] },
 
         // keys with split-characters inside them
-        { input: `"'a.'b".asdf`, output: [`'a.'b`, `asdf`] },
-        { input: `"x.y.z".firstName`, output: [`x.y.z`, `firstName`] },
-        { input: `a.".b"`, output: [`a`, `.b`] },
-        { input: `a.'.b'`, output: [`a`, `.b`] },
-        { input: `a.'""".b"'`, output: [`a`, `""".b"`] },
-        { input: `a.'""".b'`, output: [`a`, `""".b`] },
+        { input: '"\'a.\'b".asdf', output: ['\'a.\'b', 'asdf'] },
+        { input: '"x.y.z".firstName', output: ['x.y.z', 'firstName'] },
+        { input: 'a.".b"', output: ['a', '.b'] },
+        { input: 'a.\'.b\'', output: ['a', '.b'] },
+        { input: 'a.\'""".b"\'', output: ['a', '""".b"'] },
+        { input: 'a.\'""".b\'', output: ['a', '""".b'] },
 
         // empty
-        { input: ``, output: [] },
-        { input: `''`, output: [] },
-        { input: `""`, output: [] },
+        { input: '', output: [] },
+        { input: '\'\'', output: [] },
+        { input: '""', output: [] },
 
         // invalid inputs
         // missing closing quotes
-        { input: `"`, output: null },
-        { input: `."`, output: null },
-        { input: `".`, output: null },
-        { input: `'`, output: null },
-        { input: `.'`, output: null },
-        { input: `'.`, output: null },
+        { input: '"', output: null },
+        { input: '."', output: null },
+        { input: '".', output: null },
+        { input: '\'', output: null },
+        { input: '.\'', output: null },
+        { input: '\'.', output: null },
 
         // dots at the wrong location
-        { input: `.`, output: null },
-        { input: `'a'.`, output: null },
-        { input: `.a`, output: null },
-        { input: `.'a'`, output: null },
-        { input: `a..b`, output: null },
+        { input: '.', output: null },
+        { input: '\'a\'.', output: null },
+        { input: '.a', output: null },
+        { input: '.\'a\'', output: null },
+        { input: 'a..b', output: null },
     ];
 
     for (const test of tests) {

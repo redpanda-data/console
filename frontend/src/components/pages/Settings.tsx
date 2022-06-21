@@ -9,17 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import React from "react";
-import { Section } from "../misc/common";
-import { PageComponent, PageInitHelper } from "./Page";
+import React from 'react';
+import { PageComponent, PageInitHelper } from './Page';
 
-import { motion, AnimatePresence } from "framer-motion"
-import { animProps, MotionDiv } from "../../utils/animationProps";
-import { observer } from "mobx-react";
-import { Checkbox, Alert, Button, Modal, Typography, Select, Row, Col } from "antd";
-import { makeObservable, observable } from "mobx";
-import { appGlobal } from "../../state/appGlobal";
-import { uiSettings } from "../../state/ui";
+import { MotionDiv } from '../../utils/animationProps';
+import { observer } from 'mobx-react';
+import { Modal, Typography, Select } from 'antd';
+import { makeObservable, observable } from 'mobx';
+import { appGlobal } from '../../state/appGlobal';
+import { uiSettings } from '../../state/ui';
 
 const { Text } = Typography;
 
@@ -47,9 +45,9 @@ export class SettingsPage extends PageComponent {
 
             {this.MakeRow('Table pagination controls',
                 <Select<typeof user.paginationPosition> value={user.paginationPosition} onChange={v => user.paginationPosition = v} style={{ width: 160 }}>
-                    <Select.Option value='top'>Top</Select.Option>
-                    <Select.Option value='bottom'>Bottom</Select.Option>
-                    <Select.Option value='both'>Both</Select.Option>
+                    <Select.Option value="top">Top</Select.Option>
+                    <Select.Option value="bottom">Bottom</Select.Option>
+                    <Select.Option value="both">Both</Select.Option>
                 </Select>)}
 
             {this.MakeRow('2nd setting',
@@ -79,7 +77,7 @@ export class SettingsPage extends PageComponent {
             title: 'Delete user settings?',
             content: 'This will remove all local Redpanda Console settings in the browser (clears "localStorage")',
             okText: 'Yes, reset my settings!', okType: 'default',
-            cancelText: "No, don't do anything.",
+            cancelText: 'No, don\'t do anything.',
             width: 700,
             onOk() {
                 // todo:

@@ -20,7 +20,7 @@ export const DebugEditor = observer((p: { observable: { jsonText: string } }) =>
     return <div style={{ marginTop: '1.5em' }}>
         <h4>Debug Editor</h4>
         <KowlEditor
-            language='json'
+            language="json"
 
             value={obs.jsonText}
             onChange={(v, e) => {

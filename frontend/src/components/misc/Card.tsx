@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { ReactNode, Component, CSSProperties } from "react";
+import React, { Component, CSSProperties } from 'react';
 
 
 class Card extends Component<{ id?: string, style?: CSSProperties, className?: string }> {

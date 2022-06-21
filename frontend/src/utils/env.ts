@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { toJson } from "./jsonUtils";
+import { toJson } from './jsonUtils';
 import './extensions';
 
 // const assertions and mapped types are awesome!
@@ -50,7 +50,7 @@ export const IsDev = isDev;
 export const IsBusiness = Boolean(env.REACT_APP_BUSINESS);
 export const AppName = IsBusiness ? 'Redpanda Console Business' : 'Redpanda Console';
 
-const basePathRaw: string = (window as any)["BASE_URL"];
+const basePathRaw: string = (window as any)['BASE_URL'];
 const basePath = (typeof basePathRaw === 'string' && !basePathRaw.startsWith('__BASE_PATH'))
     ? basePathRaw
     : '';
@@ -72,8 +72,8 @@ const envVarDebugObj = {} as any;
 const envVarDebugAr: { name: string, value: string }[] = [];
 
 const addProp = (key: string, value: any) => {
-    if (value === undefined || value === null || value === "") return;
-    key = key.removePrefix("REACT_APP_CONSOLE_").removePrefix("REACT_APP_");
+    if (value === undefined || value === null || value === '') return;
+    key = key.removePrefix('REACT_APP_CONSOLE_').removePrefix('REACT_APP_');
     envVarDebugObj[key] = value;
     envVarDebugAr.push({ name: key, value: value });
 }
@@ -81,7 +81,7 @@ const addProp = (key: string, value: any) => {
 for (const k in env) addProp(k, (env as any)[k]);
 
 // - add custom
-addProp("appName", AppName);
+addProp('appName', AppName);
 
 // - print
 console.log(toJson(envVarDebugObj));

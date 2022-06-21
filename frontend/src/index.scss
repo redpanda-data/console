@@ -822,7 +822,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
         &:not(&-disabled):not(&-selected):not([class*="disabled"]) {
             &:hover {
                 background: hsl(0deg 0% 90%);
-                
+
                     a {
                         color: hsl(0deg 0% 40%);
                     }
@@ -901,7 +901,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 .ant-checkbox-checked .ant-checkbox-inner {
     // background-color: hsla(209, 75%, 66%, 1);
         // border-color: hsla(209, 50%, 55%, 1);
-    
+
         background-color: var(--ant-primary-color);
         border-color: var(--ant-primary-color-outline);
 }
@@ -910,7 +910,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 .ant-switch-checked {
     // background-color: hsla(209, 66%, 55%, 1);
     // background-color: hsl(0deg 84% 65%);
-    
+
         background-color: var(--ant-primary-color);
     border-color: transparent;
 }
@@ -1596,6 +1596,9 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
             border-radius: 5px;
         }
     }
+    ol {
+        align-items: center;
+    }
 }
 
 .ant-page-header.has-breadcrumb {
@@ -2248,7 +2251,7 @@ mark {
     color: hsl(0deg, 0%, 66%);
         justify-content: center;
         align-items: center;
-    
+
         background: hsl(208deg 0% 96%);
 
     &.active {
@@ -2272,8 +2275,7 @@ mark {
             display: flex;
             justify-content: center;
             border-radius: 4px;
-        
-        
+
             font-size: 15px;
 
         &.active {

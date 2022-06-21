@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-
+/* eslint-disable no-extend-native */
 export { };
 
 declare global {
@@ -344,9 +344,9 @@ Array.prototype.toMap = function toMap<TItem, TKey, TValue>(this: TItem[], compu
 };
 
 Array.prototype.joinStr = function joinStr(this: (string | null | undefined)[], separator: string): string {
-    let r = "";
+    let r = '';
     for (const str of this) {
-        if (str === null || str === undefined || str === "")
+        if (str === null || str === undefined || str === '')
             continue;
 
         if (r.length == 0)
