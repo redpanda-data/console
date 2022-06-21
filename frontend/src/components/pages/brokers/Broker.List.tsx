@@ -77,7 +77,8 @@ class BrokerList extends PageComponent {
 
         const columns: ColumnProps<Broker>[] = [
             { width: '80px', title: 'ID', dataIndex: 'brokerId', render: renderIdColumn, sorter: sortField('brokerId'), defaultSortOrder: 'ascend' },
-            { width: 'auto', title: 'Address', dataIndex: 'address', sorter: sortField('address') },
+            Table.EXPAND_COLUMN,
+            { width: 'auto', title: 'Address', dataIndex: 'address', sorter: sortField('address'), },
             { width: '120px', title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), sorter: sortField('logDirSize') }
         ]
 
@@ -104,7 +105,6 @@ class BrokerList extends PageComponent {
                         rowKey={x => x.brokerId.toString()}
                         rowClassName={() => 'pureDisplayRow'}
                         expandable={{
-                            expandIconColumnIndex: 1,
                             expandedRowRender: record => <BrokerDetails brokerId={record.brokerId} />
                         }}
                     />

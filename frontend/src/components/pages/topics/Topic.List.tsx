@@ -425,7 +425,9 @@ function makeCreateTopicModal(parent: TopicList) {
             minInSyncReplicas: undefined,
             replicationFactor: undefined,
 
-            additionalConfig: [],
+            additionalConfig: [
+                { name: '', value: '' },
+            ],
 
             defaults: {
                 get retentionTime() { return tryGetBrokerConfig('log.retention.ms'); },

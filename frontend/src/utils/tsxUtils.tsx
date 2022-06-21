@@ -413,7 +413,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
             }
         </div>
 
-        this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: null, type: 'loading' });
+        this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: 0, type: 'loading' });
     }
 
     render() {

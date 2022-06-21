@@ -13,7 +13,7 @@ import { FilterOutlined } from "@ant-design/icons";
 import { AutoComplete, Button, Checkbox, Input, Modal, Popover, Typography } from "antd";
 import Item from "antd/lib/list/Item";
 import Paragraph from "antd/lib/typography/Paragraph";
-import arrayMove from "array-move";
+import { arrayMoveMutable } from "array-move";
 import { AnimatePresence, motion } from "framer-motion";
 import { computed, makeObservable, observable } from "mobx";
 import { observer } from "mobx-react";
@@ -142,7 +142,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
 
         const onDragEnd = function (result: DropResult, provided: ResponderProvided) {
             if (!result.destination) return;
-            arrayMove.mutate(tags, result.source.index, result.destination.index);
+            arrayMoveMutable(tags, result.source.index, result.destination.index);
         };
 
         const content = <>
@@ -298,12 +298,12 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
                 style={{ flexGrow: 1, flexBasis: '400px' }}
 
                 defaultActiveFirstOption={true}
-                onSearch={(value) => {
+                onSearch={(value: string) => {
                     // console.log('onSearch ', value);
                 }}
                 value={tag.pattern}
 
-                onChange={e => tag.pattern = e}
+                onChange={(value: string) => tag.pattern = value}
                 placeholder="Pattern..."
                 filterOption={(inputValue, option) => option?.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1}
 

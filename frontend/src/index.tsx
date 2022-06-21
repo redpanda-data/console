@@ -18,7 +18,8 @@ import {
 } from "react-router-dom";
 import { configure, when } from "mobx";
 
-import "antd/dist/antd.css";
+// import "antd/dist/antd.css";
+import 'antd/dist/antd.variable.min.css';
 import "./index.scss";
 
 import App from "./components/App";
@@ -30,6 +31,35 @@ import './assets/fonts/open-sans.css';
 import './assets/fonts/poppins.css';
 import './assets/fonts/quicksand.css';
 import './assets/fonts/kumbh-sans.css';
+
+import { ConfigProvider } from 'antd';
+
+
+const exampleColors = {
+    antdDefaultBlue: '#1890FF',
+
+    rpBrandSecondaryOrange: '#F15D61', // brand-secondary-color; used in selected menu item
+    rpBrandAccentOrange: '#ED6338', // brand-accent-color
+
+    green: '#25B864', // chosen to make it really obvious when changing the theme-color works.
+    green2: 'hsl(75deg 100% 50%)',
+
+    debugRed: '#FF0000',
+} as const;
+
+
+ConfigProvider.config({
+    theme: {
+        primaryColor: "#d70bda",
+
+        infoColor: exampleColors.debugRed,
+        successColor: exampleColors.debugRed,
+        processingColor: exampleColors.debugRed,
+        // errorColor: exampleColors.debugRed,
+        warningColor: exampleColors.debugRed,
+    },
+});
+
 
 const HistorySetter = withRouter((p: RouteComponentProps) => {
     appGlobal.history = p.history;

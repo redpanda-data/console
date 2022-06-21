@@ -719,14 +719,14 @@ type NoticeType = 'info' | 'success' | 'error' | 'warning' | 'loading';
 export class Message {
     private key: string;
     private hideFunc: MessageType;
-    private duration: number | null;
+    private duration: number | undefined;
 
     constructor(private text: string, private type: NoticeType = 'loading', private suffix: string = "") {
         this.key = randomId();
         if (type == 'loading')
             this.duration = 0; // loading stays open until changed
         else
-            this.duration = null; // others disappear automatically
+            this.duration = undefined; // others disappear automatically
         this.update();
     }
 

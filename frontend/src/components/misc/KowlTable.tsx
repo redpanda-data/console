@@ -10,7 +10,7 @@
  */
 
 import React, { ReactNode, Component, CSSProperties } from "react";
-import { Button, Checkbox, Input, Menu, Pagination, Table } from "antd";
+import { Button, Checkbox, Input, InputRef, Menu, Pagination, Table } from "antd";
 import { ColumnType } from "antd/lib/table";
 import styles from './KowlTable.module.scss';
 import { ColumnFilterItem, ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from "antd/lib/table/interface";
@@ -218,7 +218,11 @@ export class KowlTable<T extends object = any> extends Component<{
 
     @action updateCustomColumns(cols: KowlColumnType<T>[]) {
         // console.count('table update columns');
-        this.customColumns = cols.map(col => Object.assign({}, col)) as KowlColumnTypeInternal<T>[];
+        this.customColumns = cols.map(col => {
+            if (Object.is(col, Table.EXPAND_COLUMN) || Object.is(col, Table.SELECTION_COLUMN))
+                return col;
+            return Object.assign({}, col);
+        }) as KowlColumnTypeInternal<T>[];
 
         // for (const col of this.customColumns)
         //     col.onHeaderCell = () => ({ style: { background: '#dbeeff' } });
@@ -392,6 +396,8 @@ export class KowlTable<T extends object = any> extends Component<{
 
             pagination={pagination}
 
+
+
             getPopupContainer={findPopupContainer}
             expandable={p.expandable}
             footer={this.renderFooter}
@@ -533,7 +539,7 @@ export class SearchTitle extends Component<{
     observableSettings: { quickSearch: string },
 }>
 {
-    inputRef = React.createRef<Input>(); // reference to input, used to focus it
+    inputRef = React.createRef<InputRef>(); // reference to input, used to focus it
 
     constructor(p: any) {
         super(p);
@@ -560,7 +566,7 @@ export class SearchTitle extends Component<{
                 onMouseDown={e => e.stopPropagation()}
                 onMouseUp={e => e.stopPropagation()}
                 style={{
-                    position: 'absolute', top: 0, right: '36px', bottom: 0, left: 0,
+                    position: 'absolute', inset: '0px 0px 0px -8px',
                     display: 'flex', placeContent: 'center', placeItems: 'center',
                     padding: '4px 6px',
                 }}

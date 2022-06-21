@@ -48,14 +48,14 @@ ul.navigationList {
         transition: background-color 0.2s ease-out,
         color .2s ease-out;
         &.default:hover {
-            color: rgb(24, 144, 255);
+            color: var(--ant-primary-color);
             background: hsla(0, 0%, 50%, 0.03);
         }
 
         &.active {
-            color: rgb(24, 144, 255);
-            background-color: rgba(0, 185, 255, 0.09);
-            border-bottom-color: rgb(48, 152, 232);
+            color: var(--ant-primary-color);
+                border-bottom-color: var(--ant-primary-5);
+                background-color: var(--ant-primary-2);
         }
 
         &.disabled {
