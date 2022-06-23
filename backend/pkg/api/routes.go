@@ -78,6 +78,11 @@ func (api *API) routes() *chi.Mux {
 				r.Post("/acls", api.handleCreateACL())
 				r.Delete("/acls", api.handleDeleteACLs())
 
+				// Kafka Users/Principals
+				r.Get("/users", api.handleGetUsers())
+				r.Post("/users", api.handleCreateUser())
+				r.Delete("/users/{principalID}", api.handleDeleteUser())
+
 				// Topics
 				r.Get("/topics-configs", api.handleGetTopicsConfigs())
 				r.Get("/topics-offsets", api.handleGetTopicsOffsets())
