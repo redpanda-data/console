@@ -185,8 +185,8 @@ const AppPageHeader = observer(() => {
 
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
         ? <>
-            <div className='breadcrumbLast'>{r.breadcrumbName}</div>
-            <LayoutBypass justifyContent='start'>
+            <div className="breadcrumbLast">{r.breadcrumbName}</div>
+            <LayoutBypass justifyContent="start">
                 <DataRefreshButton />
             </LayoutBypass>
         </>
