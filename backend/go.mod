@@ -23,6 +23,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
+	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220621235643-71527d3efdc0
 	github.com/stretchr/testify v1.7.0
 	github.com/twmb/franz-go v1.6.0
 	github.com/twmb/franz-go/pkg/kmsg v1.1.0
@@ -72,6 +73,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.7.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
+	github.com/mitchellh/reflectwalk v1.0.1 // indirect
+	github.com/pelletier/go-toml v1.7.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.35.0 // indirect
