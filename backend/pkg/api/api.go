@@ -16,6 +16,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/version"
 	"go.uber.org/zap"
 )
@@ -24,11 +25,12 @@ import (
 type API struct {
 	Cfg *Config
 
-	Logger     *zap.Logger
-	KafkaSvc   *kafka.Service
-	ConsoleSvc *console.Service
-	ConnectSvc *connect.Service
-	GitSvc     *git.Service
+	Logger      *zap.Logger
+	KafkaSvc    *kafka.Service
+	ConsoleSvc  *console.Service
+	ConnectSvc  *connect.Service
+	GitSvc      *git.Service
+	RedpandaSvc *redpanda.Service
 
 	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Console Business)
 }
@@ -46,7 +48,12 @@ func New(cfg *Config) *API {
 		logger.Fatal("failed to create kafka service", zap.Error(err))
 	}
 
-	consoleSvc, err := console.NewService(cfg.Console, logger, kafkaSvc)
+	redpandaSvc, err := redpanda.NewService(cfg.Redpanda, logger)
+	if err != nil {
+		logger.Fatal("failed to create Redpanda service", zap.Error(err))
+	}
+
+	consoleSvc, err := console.NewService(cfg.Console, logger, kafkaSvc, redpandaSvc)
 	if err != nil {
 		logger.Fatal("failed to create owl service", zap.Error(err))
 	}
@@ -57,12 +64,13 @@ func New(cfg *Config) *API {
 	}
 
 	return &API{
-		Cfg:        cfg,
-		Logger:     logger,
-		KafkaSvc:   kafkaSvc,
-		ConsoleSvc: consoleSvc,
-		ConnectSvc: connectSvc,
-		Hooks:      newDefaultHooks(),
+		Cfg:         cfg,
+		Logger:      logger,
+		KafkaSvc:    kafkaSvc,
+		ConsoleSvc:  consoleSvc,
+		ConnectSvc:  connectSvc,
+		RedpandaSvc: redpandaSvc,
+		Hooks:       newDefaultHooks(),
 	}
 }
 

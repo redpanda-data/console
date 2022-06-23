@@ -24,6 +24,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/logging"
@@ -37,11 +38,12 @@ type Config struct {
 	MetricsNamespace string `yaml:"metricsNamespace"`
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 
-	Console console.Config `yaml:"console"`
-	Connect connect.Config `yaml:"connect"`
-	REST    rest.Config    `yaml:"server"`
-	Kafka   kafka.Config   `yaml:"kafka"`
-	Logger  logging.Config `yaml:"logger"`
+	Console  console.Config  `yaml:"console"`
+	Redpanda redpanda.Config `yaml:"redpanda"`
+	Connect  connect.Config  `yaml:"connect"`
+	REST     rest.Config     `yaml:"server"`
+	Kafka    kafka.Config    `yaml:"kafka"`
+	Logger   logging.Config  `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs
