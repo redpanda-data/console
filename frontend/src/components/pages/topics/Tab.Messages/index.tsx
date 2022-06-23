@@ -720,7 +720,7 @@ function ${name}() {
 
         return (
             <Empty description={<>
-                <Text type='secondary' strong style={{ fontSize: '125%' }}>No messages</Text>
+                <Text type="secondary" strong style={{ fontSize: '125%' }}>No messages</Text>
                 {hintBox}
             </>} />
         );
