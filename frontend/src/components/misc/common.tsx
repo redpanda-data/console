@@ -105,7 +105,7 @@ export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE,
 }
 
 
-export function sortField<T, F extends keyof T>(field: F): CompareFn<T> {
+export function sortField<T, F extends (keyof T & string)>(field: F): CompareFn<T> {
     return (a: T, b: T, _) => {
 
         if (a[field] == null && b[field] == null) return 0;

@@ -37,36 +37,6 @@ import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
 import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, okIcon, TaskState, warnIcon } from './helper';
 export type Monaco = typeof monacoType;
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-// const monacoProtoLint = require('monaco-proto-lint');
-
-// const protoLangConf: monacoType.languages.LanguageConfiguration = {
-//     indentationRules: {
-//         // ^.*\{[^}'']*$
-//         increaseIndentPattern: /^.*\{[^}'']*$/,
-//         // ^(.*\*/)?\s*\}.*$
-//         decreaseIndentPattern: /^(.*\*\/)?\s*\}.*$/,
-//     },
-//     wordPattern: /(-?\d*\.\d\w*)|([^`~!@#%^&*()\-=+[{\]}\\|;:'",.<>/?\s]+)(\.proto){0,1}/g,
-//     comments: {
-//         lineComment: '//',
-//         blockComment: ['/*', '*/']
-//     },
-//     brackets: [
-//         ['{', '}'],
-//         ['[', ']'],
-//         ['(', ')'],
-//         ['<', '>'],
-//     ],
-//     folding: {
-//         markers: {
-//             start: new RegExp("^\\s*<!--\\s*#?region\\b.*-->"),
-//             end: new RegExp("^\\s*<!--\\s*#?endregion\\b.*-->")
-//         },
-//         offSide: true,
-//     }
-// }
-
 
 function onBeforeEditorMount(m: Monaco) {
     // monacoProtoLint.default(m);

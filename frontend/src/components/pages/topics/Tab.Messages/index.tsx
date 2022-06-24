@@ -339,12 +339,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const params = uiState.topicSettings.searchParams;
         const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset + params.startTimestamp;
 
-        if (this.currentSearchRun)
-            return console.warn(`searchFunc: function already in progress (trigger:${source})`);
+        if (this.currentSearchRun) {
+            if (IsDev) console.warn(`searchFunc: function already in progress (trigger:${source})`);
+            return;
+        }
 
         const phase = untracked(() => api.messageSearchPhase);
-        if (phase)
-            return console.warn(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
+        if (phase) {
+            if (IsDev) console.warn(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
+            return;
+        }
 
         try {
             this.currentSearchRun = searchParams;
@@ -700,14 +704,27 @@ function ${name}() {
         return <Tag key={6} color="black">Unknown: {type}</Tag>;
     }
 
-    empty = () => <Empty description={<>
-        <Text type="secondary" strong style={{ fontSize: '125%' }}>No messages</Text>
-        <br />
-        <span>
-            The selected topic/partition does not contain any messages.<br />
-            If you have any filters active, check if they actually match the messages you are looking for.<br />
-            If you are using live tailing (StartOffset = 'Newest'), make sure messages are being sent to the topic <i>while</i> Redpanda Console is waiting for messages.</span>
-    </>} />;
+    empty = () => {
+        const searchParams = uiState.topicSettings.searchParams;
+        const filterCount = searchParams.filtersEnabled ? searchParams.filters.filter(x => x.isActive).length : 0;
+
+        const hints: JSX.Element[] = [];
+        if (filterCount > 0)
+            hints.push(<>There are <b>{filterCount} filters</b> in use by the current search. Keep in mind that messages must pass <b>every</b> filter when using more than one filter at the same time.</>);
+        if (searchParams.startOffset == TopicOffsetOrigin.End)
+            hints.push(<><b>Start offset</b> is set to "Newest". Make sure messages are being sent to the topic.</>);
+
+        const hintBox = hints.length && <ul className={styles.noMessagesHint}>
+            {hints.map((x, i) => <li key={i}>{x}</li>)}
+        </ul>
+
+        return (
+            <Empty description={<>
+                <Text type="secondary" strong style={{ fontSize: '125%' }}>No messages</Text>
+                {hintBox}
+            </>} />
+        );
+    };
 }
 
 @observer
@@ -1263,7 +1280,7 @@ class MessageSearchFilterBar extends Component {
                         className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
                         key={e.id}
                         closable
-                        color={e.isActive ? 'blue' : undefined}
+                        color={e.isActive ? 'var(--ant-primary-3)' : undefined}
                         onClose={() => settings.filters.remove(e)}
                     >
                         <SettingOutlined

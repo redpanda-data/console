@@ -11,10 +11,9 @@
 
 import React, { Component, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } from 'react-beautiful-dnd';
-import arrayMove from 'array-move';
+import { arrayMoveMutable } from 'array-move';
 import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-
 import { Button, Input, Tooltip } from 'antd';
 import { ThreeBarsIcon, XIcon } from '@primer/octicons-react';
 
@@ -188,7 +187,7 @@ export class List<T extends { id: string }> extends Component<{
         const onDragEnd = (result: DropResult, provided: ResponderProvided) => {
             if (!result.destination)
                 return;
-            arrayMove.mutate(this.props.observableAr, result.source.index, result.destination.index);
+            arrayMoveMutable(this.props.observableAr, result.source.index, result.destination.index);
         }
 
         return <div className="reorderableList">

@@ -92,10 +92,10 @@ const SideBar = observer(() =>
             <Link to="/">
                 {/* Logo Image */}
                 <AnimatePresence initial={false} presenceAffectsLayout >
-                {uiSettings.sideBarOpen
+                    {uiSettings.sideBarOpen
                         ? <motion.img alt="logo" key="logoExpanded" src={RedpandaConsoleLogo} {...animProps_logo} />
                         : <motion.img alt="logo" key="logoCollapsed" src={VSymbolLogo}   {...animProps_logo} />
-                }
+                    }
                 </AnimatePresence>
             </Link>
         </div>
@@ -184,12 +184,12 @@ const AppPageHeader = observer(() => {
     }
 
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
-        ? <span>
+        ? <>
             <div className="breadcrumbLast">{r.breadcrumbName}</div>
             <LayoutBypass justifyContent="start">
                 <DataRefreshButton />
             </LayoutBypass>
-        </span>
+        </>
         : <NavLink to={r.path}>{r.breadcrumbName}</NavLink>;
 
     return <MotionDiv identityKey={uiState.pageTitle} className="pageTitle" style={{ display: 'flex', paddingRight: '16px', alignItems: 'center', marginBottom: '10px' }}>
