@@ -23,7 +23,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
-	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220621235643-71527d3efdc0
+	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220624141141-0d9e424d3a6d
 	github.com/stretchr/testify v1.7.0
 	github.com/twmb/franz-go v1.6.0
 	github.com/twmb/franz-go/pkg/kmsg v1.1.0
@@ -79,7 +79,6 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.35.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
-	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220720120444-5b0b0eb5d7ef // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sethgrid/pester v1.1.0 // indirect
@@ -97,7 +96,6 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
-	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20220621134657-43db42f103f7 // indirect
