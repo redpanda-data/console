@@ -26,6 +26,10 @@ type Service struct {
 }
 
 func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
+	if !cfg.AdminAPI.Enabled {
+		return nil, nil
+	}
+
 	// Build admin client with provided credentials
 	basicCreds := admin.BasicCredentials{
 		Username: cfg.AdminAPI.Username,
