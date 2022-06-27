@@ -16,9 +16,9 @@ import Table, { ColumnProps, TablePaginationConfig } from 'antd/lib/table';
 import { toJson } from '../../../../utils/jsonUtils';
 import { Alert } from 'antd';
 
-import type { AclResponse } from '../../../../state/restInterfaces';
+import type { GetAclResponse } from '../../../../state/restInterfaces';
 
-type Acls = AclResponse | null | undefined;
+type Acls = GetAclResponse | null | undefined;
 
 interface AclListProps {
     acl: Acls;

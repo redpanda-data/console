@@ -214,6 +214,13 @@ const defaultUiSettings = {
         showStatisticsBar: true,
     },
 
+    aclList: {
+        configTable: {
+            quickSearch: '',
+            pageSize: 20,
+        }
+    },
+
     aclSearchParams: clone(AclRequestDefault) as AclRequest,
 
     quotasList: {

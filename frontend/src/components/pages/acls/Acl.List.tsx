@@ -28,21 +28,46 @@ import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
 import { toJson } from '../../../utils/jsonUtils';
 import { KowlTable } from '../../misc/KowlTable';
 import { LockIcon } from '@primer/octicons-react';
+import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
 
+type AclFlat = Omit<AclResource, 'acls'> & AclRule & { eqKey: string };
 
-type AclRuleFlat = AclResource & AclRule
+type AclGroup = {
+    groupingKey: string;
 
-// todo:
-// - remove debug code
-// - add filter controls
-// - make each "resource" row expandable to show all the AclRules that apply
+    principal: string;
+    host: string;
+
+    entries: AclFlat[];
+};
+
+const columns: ColumnProps<AclGroup>[] = [
+    {
+        width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal'),
+        render: v => v ? v : 'Any'
+    },
+    {
+        width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host'),
+        render: v => v ? v : 'Any'
+    },
+    {
+        width: '170px', title: 'ACL Entries',
+        render: (_, record) => {
+            return <>
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                    <span>{record.entries.length}</span>
+                    <Button className='iconButton' style={{ marginLeft: 'auto' }}><PencilIcon /></Button>
+                    <Button className='iconButton'><TrashIcon /></Button>
+                </span>
+            </>
+        },
+        sorter: (a, b) => a.entries.length - b.entries.length,
+    },
+];
+
 
 @observer
 class AclList extends PageComponent {
-
-    @observable filteredBrokers: Broker[];
-    @observable resourceTypeFilter: string = '';
-    @observable filterText = '';
 
     constructor(p: any) {
         super(p);
@@ -57,9 +82,9 @@ class AclList extends PageComponent {
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
-    refreshData(force: boolean) {
+    async refreshData(force: boolean) {
         if (api.userData != null && !api.userData.canListAcls) return;
-        api.refreshAcls(AclRequestDefault, force);
+        await api.refreshAcls(AclRequestDefault, force);
     }
 
     render() {
@@ -74,17 +99,7 @@ class AclList extends PageComponent {
             ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} />
             : null;
 
-        const resources = this.filteredResources;
-
-        const columns: ColumnProps<typeof resources[0]>[] = [
-            { width: '120px', title: 'Resource', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
-            { width: '120px', title: 'Permission', dataIndex: 'permissionType', sorter: sortField('permissionType') },
-            { width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal') },
-            { width: '160px', title: 'Operation', dataIndex: 'operation', sorter: sortField('operation') },
-            { width: 'auto', title: 'PatternType', dataIndex: 'resourcePatternType', sorter: sortField('resourcePatternType') },
-            { width: 'auto', title: 'Name', dataIndex: 'resourceName', sorter: sortField('resourceName') },
-            { width: '120px', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
-        ];
+        const groups = this.aclGroups;
 
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
@@ -96,101 +111,102 @@ class AclList extends PageComponent {
                     {noAclAuthorizer}
 
                     <KowlTable
-                        dataSource={resources}
+                        dataSource={groups}
                         columns={columns}
 
-                        observableSettings={uiSettings.brokerList.configTable}
+                        observableSettings={uiSettings.aclList.configTable}
 
-                        rowKey={x => x.eqKey}
+                        rowKey={x => x.groupingKey}
                         rowClassName={() => 'pureDisplayRow'}
+
+                        search={{
+                            searchColumnIndex: 0,
+                            isRowMatch
+                        }}
                     />
                 </Card>
             </motion.div>
         </>
     }
 
-    @computed.struct get availableResourceTypes(): { value: string, label: string }[] {
+    @computed({ equals: aclFlatEquals }) get flatAcls() {
         const acls = api.ACLs;
-        if (acls?.aclResources == null) return [];
-        // issue: we can't easily filter by 'resourceType' (because it is a string, and we have to use an enum for requests...)
-        // so we have to cheat by building our own list of what types are available
-        const ar = acls.aclResources.map(res => res.resourceType).distinct().map(str => ({ value: str, label: capitalize(str.toLowerCase()) }));
-        ar.unshift({ label: 'Any', value: '' });
-        return ar;
+        if (!acls || !acls.aclResources || acls.aclResources.length == 0)
+            return [];
+
+        const flattened: AclFlat[] = [];
+        for (const res of acls.aclResources) {
+            for (const rule of res.acls) {
+                const eqKey = (rule.principal ?? 'Any') + ' ' + (rule.host ?? 'Any');
+                flattened.push({ ...res, ...rule, eqKey });
+            }
+        }
+
+        return flattened;
     }
 
-    @computed({ equals: comparer.structural }) get filteredResources() {
+    @computed({ equals: comparer.structural }) get aclGroups(): AclGroup[] {
+        const flat = this.flatAcls;
 
-        const filtered = this.flatResourceList
-            // filter by category
-            .filter(res => (this.resourceTypeFilter == '') || (this.resourceTypeFilter == res.resourceType))
-            // filter by name
-            .filter(this.isFilterMatch)
-            .sort((a, b) => a.resourceName.localeCompare(b.resourceName))
-            .sort((a, b) => a.operation.localeCompare(b.operation))
-            .sort((a, b) => a.principal.localeCompare(b.principal));
-        return filtered;
+        const simpleGroups = flat.groupInto(f => {
+            const groupingKey = (f.principal ?? 'Any') + ' ' + (f.host ?? 'Any');
+            return groupingKey;
+        });
+
+        const groups: AclGroup[] = [];
+        for (const g of simpleGroups) {
+            const principal = g.items[0].principal;
+            const host = g.items[0].host;
+            groups.push({
+                groupingKey: g.key,
+
+                principal,
+                host,
+                entries: g.items,
+            })
+        }
+
+        return groups;
     }
-
-    @computed get flatResourceList() {
-        const acls = api.ACLs;
-        if (acls?.aclResources == null) return [];
-        const flatResources = acls.aclResources
-            .map(res => res.acls.map(rule => ({ ...res, ...rule })))
-            .flat()
-            .map(x => ({ ...x, eqKey: toJson(x) }));
-        return flatResources;
-    }
-
-    isFilterMatch = (item: AclRuleFlat) => {
-        const text = this.filterText;
-        if (containsIgnoreCase(item.host, text)) return true;
-        if (containsIgnoreCase(item.operation, text)) return true;
-        if (containsIgnoreCase(item.permissionType, text)) return true;
-        if (containsIgnoreCase(item.principal, text)) return true;
-        if (containsIgnoreCase(item.resourceName, text)) return true;
-        if (containsIgnoreCase(String(item.resourcePatternType), text)) return true;
-        if (containsIgnoreCase(item.resourceType, text)) return true;
-
-        return false;
-    };
 
     SearchControls = observer(() => {
 
         return (
-            <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <Label text="Resource Type">
-                    <Select
-                        options={this.availableResourceTypes}
-                        value={this.resourceTypeFilter}
-                        onChange={(val) => {
-                            this.resourceTypeFilter = val;
-                        }}
-                        style={{ width: '11em' }}
-                        size="middle" />
-                </Label>
-
-                <Input allowClear={true} placeholder="Quick Search" style={{ width: '250px', marginLeft: 'auto' }}
-                    onChange={x => this.filterText = x.target.value}
-                    value={this.filterText}
+            <div style={{ margin: '0 1px', marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <Input allowClear={true} placeholder="Quick Search" style={{ width: '250px' }}
+                    onChange={x => uiSettings.aclList.configTable.quickSearch = x.target.value}
+                    value={uiSettings.aclList.configTable.quickSearch}
                 />
+
+                <span style={{ marginLeft: 'auto' }} >{' '}</span>
+
+                {/* <Button>Create Service Account</Button> */}
+                <Button disabled>Create ACL</Button>
             </div>
         );
     })
 }
 
-type FlatResource = AclList['flatResourceList'][0];
 
 export default AclList;
 
-function capitalize(str: string): string {
-    if (!str) return str;
-    return str.charAt(0).toUpperCase() + str.slice(1);
+function aclFlatEquals(a: AclFlat, b: AclFlat) {
+    return a.eqKey === b.eqKey;
 }
 
+function isRowMatch(entry: AclGroup, regex: RegExp): boolean {
+    if (regex.test(entry.host)) return true;
+    if (regex.test(entry.principal)) return true;
 
-//console.log('enum entries are:', resourceTypes.map(e => ({ name: e.name.replace(/([A-Z]+)/g, " $1"), value: e.value })));
-// console.log('enum entries are:', OptionValues);
+    for (const e of entry.entries) {
+        if (regex.test(e.operation)) return true;
+        if (regex.test(e.resourceType)) return true;
+        if (regex.test(e.resourceName)) return true;
+    }
+
+    return false;
+}
+
 
 const PermissionDenied = <>
     <motion.div {...animProps} key={'aclNoPerms'} style={{ margin: '0 1rem' }}>

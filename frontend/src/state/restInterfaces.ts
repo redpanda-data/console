@@ -574,7 +574,7 @@ export interface TopicPermissions {
 
 
 //
-// ACLs
+// Listing ACLs
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L47
 export enum AclResourceType {
@@ -643,7 +643,7 @@ export const AclRequestDefault = {
     permissionType: AclPermissionType.AclPermissionAny,
 } as const;
 
-export interface AclResponse {
+export interface GetAclResponse {
     aclResources: AclResource[];
     isAuthorizerEnabled: boolean;
 }
@@ -663,6 +663,61 @@ export interface AclRule {
     host: string;
     operation: string;
     permissionType: string;
+}
+
+
+export interface CreateACLRequest {
+    // ResourceType is the type of resource this acl entry will be on.
+    // It is invalid to use UNKNOWN or ANY.
+    resourceType: AclResourceType;
+
+    // ResourceName is the name of the resource this acl entry will be on.
+    // For CLUSTER, this must be "kafka-cluster".
+    resourceName: string;
+
+    // ResourcePatternType is the pattern type to use for the resource name.
+    // This cannot be UNKNOWN or MATCH (i.e. this must be LITERAL or PREFIXED).
+    // The default for pre-Kafka 2.0.0 is effectively LITERAL.
+    //
+    // This field has a default of 3 (prefixed).
+    resourcePatternType: ResourcePatternType.LITERAL | ResourcePatternType.PREFIXED;
+
+    // Principal is the user to apply this acl for. With the Kafka simple
+    // authorizer, this must begin with "User:".
+    principal: string;
+
+    // Host is the host address to use for this acl. Each host to allow
+    // the principal access from must be specified as a new creation. KIP-252
+    // might solve this someday. The special wildcard host "*" allows all hosts.
+    host: '*' | string;
+
+    // Operation is the operation this acl is for. This must not be UNKNOWN or
+    // ANY.
+    operation: AclOperation;
+
+    // PermissionType is the permission of this acl. This must be either ALLOW
+    // or DENY.
+    permissionType: AclPermissionType.AclPermissionAllow | AclPermissionType.AclPermissionDeny;
+}
+
+
+export interface DeleteACLsRequest {
+    resourceType: AclResourceType;
+
+    // Unset will match any resource name
+    resourceName?: string;
+
+    resourcePatternType: ResourcePatternType;
+
+    // Unset will match any principal
+    principal?: string;
+
+    // Unset will match any host
+    host?: string;
+
+    operation: AclOperation;
+
+    permissionType: AclPermissionType;
 }
 
 export interface QuotaResponse {
