@@ -12,7 +12,6 @@
 import { PlusIcon, TrashIcon } from '@primer/octicons-react';
 import { Button, Input } from 'antd';
 import { observer } from 'mobx-react';
-import React from 'react';
 import './headersEditor.scss';
 
 interface Header {
@@ -49,7 +48,6 @@ export default HeadersEditor;
 
 const HeaderComp = observer((p: { list: Header[], header: Header, index: number }) => {
     const { key, value } = p.header;
-    const { index } = p;
     return <tr>
         <td className="index">{p.index + 1}</td>
         <td className="name"><Input placeholder="Key" spellCheck={false} value={key} onChange={e => p.header.key = e.target.value} /></td>

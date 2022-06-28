@@ -38,7 +38,7 @@ import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, okIcon, TaskState
 export type Monaco = typeof monacoType;
 
 
-function onBeforeEditorMount(m: Monaco) {
+function onBeforeEditorMount(_m: Monaco) {
     // monacoProtoLint.default(m);
     // m.languages.setLanguageConfiguration('protobuf', protoLangConf);
 
@@ -55,7 +55,7 @@ function onBeforeEditorMount(m: Monaco) {
     // })
 }
 
-function onMountEditor(editor: any, monaco: any) {
+function onMountEditor(_editor: any, _monaco: any) {
     // editor is actually type: monaco.editor.IStandaloneCodeEditor
     // editor.setValue(logText);
 }
@@ -133,7 +133,6 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
         if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
 
-        const settings = uiSettings.kafkaConnect;
         const cluster = api.connectConnectors?.clusters?.first(c => c.clusterName == clusterName);
         if (!cluster) return 'cluster not found';
         const connector = cluster?.connectors.first(c => c.name == connectorName);
@@ -207,7 +206,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
                                 language="json"
                                 value={this.currentConfig}
-                                onChange={(v, e) => {
+                                onChange={(v) => {
                                     if (v) {
                                         if (!this.currentConfig && !v)
                                             return; // dont replace undefiend with empty (which would trigger our 'autorun')

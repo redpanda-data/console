@@ -27,7 +27,7 @@ import { InfoIcon } from '@primer/octicons-react';
 
 const defaultLocale = 'en'
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
-const decimalSeperator = (0.123).toLocaleString(defaultLocale)[1];
+// const decimalSeperator = (0.123).toLocaleString(defaultLocale)[1];
 
 const nbsp = '\xA0'; // non breaking space
 
@@ -227,7 +227,7 @@ export const InfoText = (p: {
     const gap = p.gap ?? '4px';
 
     const gray = 'hsl(0deg, 0%, 50%)';
-    const blue = 'hsl(209deg, 100%, 55%)';
+    // const blue = 'hsl(209deg, 100%, 55%)';
     const color = p.iconColor ?? gray;
 
     const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size, height: size, marginLeft: gap, transform: p.transform }}>{p.icon ?? <InfoIcon />}</span>
@@ -470,15 +470,15 @@ export const DefaultSkeleton = (
 );
 
 // Single line string, no wrapping, will not overflow and display ellipsis instead
-const ellipsisDivStyle: CSSProperties = {
-    display: 'inline-block',
-    width: 0,
-    minWidth: '100%',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    verticalAlign: 'text-bottom',
-};
+// const ellipsisDivStyle: CSSProperties = {
+//     display: 'inline-block',
+//     width: 0,
+//     minWidth: '100%',
+//     overflow: 'hidden',
+//     textOverflow: 'ellipsis',
+//     whiteSpace: 'nowrap',
+//     verticalAlign: 'text-bottom',
+// };
 const ellipsisSpanStyle: CSSProperties = {
     whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',

@@ -11,7 +11,7 @@
         "start": "cross-env SKIP_PREFLIGHT_CHECK=true                         react-app-rewired start",
         "start2": "cross-env SKIP_PREFLIGHT_CHECK=true REACT_APP_BUSINESS=true react-app-rewired start",
         "build": "react-app-rewired build -- --profile",
-        "buildLocalTest": "cross-env REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true react-app-rewired build",
+        "build-local-test": "cross-env REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true react-app-rewired build",
         "test": "react-app-rewired test",
         "eject": "react-scripts eject",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",

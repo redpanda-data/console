@@ -9,9 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { EditTwoTone, EyeInvisibleTwoTone, InfoCircleFilled } from '@ant-design/icons';
+import {  EyeInvisibleTwoTone, InfoCircleFilled } from '@ant-design/icons';
 import { Tooltip } from 'antd';
-import React from 'react';
 import { ConfigEntry } from '../../state/restInterfaces';
 import { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
@@ -31,12 +30,6 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
 
                 let name = <div style={{ display: 'flex' }} className={styles.nameText}>{text}</div>;
                 if (renderTooltip) name = renderTooltip(record, name);
-
-                const explicitSet = record.isExplicitlySet && (
-                    <Tooltip overlay="Value was set explicitly">
-                        <EditTwoTone twoToneColor="#1890ff" />
-                    </Tooltip>
-                );
                 const sensitive = record.isSensitive && (
                     <Tooltip overlay="Value has been redacted because it's sensitive">
                         <EyeInvisibleTwoTone twoToneColor="#1890ff" />
@@ -46,7 +39,6 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
                 return <div className={styles.name}>
                     {name}
                     <span className={styles.configFlags}>
-                        {/* {explicitSet} */}
                         {sensitive}
                     </span>
                 </div>;

@@ -12,7 +12,7 @@
 import {Button, Tooltip} from 'antd';
 import { motion } from 'framer-motion';
 import { observer } from 'mobx-react';
-import React, { Component } from 'react';
+import { Component } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectors } from '../../../state/restInterfaces';
@@ -31,11 +31,7 @@ import { Link } from 'react-router-dom';
 
 @observer
 class KafkaConnectOverview extends PageComponent {
-    constructor(p: any) {
-        super(p);
-        // makeObservable(this);
-    }
-
+        
     initPage(p: PageInitHelper): void {
         p.title = 'Overview';
         p.addBreadcrumb('Kafka Connect', '/kafka-connect');

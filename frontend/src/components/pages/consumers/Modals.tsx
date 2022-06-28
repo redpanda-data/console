@@ -12,7 +12,6 @@
 
 import { TrashIcon as TrashIconOutline, PencilIcon as PencilIconOutline } from '@heroicons/react/outline';
 import { Component } from 'react';
-import React from 'react';
 import { findPopupContainer, numberToThousandsString, RadioOptionGroup, InfoText } from '../../../utils/tsxUtils';
 import { Button, Collapse, Modal, Popover, Radio, Select, Table, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
@@ -214,10 +213,6 @@ export class EditOffsetsModal extends Component<{
 
     page2() {
         const firstTopic = this.offsetsByTopic[0].topicName;
-        const offsetsCanDiffer = this.selectedOption == 'startOffset'
-            || this.selectedOption == 'endOffset'
-            || this.selectedOption == 'time';
-
         return <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
             <Collapse bordered={false} defaultActiveKey={firstTopic}>
                 {this.offsetsByTopic.map(({ topicName, items }) =>
@@ -623,12 +618,6 @@ export class DeleteOffsetsModal extends Component<{
         const offsetsByTopic = offsets.groupInto(x => x.topicName).map(g => ({ topicName: g.key, items: g.items }));
         const singleTopic = offsetsByTopic.length == 1;
         const singlePartition = offsets.length == 1;
-
-        const subTitle =
-            (mode == 'group' && <span>All group offsets will be deleted for:</span>) ||
-            (mode == 'topic' && <span>Group offsets will be deleted for topic:</span>) ||
-            (mode == 'partition' && <span>Group offsets will be deleted for:</span>);
-
 
         return <Modal
             title={mode == 'group'
