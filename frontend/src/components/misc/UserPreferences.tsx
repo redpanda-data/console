@@ -9,15 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, ReactNode } from 'react';
+import { Component, ReactNode } from 'react';
 import { observer } from 'mobx-react';
-import { Menu, Select, Button, Modal, Input, message, Checkbox, InputNumber } from 'antd';
+import { Menu, Button, Modal, Input, message, Checkbox, InputNumber } from 'antd';
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label } from '../../utils/tsxUtils';
 import { makeObservable, observable, transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
 
-const { Option } = Select;
 type Action = () => void;
 
 const settingsTabs: { name: string, component: () => ReactNode }[] = [

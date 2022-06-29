@@ -10,7 +10,7 @@
  */
 
 import { FilterOutlined } from '@ant-design/icons';
-import { AutoComplete, Button, Checkbox, Input, Modal, Popover, Typography } from 'antd';
+import { AutoComplete, Button, Checkbox, Input, Modal, Popover } from 'antd';
 import { arrayMoveMutable } from 'array-move';
 import { computed, makeObservable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -26,7 +26,6 @@ import { getAllMessageKeys, randomId, collectElements2, CollectedProperty } from
 import globExampleImg from '../../../../assets/globExample.png';
 import { InfoIcon, ThreeBarsIcon, GearIcon, XIcon } from '@primer/octicons-react';
 
-const { Text } = Typography;
 
 const globHelp = <div>
     {/* Examples + Image */}
@@ -110,7 +109,7 @@ const globHelp = <div>
 @observer
 export class PreviewSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
     @computed.struct get allCurrentKeys() {
-        const unused = api.messages.length;
+        // const unused = api.messages.length;
         // console.log("get all current keys: " + unused);
         return getAllMessageKeys(api.messages).map(p => p.propertyName).distinct();
     }
@@ -135,7 +134,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
         tags.filter(t => !t.id).forEach(t => t.id = getFreeId());
 
 
-        const onDragEnd = function (result: DropResult, provided: ResponderProvided) {
+        const onDragEnd = function (result: DropResult, _provided: ResponderProvided) {
             if (!result.destination) return;
             arrayMoveMutable(tags, result.source.index, result.destination.index);
         };
@@ -157,14 +156,14 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
             <div className="previewTagsList">
                 <DragDropContext onDragEnd={onDragEnd} >
                     <Droppable droppableId="droppable">
-                        {(droppableProvided, droppableSnapshot) => (
+                        {(droppableProvided, _droppableSnapshot) => (
                             <div
                                 ref={droppableProvided.innerRef}
                                 style={{ display: 'flex', flexDirection: 'column' }}
                             >
                                 {tags.map((tag, index) => (
                                     <Draggable key={tag.id} draggableId={tag.id} index={index}>
-                                        {(draggableProvided, draggableSnapshot) => (
+                                        {(draggableProvided, _draggableSnapshot) => (
                                             <div
                                                 ref={draggableProvided.innerRef}
                                                 {...draggableProvided.draggableProps}
@@ -250,7 +249,7 @@ todo:
 @observer
 class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, onRemove: () => void, allCurrentKeys: string[] }>{
     render() {
-        const { tag, index, onRemove, allCurrentKeys } = this.props;
+        const { tag, onRemove, allCurrentKeys } = this.props;
 
         return <div style={{
             display: 'flex', placeItems: 'center', gap: '4px',
@@ -293,7 +292,7 @@ class PreviewTagSettings extends Component<{ tag: PreviewTagV2, index: number, o
                 style={{ flexGrow: 1, flexBasis: '400px' }}
 
                 defaultActiveFirstOption={true}
-                onSearch={(value: string) => {
+                onSearch={(_value: string) => {
                     // console.log('onSearch ', value);
                 }}
                 value={tag.pattern}
@@ -334,7 +333,7 @@ export function getPreviewTags(targetObject: any, tags: PreviewTagV2[]): React.R
         if (searchPath == null) continue;
         if (typeof searchPath == 'string') continue; // todo: show error to user
 
-        const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName, value) => {
+        const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
             // We'll never get called for '*' or '**' patterns
             // So we can be sure that the pattern is not just '*'
             const segmentRegex = caseSensitive

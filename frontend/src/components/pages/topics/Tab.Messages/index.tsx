@@ -421,7 +421,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
         const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
-        const hasValueTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageValue) > 0;
 
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
@@ -436,7 +435,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 dataIndex: 'value',
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
-                render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
+                render: (_t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
@@ -450,7 +449,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
                     </Tooltip>;
                 },
-                render: (text, record) => !record.isValueNull && (
+                render: (_text, record) => !record.isValueNull && (
                     <NoClipboardPopover placement="left">
                         <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
                             <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={this.copyDropdown(record)} trigger={['click']}>
@@ -525,7 +524,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
                         expandedRowRender: record => renderExpandedMessage(record),
                         expandedRowKeys: this.expandedKeys.slice(),
-                        onExpand: (p, r) => {
+                        onExpand: (_p, r) => {
                             this.toggleRecordExpand(r);
                         }
                     }}
@@ -563,7 +562,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             this.expandedKeys.push(key);
     }
 
-    keySorter(a: TopicMessage, b: TopicMessage, sortOrder?: SortOrder): number {
+    keySorter(a: TopicMessage, b: TopicMessage, _sortOrder?: SortOrder): number {
         const ta = String(a.key) ?? '';
         const tb = String(b.key) ?? '';
         return ta.localeCompare(tb);
@@ -1243,7 +1242,7 @@ const helpEntries = [
         <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} alt="Filter Example 1" loading="lazy" /></div></li>
         <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} alt="Filter Example 2" loading="lazy" /></div></li>
     </ul>),
-].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
+].genericJoin((_last, _cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
 
 @observer
 class MessageSearchFilterBar extends Component {
@@ -1518,7 +1517,7 @@ function createPublishRecordsModal(parent: TopicMessageView) {
                 JSON.parse(state.value);
 
             const convert: { [key in EncodingType]: (x: string) => string | null } = {
-                'none': x => null,
+                'none': () => null,
                 'base64': x => x.trim(),
                 'json': x => encodeBase64(x.trim()),
                 'utf8': x => encodeBase64(x),
@@ -1553,7 +1552,7 @@ function createPublishRecordsModal(parent: TopicMessageView) {
             return <>{result.records.length} records published successfully</>;
 
         },
-        onSuccess: (state, result) => {
+        onSuccess: (state) => {
             uiState.topicSettings.produceRecordEncoding = state.encodingType;
             parent.props.refreshTopicData(true);
             parent.searchFunc('auto');

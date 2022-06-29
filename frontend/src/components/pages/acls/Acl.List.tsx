@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { } from 'react';
 import { observer } from 'mobx-react';
 import { Empty, Select, Input, Button, Alert } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
@@ -178,8 +177,6 @@ class AclList extends PageComponent {
         );
     })
 }
-
-type FlatResource = AclList['flatResourceList'][0];
 
 export default AclList;
 

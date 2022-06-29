@@ -10,9 +10,8 @@
  */
 
 import { Component } from 'react';
-import React from 'react';
 import { UserDetails } from '../../../state/restInterfaces';
-import { Table, Select, Input, Typography, Collapse, Tooltip } from 'antd';
+import { Table, Input, Collapse, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
 import { sortField } from '../../misc/common';
@@ -22,10 +21,6 @@ import { RoleComponent } from './Admin.Roles';
 import { UserOutlined } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-
-const { Text } = Typography;
-const { Option } = Select;
-const InputGroup = Input.Group;
 
 @observer
 export class AdminUsers extends Component<{}> {
@@ -61,9 +56,9 @@ export class AdminUsers extends Component<{}> {
                     }
                 },
                 { width: 1, title: 'OAuthUserID', dataIndex: 'oauthUserId', sorter: sortField('oauthUserId') },
-                { width: 1, title: 'Roles', dataIndex: 'roles', render: (text, user) => user.grantedRoles.map(r => r.role.name).join(', ') }, // can't sort
+                { width: 1, title: 'Roles', dataIndex: 'roles', render: (_text, user) => user.grantedRoles.map(r => r.role.name).join(', ') }, // can't sort
                 { width: 1, title: 'Login', dataIndex: 'loginProvider', sorter: sortField('loginProvider') },
-                { title: '', render: r => (<span></span>) },
+                { title: '', render: _r => (<span></span>) },
             ]}
             // expandIconAsCell={false}
             // expandIconColumnIndex={0}

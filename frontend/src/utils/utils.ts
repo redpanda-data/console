@@ -331,7 +331,7 @@ export function collectElements2(
             switch (segment) {
                 case '**':
                     // And all their nested objects are a result
-                    const allNested = collectElements(currentObj, (key, path, value) => {
+                    const allNested = collectElements(currentObj, (_key, _path, value) => {
                         return typeof value == 'object';
                     }, false);
 
@@ -483,7 +483,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: any): PropertySearchRe
 const secToMs = 1000;
 const minToMs = 60 * secToMs;
 const hoursToMs = 60 * minToMs;
-const daysToMs = 24 * hoursToMs;
+// const daysToMs = 24 * hoursToMs;
 
 export function hoursToMilliseconds(hours: number) {
     return hours * hoursToMs;
@@ -792,6 +792,7 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
     switch (anchor) {
         case 'start': top = rect.top; break;
         case 'center': top = (rect.top + rect.bottom) / 2; break;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         case 'end': top = rect.bottom; break;
     }
 

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Input, Modal, notification, Select, Slider, Spin } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
@@ -25,7 +25,6 @@ type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
 type PartitionOption = null | AllPartitions | SpecificPartition;
 
-const SLIDER_INPUT_REGEX = /(^([1-9]\d*)|(\d{1,3}(,\d{3})*)$)|^$/;
 const DIGITS_ONLY_REGEX = /^\d*$/;
 
 function TrashIcon() {
@@ -252,7 +251,7 @@ const ManualOffsetContent = observer(
             return <Spin />;
         }
 
-        const [_, partitionId] = partitionInfo;
+        const [, partitionId] = partitionInfo;
         const partition = partitions.find((p) => p.id === partitionId);
 
         if (!partition) {
