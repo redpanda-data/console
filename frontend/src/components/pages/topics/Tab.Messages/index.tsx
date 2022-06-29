@@ -53,6 +53,7 @@ import { PublishMessageModalProps, PublishMessagesModalContent } from '../Publis
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
+import colors from '../../../../colors';
 
 
 const { Text } = Typography;
@@ -252,7 +253,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             {api.messageSearchPhase == null &&
                                 <MotionSpan identityKey="btnRefresh" overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title="Repeat current search" getPopupContainer={findPopupContainer}>
-                                        <Button type="primary" onClick={() => this.searchFunc('manual')}>
+                                        <Button type="default" onClick={() => this.searchFunc('manual')}>
                                             <SyncIcon size={16} />
                                         </Button>
                                     </Tooltip>
@@ -403,7 +404,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         const previewButton = <>
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button shape="round" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
+                <Button shape="round" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} style={{ color: colors.brandOrange, padding: '0 0.5em', background: 'transparent' }}>
                     <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                     <span style={{ marginLeft: '.3em', fontSize: '85%' }}>Preview</span>
                     {(() => {
