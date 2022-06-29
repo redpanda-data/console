@@ -109,8 +109,8 @@ const globHelp = <div>
 @observer
 export class PreviewSettings extends Component<{ getShowDialog: () => boolean, setShowDialog: (show: boolean) => void }> {
     @computed.struct get allCurrentKeys() {
-        // const unused = api.messages.length;
-        // console.log("get all current keys: " + unused);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const unused = api.messages.length;
         return getAllMessageKeys(api.messages).map(p => p.propertyName).distinct();
     }
 
