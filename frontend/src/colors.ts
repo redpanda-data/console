@@ -11,6 +11,7 @@ const colors = {
     brandBlue2: '#165B96',
     brandGray: '#667085',
     brandLightGray: '#F9FAFB',
+    brandLightBackground: '#F6F6F6',
 };
 
 export default colors;

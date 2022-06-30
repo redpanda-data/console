@@ -43,7 +43,7 @@
 
     gap: 6px;
     .bytesIcon {
-        color: #1890ff;
+        color: var(--ant-primary-color);
     }
 
     .time {
@@ -51,7 +51,7 @@
     }
 
     .timeIcon {
-        color: #1890ff;
+        color: var(--ant-primary-color);
     }
 }
 

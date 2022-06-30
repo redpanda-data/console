@@ -447,7 +447,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
                     return <Tooltip title="Column Settings" mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement="left">
-                        <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
+                        <SettingFilled style={IsColumnSettingsEnabled ? { color: colors.brandOrange } : { color: '#a092a0' }} />
                     </Tooltip>;
                 },
                 render: (_text, record) => !record.isValueNull && (

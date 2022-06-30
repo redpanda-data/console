@@ -32,6 +32,8 @@ $color-brand-secondary-hover: var(--ant-primary-color-hover);
 $color-reload-spinner: var(--ant-primary-6);
 $color-reload-spinner-bg: var(--ant-primary-1);
 
+$color-light-background: #F6F6F6;
+
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
@@ -1633,10 +1635,16 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     transform: rotateZ(45deg);
 }
 
-/* ant design menuitem hover is barely visible */
+.ant-select-item:not(:last-of-type) {
+    border-bottom: 2px solid white;
+}
 .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-    // background-color: hsla(205, 100%, 70%, 1);
-        background-color: var(--ant-primary-4);
+    background-color: $color-light-background;
+    color: $color-brand-secondary;
+}
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background-color: $color-light-background;
+    color: $color-brand-secondary;
 }
 
 .ant-menu-item,
@@ -2285,7 +2293,7 @@ mark {
 
         &.active {
             background: hsl(208deg, 100%, 93%);
-            color: #1890ff;
+            color: $color-brand-secondary;
         }
     }
 }
@@ -3579,7 +3587,7 @@ input::placeholder {
             transition: all ease-out 150ms;
 
             &:hover {
-                color: #40a9ff;
+                color: $color-brand-secondary;
 
                 &::after {
                     background: hsl(207deg 7% 76% / 14%);
