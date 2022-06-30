@@ -714,9 +714,9 @@ function ${name}() {
         if (searchParams.startOffset == TopicOffsetOrigin.End)
             hints.push(<><b>Start offset</b> is set to "Newest". Make sure messages are being sent to the topic.</>);
 
-        const hintBox = hints.length && <ul className={styles.noMessagesHint}>
+        const hintBox = hints.length ? <ul className={styles.noMessagesHint}>
             {hints.map((x, i) => <li key={i}>{x}</li>)}
-        </ul>
+        </ul> : null;
 
         return (
             <Empty description={<>
