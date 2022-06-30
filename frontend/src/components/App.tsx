@@ -23,8 +23,8 @@ import { animProps_logo, MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
-import RedpandaConsoleLogo from '../assets/redpanda/redpandaConsole.svg';
-import VSymbolLogo from '../assets/redpanda/v_symbol.svg';
+import RedpandaLogo from '../assets/redpanda/redpanda-color.svg';
+import RedpandaIcon from '../assets/redpanda/icon-color.svg';
 import { ErrorBoundary } from './misc/ErrorBoundary';
 import { IsDev, AppName, IsBusiness } from '../utils/env';
 import env, { getBuildDate } from '../utils/env';
@@ -93,8 +93,8 @@ const SideBar = observer(() =>
                 {/* Logo Image */}
                 <AnimatePresence initial={false} presenceAffectsLayout >
                     {uiSettings.sideBarOpen
-                        ? <motion.img alt="logo" key="logoExpanded" src={RedpandaConsoleLogo} {...animProps_logo} />
-                        : <motion.img alt="logo" key="logoCollapsed" src={VSymbolLogo}   {...animProps_logo} />
+                        ? <motion.img alt="logo" key="logoExpanded" src={RedpandaLogo} {...animProps_logo} />
+                        : <motion.img alt="logo" key="logoCollapsed" src={RedpandaIcon}   {...animProps_logo} />
                     }
                 </AnimatePresence>
             </Link>

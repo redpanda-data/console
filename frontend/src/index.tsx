@@ -33,23 +33,19 @@ import './assets/fonts/quicksand.css';
 import './assets/fonts/kumbh-sans.css';
 
 
-const exampleColors = {
-    antdDefaultBlue: '#1890FF',
-    green: '#25B864', // chosen to make it really obvious when changing the theme-color works.
-    debugRed: '#FF0000',
-} as const;
+import colors from './colors';
 
 
 // Set theme color for ant-design
 ConfigProvider.config({
     theme: {
-        primaryColor: exampleColors.green,
+        primaryColor: colors.brandOrange,
 
-        infoColor: exampleColors.debugRed,
-        successColor: exampleColors.debugRed,
-        processingColor: exampleColors.debugRed,
-        // errorColor: exampleColors.debugRed,
-        warningColor: exampleColors.debugRed,
+        infoColor: colors.debugRed,
+        successColor: colors.debugRed,
+        processingColor: colors.debugRed,
+        // errorColor: colors.debugRed,
+        warningColor: colors.debugRed,
     },
 });
 

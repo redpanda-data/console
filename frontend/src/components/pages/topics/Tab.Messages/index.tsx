@@ -53,6 +53,7 @@ import { PublishMessageModalProps, PublishMessagesModalContent } from '../Publis
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
+import colors from '../../../../colors';
 
 
 const { Text } = Typography;
@@ -252,7 +253,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             {api.messageSearchPhase == null &&
                                 <MotionSpan identityKey="btnRefresh" overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title="Repeat current search" getPopupContainer={findPopupContainer}>
-                                        <Button type="primary" onClick={() => this.searchFunc('manual')}>
+                                        <Button type="default" onClick={() => this.searchFunc('manual')}>
                                             <SyncIcon size={16} />
                                         </Button>
                                     </Tooltip>
@@ -403,7 +404,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         const previewButton = <>
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button shape="round" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
+                <Button shape="round" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} style={{ color: colors.brandOrange, padding: '0 0.5em', background: 'transparent' }}>
                     <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                     <span style={{ marginLeft: '.3em', fontSize: '85%' }}>Preview</span>
                     {(() => {
@@ -446,7 +447,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
                     return <Tooltip title="Column Settings" mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement="left">
-                        <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
+                        <SettingFilled style={IsColumnSettingsEnabled ? { color: colors.brandOrange } : { color: '#a092a0' }} />
                     </Tooltip>;
                 },
                 render: (_text, record) => !record.isValueNull && (
@@ -713,9 +714,9 @@ function ${name}() {
         if (searchParams.startOffset == TopicOffsetOrigin.End)
             hints.push(<><b>Start offset</b> is set to "Newest". Make sure messages are being sent to the topic.</>);
 
-        const hintBox = hints.length && <ul className={styles.noMessagesHint}>
+        const hintBox = hints.length ? <ul className={styles.noMessagesHint}>
             {hints.map((x, i) => <li key={i}>{x}</li>)}
-        </ul>
+        </ul> : null;
 
         return (
             <Empty description={<>

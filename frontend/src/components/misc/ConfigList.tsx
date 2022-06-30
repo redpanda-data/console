@@ -11,6 +11,7 @@
 
 import {  EyeInvisibleTwoTone, InfoCircleFilled } from '@ant-design/icons';
 import { Tooltip } from 'antd';
+import colors from '../../colors';
 import { ConfigEntry } from '../../state/restInterfaces';
 import { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
@@ -30,9 +31,10 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
 
                 let name = <div style={{ display: 'flex' }} className={styles.nameText}>{text}</div>;
                 if (renderTooltip) name = renderTooltip(record, name);
+                
                 const sensitive = record.isSensitive && (
                     <Tooltip overlay="Value has been redacted because it's sensitive">
-                        <EyeInvisibleTwoTone twoToneColor="#1890ff" />
+                        <EyeInvisibleTwoTone twoToneColor={colors.brandOrange} />
                     </Tooltip>
                 );
 

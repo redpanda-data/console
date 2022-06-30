@@ -26,6 +26,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { ConfigList } from '../../misc/ConfigList';
+import colors from '../../../colors';
 
 const { Text } = Typography;
 
@@ -167,7 +168,7 @@ const ConfigDisplaySettings = observer(() => (
     </div>
 ));
 
-const markerIcon = <HighlightTwoTone twoToneColor="#1890ff" style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
+const markerIcon = <HighlightTwoTone twoToneColor={colors.brandOrange} style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
 
 export const FavoritePopover = observer((p: { configEntry: ConfigEntry, children: React.ReactNode }) => {
     const { configEntry, children } = p;

@@ -55,7 +55,7 @@ ul.navigationList {
         &.active {
             color: var(--ant-primary-color);
                 border-bottom-color: var(--ant-primary-5);
-                background-color: var(--ant-primary-2);
+                background: hsla(0, 0%, 50%, 0.03);
         }
 
         &.disabled {
