@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/redpanda-data/console/backend/pkg/embed"
 	"go.uber.org/zap"
 )
 
@@ -35,11 +34,14 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 	basePathMarker := []byte(`__BASE_PATH_REPLACE_MARKER__`)
 
 	// Load index.html file
-	indexFilepath := "frontend/index.html"
-	indexOriginal, err := embed.FrontendFiles.ReadFile(indexFilepath)
+	fsys, err := api.Hooks.Console.FrontendResources()
 	if err != nil {
-		api.Logger.Fatal("failed to load index.html from embedded filesystem",
-			zap.String("index_filepath", indexFilepath), zap.Error(err))
+		api.Logger.Fatal("failed to load Frontend resources", zap.Error(err))
+	}
+
+	indexOriginal, err := fs.ReadFile(fsys, "index.html")
+	if err != nil {
+		api.Logger.Fatal("failed to load index.html from embedded filesystem", zap.Error(err))
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -80,9 +82,9 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 func (api *API) handleFrontendResources() http.HandlerFunc {
 	handleIndex := api.handleFrontendIndex()
 
-	fsys, err := fs.Sub(embed.FrontendFiles, "frontend")
+	fsys, err := api.Hooks.Console.FrontendResources()
 	if err != nil {
-		api.Logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
+		api.Logger.Fatal("failed to load Frontend resources", zap.Error(err))
 	}
 
 	httpFs := http.FS(fsys)

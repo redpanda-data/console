@@ -11,11 +11,13 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"io/fs"
 	"net/http"
 
-	"github.com/redpanda-data/console/backend/pkg/console"
-
 	"github.com/cloudhut/common/rest"
+	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/embed"
 
 	"github.com/go-chi/chi"
 )
@@ -81,7 +83,13 @@ type ConsoleHooks interface {
 	AllowedConnectClusterActions(ctx context.Context, clusterName string) ([]string, *rest.Error)
 
 	// Console Hooks
+	// LicenseInformation returns the license information for the console. Based on the returned
+	// license the frontend will display the appropriate UI.
 	LicenseInformation(ctx context.Context) RedpandaLicense
+	// FrontendResources is a hook that expects to return a Filesystem with all frontend resources.
+	// The index.html is expected to be at the root of the filesystem. This will only be called
+	// if the config property serveFrontend is set to true.
+	FrontendResources() (fs.FS, error)
 }
 
 type RedpandaLicense struct {
@@ -183,4 +191,11 @@ func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) (
 }
 func (*defaultHooks) LicenseInformation(_ context.Context) RedpandaLicense {
 	return RedpandaLicense{Type: "OPEN_SOURCE", ExpiresAt: "2099-12-31"}
+}
+func (*defaultHooks) FrontendResources() (fs.FS, error) {
+	fsys, err := fs.Sub(embed.FrontendFiles, "frontend")
+	if err != nil {
+		return nil, fmt.Errorf("failed to build subtree from embedded frontend files: %w", err)
+	}
+	return fsys, nil
 }
