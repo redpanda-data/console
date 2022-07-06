@@ -16,12 +16,6 @@ __debug_bin
 .idea
 .vscode
 
-# e2e data
-e2e/data
-
-# Compiled frontend
-build
-
 # Local configs
 config.yaml
 config
