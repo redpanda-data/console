@@ -1,0 +1,33 @@
+name: Repository dispatch on push or release
+
+on:
+  push:
+    paths:
+      - "frontend/**"
+      - "backend/**"
+    tags:
+      - '*'
+    branches:
+      - "master"
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Dispatch on Release
+        uses: peter-evans/repository-dispatch@11ba7d3
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          repository: redpanda-data/console-enterprise
+          event-type: release
+          client-payload: '{"ref": "${{ github.ref }}", "commit_sha": "${{ github.sha }}"}'
+
+      - name: Repository Dispatch on push
+        uses: peter-evans/repository-dispatch@11ba7d3
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          repository: redpanda-data/console-enterprise
+          event-type: push
+          client-payload: '{"branch": "master", "commit_sha": "${{ github.sha }}"}'
