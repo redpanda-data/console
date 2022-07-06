@@ -21,7 +21,7 @@ jobs:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           repository: redpanda-data/console-enterprise
           event-type: release
-          client-payload: '{"ref": "${{ github.ref }}", "commit_sha": "${{ github.sha }}"}'
+          client-payload: '{"branch": "master", "commit_sha": "${{ github.sha }}"}'
 
       - name: Repository Dispatch on push
         uses: peter-evans/repository-dispatch@11ba7d3
