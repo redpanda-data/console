@@ -26,7 +26,12 @@ import { appGlobal } from '../state/appGlobal';
 import RedpandaLogo from '../assets/redpanda/redpanda-color.svg';
 import RedpandaIcon from '../assets/redpanda/icon-color.svg';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsDev, AppName, IsBusiness } from '../utils/env';
+import { IsDev, AppName, IsBusiness, basePathS } from '../utils/env';
+import { UserProfile } from './misc/UserButton';
+import fetchWithTimeout from '../utils/fetchWithTimeout';
+import { UserData } from '../state/restInterfaces';
+import Login from './misc/login';
+import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, GithubFilled, TwitterOutlined, LinkedinFilled, SlackSquareOutlined } from '@ant-design/icons';
 import { LayoutBypass, } from '../utils/tsxUtils';
@@ -106,6 +111,7 @@ const SideBar = observer(() =>
         </Content>
 
         {/* Profile */}
+        <UserProfile />
 
 
         {/* Toggle */}
@@ -261,13 +267,16 @@ const AppContent = observer(() =>
 @observer
 export default class App extends Component {
     render(): JSX.Element {
+        const r = this.loginHandling(); // Complete login, or fetch user if needed
+        if (r) return r;
 
         return (
             <ErrorBoundary>
                 {/* {IsDev && <DebugDisplay />} */}
                 <Switch>
                     {/* Login (and callbacks) */}
-
+                    <Route exact path='/login' component={Login} />
+                    <Route path='/login/callbacks/:provider' render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
 
                     {/* Default View */}
                     <Route path="*">
@@ -280,6 +289,56 @@ export default class App extends Component {
                 <FeatureErrorCheck />
             </ErrorBoundary>
         );
+    }
+
+    loginHandling(): JSX.Element | null {
+        if (!IsBusiness)
+            return null; // free version has no login handling
+
+        const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
+        const path = window.location.pathname.removePrefix(basePathS ?? '');
+        const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); };
+
+        if (path.startsWith('/login'))
+            return null; // already in login process, don't interrupt!
+
+        if (api.userData === null && !path.startsWith('/login')) {
+            devPrint('known not logged in, hard redirect');
+            window.location.pathname = basePathS + '/login'; // definitely not logged in, and in wrong url: hard redirect!
+            return preLogin;
+        }
+
+        if (api.userData === undefined) {
+            devPrint('user is undefined (probably a fresh page load)');
+
+            fetchWithTimeout('./api/users/me', 10 * 1000).then(async r => {
+                if (r.ok) {
+                    devPrint('user fetched');
+                    api.userData = await r.json() as UserData;
+                } else if (r.status == 401) { // unauthorized / not logged in
+                    devPrint('not logged in');
+                    api.userData = null;
+                } else if (r.status == 404) { // not found: server must be non-business version
+                    devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging');
+                    uiState.isUsingDebugUserLogin = true;
+                    api.userData = {
+                        canManageKowl: false,
+                        canListAcls: true,
+                        canListQuotas: true,
+                        canPatchConfigs: true,
+                        canReassignPartitions: true,
+                        seat: null as any,
+                        user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
+                    };
+                }
+            });
+
+            return preLogin;
+        } else {
+            if (!uiState.isUsingDebugUserLogin)
+                devPrint('user is set: ' + JSON.stringify(api.userData));
+            return null;
+        }
     }
 }
 

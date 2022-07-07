@@ -444,7 +444,15 @@ export interface BrokerConfig {
 
 
 export interface EndpointCompatibilityResponse {
+    license: RedpandaLicense;
     endpointCompatibility: EndpointCompatibility;
+}
+
+export interface RedpandaLicense {
+    // Potentially also CLOUD
+    type: 'OPEN_SOURCE' | 'FREE_TRIAL' | 'ENTERPRISE';
+    // Format is: 2006-12-31
+    expiresAt: string;
 }
 
 export interface EndpointCompatibility {
