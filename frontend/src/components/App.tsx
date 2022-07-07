@@ -26,7 +26,7 @@ import { appGlobal } from '../state/appGlobal';
 import RedpandaLogo from '../assets/redpanda/redpanda-color.svg';
 import RedpandaIcon from '../assets/redpanda/icon-color.svg';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsDev, AppName, IsBusiness, basePathS } from '../utils/env';
+import { IsDev, basePathS, IsCI, AppFeatures } from '../utils/env';
 import { UserProfile } from './misc/UserButton';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
@@ -48,48 +48,29 @@ const siderCollapsedWidth = 80;
 
 
 const VersionInfo = () => {
-    // Local Development Mode
-    //   DEV
-    if (IsDev) return <>
-        <div className="versionTitle">{AppName} DEV</div>
-        <div className="versionDate">Built {new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}</div>
-        <div className="versionGitData">{'abcdef0'}/{'0fedcba'}</div>
-    </>;
+    const appName = 'Redpanda Console';
+    let mode = '';
+    if (IsDev) mode = ' - DEV';
+    if (IsCI) mode = ' - CI';
 
-    // Continuous Delivery Mode
-    //   Business - CI
-    //   b27c2a3f f3acf4b7
-    if (env.REACT_APP_BUILT_FROM_PUSH) return <>
-        <div className="versionTitle">{AppName} CI</div>
-        <div>
-            <span>{env.REACT_APP_CONSOLE_GIT_REF != 'master' && env.REACT_APP_CONSOLE_GIT_REF + '-'}</span>
-            <span>{env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7)}</span>
-        </div>
+    let ref = env.REACT_APP_CONSOLE_GIT_REF;
+    if (!ref || ref == 'master') ref = '';
 
-        <div className="versionDate">
-            (built {getBuildDate()?.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })})
-        </div>
+    let sha = IsDev
+        ? '<no git sha in dev>'
+        : env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7);
 
-        {IsBusiness && <div className="versionGitData">
-            <span>{env.REACT_APP_CONSOLE_BUSINESS_GIT_REF != 'master' &&
-                env.REACT_APP_CONSOLE_BUSINESS_GIT_REF + '-'}</span>
-            <span>{env.REACT_APP_CONSOLE_BUSINESS_GIT_SHA.slice(0, 7)}</span>
-        </div>}
-    </>;
+    const buildDate = IsDev
+        ? new Date()
+        : getBuildDate();
 
-    // Release
-    //   Business v1.2.3
-    //   b27c2a3f f3acf4b7
     return <>
-        <div className="versionTitle">{AppName} - {IsBusiness ? env.REACT_APP_CONSOLE_BUSINESS_GIT_REF : env.REACT_APP_CONSOLE_GIT_REF}</div>
-        <div className="versionDate">
-            (built {getBuildDate()?.toDateString()})
-        </div>
-        <div className="versionGitData">{env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7)}</div>
-        {IsBusiness && <div className="versionGitData">{env.REACT_APP_CONSOLE_BUSINESS_GIT_SHA.slice(0, 7)}</div>}
+        <div className="versionTitle">{appName} {mode}</div>
+        <div className="versionDate">(built {buildDate?.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })})</div>
+        <div className="versionGitData">{ref} {sha}</div>
     </>;
-
 };
+
 const SideBar = observer(() =>
     <Layout className="sideBar" >
         {/* Logo */}
@@ -292,8 +273,8 @@ export default class App extends Component {
     }
 
     loginHandling(): JSX.Element | null {
-        if (!IsBusiness)
-            return null; // free version has no login handling
+        if (!AppFeatures.SINGLE_SIGN_ON)
+            return null;
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
         const path = window.location.pathname.removePrefix(basePathS ?? '');

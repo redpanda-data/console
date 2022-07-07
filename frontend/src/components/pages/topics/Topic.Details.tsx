@@ -34,9 +34,9 @@ import { TopicConsumers } from './Tab.Consumers';
 import { TopicDocumentation } from './Tab.Docu';
 import { TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
-import { IsBusiness } from '../../../utils/env';
 import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
+import { AppFeatures } from '../../../utils/env';
 
 const { Text } = Typography;
 
@@ -133,7 +133,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                     />
                 );
             }, [(t) => {
-                if (IsBusiness)
+                if (AppFeatures.SINGLE_SIGN_ON)
                     if (api.userData != null && !api.userData.canListAcls)
                         return <Popover content={'You need the cluster-permission \'viewAcl\' to view this tab'}>
                             <div> <LockIcon size={16} /> ACL</div>

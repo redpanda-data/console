@@ -23,7 +23,7 @@ import './index.scss';
 
 import App from './components/App';
 import { appGlobal } from './state/appGlobal';
-import { basePathS, IsBusiness } from './utils/env';
+import { AppFeatures, basePathS } from './utils/env';
 import { api } from './state/backendApi';
 import { ConfigProvider } from 'antd';
 
@@ -66,14 +66,14 @@ configure({
 // Get supported endpoints / kafka cluster version
 // In the business version, that endpoint (like any other api endpoint) is
 // protected, so we need to delay the call until the user is logged in.
-if (!IsBusiness) {
-    api.refreshSupportedEndpoints(true);
+if (!AppFeatures.SINGLE_SIGN_ON) {
+    api.refreshSupportedEndpoints();
 } else {
     when(
         () => Boolean(api.userData),
         () => {
             setImmediate(() => {
-                api.refreshSupportedEndpoints(true);
+                api.refreshSupportedEndpoints();
             });
         }
     );

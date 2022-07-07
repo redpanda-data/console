@@ -442,7 +442,6 @@ export interface BrokerConfig {
 }
 
 
-
 export interface EndpointCompatibilityResponse {
     license: RedpandaLicense;
     endpointCompatibility: EndpointCompatibility;

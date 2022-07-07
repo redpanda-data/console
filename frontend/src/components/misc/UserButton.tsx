@@ -14,9 +14,9 @@ import { observer } from "mobx-react"
 import { Select, Avatar, Dropdown } from 'antd';
 import { api } from '../../state/backendApi';
 import { UserOutlined } from '@ant-design/icons';
-import { IsBusiness } from '../../utils/env';
 import { makeObservable, observable } from 'mobx';
 import { UserPreferencesDialog } from './UserPreferences';
+import { AppFeatures } from '../../utils/env';
 
 @observer
 export class UserProfile extends Component {
@@ -29,7 +29,7 @@ export class UserProfile extends Component {
     }
 
     render() {
-        if (!IsBusiness) return null;
+        if (!AppFeatures.SINGLE_SIGN_ON) return null;
         if (!api.userData || !api.userData.user || !api.userData.user.meta.name) return null;
         const user = api.userData.user;
 

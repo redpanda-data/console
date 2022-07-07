@@ -12,10 +12,6 @@
 import { toJson } from './jsonUtils';
 import './extensions';
 
-// const assertions and mapped types are awesome!
-// type
-// { [key: string]: string }
-
 const envNames = [
     'NODE_ENV',
 
@@ -23,11 +19,7 @@ const envNames = [
     'REACT_APP_CONSOLE_GIT_REF', // 'master' or 'v1.2.3'
     'REACT_APP_BUILD_TIMESTAMP',
 
-    'REACT_APP_CONSOLE_BUSINESS_GIT_SHA',
-    'REACT_APP_CONSOLE_BUSINESS_GIT_REF',
-
     'REACT_APP_BUILT_FROM_PUSH', // was built by 'image-on-push'?
-    'REACT_APP_BUSINESS', // is business version?
 
     'REACT_APP_DEV_HINT', // for debugging, since we can't override NODE_ENV
 ] as const;
@@ -44,11 +36,25 @@ export default env;
 //
 // Helpers
 const isDev = (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') || process.env.REACT_APP_DEV_HINT;
-export const IsProd = !isDev; // todo: rename IsProd IsDev
+export const IsProd = !isDev;
 export const IsDev = isDev;
+export const IsCI = env.REACT_APP_BUILT_FROM_PUSH && env.REACT_APP_BUILT_FROM_PUSH != 'false';
 
-export const IsBusiness = Boolean(env.REACT_APP_BUSINESS);
-export const AppName = IsBusiness ? 'Redpanda Console Business' : 'Redpanda Console';
+const appFeatureNames = [
+    'SINGLE_SIGN_ON',
+    'REASSIGN_PARTITIONS',
+] as const;
+type AppFeature = typeof appFeatureNames[number];
+
+const featuresRaw = (window as any)["ENABLED_FEATURES"] ?? '';
+const enabledFeatures = featuresRaw.split(',') as AppFeature[];
+
+const features = {} as { [key in AppFeature]: boolean };
+for (const f of appFeatureNames)
+    features[f] = enabledFeatures.includes(f);
+
+export const AppFeatures = features;
+
 
 const basePathRaw: string = (window as any)['BASE_URL'];
 const basePath = (typeof basePathRaw === 'string' && !basePathRaw.startsWith('__BASE_PATH'))
@@ -65,7 +71,6 @@ export function getBuildDate(): Date | undefined {
     return new Date(timestamp * 1000);
 }
 
-
 //
 // Print all env vars to console
 const envVarDebugObj = {} as any;
@@ -79,9 +84,6 @@ const addProp = (key: string, value: any) => {
 }
 // - add env vars
 for (const k in env) addProp(k, (env as any)[k]);
-
-// - add custom
-addProp('appName', AppName);
 
 // - print
 console.log(toJson(envVarDebugObj));
