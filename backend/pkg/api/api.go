@@ -10,10 +10,13 @@
 package api
 
 import (
+	"io/fs"
+
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/embed"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/version"
@@ -30,11 +33,17 @@ type API struct {
 	ConnectSvc *connect.Service
 	GitSvc     *git.Service
 
-	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Console Business)
+	// FrontendResources is an in-memory Filesystem with all go:embedded frontend resources.
+	// The index.html is expected to be at the root of the filesystem. This prop will only be accessed
+	// if the config property serveFrontend is set to true.
+	FrontendResources fs.FS
+
+	// Hooks to add additional functionality from the outside at different places
+	Hooks *Hooks
 }
 
 // New creates a new API instance
-func New(cfg *Config) *API {
+func New(cfg *Config, opts ...Option) *API {
 	logger := logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
 
 	logger.Info("started Redpanda Console",
@@ -56,14 +65,27 @@ func New(cfg *Config) *API {
 		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
 	}
 
-	return &API{
-		Cfg:        cfg,
-		Logger:     logger,
-		KafkaSvc:   kafkaSvc,
-		ConsoleSvc: consoleSvc,
-		ConnectSvc: connectSvc,
-		Hooks:      newDefaultHooks(),
+	// Use default frontend resources from embeds. They may be overridden via functional options.
+	// We don't use hooks here because we may want to use the API struct without providing all hooks.
+	fsys, err := fs.Sub(embed.FrontendFiles, "frontend")
+	if err != nil {
+		logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
 	}
+
+	a := &API{
+		Cfg:               cfg,
+		Logger:            logger,
+		KafkaSvc:          kafkaSvc,
+		ConsoleSvc:        consoleSvc,
+		ConnectSvc:        connectSvc,
+		Hooks:             newDefaultHooks(),
+		FrontendResources: fsys,
+	}
+	for _, opt := range opts {
+		opt(a)
+	}
+
+	return a
 }
 
 // Start the API server and block

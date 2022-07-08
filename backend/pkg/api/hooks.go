@@ -11,15 +11,11 @@ package api
 
 import (
 	"context"
-	"fmt"
-	"io/fs"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/embed"
-
 	"github.com/go-chi/chi"
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 // Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
@@ -86,10 +82,6 @@ type ConsoleHooks interface {
 	// LicenseInformation returns the license information for the console. Based on the returned
 	// license the frontend will display the appropriate UI.
 	LicenseInformation(ctx context.Context) RedpandaLicense
-	// FrontendResources is a hook that expects to return a Filesystem with all frontend resources.
-	// The index.html is expected to be at the root of the filesystem. This will only be called
-	// if the config property serveFrontend is set to true.
-	FrontendResources() (fs.FS, error)
 	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
 	// Only toggleable features that require conditional rendering in the Frontend will be returned.
 	// The information will be baked into the index.html so that the Frontend knows about it
@@ -196,13 +188,6 @@ func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) (
 }
 func (*defaultHooks) LicenseInformation(_ context.Context) RedpandaLicense {
 	return RedpandaLicense{Type: "OPEN_SOURCE", ExpiresAt: "2099-12-31"}
-}
-func (*defaultHooks) FrontendResources() (fs.FS, error) {
-	fsys, err := fs.Sub(embed.FrontendFiles, "frontend")
-	if err != nil {
-		return nil, fmt.Errorf("failed to build subtree from embedded frontend files: %w", err)
-	}
-	return fsys, nil
 }
 func (*defaultHooks) EnabledFeatures() []string {
 	return []string{}

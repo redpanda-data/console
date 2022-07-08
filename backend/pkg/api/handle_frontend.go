@@ -35,12 +35,7 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 	enabledFeaturesMarker := []byte(`__FEATURES_REPLACE_MARKER__`)
 
 	// Load index.html file
-	fsys, err := api.Hooks.Console.FrontendResources()
-	if err != nil {
-		api.Logger.Fatal("failed to load Frontend resources", zap.Error(err))
-	}
-
-	indexOriginal, err := fs.ReadFile(fsys, "index.html")
+	indexOriginal, err := fs.ReadFile(api.FrontendResources, "index.html")
 	if err != nil {
 		api.Logger.Fatal("failed to load index.html from embedded filesystem", zap.Error(err))
 	}
@@ -85,14 +80,9 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 func (api *API) handleFrontendResources() http.HandlerFunc {
 	handleIndex := api.handleFrontendIndex()
 
-	fsys, err := api.Hooks.Console.FrontendResources()
-	if err != nil {
-		api.Logger.Fatal("failed to load Frontend resources", zap.Error(err))
-	}
-
-	httpFs := http.FS(fsys)
+	httpFs := http.FS(api.FrontendResources)
 	fsHandler := http.StripPrefix("/", http.FileServer(httpFs))
-	fileHashes, err := getHashes(fsys)
+	fileHashes, err := getHashes(api.FrontendResources)
 	if err != nil {
 		api.Logger.Fatal("failed to calculate file hashes", zap.Error(err))
 	}
