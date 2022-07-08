@@ -22,6 +22,7 @@ const envNames = [
     'REACT_APP_BUILT_FROM_PUSH', // was built by 'image-on-push'?
 
     'REACT_APP_DEV_HINT', // for debugging, since we can't override NODE_ENV
+    'REACT_APP_ENABLED_FEATURES' // for debugging, used to set/override enabled feautures while developing
 ] as const;
 
 type Environment = { [key in typeof envNames[number]]: string };
@@ -46,6 +47,8 @@ const appFeatureNames = [
 ] as const;
 type AppFeature = typeof appFeatureNames[number];
 
+if (env.REACT_APP_ENABLED_FEATURES)
+    (window as any)['ENABLED_FEATURES'] = env.REACT_APP_ENABLED_FEATURES;
 const featuresRaw = (window as any)['ENABLED_FEATURES'] ?? '';
 const enabledFeatures = featuresRaw.split(',') as AppFeature[];
 
