@@ -21,7 +21,6 @@ import { uiSettings } from "../../../../state/ui";
 import { ColumnProps } from "antd/lib/table";
 import { TopicWithPartitions } from "../Step1.Partitions";
 import { DebugTimerStore, Message, prettyBytesOrNA, prettyMilliseconds } from "../../../../utils/utils";
-import { BrokerList } from "./BrokerList";
 import { ReassignmentState, ReassignmentTracker } from "../logic/reassignmentTracker";
 import { observer } from "mobx-react";
 import { EllipsisOutlined } from "@ant-design/icons";
@@ -29,6 +28,7 @@ import { strictEqual } from "assert";
 import { reassignmentTracker } from "../ReassignPartitions";
 import { BandwidthSlider } from "./BandwidthSlider";
 import { KowlTable } from "../../../misc/KowlTable";
+import { BrokerList } from "../../../misc/BrokerList";
 
 
 @observer

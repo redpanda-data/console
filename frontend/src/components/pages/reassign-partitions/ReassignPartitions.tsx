@@ -9,30 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { ReactNode, Component } from "react";
+import React, { } from "react";
 import { observer } from "mobx-react";
-import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification, ConfigProvider, Modal } from "antd";
+import { Statistic, Row, Steps, Button, message, notification, Modal } from "antd";
 import { PageComponent, PageInitHelper } from "../Page";
 import { api, partialTopicConfigs } from "../../../state/backendApi";
 import { uiSettings } from "../../../state/ui";
-import { makePaginationConfig, range, sortField } from "../../misc/common";
-import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig, AlterPartitionReassignmentsPartitionResponse } from "../../../state/restInterfaces";
+import { makePaginationConfig } from "../../misc/common";
+import { Broker, Partition, PartitionReassignmentRequest, Topic, AlterPartitionReassignmentsPartitionResponse } from "../../../state/restInterfaces";
 import { motion } from "framer-motion";
 import { animProps, } from "../../../utils/animationProps";
-import { observable, computed, autorun, IReactionDisposer, transaction, untracked, makeObservable } from "mobx";
+import { observable, computed, autorun, IReactionDisposer, transaction, makeObservable } from "mobx";
 import { clone, toJson } from "../../../utils/jsonUtils";
 import { appGlobal } from "../../../state/appGlobal";
 import Card from "../../misc/Card";
-import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined, YahooFilled } from '@ant-design/icons';
-import { DefaultSkeleton, ObjToKv, OptionGroup, QuickTable } from "../../../utils/tsxUtils";
-import { stringify } from "query-string";
+import { CheckCircleOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { DefaultSkeleton } from "../../../utils/tsxUtils";
 import { StepSelectBrokers } from "./Step2.Brokers";
-import { BrokerList } from "./components/BrokerList";
-import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
-import { SelectPartitionTable, StepSelectPartitions } from "./Step1.Partitions";
-import { PartitionWithMoves, StepReview, TopicWithMoves } from "./Step3.Review";
+import { StepSelectPartitions } from "./Step1.Partitions";
+import { StepReview, TopicWithMoves } from "./Step3.Review";
 import { ApiData, computeReassignments, TopicPartitions } from "./logic/reassignLogic";
-import { computeMovedReplicas, partitionSelectionToTopicPartitions, removeRedundantReassignments, topicAssignmentsToReassignmentRequest } from "./logic/utils";
+import { computeMovedReplicas, partitionSelectionToTopicPartitions, topicAssignmentsToReassignmentRequest } from "./logic/utils";
 import { IsDev } from "../../../utils/env";
 import { Message, scrollTo, scrollToTop } from "../../../utils/utils";
 import { ActiveReassignments } from "./components/ActiveReassignments";
