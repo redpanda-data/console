@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Slider } from "antd";
-import React, { Component } from "react";
-import { uiSettings } from "../../../../state/ui";
-import { prettyBytesOrNA } from "../../../../utils/utils";
+import { Slider } from 'antd';
+import React, { Component } from 'react';
+import { uiSettings } from '../../../../state/ui';
+import { prettyBytesOrNA } from '../../../../utils/utils';
 import '../../../../utils/numberExtensions';
 
 //
@@ -34,8 +34,8 @@ export class BandwidthSlider extends Component<ValueAndChangeCallback | { settin
         return <Slider style={{ minWidth: '300px', margin: '0 1em', paddingBottom: '2em', flex: 1 }}
             min={2} max={12} step={0.1}
             marks={{
-                2: "-",
-                3: "1kB", 6: "1MB", 9: "1GB", 12: "1TB",
+                2: '-',
+                3: '1kB', 6: '1MB', 9: '1GB', 12: '1TB',
             }}
             included={true}
             tipFormatter={f => {

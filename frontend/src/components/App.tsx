@@ -256,8 +256,8 @@ export default class App extends Component {
                 {/* {IsDev && <DebugDisplay />} */}
                 <Switch>
                     {/* Login (and callbacks) */}
-                    <Route exact path='/login' component={Login} />
-                    <Route path='/login/callbacks/:provider' render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
+                    <Route exact path="/login" component={Login} />
+                    <Route path="/login/callbacks/:provider" render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
 
                     {/* Default View */}
                     <Route path="*">

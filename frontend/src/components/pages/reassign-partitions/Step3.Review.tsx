@@ -9,20 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from "react";
-import { observer } from "mobx-react";
-import { Empty, Table } from "antd";
-import { ColumnProps } from "antd/lib/table";
-import { api } from "../../../state/backendApi";
-import { makePaginationConfig } from "../../misc/common";
-import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from "../../../state/restInterfaces";
-import { makeObservable, observable } from "mobx";
-import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
-import { DefaultSkeleton, InfoText } from "../../../utils/tsxUtils";
-import { BrokerList } from "../../misc/BrokerList";
-import ReassignPartitions, { PartitionSelection, } from "./ReassignPartitions";
-import { uiSettings } from "../../../state/ui";
-import { BandwidthSlider } from "./components/BandwidthSlider";
+import { Component } from 'react';
+import { observer } from 'mobx-react';
+import { Empty, Table } from 'antd';
+import { ColumnProps } from 'antd/lib/table';
+import { api } from '../../../state/backendApi';
+import { makePaginationConfig } from '../../misc/common';
+import { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from '../../../state/restInterfaces';
+import { makeObservable, observable } from 'mobx';
+import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
+import { DefaultSkeleton, InfoText } from '../../../utils/tsxUtils';
+import { BrokerList } from '../../misc/BrokerList';
+import ReassignPartitions, { PartitionSelection, } from './ReassignPartitions';
+import { uiSettings } from '../../../state/ui';
+import { BandwidthSlider } from './components/BandwidthSlider';
 
 export type PartitionWithMoves = Partition & {
     brokersBefore: number[],
@@ -81,7 +81,7 @@ export class StepReview extends Component<{
                 width: 100, title: (p) =>
                     <InfoText
                         tooltip="The number of replicas that will be moved to a different broker."
-                        maxWidth='180px'
+                        maxWidth="180px"
                     >Reassignments</InfoText>,
                 render: (v, r) => r.selectedPartitions.sum(p => p.numAddedBrokers),
             },
@@ -207,7 +207,7 @@ export class StepReview extends Component<{
 
         const data = [
             { title: 'Moved Replicas', value: this.props.topicsWithMoves.sum(t => t.selectedPartitions.sum(p => p.numAddedBrokers)) },
-            { title: 'Total Traffic', value: "~" + prettyBytesOrNA(totalTraffic) },
+            { title: 'Total Traffic', value: '~' + prettyBytesOrNA(totalTraffic) },
             { title: 'Traffic Throttle', value: trafficThrottle },
             { title: 'Estimated Time', value: estimatedTime },
         ];
@@ -240,7 +240,7 @@ class ReviewPartitionTable extends Component<{ topic: Topic, topicPartitions: Pa
     render() {
 
         return <div style={{ paddingTop: '4px', paddingBottom: '8px', width: 0, minWidth: '100%' }}>
-            <Table size='small' className='nestedTable'
+            <Table size="small" className="nestedTable"
                 dataSource={this.props.topicPartitions}
                 pagination={this.partitionsPageConfig}
                 scroll={{ y: '300px' }}

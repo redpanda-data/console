@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { untracked } from "mobx";
-import { Topic, Partition, Broker, ConfigEntry, BrokerConfig } from "../../../../state/restInterfaces";
-import { clone, toJson } from "../../../../utils/jsonUtils";
+import { untracked } from 'mobx';
+import { Topic, Partition, Broker, BrokerConfig } from '../../../../state/restInterfaces';
+import { toJson } from '../../../../utils/jsonUtils';
 
 // Requirements:
 // 1. Each replica must be on a different broker (unless replicationFactor < brokerCount makes it impossible).
@@ -68,7 +68,7 @@ function computeReassignments(
     const targetExBrokers = allExBrokers.filter(exb => targetBrokers.find(b => exb.brokerId == b.brokerId) != undefined);
     const getExBroker = (brokerId: number): ExBroker => {
         const exBroker = allExBrokers.find(x => x.brokerId == brokerId);
-        if (exBroker === undefined) throw new Error("cannot find ExBroker with brokerId " + brokerId);
+        if (exBroker === undefined) throw new Error('cannot find ExBroker with brokerId ' + brokerId);
         return exBroker;
     };
 
@@ -117,7 +117,7 @@ function computeReassignments(
     }
 
     const skewPlannedInCluster = calcRange(allExBrokers, x => x.plannedLeader);
-    console.debug(`leader skew in cluster`, {
+    console.debug('leader skew in cluster', {
         actual: {
             skew: skewActual.range,
             min: `${skewActual.minValue} partitions (brokerId ${skewActual.min?.brokerId})`,
@@ -515,16 +515,16 @@ function checkArguments(
     selectedTopicPartitions: TopicPartitions[],
     targetBrokers: Broker[]) {
     // Check for missing or invalid api data
-    throwIfNullOrEmpty("apiData.brokers", apiData.brokers);
-    throwIfNullOrEmpty("apiData.topics", apiData.topics);
-    throwIfNullOrEmpty("apiData.topicPartitions", apiData.topicPartitions);
+    throwIfNullOrEmpty('apiData.brokers', apiData.brokers);
+    throwIfNullOrEmpty('apiData.topics', apiData.topics);
+    throwIfNullOrEmpty('apiData.topicPartitions', apiData.topicPartitions);
     const topicsMissingPartitionData = apiData.topics.filter(t => apiData.topicPartitions.get(t.topicName) == null);
     if (topicsMissingPartitionData.length > 0)
-        throw new Error("apiData is missing topicPartitions for these topics: " + topicsMissingPartitionData.map(t => t.topicName).join(', '))
+        throw new Error('apiData is missing topicPartitions for these topics: ' + topicsMissingPartitionData.map(t => t.topicName).join(', '))
 
     // Require at least one selected partition
     if (selectedTopicPartitions.sum(x => x.partitions.length) == 0)
-        throw new Error("No partitions selected");
+        throw new Error('No partitions selected');
 
     // Require at least as many brokers as the highest replication factor of any selected partition
     const maxRf = selectedTopicPartitions
@@ -536,14 +536,14 @@ function checkArguments(
 
 function throwIfNullOrEmpty(name: string, obj: any[] | Map<any, any>) {
     if (obj == null)
-        throw new Error(name + " is null");
+        throw new Error(name + ' is null');
 
     if (Array.isArray(obj)) {
         if (obj.length == 0)
-            throw new Error(name + " is empty");
+            throw new Error(name + ' is empty');
     } else {
         if (obj.size == 0)
-            throw new Error(name + " is empty");
+            throw new Error(name + ' is empty');
     }
 }
 

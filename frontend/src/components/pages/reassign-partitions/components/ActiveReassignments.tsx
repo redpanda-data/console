@@ -9,26 +9,22 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, useState } from "react";
-import { Tag, Popover, Tooltip, ConfigProvider, Table, Progress, Button, Modal, Slider, Popconfirm, Checkbox, Skeleton, message } from "antd";
-import { LazyMap } from "../../../../utils/LazyMap";
-import { Broker, ConfigEntry, Partition, PartitionReassignmentsPartition } from "../../../../state/restInterfaces";
-import { api, brokerMap } from "../../../../state/backendApi";
-import { computed, makeObservable, observable } from "mobx";
-import { DefaultSkeleton, findPopupContainer, QuickTable } from "../../../../utils/tsxUtils";
-import { makePaginationConfig, sortField } from "../../../misc/common";
-import { uiSettings } from "../../../../state/ui";
-import { ColumnProps } from "antd/lib/table";
-import { TopicWithPartitions } from "../Step1.Partitions";
-import { DebugTimerStore, Message, prettyBytesOrNA, prettyMilliseconds } from "../../../../utils/utils";
-import { ReassignmentState, ReassignmentTracker } from "../logic/reassignmentTracker";
-import { observer } from "mobx-react";
-import { EllipsisOutlined } from "@ant-design/icons";
-import { strictEqual } from "assert";
-import { reassignmentTracker } from "../ReassignPartitions";
-import { BandwidthSlider } from "./BandwidthSlider";
-import { KowlTable } from "../../../misc/KowlTable";
-import { BrokerList } from "../../../misc/BrokerList";
+import React, { Component } from 'react';
+import { Progress, Button, Modal, Popconfirm, Checkbox, Skeleton, message } from 'antd';
+import { ConfigEntry } from '../../../../state/restInterfaces';
+import { api } from '../../../../state/backendApi';
+import { computed, makeObservable, observable } from 'mobx';
+import { QuickTable } from '../../../../utils/tsxUtils';
+import { sortField } from '../../../misc/common';
+import { uiSettings } from '../../../../state/ui';
+import { ColumnProps } from 'antd/lib/table';
+import { Message, prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
+import { ReassignmentState } from '../logic/reassignmentTracker';
+import { observer } from 'mobx-react';
+import { reassignmentTracker } from '../ReassignPartitions';
+import { BandwidthSlider } from './BandwidthSlider';
+import { KowlTable } from '../../../misc/KowlTable';
+import { BrokerList } from '../../../misc/BrokerList';
 
 
 @observer
@@ -88,17 +84,17 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
 
         return <>
             {/* Title */}
-            <div className='currentReassignments' style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
-                <span className='title'>Current Reassignments</span>
+            <div className="currentReassignments" style={{ display: 'flex', placeItems: 'center', marginBottom: '.5em' }}>
+                <span className="title">Current Reassignments</span>
 
-                <Button type='link' size='small' style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                <Button type="link" size="small" style={{ fontSize: 'smaller', padding: '0px 8px' }}
                     onClick={() => this.showThrottleDialog = true}
                 >{throttleText}</Button>
             </div>
 
             {/* Table */}
             <KowlTable
-                className='activeReassignments'
+                className="activeReassignments"
 
                 dataSource={currentReassignments}
                 columns={columnsActiveReassignments}
@@ -119,7 +115,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
             <ThrottleDialog visible={this.showThrottleDialog} lastKnownMinThrottle={minThrottle} onClose={() => this.showThrottleDialog = false} />
 
             {this.props.throttledTopics.length > 0 &&
-                <Button type='link' size='small' style={{ fontSize: 'smaller', padding: '0px 8px' }}
+                <Button type="link" size="small" style={{ fontSize: 'smaller', padding: '0px 8px' }}
                     onClick={this.props.onRemoveThrottleFromTopics}
                 >
                     <span>There are <b>{this.props.throttledTopics.length}</b> throttled topics - click here to fix</span>
@@ -199,7 +195,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
                 <Button
                     disabled={noChange}
-                    type='primary'
+                    type="primary"
                     onClick={() => this.applyBandwidthThrottle()}
                 >Apply</Button>
             </div>}
@@ -223,7 +219,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
     async applyBandwidthThrottle() {
 
-        const msg = new Message("Setting throttle rate...");
+        const msg = new Message('Setting throttle rate...');
         try {
             const allBrokers = api.clusterInfo?.brokers.map(b => b.brokerId);
             if (!allBrokers) {
@@ -243,11 +239,11 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
                 api.refreshCluster(true);
             });
 
-            msg.setSuccess("Setting throttle rate... done");
+            msg.setSuccess('Setting throttle rate... done');
 
         }
         catch (err) {
-            console.error("error in applyBandwidthThrottle: " + err);
+            console.error('error in applyBandwidthThrottle: ' + err);
             msg.setError();
         }
 
@@ -303,9 +299,9 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1em', }}>
                     <div>
                         {QuickTable([
-                            ["Replicas", replicas],
-                            ["Adding", addingReplicas],
-                            ["Removing", removingReplicas],
+                            ['Replicas', replicas],
+                            ['Adding', addingReplicas],
+                            ['Removing', removingReplicas],
                         ])}
                     </div>
                 </div>
@@ -324,13 +320,13 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
                 <Popconfirm title="Are you sure you want to stop the reassignment?" okText="Yes" cancelText="No"
                     onConfirm={() => this.cancelReassignment()}
                 >
-                    <Button type='dashed' danger>Cancel Reassignment</Button>
+                    <Button type="dashed" danger>Cancel Reassignment</Button>
                 </Popconfirm>
             </div>
         ) : <Skeleton loading={true} active={true} paragraph={{ rows: 5 }} />;
 
         return <Modal
-            title={"Reassignment: " + state.topicName}
+            title={'Reassignment: ' + state.topicName}
             visible={visible}
 
             okText="Apply &amp; Close"
@@ -407,7 +403,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     applyBandwidthThrottle() {
         const state = this.props.state;
         if (state == null) {
-            console.error("apply bandwidth throttle: this.props.state is null");
+            console.error('apply bandwidth throttle: this.props.state is null');
             return;
         }
 
@@ -420,7 +416,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
                 const brokersNew = p.addingReplicas;
 
                 if (brokersOld == null || brokersNew == null) {
-                    console.warn("active reassignments, traffic limit: skipping partition because old or new brokers can't be found", { state: state });
+                    console.warn('active reassignments, traffic limit: skipping partition because old or new brokers can\'t be found', { state: state });
                     continue;
                 }
 
@@ -449,7 +445,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     async cancelReassignment() {
         const state = this.props.state;
         if (state == null) {
-            console.error("cancel reassignment: this.props.state is null");
+            console.error('cancel reassignment: this.props.state is null');
             return;
         }
 
@@ -476,7 +472,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
             this.props.onClose();
         }
         catch (err) {
-            console.error("cancel reassignment: " + String(err));
+            console.error('cancel reassignment: ' + String(err));
             msg.setError();
         }
     }
@@ -497,20 +493,20 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
     render() {
         const { state } = this.props;
 
-        if (state.remaining == null) return "...";
+        if (state.remaining == null) return '...';
         const transferred = state.totalTransferSize - state.remaining.value;
 
         let progressBar: JSX.Element;
 
         if (state.progressPercent === null) {
             // Starting
-            progressBar = <ProgressBar percent={0} state='active'
-                left='Starting...'
+            progressBar = <ProgressBar percent={0} state="active"
+                left="Starting..."
                 right={prettyBytesOrNA(state.totalTransferSize)} />
 
         } else if (state.progressPercent < 100) {
             // Progressing
-            progressBar = <ProgressBar percent={state.progressPercent} state='active'
+            progressBar = <ProgressBar percent={state.progressPercent} state="active"
                 left={<span>{state.progressPercent.toFixed(1) + '%'}</span>}
                 right={<>
                     {state.estimateSpeed != null &&
@@ -522,8 +518,8 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
                 </>} />
         } else {
             // Completed
-            progressBar = <ProgressBar percent={100} state='success'
-                left='Complete'
+            progressBar = <ProgressBar percent={100} state="success"
+                left="Complete"
                 right={prettyBytesOrNA(state.totalTransferSize)} />
         }
 
@@ -542,7 +538,7 @@ export class ETACol extends Component<{ state: ReassignmentState }> {
         const { state } = this.props;
 
 
-        if (state.estimateSpeed == null || state.estimateCompletionTime == null) return "...";
+        if (state.estimateSpeed == null || state.estimateCompletionTime == null) return '...';
 
         const remainingMs = (state.estimateCompletionTime.getTime() - new Date().getTime()).clamp(0, undefined);
 
@@ -569,7 +565,7 @@ export class BrokersCol extends Component<{ state: ReassignmentState }> {
 const ProgressBar = function (p: { percent: number, state: 'active' | 'success', left?: React.ReactNode, right?: React.ReactNode }) {
     const { percent, state, left, right } = p;
     return <>
-        <Progress percent={percent} status={state} size='small' showInfo={false} style={{ lineHeight: 0.1, display: 'block' }} />
+        <Progress percent={percent} status={state} size="small" showInfo={false} style={{ lineHeight: 0.1, display: 'block' }} />
         <div style={{
             display: 'flex', marginTop: '1px',
             fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '75%'

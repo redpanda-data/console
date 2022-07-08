@@ -9,25 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, useRef } from "react";
-import { observer } from "mobx-react";
-import { ConfigProvider, Empty, Input, Popover, Table, Tooltip } from "antd";
-import { makePaginationConfig, renderLogDirSummary, sortField, WarningToolip } from "../../misc/common";
-import { Partition, PartitionReassignmentsPartition, Topic } from "../../../state/restInterfaces";
-import { BrokerList } from "../../misc/BrokerList";
-import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
-import { SelectionInfoBar } from "./components/StatisticsBar";
-import { DebugTimerStore, prettyBytesOrNA } from "../../../utils/utils";
-import { ColumnProps } from "antd/lib/table/Column";
-import { DefaultSkeleton, findPopupContainer, LayoutBypass, OptionGroup, InfoText } from "../../../utils/tsxUtils";
-import { api } from "../../../state/backendApi";
-import { computed, IReactionDisposer, makeObservable, observable, transaction } from "mobx";
-import { PartitionSelection } from "./ReassignPartitions";
+import React, { Component } from 'react';
+import { observer } from 'mobx-react';
+import { ConfigProvider, Popover, Table } from 'antd';
+import { makePaginationConfig, renderLogDirSummary, sortField, WarningToolip } from '../../misc/common';
+import { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/restInterfaces';
+import { BrokerList } from '../../misc/BrokerList';
+import { IndeterminateCheckbox } from './components/IndeterminateCheckbox';
+import { SelectionInfoBar } from './components/StatisticsBar';
+import { prettyBytesOrNA } from '../../../utils/utils';
+import { ColumnProps } from 'antd/lib/table/Column';
+import { DefaultSkeleton, findPopupContainer, LayoutBypass, InfoText } from '../../../utils/tsxUtils';
+import { api } from '../../../state/backendApi';
+import { computed, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
+import { PartitionSelection } from './ReassignPartitions';
 import Highlighter from 'react-highlight-words';
-import { uiSettings } from "../../../state/ui";
-import { ColumnFilterItem, ColumnsType, ExpandableConfig, FilterDropdownProps, TableRowSelection } from "antd/lib/table/interface";
-import { SearchOutlined, WarningTwoTone } from "@ant-design/icons";
-import { SearchTitle } from "../../misc/KowlTable";
+import { uiSettings } from '../../../state/ui';
+import { ColumnFilterItem, ColumnsType, ExpandableConfig, TableRowSelection } from 'antd/lib/table/interface';
+import { SearchOutlined, WarningTwoTone } from '@ant-design/icons';
+import { SearchTitle } from '../../misc/KowlTable';
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
 
@@ -80,7 +80,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
     render() {
         if (!api.topics) return DefaultSkeleton;
 
-        const query = uiSettings.reassignment.quickSearch ?? "";
+        const query = uiSettings.reassignment.quickSearch ?? '';
         const filterActive = query.length > 1;
 
         let searchRegex: RegExp | undefined = undefined;
@@ -90,7 +90,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
             {
-                title: <SearchTitle title='Topic' observableFilterOpen={this} observableSettings={uiSettings.reassignment} />,
+                title: <SearchTitle title="Topic" observableFilterOpen={this} observableSettings={uiSettings.reassignment} />,
                 dataIndex: 'topicName',
                 render: (v, record) => {
                     const content = filterActive
@@ -220,7 +220,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                                 <InfoText tooltip={<>
                                     If you want to select multiple adjacent items, you can use the SHIFT key.<br />
                                     Shift-Click selects the first item, last item and all items in between.
-                                </>} iconSize='16px' placement='right' />
+                                </>} iconSize="16px" placement="right" />
                             </div>,
                             renderCell: (value: boolean, record, index, originNode: React.ReactNode) => {
                                 return <IndeterminateCheckbox
@@ -350,14 +350,14 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         const brokerItems = brokers.map(b => ({ text: b.address, value: b.brokerId }));
         if (brokerItems.length > 0)
             brokerFilters.push({
-                text: "Brokers", value: "Brokers",
+                text: 'Brokers', value: 'Brokers',
                 children: brokerItems,
             });
 
         // Racks
         if (racks.length > 0)
             brokerFilters.push({
-                text: "Racks", value: "Racks",
+                text: 'Racks', value: 'Racks',
                 children: racks.map(r => ({ text: r, value: r })),
             });
 
@@ -393,7 +393,7 @@ export class SelectPartitionTable extends Component<{
 
     render() {
         return <div style={{ paddingTop: '4px', paddingBottom: '8px', width: 0, minWidth: '100%' }}>
-            <Table size='small' className='nestedTable'
+            <Table size="small" className="nestedTable"
                 dataSource={this.props.topicPartitions}
                 pagination={this.partitionsPageConfig}
                 scroll={this.scroll}
@@ -438,8 +438,8 @@ function renderPartitionError(partition: Partition) {
     const txt = [partition.partitionError, partition.waterMarksError].join('\n\n');
 
     return <Popover
-        title='Partition Error'
-        placement='rightTop' overlayClassName='popoverSmall'
+        title="Partition Error"
+        placement="rightTop" overlayClassName="popoverSmall"
         getPopupContainer={findPopupContainer}
         content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
             {txt}
@@ -447,9 +447,9 @@ function renderPartitionError(partition: Partition) {
         }
     >
         <span>
-            <LayoutBypass justifyContent='center' alignItems='center' width='20px' height='18px'>
+            <LayoutBypass justifyContent="center" alignItems="center" width="20px" height="18px">
                 <span style={{ fontSize: '19px' }}>
-                    <WarningTwoTone twoToneColor='orange' />
+                    <WarningTwoTone twoToneColor="orange" />
                 </span>
             </LayoutBypass>
         </span>
@@ -458,8 +458,8 @@ function renderPartitionError(partition: Partition) {
 
 function renderPartitionErrorsForTopic(partitionsWithErrors: number) {
     return <Popover
-        title='Partition Error'
-        placement='rightTop' overlayClassName='popoverSmall'
+        title="Partition Error"
+        placement="rightTop" overlayClassName="popoverSmall"
         getPopupContainer={findPopupContainer}
         content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
             Some partitions could not be retreived.<br />
@@ -468,9 +468,9 @@ function renderPartitionErrorsForTopic(partitionsWithErrors: number) {
         }
     >
         <span>
-            <LayoutBypass justifyContent='center' alignItems='center' width='20px' height='18px'>
+            <LayoutBypass justifyContent="center" alignItems="center" width="20px" height="18px">
                 <span style={{ fontSize: '19px' }}>
-                    <WarningTwoTone twoToneColor='orange' />
+                    <WarningTwoTone twoToneColor="orange" />
                 </span>
             </LayoutBypass>
         </span>

@@ -288,7 +288,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ clusterName: string, connector: string }>('/kafka-connect/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
     MakeRoute<{}>('/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
 
-    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className='menuIcon anticon'><BeakerIcon /></span>, false,
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className="menuIcon anticon"><BeakerIcon /></span>, false,
         routeVisibility(true,
             [Feature.GetReassignments, Feature.PatchReassignments],
             ['canPatchConfigs', 'canReassignPartitions']

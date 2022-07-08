@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from "react";
-import { observer } from "mobx-react";
-import { api } from "../../../../state/backendApi";
-import { Broker, Partition } from "../../../../state/restInterfaces";
-import { computed, makeObservable } from "mobx";
-import { PartitionSelection } from "../ReassignPartitions";
-import { prettyBytesOrNA } from "../../../../utils/utils";
+import { Component } from 'react';
+import { observer } from 'mobx-react';
+import { api } from '../../../../state/backendApi';
+import { Broker, Partition } from '../../../../state/restInterfaces';
+import { computed, makeObservable } from 'mobx';
+import { PartitionSelection } from '../ReassignPartitions';
+import { prettyBytesOrNA } from '../../../../utils/utils';
 
 
 @observer

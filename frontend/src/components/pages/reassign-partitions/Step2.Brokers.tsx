@@ -9,18 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from "react";
-import { observer } from "mobx-react";
-import { Table } from "antd";
-import { ColumnProps } from "antd/lib/table";
-import { api } from "../../../state/backendApi";
-import { makePaginationConfig } from "../../misc/common";
-import { Broker } from "../../../state/restInterfaces";
-import { transaction } from "mobx";
-import { prettyBytesOrNA } from "../../../utils/utils";
-import { SelectionInfoBar } from "./components/StatisticsBar";
-import { PartitionSelection } from "./ReassignPartitions";
-import { uiSettings } from "../../../state/ui";
+import React, { Component } from 'react';
+import { observer } from 'mobx-react';
+import { Table } from 'antd';
+import { ColumnProps } from 'antd/lib/table';
+import { api } from '../../../state/backendApi';
+import { makePaginationConfig } from '../../misc/common';
+import { Broker } from '../../../state/restInterfaces';
+import { transaction } from 'mobx';
+import { prettyBytesOrNA } from '../../../utils/utils';
+import { SelectionInfoBar } from './components/StatisticsBar';
+import { PartitionSelection } from './ReassignPartitions';
+import { uiSettings } from '../../../state/ui';
 
 
 @observer
@@ -59,7 +59,7 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
             <SelectionInfoBar partitionSelection={this.props.partitionSelection} margin="1em" />
 
             <Table
-                style={{ margin: '0', }} size='middle'
+                style={{ margin: '0', }} size="middle"
                 pagination={this.pageConfig}
                 onChange={(p) => {
                     if (p.pageSize) uiSettings.reassignment.pageSizeBrokers = p.pageSize;
@@ -76,7 +76,7 @@ export class StepSelectBrokers extends Component<{ selectedBrokerIds: number[], 
                         : selectedBrokers.push(record.brokerId),
                 })}
 
-                rowKey='brokerId'
+                rowKey="brokerId"
                 rowClassName={() => 'pureDisplayRow'}
                 rowSelection={{
                     type: 'checkbox',

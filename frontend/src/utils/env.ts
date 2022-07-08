@@ -46,7 +46,7 @@ const appFeatureNames = [
 ] as const;
 type AppFeature = typeof appFeatureNames[number];
 
-const featuresRaw = (window as any)["ENABLED_FEATURES"] ?? '';
+const featuresRaw = (window as any)['ENABLED_FEATURES'] ?? '';
 const enabledFeatures = featuresRaw.split(',') as AppFeature[];
 
 const features = {} as { [key in AppFeature]: boolean };
