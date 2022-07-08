@@ -90,6 +90,11 @@ type ConsoleHooks interface {
 	// The index.html is expected to be at the root of the filesystem. This will only be called
 	// if the config property serveFrontend is set to true.
 	FrontendResources() (fs.FS, error)
+	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
+	// Only toggleable features that require conditional rendering in the Frontend will be returned.
+	// The information will be baked into the index.html so that the Frontend knows about it
+	// at startup, which might be important to not block rendering (e.g. SSO enabled -> render login).
+	EnabledFeatures() []string
 }
 
 type RedpandaLicense struct {
@@ -198,4 +203,7 @@ func (*defaultHooks) FrontendResources() (fs.FS, error) {
 		return nil, fmt.Errorf("failed to build subtree from embedded frontend files: %w", err)
 	}
 	return fsys, nil
+}
+func (*defaultHooks) EnabledFeatures() []string {
+	return []string{}
 }

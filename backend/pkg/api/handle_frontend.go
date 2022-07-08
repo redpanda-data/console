@@ -32,6 +32,7 @@ import (
 // that target /api/* are excluded from this behaviour.
 func (api *API) handleFrontendIndex() http.HandlerFunc {
 	basePathMarker := []byte(`__BASE_PATH_REPLACE_MARKER__`)
+	enabledFeaturesMarker := []byte(`__FEATURES_REPLACE_MARKER__`)
 
 	// Load index.html file
 	fsys, err := api.Hooks.Console.FrontendResources()
@@ -58,6 +59,8 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 			// https://github.com/cloudhut/kowl/issues/107
 			index = bytes.ReplaceAll(indexOriginal, basePathMarker, []byte(basePath))
 		}
+		enabledFeatures := strings.Join(api.Hooks.Console.EnabledFeatures(), ",")
+		index = bytes.ReplaceAll(index, enabledFeaturesMarker, []byte(enabledFeatures))
 
 		hash := hashData(index)
 		// For index.html we always set cache-control and etag
