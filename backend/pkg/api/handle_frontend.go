@@ -39,6 +39,8 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 	if err != nil {
 		api.Logger.Fatal("failed to load index.html from embedded filesystem", zap.Error(err))
 	}
+	enabledFeatures := strings.Join(api.Hooks.Console.EnabledFeatures(), ",")
+	indexOriginal = bytes.ReplaceAll(indexOriginal, enabledFeaturesMarker, []byte(enabledFeatures))
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		index := indexOriginal
@@ -54,8 +56,6 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 			// https://github.com/cloudhut/kowl/issues/107
 			index = bytes.ReplaceAll(indexOriginal, basePathMarker, []byte(basePath))
 		}
-		enabledFeatures := strings.Join(api.Hooks.Console.EnabledFeatures(), ",")
-		index = bytes.ReplaceAll(index, enabledFeaturesMarker, []byte(enabledFeatures))
 
 		hash := hashData(index)
 		// For index.html we always set cache-control and etag
@@ -88,6 +88,11 @@ func (api *API) handleFrontendResources() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		if isRequestToIndexFile(r) {
+			handleIndex(w, r)
+			return
+		}
+
 		f, err := httpFs.Open(r.URL.Path)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -152,4 +157,16 @@ func hashData(data []byte) string {
 	hasher.Write(data)
 	hash := hasher.Sum(nil)
 	return hex.EncodeToString(hash)
+}
+
+func isRequestToIndexFile(r *http.Request) bool {
+	if strings.HasSuffix(r.URL.Path, "/index.html") {
+		return true
+	}
+
+	if r.URL.Path == "/" {
+		return true
+	}
+
+	return false
 }
