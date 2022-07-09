@@ -296,7 +296,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     ),
 
     MakeRoute<{}>('/admin', AdminPage, 'Admin', <span className="menuIcon anticon"><CogIcon /></span>, false,
-        routeVisibility(() => api.userData?.canManageKowl ?? false)
+        routeVisibility(() => api.userData?.canViewConsoleUsers ?? false)
     ),
 
 

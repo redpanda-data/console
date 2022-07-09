@@ -492,7 +492,7 @@ export interface Seat {
 export interface UserData {
     user: User;
     seat: Seat;
-    canManageKowl: boolean;
+    canViewConsoleUsers: boolean;
     canListAcls: boolean;
     canListQuotas: boolean;
     canReassignPartitions: boolean;

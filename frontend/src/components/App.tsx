@@ -303,7 +303,7 @@ export default class App extends Component {
                     devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging');
                     uiState.isUsingDebugUserLogin = true;
                     api.userData = {
-                        canManageKowl: false,
+                        canViewConsoleUsers: false,
                         canListAcls: true,
                         canListQuotas: true,
                         canPatchConfigs: true,
