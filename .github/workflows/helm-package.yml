@@ -1,4 +1,4 @@
-name: Lint and Test Charts
+name: Package Helm chart
 
 on:
   workflow_dispatch:
