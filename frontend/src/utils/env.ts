@@ -45,7 +45,7 @@ const appFeatureNames = [
     'SINGLE_SIGN_ON',
     'REASSIGN_PARTITIONS',
 ] as const;
-type AppFeature = typeof appFeatureNames[number];
+export type AppFeature = typeof appFeatureNames[number];
 
 if (env.REACT_APP_ENABLED_FEATURES)
     (window as any)['ENABLED_FEATURES'] = env.REACT_APP_ENABLED_FEATURES;

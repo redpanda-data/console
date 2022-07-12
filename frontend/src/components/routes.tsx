@@ -38,6 +38,7 @@ import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import CreateConnector from './pages/connect/CreateConnector';
 import QuotasList from './pages/quotas/Quotas.List';
+import { AppFeature, AppFeatures } from '../utils/env';
 
 
 //
@@ -174,6 +175,7 @@ export const RouteView = (() =>
 enum DisabledReasons {
     'notSupported', // kafka cluster version too low
     'noPermission', // user doesn't have permissions to use the feature
+    'enterpriseFeature'
 }
 
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
@@ -181,6 +183,8 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
         <span>You don't have premissions<br />to view this page.</span>,
     [DisabledReasons.notSupported]:
         <span>The Kafka cluster does not<br />support this feature.</span>,
+    [DisabledReasons.enterpriseFeature]:
+        <span>This feature requires an enterprise license.</span>,
 } as const;
 
 interface MenuItemState {
@@ -225,7 +229,9 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 function routeVisibility(
     visible: boolean | (() => boolean),
     requiredFeatures?: FeatureEntry[],
-    requiredPermissions?: UserPermissions[]): () => MenuItemState {
+    requiredPermissions?: UserPermissions[],
+    requiredAppFeatures?: AppFeature[],
+): () => MenuItemState {
     return () => {
         const v = typeof visible === 'boolean'
             ? visible
@@ -248,6 +254,14 @@ function routeVisibility(
                     break;
                 }
             }
+
+        if (requiredAppFeatures) {
+            for (const f of requiredAppFeatures)
+                if (AppFeatures[f] == false) {
+                    disabledReasons.push(DisabledReasons.enterpriseFeature);
+                    break;
+                }
+        }
 
         return {
             visible: v,
@@ -291,7 +305,8 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className="menuIcon anticon"><BeakerIcon /></span>, false,
         routeVisibility(true,
             [Feature.GetReassignments, Feature.PatchReassignments],
-            ['canPatchConfigs', 'canReassignPartitions']
+            ['canPatchConfigs', 'canReassignPartitions'],
+            ['REASSIGN_PARTITIONS']
         )
     ),
 
