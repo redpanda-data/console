@@ -1275,7 +1275,6 @@ class MessageSearchFilterBar extends Component {
                         className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
                         key={e.id}
                         closable
-                        color={e.isActive ? 'var(--ant-primary-3)' : undefined}
                         onClose={() => settings.filters.remove(e)}
                     >
                         <SettingOutlined
