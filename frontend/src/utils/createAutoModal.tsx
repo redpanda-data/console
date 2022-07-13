@@ -138,7 +138,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
             <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="success"
                 title={options.modalProps.successTitle ?? 'Success'}
                 subTitle={response}
-                extra={<Button type="primary" size="large" style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
+                extra={<Button type="default" size="large" style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
             />
         </>;
     };

@@ -41,11 +41,11 @@ ConfigProvider.config({
     theme: {
         primaryColor: colors.brandOrange,
 
-        infoColor: colors.debugRed,
-        successColor: colors.debugRed,
-        processingColor: colors.debugRed,
-        // errorColor: colors.debugRed,
-        warningColor: colors.debugRed,
+        infoColor: colors.brandBlue,
+        successColor: colors.brandSuccess,
+        // processingColor: colors.debugRed,
+        errorColor: colors.brandError,
+        warningColor: colors.brandWarning,
     },
 });
 

@@ -339,7 +339,6 @@ b {
 
 .hoverLink:hover {
     cursor: pointer;
-    color: hsl(205, 100%, 50%);
     color: var(--ant-primary-color);
 }
 
@@ -446,10 +445,7 @@ td.ant-table-column-sort {
     margin-bottom: 4px;
 }
 
-/* .ant-pagination-item a {
-    color: hsl(205, 100%, 55%)
-}
-*/
+
 .ant-pagination-item-active a {
     font-weight: bold;
     cursor: default;
@@ -649,7 +645,6 @@ td.ant-table-column-sort {
     /* or 107% */
     display: flex;
     align-items: center;
-    // color: #498FC2;
     color: gray;
 }
 
@@ -905,18 +900,12 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 }
 
 .ant-checkbox-checked .ant-checkbox-inner {
-    // background-color: hsla(209, 75%, 66%, 1);
-        // border-color: hsla(209, 50%, 55%, 1);
-
-        background-color: var(--ant-primary-color);
-        border-color: var(--ant-primary-color-outline);
+    background-color: var(--ant-primary-color);
+    border-color: var(--ant-primary-color-outline);
 }
 
 .ant-btn-primary,
 .ant-switch-checked {
-    // background-color: hsla(209, 66%, 55%, 1);
-    // background-color: hsl(0deg 84% 65%);
-
     background-color: var(--ant-primary-color);
     border-color: transparent;
 }
@@ -936,8 +925,8 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 }
 
 .ant-tabs-nav .ant-tabs-tab-active {
-    color: hsla(206, 80%, 55%, 1);
-    background: #00b9ff17;
+    color: var(--ant-primary-color);
+    background: $color-light-background !important;
 }
 
 .ant-tabs-nav-list {
@@ -949,7 +938,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 }
 
 .ant-tabs-ink-bar {
-    background-color: hsla(209, 75%, 60%, 1);
+    background-color: var(--ant-primary-color-active);
 }
 
 button.ant-btn-circle > i.anticon:only-child {
@@ -1726,8 +1715,8 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     transform: translate(-27px, -20px);
 
     &:hover {
-        background: #b0e2ff7a;
-        color: hsla(205, 50%, 50%, 1);
+        background: var(--ant-primary-2);
+        color: var(--ant-primary-6);
     }
 
     svg {
@@ -1760,9 +1749,16 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
 }
 
 .filterTagDisabled {
+    color: rgba(46, 46, 46, 0.66);
+    background: rgba(46, 46, 46, 0.1);
     .filterName {
-        text-decoration: line-through rgba(46, 46, 46, 0.66);
+        text-decoration: line-through black;
     }
+}
+
+.ant-alert-info {
+    border: 1px solid hsl(220, 19%, 90%);
+    background: hsl(220, 19%, 98%);
 }
 
 .messageHeaders {
@@ -1965,15 +1961,6 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     0% {
         color: inherit;
     }
-
-    40% {
-        color: rgb(79, 173, 245);
-    }
-
-    60% {
-        color: rgb(79, 173, 245);
-    }
-
     100% {
         color: inherit;
     }
@@ -1987,7 +1974,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     @include beforeAfter;
 
     border-radius: 4px;
-    box-shadow: 0 0 8px 4px #3098e8;
+    box-shadow: 0 0 8px 4px #7e8a93b0;
 
     animation: waitingForMessagesBoxPulseShadow 1.5s ease-in-out 0s infinite;
 }
@@ -1998,7 +1985,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     }
 
     50% {
-        box-shadow: 0 0 8px 2px #3098e8b0;
+        box-shadow: 0 0 8px 2px #7e8a93b0;
     }
 
     100% {
@@ -2242,8 +2229,8 @@ mark {
     margin-bottom: 1px;
 
     border: 2px solid hsl(0, 0%, 85%);
-    border-bottom-color: hsl(205, 100%, 50%);
-    border-top-color: hsl(205, 100%, 50%);
+    border-bottom-color: var(--ant-primary-color);
+    border-top-color: var(--ant-primary-color);
     animation: rotate 1.5s linear 0s infinite;
 
     @keyframes rotate {
@@ -2359,7 +2346,7 @@ mark {
         cursor: pointer;
 
         &:hover {
-            color: hsl(205, 100%, 50%);
+            color: var(--ant-primary-color);
             background: hsl(205, 100%, 98%);
         }
     }
@@ -3019,7 +3006,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
 .linkBtn {
     cursor: pointer;
-    color: hsl(205, 100%, 50%);
+    color: var(--ant-primary-color);
 
     &:hover {
         text-decoration: solid underline;

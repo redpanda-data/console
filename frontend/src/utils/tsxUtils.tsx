@@ -23,6 +23,7 @@ import { SizeType } from 'antd/lib/config-provider/SizeContext';
 import { makeObservable, observable } from 'mobx';
 import { TooltipPlacement } from 'antd/lib/tooltip';
 import { InfoIcon } from '@primer/octicons-react';
+import colors from '../colors';
 
 
 const defaultLocale = 'en'
@@ -404,10 +405,10 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
                 <div style={StatusIndicator.statusBarStyle}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <DownloadOutlined /> {this.props.bytesConsumed}
+                        <DownloadOutlined style={{color: colors.brandOrange}} /> {this.props.bytesConsumed}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-                        <CopyOutlined />{this.props.messagesConsumed} messages
+                        <CopyOutlined style={{color: colors.brandOrange}} />{this.props.messagesConsumed} messages
                     </div>
                 </div>
             }
