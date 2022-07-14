@@ -222,10 +222,10 @@ const ManualOffsetContent = observer(
         if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
             const partitionErrors = api.topicPartitionErrors
                 .get(topicName)
-                ?.map(({ partitionError }) => <li>{partitionError}</li>);
+                ?.map(({ partitionError }, idx) => <li key={`${topicName}-partitionErrors-${idx}`} >{partitionError}</li>);
             const waterMarksErrors = api.topicWatermarksErrors
                 .get(topicName)
-                ?.map(({ waterMarksError }) => <li>{waterMarksError}</li>);
+                ?.map(({ waterMarksError }, idx) => <li key={`${topicName}-watermarkErrors-${idx}`} >{waterMarksError}</li>);
             const message = (
                 <>
                     {partitionErrors && partitionErrors.length > 0 ? (
@@ -286,17 +286,6 @@ const ManualOffsetContent = observer(
                             updateOffsetFromSlider(sliderValue)
                         }
                     }}
-
-                // onChange={(e) => {
-                //     const { value } = e.target;
-                //     if (!SLIDER_INPUT_REGEX.test(value)) return;
-                //     const rangedValue = keepInRange(
-                //         fromDecimalSeparated(value),
-                //         min || 0,
-                //         max || Number.MAX_SAFE_INTEGER
-                //     );
-                //     updateOffsetFromSlider(rangedValue);
-                // }}
                 />
             </div>
         );

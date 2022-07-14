@@ -92,7 +92,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             {
                 title: <SearchTitle title="Topic" observableFilterOpen={this} observableSettings={uiSettings.reassignment} />,
                 dataIndex: 'topicName',
-                render: (v, record) => {
+                render: (_v, record) => {
                     const content = filterActive
                         ? <Highlighter searchWords={[query]} textToHighlight={record.topicName} />
                         : record.topicName;
@@ -110,7 +110,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
                 // to support both filters at the same time (topic and brokers), both filters *must* be in controlled mode
                 filteredValue: filterActive ? [query] : undefined,
-                onFilter: (value, record) => searchRegex?.test(record.topicName) ?? false,
+                onFilter: (_value, record) => searchRegex?.test(record.topicName) ?? false,
 
                 filterIcon: filterIcon(filterActive),
                 filterDropdown: <></>,
@@ -135,7 +135,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 sorter: sortField('partitionCount')
             },
             {
-                title: 'Replication Factor', width: 160, render: (t, r) => {
+                title: 'Replication Factor', width: 160, render: (_t, r) => {
                     if (r.activeReassignments.length == 0) return r.replicationFactor;
                     return <InfoText tooltip="While reassignment is active, replication factor is temporarily doubled." maxWidth="180px">
                         {r.replicationFactor}
@@ -145,7 +145,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             },
             {
                 title: 'Brokers', width: 160, dataIndex: 'partitions',
-                render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A',
+                render: (_value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A',
 
                 // to support both filters at the same time (topic and brokers), both filters *must* be in controlled mode
                 filteredValue: this.selectedBrokerFilters,
@@ -167,7 +167,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             },
             {
                 title: 'Size', width: 110,
-                render: (v, r) => renderLogDirSummary(r.logDirSummary),
+                render: (_v, r) => renderLogDirSummary(r.logDirSummary),
                 sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes
             },
         ];
@@ -190,7 +190,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                     <Table
                         style={{ margin: '0', }} size={'middle'}
                         pagination={this.pageConfig}
-                        onChange={(p, filters, sorters) => {
+                        onChange={(p, filters, _sorters) => {
                             if (p.pageSize) uiSettings.reassignment.pageSizeSelect = p.pageSize;
                             this.pageConfig.current = p.current;
                             this.pageConfig.pageSize = p.pageSize;
@@ -222,17 +222,17 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                                     Shift-Click selects the first item, last item and all items in between.
                                 </>} iconSize="16px" placement="right" />
                             </div>,
-                            renderCell: (value: boolean, record, index, originNode: React.ReactNode) => {
+                            renderCell: (_value: boolean, record, _index, originNode: React.ReactNode) => {
                                 return <IndeterminateCheckbox
                                     originalCheckbox={originNode}
                                     getCheckState={() => this.getTopicCheckState(record.topicName)}
                                 />
                             },
-                            onSelect: (record, selected: boolean, selectedRows) => {
+                            onSelect: (record, selected: boolean, _selectedRows) => {
                                 if (!record.partitions) return;
                                 this.setTopicSelection(record, selected);
                             },
-                            onSelectMultiple: (selected, selectedRows, changeRows) => {
+                            onSelectMultiple: (selected, _selectedRows, changeRows) => {
                                 transaction(() => {
                                     for (const r of changeRows)
                                         for (const p of r.partitions)
@@ -386,7 +386,7 @@ export class SelectPartitionTable extends Component<{
                     : renderPartitionError(p)
         },
         {
-            width: 100, title: 'Size', render: (v, p) => prettyBytesOrNA(p.replicaSize),
+            width: 100, title: 'Size', render: (_v, p) => prettyBytesOrNA(p.replicaSize),
             sortOrder: 'ascend', sorter: (a, b) => a.replicaSize - b.replicaSize
         },
     ];
@@ -456,7 +456,7 @@ function renderPartitionError(partition: Partition) {
     </Popover>
 }
 
-function renderPartitionErrorsForTopic(partitionsWithErrors: number) {
+function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
     return <Popover
         title="Partition Error"
         placement="rightTop" overlayClassName="popoverSmall"

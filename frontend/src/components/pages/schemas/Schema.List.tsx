@@ -35,8 +35,8 @@ function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
 
     return (
         <Card className="SchemaList__error-card">
-            {requestErrors.map(({ errorMessage, requestDescription }) => (
-                <Alert type="error" message={errorMessage} description={requestDescription} closable className="SchemaList__alert" />
+            {requestErrors.map(({ errorMessage, requestDescription }, idx) => (
+                <Alert key={idx} type="error" message={errorMessage} description={requestDescription} closable className="SchemaList__alert" />
             ))}
         </Card>
     );

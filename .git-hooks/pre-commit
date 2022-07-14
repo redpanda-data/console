@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# FRONTEND ESLINT CHECK
+###########################
+FRONTEND_STAGED_FILES=("$(git diff --diff-filter=d --cached --name-only ./frontend | grep -E '^.*src\/.*\.(js|jsx|tsx|ts)$')")
+
+
+if [[ "$FRONTEND_STAGED_FILES" = "" ]]; then
+  exit 0
+fi
+
+PASS=true
+
+# Check for node
+which node &> /dev/null
+if [[ "$?" == 1 ]]; then
+  echo "\t\033[41mPlease install node\033[0m"
+  exit 1
+fi
+
+echo $FRONTEND_STAGED_FILES
+for FILE in $FRONTEND_STAGED_FILES
+do
+
+pattern="frontend/"
+
+npm run linter --prefix ./frontend -- "${FILE/$pattern/}"
+
+  if [[ "$?" == 0 ]]; then
+    echo "\033[32mESLint Passed: $FILE\033[0m"
+  else
+    echo "\033[41mESLint Failed: $FILE\033[0m"
+    PASS=false
+  fi
+done
+
+
+echo "\nESLint validation completed!\n"
+
+if ! $PASS; then
+  echo "\033[41mCOMMIT FAILED:\033[0m Your commit contains files that should pass ESLint but do not. Please fix the ESLint errors and try again.\n"
+  exit 1
+else
+  echo "\033[42mCOMMIT SUCCEEDED\033[0m\n"
+fi
+
+exit $?
+

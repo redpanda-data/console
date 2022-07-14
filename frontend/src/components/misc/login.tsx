@@ -21,9 +21,9 @@ import OktaLogo from '../../utils/svg/OktaLogo';
 
 
 const iconMap = new Map([
-    ['google', <GoogleOutlined style={{ marginBottom: '6px' }} />],
-    ['github', <GithubOutlined style={{ marginBottom: '6px' }} />],
-    ['okta', <span style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{OktaLogo}</span>],
+    ['google', <GoogleOutlined key="google-icon" style={{ marginBottom: '6px' }} />],
+    ['github', <GithubOutlined key="github-icon" style={{ marginBottom: '6px' }} />],
+    ['okta', <span key="okata-icon" style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{OktaLogo}</span>],
 ]);
 
 interface ProvidersResponse {

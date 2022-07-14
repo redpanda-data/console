@@ -132,7 +132,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                         }}
                     />
                 );
-            }, [(t) => {
+            }, [() => {
                 if (AppFeatures.SINGLE_SIGN_ON)
                     if (api.userData != null && !api.userData.canListAcls)
                         return <Popover content={'You need the cluster-permission \'viewAcl\' to view this tab'}>

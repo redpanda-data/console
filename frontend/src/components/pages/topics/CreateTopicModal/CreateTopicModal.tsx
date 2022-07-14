@@ -171,14 +171,14 @@ function NumInput(p: {
         }
 
         onBlur={() => {
-            let s = editValue;
+            const s = editValue;
             if (s == undefined || s == '') {
                 // still a valid value, meaning "default"
                 commit(undefined);
                 return;
             }
 
-            let n = Number(s);
+            const n = Number(s);
             if (!Number.isFinite(n)) {
                 commit(undefined);
                 return;
@@ -255,7 +255,7 @@ function RetentionTimeSelect(p: {
                 p.onChangeUnit(u);
             }}
             options={
-                Object.entries(timeFactors).map(([name, value]) => {
+                Object.entries(timeFactors).map(([name]) => {
                     const isSpecial = name == 'default' || name == 'infinite';
                     return {
                         value: name,
@@ -332,7 +332,7 @@ function RetentionSizeSelect(p: {
                 p.onChangeUnit(u);
             }}
             options={
-                Object.entries(sizeFactors).map(([name, value]) => {
+                Object.entries(sizeFactors).map(([name]) => {
                     const isSpecial = name == 'default' || name == 'infinite';
                     return {
                         value: name,
