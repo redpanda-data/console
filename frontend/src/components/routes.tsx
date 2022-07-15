@@ -39,31 +39,22 @@ import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import CreateConnector from './pages/connect/CreateConnector';
 import QuotasList from './pages/quotas/Quotas.List';
 import { AppFeature, AppFeatures } from '../utils/env';
-
+import { ItemType } from 'antd/lib/menu/hooks/useItems';
 
 //
 //	Route Types
 //
-export type IRouteEntry = PageDefinition<any> | PageGroup | SeparatorEntry;
-
-export interface PageGroup {
-    title: string
-    children: IRouteEntry[]
-}
+type IRouteEntry = PageDefinition<any>;
 
 export interface PageDefinition<TRouteParams = {}> {
-    title: string
-    path: string
-    pageType: PageComponentType<TRouteParams>
-    routeJsx: JSX.Element
-    icon?: JSX.Element
-    menuItemKey?: string, // set by 'CreateRouteMenuItems'
-    visibilityCheck?: () => MenuItemState,
+    title: string;
+    path: string;
+    pageType: PageComponentType<TRouteParams>;
+    routeJsx: JSX.Element;
+    icon?: JSX.Element;
+    menuItemKey?: string; // set by 'CreateRouteMenuItems'
+    visibilityCheck?: () => MenuItemState;
 }
-export interface SeparatorEntry { isSeparator: boolean; }
-
-export function isPageDefinition(x: IRouteEntry): x is PageDefinition<any> { return (x as PageDefinition<any>).path !== undefined; }
-export function isSeparator(x: IRouteEntry): x is SeparatorEntry { return (x as SeparatorEntry).isSeparator !== undefined; }
 
 
 export const RouteMenu = observer(() =>
@@ -71,82 +62,58 @@ export const RouteMenu = observer(() =>
         theme="dark"
         selectedKeys={uiState.selectedMenuKeys}
         style={{ border: 0, background: 'none' }}
+        items={CreateRouteMenuItems(APP_ROUTES)}
     >
-        {CreateRouteMenuItems(APP_ROUTES)}
     </Menu>
 )
 
 // Generate content for <Menu> from all routes
-export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArray {
-    return entries.map((entry, index) => {
+export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
+    const routeItems = entries.map((entry) => {
+        // Menu entry for Page
+        if (entry.path.includes(':'))
+            return null; // only root-routes (no param) can be in menu
 
-        if (isPageDefinition(entry)) {
-            // Menu entry for Page
-            if (entry.path.includes(':'))
-                return null; // only root-routes (no param) can be in menu
+        let isEnabled = true;
+        let disabledText: JSX.Element = <></>;
+        if (entry.visibilityCheck) {
+            const visibility = entry.visibilityCheck();
+            if (!visibility.visible) return null;
 
-            let isEnabled = true;
-            let disabledText: JSX.Element = <></>;
-            if (entry.visibilityCheck) {
-                const visibility = entry.visibilityCheck();
-                if (!visibility.visible) return null;
+            isEnabled = visibility.disabledReasons.length == 0;
+            if (!isEnabled)
+                disabledText = disabledReasonText[visibility.disabledReasons[0]];
+        }
+        const isDisabled = !isEnabled;
 
-                isEnabled = visibility.disabledReasons.length == 0;
-                if (!isEnabled)
-                    disabledText = disabledReasonText[visibility.disabledReasons[0]];
-            }
-            const isDisabled = !isEnabled;
-
-            // {/*  */}
-            return <Menu.Item key={entry.path} disabled={isDisabled}>
+        return {
+            key: entry.path,
+            icon: entry.icon,
+            label: (
                 <Tooltip
                     overlayClassName="menu-permission-tooltip"
                     overlay={disabledText}
-                    align={{ points: ['cc', 'cc'], offset: [0, 0] }}
+                    align={{ points: ['cc', 'cc'], offset: [-20, 0] }}
                     trigger={isDisabled ? 'hover' : 'none'}
                     mouseEnterDelay={0.05}
                 >
                     <div style={{ display: isDisabled ? 'block' : 'contents', width: '100%' }}>
                         <Link to={entry.path} style={{ pointerEvents: isEnabled ? 'all' : 'none' }}>
-                            {entry.icon}
-                            <span>{entry.title}</span>
+                            {entry.title}
                         </Link>
                     </div>
                 </Tooltip>
-            </Menu.Item>
-        }
-        else if (isSeparator(entry)) {
-            return <div key={index} className="menu-divider" />
-        }
-        else {
-            // Group
-            return (
-                <Menu.ItemGroup key={entry.title} title={entry.title}>
-                    {CreateRouteMenuItems(entry.children)}
-                </Menu.ItemGroup>
-            );
-        }
+            ),
+            disabled: isDisabled,
+        } as ItemType;
     }).filter(x => x != null && x != undefined);
+    return routeItems as ItemType[];
 }
 
 // Convert routes to <Route/> JSX declarations
 function EmitRouteViews(entries: IRouteEntry[]): JSX.Element[] {
-
-    const elements: JSX.Element[] = [];
-
-    for (const entry of entries) {
-        if (isPageDefinition(entry)) {
-            elements.push(entry.routeJsx);
-        } else if (isSeparator(entry)) {
-            // seperators are not routes
-        } else {
-            const childJsxElements = EmitRouteViews(entry.children);
-            elements.push(...childJsxElements);
-        }
-    }
-    return elements;
+    return entries.map(e => e.routeJsx);
 }
-
 
 export const RouteView = (() =>
     <AnimatePresence exitBeforeEnter>

@@ -757,7 +757,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 
     $baseColor: #828080;
     font-family: 'Poppins', sans-serif;
-
+    
     li.ant-menu-item {
         display: flex;
 
@@ -773,60 +773,45 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             width 2000ms,
             color 0ms ease-out,
             background-color 100ms ease;
+        
+        color: $baseColor;
 
-        a {
-            display: flex; // fix vertical alignment of menu items in sidebar
-            color: $baseColor;
+        .menuIcon {
+            $size: 22px;
 
-            gap: 10px;
+            display: inline-flex;
+            width: $size;
+            margin: 0;
+            margin-left: 5px;
+
             transition:
-                gap 200ms,
-                color 50ms ease-out;
+                margin 200ms ease-out,
+                margin-left 200ms ease-out;
 
-            .anticon + span {
-                transition: none;
-            }
-
-            .menuIcon {
-                $size: 22px;
-
-                display: inline-flex;
+            // Safari
+            // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
+            svg {
                 width: $size;
-                margin: 0;
-                margin-left: 5px;
-
-                transition:
-                    margin 200ms ease-out,
-                    margin-left 200ms ease-out;
-
-                // Safari
-                // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
-                svg {
-                    width: $size;
-                }
             }
-
-            &::before {
-                @include tlrb;
-                left: -20px;
-                right: -20px;
-                // background-color: red;
-                content: '';
-            }
-
-            & > span {
-                color: unset; // remove antd default
-            }
-
         }
+
+        &::before {
+            @include tlrb;
+            left: -20px;
+            right: -20px;
+            // background-color: red;
+            content: '';
+        }
+
+        & > span {
+            color: unset; // remove antd default
+        }
+
 
         &:not(&-disabled):not(&-selected):not([class*="disabled"]) {
             &:hover {
                 background: hsla(0, 0%, 50%, 0.07);
-
-                    a {
-                        color: hsl(0deg 0% 40%);
-                    }
+                color: $color-brand-secondary;
             }
         }
 
@@ -834,9 +819,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             background: hsla(0, 0%, 50%, 0.07);
             font-weight: 500;
 
-            a, .menuIcon {
-                color: $color-brand-secondary;
-            }
+            color: $color-brand-secondary;
         }
 
 
@@ -845,12 +828,20 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             user-select: none;
             opacity: .35;
 
+            color: $baseColor !important;
+            
             a {
-                color: $baseColor  !important;
+                color: $baseColor !important;
             }
         }
-    }
 
+        a {
+            transition:
+                gap 200ms,
+                color 50ms ease-out;
+        }
+    }
+    
     // we don't need a clearfix in our menu
     &::before {
         display: none;
