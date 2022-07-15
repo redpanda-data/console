@@ -119,7 +119,7 @@ class Login extends Component {
                                 <span style={{ fontSize: '0.66em' }}>to access Redpanda Console</span>
                             </div>
                             <div className="loginButtonList">
-                                {ar?.map(p => <LoginProviderButton provider={p} />)
+                                {ar?.map(p => <LoginProviderButton key={p.displayName} provider={p} />)
                                     || (this.providersError && <ProvidersError error={this.providersError} />)
                                     || <div style={{ fontSize: '14px', marginTop: '32px', color: '#ddd' }}><Spin size="large" /><br />Retreiving login method from backend...</div>}
                             </div>
