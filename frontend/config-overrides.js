@@ -18,6 +18,8 @@ module.exports = override(
     (webpackConfig) => {
         if (webpackConfig.mode != 'development') {
             webpackConfig.devtool = 'nosources-source-map';
+        } else {
+            webpackConfig.devtool = 'eval-source-map';
         }
         return webpackConfig;
     },
