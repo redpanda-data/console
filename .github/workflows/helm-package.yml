@@ -17,7 +17,7 @@ jobs:
       - name: Set up latest stable Helm version
         uses: azure/setup-helm@v3
 
-      # Python is required because ct lint runs Yamale and yamllint which requires Python
+      # Python is required for ct lint
       - uses: actions/setup-python@v4
         with:
           python-version: '3.7'
@@ -46,13 +46,22 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+
+      - name: Install Cloudsmith CLI
+        run: pip install --upgrade cloudsmith-cli
 
       - name: Set up latest stable Helm version
         uses: azure/setup-helm@v3
 
-      - name: Helm Package & Upload Helm chart
+      - name: Package Helm Chart
         working-directory: helm
-        run: |
-          ${{ secrets.GOOGLE_CLOUD_SA }} | helm registry login https://europe-west1-docker.pkg.dev -u _json_key --password-stdin
-          helm package -u console --version ${{ github.event.inputs.chartVersion }}
-          helm push console-${{ github.event.inputs.chartVersion }} oci://europe-west1-docker.pkg.dev/rp-console-356021/helm-charts
+        run: helm package -u console --version ${{ github.event.inputs.chartVersion }}
+
+      - name: Push Helm package to Cloudsmith repo
+        working-directory: helm
+        run: cloudsmith push helm redpanda/console console-${{ github.event.inputs.chartVersion }}.tgz
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_VBOT_API_KEY }}
