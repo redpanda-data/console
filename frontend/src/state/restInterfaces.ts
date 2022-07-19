@@ -598,27 +598,27 @@ export enum AclResourcePatternTypeFilter {
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L81
 export enum AclOperation {
-    AclOperationUnknown,
-    AclOperationAny,
-    AclOperationAll,
-    AclOperationRead,
-    AclOperationWrite,
-    AclOperationCreate,
-    AclOperationDelete,
-    AclOperationAlter,
-    AclOperationDescribe,
-    AclOperationClusterAction,
-    AclOperationDescribeConfigs,
-    AclOperationAlterConfigs,
-    AclOperationIdempotentWrite
+    Unknown,
+    Any,
+    All,
+    Read,
+    Write,
+    Create,
+    Delete,
+    Alter,
+    Describe,
+    ClusterAction,
+    DescribeConfigs,
+    AlterConfigs,
+    IdempotentWrite
 }
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L71
-export enum AclPermissionType {
-    AclPermissionUnknown,
-    AclPermissionAny,
-    AclPermissionDeny,
-    AclPermissionAllow
+export enum AclPermission {
+    Unknown,
+    Any,
+    Deny,
+    Allow
 }
 
 // list all:
@@ -630,7 +630,7 @@ export interface AclRequest {
     principal?: string;
     host?: string;
     operation: AclOperation;
-    permissionType: AclPermissionType;
+    permissionType: AclPermission;
 }
 
 export const AclRequestDefault = {
@@ -639,8 +639,8 @@ export const AclRequestDefault = {
     resourcePatternTypeFilter: AclResourcePatternTypeFilter.AclPatternAny,
     principal: '',
     host: '',
-    operation: AclOperation.AclOperationAny,
-    permissionType: AclPermissionType.AclPermissionAny,
+    operation: AclOperation.Any,
+    permissionType: AclPermission.Any,
 } as const;
 
 export interface GetAclResponse {
@@ -697,7 +697,7 @@ export interface CreateACLRequest {
 
     // PermissionType is the permission of this acl. This must be either ALLOW
     // or DENY.
-    permissionType: AclPermissionType.AclPermissionAllow | AclPermissionType.AclPermissionDeny;
+    permissionType: AclPermission.Allow | AclPermission.Deny;
 }
 
 
@@ -717,7 +717,7 @@ export interface DeleteACLsRequest {
 
     operation: AclOperation;
 
-    permissionType: AclPermissionType;
+    permissionType: AclPermission;
 }
 
 export interface QuotaResponse {
