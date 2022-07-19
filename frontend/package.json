@@ -11,13 +11,16 @@
         "start": "cross-env SKIP_PREFLIGHT_CHECK=true                         react-app-rewired start",
         "start2": "cross-env SKIP_PREFLIGHT_CHECK=true REACT_APP_BUSINESS=true react-app-rewired start",
         "build": "react-app-rewired build -- --profile",
-        "buildLocalTest": "cross-env REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true react-app-rewired build",
+        "build-local-test": "cross-env REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true react-app-rewired build",
         "test": "react-app-rewired test",
         "eject": "react-scripts eject",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
         "preinstall": "npx npm-force-resolutions",
         "lint": "eslint --ext .ts,.tsx ./src  --cache",
-        "prepare": "node scripts/fetch-monaco.mjs"
+        "linter": "eslint",
+        "fetch-monaco": "node scripts/fetch-monaco.mjs",
+        "load-git-hooks": "cd ../; git config core.hooksPath ./.git-hooks",
+        "prepare": "npm run fetch-monaco && npm run load-git-hooks"
     },
     "dependencies": {
         "@ant-design/icons": "^4.7",
@@ -32,10 +35,10 @@
         "mobx-react": "^7.5",
         "moment": "^2.29.1",
         "monaco-editor": "^0.33.0",
+        "node-fetch": "^3.2.6",
         "npm-force-resolutions": "^0.0.10",
         "pretty-bytes": "^5.6.0",
         "pretty-ms": "^7.0.1",
-        "prismjs": "^1.24.0",
         "query-string": "^7.0.1",
         "react": "^17.0.2",
         "react-beautiful-dnd": "^13.1.0",
@@ -47,7 +50,6 @@
         "react-markdown": "^8.0.3",
         "react-router-dom": "^5.2.0",
         "react-scripts": "^4.0.3",
-        "react-simple-code-editor": "^0.11.0",
         "react-syntax-highlighter": "^15.4.3",
         "rehype-highlight": "^4.1.0",
         "remark-emoji": "^3.0.2",
@@ -62,11 +64,10 @@
         "@testing-library/react": "^11.2.6",
         "@types/jest": "26.0.23",
         "@types/node": "^16",
-        "@types/prismjs": "^1.26",
-        "@types/react": "^17.0.0",
+        "@types/react": "17.0.21",
         "@types/react-beautiful-dnd": "^13.1",
         "@types/react-css-transition-replace": "^2.1.3",
-        "@types/react-dom": "^17.0.0",
+        "@types/react-dom": "17.0.11",
         "@types/react-highlight-words": "^0.16.2",
         "@types/react-router-dom": "^5.3.3",
         "@types/react-syntax-highlighter": "^15",
@@ -93,10 +94,7 @@
             "last 1 safari version"
         ]
     },
-    "resolutions": {
-        "immer": "9.0.7",
-        "@types/react": "17.0.21",
-        "@types/react-dom": "17.0.11",
-        "@typescript-eslint/eslint-plugin": "5.27.1"
+    "overrides": {
+        "immer": "9.0.7"
     }
 }

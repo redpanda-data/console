@@ -24,7 +24,7 @@ class AppGlobal {
 
         this._history = h;
 
-        h.listen((location, action) => {
+        h.listen((location, _action) => {
             api.errors = [];
             uiState.pathName = location.pathname;
         });

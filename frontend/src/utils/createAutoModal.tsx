@@ -49,7 +49,6 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 
 }): AutoModal<TShowArg> {
 
-    let showArg: TShowArg | null = null;
     let userState: TModalState | undefined = undefined;
     const state = observable({
         modalProps: null as AntdModalProps | null,
@@ -60,7 +59,6 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 
     // Called by user to create a new modal instance
     const show = action((arg: TShowArg) => {
-        showArg = arg;
         userState = options.onCreate(arg);
         state.modalProps = Object.assign({}, options.modalProps, {
             onCancel: () => {
@@ -91,7 +89,6 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
                     options.onSuccess?.(userState!, state.result.returnValue);
             },
             afterClose: () => {
-                showArg = null;
                 state.modalProps = null;
                 state.result = null;
                 state.visible = false;
@@ -141,7 +138,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
             <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="success"
                 title={options.modalProps.successTitle ?? 'Success'}
                 subTitle={response}
-                extra={<Button type="primary" size="large" style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
+                extra={<Button type="default" size="large" style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
             />
         </>;
     };

@@ -13,11 +13,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/redpanda-data/console/backend/pkg/console"
-
 	"github.com/cloudhut/common/rest"
-
 	"github.com/go-chi/chi"
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 // Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
@@ -81,6 +79,23 @@ type ConsoleHooks interface {
 	CanEditConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
 	CanDeleteConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
 	AllowedConnectClusterActions(ctx context.Context, clusterName string) ([]string, *rest.Error)
+
+	// Console Hooks
+	// LicenseInformation returns the license information for the console. Based on the returned
+	// license the frontend will display the appropriate UI.
+	LicenseInformation(ctx context.Context) RedpandaLicense
+	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
+	// Only toggleable features that require conditional rendering in the Frontend will be returned.
+	// The information will be baked into the index.html so that the Frontend knows about it
+	// at startup, which might be important to not block rendering (e.g. SSO enabled -> render login).
+	EnabledFeatures() []string
+}
+
+type RedpandaLicense struct {
+	// Type is the type of license
+	Type string `json:"type"`
+	// Format is: 2006-1-2
+	ExpiresAt string `json:"expiresAt"`
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -178,4 +193,10 @@ func (*defaultHooks) CanDeleteConnectCluster(_ context.Context, _ string) (bool,
 func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) ([]string, *rest.Error) {
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
+}
+func (*defaultHooks) LicenseInformation(_ context.Context) RedpandaLicense {
+	return RedpandaLicense{Type: "OPEN_SOURCE", ExpiresAt: "2099-12-31"}
+}
+func (*defaultHooks) EnabledFeatures() []string {
+	return []string{}
 }

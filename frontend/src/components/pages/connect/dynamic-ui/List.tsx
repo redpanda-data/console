@@ -131,7 +131,7 @@ export class CommaSeparatedStringList extends Component<{
         </>
     })
 
-    AddButton = observer((props: {}) => {
+    AddButton = observer(() => {
         return <div className="createEntryRow">
             <div className={'inputWrapper' + (this.newEntryError ? ' hasError' : '')} style={{ height: '100%' }}>
                 <Input
@@ -184,7 +184,7 @@ export class List<T extends { id: string }> extends Component<{
     render() {
         const { observableAr: list, renderItem } = this.props;
 
-        const onDragEnd = (result: DropResult, provided: ResponderProvided) => {
+        const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
             if (!result.destination)
                 return;
             arrayMoveMutable(this.props.observableAr, result.source.index, result.destination.index);
@@ -193,14 +193,14 @@ export class List<T extends { id: string }> extends Component<{
         return <div className="reorderableList">
             <DragDropContext onDragEnd={onDragEnd} >
                 <Droppable droppableId="droppable" ignoreContainerClipping={false}>
-                    {(droppableProvided, droppableSnapshot) => (
+                    {(droppableProvided, _droppableSnapshot) => (
                         <div
                             ref={droppableProvided.innerRef}
                             style={{ display: 'flex', flexDirection: 'column' }}
                         >
                             {list.map((tag, index) => (
                                 <Draggable key={String(index)} draggableId={String(index)} index={index} >
-                                    {(draggableProvided, draggableSnapshot) => (
+                                    {(draggableProvided, _draggableSnapshot) => (
                                         <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
                                             <div className="draggableItem">
                                                 <div className="dragHandle" {...draggableProvided.dragHandleProps}><ThreeBarsIcon /></div>

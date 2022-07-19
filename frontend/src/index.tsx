@@ -23,7 +23,7 @@ import './index.scss';
 
 import App from './components/App';
 import { appGlobal } from './state/appGlobal';
-import { basePathS, IsBusiness } from './utils/env';
+import { AppFeatures, basePathS } from './utils/env';
 import { api } from './state/backendApi';
 import { ConfigProvider } from 'antd';
 
@@ -33,23 +33,19 @@ import './assets/fonts/quicksand.css';
 import './assets/fonts/kumbh-sans.css';
 
 
-const exampleColors = {
-    antdDefaultBlue: '#1890FF',
-    green: '#25B864', // chosen to make it really obvious when changing the theme-color works.
-    debugRed: '#FF0000',
-} as const;
+import colors from './colors';
 
 
 // Set theme color for ant-design
 ConfigProvider.config({
     theme: {
-        primaryColor: exampleColors.green,
+        primaryColor: colors.brandOrange,
 
-        infoColor: exampleColors.debugRed,
-        successColor: exampleColors.debugRed,
-        processingColor: exampleColors.debugRed,
-        // errorColor: exampleColors.debugRed,
-        warningColor: exampleColors.debugRed,
+        infoColor: colors.brandBlue,
+        successColor: colors.brandSuccess,
+        // processingColor: colors.debugRed,
+        errorColor: colors.brandError,
+        warningColor: colors.brandWarning,
     },
 });
 
@@ -70,14 +66,14 @@ configure({
 // Get supported endpoints / kafka cluster version
 // In the business version, that endpoint (like any other api endpoint) is
 // protected, so we need to delay the call until the user is logged in.
-if (!IsBusiness) {
-    api.refreshSupportedEndpoints(true);
+if (!AppFeatures.SINGLE_SIGN_ON) {
+    api.refreshSupportedEndpoints();
 } else {
     when(
         () => Boolean(api.userData),
         () => {
             setImmediate(() => {
-                api.refreshSupportedEndpoints(true);
+                api.refreshSupportedEndpoints();
             });
         }
     );

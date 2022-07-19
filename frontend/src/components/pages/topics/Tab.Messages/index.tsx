@@ -19,21 +19,17 @@ import { AnimatePresence } from 'framer-motion';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import * as moment from 'moment';
-import Prism, { languages as PrismLanguages } from 'prismjs';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-js-extras';
-import 'prismjs/prism.js';
-import 'prismjs/themes/prism.css';
 import queryString from 'query-string';
 import React, { Component, ReactNode } from 'react';
 import { CollapsedFieldProps } from 'react-json-view';
-import Editor from 'react-simple-code-editor';
+import FilterEditor from './Editor';
+
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
 import { api } from '../../../../state/backendApi';
 import { CompressionType, compressionTypeToNum, EncodingType, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import { ColumnList, FilterEntry, PreviewTagV2, TopicOffsetOrigin } from '../../../../state/ui';
+import { ColumnList, FilterEntry, PreviewTagV2, PartitionOffsetOrigin } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
 import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
@@ -53,6 +49,7 @@ import { PublishMessageModalProps, PublishMessagesModalContent } from '../Publis
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
+import colors from '../../../../colors';
 
 
 const { Text } = Typography;
@@ -116,7 +113,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         if (query.s != null) searchParams.maxResults = Number(query.s);
         if (query.o != null) {
             searchParams.startOffset = Number(query.o);
-            searchParams.offsetOrigin = (searchParams.startOffset >= 0) ? TopicOffsetOrigin.Custom : searchParams.startOffset;
+            searchParams.offsetOrigin = (searchParams.startOffset >= 0) ? PartitionOffsetOrigin.Custom : searchParams.startOffset;
         }
         if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
 
@@ -210,23 +207,23 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 </Label>
                 <Label text="Start Offset" style={{ ...spaceStyle }}>
                     <InputGroup compact style={{ display: 'inline-block', width: 'auto' }}>
-                        <Select<TopicOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => searchParams.offsetOrigin = e} size="middle"
+                        <Select<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => searchParams.offsetOrigin = e} size="middle"
                             dropdownMatchSelectWidth={false} style={{ width: '9em' }}
                         >
-                            <Option value={TopicOffsetOrigin.End}>Newest</Option>
-                            <Option value={TopicOffsetOrigin.EndMinusResults}>Newest<span style={{ opacity: '0.9' }}>-{searchParams.maxResults}</span></Option>
-                            <Option value={TopicOffsetOrigin.Start}>Oldest</Option>
-                            <Option value={TopicOffsetOrigin.Custom}>Custom</Option>
-                            <Option value={TopicOffsetOrigin.Timestamp}>Timestamp</Option>
+                            <Option value={PartitionOffsetOrigin.End}>Newest</Option>
+                            <Option value={PartitionOffsetOrigin.EndMinusResults}>Newest<span style={{ opacity: '0.9' }}>-{searchParams.maxResults}</span></Option>
+                            <Option value={PartitionOffsetOrigin.Start}>Oldest</Option>
+                            <Option value={PartitionOffsetOrigin.Custom}>Custom</Option>
+                            <Option value={PartitionOffsetOrigin.Timestamp}>Timestamp</Option>
                         </Select>
                         {
-                            searchParams.offsetOrigin == TopicOffsetOrigin.Custom &&
+                            searchParams.offsetOrigin == PartitionOffsetOrigin.Custom &&
                             <Input style={{ width: '7.5em' }} maxLength={20}
                                 value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
-                                disabled={searchParams.offsetOrigin != TopicOffsetOrigin.Custom} />
+                                disabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />
                         }
                         {
-                            searchParams.offsetOrigin == TopicOffsetOrigin.Timestamp &&
+                            searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp &&
                             <StartOffsetDateTimePicker />
                         }
                     </InputGroup>
@@ -252,7 +249,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             {api.messageSearchPhase == null &&
                                 <MotionSpan identityKey="btnRefresh" overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title="Repeat current search" getPopupContainer={findPopupContainer}>
-                                        <Button type="primary" onClick={() => this.searchFunc('manual')}>
+                                        <Button type="default" onClick={() => this.searchFunc('manual')}>
                                             <SyncIcon size={16} />
                                         </Button>
                                     </Tooltip>
@@ -403,7 +400,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         const previewButton = <>
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button shape="round" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
+                <Button shape="round" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} style={{ color: colors.brandOrange, padding: '0 0.5em', background: 'transparent' }}>
                     <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                     <span style={{ marginLeft: '.3em', fontSize: '85%' }}>Preview</span>
                     {(() => {
@@ -421,7 +418,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
         const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
-        const hasValueTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageValue) > 0;
 
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
@@ -436,7 +432,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 dataIndex: 'value',
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
-                render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
+                render: (_t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
@@ -447,10 +443,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
                     return <Tooltip title="Column Settings" mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement="left">
-                        <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
+                        <SettingFilled style={IsColumnSettingsEnabled ? { color: colors.brandOrange } : { color: '#a092a0' }} />
                     </Tooltip>;
                 },
-                render: (text, record) => !record.isValueNull && (
+                render: (_text, record) => !record.isValueNull && (
                     <NoClipboardPopover placement="left">
                         <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
                             <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={this.copyDropdown(record)} trigger={['click']}>
@@ -525,7 +521,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
                         expandedRowRender: record => renderExpandedMessage(record),
                         expandedRowKeys: this.expandedKeys.slice(),
-                        onExpand: (p, r) => {
+                        onExpand: (_p, r) => {
                             this.toggleRecordExpand(r);
                         }
                     }}
@@ -563,7 +559,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             this.expandedKeys.push(key);
     }
 
-    keySorter(a: TopicMessage, b: TopicMessage, sortOrder?: SortOrder): number {
+    keySorter(a: TopicMessage, b: TopicMessage, _sortOrder?: SortOrder): number {
         const ta = String(a.key) ?? '';
         const tb = String(b.key) ?? '';
         return ta.localeCompare(tb);
@@ -603,7 +599,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const searchParams = uiState.topicSettings.searchParams;
         const canUseFilters = api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
 
-        if (searchParams.offsetOrigin != TopicOffsetOrigin.Custom)
+        if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
             searchParams.startOffset = searchParams.offsetOrigin;
 
         editQuery(query => {
@@ -617,13 +613,12 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             const functionNames: string[] = [];
             const functions: string[] = [];
 
-            searchParams.filters.filter(e => e.isActive && e.code).forEach(e => {
+            searchParams.filters.filter(e => e.isActive && e.code && e.transpiledCode).forEach(e => {
                 const name = `filter${functionNames.length + 1}`;
                 functionNames.push(name);
-                functions.push(`
-function ${name}() {
-    ${wrapFilterFragment(e.code)}
-}`);
+                functions.push(`function ${name}() {
+                    ${wrapFilterFragment(e.transpiledCode)}
+                }`);
             });
 
             if (functions.length > 0) {
@@ -711,12 +706,12 @@ function ${name}() {
         const hints: JSX.Element[] = [];
         if (filterCount > 0)
             hints.push(<>There are <b>{filterCount} filters</b> in use by the current search. Keep in mind that messages must pass <b>every</b> filter when using more than one filter at the same time.</>);
-        if (searchParams.startOffset == TopicOffsetOrigin.End)
+        if (searchParams.startOffset == PartitionOffsetOrigin.End)
             hints.push(<><b>Start offset</b> is set to "Newest". Make sure messages are being sent to the topic.</>);
 
-        const hintBox = hints.length && <ul className={styles.noMessagesHint}>
+        const hintBox = hints.length ? <ul className={styles.noMessagesHint}>
             {hints.map((x, i) => <li key={i}>{x}</li>)}
-        </ul>
+        </ul> : null;
 
         return (
             <Empty description={<>
@@ -1229,7 +1224,7 @@ const helpEntries = [
     </ul>),
     makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
         <li><span className="codeBox">offset</span> (number)</li>
-        <li><span className="codeBox">partitionId</span> (number)</li>
+        <li><span className="codeBox">partitionID</span> (number)</li>
         <li><span className="codeBox">key</span> (string)</li>
         <li><span className="codeBox">value</span> (object)</li>
         <li><span className="codeBox">headers</span> (object)</li>
@@ -1239,11 +1234,11 @@ const helpEntries = [
         <li style={{ margin: '1em 0' }}><span className="codeBox">value != null</span> Skips tombstone messages</li>
         <li style={{ margin: '1em 0' }}><span className="codeBox">if (key == 'example') return true</span></li>
         <li style={{ margin: '1em 0' }}><span className="codeBox">headers.myVersionHeader &amp;&amp; (headers.myVersionHeader &gt;&eq; 2)</span> Only messages that have a header entry like {'{key: "myVersionHeader", "value:" 12345}'}</li>
-        <li style={{ margin: '1em 0' }}><span className="codeBox">return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
+        <li style={{ margin: '1em 0' }}><span className="codeBox">return (partitionID == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
         <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} alt="Filter Example 1" loading="lazy" /></div></li>
         <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} alt="Filter Example 2" loading="lazy" /></div></li>
     </ul>),
-].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
+].genericJoin((_last, _cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
 
 @observer
 class MessageSearchFilterBar extends Component {
@@ -1280,7 +1275,6 @@ class MessageSearchFilterBar extends Component {
                         className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
                         key={e.id}
                         closable
-                        color={e.isActive ? 'var(--ant-primary-3)' : undefined}
                         onClose={() => settings.filters.remove(e)}
                     >
                         <SettingOutlined
@@ -1313,7 +1307,7 @@ class MessageSearchFilterBar extends Component {
                 </Tag>
             </div>
 
-            {console.log(api.messageSearchPhase)}
+            { IsDev && console.debug(api.messageSearchPhase)}
 
             {api.messageSearchPhase === null || api.messageSearchPhase === 'Done'
                 ? (
@@ -1387,22 +1381,14 @@ class MessageSearchFilterBar extends Component {
 
                     {/* Code Box */}
                     <Label text="Filter Code">
-                        <Editor
+<>
+                       <FilterEditor
                             value={this.currentFilter!.code}
-                            onValueChange={code => { this.currentFilter!.code = code; this.hasChanges = true; }}
-                            highlight={code => Prism.highlight(code, PrismLanguages['javascript'], 'javascript')}
-                            padding={10}
-                            style={{
-                                fontFamily: '"Fira code", "Fira Mono", monospace',
-                                fontSize: 12,
-                                minWidth: '300px',
-                                minHeight: '200px',
-                                border: '1px solid #0004',
-                                outline: 'none',
-                                borderRadius: '2px',
-                            }}
-                            textareaClassName="code-editor-textarea"
-                        />
+                            onValueChange={(code, transpiled) => { this.currentFilter!.code = code; this.currentFilter!.transpiledCode = transpiled; this.hasChanges = true;  }}
+
+                        /> 
+
+                                             </>
                     </Label>
 
                     {/* Help Bar */}
@@ -1518,7 +1504,7 @@ function createPublishRecordsModal(parent: TopicMessageView) {
                 JSON.parse(state.value);
 
             const convert: { [key in EncodingType]: (x: string) => string | null } = {
-                'none': x => null,
+                'none': () => null,
                 'base64': x => x.trim(),
                 'json': x => encodeBase64(x.trim()),
                 'utf8': x => encodeBase64(x),
@@ -1553,7 +1539,7 @@ function createPublishRecordsModal(parent: TopicMessageView) {
             return <>{result.records.length} records published successfully</>;
 
         },
-        onSuccess: (state, result) => {
+        onSuccess: (state) => {
             uiState.topicSettings.produceRecordEncoding = state.encodingType;
             parent.props.refreshTopicData(true);
             parent.searchFunc('auto');
@@ -1562,3 +1548,4 @@ function createPublishRecordsModal(parent: TopicMessageView) {
     })
 
 }
+

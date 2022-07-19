@@ -252,6 +252,7 @@ class AclList extends PageComponent {
     })
 }
 
+type FlatResource = AclList['flatResourceList'][0];
 
 export default AclList;
 

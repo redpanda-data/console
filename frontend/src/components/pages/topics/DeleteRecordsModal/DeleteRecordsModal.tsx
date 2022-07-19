@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Input, Modal, notification, Select, Slider, Spin } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../../state/backendApi';
@@ -25,7 +25,6 @@ type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
 type PartitionOption = null | AllPartitions | SpecificPartition;
 
-const SLIDER_INPUT_REGEX = /(^([1-9]\d*)|(\d{1,3}(,\d{3})*)$)|^$/;
 const DIGITS_ONLY_REGEX = /^\d*$/;
 
 function TrashIcon() {
@@ -223,10 +222,10 @@ const ManualOffsetContent = observer(
         if (api.topicPartitionErrors?.get(topicName) || api.topicWatermarksErrors?.get(topicName)) {
             const partitionErrors = api.topicPartitionErrors
                 .get(topicName)
-                ?.map(({ partitionError }) => <li>{partitionError}</li>);
+                ?.map(({ partitionError }, idx) => <li key={`${topicName}-partitionErrors-${idx}`} >{partitionError}</li>);
             const waterMarksErrors = api.topicWatermarksErrors
                 .get(topicName)
-                ?.map(({ waterMarksError }) => <li>{waterMarksError}</li>);
+                ?.map(({ waterMarksError }, idx) => <li key={`${topicName}-watermarkErrors-${idx}`} >{waterMarksError}</li>);
             const message = (
                 <>
                     {partitionErrors && partitionErrors.length > 0 ? (
@@ -252,7 +251,7 @@ const ManualOffsetContent = observer(
             return <Spin />;
         }
 
-        const [_, partitionId] = partitionInfo;
+        const [, partitionId] = partitionInfo;
         const partition = partitions.find((p) => p.id === partitionId);
 
         if (!partition) {
@@ -287,17 +286,6 @@ const ManualOffsetContent = observer(
                             updateOffsetFromSlider(sliderValue)
                         }
                     }}
-
-                // onChange={(e) => {
-                //     const { value } = e.target;
-                //     if (!SLIDER_INPUT_REGEX.test(value)) return;
-                //     const rangedValue = keepInRange(
-                //         fromDecimalSeparated(value),
-                //         min || 0,
-                //         max || Number.MAX_SAFE_INTEGER
-                //     );
-                //     updateOffsetFromSlider(rangedValue);
-                // }}
                 />
             </div>
         );

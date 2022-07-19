@@ -13,14 +13,14 @@
 
 import { notification } from 'antd';
 import { comparer, computed, observable, transaction } from 'mobx';
-import { basePathS, IsBusiness, IsDev } from '../utils/env';
+import { AppFeatures, basePathS, IsDev } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
 import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
-import { AclRequest, AclRequestDefault, AclResourceType, GetAclResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError, CreateACLRequest, DeleteACLsRequest } from './restInterfaces';
+import { AclRequest, AclRequestDefault, AclResourceType, GetAclResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError, CreateACLRequest, DeleteACLsRequest, RedpandaLicense } from './restInterfaces';
 import { Features } from './supportedFeatures';
 import { uiState } from './uiState';
 
@@ -61,9 +61,9 @@ async function handle401(res: Response) {
         console.log('unauthorized message: ' + text);
 
         const err = obj as ApiError;
-        window.alert(String(err.message));
+        uiState.loginError = String(err.message);
     } catch (err) {
-        window.alert(String(err));
+        uiState.loginError = String(err);
     }
 
     // Save current location url
@@ -176,6 +176,7 @@ const apiStore = {
 
     // Data
     endpointCompatibility: null as (EndpointCompatibility | null),
+    license: null as (RedpandaLicense | null),
 
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
@@ -252,7 +253,7 @@ const apiStore = {
         this.messagesBytesConsumed = 0;
         this.messagesTotalConsumed = 0;
 
-        currentWS.onopen = ev => {
+        currentWS.onopen = _ev => {
             if (ws !== currentWS) return; // newer request has taken over
             // reset state for new request
             this.messagesFor = searchRequest.topicName;
@@ -421,7 +422,7 @@ const apiStore = {
     },
 
     refreshTopicPermissions(topicName: string, force?: boolean) {
-        if (!IsBusiness) return; // permissions endpoint only exists in business version
+        if (!AppFeatures.SINGLE_SIGN_ON) return; // without SSO there can't be a permissions endpoint
         if (this.userData?.user?.providerID == -1) return; // debug user
         cachedApiRequest<TopicPermissions | null>(`./api/permissions/topics/${topicName}`, force)
             .then(x => this.topicPermissions.set(topicName, x), addError);
@@ -625,9 +626,13 @@ const apiStore = {
             .then(v => this.Quotas = v ?? null, addError);
     },
 
-    refreshSupportedEndpoints(force?: boolean) {
-        cachedApiRequest<EndpointCompatibilityResponse>('./api/console/endpoints', force)
-            .then(v => this.endpointCompatibility = v.endpointCompatibility, addError);
+    async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
+        const r = await rest<EndpointCompatibilityResponse>('./api/console/endpoints');
+        if (!r)
+            return null;
+        this.endpointCompatibility = r.endpointCompatibility;
+        this.license = r.license;
+        return r;
     },
 
     refreshCluster(force?: boolean) {

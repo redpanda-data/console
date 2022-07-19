@@ -32,6 +32,8 @@ $color-brand-secondary-hover: var(--ant-primary-color-hover);
 $color-reload-spinner: var(--ant-primary-6);
 $color-reload-spinner-bg: var(--ant-primary-1);
 
+$color-light-background: #F6F6F6;
+
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
@@ -337,7 +339,6 @@ b {
 
 .hoverLink:hover {
     cursor: pointer;
-    color: hsl(205, 100%, 50%);
     color: var(--ant-primary-color);
 }
 
@@ -444,10 +445,7 @@ td.ant-table-column-sort {
     margin-bottom: 4px;
 }
 
-/* .ant-pagination-item a {
-    color: hsl(205, 100%, 55%)
-}
-*/
+
 .ant-pagination-item-active a {
     font-weight: bold;
     cursor: default;
@@ -518,19 +516,16 @@ td.ant-table-column-sort {
     flex: 1;
     flex-direction: column;
     height: 100vh;
-    background: #F3F3F3;
+    background: white;
 
     img[alt="logo"] {
         display: block;
         width: 100%;
         max-width: 100%;
-        height: 90px;
-
+        height: 80px;
         margin: auto;
-
-        padding: 20px;
-        // padding-bottom: 26px;
-
+        // padding: 25px;
+        padding: 27px 50px 27px 0px;
         transition: all 200ms;
     }
 
@@ -549,13 +544,19 @@ td.ant-table-column-sort {
     }
 }
 
+.ant-layout-sider-collapsed {
+    img[alt="logo"] {
+        padding: 25px;
+    }
+}
+
 .sideBarToggle {
     display: flex;
     flex-direction: column;
     justify-content: center;
     padding: 0;
     height: 40px;
-    background: hsl(0deg 0% 91%);
+    background: hsla(0, 0%, 50%, 0.07);
     cursor: pointer;
 
     .icon {
@@ -644,7 +645,6 @@ td.ant-table-column-sort {
     /* or 107% */
     display: flex;
     align-items: center;
-    // color: #498FC2;
     color: gray;
 }
 
@@ -757,7 +757,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 
     $baseColor: #828080;
     font-family: 'Poppins', sans-serif;
-
+    
     li.ant-menu-item {
         display: flex;
 
@@ -773,69 +773,53 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             width 2000ms,
             color 0ms ease-out,
             background-color 100ms ease;
+        
+        color: $baseColor;
 
-        a {
-            display: flex; // fix vertical alignment of menu items in sidebar
-            color: $baseColor;
+        .menuIcon {
+            $size: 22px;
 
-            gap: 10px;
+            display: inline-flex;
+            width: $size;
+            margin: 0;
+            margin-left: 5px;
+
             transition:
-                gap 200ms,
-                color 50ms ease-out;
+                margin 200ms ease-out,
+                margin-left 200ms ease-out;
 
-            .anticon + span {
-                transition: none;
-            }
-
-            .menuIcon {
-                $size: 22px;
-
-                display: inline-flex;
+            // Safari
+            // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
+            svg {
                 width: $size;
-                margin: 0;
-
-                transition:
-                    margin 200ms ease-out,
-                    margin-left 200ms ease-out;
-
-                // Safari
-                // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
-                svg {
-                    width: $size;
-                }
             }
-
-            &::before {
-                @include tlrb;
-                left: -20px;
-                right: -20px;
-                // background-color: red;
-                content: '';
-            }
-
-            & > span {
-                color: unset; // remove antd default
-            }
-
         }
+
+        &::before {
+            @include tlrb;
+            left: -20px;
+            right: -20px;
+            // background-color: red;
+            content: '';
+        }
+
+        & > span {
+            color: unset; // remove antd default
+        }
+
 
         &:not(&-disabled):not(&-selected):not([class*="disabled"]) {
             &:hover {
-                background: hsl(0deg 0% 90%);
-
-                    a {
-                        color: hsl(0deg 0% 40%);
-                    }
+                background: hsla(0, 0%, 50%, 0.07);
+                color: $color-brand-secondary;
             }
         }
 
         &-selected {
-            background: $color-brand-secondary;
+            background: hsla(0, 0%, 50%, 0.07);
             font-weight: 500;
 
-            a, .menuIcon {
-                color: hsl(216deg, 0%, 96%);
-            }
+            color: $color-brand-secondary;
         }
 
 
@@ -844,12 +828,20 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             user-select: none;
             opacity: .35;
 
+            color: $baseColor !important;
+            
             a {
-                color: $baseColor  !important;
+                color: $baseColor !important;
             }
         }
-    }
 
+        a {
+            transition:
+                gap 200ms,
+                color 50ms ease-out;
+        }
+    }
+    
     // we don't need a clearfix in our menu
     &::before {
         display: none;
@@ -899,38 +891,33 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 }
 
 .ant-checkbox-checked .ant-checkbox-inner {
-    // background-color: hsla(209, 75%, 66%, 1);
-        // border-color: hsla(209, 50%, 55%, 1);
-
-        background-color: var(--ant-primary-color);
-        border-color: var(--ant-primary-color-outline);
+    background-color: var(--ant-primary-color);
+    border-color: var(--ant-primary-color-outline);
 }
 
 .ant-btn-primary,
 .ant-switch-checked {
-    // background-color: hsla(209, 66%, 55%, 1);
-    // background-color: hsl(0deg 84% 65%);
-
-        background-color: var(--ant-primary-color);
+    background-color: var(--ant-primary-color);
     border-color: transparent;
 }
 
 .ant-btn-primary:hover {
-    background-color: hsl(0deg 100% 68%);
+    // background-color: hsl(0deg 100% 68%);
+    // background-color: transparent;
     border-color: hsl(0deg 100% 65%);
-border-color: var(--ant-primary-color-outline);
+    border-color: var(--ant-primary-color-outline);
     background-color: var(--ant-primary-color-hover);
 }
 
 .ant-btn-primary:active {
     border-color: hsl(0deg 100% 45%);
-border-color: var(--ant-primary-color-outline);
+    border-color: var(--ant-primary-color-outline);
     background-color: var(--ant-primary-color-active);
 }
 
 .ant-tabs-nav .ant-tabs-tab-active {
-    color: hsla(206, 80%, 55%, 1);
-    background: #00b9ff17;
+    color: var(--ant-primary-color);
+    background: $color-light-background !important;
 }
 
 .ant-tabs-nav-list {
@@ -942,7 +929,7 @@ border-color: var(--ant-primary-color-outline);
 }
 
 .ant-tabs-ink-bar {
-    background-color: hsla(209, 75%, 60%, 1);
+    background-color: var(--ant-primary-color-active);
 }
 
 button.ant-btn-circle > i.anticon:only-child {
@@ -1628,10 +1615,16 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     transform: rotateZ(45deg);
 }
 
-/* ant design menuitem hover is barely visible */
+.ant-select-item:not(:last-of-type) {
+    border-bottom: 2px solid white;
+}
 .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-    // background-color: hsla(205, 100%, 70%, 1);
-        background-color: var(--ant-primary-4);
+    background-color: $color-light-background;
+    color: $color-brand-secondary;
+}
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background-color: $color-light-background;
+    color: $color-brand-secondary;
 }
 
 .ant-menu-item,
@@ -1713,8 +1706,8 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     transform: translate(-27px, -20px);
 
     &:hover {
-        background: #b0e2ff7a;
-        color: hsla(205, 50%, 50%, 1);
+        background: var(--ant-primary-2);
+        color: var(--ant-primary-6);
     }
 
     svg {
@@ -1747,9 +1740,16 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
 }
 
 .filterTagDisabled {
+    color: rgba(46, 46, 46, 0.66);
+    background: rgba(46, 46, 46, 0.1);
     .filterName {
-        text-decoration: line-through rgba(46, 46, 46, 0.66);
+        text-decoration: line-through black;
     }
+}
+
+.ant-alert-info {
+    border: 1px solid hsl(220, 19%, 90%);
+    background: hsl(220, 19%, 98%);
 }
 
 .messageHeaders {
@@ -1952,15 +1952,6 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     0% {
         color: inherit;
     }
-
-    40% {
-        color: rgb(79, 173, 245);
-    }
-
-    60% {
-        color: rgb(79, 173, 245);
-    }
-
     100% {
         color: inherit;
     }
@@ -1974,7 +1965,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     @include beforeAfter;
 
     border-radius: 4px;
-    box-shadow: 0 0 8px 4px #3098e8;
+    box-shadow: 0 0 8px 4px #7e8a93b0;
 
     animation: waitingForMessagesBoxPulseShadow 1.5s ease-in-out 0s infinite;
 }
@@ -1985,7 +1976,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     }
 
     50% {
-        box-shadow: 0 0 8px 2px #3098e8b0;
+        box-shadow: 0 0 8px 2px #7e8a93b0;
     }
 
     100% {
@@ -2229,8 +2220,8 @@ mark {
     margin-bottom: 1px;
 
     border: 2px solid hsl(0, 0%, 85%);
-    border-bottom-color: hsl(205, 100%, 50%);
-    border-top-color: hsl(205, 100%, 50%);
+    border-bottom-color: var(--ant-primary-color);
+    border-top-color: var(--ant-primary-color);
     animation: rotate 1.5s linear 0s infinite;
 
     @keyframes rotate {
@@ -2280,7 +2271,7 @@ mark {
 
         &.active {
             background: hsl(208deg, 100%, 93%);
-            color: #1890ff;
+            color: $color-brand-secondary;
         }
     }
 }
@@ -2346,7 +2337,7 @@ mark {
         cursor: pointer;
 
         &:hover {
-            color: hsl(205, 100%, 50%);
+            color: var(--ant-primary-color);
             background: hsl(205, 100%, 98%);
         }
     }
@@ -2708,7 +2699,10 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     padding: 0 18px;
     gap: 11px;
 
-    background: hsl(216deg, 21%, 24%);
+    border-top: 1px solid;
+        border-bottom: 1px solid;
+        border-color: hsl(216deg, 21%, 93%);
+        background: hsl(0deg 0% 97% / 50%);
     font-family: 'Poppins', sans-serif;
     cursor: pointer;
     user-select: none;
@@ -2754,7 +2748,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         .userName {
             max-width: 100%;
             font-size: 12.5px;
-            color: #fff;
+            color: hsl(0deg 0% 50%);
             padding-bottom: 1px;
 
             overflow: hidden;
@@ -2764,12 +2758,12 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         .prefText {
             max-width: 100%;
             font-size: 11.5px;
-            color: #9FA6B2;
+            color: hsl(218, 11%, 60%);
         }
     }
 
     &:hover {
-        background: hsl(216deg, 21%, 27%);
+        background: hsl(0deg 0% 95%);
     }
 
     @at-root .ant-layout-sider-collapsed & {
@@ -3003,7 +2997,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
 .linkBtn {
     cursor: pointer;
-    color: hsl(205, 100%, 50%);
+    color: var(--ant-primary-color);
 
     &:hover {
         text-decoration: solid underline;
@@ -3574,7 +3568,7 @@ input::placeholder {
             transition: all ease-out 150ms;
 
             &:hover {
-                color: #40a9ff;
+                color: $color-brand-secondary;
 
                 &::after {
                     background: hsl(207deg 7% 76% / 14%);

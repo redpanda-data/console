@@ -9,8 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, ReactNode } from 'react';
-import React from 'react';
+/* eslint-disable react/jsx-key */
+
+import React, { Component, ReactNode } from 'react';
 import { Role, RoleBinding, Permission } from '../../../state/restInterfaces';
 import { Table } from 'antd';
 import { observer } from 'mobx-react';
@@ -40,7 +41,7 @@ export class AdminRoles extends Component<{}> {
             rowKey={x => x.name}
             columns={[
                 { width: 1, title: 'Role Name', dataIndex: 'name', sorter: sortField('name') },
-                { title: '', render: r => (<span></span>) },
+                { title: '', render: _r => (<span></span>) },
             ]}
             // expandIconAsCell={false} broken after upgrade to antd4
             expandable={{
@@ -87,7 +88,7 @@ const joinerOr = <span className="joinerOr">or</span>;
 export class PermissionComponent extends Component<{ permission: Permission }>{
     render() {
         const p = this.props.permission;
-        const rows: [any, any][] = [
+        const rows: [ReactNode, ReactNode][] = [
             [<span className="resourceLabel">Resource</span>, <span className="codeBox resourceName">{p.resourceName}</span>],
         ];
         if (p.allowedActions.length > 0)

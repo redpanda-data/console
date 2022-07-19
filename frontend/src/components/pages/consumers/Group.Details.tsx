@@ -384,7 +384,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
         const memberEntries = p.group.members
             // sorting actually not necessary
             // .sort((a, b) => a.id.localeCompare(b.id))
-            .map((m, i) => {
+            .map((m) => {
                 const assignments = m.assignments;
 
                 const assignmentsFlat = assignments
@@ -485,16 +485,16 @@ const renderMergedID = (id?: string, clientId?: string) => {
 
 
 const stateIcons = new Map<string, JSX.Element>([
-    ['stable', <CheckCircleTwoTone twoToneColor="#52c41a" />],
-    ['completingrebalance', <HourglassTwoTone twoToneColor="#52c41a" />],
-    ['preparingrebalance', <HourglassTwoTone twoToneColor="orange" />],
-    ['empty', <WarningTwoTone twoToneColor="orange" />],
-    ['dead', <FireTwoTone twoToneColor="orangered" />],
-    ['unknown', <QuestionCircleOutlined />],
+    ['stable', <CheckCircleTwoTone key="stable" twoToneColor="#52c41a" />],
+    ['completingrebalance', <HourglassTwoTone key="completingrebalance" twoToneColor="#52c41a" />],
+    ['preparingrebalance', <HourglassTwoTone key="preparingrebalance" twoToneColor="orange" />],
+    ['empty', <WarningTwoTone key="empty" twoToneColor="orange" />],
+    ['dead', <FireTwoTone key="dead" twoToneColor="orangered" />],
+    ['unknown', <QuestionCircleOutlined key="unknown" />],
 ]);
 const makeStateEntry = (iconName: string, displayName: string, description: string): [any, any] => [
-    <span>{stateIcons.get(iconName)} <span style={{ fontSize: '85%', fontWeight: 600 }}>{displayName}</span></span>,
-    <div style={{ maxWidth: '350px' }}>{description}</div>
+    <span key={`${iconName}-name`} >{stateIcons.get(iconName)} <span style={{ fontSize: '85%', fontWeight: 600 }}>{displayName}</span></span>,
+    <div key={`${iconName}-description`} style={{ maxWidth: '350px' }}>{description}</div>
 ]
 
 const consumerGroupStateTable = QuickTable([

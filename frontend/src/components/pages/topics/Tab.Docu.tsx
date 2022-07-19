@@ -39,7 +39,7 @@ const allowedProtocols = [
     'mailto://',
 ];
 
-function sanitizeUrl(uri: string, children?: any, title?: string | null): string {
+function sanitizeUrl(uri: string, _children?: any, _title?: string | null): string {
     const baseTransformed = baseUriTransformer(uri);
     if (baseTransformed != uri) return baseTransformed;
 
@@ -57,7 +57,7 @@ function sanitizeUrl(uri: string, children?: any, title?: string | null): string
 export class TopicDocumentation extends Component<{ topic: Topic }> {
 
     private components = {
-        code({node, inline, className, children, ...props}:any) {
+        code({ inline, className, children, ...props}:any) {
           const match = /language-(\w+)/.exec(className || '')
           return !inline && match ? (
             <SyntaxHighlighter style={vs}

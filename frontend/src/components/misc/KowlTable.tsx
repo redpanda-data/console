@@ -114,7 +114,7 @@ export class KowlTable<T extends object = any> extends Component<{
 
             hideOnSinglePage: false,
 
-            showTotal: action((total, range) => {
+            showTotal: action((total, _range) => {
                 this.filteredTotal = total;
                 return null;
             }),
@@ -134,7 +134,7 @@ export class KowlTable<T extends object = any> extends Component<{
         const disposers = this.reactionDisposers;
         const ar = function <T>(data: () => T, effect: (prev: T, cur: T, count: number) => void, delay?: number) {
             let count = 0;
-            const newEffect = (cur: any, prev: any, r: IReactionPublic) => {
+            const newEffect = (cur: any, prev: any, _r: IReactionPublic) => {
                 effect(prev, cur, ++count);
             };
             const d = reaction(data, newEffect, {
@@ -148,18 +148,18 @@ export class KowlTable<T extends object = any> extends Component<{
         }
 
         // Ensure our custom columns are up to date
-        ar(() => this.props.columns, (prev, cur, count) => {
+        ar(() => this.props.columns, (_prev, cur, _count) => {
             // console.log('columns changed ' + count, { prev, cur });
             this.updateCustomColumns(cur);
         });
 
         // Keep our columns up to date (to learn about new values for filtering)
-        ar(() => ({ data: this.props.dataSource, oriCols: this.props.columns }), (prev, cur, count) => {
+        ar(() => ({ data: this.props.dataSource, oriCols: this.props.columns }), (_prev, cur, _count) => {
             this.ensureFiltersAreUpdated(cur.data);
         });
 
         // Keep search column up to date ('active state' of the filter icon etc)
-        ar(() => ({ query: this.observableSettings.quickSearch, searchColumn: this.searchColumn, filterOpen: this.filterOpen, oriCols: this.props.columns }), (prev, cur, count) => {
+        ar(() => ({ query: this.observableSettings.quickSearch, searchColumn: this.searchColumn, filterOpen: this.filterOpen, oriCols: this.props.columns }), (_prev, cur, _count) => {
             const { searchColumn } = cur;
 
             if (cur.query && cur.query.length > 0) {
@@ -190,13 +190,12 @@ export class KowlTable<T extends object = any> extends Component<{
                 filterActive: this.filterActive,
                 query: this.observableSettings?.quickSearch
             }),
-            (prev, cur, count) => {
-                const { data, filterActive, query, dataLength } = cur;
+            (_prev, cur, _count) => {
+                const { data, filterActive } = cur;
                 // Clone ensures re-render on every change; which (for now) is somewhat wasteful
                 // since many tables already use observer components.
                 // However, in order for us to (eventually) be able to fully eliminate those redundant updates,
                 // we'll also have to consider the effects of sorters and filters (a change in some nested property might end up changing the order of entries in the table...)
-                const a = clone(data);
 
                 if (data == null) {
                     return;
@@ -245,7 +244,7 @@ export class KowlTable<T extends object = any> extends Component<{
 
         // Title
         const originalTitle = String(this.searchColumn.title);
-        this.searchColumn.title = (props: ColumnTitleProps<T>) => {
+        this.searchColumn.title = (_props: ColumnTitleProps<T>) => {
             return <SearchTitle
                 title={originalTitle}
                 observableFilterOpen={this}
@@ -278,7 +277,7 @@ export class KowlTable<T extends object = any> extends Component<{
             }
         };
 
-        this.searchColumn.filterDropdown = (p) => null;
+        this.searchColumn.filterDropdown = () => null;
         this.searchColumn.onFilterDropdownVisibleChange = visible => {
             // only accept requests to open the filter
             if (visible)
@@ -375,11 +374,12 @@ export class KowlTable<T extends object = any> extends Component<{
         const pagination = this.pagination;
 
         // trigger mobx update
+        /* eslint-disable  @typescript-eslint/no-unused-vars */
         const unused1 = pagination.pageSize;
         const unused2 = pagination.current;
         const unused3 = this.currentDataSource?.length;
         const unused4 = this.displayData?.length;
-
+        /* eslint-enable @typescript-eslint/no-unused-vars*/
         return <Table<T>
             style={{ margin: '0', padding: '0' }}
             size="middle"
@@ -400,7 +400,7 @@ export class KowlTable<T extends object = any> extends Component<{
             getPopupContainer={findPopupContainer}
             expandable={p.expandable}
             footer={this.renderFooter}
-            onChange={(pagination: TablePaginationConfig, filters: Record<string, FilterValue | null>, sorter: SorterResult<T> | SorterResult<T>[], extra: TableCurrentDataSource<T>) => {
+            onChange={(_pagination: TablePaginationConfig, _filters: Record<string, FilterValue | null>, _sorter: SorterResult<T> | SorterResult<T>[], _extra: TableCurrentDataSource<T>) => {
                 //
             }}
 

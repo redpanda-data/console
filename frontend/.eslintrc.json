@@ -5,22 +5,55 @@
         "es6": true,
         "jest": true
     },
-    "plugins": ["unused-imports", "@typescript-eslint"],
-    "extends": ["react-app", "react-app/jest"],
+    "plugins": [
+        "@typescript-eslint",
+        "react"
+    ],
+    "extends": [
+        "react-app",
+        "react-app/jest",
+        "plugin:react/recommended",
+        "plugin:@typescript-eslint/eslint-recommended"
+    ],
     "parserOptions": {
         "ecmaVersion": 2018,
         "sourceType": "module"
     },
     "rules": {
         "no-console": "off",
-        "strict": ["error", "global"],
+        "strict": [
+            "error",
+            "global"
+        ],
         "curly": "off",
-        "quotes": ["error", "single"],
-        "jsx-quotes": ["error", "prefer-double"],
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "jsx-quotes": [
+            "error",
+            "prefer-double"
+        ],
         "no-unused-vars": "off",
-        "unused-imports/no-unused-imports": "error",
-        "unused-imports/no-unused-vars": "off",
-        "eol-last": ["error", "always"],
-        "eqeqeq": ["off"]
+        "@typescript-eslint/no-unused-vars": [
+            2,
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_"
+            }
+        ],
+        "@typescript-eslint/no-inferrable-types": "off",
+        "react/no-unescaped-entities": "off",
+        "react/react-in-jsx-scope": "off",
+        "react/prop-types": [2, { "ignore": ["children"]}],
+        "react/no-children-prop": "off",
+        "eol-last": [
+            "error",
+            "always"
+        ],
+        "eqeqeq": [
+            "off"
+        ]
     }
 }

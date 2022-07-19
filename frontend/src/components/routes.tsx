@@ -29,7 +29,8 @@ import { api } from '../state/backendApi';
 import SchemaList from './pages/schemas/Schema.List';
 import SchemaDetailsView, { SchemaDetailsProps } from './pages/schemas/Schema.Details';
 import AclList from './pages/acls/Acl.List';
-import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon } from '@heroicons/react/outline'
+import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/outline';
+import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
 import { Feature, FeatureEntry, isSupported } from '../state/supportedFeatures';
 import { UserPermissions } from '../state/restInterfaces';
 import KafkaConnectOverview from './pages/connect/Overview';
@@ -37,31 +38,23 @@ import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import CreateConnector from './pages/connect/CreateConnector';
 import QuotasList from './pages/quotas/Quotas.List';
-
+import { AppFeature, AppFeatures } from '../utils/env';
+import { ItemType } from 'antd/lib/menu/hooks/useItems';
 
 //
 //	Route Types
 //
-export type IRouteEntry = PageDefinition<any> | PageGroup | SeparatorEntry;
-
-export interface PageGroup {
-    title: string
-    children: IRouteEntry[]
-}
+type IRouteEntry = PageDefinition<any>;
 
 export interface PageDefinition<TRouteParams = {}> {
-    title: string
-    path: string
-    pageType: PageComponentType<TRouteParams>
-    routeJsx: JSX.Element
-    icon?: JSX.Element
-    menuItemKey?: string, // set by 'CreateRouteMenuItems'
-    visibilityCheck?: () => MenuItemState,
+    title: string;
+    path: string;
+    pageType: PageComponentType<TRouteParams>;
+    routeJsx: JSX.Element;
+    icon?: JSX.Element;
+    menuItemKey?: string; // set by 'CreateRouteMenuItems'
+    visibilityCheck?: () => MenuItemState;
 }
-export interface SeparatorEntry { isSeparator: boolean; }
-
-export function isPageDefinition(x: IRouteEntry): x is PageDefinition<any> { return (x as PageDefinition<any>).path !== undefined; }
-export function isSeparator(x: IRouteEntry): x is SeparatorEntry { return (x as SeparatorEntry).isSeparator !== undefined; }
 
 
 export const RouteMenu = observer(() =>
@@ -69,82 +62,58 @@ export const RouteMenu = observer(() =>
         theme="dark"
         selectedKeys={uiState.selectedMenuKeys}
         style={{ border: 0, background: 'none' }}
+        items={CreateRouteMenuItems(APP_ROUTES)}
     >
-        {CreateRouteMenuItems(APP_ROUTES)}
     </Menu>
 )
 
 // Generate content for <Menu> from all routes
-export function CreateRouteMenuItems(entries: IRouteEntry[]): React.ReactNodeArray {
-    return entries.map((entry, index) => {
+export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
+    const routeItems = entries.map((entry) => {
+        // Menu entry for Page
+        if (entry.path.includes(':'))
+            return null; // only root-routes (no param) can be in menu
 
-        if (isPageDefinition(entry)) {
-            // Menu entry for Page
-            if (entry.path.includes(':'))
-                return null; // only root-routes (no param) can be in menu
+        let isEnabled = true;
+        let disabledText: JSX.Element = <></>;
+        if (entry.visibilityCheck) {
+            const visibility = entry.visibilityCheck();
+            if (!visibility.visible) return null;
 
-            let isEnabled = true;
-            let disabledText: JSX.Element = <></>;
-            if (entry.visibilityCheck) {
-                const visibility = entry.visibilityCheck();
-                if (!visibility.visible) return null;
+            isEnabled = visibility.disabledReasons.length == 0;
+            if (!isEnabled)
+                disabledText = disabledReasonText[visibility.disabledReasons[0]];
+        }
+        const isDisabled = !isEnabled;
 
-                isEnabled = visibility.disabledReasons.length == 0;
-                if (!isEnabled)
-                    disabledText = disabledReasonText[visibility.disabledReasons[0]];
-            }
-            const isDisabled = !isEnabled;
-
-            // {/*  */}
-            return <Menu.Item key={entry.path} disabled={isDisabled}>
+        return {
+            key: entry.path,
+            icon: entry.icon,
+            label: (
                 <Tooltip
                     overlayClassName="menu-permission-tooltip"
                     overlay={disabledText}
-                    align={{ points: ['cc', 'cc'], offset: [0, 0] }}
+                    align={{ points: ['cc', 'cc'], offset: [-20, 0] }}
                     trigger={isDisabled ? 'hover' : 'none'}
                     mouseEnterDelay={0.05}
                 >
                     <div style={{ display: isDisabled ? 'block' : 'contents', width: '100%' }}>
                         <Link to={entry.path} style={{ pointerEvents: isEnabled ? 'all' : 'none' }}>
-                            {entry.icon}
-                            <span>{entry.title}</span>
+                            {entry.title}
                         </Link>
                     </div>
                 </Tooltip>
-            </Menu.Item>
-        }
-        else if (isSeparator(entry)) {
-            return <div key={index} className="menu-divider" />
-        }
-        else {
-            // Group
-            return (
-                <Menu.ItemGroup key={entry.title} title={entry.title}>
-                    {CreateRouteMenuItems(entry.children)}
-                </Menu.ItemGroup>
-            );
-        }
+            ),
+            disabled: isDisabled,
+        } as ItemType;
     }).filter(x => x != null && x != undefined);
+    return routeItems as ItemType[];
 }
 
 // Convert routes to <Route/> JSX declarations
 function EmitRouteViews(entries: IRouteEntry[]): JSX.Element[] {
-
-    const elements: JSX.Element[] = [];
-
-    for (const entry of entries) {
-        if (isPageDefinition(entry)) {
-            elements.push(entry.routeJsx);
-        } else if (isSeparator(entry)) {
-            // seperators are not routes
-        } else {
-            const childJsxElements = EmitRouteViews(entry.children);
-            elements.push(...childJsxElements);
-        }
-    }
-    return elements;
+    return entries.map(e => e.routeJsx);
 }
-
 
 export const RouteView = (() =>
     <AnimatePresence exitBeforeEnter>
@@ -173,6 +142,7 @@ export const RouteView = (() =>
 enum DisabledReasons {
     'notSupported', // kafka cluster version too low
     'noPermission', // user doesn't have permissions to use the feature
+    'enterpriseFeature'
 }
 
 const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
@@ -180,6 +150,8 @@ const disabledReasonText: { [key in DisabledReasons]: JSX.Element } = {
         <span>You don't have premissions<br />to view this page.</span>,
     [DisabledReasons.notSupported]:
         <span>The Kafka cluster does not<br />support this feature.</span>,
+    [DisabledReasons.enterpriseFeature]:
+        <span>This feature requires an enterprise license.</span>,
 } as const;
 
 interface MenuItemState {
@@ -224,7 +196,9 @@ function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRoutePar
 function routeVisibility(
     visible: boolean | (() => boolean),
     requiredFeatures?: FeatureEntry[],
-    requiredPermissions?: UserPermissions[]): () => MenuItemState {
+    requiredPermissions?: UserPermissions[],
+    requiredAppFeatures?: AppFeature[],
+): () => MenuItemState {
     return () => {
         const v = typeof visible === 'boolean'
             ? visible
@@ -247,6 +221,14 @@ function routeVisibility(
                     break;
                 }
             }
+
+        if (requiredAppFeatures) {
+            for (const f of requiredAppFeatures)
+                if (AppFeatures[f] == false) {
+                    disabledReasons.push(DisabledReasons.enterpriseFeature);
+                    break;
+                }
+        }
 
         return {
             visible: v,
@@ -287,8 +269,16 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ clusterName: string, connector: string }>('/kafka-connect/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
     MakeRoute<{}>('/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
 
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className="menuIcon anticon"><BeakerIcon /></span>, false,
+        routeVisibility(true,
+            [Feature.GetReassignments, Feature.PatchReassignments],
+            ['canPatchConfigs', 'canReassignPartitions'],
+            ['REASSIGN_PARTITIONS']
+        )
+    ),
+
     MakeRoute<{}>('/admin', AdminPage, 'Admin', <span className="menuIcon anticon"><CogIcon /></span>, false,
-        routeVisibility(() => api.userData?.canManageKowl ?? false)
+        routeVisibility(() => api.userData?.canViewConsoleUsers ?? false)
     ),
 
 
