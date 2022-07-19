@@ -9,8 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, ReactNode } from 'react';
-import React from 'react';
+
+/* eslint-disable react/jsx-key */
+
+import React, { Component, ReactNode } from 'react';
 import { RoleBinding, Subject } from '../../../state/restInterfaces';
 import { Collapse } from 'antd';
 import '../../../utils/arrayExtensions';

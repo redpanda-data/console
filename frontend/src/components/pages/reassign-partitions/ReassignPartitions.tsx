@@ -530,7 +530,7 @@ class ReassignPartitions extends PageComponent {
             newThrottledTopics.removeAll(t => inProgress.includes(t));
 
             // Update observable
-            const changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
+            const _changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
             // if (changes.added || changes.removed)
             //     if (IsDev) console.log('refreshTopicConfigs updated', changes);
 
@@ -707,7 +707,7 @@ const steps: WizardStep[] = [
                 if (selectedRacks.length == 1 && allRacks.length >= 2) {
                     let selectedRack = selectedRacks[0];
                     if (!selectedRack || selectedRack.length == 0) selectedRack = '(empty)';
-                    const msgStart = selectedBrokers.length == 1
+                    const _msgStart = selectedBrokers.length == 1
                         ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
                         : '';
 
@@ -722,7 +722,7 @@ const steps: WizardStep[] = [
         backButton: 'Select Target Brokers',
         nextButton: {
             text: 'Start Reassignment',
-            isEnabled: c => true,
+            isEnabled: () => true,
         }
     },
 ];

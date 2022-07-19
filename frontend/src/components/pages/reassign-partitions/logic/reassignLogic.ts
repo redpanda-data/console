@@ -580,7 +580,12 @@ function calcRange<T>(ar: T[], selector: (item: T) => number): {
     };
 }
 
-function dumpBrokerInfo(title: string, brokers: ExBroker[]) {
+/*
+* TODO: move helper/debugger functions to a common place so you actually use them long term
+* if not useful simply delete them
+* */
+
+function _dumpBrokerInfo(title: string, brokers: ExBroker[]) {
     console.log(title);
     console.table(brokers.map((x: ExBroker) => ({
         id: x.brokerId,

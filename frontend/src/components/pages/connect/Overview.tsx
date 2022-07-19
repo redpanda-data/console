@@ -55,7 +55,7 @@ class KafkaConnectOverview extends PageComponent {
 
                 <Card>
                     <Tabs tabs={connectTabs}
-                        onChange={x => settings.selectedTab}
+                        onChange={() => settings.selectedTab}
                         selectedTabKey={settings.selectedTab}
                     />
                 </Card>

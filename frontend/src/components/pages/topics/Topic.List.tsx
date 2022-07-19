@@ -485,7 +485,7 @@ function makeCreateTopicModal(parent: TopicList) {
                 <span>Replication Factor:</span><span style={{ justifySelf: 'start' }}>{String(result.replicationFactor).replace('-1', '(Default)')}</span>
             </div>
         },
-        onSuccess: (state, result) => {
+        onSuccess: (_state, _result) => {
             parent.refreshData(true);
         },
         content: (state) => <CreateTopicModalContent state={state} />,

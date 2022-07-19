@@ -93,7 +93,7 @@ export class PublishMessagesModalContent extends Component<Props> {
                     <Select style={{ minWidth: '160px' }}
                         options={this.availableCompressionTypes}
                         value={this.props.state.compressionType}
-                        onChange={(v, d) => this.props.state.compressionType = v}
+                        onChange={(v, _d) => this.props.state.compressionType = v}
                     />
                 </Label>
 

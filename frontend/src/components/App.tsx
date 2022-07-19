@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, ReactNode } from 'react';
+import React, { Component, ReactNode } from 'react';
 import { observer } from 'mobx-react';
 import { Layout, PageHeader, Button, Popover } from 'antd';
 import { uiSettings } from '../state/ui';
@@ -56,7 +56,7 @@ const VersionInfo = () => {
     let ref = env.REACT_APP_CONSOLE_GIT_REF;
     if (!ref || ref == 'master') ref = '';
 
-    let sha = IsDev
+    const sha = IsDev
         ? '<no git sha in dev>'
         : env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7);
 

@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import React from 'react';
 import { Button, message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
 import Card from '../../misc/Card';
 import { observer } from 'mobx-react';
-import React from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
@@ -33,7 +33,7 @@ export interface SchemaDetailsProps {
     };
 }
 
-function renderSchemaType(value: any, record: SchemaField, index: number) {
+function renderSchemaType(value: any, _record: SchemaField, _index: number) {
     return toSafeString(value);
 }
 

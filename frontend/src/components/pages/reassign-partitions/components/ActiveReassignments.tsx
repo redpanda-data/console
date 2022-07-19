@@ -100,9 +100,9 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
                 columns={columnsActiveReassignments}
 
                 rowKey={r => r.topicName}
-                onRow={(state, index) => {
+                onRow={(state) => {
                     return {
-                        onClick: e => this.reassignmentDetails = state,
+                        onClick: _e => this.reassignmentDetails = state,
                     };
                 }}
                 pagination={this.pageConfig}

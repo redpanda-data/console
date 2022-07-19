@@ -253,7 +253,7 @@ const apiStore = {
         this.messagesBytesConsumed = 0;
         this.messagesTotalConsumed = 0;
 
-        currentWS.onopen = ev => {
+        currentWS.onopen = _ev => {
             if (ws !== currentWS) return; // newer request has taken over
             // reset state for new request
             this.messagesFor = searchRequest.topicName;

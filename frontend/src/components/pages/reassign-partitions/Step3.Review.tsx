@@ -78,7 +78,7 @@ export class StepReview extends Component<{
                 }
             },
             {
-                width: 100, title: (p) =>
+                width: 100, title: () =>
                     <InfoText
                         tooltip="The number of replicas that will be moved to a different broker."
                         maxWidth="180px"
