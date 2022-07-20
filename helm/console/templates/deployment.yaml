@@ -140,7 +140,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "console.fullname" . }}
-                  key: kafka-login-jwt-secret
+                  key: login-jwt-secret
             {{- if .Values.secret.login.google.clientSecret }}
             - name: LOGIN_GOOGLE_CLIENTSECRET
               valueFrom:
