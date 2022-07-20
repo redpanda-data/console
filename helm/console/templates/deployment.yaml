@@ -194,6 +194,13 @@ spec:
                   name: {{ include "console.fullname" . }}
                   key: login-oidc-client-secret
             {{- end }}
+            {{- if .Values.secret.enterprise.license }}
+            - name: LICENSE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: enterprise-license
+            {{- end }}
             {{- if .Values.secret.redpanda.adminApi.password }}
             - name: REDPANDA_ADMINAPI_PASSWORD
               valueFrom:
