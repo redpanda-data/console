@@ -148,6 +148,10 @@ secret:
       # directoryApiToken:
     oidc: {}
       # clientSecret:
+
+  enterprise: {}
+    # license:
+
   redpanda:
     adminApi: {}
       # password:
