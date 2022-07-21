@@ -147,8 +147,10 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 
 	// 2. Test for json schema
 	if d.SchemaService != nil && len(payload) > 5 && payload[0] == byte(0) {
+		// TODO: For more confidence we could just ask the schema service for the given
+		// schema and based on the response we can check the schema type (avro, json, ..)
 		schemaID := binary.BigEndian.Uint32(payload[1:5])
-		trimmed := bytes.TrimLeft(payload[5:], " \t\r\n")
+		trimmed := payload[5:]
 		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 		if startsWithJSON {
 			var obj interface{}
