@@ -22,13 +22,13 @@ import (
 
 type getAclsOverviewRequest struct {
 	// The resource type.
-	ResourceType int8 `schema:"resourceType"`
+	ResourceType kmsg.ACLResourceType `schema:"resourceType"`
 
 	// The resource name, or null to match any resource name.
 	ResourceName *string `schema:"resourceName"`
 
 	// The resource pattern to match.
-	ResourcePatternTypeFilter int `schema:"resourcePatternTypeFilter"`
+	ResourcePatternTypeFilter kmsg.ACLResourcePatternType `schema:"resourcePatternTypeFilter"`
 
 	// The principal to match, or null to match any principal.
 	Principal *string `schema:"principal"`
@@ -37,42 +37,22 @@ type getAclsOverviewRequest struct {
 	Host *string `schema:"host"`
 
 	// The operation to match.
-	Operation int `schema:"operation"`
+	Operation kmsg.ACLOperation `schema:"operation"`
 
 	// The permission type to match.
-	PermissionType int `schema:"permissionType"`
-}
-
-func (g *getAclsOverviewRequest) OK() error {
-	if kmsg.ACLResourceType(g.ResourceType).String() == kmsg.ACLResourceTypeUnknown.String() {
-		return fmt.Errorf("resourceType filter is out of bounds")
-	}
-
-	if kmsg.ACLResourcePatternType(g.ResourcePatternTypeFilter).String() == kmsg.ACLResourcePatternTypeUnknown.String() {
-		return fmt.Errorf("resourcePatternTypeFilter is out of bounds")
-	}
-
-	if kmsg.ACLOperation(g.Operation).String() == kmsg.ACLOperationUnknown.String() {
-		return fmt.Errorf("operation filter is out of bounds")
-	}
-
-	if kmsg.ACLPermissionType(g.PermissionType).String() == kmsg.ACLPermissionTypeUnknown.String() {
-		return fmt.Errorf("permission type filter is out of bounds")
-	}
-
-	return nil
+	PermissionType kmsg.ACLPermissionType `schema:"permissionType"`
 }
 
 // ToKafkaRequest returns a request struct that complies with the expected request object for the Kafka library
 func (g *getAclsOverviewRequest) ToKafkaRequest() kmsg.DescribeACLsRequest {
 	return kmsg.DescribeACLsRequest{
-		ResourceType:        kmsg.ACLResourceType(g.ResourceType),
+		ResourceType:        g.ResourceType,
 		ResourceName:        g.ResourceName,
-		ResourcePatternType: kmsg.ACLResourcePatternType(g.ResourcePatternTypeFilter),
+		ResourcePatternType: g.ResourcePatternTypeFilter,
 		Principal:           g.Principal,
 		Host:                g.Host,
-		Operation:           kmsg.ACLOperation(g.Operation),
-		PermissionType:      kmsg.ACLPermissionType(g.PermissionType),
+		Operation:           g.Operation,
+		PermissionType:      g.PermissionType,
 	}
 }
 
@@ -91,20 +71,7 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			restErr := &rest.Error{
 				Err:      err,
 				Status:   http.StatusBadRequest,
-				Message:  "Failed to parse request parameters",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// Validate parsed request
-		err = req.OK()
-		if err != nil {
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  fmt.Sprintf("Failed to validate request parameters: %v", err.Error()),
+				Message:  fmt.Sprintf("Failed to parse request parameters: %v", err.Error()),
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -148,13 +115,13 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 
 type deleteAclsRequest struct {
 	// The resource type.
-	ResourceType int8 `schema:"resourceType"`
+	ResourceType kmsg.ACLResourceType `schema:"resourceType"`
 
 	// The resource name, or null to match any resource name.
 	ResourceName *string `schema:"resourceName"`
 
 	// The resource pattern to match.
-	ResourcePatternType int `schema:"resourcePatternType"`
+	ResourcePatternType kmsg.ACLResourcePatternType `schema:"resourcePatternType"`
 
 	// The principal to match, or null to match any principal.
 	Principal *string `schema:"principal"`
@@ -163,42 +130,22 @@ type deleteAclsRequest struct {
 	Host *string `schema:"host"`
 
 	// The operation to match.
-	Operation int `schema:"operation"`
+	Operation kmsg.ACLOperation `schema:"operation"`
 
 	// The permission type to match.
-	PermissionType int `schema:"permissionType"`
-}
-
-func (g *deleteAclsRequest) OK() error {
-	if kmsg.ACLResourceType(g.ResourceType).String() == kmsg.ACLResourceTypeUnknown.String() {
-		return fmt.Errorf("resourceType filter is out of bounds")
-	}
-
-	if kmsg.ACLResourcePatternType(g.ResourcePatternType).String() == kmsg.ACLResourcePatternTypeUnknown.String() {
-		return fmt.Errorf("resourcePatternTypeFilter is out of bounds")
-	}
-
-	if kmsg.ACLOperation(g.Operation).String() == kmsg.ACLOperationUnknown.String() {
-		return fmt.Errorf("operation filter is out of bounds")
-	}
-
-	if kmsg.ACLPermissionType(g.PermissionType).String() == kmsg.ACLPermissionTypeUnknown.String() {
-		return fmt.Errorf("permission type filter is out of bounds")
-	}
-
-	return nil
+	PermissionType kmsg.ACLPermissionType `schema:"permissionType"`
 }
 
 // ToKafkaRequest returns a request struct that complies with the expected request object for the Kafka library
 func (g *deleteAclsRequest) ToKafkaRequest() kmsg.DeleteACLsRequestFilter {
 	reqFilter := kmsg.NewDeleteACLsRequestFilter()
-	reqFilter.PermissionType = kmsg.ACLPermissionType(g.PermissionType)
-	reqFilter.Operation = kmsg.ACLOperation(g.Operation)
+	reqFilter.PermissionType = g.PermissionType
+	reqFilter.Operation = g.Operation
 	reqFilter.Host = g.Host
 	reqFilter.Principal = g.Principal
-	reqFilter.ResourcePatternType = kmsg.ACLResourcePatternType(g.ResourcePatternType)
+	reqFilter.ResourcePatternType = g.ResourcePatternType
 	reqFilter.ResourceName = g.ResourceName
-	reqFilter.ResourceType = kmsg.ACLResourceType(g.ResourceType)
+	reqFilter.ResourceType = g.ResourceType
 
 	return reqFilter
 }
@@ -213,20 +160,7 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 			restErr := &rest.Error{
 				Err:      err,
 				Status:   http.StatusBadRequest,
-				Message:  "Failed to parse request parameters",
-				IsSilent: false,
-			}
-			rest.SendRESTError(w, r, api.Logger, restErr)
-			return
-		}
-
-		// Validate parsed request
-		err = req.OK()
-		if err != nil {
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  fmt.Sprintf("Failed to validate request parameters: %v", err.Error()),
+				Message:  fmt.Sprintf("Failed to parse request parameters: %v", err.Error()),
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -262,7 +196,7 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 type CreateACLRequest struct {
 	// ResourceType is the type of resource this acl entry will be on.
 	// It is invalid to use UNKNOWN or ANY.
-	ResourceType int8 `schema:"resourceType"`
+	ResourceType kmsg.ACLResourceType `schema:"resourceType"`
 
 	// ResourceName is the name of the resource this acl entry will be on.
 	// For CLUSTER, this must be "kafka-cluster".
@@ -271,9 +205,7 @@ type CreateACLRequest struct {
 	// ResourcePatternType is the pattern type to use for the resource name.
 	// This cannot be UNKNOWN or MATCH (i.e. this must be LITERAL or PREFIXED).
 	// The default for pre-Kafka 2.0.0 is effectively LITERAL.
-	//
-	// This field has a default of 3.
-	ResourcePatternType int `schema:"resourcePatternType"`
+	ResourcePatternType kmsg.ACLResourcePatternType `schema:"resourcePatternType"`
 
 	// Principal is the user to apply this acl for. With the Kafka simple
 	// authorizer, this must begin with "User:".
@@ -286,37 +218,32 @@ type CreateACLRequest struct {
 
 	// Operation is the operation this acl is for. This must not be UNKNOWN or
 	// ANY.
-	Operation int `schema:"operation"`
+	Operation kmsg.ACLOperation `schema:"operation"`
 
 	// PermissionType is the permission of this acl. This must be either ALLOW
 	// or DENY.
-	PermissionType int `schema:"permissionType"`
+	PermissionType kmsg.ACLPermissionType `schema:"permissionType"`
 }
 
 func (c *CreateACLRequest) OK() error {
-	// ACL resource type must not be UNKNOWN (0) or ANY (1)
-	switch kmsg.ACLResourceType(c.ResourceType).String() {
-	case kmsg.ACLResourceTypeAny.String(), kmsg.ACLResourceTypeUnknown.String():
-		return fmt.Errorf("acl resource type must not be any (1) or unknown (0), but found: %q", kmsg.ACLResourceType(c.ResourceType).String())
+	if c.ResourceType == kmsg.ACLResourceTypeAny {
+		return fmt.Errorf("acl resource type must not be any (1), but found: %q", c.ResourceType)
 	}
 
-	// Resource pattern type must be LITERAL (3) or PREFIXED (4)
-	switch kmsg.ACLResourcePatternType(c.ResourcePatternType) {
+	// Check Resource pattern type - must be LITERAL (3) or PREFIXED (4)
+	switch c.ResourcePatternType {
 	case kmsg.ACLResourcePatternTypeLiteral, kmsg.ACLResourcePatternTypePrefixed:
 	default:
 		return fmt.Errorf("resourcePatternType is invalid, must be either LITERAL (3) or PREFIXED (4)")
 	}
 
-	// Operation must not be Unknown (0) or Any (1)
-	switch kmsg.ACLOperation(c.Operation).String() {
-	case kmsg.ACLOperationUnknown.String():
-		return fmt.Errorf("operation filter is out of bounds")
-	case kmsg.ACLOperationAny.String():
+	// Check Operation - must not be Any (1)
+	if c.Operation == kmsg.ACLOperationAny {
 		return fmt.Errorf("operation type any (1) is not allowed for creating a new ACL")
 	}
 
 	// Permission type must be either 'deny' (2) or 'any' (1)
-	switch kmsg.ACLPermissionType(c.PermissionType) {
+	switch c.PermissionType {
 	case kmsg.ACLPermissionTypeDeny, kmsg.ACLPermissionTypeAllow:
 	default:
 		return fmt.Errorf("given permission type is invalid, it must be either allow (3) or deny (2)")
@@ -328,13 +255,13 @@ func (c *CreateACLRequest) OK() error {
 // ToKafkaRequest returns a request struct that complies with the expected request object for the Kafka library
 func (c *CreateACLRequest) ToKafkaRequest() kmsg.CreateACLsRequestCreation {
 	reqFilter := kmsg.NewCreateACLsRequestCreation()
-	reqFilter.PermissionType = kmsg.ACLPermissionType(c.PermissionType)
-	reqFilter.Operation = kmsg.ACLOperation(c.Operation)
+	reqFilter.PermissionType = c.PermissionType
+	reqFilter.Operation = c.Operation
 	reqFilter.Host = c.Host
 	reqFilter.Principal = c.Principal
-	reqFilter.ResourcePatternType = kmsg.ACLResourcePatternType(c.ResourcePatternType)
+	reqFilter.ResourcePatternType = c.ResourcePatternType
 	reqFilter.ResourceName = c.ResourceName
-	reqFilter.ResourceType = kmsg.ACLResourceType(c.ResourceType)
+	reqFilter.ResourceType = c.ResourceType
 
 	return reqFilter
 }
