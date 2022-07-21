@@ -58,7 +58,7 @@ function renderNotConfigured() {
                     </div>
 
                     {/* todo: fix link once we have a better guide */}
-                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/console/blob/master/docs/config/kowl.yaml">
+                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/console/blob/master/docs/config/console.yaml">
                         <Button type="primary">Redpanda Console Config Documentation</Button>
                     </a>
                 </Empty>
