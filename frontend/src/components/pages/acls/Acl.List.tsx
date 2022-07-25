@@ -280,68 +280,6 @@ class AclList extends PageComponent {
             return groupingKey;
         });
 
-        const collectTopicAcls = (acls: AclFlat[]): TopicACLs[] => {
-            const topics = acls
-                .filter(x => x.resourceType == 'Topic')
-                .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
-
-            const topicAcls: TopicACLs[] = [];
-            for (const { items } of topics) {
-                const first = items[0];
-                let selector = first.resourceName;
-                if (first.resourcePatternType != 'Literal')
-                    if (first.resourcePatternType == 'Prefixed')
-                        selector += '*';
-                    else
-                        selector += ` (unsupported pattern type "${first.resourcePatternType}")`;
-
-                const topicOperations = [
-                    'Alter',
-                    'AlterConfigs',
-                    'Create',
-                    'Delete',
-                    'Describe',
-                    'DescribeConfigs',
-                    'Read',
-                    'Write',
-                ] as const;
-
-                const topicPermissions: { [key in typeof topicOperations[number]]: AclStrPermission } = {
-                    Alter: 'Any',
-                    AlterConfigs: 'Any',
-                    Create: 'Any',
-                    Delete: 'Any',
-                    Describe: 'Any',
-                    DescribeConfigs: 'Any',
-                    Read: 'Any',
-                    Write: 'Any',
-                };
-
-                for (const op of topicOperations) {
-                    const entryForOp = items.find(x => x.operation === op);
-                    if (entryForOp) {
-                        topicPermissions[op] = entryForOp.permissionType;
-                    }
-                }
-
-                let all: AclStrPermission = 'Any';
-                if (Object.values(topicPermissions).all(p => p == 'Allow'))
-                    all = 'Allow';
-                if (Object.values(topicPermissions).all(p => p == 'Deny'))
-                    all = 'Deny';
-
-                const topicAcl: TopicACLs = {
-                    selector,
-                    permissions: topicPermissions,
-                    all,
-                };
-
-                topicAcls.push(topicAcl);
-            }
-
-            return topicAcls;
-        };
-
         const result: AclPrincipalGroup[] = [];
 
         for (const { items } of g) {
@@ -352,8 +290,8 @@ class AclList extends PageComponent {
                 host,
 
                 topicAcls: collectTopicAcls(items),
-                consumerGroupAcls: [],
-                clusterAcls: createEmptyClusterAcl(),
+                consumerGroupAcls: collectConsumerGroupAcls(items),
+                clusterAcls: collectClusterAcls(items),
 
                 sourceEntries: items,
             };
@@ -396,6 +334,173 @@ class AclList extends PageComponent {
         );
     })
 }
+
+function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
+    const topics = acls
+        .filter(x => x.resourceType == 'Topic')
+        .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
+
+    const topicAcls: TopicACLs[] = [];
+    for (const { items } of topics) {
+        const first = items[0];
+        let selector = first.resourceName;
+        if (first.resourcePatternType != 'Literal')
+            if (first.resourcePatternType == 'Prefixed')
+                selector += '*';
+            else
+                selector += ` (unsupported pattern type "${first.resourcePatternType}")`;
+
+        const topicOperations = [
+            'Alter',
+            'AlterConfigs',
+            'Create',
+            'Delete',
+            'Describe',
+            'DescribeConfigs',
+            'Read',
+            'Write',
+        ] as const;
+
+        const topicPermissions: { [key in typeof topicOperations[number]]: AclStrPermission } = {
+            Alter: 'Any',
+            AlterConfigs: 'Any',
+            Create: 'Any',
+            Delete: 'Any',
+            Describe: 'Any',
+            DescribeConfigs: 'Any',
+            Read: 'Any',
+            Write: 'Any',
+        };
+
+        for (const op of topicOperations) {
+            const entryForOp = items.find(x => x.operation === op);
+            if (entryForOp) {
+                topicPermissions[op] = entryForOp.permissionType;
+            }
+        }
+
+        let all: AclStrPermission = 'Any';
+        if (Object.values(topicPermissions).all(p => p == 'Allow'))
+            all = 'Allow';
+        if (Object.values(topicPermissions).all(p => p == 'Deny'))
+            all = 'Deny';
+
+        const topicAcl: TopicACLs = {
+            selector,
+            permissions: topicPermissions,
+            all,
+        };
+
+        topicAcls.push(topicAcl);
+    }
+
+    return topicAcls;
+};
+
+function collectConsumerGroupAcls(acls: AclFlat[]): ConsumerGroupACLs[] {
+    const consumerGroups = acls
+        .filter(x => x.resourceType == 'Group')
+        .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
+
+    const consumerGroupAcls: ConsumerGroupACLs[] = [];
+    for (const { items } of consumerGroups) {
+        const first = items[0];
+        let selector = first.resourceName;
+        if (first.resourcePatternType != 'Literal')
+            if (first.resourcePatternType == 'Prefixed')
+                selector += '*';
+            else
+                selector += ` (unsupported pattern type "${first.resourcePatternType}")`;
+
+        const groupOperations = [
+            'Delete',
+            'Describe',
+            'Read',
+        ] as const;
+
+        const groupPermissions: { [key in typeof groupOperations[number]]: AclStrPermission } = {
+            Delete: 'Any',
+            Describe: 'Any',
+            Read: 'Any',
+        };
+
+        for (const op of groupOperations) {
+            const entryForOp = items.find(x => x.operation === op);
+            if (entryForOp) {
+                groupPermissions[op] = entryForOp.permissionType;
+            }
+        }
+
+        let all: AclStrPermission = 'Any';
+        if (Object.values(groupPermissions).all(p => p == 'Allow'))
+            all = 'Allow';
+        if (Object.values(groupPermissions).all(p => p == 'Deny'))
+            all = 'Deny';
+
+        const groupAcl: ConsumerGroupACLs = {
+            selector,
+            permissions: groupPermissions,
+            all,
+        };
+
+        consumerGroupAcls.push(groupAcl);
+    }
+
+    return consumerGroupAcls;
+};
+
+function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
+    const flatClusterAcls = acls.filter(x => x.resourceType == 'Cluster');
+
+    const clusterOperations = [
+        'Alter',
+        'AlterConfigs',
+        'ClusterAction',
+        'Create',
+        'Describe',
+        'DescribeConfigs',
+    ] as const;
+
+    const clusterPermissions: { [key in typeof clusterOperations[number]]: AclStrPermission } = {
+        Alter: 'Any',
+        AlterConfigs: 'Any',
+        ClusterAction: 'Any',
+        Create: 'Any',
+        Describe: 'Any',
+        DescribeConfigs: 'Any',
+    };
+
+    for (const op of clusterOperations) {
+        const entryForOp = flatClusterAcls.find(x => x.operation === op);
+        if (entryForOp) {
+            clusterPermissions[op] = entryForOp.permissionType;
+        }
+    }
+
+    let all: AclStrPermission = 'Any';
+    if (Object.values(clusterPermissions).all(p => p == 'Allow'))
+        all = 'Allow';
+    if (Object.values(clusterPermissions).all(p => p == 'Deny'))
+        all = 'Deny';
+
+    const clusterAcls: ClusterACLs = {
+        permissions: clusterPermissions,
+        all,
+    };
+
+
+    return clusterAcls;
+};
+
+
+function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
+    const flat: AclFlat[] = [];
+
+
+
+    return flat;
+}
+
 
 export default AclList;
 
