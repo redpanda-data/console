@@ -20,7 +20,7 @@ import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
 import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
-import { AclRequest, AclRequestDefault, AclResourceType, GetAclResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError, CreateACLRequest, DeleteACLsRequest, RedpandaLicense } from './restInterfaces';
+import { GetAclsRequest, AclRequestDefault, AclResourceType, GetAclOverviewResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError, CreateACLRequest, DeleteACLsRequest, RedpandaLicense } from './restInterfaces';
 import { Features } from './supportedFeatures';
 import { uiState } from './uiState';
 
@@ -197,14 +197,14 @@ const apiStore = {
     topicPartitionErrors: new Map<string, Array<{ id: number, partitionError: string; }>>(),
     topicWatermarksErrors: new Map<string, Array<{ id: number, waterMarksError: string; }>>(),
     topicConsumers: new Map<string, TopicConsumer[]>(),
-    topicAcls: new Map<string, GetAclResponse | null>(),
+    topicAcls: new Map<string, GetAclOverviewResponse | null>(),
 
-    ACLs: undefined as GetAclResponse | undefined | null,
+    ACLs: undefined as GetAclOverviewResponse | undefined | null,
 
     Quotas: undefined as QuotaResponse | undefined | null,
 
     consumerGroups: new Map<string, GroupDescription>(),
-    consumerGroupAcls: new Map<string, GetAclResponse | null>(),
+    consumerGroupAcls: new Map<string, GetAclOverviewResponse | null>(),
 
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
@@ -605,8 +605,8 @@ const apiStore = {
     },
 
     refreshTopicAcls(topicName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName });
-        cachedApiRequest<GetAclResponse | null>(`./api/acls?${query}`, force)
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.Topic, resourceName: topicName });
+        cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.topicAcls.set(topicName, v));
     },
 
@@ -615,9 +615,9 @@ const apiStore = {
             .then(v => this.topicConsumers.set(topicName, v.topicConsumers), addError);
     },
 
-    async refreshAcls(request: AclRequest, force?: boolean): Promise<void> {
+    async refreshAcls(request: GetAclsRequest, force?: boolean): Promise<void> {
         const query = aclRequestToQuery(request);
-        await cachedApiRequest<GetAclResponse | null>(`./api/acls?${query}`, force)
+        await cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.ACLs = v ?? null, addError);
     },
 
@@ -693,8 +693,8 @@ const apiStore = {
     },
 
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName });
-        cachedApiRequest<GetAclResponse | null>(`./api/acls?${query}`, force)
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.Group, resourceName: groupName });
+        cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.consumerGroupAcls.set(groupName, v));
     },
 
@@ -1261,7 +1261,7 @@ function prepareSynonyms(configEntries: ConfigEntry[]) {
 }
 
 
-export function aclRequestToQuery(request: AclRequest): string {
+export function aclRequestToQuery(request: GetAclsRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);
     const query = filters.map(x => `${x.key}=${x.value}`).join('&');
     return query;

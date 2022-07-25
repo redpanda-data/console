@@ -585,22 +585,22 @@ export interface TopicPermissions {
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L47
 export enum AclResourceType {
-    AclResourceUnknown,
-    AclResourceAny,
-    AclResourceTopic,
-    AclResourceGroup,
-    AclResourceCluster,
-    AclResourceTransactionalID,
-    AclDelegationToken,
+    Unknown,
+    Any,
+    Topic,
+    Group,
+    Cluster,
+    TransactionalID,
+    DelegationToken,
 }
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L59
-export enum AclResourcePatternTypeFilter {
-    AclPatternUnknown,
-    AclPatternAny,
-    AclPatternMatch,
-    AclPatternLiteral,
-    AclPatternPrefixed
+export enum AclResourcePatternType {
+    Unknown,
+    Any,
+    Match,
+    Literal,
+    Prefixed
 }
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L81
@@ -630,10 +630,10 @@ export enum AclPermission {
 
 // list all:
 //   /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
-export interface AclRequest {
+export interface GetAclsRequest {
     resourceType: AclResourceType;
     resourceName?: string;
-    resourcePatternTypeFilter: AclResourcePatternTypeFilter;
+    resourcePatternTypeFilter: AclResourcePatternType;
     principal?: string;
     host?: string;
     operation: AclOperation;
@@ -641,35 +641,78 @@ export interface AclRequest {
 }
 
 export const AclRequestDefault = {
-    resourceType: AclResourceType.AclResourceAny,
+    resourceType: AclResourceType.Any,
     resourceName: '',
-    resourcePatternTypeFilter: AclResourcePatternTypeFilter.AclPatternAny,
+    resourcePatternTypeFilter: AclResourcePatternType.Any,
     principal: '',
     host: '',
     operation: AclOperation.Any,
     permissionType: AclPermission.Any,
 } as const;
 
-export interface GetAclResponse {
+
+
+
+
+export type AclStrResourceType =
+    | 'Unknown'
+    | 'Any'
+    | 'Topic'
+    | 'Group'
+    | 'Cluster'
+    | 'TransactionalID'
+    | 'DelegationToken'
+    ;
+
+export type AclStrResourcePatternType =
+    | 'Unknown'
+    | 'Any'
+    | 'Match'
+    | 'Literal'
+    | 'Prefixed'
+    ;
+
+export type AclStrOperation =
+    | 'Unknown'
+    | 'Any'
+    | 'All'
+    | 'Read'
+    | 'Write'
+    | 'Create'
+    | 'Delete'
+    | 'Alter'
+    | 'Describe'
+    | 'ClusterAction'
+    | 'DescribeConfigs'
+    | 'AlterConfigs'
+    | 'IdempotentWrite'
+    ;
+
+export type AclStrPermission =
+    | 'Unknown'
+    | 'Any'
+    | 'Deny'
+    | 'Allow'
+    ;
+
+
+export interface GetAclOverviewResponse {
     aclResources: AclResource[];
     isAuthorizerEnabled: boolean;
 }
 
-export enum ResourcePatternType {
-    'UNKNOWN', 'MATCH', 'LITERAL', 'PREFIXED'
-}
 export interface AclResource {
-    resourceType: string;
+    resourceType: AclStrResourceType;
     resourceName: string;
-    resourcePatternType: ResourcePatternType;
+    resourcePatternType: AclStrResourcePatternType;
     acls: AclRule[];
 }
 
 export interface AclRule {
     principal: string;
     host: string;
-    operation: string;
-    permissionType: string;
+    operation: AclStrOperation;
+    permissionType: AclStrPermission;
 }
 
 
@@ -687,7 +730,7 @@ export interface CreateACLRequest {
     // The default for pre-Kafka 2.0.0 is effectively LITERAL.
     //
     // This field has a default of 3 (prefixed).
-    resourcePatternType: ResourcePatternType.LITERAL | ResourcePatternType.PREFIXED;
+    resourcePatternType: AclResourcePatternType.Literal | AclResourcePatternType.Prefixed;
 
     // Principal is the user to apply this acl for. With the Kafka simple
     // authorizer, this must begin with "User:".
@@ -714,7 +757,7 @@ export interface DeleteACLsRequest {
     // Unset will match any resource name
     resourceName?: string;
 
-    resourcePatternType: ResourcePatternType;
+    resourcePatternType: AclResourcePatternType;
 
     // Unset will match any principal
     principal?: string;

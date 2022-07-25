@@ -17,7 +17,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { sortField } from '../../misc/common';
-import { AclOperation, AclPermission, AclRequestDefault, AclResource, AclRule, Broker } from '../../../state/restInterfaces';
+import { AclOperation, AclPermission, AclRequestDefault, AclResource, AclRule, AclStrOperation, AclStrPermission, AclStrResourcePatternType, AclStrResourceType, Broker } from '../../../state/restInterfaces';
 import { AnimatePresence, motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { comparer, computed, makeObservable, observable } from 'mobx';
@@ -32,19 +32,77 @@ import { PencilIcon, TrashIcon, CheckIcon, XIcon, MinusIcon } from '@heroicons/r
 const { Option } = Select;
 
 
-type AclFlat = Omit<AclResource, 'acls' | 'principal' | 'host'> & AclRule & { eqKey: string };
+type AclFlat = {
+    // AclResource
+    resourceType: AclStrResourceType;
+    resourceName: string;
+    resourcePatternType: AclStrResourcePatternType;
 
+    // AclRule
+    principal: string;
+    host: string;
+    operation: AclStrOperation;
+    permissionType: AclStrPermission;
 
-type AclGroup = {
-    groupingKey: string;
+    eqKey: string;
+}
 
+type AclPrincipalGroup = {
     principal: string;
     host: string;
 
-    entries: AclFlat[];
+    topicAcls: TopicACLs[];
+    consumerGroupAcls: ConsumerGroupACLs[];
+    clusterAcls: ClusterACLs;
+
+    sourceEntries: AclFlat[];
 };
 
-const columns: ColumnProps<AclGroup>[] = [
+type TopicACLs = {
+    selector: string;
+    all: AclStrPermission;
+
+    permissions: {
+        Alter: AclStrPermission;
+        AlterConfigs: AclStrPermission;
+        Create: AclStrPermission;
+        Delete: AclStrPermission;
+        Describe: AclStrPermission;
+        DescribeConfigs: AclStrPermission;
+        Read: AclStrPermission;
+        Write: AclStrPermission;
+    };
+};
+
+type ConsumerGroupACLs = {
+    selector: string;
+    all: AclStrPermission;
+
+    permissions: {
+        Delete: AclStrPermission;
+        Describe: AclStrPermission;
+        Read: AclStrPermission;
+    };
+};
+
+type ClusterACLs = {
+    all: AclStrPermission;
+
+    permissions: {
+        Alter: AclStrPermission;
+        AlterConfigs: AclStrPermission;
+        ClusterAction: AclStrPermission;
+        Create: AclStrPermission;
+        Describe: AclStrPermission;
+        DescribeConfigs: AclStrPermission;
+    };
+};
+
+type ResourceACLs = TopicACLs | ConsumerGroupACLs | ClusterACLs;
+
+
+
+const columns: ColumnProps<AclPrincipalGroup>[] = [
     {
         width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal'),
         render: v => v ? v : 'Any'
@@ -58,54 +116,55 @@ const columns: ColumnProps<AclGroup>[] = [
         render: (_, record) => {
             return <>
                 <span style={{ display: 'flex', alignItems: 'center' }}>
-                    <span>{record.entries.length}</span>
+                    <span>{record.sourceEntries.length}</span>
                     <Button className='iconButton' style={{ marginLeft: 'auto' }}><PencilIcon /></Button>
                     <Button className='iconButton'><TrashIcon /></Button>
                 </span>
             </>
         },
-        sorter: (a, b) => a.entries.length - b.entries.length,
+        sorter: (a, b) => a.sourceEntries.length - b.sourceEntries.length,
     },
 ];
 
 function createEmptyTopicAcl(): TopicACLs {
     return {
         selector: '',
-        all: AclPermission.Any,
+        all: 'Any',
         permissions: {
-            Alter: AclPermission.Any,
-            AlterConfigs: AclPermission.Any,
-            Create: AclPermission.Any,
-            DescribeConfigs: AclPermission.Any,
-            Write: AclPermission.Any,
-            Read: AclPermission.Any,
-            Delete: AclPermission.Any,
-            Describe: AclPermission.Any,
+            Alter: 'Any',
+            AlterConfigs: 'Any',
+            Create: 'Any',
+            DescribeConfigs: 'Any',
+            Write: 'Any',
+            Read: 'Any',
+            Delete: 'Any',
+            Describe: 'Any',
         }
     };
 }
+
 function createEmptyConsumerGroupAcl(): ConsumerGroupACLs {
     return {
         selector: '',
-        all: AclPermission.Any,
+        all: 'Any',
         permissions: {
-            Read: AclPermission.Any,
-            Delete: AclPermission.Any,
-            Describe: AclPermission.Any,
+            Read: 'Any',
+            Delete: 'Any',
+            Describe: 'Any',
         }
     };
 }
 
 function createEmptyClusterAcl(): ClusterACLs {
     return {
-        all: AclPermission.Any,
+        all: 'Any',
         permissions: {
-            Alter: AclPermission.Any,
-            AlterConfigs: AclPermission.Any,
-            ClusterAction: AclPermission.Any,
-            Create: AclPermission.Any,
-            Describe: AclPermission.Any,
-            DescribeConfigs: AclPermission.Any,
+            Alter: 'Any',
+            AlterConfigs: 'Any',
+            ClusterAction: 'Any',
+            Create: 'Any',
+            Describe: 'Any',
+            DescribeConfigs: 'Any',
         }
     };
 }
@@ -145,7 +204,7 @@ class AclList extends PageComponent {
             ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} />
             : null;
 
-        const groups = this.aclGroups;
+        const groups = this.principalGroups;
 
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
@@ -167,7 +226,7 @@ class AclList extends PageComponent {
 
                         observableSettings={uiSettings.aclList.configTable}
 
-                        rowKey={x => x.groupingKey}
+                        rowKey={x => x.principal + x.host}
                         rowClassName={() => 'pureDisplayRow'}
 
                         search={{
@@ -188,37 +247,122 @@ class AclList extends PageComponent {
         const flattened: AclFlat[] = [];
         for (const res of acls.aclResources) {
             for (const rule of res.acls) {
-                const eqKey = (rule.principal ?? 'Any') + ' ' + (rule.host ?? 'Any');
-                flattened.push({ ...res, ...rule, eqKey });
+
+                const flattenedEntry: AclFlat = {
+                    resourceType: res.resourceType,
+                    resourceName: res.resourceName,
+                    resourcePatternType: res.resourcePatternType,
+
+                    principal: rule.principal,
+                    host: rule.host,
+                    operation: rule.operation,
+                    permissionType: rule.permissionType,
+
+                    eqKey: ''
+                };
+
+                const eqKey = toJson(flattenedEntry);
+                flattenedEntry.eqKey = eqKey;
+
+                flattened.push(flattenedEntry);
             }
         }
 
         return flattened;
     }
 
-    @computed({ equals: comparer.structural }) get aclGroups(): AclGroup[] {
+
+    @computed({ equals: comparer.structural }) get principalGroups(): AclPrincipalGroup[] {
         const flat = this.flatAcls;
 
-        const simpleGroups = flat.groupInto(f => {
+        const g = flat.groupInto(f => {
             const groupingKey = (f.principal ?? 'Any') + ' ' + (f.host ?? 'Any');
             return groupingKey;
         });
 
-        const groups: AclGroup[] = [];
-        for (const g of simpleGroups) {
-            const principal = g.items[0].principal;
-            const host = g.items[0].host;
-            groups.push({
-                groupingKey: g.key,
+        const collectTopicAcls = (acls: AclFlat[]): TopicACLs[] => {
+            const topics = acls
+                .filter(x => x.resourceType == 'Topic')
+                .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
 
+            const topicAcls: TopicACLs[] = [];
+            for (const { items } of topics) {
+                const first = items[0];
+                let selector = first.resourceName;
+                if (first.resourcePatternType != 'Literal')
+                    if (first.resourcePatternType == 'Prefixed')
+                        selector += '*';
+                    else
+                        selector += ` (unsupported pattern type "${first.resourcePatternType}")`;
+
+                const topicOperations = [
+                    'Alter',
+                    'AlterConfigs',
+                    'Create',
+                    'Delete',
+                    'Describe',
+                    'DescribeConfigs',
+                    'Read',
+                    'Write',
+                ] as const;
+
+                const topicPermissions: { [key in typeof topicOperations[number]]: AclStrPermission } = {
+                    Alter: 'Any',
+                    AlterConfigs: 'Any',
+                    Create: 'Any',
+                    Delete: 'Any',
+                    Describe: 'Any',
+                    DescribeConfigs: 'Any',
+                    Read: 'Any',
+                    Write: 'Any',
+                };
+
+                for (const op of topicOperations) {
+                    const entryForOp = items.find(x => x.operation === op);
+                    if (entryForOp) {
+                        topicPermissions[op] = entryForOp.permissionType;
+                    }
+                }
+
+                let all: AclStrPermission = 'Any';
+                if (Object.values(topicPermissions).all(p => p == 'Allow'))
+                    all = 'Allow';
+                if (Object.values(topicPermissions).all(p => p == 'Deny'))
+                    all = 'Deny';
+
+                const topicAcl: TopicACLs = {
+                    selector,
+                    permissions: topicPermissions,
+                    all,
+                };
+
+                topicAcls.push(topicAcl);
+            }
+
+            return topicAcls;
+        };
+
+        const result: AclPrincipalGroup[] = [];
+
+        for (const { items } of g) {
+            const { principal, host } = items[0];
+
+            const principalGroup: AclPrincipalGroup = {
                 principal,
                 host,
-                entries: g.items,
-            })
+
+                topicAcls: collectTopicAcls(items),
+                consumerGroupAcls: [],
+                clusterAcls: createEmptyClusterAcl(),
+
+                sourceEntries: items,
+            };
+            result.push(principalGroup);
         }
 
-        return groups;
+        return result;
     }
+
 
     SearchControls = observer(() => {
 
@@ -244,6 +388,7 @@ class AclList extends PageComponent {
                             createEmptyConsumerGroupAcl()
                         ],
                         clusterAcls: createEmptyClusterAcl(),
+                        sourceEntries: []
                     };
                 }}>Create ACL</Button>
 
@@ -252,19 +397,17 @@ class AclList extends PageComponent {
     })
 }
 
-type FlatResource = AclList['flatResourceList'][0];
-
 export default AclList;
 
 function aclFlatEquals(a: AclFlat, b: AclFlat) {
     return a.eqKey === b.eqKey;
 }
 
-function isRowMatch(entry: AclGroup, regex: RegExp): boolean {
+function isRowMatch(entry: AclPrincipalGroup, regex: RegExp): boolean {
     if (regex.test(entry.host)) return true;
     if (regex.test(entry.principal)) return true;
 
-    for (const e of entry.entries) {
+    for (const e of entry.sourceEntries) {
         if (regex.test(e.operation)) return true;
         if (regex.test(e.resourceType)) return true;
         if (regex.test(e.resourceName)) return true;
@@ -402,7 +545,7 @@ const ResourceACLsEditor = observer((p: {
     const res = p.resource;
     const isCluster = !('selector' in res);
 
-    const isAllSet = res.all == AclPermission.Allow || res.all == AclPermission.Deny;
+    const isAllSet = res.all == 'Allow' || res.all == 'Deny';
 
     return <div style={{
         position: 'relative',
@@ -470,57 +613,6 @@ const ResourceACLsEditor = observer((p: {
 });
 
 
-type AclPrincipalGroup = {
-    principal: string;
-    host: string;
-
-    topicAcls: TopicACLs[];
-    consumerGroupAcls: ConsumerGroupACLs[];
-    clusterAcls: ClusterACLs;
-};
-
-type TopicACLs = {
-    selector: string;
-    all: AclPermission;
-
-    permissions: {
-        Alter: AclPermission;
-        AlterConfigs: AclPermission;
-        Create: AclPermission;
-        Delete: AclPermission;
-        Describe: AclPermission;
-        DescribeConfigs: AclPermission;
-        Read: AclPermission;
-        Write: AclPermission;
-    };
-};
-
-type ConsumerGroupACLs = {
-    selector: string;
-    all: AclPermission;
-
-    permissions: {
-        Delete: AclPermission;
-        Describe: AclPermission;
-        Read: AclPermission;
-    };
-};
-
-type ClusterACLs = {
-    all: AclPermission;
-
-    permissions: {
-        Alter: AclPermission;
-        AlterConfigs: AclPermission;
-        ClusterAction: AclPermission;
-        Create: AclPermission;
-        Describe: AclPermission;
-        DescribeConfigs: AclPermission;
-    };
-};
-
-type ResourceACLs = TopicACLs | ConsumerGroupACLs | ClusterACLs;
-
 
 const icons = {
     minus: <MinusIcon color='grey' />,
@@ -531,9 +623,9 @@ const icons = {
 
 const Operation = observer((p: {
     operation: string | AclOperation,
-    value: AclPermission,
+    value: AclStrPermission,
     disabled?: boolean,
-    onChange?: (v: AclPermission) => void,
+    onChange?: (v: AclStrPermission) => void,
     style?: CSSProperties
 }) => {
     const disabled = p.disabled ?? false;
@@ -560,20 +652,20 @@ const Operation = observer((p: {
         value={p.value}
         onChange={p.onChange}
         virtual={false}
-        defaultValue={AclPermission.Any}
+        defaultValue='Any'
 
         dropdownMatchSelectWidth={false}
 
         optionLabelProp='label'
 
     >
-        <Option value={AclPermission.Any} label={optionContent(icons.minus, operationName)}>
+        <Option value='Any' label={optionContent(icons.minus, operationName)}>
             {optionContent(icons.minus, 'Not set')}
         </Option>
-        <Option value={AclPermission.Allow} label={optionContent(icons.check, operationName)}>
+        <Option value='Allow' label={optionContent(icons.check, operationName)}>
             {optionContent(icons.check, 'Allow')}
         </Option>
-        <Option value={AclPermission.Deny} label={optionContent(icons.cross, operationName)}>
+        <Option value='Deny' label={optionContent(icons.cross, operationName)}>
             {optionContent(icons.cross, 'Deny')}
         </Option>
     </Select>

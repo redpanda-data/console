@@ -14,7 +14,7 @@ import { assignDeep, randomId } from '../utils/utils';
 import { clone } from '../utils/jsonUtils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../components/misc/common';
 import { TopicTabId } from '../components/pages/topics/Topic.Details';
-import { AclRequest, AclRequestDefault, EncodingType } from './restInterfaces';
+import { GetAclsRequest, AclRequestDefault, EncodingType } from './restInterfaces';
 import { ConnectTabKeys } from '../components/pages/connect/Overview';
 
 const settingsName = 'uiSettings-v3';
@@ -210,7 +210,7 @@ const defaultUiSettings = {
         }
     },
 
-    aclSearchParams: clone(AclRequestDefault) as AclRequest,
+    aclSearchParams: clone(AclRequestDefault) as GetAclsRequest,
 
     quotasList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
