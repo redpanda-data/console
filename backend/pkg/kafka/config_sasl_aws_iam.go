@@ -33,7 +33,7 @@ type SASLAwsMskIam struct {
 
 // RegisterFlags registers all sensitive Kerberos settings as flag
 func (c *SASLAwsMskIam) RegisterFlags(f *flag.FlagSet) {
-	f.StringVar(&c.AccessKey, "kafka.sasl.aws-msk-iam.secret-key", "", "IAM Account secret key")
+	f.StringVar(&c.SecretKey, "kafka.sasl.aws-msk-iam.secret-key", "", "IAM Account secret key")
 	f.StringVar(&c.SessionToken, "kafka.sasl.aws-msk-iam.session-token", "", "Optional session token for authentication purposes. Uses the AWS Security Token Service API")
 }
 
