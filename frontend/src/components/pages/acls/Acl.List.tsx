@@ -315,7 +315,7 @@ class AclList extends PageComponent {
 
                 {/* <Button>Create Service Account</Button> */}
 
-                <Button onClick={() => {
+                {/* <Button onClick={() => {
                     this.creatingPrincipalGroup = {
                         host: '',
                         principal: '',
@@ -328,7 +328,7 @@ class AclList extends PageComponent {
                         clusterAcls: createEmptyClusterAcl(),
                         sourceEntries: []
                     };
-                }}>Create ACL</Button>
+                }}>Create ACL</Button> */}
 
             </div>
         );
