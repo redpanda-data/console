@@ -17,7 +17,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { sortField } from '../../misc/common';
-import { AclOperation, AclPermission, AclRequestDefault, AclResource, AclRule, AclStrOperation, AclStrPermission, AclStrResourcePatternType, AclStrResourceType, Broker } from '../../../state/restInterfaces';
+import { AclOperation, AclRequestDefault, AclStrOperation, AclStrPermission, AclStrResourcePatternType, AclStrResourceType } from '../../../state/restInterfaces';
 import { AnimatePresence, motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { comparer, computed, makeObservable, observable } from 'mobx';
@@ -117,8 +117,8 @@ const columns: ColumnProps<AclPrincipalGroup>[] = [
             return <>
                 <span style={{ display: 'flex', alignItems: 'center' }}>
                     <span>{record.sourceEntries.length}</span>
-                    <Button className='iconButton' style={{ marginLeft: 'auto' }}><PencilIcon /></Button>
-                    <Button className='iconButton'><TrashIcon /></Button>
+                    <Button className="iconButton" style={{ marginLeft: 'auto' }}><PencilIcon /></Button>
+                    <Button className="iconButton"><TrashIcon /></Button>
                 </span>
             </>
         },
@@ -210,7 +210,7 @@ class AclList extends PageComponent {
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
 
                 {this.creatingPrincipalGroup != null
-                    ? <AclPrincipalGroupEditor principalGroup={this.creatingPrincipalGroup} type='create' />
+                    ? <AclPrincipalGroupEditor principalGroup={this.creatingPrincipalGroup} type="create" />
                     : undefined
                 }
 
@@ -315,7 +315,7 @@ class AclList extends PageComponent {
 
                 {/* <Button>Create Service Account</Button> */}
 
-                {/* <Button onClick={() => {
+                <Button style={{ display: 'none' }} onClick={() => {
                     this.creatingPrincipalGroup = {
                         host: '',
                         principal: '',
@@ -328,7 +328,7 @@ class AclList extends PageComponent {
                         clusterAcls: createEmptyClusterAcl(),
                         sourceEntries: []
                     };
-                }}>Create ACL</Button> */}
+                }}>Create ACL</Button>
 
             </div>
         );
@@ -493,7 +493,7 @@ function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
 };
 
 
-function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
+function _unpackPrincipalGroup(_group: AclPrincipalGroup): AclFlat[] {
     const flat: AclFlat[] = [];
 
 
@@ -662,11 +662,11 @@ const ResourceACLsEditor = observer((p: {
             ? <div style={{ width: '300px' }}>
                 <b>Applies to whole cluster</b>
             </div>
-            : <Label text='Selector (supports wildcard)' style={{ width: '300px' }}>
+            : <Label text="Selector (supports wildcard)" style={{ width: '300px' }}>
                 <>
-                    <Input placeholder='*' value={res.selector} onChange={e => res.selector = e.target.value} />
+                    <Input placeholder="*" value={res.selector} onChange={e => res.selector = e.target.value} />
                     <span style={{ opacity: '0.5', fontSize: '10px', marginLeft: '2px' }}>
-                        {res.selector.endsWith('*') ? "Prefix Selector" : "Literal Selector"}
+                        {res.selector.endsWith('*') ? 'Prefix Selector' : 'Literal Selector'}
                     </span>
                 </>
             </Label>
@@ -706,7 +706,7 @@ const ResourceACLsEditor = observer((p: {
         {p.onDelete &&
             <AnimatePresence>
                 <Button
-                    type='text'
+                    type="text"
                     style={{ position: 'absolute', right: '8px', top: '8px', padding: '4px', color: 'rgb(0, 0, 0, 0.35)' }}
                     onClick={p.onDelete}
                 >
@@ -720,9 +720,9 @@ const ResourceACLsEditor = observer((p: {
 
 
 const icons = {
-    minus: <MinusIcon color='grey' />,
-    check: <CheckIcon color='green' />,
-    cross: <XIcon color='red' />,
+    minus: <MinusIcon color="grey" />,
+    check: <CheckIcon color="green" />,
+    cross: <XIcon color="red" />,
 }
 
 
@@ -740,37 +740,37 @@ const Operation = observer((p: {
         : AclOperation[p.operation];
 
     const optionContent = (icon: JSX.Element, text: string) => <>
-        <div className='iconSelectOption'>
+        <div className="iconSelectOption">
             {icon}
             <span>{text}</span>
         </div>
     </>
 
     return <Select
-        className='aclOperationSelect'
+        className="aclOperationSelect"
         style={Object.assign({}, p.style, { pointerEvents: disabled ? 'none' : undefined })}
         bordered={!disabled}
         disabled={disabled}
 
-        size='middle'
+        size="middle"
         showArrow={false}
         value={p.value}
         onChange={p.onChange}
         virtual={false}
-        defaultValue='Any'
+        defaultValue="Any"
 
         dropdownMatchSelectWidth={false}
 
-        optionLabelProp='label'
+        optionLabelProp="label"
 
     >
-        <Option value='Any' label={optionContent(icons.minus, operationName)}>
+        <Option value="Any" label={optionContent(icons.minus, operationName)}>
             {optionContent(icons.minus, 'Not set')}
         </Option>
-        <Option value='Allow' label={optionContent(icons.check, operationName)}>
+        <Option value="Allow" label={optionContent(icons.check, operationName)}>
             {optionContent(icons.check, 'Allow')}
         </Option>
-        <Option value='Deny' label={optionContent(icons.cross, operationName)}>
+        <Option value="Deny" label={optionContent(icons.cross, operationName)}>
             {optionContent(icons.cross, 'Deny')}
         </Option>
     </Select>
