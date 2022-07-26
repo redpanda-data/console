@@ -54,7 +54,7 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
                     <Statistic
                         key={(configEntry!.name)}
                         title={(configEntry!.name)}
-                        value={formatConfigValue(configEntry!.name, configEntry?.value, uiSettings.topicList.valueDisplay)}
+                        value={formatConfigValue(configEntry!.name, configEntry?.value, 'friendly')}
                     />
                 </FavoritePopover>
             );
