@@ -757,7 +757,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 
     $baseColor: #828080;
     font-family: 'Poppins', sans-serif;
-    
+
     li.ant-menu-item {
         display: flex;
 
@@ -773,7 +773,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             width 2000ms,
             color 0ms ease-out,
             background-color 100ms ease;
-        
+
         color: $baseColor;
 
         .menuIcon {
@@ -829,7 +829,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             opacity: .35;
 
             color: $baseColor !important;
-            
+
             a {
                 color: $baseColor !important;
             }
@@ -841,7 +841,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
                 color 50ms ease-out;
         }
     }
-    
+
     // we don't need a clearfix in our menu
     &::before {
         display: none;
@@ -3595,5 +3595,20 @@ input::placeholder {
             pointer-events: none;
             cursor: default;
         }
+    }
+}
+.expiringLicenses {
+    margin: 1em;
+    padding: 0.5em;
+    border: solid 2px #e142267a;
+    background: #e1422638;
+    color: #ff2f00;
+    font-weight: 500;
+
+    list-style: none;
+
+    li::before {
+        content: '-';
+        margin: .5em;
     }
 }

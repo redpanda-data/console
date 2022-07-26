@@ -176,7 +176,7 @@ const apiStore = {
 
     // Data
     endpointCompatibility: null as (EndpointCompatibility | null),
-    license: null as (RedpandaLicense | null),
+    licenses: null as (RedpandaLicense[] | null),
 
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
@@ -631,7 +631,7 @@ const apiStore = {
         if (!r)
             return null;
         this.endpointCompatibility = r.endpointCompatibility;
-        this.license = r.license;
+        this.licenses = r.licenses;
         return r;
     },
 
