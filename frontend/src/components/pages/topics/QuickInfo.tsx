@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
 import { ConfigEntry, Topic } from '../../../state/restInterfaces';
 import { Row, Statistic } from 'antd';
 import { observer } from 'mobx-react';
@@ -17,7 +16,6 @@ import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
 import { uiState } from '../../../state/uiState';
 import { FavoritePopover } from './Tab.Config';
-import { uiSettings } from '../../../state/ui';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 
