@@ -18,7 +18,7 @@ import (
 
 func (api *API) handleGetEndpoints() http.HandlerFunc {
 	type response struct {
-		License               RedpandaLicense               `json:"license"`
+		Licenses              []RedpandaLicense             `json:"licenses"`
 		EndpointCompatibility console.EndpointCompatibility `json:"endpointCompatibility"`
 	}
 
@@ -36,7 +36,7 @@ func (api *API) handleGetEndpoints() http.HandlerFunc {
 		}
 
 		response := response{
-			License:               api.Hooks.Console.LicenseInformation(r.Context()),
+			Licenses:              api.Hooks.Console.LicenseInformation(r.Context()),
 			EndpointCompatibility: endpointCompatibility,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)

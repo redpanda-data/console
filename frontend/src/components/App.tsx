@@ -229,6 +229,8 @@ const AppContent = observer(() =>
 
         {/* Page */}
         <Content style={{ display: 'flex', flexDirection: 'column', padding: '8px 6px 0px 4px', zIndex: 1 }}>
+            <LicenseNotification />
+
             <AppPageHeader />
 
             <ErrorDisplay>
@@ -333,5 +335,42 @@ class FeatureErrorCheck extends Component {
             throw new Error(allErrors);
         }
         return null;
+    }
+}
+
+@observer
+class LicenseNotification extends Component {
+
+    render() {
+        if (!api.licenses || !api.licenses.length)
+            return null;
+
+        const unixNow = new Date().getTime() / 1000;
+
+        const withRemainingTime = api.licenses.map(x => {
+            const remainingSec = x.expiresAt - unixNow;
+            const remainingDays = remainingSec / (60 * 60 * 24);
+            return {
+                ...x,
+                remainingSec,
+                remainingDays,
+            };
+        });
+
+        const expiring = withRemainingTime.filter(x => x.remainingDays < 30);
+        if (!expiring.length)
+            return null;
+
+        return <ul className="expiringLicenses">
+            The following licenses are about to expire:
+            {expiring.map(e =>
+                <li key={e.source}>
+                    <span className="source">{e.source}</span>
+                    {e.type && <span className="type"> {e.type}</span>}
+                    <span> is valid until</span>
+                    <span className="date"> {new Date(e.expiresAt * 1000).toLocaleString()} ({prettyMilliseconds(e.remainingSec * 1000, { unitCount: 2, verbose: true })})</span>
+                </li>
+            )}
+        </ul>
     }
 }
