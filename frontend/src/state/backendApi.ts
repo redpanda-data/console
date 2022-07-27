@@ -605,7 +605,7 @@ const apiStore = {
     },
 
     refreshTopicAcls(topicName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.Topic, resourceName: topicName });
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: 'Topic', resourceName: topicName });
         cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.topicAcls.set(topicName, v));
     },
@@ -693,7 +693,7 @@ const apiStore = {
     },
 
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.Group, resourceName: groupName });
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: 'Group', resourceName: groupName });
         cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.consumerGroupAcls.set(groupName, v));
     },

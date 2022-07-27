@@ -633,23 +633,23 @@ export enum AclPermission {
 // list all:
 //   /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
 export interface GetAclsRequest {
-    resourceType: AclResourceType;
+    resourceType: AclStrResourceType;
     resourceName?: string;
-    resourcePatternTypeFilter: AclResourcePatternType;
+    resourcePatternTypeFilter: AclStrResourcePatternType;
     principal?: string;
     host?: string;
-    operation: AclOperation;
-    permissionType: AclPermission;
+    operation: AclStrOperation;
+    permissionType: AclStrPermission;
 }
 
 export const AclRequestDefault = {
-    resourceType: AclResourceType.Any,
+    resourceType: 'Any',
     resourceName: '',
-    resourcePatternTypeFilter: AclResourcePatternType.Any,
+    resourcePatternTypeFilter: 'Any',
     principal: '',
     host: '',
-    operation: AclOperation.Any,
-    permissionType: AclPermission.Any,
+    operation: 'Any',
+    permissionType: 'Any',
 } as const;
 
 
