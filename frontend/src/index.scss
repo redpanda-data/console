@@ -3603,3 +3603,64 @@ input::placeholder {
         }
     }
 }
+.expiringLicenses {
+    margin: 1em;
+    padding: 0.5em;
+    border: solid 2px #e142267a;
+    background: #e1422638;
+    color: #ff2f00;
+    font-weight: 500;
+
+    list-style: none;
+
+    li::before {
+        content: '-';
+        margin: .5em;
+    }
+}
+
+
+.iconSelectOption {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    svg {
+        height: 1.0em;
+        margin: 0;
+    }
+}
+
+.aclOperationSelect {
+    .ant-select-selector {
+        border-radius: 100px !important;
+        padding-inline: 10px !important;
+        // different padding on right side because icons unfortunately have built-in padding
+        padding-right: 12px !important;
+        // strangely the element already has some flex props properly configured, but it doesn't have display set
+        display: flex;
+
+        height: 25px !important;
+
+        .ant-select-selection-item {
+            display: flex;
+            line-height: normal;
+        }
+    }
+
+    &:not(.ant-select-borderless) .ant-select-selector {
+        background: hsla(0, 0%, 100%, 0.75);
+    }
+
+    .ant-select-disabled svg {
+        filter: grayscale(0.5);
+        opacity: .5;
+    }
+
+    &:not(:hover) {
+        .ant-select-selector {
+            background: transparent !important;
+            border-color: transparent !important;
+        }
+    }
+}
