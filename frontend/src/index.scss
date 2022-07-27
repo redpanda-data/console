@@ -1006,6 +1006,9 @@ tr td:nth-last-child(1) {
     transition-timing-function: ease-out;
     transition-delay: 0ms;
     color: hsl(0, 0%, 45%);
+    &:hover {
+        z-index: 1;
+    }
 }
 
 .disableAnimation {

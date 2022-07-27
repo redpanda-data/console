@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { CSSProperties } from 'react';
+import React, { CSSProperties, useState } from 'react';
 import { observer } from 'mobx-react';
-import { Empty, Select, Input, Button, Alert, Modal, AutoComplete, Switch } from 'antd';
+import { Empty, Select, Input, Button, Alert, Modal, AutoComplete, Switch, Tag } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
@@ -105,20 +105,30 @@ type ResourceACLs = TopicACLs | ConsumerGroupACLs | ClusterACLs;
 const columns: ColumnProps<AclPrincipalGroup>[] = [
     {
         width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal'),
-        render: v => v ? v : 'Any'
+        render: (v?: string) => {
+            if (!v)
+                return <Tag>Any</Tag>
+            const userPrefix = 'user:';
+            if (v.toLowerCase().startsWith(userPrefix)) {
+                const name = v.slice(userPrefix.length).trim();
+                return <><Tag>User</Tag>{name}</>
+            }
+
+            return v;
+        }
     },
     {
         width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host'),
-        render: v => v ? v : 'Any'
+        render: v => (!v || v == '*') ? <Tag>Any</Tag> : v
     },
     {
-        width: '170px', title: 'ACL Entries',
+        width: '200px', title: 'ACL Entries',
         render: (_, record) => {
             return <>
                 <span style={{ display: 'flex', alignItems: 'center' }}>
                     <span>{record.sourceEntries.length}</span>
                     <Button className="iconButton" style={{ marginLeft: 'auto' }}><PencilIcon /></Button>
-                    <Button className="iconButton"><TrashIcon /></Button>
+                    <Button className="iconButton" style={{ marginLeft: '-1px' }}><TrashIcon /></Button>
                 </span>
             </>
         },
@@ -315,7 +325,7 @@ class AclList extends PageComponent {
 
                 {/* <Button>Create Service Account</Button> */}
 
-                <Button style={{ display: 'none' }} onClick={() => {
+                <Button onClick={() => {
                     this.creatingPrincipalGroup = {
                         host: '',
                         principal: '',
@@ -493,9 +503,52 @@ function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
 };
 
 
-function _unpackPrincipalGroup(_group: AclPrincipalGroup): AclFlat[] {
+function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     const flat: AclFlat[] = [];
 
+    for (const topic of group.topicAcls) {
+        const name = topic.selector.removeSuffix('*');
+        const isPrefix = topic.selector.endsWith('*');
+
+        for (const [key, permission] of Object.entries(topic.permissions)) {
+            const operation = key as AclStrOperation;
+
+            if (permission != 'Allow' && permission != 'Deny')
+                continue;
+
+            const e: AclFlat = {
+                principal: group.principal,
+                host: 'User: ' + group.host,
+
+                resourceType: 'Topic',
+                resourceName: name,
+                resourcePatternType: isPrefix ? 'Prefixed' : 'Literal',
+
+                operation: operation,
+                permissionType: permission,
+
+                eqKey: '',
+            };
+            e.eqKey = toJson(e);
+            flat.push(e);
+        }
+    }
+
+    const e: AclFlat = {
+        principal: group.principal,
+        host: group.host,
+
+        resourceType: 'Cluster',
+        resourceName: 'kafka-cluster',
+        resourcePatternType: 'Literal',
+
+        operation: 'All',
+        permissionType: 'Allow',
+
+        eqKey: '',
+    };
+    e.eqKey = toJson(e);
+    flat.push(e);
 
 
     return flat;
@@ -548,15 +601,47 @@ const AclPrincipalGroupEditor = observer((p: { principalGroup: AclPrincipalGroup
 
     const existingPrincipals: string[] = [];
     const principalOptions = existingPrincipals.map(p => ({ value: p }));
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(undefined as string | undefined);
 
     return <Modal
         title={p.type == 'create' ? 'Create ACL' : 'Edit ACL'}
         style={{ top: '50px' }}
         width="1100px"
         visible={true} closable={false} maskClosable={false}
+        confirmLoading={isLoading}
+        onOk={async () => {
+            setError(undefined);
+            setIsLoading(true);
+            try {
+                const allToCreate = unpackPrincipalGroup(group);
+                console.log('acls needed to create', allToCreate);
+
+                const requests = allToCreate.map(x => api.createACL({
+                    host: x.host,
+                    principal: x.principal,
+                    resourceType: x.resourceType,
+                    resourceName: x.resourceName,
+                    resourcePatternType: x.resourcePatternType as unknown as 'Literal' | 'Prefixed',
+                    operation: x.operation as unknown as Exclude<AclStrOperation, 'Unknown' | 'Any'>,
+                    permissionType: x.permissionType as unknown as 'Allow' | 'Deny',
+                }))
+
+                const results = await Promise.allSettled(requests);
+                const rejected = results.filter(x => x.status == 'rejected');
+                if (rejected.length) {
+                    console.error('some create acl requests failed', { results, rejected });
+                    throw new Error(rejected.length + ' requests failed');
+                }
+            } catch (err) {
+                setError(String(err));
+            }
+            setIsLoading(false);
+        }}
     >
 
         <div style={{ display: 'flex', gap: '1.5em', flexDirection: 'column' }}>
+            {error && <div>Error: {error}</div>}
 
             <div style={{ display: 'flex', gap: '2.5em', alignItems: 'flex-end' }}>
                 <Label text="Principal / Service Account">

@@ -721,7 +721,7 @@ export interface AclRule {
 export interface CreateACLRequest {
     // ResourceType is the type of resource this acl entry will be on.
     // It is invalid to use UNKNOWN or ANY.
-    resourceType: AclResourceType;
+    resourceType: AclStrResourceType;
 
     // ResourceName is the name of the resource this acl entry will be on.
     // For CLUSTER, this must be "kafka-cluster".
@@ -732,7 +732,7 @@ export interface CreateACLRequest {
     // The default for pre-Kafka 2.0.0 is effectively LITERAL.
     //
     // This field has a default of 3 (prefixed).
-    resourcePatternType: AclResourcePatternType.Literal | AclResourcePatternType.Prefixed;
+    resourcePatternType: ('Literal' | 'Prefixed') & AclStrResourcePatternType;
 
     // Principal is the user to apply this acl for. With the Kafka simple
     // authorizer, this must begin with "User:".
@@ -745,11 +745,11 @@ export interface CreateACLRequest {
 
     // Operation is the operation this acl is for. This must not be UNKNOWN or
     // ANY.
-    operation: AclOperation;
+    operation: Exclude<AclStrOperation, 'Unknown' | 'Any'>;
 
     // PermissionType is the permission of this acl. This must be either ALLOW
     // or DENY.
-    permissionType: AclPermission.Allow | AclPermission.Deny;
+    permissionType: ('Allow' | 'Deny') & AclStrPermission;
 }
 
 
