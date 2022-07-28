@@ -3667,3 +3667,9 @@ input::placeholder {
         }
     }
 }
+// Fix button order in popover.
+// The right-most button is usually "cancel", with the "confirm" button usually being pushed towards the center/left
+.ant-popover-buttons {
+    flex-direction: row-reverse;
+    display: flex;
+}

@@ -1176,7 +1176,7 @@ const apiStore = {
 
     async deleteACLs(request: DeleteACLsRequest): Promise<void> {
         const response = await fetch('./api/acls', {
-            method: 'POST',
+            method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
             ],

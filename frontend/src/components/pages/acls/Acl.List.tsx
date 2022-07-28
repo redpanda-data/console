@@ -11,7 +11,7 @@
 
 import React, { CSSProperties, useState } from 'react';
 import { observer } from 'mobx-react';
-import { Empty, Select, Input, Button, Alert, Modal, AutoComplete, Switch, Tag } from 'antd';
+import { Empty, Select, Input, Button, Alert, Modal, AutoComplete, Switch, Tag, Popconfirm } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
@@ -24,11 +24,12 @@ import { comparer, computed, makeObservable, observable } from 'mobx';
 import { containsIgnoreCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
 import Card from '../../misc/Card';
-import { DefaultSkeleton, Label } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton, Label } from '../../../utils/tsxUtils';
 import { toJson } from '../../../utils/jsonUtils';
 import { KowlTable } from '../../misc/KowlTable';
 import { LockIcon } from '@primer/octicons-react';
 import { PencilIcon, TrashIcon, CheckIcon, XIcon, MinusIcon } from '@heroicons/react/solid';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 const { Option } = Select;
 
 
@@ -128,7 +129,27 @@ const columns: ColumnProps<AclPrincipalGroup>[] = [
                 <span style={{ display: 'flex', alignItems: 'center' }}>
                     <span>{record.sourceEntries.length}</span>
                     <Button className="iconButton" style={{ marginLeft: 'auto' }}><PencilIcon /></Button>
-                    <Button className="iconButton" style={{ marginLeft: '-1px' }}><TrashIcon /></Button>
+                    <Popconfirm
+                        title={<>Delete all ACL entries for principal <Code>{record.principal}</Code> ?</>}
+                        icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
+                        placement="left"
+                        okText="Delete"
+                        okButtonProps={{ danger: true }}
+                        onConfirm={async () => {
+
+                            await api.deleteACLs({
+                                resourceType: 'Any',
+                                resourceName: undefined,
+                                resourcePatternType: 'Any',
+                                principal: record.principal,
+                                host: record.host,
+                                operation: 'Any',
+                                permissionType: 'Any',
+                            });
+                        }}
+                    >
+                        <Button className="iconButton" style={{ marginLeft: '-1px' }}><TrashIcon /></Button>
+                    </Popconfirm>
                 </span>
             </>
         },
@@ -506,9 +527,31 @@ function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
 function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     const flat: AclFlat[] = [];
 
+    if (!group.host)
+        group.host = '*';
+
     for (const topic of group.topicAcls) {
         const name = topic.selector.removeSuffix('*');
         const isPrefix = topic.selector.endsWith('*');
+
+        if (topic.all == 'Allow' || topic.all == 'Deny') {
+            const e: AclFlat = {
+                principal: 'User: ' + group.principal,
+                host: group.host,
+
+                resourceType: 'Topic',
+                resourceName: name,
+                resourcePatternType: isPrefix ? 'Prefixed' : 'Literal',
+
+                operation: 'All',
+                permissionType: topic.all,
+
+                eqKey: '',
+            };
+            e.eqKey = toJson(e);
+            flat.push(e);
+            continue;
+        }
 
         for (const [key, permission] of Object.entries(topic.permissions)) {
             const operation = key as AclStrOperation;
@@ -517,8 +560,8 @@ function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
                 continue;
 
             const e: AclFlat = {
-                principal: group.principal,
-                host: 'User: ' + group.host,
+                principal: 'User: ' + group.principal,
+                host: group.host,
 
                 resourceType: 'Topic',
                 resourceName: name,
@@ -534,21 +577,46 @@ function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
         }
     }
 
-    const e: AclFlat = {
-        principal: group.principal,
-        host: group.host,
+    if (group.clusterAcls.all == 'Allow' || group.clusterAcls.all == 'Deny') {
+        const e: AclFlat = {
+            principal: group.principal,
+            host: group.host,
 
-        resourceType: 'Cluster',
-        resourceName: 'kafka-cluster',
-        resourcePatternType: 'Literal',
+            resourceType: 'Cluster',
+            resourceName: 'kafka-cluster',
+            resourcePatternType: 'Literal',
 
-        operation: 'All',
-        permissionType: 'Allow',
+            operation: 'All',
+            permissionType: group.clusterAcls.all,
 
-        eqKey: '',
-    };
-    e.eqKey = toJson(e);
-    flat.push(e);
+            eqKey: '',
+        };
+        e.eqKey = toJson(e);
+        flat.push(e);
+    } else {
+        for (const [key, permission] of Object.entries(group.clusterAcls.permissions)) {
+            const operation = key as AclStrOperation;
+            if (permission != 'Allow' && permission != 'Deny')
+                continue;
+
+            const e: AclFlat = {
+                principal: 'User: ' + group.principal,
+                host: group.host,
+
+                resourceType: 'Cluster',
+                resourceName: 'kafka-cluster',
+                resourcePatternType: 'Literal',
+
+                operation: operation,
+                permissionType: permission,
+
+                eqKey: '',
+            };
+            e.eqKey = toJson(e);
+            flat.push(e);
+        }
+    }
+
 
 
     return flat;
