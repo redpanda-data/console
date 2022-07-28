@@ -15,7 +15,7 @@
         "test": "react-app-rewired test",
         "eject": "react-scripts eject",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
-        "lint": "eslint --ext .ts,.tsx ./src  --cache",
+        "lint": "eslint \"./src/**/*.{ts,tsx}\" --cache",
         "linter": "eslint",
         "fetch-monaco": "node scripts/fetch-monaco.mjs",
         "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
