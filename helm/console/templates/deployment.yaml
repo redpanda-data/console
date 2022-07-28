@@ -110,6 +110,13 @@ spec:
                   name: {{ include "console.fullname" . }}
                   key: kafka-sasl-password
             {{- end }}
+            {{- if .Values.secret.kafka.awsMskIamSecretKey }}
+            - name: KAFKA_SASL_AWSMSKIAM_SECRETKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: kafka-sasl-aws-msk-iam-secret-key
+            {{- end }}
             {{- if .Values.secret.kafka.tlsCa }}
             - name: KAFKA_TLS_CAFILEPATH
               value: "/etc/console/secrets/kafka-tls-ca"

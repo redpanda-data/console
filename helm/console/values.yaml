@@ -129,6 +129,7 @@ secret:
   # Kafka secrets
   kafka: {}
     # saslPassword:
+    # awsMskIamSecretKey:
     # tlsCa:
     # tlsCert:
     # tlsKey:

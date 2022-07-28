@@ -14,19 +14,21 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"go.uber.org/zap"
 )
 
 // Service offers all methods to serve the responses for the REST API. This usually only involves fetching
 // several responses from Kafka concurrently and constructing them so, that they are
 type Service struct {
-	kafkaSvc *kafka.Service
-	gitSvc   *git.Service // Git service can be nil if not configured
-	logger   *zap.Logger
+	kafkaSvc    *kafka.Service
+	redpandaSvc *redpanda.Service
+	gitSvc      *git.Service // Git service can be nil if not configured
+	logger      *zap.Logger
 }
 
 // NewService for the Console package
-func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service) (*Service, error) {
+func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service, redpandaSvc *redpanda.Service) (*Service, error) {
 	var gitSvc *git.Service
 	cfg.TopicDocumentation.Git.AllowedFileExtensions = []string{"md"}
 	if cfg.TopicDocumentation.Enabled && cfg.TopicDocumentation.Git.Enabled {
@@ -37,9 +39,10 @@ func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service) (*Servi
 		gitSvc = svc
 	}
 	return &Service{
-		kafkaSvc: kafkaSvc,
-		gitSvc:   gitSvc,
-		logger:   logger,
+		kafkaSvc:    kafkaSvc,
+		redpandaSvc: redpandaSvc,
+		gitSvc:      gitSvc,
+		logger:      logger,
 	}, nil
 }
 

@@ -73,10 +73,21 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 
 	eg.Go(func() error {
 		var err error
+
+		// Try to get cluster version via Redpanda Admin API.
+		if s.redpandaSvc != nil {
+			kafkaVersion, err = s.redpandaSvc.GetClusterVersion(childCtx)
+			if err == nil {
+				return nil
+			}
+		}
+
+		// If Redpanda Admin API failed or not available, try to get cluster version via Kafka API.
 		kafkaVersion, err = s.GetKafkaVersion(childCtx)
 		if err != nil {
 			s.logger.Warn("failed to request kafka version", zap.Error(err))
 		}
+
 		return nil
 	})
 

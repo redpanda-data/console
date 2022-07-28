@@ -20,7 +20,7 @@ import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
 import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
-import { AclRequest, AclRequestDefault, AclResourceType, AclResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, RedpandaLicense, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError } from './restInterfaces';
+import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError, CreateACLRequest, DeleteACLsRequest, RedpandaLicense } from './restInterfaces';
 import { Features } from './supportedFeatures';
 import { uiState } from './uiState';
 
@@ -197,14 +197,14 @@ const apiStore = {
     topicPartitionErrors: new Map<string, Array<{ id: number, partitionError: string; }>>(),
     topicWatermarksErrors: new Map<string, Array<{ id: number, waterMarksError: string; }>>(),
     topicConsumers: new Map<string, TopicConsumer[]>(),
-    topicAcls: new Map<string, AclResponse | null>(),
+    topicAcls: new Map<string, GetAclOverviewResponse | null>(),
 
-    ACLs: undefined as AclResponse | undefined | null,
+    ACLs: undefined as GetAclOverviewResponse | undefined | null,
 
     Quotas: undefined as QuotaResponse | undefined | null,
 
     consumerGroups: new Map<string, GroupDescription>(),
-    consumerGroupAcls: new Map<string, AclResponse | null>(),
+    consumerGroupAcls: new Map<string, GetAclOverviewResponse | null>(),
 
     partitionReassignments: undefined as (PartitionReassignments[] | null | undefined),
 
@@ -605,8 +605,8 @@ const apiStore = {
     },
 
     refreshTopicAcls(topicName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceTopic, resourceName: topicName });
-        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: 'Topic', resourceName: topicName });
+        cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.topicAcls.set(topicName, v));
     },
 
@@ -615,9 +615,9 @@ const apiStore = {
             .then(v => this.topicConsumers.set(topicName, v.topicConsumers), addError);
     },
 
-    refreshAcls(request: AclRequest, force?: boolean) {
+    async refreshAcls(request: GetAclsRequest, force?: boolean): Promise<void> {
         const query = aclRequestToQuery(request);
-        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+        await cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.ACLs = v ?? null, addError);
     },
 
@@ -693,8 +693,8 @@ const apiStore = {
     },
 
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: AclResourceType.AclResourceGroup, resourceName: groupName });
-        cachedApiRequest<AclResponse | null>(`./api/acls?${query}`, force)
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: 'Group', resourceName: groupName });
+        cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => this.consumerGroupAcls.set(groupName, v));
     },
 
@@ -1043,7 +1043,7 @@ const apiStore = {
 
     */
 
-    async deleteConnector(clusterName: string, connector: string): Promise<null> {
+    async deleteConnector(clusterName: string, connector: string): Promise<void> {
         // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
             method: 'DELETE',
@@ -1051,10 +1051,10 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        return parseOrUnwrap<null>(response, null);
+        return parseOrUnwrap<void>(response, null);
     },
 
-    async pauseConnector(clusterName: string, connector: string): Promise<null> {
+    async pauseConnector(clusterName: string, connector: string): Promise<void> {
         // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/pause`, {
             method: 'PUT',
@@ -1062,10 +1062,10 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        return parseOrUnwrap<null>(response, null);
+        return parseOrUnwrap<void>(response, null);
     },
 
-    async resumeConnector(clusterName: string, connector: string): Promise<null> {
+    async resumeConnector(clusterName: string, connector: string): Promise<void> {
         // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/resume`, {
             method: 'PUT',
@@ -1073,10 +1073,10 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        return parseOrUnwrap<null>(response, null);
+        return parseOrUnwrap<void>(response, null);
     },
 
-    async restartConnector(clusterName: string, connector: string): Promise<null> {
+    async restartConnector(clusterName: string, connector: string): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/restart`, {
             method: 'POST',
@@ -1084,10 +1084,10 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ]
         });
-        return parseOrUnwrap<null>(response, null);
+        return parseOrUnwrap<void>(response, null);
     },
 
-    async updateConnector(clusterName: string, connector: string, config: object): Promise<null> {
+    async updateConnector(clusterName: string, connector: string, config: object): Promise<void> {
         // PUT "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
             method: 'PUT',
@@ -1096,10 +1096,10 @@ const apiStore = {
             ],
             body: JSON.stringify({ config: config }),
         });
-        return parseOrUnwrap<null>(response, null);
+        return parseOrUnwrap<void>(response, null);
     },
 
-    async restartTask(clusterName: string, connector: string, taskID: number): Promise<null> {
+    async restartTask(clusterName: string, connector: string, taskID: number): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart"
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/tasks/${String(taskID)}/restart`, {
             method: 'POST',
@@ -1108,7 +1108,7 @@ const apiStore = {
             ]
         });
 
-        return parseOrUnwrap<null>(response, null);
+        return parseOrUnwrap<void>(response, null);
     },
 
     async validateConnectorConfig(clusterName: string, pluginClassName: string, config: object): Promise<ConnectorValidationResult> {
@@ -1123,7 +1123,7 @@ const apiStore = {
         return parseOrUnwrap<ConnectorValidationResult>(response, null);
     },
 
-    async createConnector(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<null> {
+    async createConnector(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors"
         const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors`, {
             method: 'POST',
@@ -1135,7 +1135,7 @@ const apiStore = {
                 config: config
             }),
         });
-        return parseOrUnwrap<null>(response, null);
+        return parseOrUnwrap<void>(response, null);
     },
 
     async publishRecords(request: PublishRecordsRequest): Promise<ProduceRecordsResponse> {
@@ -1160,7 +1160,31 @@ const apiStore = {
             body: JSON.stringify(request),
         });
         return parseOrUnwrap<CreateTopicResponse>(response, null);
-    }
+    },
+
+    async createACL(request: CreateACLRequest): Promise<void> {
+        const response = await fetch('./api/acls', {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify(request),
+        });
+
+        return parseOrUnwrap<void>(response, null);
+    },
+
+    async deleteACLs(request: DeleteACLsRequest): Promise<void> {
+        const response = await fetch('./api/acls', {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify(request),
+        });
+
+        return parseOrUnwrap<void>(response, null);
+    },
 };
 
 function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {
@@ -1237,7 +1261,7 @@ function prepareSynonyms(configEntries: ConfigEntry[]) {
 }
 
 
-export function aclRequestToQuery(request: AclRequest): string {
+export function aclRequestToQuery(request: GetAclsRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);
     const query = filters.map(x => `${x.key}=${x.value}`).join('&');
     return query;
