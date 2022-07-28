@@ -18,7 +18,7 @@
         "lint": "eslint --ext .ts,.tsx ./src  --cache",
         "linter": "eslint",
         "fetch-monaco": "node scripts/fetch-monaco.mjs",
-        "load-git-hooks": "cd ../; git config core.hooksPath ./.git-hooks",
+        "load-git-hooks": "cd .. && git config core.hooksPath \"./.git-hooks\"",
         "prepare": "npm run fetch-monaco && npm run load-git-hooks"
     },
     "dependencies": {
