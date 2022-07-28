@@ -15,7 +15,6 @@
         "test": "react-app-rewired test",
         "eject": "react-scripts eject",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
-        "preinstall": "npx npm-force-resolutions",
         "lint": "eslint --ext .ts,.tsx ./src  --cache",
         "linter": "eslint",
         "fetch-monaco": "node scripts/fetch-monaco.mjs",
@@ -35,7 +34,6 @@
         "mobx-react": "^7.5",
         "moment": "^2.29.1",
         "monaco-editor": "^0.33.0",
-        "npm-force-resolutions": "^0.0.10",
         "pretty-bytes": "^5.6.0",
         "pretty-ms": "^7.0.1",
         "query-string": "^7.0.1",
@@ -93,7 +91,9 @@
             "last 1 safari version"
         ]
     },
-    "overrides": {
-        "immer": "9.0.7"
+    "resolutions": {
+      "//": "See https://github.com/facebook/create-react-app/issues/11773 ",
+      "react-error-overlay": "6.0.11",
+      "immer": "9.0.7"
     }
 }
