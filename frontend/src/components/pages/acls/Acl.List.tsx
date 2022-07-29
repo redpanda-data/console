@@ -534,6 +534,7 @@ function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
 function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     const flat: AclFlat[] = [];
 
+    group.principal = group.principal.removePrefix('User: ');
     if (!group.host)
         group.host = '*';
 
