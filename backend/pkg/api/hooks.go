@@ -58,8 +58,8 @@ type ConsoleHooks interface {
 
 	// ACL Hooks
 	CanListACLs(ctx context.Context) (bool, *rest.Error)
-	CanCreateACL(ctx context.Context, principalName string) (bool, *rest.Error)
-	CanDeleteACL(ctx context.Context, principalName *string) (bool, *rest.Error)
+	CanCreateACL(ctx context.Context) (bool, *rest.Error)
+	CanDeleteACL(ctx context.Context) (bool, *rest.Error)
 
 	// Quotas Hookas
 	CanListQuotas(ctx context.Context) (bool, *rest.Error)
@@ -157,10 +157,10 @@ func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *console.ListM
 func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
-func (*defaultHooks) CanCreateACL(_ context.Context, _ string) (bool, *rest.Error) {
+func (*defaultHooks) CanCreateACL(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
-func (*defaultHooks) CanDeleteACL(_ context.Context, _ *string) (bool, *rest.Error) {
+func (*defaultHooks) CanDeleteACL(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
 func (*defaultHooks) CanListQuotas(_ context.Context) (bool, *rest.Error) {

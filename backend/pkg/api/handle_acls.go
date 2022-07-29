@@ -168,7 +168,7 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 		}
 
 		// Check if logged-in user is allowed to delete ACLs
-		isAllowed, restErr := api.Hooks.Console.CanDeleteACL(r.Context(), req.Principal)
+		isAllowed, restErr := api.Hooks.Console.CanDeleteACL(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -277,7 +277,7 @@ func (api *API) handleCreateACL() http.HandlerFunc {
 		}
 
 		// Check if logged-in user is allowed to create ACLs
-		isAllowed, restErr := api.Hooks.Console.CanCreateACL(r.Context(), req.Principal)
+		isAllowed, restErr := api.Hooks.Console.CanCreateACL(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
