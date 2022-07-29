@@ -270,7 +270,7 @@ export function removeNamespace(className: string): string {
 
     const lastDot = className.lastIndexOf('.');
     if (lastDot >= 0)
-        return className.substr(lastDot + 1, undefined);
+        return className.slice(lastDot + 1, undefined);
 
     return className;
 }

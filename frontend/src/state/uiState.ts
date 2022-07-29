@@ -47,7 +47,7 @@ class UIState {
         let path = this.pathName;
 
         const i = path.indexOf('/', 1);
-        if (i > -1) path = path.substr(0, i);
+        if (i > -1) path = path.slice(0, i);
 
         return [path];
     }
