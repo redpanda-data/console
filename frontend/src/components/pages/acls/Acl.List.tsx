@@ -241,7 +241,14 @@ class AclList extends PageComponent {
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
 
                 {this.creatingPrincipalGroup != null
-                    ? <AclPrincipalGroupEditor principalGroup={this.creatingPrincipalGroup} type="create" />
+                    ? <AclPrincipalGroupEditor
+                        principalGroup={this.creatingPrincipalGroup}
+                        type="create"
+                        onClose={() => {
+                            this.creatingPrincipalGroup = undefined;
+                            this.refreshData(true);
+                        }}
+                    />
                     : undefined
                 }
 
@@ -664,7 +671,11 @@ const PermissionDenied = <>
     </motion.div>
 </>
 
-const AclPrincipalGroupEditor = observer((p: { principalGroup: AclPrincipalGroup, type: 'create' | 'edit' }) => {
+const AclPrincipalGroupEditor = observer((p: {
+    principalGroup: AclPrincipalGroup,
+    type: 'create' | 'edit',
+    onClose: () => void
+}) => {
     const group = p.principalGroup;
 
     const existingPrincipals: string[] = [];
@@ -705,7 +716,9 @@ const AclPrincipalGroupEditor = observer((p: { principalGroup: AclPrincipalGroup
                 setError(String(err));
             }
             setIsLoading(false);
+            p.onClose();
         }}
+        onCancel={p.onClose}
     >
 
         <div style={{ display: 'flex', gap: '1.5em', flexDirection: 'column' }}>
