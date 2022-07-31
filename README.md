@@ -37,13 +37,13 @@ Do you just want to test RP Console against one of your Kafka clusters without s
 Since Console runs in its own container (which has its own network scope), we have to use host.docker.internal as a bootstrap server. That DNS resolves to the host system's ip address. However since the brokers send a list of all brokers' DNS when a client has connected, you have to make sure your advertised listener is connected accordingly, e.g.: `PLAINTEXT://host.docker.internal:9092`
 
 ```shell
-docker run -p 8080:8080 -e KAFKA_BROKERS=host.docker.internal:9092 docker.redpanda.com/vectorized/console:master-0a8fce8
+docker run -p 8080:8080 -e KAFKA_BROKERS=host.docker.internal:9092 docker.redpanda.com/vectorized/console:master-173596f
 ```
 
 Docker supports the `--network=host` option only on Linux. So Linux users use `localhost:9092` as an advertised listener and use the host network namespace instead. Console will then be run as it would be executed on the host machine.
 
 ```shell
-docker run --network=host -p 8080:8080 -e KAFKA_BROKERS=localhost:9092 docker.redpanda.com/vectorized/console:master-0a8fce8
+docker run --network=host -p 8080:8080 -e KAFKA_BROKERS=localhost:9092 docker.redpanda.com/vectorized/console:master-173596f
 ```
 
 #### Kafka is running remotely
@@ -51,7 +51,7 @@ docker run --network=host -p 8080:8080 -e KAFKA_BROKERS=localhost:9092 docker.re
 Protected via SASL_SSL and trusted certificates (e.g. Confluent Cloud):
 
 ```shell
-docker run -p 8080:8080 -e KAFKA_BROKERS=pkc-4r000.europe-west1.gcp.confluent.cloud:9092 -e KAFKA_TLS_ENABLED=true -e KAFKA_SASL_ENABLED=true -e KAFKA_SASL_USERNAME=xxx -e KAFKA_SASL_PASSWORD=xxx docker.redpanda.com/vectorized/console:master-0a8fce8
+docker run -p 8080:8080 -e KAFKA_BROKERS=pkc-4r000.europe-west1.gcp.confluent.cloud:9092 -e KAFKA_TLS_ENABLED=true -e KAFKA_SASL_ENABLED=true -e KAFKA_SASL_USERNAME=xxx -e KAFKA_SASL_PASSWORD=xxx docker.redpanda.com/vectorized/console:master-173596f
 ```
 
 #### I don't have a running Kafka cluster to test against
