@@ -18,7 +18,7 @@ services:
       - 29092:29092
 
   console:
-    image: docker.redpanda.com/vectorized/console:master-217260f
+    image: docker.redpanda.com/vectorized/console:master-173596f
     restart: on-failure
     entrypoint: /bin/sh
     command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
