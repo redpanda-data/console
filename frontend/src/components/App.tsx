@@ -347,8 +347,8 @@ class LicenseNotification extends Component {
 
         const unixNow = new Date().getTime() / 1000;
         const sourceNames: { [key in string]: string } = {
-            'console': 'Redpanda Console',
-            'cluster': 'Redpanda Cluster',
+            'console': 'Console',
+            'cluster': 'Cluster',
         };
         const typeNames: { [key in string]: string } = {
             'free_trial': 'Free Trial',
@@ -381,34 +381,25 @@ class LicenseNotification extends Component {
             };
         });
 
-        const warnings = withRemainingTime.filter(x => x.isExpiringSoon);
-        const expired = withRemainingTime.filter(x => x.isExpired);
-        if (!warnings.length && !expired.length)
+        const warnings = withRemainingTime.filter(x => x.isExpiringSoon || x.isExpired);
+        if (!warnings.length)
             return null;
 
-        return <>
-            {(warnings.length > 0) && <ul className="expiringLicenses">
-                The following licenses are about to expire:
-                {warnings.map(e =>
-                    <li key={e.source}>
-                        <span className="source">{e.sourceDisplayName}</span>
-                        {e.type && <span className="type"> {e.typeDisplayName}</span>}
-                        <span> is valid until</span>
-                        <span className="date"> {new Date(e.expiresAt * 1000).toLocaleString()} ({prettyMilliseconds(e.remainingSec * 1000, { unitCount: 2, verbose: true })})</span>
-                    </li>
-                )}
-            </ul>}
-            {(expired.length > 0) && <ul className="expiringLicenses">
-                Looks like you've enabled a Redpanda Enterprise feature(s) without a valid license.
-                Please enter an active Redpanda license key.
+        return <div>
+            <div>Looks like you've enabled one or more Redpanda Enterprise features without a valid license, or one that is expiring soon.</div>
+            <ul className="expiringLicenses">
+                {warnings.map(e => <li key={e.source}>
+                    <span className="source">{e.sourceDisplayName}</span>
+                    {e.isExpired
+                        ? <span> is expired</span>
+                        : <span> is valid until <span className="date"> {new Date(e.expiresAt * 1000).toLocaleString()}</span></span>
+                    }
+                </li>)}
+            </ul>
+            <div>
+                Please renew your license key.
                 If you don't have one, please request a new/trial license at: <a href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</a>
-                {warnings.map(e =>
-                    <li key={e.source}>
-                        <span className="source">{e.sourceDisplayName}</span>
-                        {e.type && <span className="type"> ({e.typeDisplayName} license)</span>}
-                    </li>
-                )}
-            </ul>}
-        </>
+            </div>
+        </div>
     }
 }
