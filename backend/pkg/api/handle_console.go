@@ -10,15 +10,18 @@
 package api
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 func (api *API) handleGetEndpoints() http.HandlerFunc {
 	type response struct {
-		Licenses              []RedpandaLicense             `json:"licenses"`
+		Licenses              []redpanda.License            `json:"licenses"`
 		EndpointCompatibility console.EndpointCompatibility `json:"endpointCompatibility"`
 	}
 
@@ -35,8 +38,19 @@ func (api *API) handleGetEndpoints() http.HandlerFunc {
 			return
 		}
 
+		// Get license from Redpanda cluster if Redpanda service is configured.
+		// We can warn about expiring license in the Console UI.
+		// Because this endpoint may block the rendering of the Frontend application
+		// on startup, we limit the timeout for this call to 3s
+		childCtx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+		defer cancel()
+		licenses := []redpanda.License{api.Hooks.Console.ConsoleLicenseInformation(childCtx)}
+		if api.RedpandaSvc != nil {
+			licenses = append(licenses, api.RedpandaSvc.GetLicense(r.Context()))
+		}
+
 		response := response{
-			Licenses:              api.Hooks.Console.LicenseInformation(r.Context()),
+			Licenses:              licenses,
 			EndpointCompatibility: endpointCompatibility,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)

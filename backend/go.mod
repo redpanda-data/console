@@ -23,7 +23,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
-	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220726211426-9ad7e9d59990
+	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220730011954-8de704b87b6d
 	github.com/stretchr/testify v1.7.0
 	github.com/twmb/franz-go v1.6.0
 	github.com/twmb/franz-go/pkg/kmsg v1.1.0
