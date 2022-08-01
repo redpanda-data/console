@@ -385,21 +385,19 @@ class LicenseNotification extends Component {
         if (!warnings.length)
             return null;
 
-        return <div>
-            <div>Looks like you've enabled one or more Redpanda Enterprise features without a valid license, or one that is expiring soon.</div>
-            <ul className="expiringLicenses">
-                {warnings.map(e => <li key={e.source}>
-                    <span className="source">{e.sourceDisplayName}</span>
-                    {e.isExpired
-                        ? <span> is expired</span>
-                        : <span> is valid until <span className="date"> {new Date(e.expiresAt * 1000).toLocaleString()}</span></span>
-                    }
-                </li>)}
-            </ul>
-            <div>
-                Please renew your license key.
-                If you don't have one, please request a new/trial license at: <a href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</a>
-            </div>
+        return <div className="expiringLicenses">
+            {warnings.map(e =>
+                <div key={e.source} >
+                    <div>
+                        Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>) is about to expire
+                        {e.isExpiringSoon && <span className="date"> (valid until {new Date(e.expiresAt * 1000).toLocaleString()})</span>}.
+                    </div>
+                    <div>
+                        Please renew your license key. If you don't have one, please request a new/trial license at:{' '}
+                        <a href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</a>
+                    </div>
+                </div>
+            )}
         </div>
     }
 }

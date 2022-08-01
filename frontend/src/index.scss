@@ -1006,6 +1006,7 @@ tr td:nth-last-child(1) {
     transition-timing-function: ease-out;
     transition-delay: 0ms;
     color: hsl(0, 0%, 45%);
+
     &:hover {
         z-index: 1;
     }
@@ -3606,7 +3607,12 @@ input::placeholder {
         }
     }
 }
+
 .expiringLicenses {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
     margin: 1em;
     padding: 0.5em;
     border: solid 2px #e142267a;
@@ -3614,11 +3620,9 @@ input::placeholder {
     color: #ff2f00;
     font-weight: 500;
 
-    list-style: none;
 
-    li::before {
-        content: '-';
-        margin: .5em;
+    a {
+        text-decoration: underline 1px solid;
     }
 }
 
@@ -3667,6 +3671,7 @@ input::placeholder {
         }
     }
 }
+
 // Fix button order in popover.
 // The right-most button is usually "cancel", with the "confirm" button usually being pushed towards the center/left
 .ant-popover-buttons {
