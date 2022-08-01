@@ -11,11 +11,13 @@ package api
 
 import (
 	"context"
+	"math"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
@@ -81,25 +83,16 @@ type ConsoleHooks interface {
 	AllowedConnectClusterActions(ctx context.Context, clusterName string) ([]string, *rest.Error)
 
 	// Console Hooks
-	// LicenseInformation returns the license information for Console and the connected
-	// Redpanda cluster. Based on the returned license the frontend will display the
+	// ConsoleLicenseInformation returns the license information for Console.
+	// Based on the returned license the frontend will display the
 	// appropriate UI and also warnings if the license is (about to be) expired.
-	LicenseInformation(ctx context.Context) []RedpandaLicense
+	ConsoleLicenseInformation(ctx context.Context) redpanda.License
 
 	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
 	// Only toggleable features that require conditional rendering in the Frontend will be returned.
 	// The information will be baked into the index.html so that the Frontend knows about it
 	// at startup, which might be important to not block rendering (e.g. SSO enabled -> render login).
 	EnabledFeatures() []string
-}
-
-type RedpandaLicense struct {
-	// Source is where the license is used (e.g. Redpanda Cluster, Console)
-	Source string `json:"source"`
-	// Type is the type of license (free, trial, enterprise)
-	Type string `json:"type"`
-	// Format is: 2006-1-2
-	ExpiresAt string `json:"expiresAt"`
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -198,10 +191,8 @@ func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) (
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
 }
-func (*defaultHooks) LicenseInformation(_ context.Context) []RedpandaLicense {
-	return []RedpandaLicense{
-		{Source: "CONSOLE", Type: "OPEN_SOURCE", ExpiresAt: "2099-12-31"},
-	}
+func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
+	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
 }
 func (*defaultHooks) EnabledFeatures() []string {
 	return []string{}

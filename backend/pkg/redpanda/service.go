@@ -110,6 +110,49 @@ func (s *Service) GetClusterVersion(ctx context.Context) (string, error) {
 	return ClusterVersionFromBrokerList(brokers), nil
 }
 
+func (s *Service) GetLicense(ctx context.Context) License {
+	l, err := s.adminClient.GetLicenseInfo(ctx)
+	if err != nil {
+		// This might be because the target Redpanda cluster has not yet implemented the endpoint
+		// to request license information from, hence log at debug level only.
+		s.logger.Debug("failed to get license info", zap.Error(err))
+		return newOpenSourceLicense()
+	}
+
+	decoded, err := licenseToRedpandaLicense(l)
+	if err != nil {
+		s.logger.Warn("failed to decode redpanda cluster license", zap.Error(err))
+		return newOpenSourceLicense()
+	}
+
+	return decoded
+}
+
+func licenseToRedpandaLicense(license admin.License) (License, error) {
+	if !license.Loaded {
+		return newOpenSourceLicense(), nil
+	}
+
+	switch license.Properties.Type {
+	case string(LicenseTypeFreeTrial), string(LicenseTypeEnterprise):
+	default:
+		return License{}, fmt.Errorf("unknown license type: %s", license.Properties.Type)
+	}
+
+	expiresAt := int64(-1)
+	if license.Properties.Expires != -1 {
+		timeDay := 24 * time.Hour
+		expiringIn := time.Duration(license.Properties.Expires) * timeDay
+		expiresAt = time.Now().Add(expiringIn).Unix()
+	}
+
+	return License{
+		Source:    LicenseSourceRedpanda,
+		Type:      LicenseType(license.Properties.Type),
+		ExpiresAt: expiresAt,
+	}, nil
+}
+
 // ClusterVersionFromBrokerList returns the version of the Redpanda cluster. Since each broker
 // reports the version individually, we iterate through the list of brokers and
 // return the first reported version that contains a semVer.
