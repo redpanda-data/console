@@ -390,7 +390,7 @@ class LicenseNotification extends Component {
                 <div key={e.source} >
                     <div>
                         Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>) is about to expire
-                        {e.isExpiringSoon && <span className="date"> (valid until {new Date(e.expiresAt * 1000).toLocaleString()})</span>}.
+                        {e.isExpiringSoon && <span className="date"> (valid until {new Date(e.expiresAt * 1000).toLocaleDateString()})</span>}.
                     </div>
                     <div>
                         Please renew your license key. If you don't have one, please request a new/trial license at:{' '}
