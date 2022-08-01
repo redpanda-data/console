@@ -687,6 +687,18 @@ const AclPrincipalGroupEditor = observer((p: {
             try {
                 const allToCreate = unpackPrincipalGroup(group);
 
+                // Delete all ACLs in group
+                await api.deleteACLs({
+                    resourceType: 'Any',
+                    resourceName: undefined,
+                    resourcePatternType: 'Any',
+                    principal: 'User: ' + group.principal,
+                    host: group.host,
+                    operation: 'Any',
+                    permissionType: 'Any',
+                });
+
+                // Create all ACLs in group
                 const requests = allToCreate.map(x => api.createACL({
                     host: x.host,
                     principal: x.principal,

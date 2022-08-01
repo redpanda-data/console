@@ -348,7 +348,7 @@ class LicenseNotification extends Component {
         const unixNow = new Date().getTime() / 1000;
         const sourceNames: { [key in string]: string } = {
             'console': 'Redpanda Console',
-            'cluster': 'Redpanda',
+            'cluster': 'Redpanda Cluster',
         };
         const typeNames: { [key in string]: string } = {
             'free_trial': 'Free Trial',
@@ -399,11 +399,13 @@ class LicenseNotification extends Component {
                 )}
             </ul>}
             {(expired.length > 0) && <ul className="expiringLicenses">
-                The following licenses are expired:
+                Looks like you've enabled a Redpanda Enterprise feature(s) without a valid license.
+                Please enter an active Redpanda license key.
+                If you don't have one, please request a new/trial license at: <a href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</a>
                 {warnings.map(e =>
                     <li key={e.source}>
                         <span className="source">{e.sourceDisplayName}</span>
-                        {e.type && <span className="type"> ({e.typeDisplayName})</span>}
+                        {e.type && <span className="type"> ({e.typeDisplayName} license)</span>}
                     </li>
                 )}
             </ul>}
