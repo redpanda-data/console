@@ -47,7 +47,9 @@ type AclFlat = {
 }
 
 type AclPrincipalGroup = {
-    principal: string;
+    principalType: string;
+    principalName: string;
+
     host: string;
 
     topicAcls: TopicACLs[];
@@ -149,17 +151,12 @@ class AclList extends PageComponent {
 
     columns: ColumnProps<AclPrincipalGroup>[] = [
         {
-            width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal'),
-            render: (v?: string) => {
-                if (!v)
-                    return <Tag>Any</Tag>
-                const userPrefix = 'user:';
-                if (v.toLowerCase().startsWith(userPrefix)) {
-                    const name = v.slice(userPrefix.length).trim();
-                    return <><Tag>User</Tag>{name}</>
-                }
-
-                return v;
+            width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principalName'),
+            render: (_value: string, record: AclPrincipalGroup) => {
+                return <>
+                    <Tag>{record.principalType}</Tag>
+                    <span>{record.principalName}</span>
+                </>
             }
         },
         {
@@ -173,15 +170,16 @@ class AclList extends PageComponent {
                     <span style={{ display: 'flex', alignItems: 'center' }}>
                         <span>{record.sourceEntries.length}</span>
                         <Button
+                            type="text"
                             className="iconButton"
-                            style={{ marginLeft: 'auto' }}
+                            style={{ marginLeft: 'auto', padding: '4px', width: '40px' }}
                             onClick={() => {
                                 this.editorType = 'edit';
                                 this.edittingPrincipalGroup = clone(record);
                             }}
                         ><PencilIcon /></Button>
                         <Popconfirm
-                            title={<>Delete all ACL entries for principal <Code>{record.principal}</Code> ?</>}
+                            title={<>Delete all ACL entries for principal <Code>{record.principalName}</Code> ?</>}
                             icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
                             placement="left"
                             okText="Delete"
@@ -191,14 +189,19 @@ class AclList extends PageComponent {
                                     resourceType: 'Any',
                                     resourceName: undefined,
                                     resourcePatternType: 'Any',
-                                    principal: 'User: ' + record.principal,
+                                    principal: record.principalType + ':' + record.principalName,
                                     host: record.host,
                                     operation: 'Any',
                                     permissionType: 'Any',
                                 });
+                                await this.refreshData(true);
                             }}
                         >
-                            <Button className="iconButton" style={{ marginLeft: '-1px' }}><TrashIcon /></Button>
+                            <Button
+                                type="text"
+                                className="iconButton"
+                                style={{ padding: '4px', width: '40px' }}
+                            ><TrashIcon /></Button>
                         </Popconfirm>
                     </span>
                 </>
@@ -270,7 +273,7 @@ class AclList extends PageComponent {
 
                         observableSettings={uiSettings.aclList.configTable}
 
-                        rowKey={x => x.principal + x.host}
+                        rowKey={x => x.principalType + ' :: ' + x.principalName + ' :: ' + x.host}
                         rowClassName={() => 'pureDisplayRow'}
 
                         search={{
@@ -324,8 +327,20 @@ class AclList extends PageComponent {
         for (const { items } of g) {
             const { principal, host } = items[0];
 
+            let principalType: string;
+            let principalName: string;
+            if (principal.includes(':')) {
+                const split = principal.split(':', 2);
+                principalType = split[0].trim();
+                principalName = split[1].trim();
+            } else {
+                principalType = 'User';
+                principalName = principal.trim();
+            }
+
             const principalGroup: AclPrincipalGroup = {
-                principal: principal.removePrefix('User: '),
+                principalType,
+                principalName,
                 host,
 
                 topicAcls: collectTopicAcls(items),
@@ -355,9 +370,11 @@ class AclList extends PageComponent {
                 {/* <Button>Create Service Account</Button> */}
 
                 <Button onClick={() => {
+                    this.editorType = 'create';
                     this.edittingPrincipalGroup = {
                         host: '',
-                        principal: '',
+                        principalType: 'User',
+                        principalName: '',
                         topicAcls: [
                             createEmptyTopicAcl()
                         ],
@@ -376,15 +393,15 @@ class AclList extends PageComponent {
 
 function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
     const topics = acls
-        .filter(x => x.resourceType.toLowerCase() == 'topic')
+        .filter(x => x.resourceType == 'Topic')
         .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
 
     const topicAcls: TopicACLs[] = [];
     for (const { items } of topics) {
         const first = items[0];
         let selector = first.resourceName;
-        if (first.resourcePatternType.toLowerCase() != 'literal')
-            if (first.resourcePatternType.toLowerCase() == 'prefixed')
+        if (first.resourcePatternType != 'Literal')
+            if (first.resourcePatternType == 'Prefixed')
                 selector += '*';
             else
                 selector += ` (unsupported pattern type "${first.resourcePatternType}")`;
@@ -412,17 +429,17 @@ function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
         };
 
         for (const op of topicOperations) {
-            const entryForOp = items.find(x => x.operation.toLowerCase() === op.toLowerCase());
+            const entryForOp = items.find(x => x.operation === op);
             if (entryForOp) {
                 topicPermissions[op] = entryForOp.permissionType;
             }
         }
 
         let all: AclStrPermission = 'Any';
-        const allEntry = items.find(x => x.operation.toLowerCase() === 'all');
-        if (allEntry && allEntry.permissionType.toLowerCase() == 'allow')
+        const allEntry = items.find(x => x.operation === 'All');
+        if (allEntry && allEntry.permissionType == 'Allow')
             all = 'Allow';
-        if (allEntry && allEntry.permissionType.toLowerCase() == 'deny')
+        if (allEntry && allEntry.permissionType == 'Deny')
             all = 'Deny';
 
         const topicAcl: TopicACLs = {
@@ -439,15 +456,15 @@ function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
 
 function collectConsumerGroupAcls(acls: AclFlat[]): ConsumerGroupACLs[] {
     const consumerGroups = acls
-        .filter(x => x.resourceType.toLowerCase() == 'group')
+        .filter(x => x.resourceType == 'Group')
         .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
 
     const consumerGroupAcls: ConsumerGroupACLs[] = [];
     for (const { items } of consumerGroups) {
         const first = items[0];
         let selector = first.resourceName;
-        if (first.resourcePatternType.toLowerCase() != 'literal')
-            if (first.resourcePatternType.toLowerCase() == 'prefixed')
+        if (first.resourcePatternType != 'Literal')
+            if (first.resourcePatternType == 'Prefixed')
                 selector += '*';
             else
                 selector += ` (unsupported pattern type "${first.resourcePatternType}")`;
@@ -465,17 +482,17 @@ function collectConsumerGroupAcls(acls: AclFlat[]): ConsumerGroupACLs[] {
         };
 
         for (const op of groupOperations) {
-            const entryForOp = items.find(x => x.operation.toLowerCase() === op);
+            const entryForOp = items.find(x => x.operation === op);
             if (entryForOp) {
                 groupPermissions[op] = entryForOp.permissionType;
             }
         }
 
         let all: AclStrPermission = 'Any';
-        const allEntry = items.find(x => x.operation.toLowerCase() === 'all');
-        if (allEntry && allEntry.permissionType.toLowerCase() == 'allow')
+        const allEntry = items.find(x => x.operation === 'All');
+        if (allEntry && allEntry.permissionType == 'Allow')
             all = 'Allow';
-        if (allEntry && allEntry.permissionType.toLowerCase() == 'deny')
+        if (allEntry && allEntry.permissionType == 'Deny')
             all = 'Deny';
 
         const groupAcl: ConsumerGroupACLs = {
@@ -491,7 +508,7 @@ function collectConsumerGroupAcls(acls: AclFlat[]): ConsumerGroupACLs[] {
 };
 
 function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
-    const flatClusterAcls = acls.filter(x => x.resourceType.toLowerCase() == 'cluster');
+    const flatClusterAcls = acls.filter(x => x.resourceType == 'Cluster');
 
     const clusterOperations = [
         'Alter',
@@ -512,17 +529,17 @@ function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
     };
 
     for (const op of clusterOperations) {
-        const entryForOp = flatClusterAcls.find(x => x.operation.toLowerCase() === op);
+        const entryForOp = flatClusterAcls.find(x => x.operation === op);
         if (entryForOp) {
             clusterPermissions[op] = entryForOp.permissionType;
         }
     }
 
     let all: AclStrPermission = 'Any';
-    const allEntry = flatClusterAcls.find(x => x.operation.toLowerCase() === 'all');
-    if (allEntry && allEntry.permissionType.toLowerCase() == 'allow')
+    const allEntry = flatClusterAcls.find(x => x.operation === 'All');
+    if (allEntry && allEntry.permissionType == 'Allow')
         all = 'Allow';
-    if (allEntry && allEntry.permissionType.toLowerCase() == 'deny')
+    if (allEntry && allEntry.permissionType == 'Deny')
         all = 'Deny';
 
     const clusterAcls: ClusterACLs = {
@@ -538,25 +555,30 @@ function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
 function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     const flat: AclFlat[] = [];
 
-    if (!group.principal.toLowerCase().startsWith('user: '))
-        group.principal = 'User: ' + group.principal;
-    if (!group.host)
-        group.host = '*';
+    const principal = group.principalType + ':' + group.principalName;
+    const host = group.host || '*';
 
     for (const topic of group.topicAcls) {
+        const isWildcard = topic.selector == '*';
         const name = topic.selector.removeSuffix('*');
-        const isPrefix = topic.selector.endsWith('*');
+        const isPrefix = !isWildcard && topic.selector.endsWith('*');
+        if (!name) continue;
+
+        const resourcePatternType = isPrefix
+            ? 'Prefixed'
+            : 'Literal';
+        const resourceName = isWildcard
+            ? '*'
+            : name;
 
         if (topic.all == 'Allow' || topic.all == 'Deny') {
             const e: AclFlat = {
-                principal: group.principal,
-                host: group.host,
+                principal,
+                host,
 
                 resourceType: 'Topic',
-                resourceName: name == '' ? '*' : name,
-                resourcePatternType: isPrefix
-                    ? 'Prefixed'
-                    : 'Literal',
+                resourcePatternType,
+                resourceName,
 
                 operation: 'All',
                 permissionType: topic.all
@@ -572,8 +594,8 @@ function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
                 continue;
 
             const e: AclFlat = {
-                principal: group.principal,
-                host: group.host,
+                principal,
+                host,
 
                 resourceType: 'Topic',
                 resourceName: name,
@@ -586,10 +608,60 @@ function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
         }
     }
 
+    for (const consumerGroup of group.consumerGroupAcls) {
+        const isWildcard = consumerGroup.selector == '*';
+        const name = consumerGroup.selector.removeSuffix('*');
+        const isPrefix = !isWildcard && consumerGroup.selector.endsWith('*');
+        if (!name) continue;
+
+        const resourcePatternType = isPrefix
+            ? 'Prefixed'
+            : 'Literal';
+        const resourceName = isWildcard
+            ? '*'
+            : name;
+
+        if (consumerGroup.all == 'Allow' || consumerGroup.all == 'Deny') {
+            const e: AclFlat = {
+                principal,
+                host,
+
+                resourceType: 'Group',
+                resourcePatternType,
+                resourceName,
+
+                operation: 'All',
+                permissionType: consumerGroup.all
+            };
+            flat.push(e);
+            continue;
+        }
+
+        for (const [key, permission] of Object.entries(consumerGroup.permissions)) {
+            const operation = key as AclStrOperation;
+
+            if (permission != 'Allow' && permission != 'Deny')
+                continue;
+
+            const e: AclFlat = {
+                principal,
+                host,
+
+                resourceType: 'Group',
+                resourceName: name,
+                resourcePatternType: isPrefix ? 'Prefixed' : 'Literal',
+
+                operation: operation,
+                permissionType: permission
+            };
+            flat.push(e);
+        }
+    }
+
     if (group.clusterAcls.all == 'Allow' || group.clusterAcls.all == 'Deny') {
         const e: AclFlat = {
-            principal: group.principal,
-            host: group.host,
+            principal,
+            host,
 
             resourceType: 'Cluster',
             resourceName: 'kafka-cluster',
@@ -606,8 +678,8 @@ function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
                 continue;
 
             const e: AclFlat = {
-                principal: group.principal,
-                host: group.host,
+                principal,
+                host,
 
                 resourceType: 'Cluster',
                 resourceName: 'kafka-cluster',
@@ -630,7 +702,7 @@ export default AclList;
 
 function isRowMatch(entry: AclPrincipalGroup, regex: RegExp): boolean {
     if (regex.test(entry.host)) return true;
-    if (regex.test(entry.principal)) return true;
+    if (regex.test(entry.principalName)) return true;
 
     for (const e of entry.sourceEntries) {
         if (regex.test(e.operation)) return true;
@@ -685,18 +757,29 @@ const AclPrincipalGroupEditor = observer((p: {
             setError(undefined);
             setIsLoading(true);
             try {
+                if (group.principalName.length == 0)
+                    throw new Error('The principal field can not be empty.');
+
                 const allToCreate = unpackPrincipalGroup(group);
 
+                if (allToCreate.length == 0)
+                    if (p.type == 'create')
+                        throw new Error('Creating an ACL group requires at least one resource to be targetted.');
+                    else
+                        throw new Error('Removing all targetted resources from an ACL group would essentially delete it. To do so, close this dialog and click the delete icon in the list.');
+
                 // Delete all ACLs in group
-                await api.deleteACLs({
-                    resourceType: 'Any',
-                    resourceName: undefined,
-                    resourcePatternType: 'Any',
-                    principal: 'User: ' + group.principal,
-                    host: group.host,
-                    operation: 'Any',
-                    permissionType: 'Any',
-                });
+                if (p.type == 'edit') {
+                    await api.deleteACLs({
+                        resourceType: 'Any',
+                        resourceName: undefined,
+                        resourcePatternType: 'Any',
+                        principal: group.principalType + ':' + group.principalName,
+                        host: group.host,
+                        operation: 'Any',
+                        permissionType: 'Any',
+                    });
+                }
 
                 // Create all ACLs in group
                 const requests = allToCreate.map(x => api.createACL({
@@ -716,7 +799,10 @@ const AclPrincipalGroupEditor = observer((p: {
                     throw new Error(rejected.length + ' requests failed');
                 }
             } catch (err) {
-                setError(String(err));
+                const msg = (err instanceof Error) ? err.message : String(err);
+                setError(msg);
+                setIsLoading(false);
+                return;
             }
             setIsLoading(false);
             p.onClose();
@@ -725,18 +811,24 @@ const AclPrincipalGroupEditor = observer((p: {
     >
 
         <div style={{ display: 'flex', gap: '1.5em', flexDirection: 'column' }}>
-            {error && <div>Error: {error}</div>}
+            {error && <div style={{ color: 'red', fontWeight: 500 }}>Error: {error}</div>}
 
             <div style={{ display: 'flex', gap: '2.5em', alignItems: 'flex-end' }}>
                 <Label text="Principal / Service Account">
-                    <AutoComplete
-                        style={{ width: 260 }}
-                        options={principalOptions}
-                        filterOption={(inputValue, option) => containsIgnoreCase(option!.value, inputValue)}
-                        value={group.principal}
-                        onChange={v => group.principal = v}
-                        {...{ spellCheck: false }}
-                    />
+                    <Input.Group compact>
+                        <Select value={group.principalType} onChange={x => group.principalType = x} style={{ width: '85px', background: 'hsl(0deg 0% 98%)' }}>
+                            <Option value="User">User</Option>
+                            <Option value="Group">Group</Option>
+                        </Select>
+                        <AutoComplete
+                            style={{ width: 260 }}
+                            options={principalOptions}
+                            filterOption={(inputValue, option) => containsIgnoreCase(option!.value, inputValue)}
+                            value={group.principalName}
+                            onChange={v => group.principalName = v}
+                            {...{ spellCheck: false }}
+                        />
+                    </Input.Group>
                 </Label>
 
                 <Label text="Host">
@@ -814,8 +906,13 @@ const ResourceACLsEditor = observer((p: {
 }) => {
     const res = p.resource;
     const isCluster = !('selector' in res);
-
+    const isTopic = ('Write' in res.permissions);
+    const isConsumerGroup = !isCluster && !isTopic;
     const isAllSet = res.all == 'Allow' || res.all == 'Deny';
+
+    let resourceName = 'Cluster';
+    if (isTopic) resourceName = 'Topic';
+    if (isConsumerGroup) resourceName = 'Consumer Group';
 
     return <div style={{
         position: 'relative',
@@ -827,11 +924,16 @@ const ResourceACLsEditor = observer((p: {
             ? <div style={{ width: '300px' }}>
                 <b>Applies to whole cluster</b>
             </div>
-            : <Label text="Selector (supports wildcard)" style={{ width: '300px' }}>
+            : <Label text={`Selector (${resourceName} Name)`} style={{ width: '300px' }}>
                 <>
-                    <Input placeholder="*" value={res.selector} onChange={e => res.selector = e.target.value} />
+                    <Input value={res.selector} onChange={e => res.selector = e.target.value} />
                     <span style={{ opacity: '0.5', fontSize: '10px', marginLeft: '2px' }}>
-                        {res.selector.endsWith('*') ? 'Prefix Selector' : 'Literal Selector'}
+                        {res.selector == '*'
+                            ? ('Wildcard / Any ' + resourceName)
+                            : res.selector.endsWith('*')
+                                ? 'Prefix Selector'
+                                : 'Literal Selector'
+                        }
                     </span>
                 </>
             </Label>
@@ -858,14 +960,14 @@ const ResourceACLsEditor = observer((p: {
                 {Object.entries(res.permissions)
                     .sort(([op1], [op2]) => op1.localeCompare(op2))
                     .map(([operation, permission]) =>
-                    <Operation
-                        key={operation}
-                        operation={operation}
-                        value={isAllSet ? res.all : permission}
-                        onChange={p => (res.permissions as any)[operation] = p}
-                        disabled={isAllSet}
-                    />
-                )}
+                        <Operation
+                            key={operation}
+                            operation={operation}
+                            value={isAllSet ? res.all : permission}
+                            onChange={p => (res.permissions as any)[operation] = p}
+                            disabled={isAllSet}
+                        />
+                    )}
             </div>
 
         </Label>

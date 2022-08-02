@@ -3678,3 +3678,10 @@ input::placeholder {
     flex-direction: row-reverse;
     display: flex;
 }
+.ant-input-group {
+    .ant-select {
+        .ant-select-selector {
+            background-color: transparent;
+        }
+    }
+}
