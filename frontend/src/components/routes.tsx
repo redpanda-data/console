@@ -256,7 +256,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     ),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-    MakeRoute<{}>('/acls', AclList, 'Access Control List', <span className="menuIcon anticon"><ShieldCheckIcon /></span>, true,
+    MakeRoute<{}>('/acls', AclList, 'Security', <span className="menuIcon anticon"><ShieldCheckIcon /></span>, true,
         routeVisibility(true, [], ['canListAcls'])
     ),
 

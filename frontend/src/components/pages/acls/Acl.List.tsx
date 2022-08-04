@@ -219,8 +219,8 @@ class AclList extends PageComponent {
     }
 
     initPage(p: PageInitHelper): void {
-        p.title = 'ACLs';
-        p.addBreadcrumb('ACLs', '/acls');
+        p.title = 'Kafka Access Control';
+        p.addBreadcrumb('Kafka Access Control', '/acls');
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
