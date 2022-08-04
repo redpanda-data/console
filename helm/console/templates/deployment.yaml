@@ -167,7 +167,7 @@ spec:
                   key: login-github-oauth-client-secret
             {{- end }}
             {{- if .Values.secret.login.github.personalAccessToken }}
-            - name: LOGIN_GITHUB_PERSONALACCESSTOKEN
+            - name: LOGIN_GITHUB_DIRECTORY_PERSONALACCESSTOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "console.fullname" . }}
@@ -181,7 +181,7 @@ spec:
                   key: login-okta-client-secret
             {{- end }}
             {{- if .Values.secret.login.okta.directoryApiToken }}
-            - name: LOGIN_OKTA_APITOKEN
+            - name: LOGIN_OKTA_DIRECTORY_APITOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "console.fullname" . }}
