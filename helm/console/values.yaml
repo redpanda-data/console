@@ -99,16 +99,30 @@ extraEnv: ""
 
 # Additional environment variables for Console mapped from Secret or ConfigMap
 extraEnvFrom: ""
+# - secretKeyRef:
+#     name: kowl-config-secret
+#     key: kowl.config
 
 # Add additional volumes, e. g. for tls keys
 extraVolumes: ""
+# - name: kafka-certs
+#   secret:
+#     secretName: kafka-certs
+# - name: config
+#   configMap:
+#     name: console-config
 
 # Add additional volumes mounts, e. g. for tls keys
 extraVolumeMounts: ""
+# - name: kafka-certs # Must match the volume name
+#   mountPath: /etc/kafka/certs
+#   readOnly: true
 
 # Add additional containers, e. g. for oauth2-proxy
 extraContainers: {}
 
+# SecretMounts is an abstraction to make a secret available in the container's filesystem. 
+# Under the hood it creates a volume + volume mount for the Console container.
 secretMounts: []
 #  - name: kafka-certs
 #    secretName: kafka-certs

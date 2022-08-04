@@ -82,6 +82,11 @@ type ConsoleHooks interface {
 	CanDeleteConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
 	AllowedConnectClusterActions(ctx context.Context, clusterName string) ([]string, *rest.Error)
 
+	// Kafka User Hooks
+	CanListKafkaUsers(ctx context.Context) (bool, *rest.Error)
+	CanCreateKafkaUsers(ctx context.Context) (bool, *rest.Error)
+	CanDeleteKafkaUsers(ctx context.Context) (bool, *rest.Error)
+
 	// Console Hooks
 	// ConsoleLicenseInformation returns the license information for Console.
 	// Based on the returned license the frontend will display the
@@ -190,6 +195,15 @@ func (*defaultHooks) CanDeleteConnectCluster(_ context.Context, _ string) (bool,
 func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) ([]string, *rest.Error) {
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
+}
+func (*defaultHooks) CanListKafkaUsers(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanCreateKafkaUsers(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) {
+	return true, nil
 }
 func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
 	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}

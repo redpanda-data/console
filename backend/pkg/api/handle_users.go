@@ -14,6 +14,7 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/go-chi/chi"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/api/admin"
 )
 
@@ -29,6 +30,23 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 		IsComplete bool     `json:"isComplete"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Check if logged-in user is allowed to list Kafka users
+		canList, restErr := api.Hooks.Console.CanListKafkaUsers(r.Context())
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canList {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("requester has no permissions to list Kafka users"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to list Kafka users.",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
 		if api.Cfg.Redpanda.AdminAPI.Enabled {
 			users, err := api.RedpandaSvc.ListUsers(r.Context())
 			if err != nil {
@@ -84,7 +102,24 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 			return
 		}
 
-		// 2. Create user
+		// 2. Check if logged-in user is allowed to create Kafka users
+		canCreate, restErr := api.Hooks.Console.CanCreateKafkaUsers(r.Context())
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canCreate {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("requester has no permissions to create Kafka users"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to create Kafka users.",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 3. Create user
 		if api.Cfg.Redpanda.AdminAPI.Enabled {
 			err := api.RedpandaSvc.CreateUser(r.Context(), req.Username, req.Password, req.Mechanism)
 			if err != nil {
@@ -99,7 +134,7 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 			return
 		}
 
-		// 3. Return an error if we can't create any users
+		// 4. Return an error if we can't create any users
 		rest.SendRESTError(w, r, api.Logger, &rest.Error{
 			Err:     fmt.Errorf("redpanda Admin API is not enabled"),
 			Status:  http.StatusServiceUnavailable,
@@ -108,31 +143,38 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 	}
 }
 
-type deleteUserRequest struct {
-	Username string `json:"username"`
-}
-
-func (c *deleteUserRequest) OK() error {
-	if c.Username == "" {
-		return fmt.Errorf("username must be set")
-	}
-
-	return nil
-}
-
 func (api *API) handleDeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Parse and validate request
-		var req deleteUserRequest
-		restErr := rest.Decode(w, r, &req)
+		principalID := chi.URLParam(r, "principalID")
+		if principalID == "" {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:     fmt.Errorf("user must be set"),
+				Status:  http.StatusBadRequest,
+				Message: "User must be set",
+			})
+			return
+		}
+
+		// 2. Check if logged-in user is allowed to delete Kafka users
+		canDelete, restErr := api.Hooks.Console.CanDeleteKafkaUsers(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
+		if !canDelete {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("requester has no permissions to delete Kafka users"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to delete Kafka users.",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
 
-		// 2. Delete user
+		// 3. Delete user
 		if api.Cfg.Redpanda.AdminAPI.Enabled {
-			err := api.RedpandaSvc.DeleteUser(r.Context(), req.Username)
+			err := api.RedpandaSvc.DeleteUser(r.Context(), principalID)
 			if err != nil {
 				rest.SendRESTError(w, r, api.Logger, &rest.Error{
 					Err:     err,
