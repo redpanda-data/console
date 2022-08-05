@@ -346,31 +346,58 @@ class LicenseNotification extends Component {
             return null;
 
         const unixNow = new Date().getTime() / 1000;
+        const sourceNames: { [key in string]: string } = {
+            'console': 'Console',
+            'cluster': 'Cluster',
+        };
+        const typeNames: { [key in string]: string } = {
+            'free_trial': 'Free Trial',
+            'open_source': 'Open Source',
+            'enterprise': 'Enterprise',
+        };
 
         const withRemainingTime = api.licenses.map(x => {
+            if (x.expiresAt <= 0) {
+                return {
+                    ...x,
+                    remainingSec: 0,
+                    remainingDays: 0,
+                    isExpiringSoon: false,
+                    isExpired: true,
+                    sourceDisplayName: sourceNames[x.source] ?? x.source,
+                    typeDisplayName: typeNames[x.type] ?? x.type,
+                };
+            }
             const remainingSec = x.expiresAt - unixNow;
             const remainingDays = remainingSec / (60 * 60 * 24);
             return {
                 ...x,
                 remainingSec,
                 remainingDays,
+                isExpiringSoon: remainingDays < 30,
+                isExpired: x.expiresAt <= 0,
+                sourceDisplayName: sourceNames[x.source] ?? x.source,
+                typeDisplayName: typeNames[x.type] ?? x.type,
             };
         });
 
-        const expiring = withRemainingTime.filter(x => x.remainingDays < 30);
-        if (!expiring.length)
+        const warnings = withRemainingTime.filter(x => x.isExpiringSoon || x.isExpired);
+        if (!warnings.length)
             return null;
 
-        return <ul className="expiringLicenses">
-            The following licenses are about to expire:
-            {expiring.map(e =>
-                <li key={e.source}>
-                    <span className="source">{e.source}</span>
-                    {e.type && <span className="type"> {e.type}</span>}
-                    <span> is valid until</span>
-                    <span className="date"> {new Date(e.expiresAt * 1000).toLocaleString()} ({prettyMilliseconds(e.remainingSec * 1000, { unitCount: 2, verbose: true })})</span>
-                </li>
+        return <div className="expiringLicenses">
+            {warnings.map(e =>
+                <div key={e.source} >
+                    <div>
+                        Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>) is about to expire
+                        {e.isExpiringSoon && <span className="date"> (valid until {new Date(e.expiresAt * 1000).toLocaleDateString()})</span>}.
+                    </div>
+                    <div>
+                        Please renew your license key. If you don't have one, please request a new/trial license at:{' '}
+                        <a href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</a>
+                    </div>
+                </div>
             )}
-        </ul>
+        </div>
     }
 }

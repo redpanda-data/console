@@ -449,9 +449,9 @@ export interface EndpointCompatibilityResponse {
 
 export interface RedpandaLicense {
     // Source is where the license is used (e.g. Redpanda Cluster, Console)
-    source: string;
+    source: 'console' | 'cluster' | string;
     // Type is the type of license (free, trial, enterprise)
-    type: string;
+    type: 'free_trial' | 'open_source' | 'enterprise' | string;
     // unix seconds
     expiresAt: number;
 }
@@ -754,12 +754,12 @@ export interface CreateACLRequest {
 
 
 export interface DeleteACLsRequest {
-    resourceType: AclResourceType;
+    resourceType: AclStrResourceType;
 
     // Unset will match any resource name
     resourceName?: string;
 
-    resourcePatternType: AclResourcePatternType;
+    resourcePatternType: AclStrResourcePatternType;
 
     // Unset will match any principal
     principal?: string;
@@ -767,9 +767,9 @@ export interface DeleteACLsRequest {
     // Unset will match any host
     host?: string;
 
-    operation: AclOperation;
+    operation: AclStrOperation;
 
-    permissionType: AclPermission;
+    permissionType: AclStrPermission;
 }
 
 export interface QuotaResponse {

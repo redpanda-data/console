@@ -20,7 +20,7 @@ import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
 import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
-import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError, CreateACLRequest, DeleteACLsRequest, RedpandaLicense } from './restInterfaces';
+import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError, CreateACLRequest, DeleteACLsRequest, RedpandaLicense, AclResource } from './restInterfaces';
 import { Features } from './supportedFeatures';
 import { uiState } from './uiState';
 
@@ -607,7 +607,11 @@ const apiStore = {
     refreshTopicAcls(topicName: string, force?: boolean) {
         const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: 'Topic', resourceName: topicName });
         cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
-            .then(v => this.topicAcls.set(topicName, v));
+            .then(v => {
+                if (v)
+                    normalizeAcls(v.aclResources);
+                this.topicAcls.set(topicName, v);
+            });
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
@@ -618,7 +622,15 @@ const apiStore = {
     async refreshAcls(request: GetAclsRequest, force?: boolean): Promise<void> {
         const query = aclRequestToQuery(request);
         await cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
-            .then(v => this.ACLs = v ?? null, addError);
+            .then(v => {
+                if (v) {
+                    normalizeAcls(v.aclResources);
+                    this.ACLs = v;
+                }
+                else {
+                    this.ACLs = null;
+                }
+            }, addError);
     },
 
     refreshQuotas(force?: boolean) {
@@ -695,7 +707,12 @@ const apiStore = {
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
         const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: 'Group', resourceName: groupName });
         cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
-            .then(v => this.consumerGroupAcls.set(groupName, v));
+            .then(v => {
+                if (v) {
+                    normalizeAcls(v.aclResources);
+                }
+                this.consumerGroupAcls.set(groupName, v);
+            });
     },
 
     async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]):
@@ -1176,7 +1193,7 @@ const apiStore = {
 
     async deleteACLs(request: DeleteACLsRequest): Promise<void> {
         const response = await fetch('./api/acls', {
-            method: 'POST',
+            method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
             ],
@@ -1260,6 +1277,35 @@ function prepareSynonyms(configEntries: ConfigEntry[]) {
     }
 }
 
+function normalizeAcls(acls: AclResource[]) {
+    function upperFirst(str: string): string {
+        if (!str) return str;
+        const lower = str.toLowerCase();
+        const first = lower[0];
+        const result = first.toUpperCase() + lower.slice(1);
+        return result;
+    }
+
+    function normalizeStringEnum<T extends string>(str: T): T {
+        if (!str) return str;
+        const parts = str.split('_');
+        for (let i = 0; i < parts.length; i++) {
+            parts[i] = upperFirst(parts[i].toLowerCase());
+        }
+        const result = parts.join('');
+        return result as T;
+    }
+
+    for (const e of acls) {
+        e.resourceType = normalizeStringEnum(e.resourceType);
+        e.resourcePatternType = normalizeStringEnum(e.resourcePatternType);
+
+        for (const acl of e.acls) {
+            acl.operation = normalizeStringEnum(acl.operation);
+            acl.permissionType = normalizeStringEnum(acl.permissionType);
+        }
+    }
+}
 
 export function aclRequestToQuery(request: GetAclsRequest): string {
     const filters = ObjToKv(request).filter(kv => !!kv.value);

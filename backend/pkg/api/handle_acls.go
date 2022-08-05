@@ -152,17 +152,10 @@ func (g *deleteAclsRequest) ToKafkaRequest() kmsg.DeleteACLsRequestFilter {
 
 func (api *API) handleDeleteACLs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Parse request from url parameters
-		decoder := schema.NewDecoder()
-		req := &deleteAclsRequest{}
-		err := decoder.Decode(req, r.URL.Query())
-		if err != nil {
-			restErr := &rest.Error{
-				Err:      err,
-				Status:   http.StatusBadRequest,
-				Message:  fmt.Sprintf("Failed to parse request parameters: %v", err.Error()),
-				IsSilent: false,
-			}
+		// Parse request from body
+		var req deleteAclsRequest
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}

@@ -1006,6 +1006,7 @@ tr td:nth-last-child(1) {
     transition-timing-function: ease-out;
     transition-delay: 0ms;
     color: hsl(0, 0%, 45%);
+
     &:hover {
         z-index: 1;
     }
@@ -3606,7 +3607,12 @@ input::placeholder {
         }
     }
 }
+
 .expiringLicenses {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
     margin: 1em;
     padding: 0.5em;
     border: solid 2px #e142267a;
@@ -3614,11 +3620,9 @@ input::placeholder {
     color: #ff2f00;
     font-weight: 500;
 
-    list-style: none;
 
-    li::before {
-        content: '-';
-        margin: .5em;
+    a {
+        text-decoration: underline 1px solid;
     }
 }
 
@@ -3665,5 +3669,35 @@ input::placeholder {
             background: transparent !important;
             border-color: transparent !important;
         }
+    }
+}
+
+// Fix button order in popover.
+// The right-most button is usually "cancel", with the "confirm" button usually being pushed towards the center/left
+.ant-popover-buttons {
+    flex-direction: row-reverse;
+    display: flex;
+}
+.ant-input-group {
+    .ant-select {
+        .ant-select-selector {
+            background-color: transparent;
+        }
+    }
+}
+.ant-tooltip-inner code {
+    background: hsl(0deg 0% 0% / 25%);
+    padding: 2px 4px;
+    border: 1px solid rgb(0 0 0 / 20%);
+    border-radius: 2px;
+    font-size: 95%;
+}
+
+// Used in Create ACLs modal.
+// The help icon is very small. Visually that is fine, but the cursor hitbox should be larger
+.labelText span.anticon {
+    &::after {
+        @include beforeAfter();
+        inset: -5px;
     }
 }

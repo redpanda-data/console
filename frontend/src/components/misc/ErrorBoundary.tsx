@@ -105,9 +105,11 @@ export class ErrorBoundary extends React.Component {
 
             // Normal stack trace
             let s = this.error.stack;
-            if (s.toLowerCase().startsWith('error:')) s = s.substr(6).trim(); // todo removePrefix()
+            // remove "Error: " prefix
+            s = s.removePrefix('error:').trim();
+            // remove the error message as well, leaving only the stack trace
             if (this.error.message && s.startsWith(this.error.message))
-                s = s.substr(this.error.message.length).trimStart();
+                s = s.slice(this.error.message.length).trimStart();
             this.infoItems.push({ name: 'Stack (Raw)', value: s });
         }
 
