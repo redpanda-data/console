@@ -3685,3 +3685,19 @@ input::placeholder {
         }
     }
 }
+.ant-tooltip-inner code {
+    background: hsl(0deg 0% 0% / 25%);
+    padding: 2px 4px;
+    border: 1px solid rgb(0 0 0 / 20%);
+    border-radius: 2px;
+    font-size: 95%;
+}
+
+// Used in Create ACLs modal.
+// The help icon is very small. Visually that is fine, but the cursor hitbox should be larger
+.labelText span.anticon {
+    &::after {
+        @include beforeAfter();
+        inset: -5px;
+    }
+}

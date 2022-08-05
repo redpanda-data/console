@@ -11,7 +11,7 @@
 
 import React, { CSSProperties, useState } from 'react';
 import { observer } from 'mobx-react';
-import { Empty, Select, Input, Button, Alert, Modal, AutoComplete, Switch, Tag, Popconfirm } from 'antd';
+import { Empty, Select, Input, Button, Alert, Modal, AutoComplete, Tag, Popconfirm, Tooltip } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
@@ -19,12 +19,12 @@ import { uiSettings } from '../../../state/ui';
 import { sortField } from '../../misc/common';
 import { AclOperation, AclRequestDefault, AclStrOperation, AclStrPermission, AclStrResourcePatternType, AclStrResourceType } from '../../../state/restInterfaces';
 import { AnimatePresence, motion } from 'framer-motion';
-import { animProps } from '../../../utils/animationProps';
+import { animProps, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { comparer, computed, makeObservable, observable } from 'mobx';
 import { containsIgnoreCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
 import Card from '../../misc/Card';
-import { Code, DefaultSkeleton, Label } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton, findPopupContainer, Label } from '../../../utils/tsxUtils';
 import { clone } from '../../../utils/jsonUtils';
 import { KowlTable } from '../../misc/KowlTable';
 import { LockIcon } from '@primer/octicons-react';
@@ -560,7 +560,7 @@ function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
 
     for (const topic of group.topicAcls) {
         const isWildcard = topic.selector == '*';
-        const name = topic.selector.removeSuffix('*');
+        const name = topic.selector;
         const isPrefix = !isWildcard && topic.selector.endsWith('*');
         if (!name) continue;
 
@@ -610,7 +610,7 @@ function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
 
     for (const consumerGroup of group.consumerGroupAcls) {
         const isWildcard = consumerGroup.selector == '*';
-        const name = consumerGroup.selector.removeSuffix('*');
+        const name = consumerGroup.selector;
         const isPrefix = !isWildcard && consumerGroup.selector.endsWith('*');
         if (!name) continue;
 
@@ -764,9 +764,9 @@ const AclPrincipalGroupEditor = observer((p: {
 
                 if (allToCreate.length == 0)
                     if (p.type == 'create')
-                        throw new Error('Creating an ACL group requires at least one resource to be targetted.');
+                        throw new Error('Creating an ACL group requires at least one resource to be targetted. Topic/Group targets with an empty selector are not valid.');
                     else
-                        throw new Error('Removing all targetted resources from an ACL group would essentially delete it. To do so, close this dialog and click the delete icon in the list.');
+                        throw new Error('No targeted resources. You can delete this ACL group from the list view.');
 
                 // Delete all ACLs in group
                 if (p.type == 'edit') {
@@ -811,14 +811,25 @@ const AclPrincipalGroupEditor = observer((p: {
     >
 
         <div style={{ display: 'flex', gap: '1.5em', flexDirection: 'column' }}>
-            {error && <div style={{ color: 'red', fontWeight: 500 }}>Error: {error}</div>}
+            <AnimatePresence>
+                {error && <MotionDiv animProps={animProps_radioOptionGroup} style={{ color: 'red', fontWeight: 500 }}>Error: {error}</MotionDiv>}
+            </AnimatePresence>
 
             <div style={{ display: 'flex', gap: '2.5em', alignItems: 'flex-end' }}>
-                <Label text="Principal / Service Account">
+                <Label text="User / Principal" textSuffix={<LabelTooltip nowrap left>
+                    The user that gets the permissions granted (or denied).<br />
+                    In Kafka this is referred to as the "principal".<br />
+                    Do not include the prefix so <code>my-user</code> instead of <code>User: my-user</code>.<br />
+                    You can use <code>*</code> to target all users.
+                </LabelTooltip>} >
                     <Input.Group compact>
-                        <Select value={group.principalType} onChange={x => group.principalType = x} style={{ width: '85px', background: 'hsl(0deg 0% 98%)' }}>
+                        <Select
+                            value={group.principalType}
+                            onChange={x => group.principalType = x}
+                            style={{ width: '80px', background: 'hsl(0deg 0% 98%)' }}
+                        >
                             <Option value="User">User</Option>
-                            <Option value="Group">Group</Option>
+                            {/* <Option value="Group">Group</Option> */}
                         </Select>
                         <AutoComplete
                             style={{ width: 260 }}
@@ -831,7 +842,10 @@ const AclPrincipalGroupEditor = observer((p: {
                     </Input.Group>
                 </Label>
 
-                <Label text="Host">
+                <Label text="Host" textSuffix={<LabelTooltip nowrap left>
+                    The host the user needs to connect from in order for the permissions to apply.<br />
+                    Can be set to left empty or set to <code>*</code> to allow any host.
+                </LabelTooltip>}>
                     <Input
                         style={{ width: 200 }}
                         value={group.host}
@@ -840,13 +854,23 @@ const AclPrincipalGroupEditor = observer((p: {
                     />
                 </Label>
 
-                <Label text="Allow all operations">
-                    <Switch />
-                </Label>
+                <Button onClick={() => {
+                    if (group.topicAcls.length == 0)
+                        group.topicAcls.push(createEmptyTopicAcl());
+                    if (group.consumerGroupAcls.length == 0)
+                        group.consumerGroupAcls.push(createEmptyConsumerGroupAcl());
+                    group.topicAcls[0].selector = '*';
+                    group.topicAcls[0].all = 'Allow';
+                    group.consumerGroupAcls[0].selector = '*';
+                    group.consumerGroupAcls[0].all = 'Allow';
+                    group.clusterAcls.all = 'Allow';
+                }}>
+                    Allow all operations
+                </Button>
             </div>
 
             <div style={{
-                display: 'flex', gap: '1em', flexDirection: 'column',
+                display: 'flex', gap: '2em', flexDirection: 'column',
                 maxHeight: 'calc(100vh - 300px)', overflowY: 'auto', paddingRight: '8px'
             }}>
 
@@ -1046,3 +1070,29 @@ const Operation = observer((p: {
 });
 
 
+function LabelTooltip(p: { children?: React.ReactNode, width?: number, nowrap?: boolean, left?: boolean }) {
+    const style: CSSProperties = {};
+
+    if (typeof p.width == 'number')
+        style.width = p.width + 'px';
+    if (p.nowrap === true)
+        style.whiteSpace = 'nowrap';
+    if (p.left === true)
+        style.textAlign = 'left';
+
+    const content = <div style={style}>
+        {p.children}
+    </div>
+
+    return <Tooltip
+        overlay={content}
+        trigger="hover"
+        getPopupContainer={findPopupContainer}>
+        <QuestionCircleOutlined style={{
+            color: 'hsl(0deg 0% 66%)',
+            fontSize: '13px',
+            transform: 'translateY(1px)',
+            marginLeft: '3px'
+        }} />
+    </Tooltip>
+}
