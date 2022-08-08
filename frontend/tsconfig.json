@@ -28,5 +28,11 @@
     ],
     "exclude": [
         "src/utils/interpreter/**"
-    ]
+    ],
+
+    // Set more sensible defaults to stop 'fork-ts-checker-webpack-plugin' from consuming a lot more CPU than necessary
+    "watchOptions": {
+        "watchFile": "useFsEvents",
+        "fallbackPolling": "dynamicpriority"
+    }
 }
