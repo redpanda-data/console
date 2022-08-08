@@ -294,17 +294,9 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     const host = group.host || '*';
 
     for (const topic of group.topicAcls) {
-        const isWildcard = topic.selector == '*';
-        const name = topic.selector;
-        const isPrefix = !isWildcard && topic.selector.endsWith('*');
-        if (!name) continue;
+        if (!topic.selector) continue;
 
-        const resourcePatternType = isPrefix
-            ? 'Prefixed'
-            : 'Literal';
-        const resourceName = isWildcard
-            ? '*'
-            : name;
+        const [resourcePatternType, resourceName] = selectorToPatternAndName(topic.selector);
 
         if (topic.all == 'Allow' || topic.all == 'Deny') {
             const e: AclFlat = {
@@ -333,8 +325,8 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
                 host,
 
                 resourceType: 'Topic',
-                resourceName: name,
-                resourcePatternType: isPrefix ? 'Prefixed' : 'Literal',
+                resourceName,
+                resourcePatternType,
 
                 operation: operation,
                 permissionType: permission
@@ -344,17 +336,9 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
     }
 
     for (const consumerGroup of group.consumerGroupAcls) {
-        const isWildcard = consumerGroup.selector == '*';
-        const name = consumerGroup.selector;
-        const isPrefix = !isWildcard && consumerGroup.selector.endsWith('*');
-        if (!name) continue;
+        if (!consumerGroup.selector) continue;
 
-        const resourcePatternType = isPrefix
-            ? 'Prefixed'
-            : 'Literal';
-        const resourceName = isWildcard
-            ? '*'
-            : name;
+        const [resourcePatternType, resourceName] = selectorToPatternAndName(consumerGroup.selector);
 
         if (consumerGroup.all == 'Allow' || consumerGroup.all == 'Deny') {
             const e: AclFlat = {
@@ -383,8 +367,8 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
                 host,
 
                 resourceType: 'Group',
-                resourceName: name,
-                resourcePatternType: isPrefix ? 'Prefixed' : 'Literal',
+                resourceName,
+                resourcePatternType,
 
                 operation: operation,
                 permissionType: permission
@@ -427,7 +411,21 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
         }
     }
 
-
-
     return flat;
+}
+
+
+function selectorToPatternAndName(selector: string): [resourcePatternType: AclStrResourcePatternType, resourceName: string] {
+    // Wildcard (special case)
+    if (selector == '*')
+        return ['Literal', '*'];
+
+    // Prefixed (remove star)
+    if (selector.endsWith('*')) {
+        const rawName = selector.removeSuffix('*');
+        return ['Prefixed', rawName];
+    }
+
+    // Literal
+    return ['Literal', selector];
 }
