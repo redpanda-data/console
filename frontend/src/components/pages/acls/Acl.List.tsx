@@ -219,11 +219,11 @@ class AclList extends PageComponent {
             let principalName: string;
             if (principal.includes(':')) {
                 const split = principal.split(':', 2);
-                principalType = split[0].trim();
-                principalName = split[1].trim();
+                principalType = split[0];
+                principalName = split[1];
             } else {
                 principalType = 'User';
-                principalName = principal.trim();
+                principalName = principal;
             }
 
             const principalGroup: AclPrincipalGroup = {
