@@ -246,9 +246,20 @@ const ResourceACLsEditor = observer((p: {
             ? <div style={{ width: '300px' }}>
                 <b>Applies to whole cluster</b>
             </div>
-            : <Label text={`Selector (${resourceName} Name)`} style={{ width: '300px' }}>
+            : <Label
+                text={`Selector (${resourceName} Name)`}
+                style={{ width: '300px' }}
+                textSuffix={<LabelTooltip nowrap left>
+                    Other than just simply typing the name of a resource directly,<br />
+                    you can also use wildcard and prefix selectors.<br />
+                    <br />
+                    Input <code>*</code> to match any name (wildcard).<br />
+                    Or speficy a prefix selector by adding a star at the end. <br />
+                    For example <code>abc-*</code> would match any resource that starts with <code>abc-</code>.
+                </LabelTooltip>}
+            >
                 <>
-                    <Input value={res.selector} onChange={e => res.selector = e.target.value} />
+                    <Input value={res.selector} onChange={e => res.selector = e.target.value} spellCheck={false} />
                     <span style={{ opacity: '0.5', fontSize: '10px', marginLeft: '2px' }}>
                         {res.selector == '*'
                             ? ('Wildcard / Any ' + resourceName)
