@@ -112,14 +112,19 @@ export const AclPrincipalGroupEditor = observer((p: {
                 <Label text="User / Principal" textSuffix={<LabelTooltip nowrap left>
                     The user that gets the permissions granted (or denied).<br />
                     In Kafka this is referred to as the "principal".<br />
-                    Do not include the prefix so <code>my-user</code> instead of <code>User: my-user</code>.<br />
+                    Do not include the prefix so <code>my-user</code> instead of <code>User:my-user</code>.<br />
                     You can use <code>*</code> to target all users.
                 </LabelTooltip>} >
                     <Input.Group compact>
                         <Select
                             value={group.principalType}
                             onChange={x => group.principalType = x}
-                            style={{ width: '80px', background: 'hsl(0deg 0% 98%)' }}
+                            disabled
+                            showArrow={false}
+                            style={{
+                                width: '80px', background: 'hsl(0deg 0% 98%)',
+                                cursor: 'default'
+                            }}
                         >
                             <Option value="User">User</Option>
                             {/* <Option value="Group">Group</Option> */}
