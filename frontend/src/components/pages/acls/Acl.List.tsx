@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, Button, Alert, Tag, Popconfirm } from 'antd';
+import { Empty, Input, Button, Alert, Tag, Popconfirm, message } from 'antd';
 import { ColumnProps } from 'antd/lib/table';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
@@ -82,6 +82,7 @@ class AclList extends PageComponent {
                                     permissionType: 'Any',
                                 });
                                 await this.refreshData(true);
+                                message.success(<>Deleted ACLs for principal <Code>{record.principalName}</Code></>);
                             }}
                         >
                             <Button

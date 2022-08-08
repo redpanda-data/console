@@ -11,13 +11,13 @@
 
 import { useState } from 'react';
 import { observer } from 'mobx-react';
-import { Select, Input, Button, Modal, AutoComplete } from 'antd';
+import { Select, Input, Button, Modal, AutoComplete, message } from 'antd';
 import { api } from '../../../state/backendApi';
 import { AclOperation, AclStrOperation } from '../../../state/restInterfaces';
 import { AnimatePresence } from 'framer-motion';
 import { animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { containsIgnoreCase } from '../../../utils/utils';
-import { Label, LabelTooltip } from '../../../utils/tsxUtils';
+import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { TrashIcon } from '@heroicons/react/solid';
 import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
@@ -93,6 +93,10 @@ export const AclPrincipalGroupEditor = observer((p: {
                 setIsLoading(false);
                 return;
             }
+
+            if (p.type == 'create') message.success(<>Created ACLs for principal <Code>{group.principalName}</Code></>);
+            else message.success(<>Updated ACLs for principal <Code>{group.principalName}</Code></>);
+
             setIsLoading(false);
             p.onClose();
         }}
