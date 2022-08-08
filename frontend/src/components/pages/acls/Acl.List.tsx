@@ -43,7 +43,8 @@ class AclList extends PageComponent {
                     <Tag>{record.principalType}</Tag>
                     <span>{record.principalName}</span>
                 </>
-            }
+            },
+            defaultSortOrder: 'ascend'
         },
         {
             width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host'),
