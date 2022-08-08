@@ -14,7 +14,7 @@ import { toJson } from './jsonUtils';
 import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
 import { Radio, message, Progress, Skeleton, Tooltip } from 'antd';
 import { MessageType } from 'antd/lib/message';
-import { CopyOutlined, DownloadOutlined } from '@ant-design/icons';
+import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
 import { observer } from 'mobx-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -496,3 +496,30 @@ export const Code = (p: { children?: React.ReactNode, nowrap?: boolean }) => {
     return <span className={className}>{p.children}</span>
 }
 
+
+export function LabelTooltip(p: { children?: React.ReactNode, width?: number, nowrap?: boolean, left?: boolean }) {
+    const style: CSSProperties = {};
+
+    if (typeof p.width == 'number')
+        style.width = p.width + 'px';
+    if (p.nowrap === true)
+        style.whiteSpace = 'nowrap';
+    if (p.left === true)
+        style.textAlign = 'left';
+
+    const content = <div style={style}>
+        {p.children}
+    </div>
+
+    return <Tooltip
+        overlay={content}
+        trigger="hover"
+        getPopupContainer={findPopupContainer}>
+        <QuestionCircleOutlined style={{
+            color: 'hsl(0deg 0% 66%)',
+            fontSize: '13px',
+            transform: 'translateY(1px)',
+            marginLeft: '3px'
+        }} />
+    </Tooltip>
+}
