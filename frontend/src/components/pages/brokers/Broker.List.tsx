@@ -91,7 +91,7 @@ class BrokerList extends PageComponent {
                     <Row> {/* type="flex" */}
                         <Statistic title="ControllerID" value={info.controllerId} />
                         <Statistic title="Broker Count" value={brokers.length} />
-                        <Statistic title="Kafka Version" value={info.kafkaVersion} />
+                        <Statistic title="Cluster Version" value={info.kafkaVersion} />
                     </Row>
                 </Card>
 
