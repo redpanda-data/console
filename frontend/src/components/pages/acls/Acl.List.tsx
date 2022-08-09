@@ -26,7 +26,7 @@ import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone } from '../../../utils/jsonUtils';
 import { KowlTable } from '../../misc/KowlTable';
 import { LockIcon } from '@primer/octicons-react';
-import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
+import { TrashIcon } from '@heroicons/react/solid';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
@@ -54,22 +54,19 @@ class AclList extends PageComponent {
             width: '200px', title: 'ACL Entries',
             render: (_, record) => {
                 return <>
-                    <span style={{ display: 'flex', alignItems: 'center' }}>
+                    <span style={{ display: 'flex', alignItems: 'center' }}
+                        onClick={e => {
+                            e.stopPropagation();
+                        }}
+                    >
                         <span>{record.sourceEntries.length}</span>
-                        <Button
-                            type="text"
-                            className="iconButton"
-                            style={{ marginLeft: 'auto', padding: '4px', width: '40px' }}
-                            onClick={() => {
-                                this.editorType = 'edit';
-                                this.edittingPrincipalGroup = clone(record);
-                            }}
-                        ><PencilIcon /></Button>
+
                         <Popconfirm
                             title={<>Delete all ACL entries for principal <Code>{record.principalName}</Code> ?</>}
                             icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
                             placement="left"
                             okText="Delete"
+
                             okButtonProps={{ danger: true }}
                             onConfirm={async () => {
                                 await api.deleteACLs({
@@ -88,7 +85,8 @@ class AclList extends PageComponent {
                             <Button
                                 type="text"
                                 className="iconButton"
-                                style={{ padding: '4px', width: '40px' }}
+                                style={{ marginLeft: 'auto', padding: '4px', width: '40px' }}
+
                             ><TrashIcon /></Button>
                         </Popconfirm>
                     </span>
@@ -162,7 +160,14 @@ class AclList extends PageComponent {
                         observableSettings={uiSettings.aclList.configTable}
 
                         rowKey={x => x.principalType + ' :: ' + x.principalName + ' :: ' + x.host}
-                        rowClassName={() => 'pureDisplayRow'}
+
+                        rowClassName="hoverLink"
+                        onRow={(record) => ({
+                            onClick: () => {
+                                this.editorType = 'edit';
+                                this.edittingPrincipalGroup = clone(record);
+                            },
+                        })}
 
                         search={{
                             searchColumnIndex: 0,
