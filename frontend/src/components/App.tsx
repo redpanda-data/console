@@ -53,6 +53,9 @@ const VersionInfo = () => {
     if (IsDev) mode = ' - DEV';
     if (IsCI) mode = ' - CI';
 
+    if (env.REACT_APP_CONSOLE_PLATFORM_VERSION)
+        mode += ` (Platform Version ${env.REACT_APP_CONSOLE_PLATFORM_VERSION})`;
+
     let ref = env.REACT_APP_CONSOLE_GIT_REF;
     if (!ref || ref == 'master') ref = '';
 
@@ -387,7 +390,7 @@ class LicenseNotification extends Component {
                         }
                     </div>
                     <div>
-                        Please renew your license key. If you don't have one, please request a new/trial license at:{' '}
+                        To renew your license key, request a new/trial license at:{' '}
                         <a href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</a>
                     </div>
                 </div>
@@ -395,3 +398,4 @@ class LicenseNotification extends Component {
         </div>
     }
 }
+

@@ -18,6 +18,7 @@ const envNames = [
     'REACT_APP_CONSOLE_GIT_SHA',
     'REACT_APP_CONSOLE_GIT_REF', // 'master' or 'v1.2.3'
     'REACT_APP_BUILD_TIMESTAMP',
+    'REACT_APP_CONSOLE_PLATFORM_VERSION',
 
     'REACT_APP_BUILT_FROM_PUSH', // was built by 'image-on-push'?
 
