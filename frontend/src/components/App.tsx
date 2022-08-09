@@ -367,6 +367,8 @@ class LicenseNotification extends Component {
                 isExpired: remainingSec <= 0,
                 sourceDisplayName: sourceNames[x.source] ?? x.source,
                 typeDisplayName: typeNames[x.type] ?? x.type,
+                prettyDuration: prettyMilliseconds(remainingSec * 1000, { unitCount: 2, verbose: true }),
+                prettyDateTime: new Date(x.expiresAt * 1000).toLocaleDateString(),
             };
         });
 
@@ -377,17 +379,13 @@ class LicenseNotification extends Component {
         return <div className="expiringLicenses">
             {warnings.map(e =>
                 <div key={e.source}>
-                    {e.isExpired ?
-                        <div>
-                            Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>) has expired.
-                        </div>
-                        :
-                        <div>
-                            Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>) is about to expire
-                            <span className="date"> (valid until {new Date(e.expiresAt * 1000).toLocaleDateString()})</span>.
-                        </div>
-                    }
-
+                    <div>
+                        Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>) &nbsp;
+                        {e.isExpired
+                            ? <> has expired <span className="date">{e.prettyDateTime}</span> ({e.prettyDuration} ago)</>
+                            : <> will expire <span className="date">{e.prettyDateTime}</span> ({e.prettyDuration} remaining)</>
+                        }
+                    </div>
                     <div>
                         Please renew your license key. If you don't have one, please request a new/trial license at:{' '}
                         <a href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</a>
