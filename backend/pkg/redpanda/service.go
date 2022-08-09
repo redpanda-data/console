@@ -139,17 +139,10 @@ func licenseToRedpandaLicense(license admin.License) (License, error) {
 		return License{}, fmt.Errorf("unknown license type: %s", license.Properties.Type)
 	}
 
-	expiresAt := int64(-1)
-	if license.Properties.Expires != -1 {
-		timeDay := 24 * time.Hour
-		expiringIn := time.Duration(license.Properties.Expires) * timeDay
-		expiresAt = time.Now().Add(expiringIn).Unix()
-	}
-
 	return License{
 		Source:    LicenseSourceRedpanda,
 		Type:      LicenseType(license.Properties.Type),
-		ExpiresAt: expiresAt,
+		ExpiresAt: license.Properties.Expires,
 	}, nil
 }
 
