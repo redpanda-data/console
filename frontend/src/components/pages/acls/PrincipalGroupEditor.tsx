@@ -202,7 +202,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                         )}
                         <Button
                             block
-                            onClick={() => group.consumerGroupAcls.push(createEmptyTopicAcl())}
+                            onClick={() => group.consumerGroupAcls.push(createEmptyConsumerGroupAcl())}
                         >Add Consumer Group ACL
                         </Button>
                     </div>
