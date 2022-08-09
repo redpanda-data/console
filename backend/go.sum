@@ -389,8 +389,8 @@ github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvW
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.15.2/go.mod h1:PhcZ0MbTNciWF3rruxRgKxI5NkcHHrHUDtV4Yw2GlzU=
 github.com/klauspost/compress v1.15.4/go.mod h1:PhcZ0MbTNciWF3rruxRgKxI5NkcHHrHUDtV4Yw2GlzU=
-github.com/klauspost/compress v1.15.8 h1:JahtItbkWjf2jzm/T+qgMxkP9EMHsqEUA6vCMGmXvhA=
-github.com/klauspost/compress v1.15.8/go.mod h1:PhcZ0MbTNciWF3rruxRgKxI5NkcHHrHUDtV4Yw2GlzU=
+github.com/klauspost/compress v1.15.9 h1:wKRjX6JRtDdrE9qwa4b/Cip7ACOshUI4smpCQanqjSY=
+github.com/klauspost/compress v1.15.9/go.mod h1:PhcZ0MbTNciWF3rruxRgKxI5NkcHHrHUDtV4Yw2GlzU=
 github.com/knadh/koanf v1.4.2 h1:2itp+cdC6miId4pO4Jw7c/3eiYD26Z/Sz3ATJMwHxIs=
 github.com/knadh/koanf v1.4.2/go.mod h1:4NCo0q4pmU398vF9vq2jStF9MWQZ8JEDcDMHlDCr4h0=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
@@ -528,10 +528,8 @@ github.com/prometheus/procfs v0.6.0/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1
 github.com/prometheus/procfs v0.7.3 h1:4jVXhlkAyzOScmCkXBTOLRLTz8EeU+eyjrwB/EPq0VU=
 github.com/prometheus/procfs v0.7.3/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1xBZuNvfVA=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
-github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220726211426-9ad7e9d59990 h1:vTg9504pzUBndIvX7U+zUvPAsDymCvdNujPHKZQxzlI=
-github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220726211426-9ad7e9d59990/go.mod h1:WIV9YnnJwpNwHJS7XlntpV9iiHJHTA0RVE6nkGL53Xg=
-github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220730011954-8de704b87b6d h1:6qXlzNOewbn2gYDMlrGLlaDEwLCdE5NX9DdZp7ObcP8=
-github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220730011954-8de704b87b6d/go.mod h1:WIV9YnnJwpNwHJS7XlntpV9iiHJHTA0RVE6nkGL53Xg=
+github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220809083906-042dbc2cf73f h1:cOpKJ0LcsLQFkReeDVfenRBW/FobwgS/CB9NFa9Jk0Y=
+github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220809083906-042dbc2cf73f/go.mod h1:3AjNRy0lb0JMzZeHW6622PXV8bj/vR1j6VZ3m8fv7rk=
 github.com/rhnvrm/simples3 v0.6.1/go.mod h1:Y+3vYm2V7Y4VijFoJHHTrja6OgPrJ2cBti8dPGkC3sA=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
@@ -587,8 +585,9 @@ github.com/twmb/franz-go v1.5.0/go.mod h1:ZKQ5AtqBbdc783bLCay7nDc21lJnIIA8mFJYhL
 github.com/twmb/franz-go v1.6.0 h1:yri7YsVBe/k1LKcoZSLILgUI3U14e82qtD9i4VOcs9c=
 github.com/twmb/franz-go v1.6.0/go.mod h1:xdMwpUIQL/JDKKwerc5qJQG8TU1SNIddfjKJJyqRJIg=
 github.com/twmb/franz-go/pkg/kmsg v1.0.0/go.mod h1:SxG/xJKhgPu25SamAq0rrucfp7lbzCpEXOC+vH/ELrY=
-github.com/twmb/franz-go/pkg/kmsg v1.1.0 h1:csckTxG48q7Tem7ZwMxe2jAb0ehDNglxZccGnpqe4RU=
 github.com/twmb/franz-go/pkg/kmsg v1.1.0/go.mod h1:SxG/xJKhgPu25SamAq0rrucfp7lbzCpEXOC+vH/ELrY=
+github.com/twmb/franz-go/pkg/kmsg v1.2.0 h1:jYWh2qFw5lDbNv5Gvu/sMKagzICxuA5L6m1W2Oe7XUo=
+github.com/twmb/franz-go/pkg/kmsg v1.2.0/go.mod h1:SxG/xJKhgPu25SamAq0rrucfp7lbzCpEXOC+vH/ELrY=
 github.com/twmb/franz-go/pkg/sasl/kerberos v1.0.0 h1:Wfq7o2Eu8CaPJOqu/mqM1pu9b3HuO0aWfDGcdo1cVR8=
 github.com/twmb/franz-go/pkg/sasl/kerberos v1.0.0/go.mod h1:S0nXtRBGwqtOfTGQL3BDliF3hSxyUm0dqy5gEfPsQT0=
 github.com/twmb/go-rbtree v1.0.0/go.mod h1:UlIAI8gu3KRPkXSobZnmJfVwCJgEhD/liWzT5ppzIyc=

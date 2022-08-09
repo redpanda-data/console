@@ -23,10 +23,10 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
-	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220730011954-8de704b87b6d
+	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20220809083906-042dbc2cf73f
 	github.com/stretchr/testify v1.7.0
 	github.com/twmb/franz-go v1.6.0
-	github.com/twmb/franz-go/pkg/kmsg v1.1.0
+	github.com/twmb/franz-go/pkg/kmsg v1.2.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.0.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	go.uber.org/zap v1.21.0
@@ -62,7 +62,7 @@ require (
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/klauspost/compress v1.15.8 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
