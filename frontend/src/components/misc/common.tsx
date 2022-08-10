@@ -19,7 +19,7 @@ import { Grid, Modal, Tag } from 'antd';
 import { uiState } from '../../state/uiState';
 import { prettyBytesOrNA } from '../../utils/utils';
 import env, { IsDev } from '../../utils/env';
-import { LayoutBypass } from '../../utils/tsxUtils';
+import { ZeroSizeWrapper } from '../../utils/tsxUtils';
 import { clone } from '../../utils/jsonUtils';
 import { TopicLogDirSummary } from '../../state/restInterfaces';
 import { AlertIcon } from '@primer/octicons-react';
@@ -205,7 +205,7 @@ export function WarningToolip(p: { content: React.ReactNode, position: 'top' | '
         transform: 'none',
     };
 
-    return <LayoutBypass>
+    return <ZeroSizeWrapper>
         <div className="tooltip" style={{
             color: 'hsl(33deg, 90%, 65%)',
             borderRadius: '25px',
@@ -219,5 +219,5 @@ export function WarningToolip(p: { content: React.ReactNode, position: 'top' | '
             <AlertIcon />
             <span className="tooltiptext" style={p.position == 'left' ? styleLeft : undefined}>{p.content}</span>
         </div>
-    </LayoutBypass>
+    </ZeroSizeWrapper>
 }

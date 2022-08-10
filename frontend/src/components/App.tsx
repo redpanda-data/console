@@ -34,7 +34,7 @@ import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
 import { MenuFoldOutlined, MenuUnfoldOutlined, GithubFilled, TwitterOutlined, LinkedinFilled, SlackSquareOutlined } from '@ant-design/icons';
-import { LayoutBypass, } from '../utils/tsxUtils';
+import { ZeroSizeWrapper, } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
 import { renderErrorModals } from './misc/ErrorModal';
@@ -176,9 +176,9 @@ const AppPageHeader = observer(() => {
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
         ? <>
             <div className="breadcrumbLast">{r.breadcrumbName}</div>
-            <LayoutBypass justifyContent="start">
+            <ZeroSizeWrapper justifyContent="start">
                 <DataRefreshButton />
-            </LayoutBypass>
+            </ZeroSizeWrapper>
         </>
         : <NavLink to={r.path}>{r.breadcrumbName}</NavLink>;
 
@@ -186,7 +186,7 @@ const AppPageHeader = observer(() => {
         <PageHeader
             breadcrumb={{
                 routes: breadcrumbs,
-                separator: <LayoutBypass width="10px"><ChevronRightIcon size={14} verticalAlign="unset" /></LayoutBypass>,
+                separator: <ZeroSizeWrapper width="10px"><ChevronRightIcon size={14} verticalAlign="unset" /></ZeroSizeWrapper>,
                 params: breadcrumbs.last(),
                 itemRender: breadcrumbRender
             }}

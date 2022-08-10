@@ -39,7 +39,7 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
+import { Ellipsis, findPopupContainer, Label, ZeroSizeWrapper, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
 import { cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { makePaginationConfig, range, sortField } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
@@ -259,9 +259,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 <MotionSpan identityKey="btnCancelSearch" overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title="Stop searching" getPopupContainer={findPopupContainer}>
                                         <Button type="primary" danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
-                                            <LayoutBypass >
+                                            <ZeroSizeWrapper >
                                                 <XCircleIcon size={20} />
-                                            </LayoutBypass>
+                                            </ZeroSizeWrapper>
                                         </Button>
                                     </Tooltip>
                                 </MotionSpan>
@@ -455,13 +455,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                             </Dropdown>
                         </div>
                     </NoClipboardPopover>
-                    // <ZeroSizeWrapper width={32} height={0}>
-                    //     <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
-                    // </ZeroSizeWrapper>
-                    // <ZeroSizeWrapper width={32} height={0}>
-                    //     <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
-                    // </ZeroSizeWrapper>
-                    // <Divider type="vertical" />
                 ),
             },
             // todo: size was a guess anyway, might be added back later
@@ -1386,7 +1379,7 @@ class MessageSearchFilterBar extends Component {
                             value={this.currentFilter!.code}
                             onValueChange={(code, transpiled) => { this.currentFilter!.code = code; this.currentFilter!.transpiledCode = transpiled; this.hasChanges = true;  }}
 
-                        /> 
+                            />
 
                                              </>
                     </Label>

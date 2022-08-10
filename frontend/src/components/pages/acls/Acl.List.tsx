@@ -22,11 +22,11 @@ import { animProps } from '../../../utils/animationProps';
 import { comparer, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import Card from '../../misc/Card';
-import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import { clone } from '../../../utils/jsonUtils';
 import { KowlTable } from '../../misc/KowlTable';
 import { LockIcon } from '@primer/octicons-react';
-import { TrashIcon } from '@heroicons/react/solid';
+import { TrashIcon } from '@heroicons/react/outline';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
@@ -61,34 +61,33 @@ class AclList extends PageComponent {
                     >
                         <span>{record.sourceEntries.length}</span>
 
-                        <Popconfirm
-                            title={<>Delete all ACL entries for principal <Code>{record.principalName}</Code> ?</>}
-                            icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
-                            placement="left"
-                            okText="Delete"
+                        <ZeroSizeWrapper height="21px" width="auto" wrapperStyle={{ marginLeft: 'auto' }}>
+                            <Popconfirm
+                                title={<>Delete all ACL entries for principal <Code>{record.principalName}</Code> ?</>}
+                                icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
+                                placement="left"
+                                okText="Delete"
 
-                            okButtonProps={{ danger: true }}
-                            onConfirm={async () => {
-                                await api.deleteACLs({
-                                    resourceType: 'Any',
-                                    resourceName: undefined,
-                                    resourcePatternType: 'Any',
-                                    principal: record.principalType + ':' + record.principalName,
-                                    host: record.host,
-                                    operation: 'Any',
-                                    permissionType: 'Any',
-                                });
-                                await this.refreshData(true);
-                                message.success(<>Deleted ACLs for principal <Code>{record.principalName}</Code></>);
-                            }}
-                        >
-                            <Button
-                                type="text"
-                                className="iconButton"
-                                style={{ marginLeft: 'auto', padding: '4px', width: '40px' }}
-
-                            ><TrashIcon /></Button>
-                        </Popconfirm>
+                                okButtonProps={{ danger: true }}
+                                onConfirm={async () => {
+                                    await api.deleteACLs({
+                                        resourceType: 'Any',
+                                        resourceName: undefined,
+                                        resourcePatternType: 'Any',
+                                        principal: record.principalType + ':' + record.principalName,
+                                        host: record.host,
+                                        operation: 'Any',
+                                        permissionType: 'Any',
+                                    });
+                                    await this.refreshData(true);
+                                    message.success(<>Deleted ACLs for principal <Code>{record.principalName}</Code></>);
+                                }}
+                            >
+                                <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}>
+                                    <TrashIcon />
+                                </Button>
+                            </Popconfirm>
+                        </ZeroSizeWrapper>
                     </span>
                 </>
             },

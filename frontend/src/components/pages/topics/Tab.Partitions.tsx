@@ -18,7 +18,7 @@ import { api, } from '../../../state/backendApi';
 import { sortField, makePaginationConfig } from '../../misc/common';
 import '../../../utils/arrayExtensions';
 import { uiState } from '../../../state/uiState';
-import { numberToThousandsString, DefaultSkeleton, InfoText, findPopupContainer, LayoutBypass } from '../../../utils/tsxUtils';
+import { numberToThousandsString, DefaultSkeleton, InfoText, findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
 import { WarningTwoTone } from '@ant-design/icons';
 
@@ -104,11 +104,11 @@ function renderPartitionError(partition: Partition) {
         }
     >
         <span>
-            <LayoutBypass justifyContent="center" alignItems="center" width="20px" height="18px">
+            <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
                 <span style={{ fontSize: '19px' }}>
                     <WarningTwoTone twoToneColor="orange" />
                 </span>
-            </LayoutBypass>
+            </ZeroSizeWrapper>
         </span>
     </Popover>
 

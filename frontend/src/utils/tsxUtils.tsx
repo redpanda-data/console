@@ -424,8 +424,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
     }
 }
 
-// todo: layoutbypass and zerosizewrapper do the same thing, merge them.
-export class LayoutBypass extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string, positionContentAbsolute?: boolean, transform?: string }> {
+export class ZeroSizeWrapper extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string, positionContentAbsolute?: boolean, transform?: string, wrapperStyle?: CSSProperties }> {
 
     static readonly style: CSSProperties = {
         display: 'inline-flex',
@@ -438,9 +437,9 @@ export class LayoutBypass extends Component<{ width?: string, height?: string, j
 
     render() {
         const p = this.props;
-        let style = LayoutBypass.style;
-        if (p.width || p.height || p.justifyContent || p.alignItems || p.transform) {
-            style = Object.assign({}, style, p);
+        let style = ZeroSizeWrapper.style;
+        if (p.width || p.height || p.justifyContent || p.alignItems || p.transform || p.wrapperStyle) {
+            style = Object.assign({}, style, p, p.wrapperStyle);
         }
 
         return <span className="verticalCenter" style={style}>
@@ -450,16 +449,6 @@ export class LayoutBypass extends Component<{ width?: string, height?: string, j
         </span>
     }
 }
-
-export const ZeroSizeWrapper = (p: { width: number, height: number, children?: React.ReactNode }) => {
-    return <span style={{
-        width: p.width, height: p.height,
-        display: 'inline-flex', placeContent: 'center', placeItems: 'center',
-
-    }}>
-        {p.children}
-    </span>;
-};
 
 
 const defaultSkeletonStyle = { margin: '2rem' };

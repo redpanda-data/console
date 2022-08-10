@@ -19,7 +19,7 @@ import { IndeterminateCheckbox } from './components/IndeterminateCheckbox';
 import { SelectionInfoBar } from './components/StatisticsBar';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { ColumnProps } from 'antd/lib/table/Column';
-import { DefaultSkeleton, findPopupContainer, LayoutBypass, InfoText } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, findPopupContainer, ZeroSizeWrapper, InfoText } from '../../../utils/tsxUtils';
 import { api } from '../../../state/backendApi';
 import { computed, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
 import { PartitionSelection } from './ReassignPartitions';
@@ -447,11 +447,11 @@ function renderPartitionError(partition: Partition) {
         }
     >
         <span>
-            <LayoutBypass justifyContent="center" alignItems="center" width="20px" height="18px">
+            <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
                 <span style={{ fontSize: '19px' }}>
                     <WarningTwoTone twoToneColor="orange" />
                 </span>
-            </LayoutBypass>
+            </ZeroSizeWrapper>
         </span>
     </Popover>
 }
@@ -468,11 +468,11 @@ function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
         }
     >
         <span>
-            <LayoutBypass justifyContent="center" alignItems="center" width="20px" height="18px">
+            <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
                 <span style={{ fontSize: '19px' }}>
                     <WarningTwoTone twoToneColor="orange" />
                 </span>
-            </LayoutBypass>
+            </ZeroSizeWrapper>
         </span>
     </Popover>
 }

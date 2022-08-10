@@ -19,7 +19,7 @@ import React, { Component, CSSProperties, useState } from 'react';
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
 import { animProps } from '../../../utils/animationProps';
-import { findPopupContainer, LayoutBypass } from '../../../utils/tsxUtils';
+import { findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
 
 import ElasticLogo from '../../../assets/connectors/elastic.svg';
@@ -246,11 +246,11 @@ export const ConnectorClass = observer((props: { observable: { class: string; } 
     return <div style={{ height: '1px', overflow: 'visible', display: 'flex', alignItems: 'center' }}>
         {meta && meta.logo &&
             <span style={{ verticalAlign: 'inherit', marginRight: '5px' }}>
-                <LayoutBypass width="22px" transform="translateY(-1px)" >
+                <ZeroSizeWrapper width="22px" transform="translateY(-1px)" >
                     <div style={{ width: '22px', height: '22px' }}>
                         {meta.logo}
                     </div>
-                </LayoutBypass>
+                </ZeroSizeWrapper>
             </span>
         }
 
@@ -527,9 +527,9 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     const state = task.state;
 
     const iconWrapper = (icon: JSX.Element) => <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle' }}>
-        <LayoutBypass width="17px">
+        <ZeroSizeWrapper width="17px">
             {icon}
-        </LayoutBypass>
+        </ZeroSizeWrapper>
     </span>
 
     let icon: JSX.Element = <></>;
@@ -547,12 +547,12 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     let errBtn: JSX.Element | undefined = undefined;
     let modal: JSX.Element | undefined = undefined;
     if (task.taskId != null && task.trace) {
-        errBtn = <LayoutBypass height="12px" width="autos">
+        errBtn = <ZeroSizeWrapper height="12px" width="autos">
             <Button danger onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
                 {stateContent}
                 <span>(Show Error)</span>
             </Button>
-        </LayoutBypass>
+        </ZeroSizeWrapper>
 
         const close = () => showErr(undefined);
         modal = <Modal visible={err != null} onOk={close} onCancel={close} cancelButtonProps={{ style: { display: 'none' } }}
