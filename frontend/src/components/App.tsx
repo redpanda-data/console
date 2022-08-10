@@ -362,6 +362,12 @@ class LicenseNotification extends Component {
         const withRemainingTime = api.licenses.map(x => {
             const remainingSec = x.expiresAt - unixNow;
             const remainingDays = remainingSec / (60 * 60 * 24);
+
+            const expiredForMoreThanAYear = (remainingSec < 0 && remainingDays < -365);
+            const prettyDuration = expiredForMoreThanAYear
+                ? 'over a year'
+                : prettyMilliseconds(Math.abs(remainingSec) * 1000, { unitCount: 2, verbose: true, secondsDecimalDigits: 0 });
+
             return {
                 ...x,
                 remainingSec,
@@ -370,7 +376,7 @@ class LicenseNotification extends Component {
                 isExpired: remainingSec <= 0,
                 sourceDisplayName: sourceNames[x.source] ?? x.source,
                 typeDisplayName: typeNames[x.type] ?? x.type,
-                prettyDuration: prettyMilliseconds(remainingSec * 1000, { unitCount: 2, verbose: true }),
+                prettyDuration,
                 prettyDateTime: new Date(x.expiresAt * 1000).toLocaleDateString(),
             };
         });
@@ -383,7 +389,7 @@ class LicenseNotification extends Component {
             {warnings.map(e =>
                 <div key={e.source}>
                     <div>
-                        Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>) &nbsp;
+                        Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>)
                         {e.isExpired
                             ? <> has expired <span className="date">{e.prettyDateTime}</span> ({e.prettyDuration} ago)</>
                             : <> will expire <span className="date">{e.prettyDateTime}</span> ({e.prettyDuration} remaining)</>
