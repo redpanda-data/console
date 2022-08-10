@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
@@ -24,6 +25,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/runtime/protoiface"
 )
 
 type RecordPropertyType int
@@ -171,7 +173,9 @@ func (s *Service) deserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 		return nil, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
 	}
 
-	jsonBytes, err := msg.MarshalJSON()
+	jsonBytes, err := msg.MarshalJSONPB(&jsonpb.Marshaler{
+		AnyResolver: &anyResolver{s.registry},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal protobuf message to JSON: %w", err)
 	}
@@ -472,4 +476,17 @@ func (s *Service) getFileDescriptorBySchemaID(schemaID int) (*desc.FileDescripto
 
 	desc, exists := s.fileDescriptorsBySchemaID[schemaID]
 	return desc, exists
+}
+
+type anyResolver struct {
+	mr *msgregistry.MessageRegistry
+}
+
+func (r *anyResolver) Resolve(typeURL string) (protoiface.MessageV1, error) {
+	mname := typeURL
+	if slash := strings.LastIndex(mname, "/"); slash >= 0 {
+		mname = mname[slash+1:]
+	}
+
+	return r.mr.Resolve(mname)
 }
