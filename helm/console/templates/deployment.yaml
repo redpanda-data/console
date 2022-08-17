@@ -110,7 +110,7 @@ spec:
                   name: {{ include "console.fullname" . }}
                   key: kafka-sasl-password
             {{- end }}
-             {{- if .Values.secret.kafka.protobufGitBasicAuthPassword }}
+            {{- if .Values.secret.kafka.protobufGitBasicAuthPassword }}
             - name: KAFKA_PROTOBUF_GIT_BASICAUTH_PASSWORD
               valueFrom:
                 secretKeyRef:
