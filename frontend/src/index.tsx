@@ -50,7 +50,7 @@ ConfigProvider.config({
 });
 
 // Tell monaco editor where to load dependencies from
-loader.config({ paths: { vs: '/static/js/vendor/monaco/package/min/vs' } });
+loader.config({ paths: { vs: basePathS + '/static/js/vendor/monaco/package/min/vs' } });
 
 const HistorySetter = withRouter((p: RouteComponentProps) => {
     appGlobal.history = p.history;
