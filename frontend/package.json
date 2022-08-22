@@ -8,11 +8,11 @@
         "node": "^16.13"
     },
     "scripts": {
-        "start": "cross-env SKIP_PREFLIGHT_CHECK=true                         react-app-rewired start",
-        "start2": "cross-env SKIP_PREFLIGHT_CHECK=true REACT_APP_ENABLED_FEATURES=SINGLE_SIGN_ON,REASSIGN_PARTITIONS react-app-rewired start",
-        "build": "react-app-rewired build -- --profile",
-        "build-local-test": "cross-env REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true react-app-rewired build",
-        "test": "react-app-rewired test",
+        "start": "cross-env SKIP_PREFLIGHT_CHECK=true node ./scripts/start.js",
+        "start2": "cross-env SKIP_PREFLIGHT_CHECK=true REACT_APP_ENABLED_FEATURES=SINGLE_SIGN_ON,REASSIGN_PARTITIONS node ./scripts/start.js",
+        "build": "node ./scripts/build.js -- --profile",
+        "build-local-test": "cross-env REACT_APP_BUSINESS=true REACT_APP_CONSOLE_GIT_SHA=abc123 REACT_APP_CONSOLE_GIT_REF=local REACT_APP_BUILD_TIMESTAMP=32503680000 REACT_APP_DEV_HINT=true node ./scripts/build.js",
+        "test": "react-scripts test",
         "eject": "react-scripts eject",
         "test-interpreter-code": "ts-node --project src/utils/interpreter/tsconfig.json src/utils/interpreter/findFunction.test.ts",
         "lint": "eslint \"./src/**/*.{ts,tsx}\" --cache",
@@ -34,6 +34,7 @@
         "mobx-react": "^7.5",
         "moment": "^2.29.1",
         "monaco-editor": "^0.33.0",
+        "node-fetch": "^3.2.6",
         "pretty-bytes": "^5.6.0",
         "pretty-ms": "^7.0.1",
         "query-string": "^7.0.1",
@@ -52,9 +53,7 @@
         "remark-emoji": "^3.0.2",
         "remark-gfm": "^3.0.1",
         "remark-prism": "^1.3.6",
-        "stacktrace-js": "^2.0.2",
-        "node-fetch": "^3.2.6"
-
+        "stacktrace-js": "^2.0.2"
     },
     "devDependencies": {
         "@testing-library/jest-dom": "^5.12.0",
@@ -72,8 +71,6 @@
         "@typescript-eslint/parser": "^5.27.1",
         "cross-env": "^7.0.3",
         "node-fetch": "^3.2.6",
-        "customize-cra": "^1.0.0",
-        "react-app-rewired": "^2.1.8",
         "sass": "^1.52.0",
         "tar-stream": "^2.2.0",
         "ts-node": "^10.8",
@@ -92,8 +89,8 @@
         ]
     },
     "resolutions": {
-      "//": "See https://github.com/facebook/create-react-app/issues/11773 ",
-      "react-error-overlay": "6.0.11",
-      "immer": "9.0.7"
+        "//": "See https://github.com/facebook/create-react-app/issues/11773 ",
+        "react-error-overlay": "6.0.11",
+        "immer": "9.0.7"
     }
 }
