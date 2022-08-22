@@ -19,7 +19,7 @@ interface FilterEditorProps {
     onValueChange: (code: string, transpiledCode: string) => void;
 }
 
-const options: editor.IStandaloneEditorConstructionOptions  = {
+const options: editor.IStandaloneEditorConstructionOptions = {
     lineNumbers: 'off',
 };
 
@@ -45,11 +45,11 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
     const handleBeforeMount: BeforeMount = (monaco) => {
         const libSource = `
             /**
-            * Is a position within a partition for the next message to be sent to a consumer. 
-            * A simple integer number which is to maintain the current position of a consumer.    
+            * Is a position within a partition for the next message to be sent to a consumer.
+            * A simple integer number which is to maintain the current position of a consumer.
             */
             const offset: number;
-            /** 
+            /**
             * integer id of a topic partition, eatch partition holds a subset of records owned by a topic
             */
             const partitionID: number;
@@ -82,7 +82,7 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
     const handleValueChange: OnChange = async () => {
         const editorValue = (await getEditorValue()) ?? '';
         const result = await tsWorkerClient!.getEmitOutput(editorUri!.toString());
-        setImmediate(() => onValueChange(editorValue, result.outputFiles[0].text));
+        setTimeout(() => onValueChange(editorValue, result.outputFiles[0].text));
     };
 
     return (

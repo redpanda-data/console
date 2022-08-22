@@ -27,7 +27,7 @@ export class BrokerList extends Component<BrokerListProps> {
     constructor(p: any) {
         super(p);
         if (!api.clusterInfo)
-            setImmediate(() => api.refreshCluster());
+            setTimeout(() => api.refreshCluster());
     }
 
     render() {

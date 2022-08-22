@@ -168,7 +168,7 @@ export class UpdatePopup extends Component {
         });
 
         updateDialogOpen = true;
-        setImmediate(() => {
+        setTimeout(() => {
             Modal.info({
                 title: 'Redpanda Console has been updated',
                 content: <div>The page must be reloaded to apply the newest version of the frontend.</div>,

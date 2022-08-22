@@ -21,7 +21,6 @@ import KowlEditor, { IStandaloneCodeEditor } from '../../../misc/KowlEditor';
 import Tabs, { Tab } from '../../../misc/tabs/Tabs';
 import HeadersEditor from './Headers';
 
-export type { Props as PublishMessageModalProps };
 type Props = {
     state: {
         topics: string[];
@@ -39,6 +38,8 @@ type Props = {
         headers: { key: string; value: string; }[];
     }
 };
+
+export type { Props as PublishMessageModalProps };
 
 type EncodingOption = {
     value: EncodingType,

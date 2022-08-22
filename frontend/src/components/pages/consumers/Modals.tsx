@@ -305,7 +305,7 @@ export class EditOffsetsModal extends Component<{
 
                 const propOffsets = this.props.offsets;
                 // Fetch offset for each partition
-                setImmediate(async () => {
+                setTimeout(async () => {
                     const msg = new Message('Fetching offsets for timestamp', 'loading', '...');
 
                     let offsetsForTimestamp: TopicOffset[];
@@ -423,7 +423,7 @@ export class EditOffsetsModal extends Component<{
         if (visible == this.lastVisible) return;
 
         if (visible) {
-            setImmediate(() => {
+            setTimeout(() => {
                 // modal became visible
 
                 // need all groups for "other groups" dropdown

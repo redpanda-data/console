@@ -51,7 +51,7 @@ class SearchBar<TItem> extends Component<{
             const data = this.filteredSource.data;
 
             transaction(() => {
-                setImmediate(() => {
+                setTimeout(() => {
                     this.props.onFilteredDataChanged(data);
                 });
             });

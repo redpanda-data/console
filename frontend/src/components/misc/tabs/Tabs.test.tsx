@@ -11,13 +11,13 @@
 
 import React from 'react';
 import Tabs, { Tab } from './Tabs';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, screen } from '@testing-library/react';
 
 const testTabs: Array<Tab> = [
     {
         key: 'test1',
         title: 'test title 1',
-        content: 'test content 1',
+        content: () => 'test content 1',
     },
     {
         key: 'test2',
@@ -33,65 +33,65 @@ const testTabs: Array<Tab> = [
 ];
 
 it('renders a single tab with string title and content', () => {
-    const { getByText } = render(<Tabs tabs={testTabs.slice(0, 1)} />);
+    render(<Tabs tabs={testTabs.slice(0, 1)} />);
 
-    expect(getByText('test title 1')).toBeInTheDocument();
-    expect(getByText('test content 1')).toBeInTheDocument();
+    expect(screen.getByText('test title 1')).toBeInTheDocument();
+    expect(screen.getByText('test content 1')).toBeInTheDocument();
 });
 
 it('renders an initial tab other than the first', () => {
-    const { getByText } = render(<Tabs tabs={testTabs.slice(0, 2)} selectedTabKey="test2" />);
+    render(<Tabs tabs={testTabs.slice(0, 2)} selectedTabKey="test2" />);
 
-    expect(getByText('test title 2')).toBeInTheDocument();
-    expect(getByText('test content 2')).toBeInTheDocument();
+    expect(screen.getByText('test title 2')).toBeInTheDocument();
+    expect(screen.getByText('test content 2')).toBeInTheDocument();
 });
 
 it('renders the wanted tab after switching to it', () => {
-    const { getByText, queryByText } = render(<Tabs tabs={testTabs.slice(0, 2)} />);
+    render(<Tabs tabs={testTabs.slice(0, 2)} />);
 
-    expect(getByText('test content 1')).toBeInTheDocument();
-    expect(queryByText('test content 2')).not.toBeInTheDocument();
+    expect(screen.getByText('test content 1')).toBeInTheDocument();
+    expect(screen.queryByText('test content 2')).not.toBeInTheDocument();
 
-    fireEvent.click(getByText('test title 2'));
+    fireEvent.click(screen.getByText('test title 2'));
 
-    expect(getByText('test content 2')).toBeInTheDocument();
-    expect(queryByText('test content 1')).not.toBeInTheDocument();
+    expect(screen.getByText('test content 2')).toBeInTheDocument();
+    expect(screen.queryByText('test content 1')).not.toBeInTheDocument();
 
-    fireEvent.click(getByText('test title 1'));
+    fireEvent.click(screen.getByText('test title 1'));
 
-    expect(getByText('test content 1')).toBeInTheDocument();
-    expect(queryByText('test content 2')).not.toBeInTheDocument();
+    expect(screen.getByText('test content 1')).toBeInTheDocument();
+    expect(screen.queryByText('test content 2')).not.toBeInTheDocument();
 });
 
 it('does not switch tabs when wanted key is disabled', () => {
-    const { getByText, queryByText } = render(<Tabs tabs={testTabs.slice(0, 3)} />);
+    render(<Tabs tabs={testTabs.slice(0, 3)} />);
 
-    fireEvent.click(getByText('test title 3'));
+    fireEvent.click(screen.getByText('test title 3'));
 
-    expect(queryByText('test content 3')).not.toBeInTheDocument();
-    expect(getByText('test content 1')).toBeInTheDocument();
+    expect(screen.queryByText('test content 3')).not.toBeInTheDocument();
+    expect(screen.getByText('test content 1')).toBeInTheDocument();
 });
 
 it('executes onChange callback when active tab changes', () => {
     const onChange = jest.fn();
 
-    const { getByText } = render(<Tabs tabs={testTabs.slice(0, 2)} onChange={onChange} />);
+    render(<Tabs tabs={testTabs.slice(0, 2)} onChange={onChange} />);
 
-    fireEvent.click(getByText('test title 2'));
+    fireEvent.click(screen.getByText('test title 2'));
 
     expect(onChange).toHaveBeenCalled();
 });
 
 it('accepts a function as tab title', () => {
     const tabs = testTabs.slice(0, 1).map((tab) => ({ ...tab, title: () => <span data-testid="title-function-span" /> }));
-    const { getByTestId } = render(<Tabs tabs={tabs} />);
+    render(<Tabs tabs={tabs} />);
 
-    expect(getByTestId('title-function-span')).toBeInTheDocument();
+    expect(screen.getByTestId('title-function-span')).toBeInTheDocument();
 });
 
 it('accepts a function as tab content', () => {
     const tabs = testTabs.slice(0, 1).map((tab) => ({ ...tab, content: () => <span data-testid="content-function-span" /> }));
-    const { getByTestId } = render(<Tabs tabs={tabs} />);
+    render(<Tabs tabs={tabs} />);
 
-    expect(getByTestId('content-function-span')).toBeInTheDocument();
+    expect(screen.getByTestId('content-function-span')).toBeInTheDocument();
 })

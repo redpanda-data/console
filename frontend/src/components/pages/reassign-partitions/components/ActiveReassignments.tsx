@@ -234,7 +234,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
                 await api.resetReplicationThrottleRate(allBrokers);
             }
 
-            setImmediate(() => {
+            setTimeout(() => {
                 // need to update actual value after changing
                 api.refreshCluster(true);
             });
@@ -276,7 +276,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         if (this.wasVisible != visible) {
             // became visible or invisible
             // force update of topic config, so isThrottle has up to date information
-            setImmediate(async () => {
+            setTimeout(async () => {
                 api.topicConfig.delete(state.topicName);
                 await api.refreshTopicConfig(state.topicName, true);
                 this.shouldThrottle = this.isThrottled();
@@ -285,7 +285,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         this.wasVisible = visible;
 
         const topicConfig = api.topicConfig.get(state.topicName);
-        if (!topicConfig) setImmediate(() => { api.refreshTopicConfig(state.topicName); });
+        if (!topicConfig) setTimeout(() => { api.refreshTopicConfig(state.topicName); });
 
         const replicas = state.partitions.flatMap(p => p.replicas).distinct();
         const addingReplicas = state.partitions.flatMap(p => p.addingReplicas).distinct();

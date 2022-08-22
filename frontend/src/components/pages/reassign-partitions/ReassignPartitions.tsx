@@ -284,7 +284,7 @@ class ReassignPartitions extends PageComponent {
             if (scrollTop)
                 setTimeout(() => {
                     this.currentStep = 0;
-                    setImmediate(() => scrollToTop());
+                    setTimeout(() => scrollToTop());
                 }, 300);
         });
     }
@@ -345,7 +345,7 @@ class ReassignPartitions extends PageComponent {
                 return;
             }
 
-            setImmediate(async () => {
+            setTimeout(async () => {
                 try {
                     this.requestInProgress = true;
                     // todo: Don't use returns and execeptions for control flow

@@ -39,7 +39,7 @@ export class Feature {
 
 // As soon as the supported endpoints are available we should check if
 // the backend has returned a feature that we don't know of yet.
-setImmediate(() => {
+setTimeout(() => {
     when(() => api.endpointCompatibility != null, () => {
         if (!api.endpointCompatibility) return;
         // Copy features, then remove the ones we know, report any leftover features.

@@ -72,7 +72,7 @@ if (!AppFeatures.SINGLE_SIGN_ON) {
     when(
         () => Boolean(api.userData),
         () => {
-            setImmediate(() => {
+            setTimeout(() => {
                 api.refreshSupportedEndpoints();
             });
         }

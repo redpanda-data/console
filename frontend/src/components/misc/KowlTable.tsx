@@ -556,7 +556,7 @@ export class SearchTitle extends Component<{
         // Render the actual search bar
 
         // inputRef won't be set yet, so we delay by one frame
-        setImmediate(this.focusInput);
+        setTimeout(this.focusInput);
 
         return <span>
             <span >{this.props.title}</span>

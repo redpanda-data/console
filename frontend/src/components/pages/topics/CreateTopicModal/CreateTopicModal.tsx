@@ -7,8 +7,6 @@ import { Label } from '../../../../utils/tsxUtils';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import './CreateTopicModal.scss';
 
-export type { Props as CreateTopicModalProps };
-export type { CreateTopicModalState };
 
 type CreateTopicModalState = {
     topicName: string; // required
@@ -378,3 +376,6 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[], entry: TopicCon
         </Button>
     </div>
 });
+
+export type { Props as CreateTopicModalProps };
+export type { CreateTopicModalState };

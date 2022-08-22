@@ -49,8 +49,7 @@ function renderContent(tabs: Array<Tab>, key: string): JSX.Element {
     if (React.isValidElement(content))
         return content;
 
-    console.error('tabs.renderContent: invalid element', { content });
-    return <></>;
+    return <>{content}</>
 }
 
 function getClass(active: boolean, disabled: boolean | undefined) {

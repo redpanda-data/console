@@ -733,8 +733,8 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
         const title = count > 1 ? 'Save Messages' : 'Save Message';
 
         // Keep dialog open after closing it, so it can play its closing animation
-        if (count > 0 && !this.isOpen) setImmediate(() => this.isOpen = true);
-        if (this.isOpen && count == 0) setImmediate(() => this.isOpen = false);
+        if (count > 0 && !this.isOpen) setTimeout(() => this.isOpen = true);
+        if (this.isOpen && count == 0) setTimeout(() => this.isOpen = false);
 
         return <Modal
             title={title} centered closable={false}
@@ -1300,7 +1300,7 @@ class MessageSearchFilterBar extends Component {
                 </Tag>
             </div>
 
-            { IsDev && console.debug(api.messageSearchPhase)}
+            {IsDev && console.debug(api.messageSearchPhase)}
 
             {api.messageSearchPhase === null || api.messageSearchPhase === 'Done'
                 ? (
@@ -1374,14 +1374,13 @@ class MessageSearchFilterBar extends Component {
 
                     {/* Code Box */}
                     <Label text="Filter Code">
-<>
-                       <FilterEditor
-                            value={this.currentFilter!.code}
-                            onValueChange={(code, transpiled) => { this.currentFilter!.code = code; this.currentFilter!.transpiledCode = transpiled; this.hasChanges = true;  }}
+                        <>
+                            <FilterEditor
+                                value={this.currentFilter!.code}
+                                onValueChange={(code, transpiled) => { this.currentFilter!.code = code; this.currentFilter!.transpiledCode = transpiled; this.hasChanges = true; }}
 
                             />
-
-                                             </>
+                        </>
                     </Label>
 
                     {/* Help Bar */}

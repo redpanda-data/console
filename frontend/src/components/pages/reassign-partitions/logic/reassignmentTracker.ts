@@ -95,7 +95,7 @@ export class ReassignmentTracker {
         this.clusterTimer = setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
 
         // Immediately refresh as well
-        setImmediate(() => {
+        setTimeout(() => {
             this.refreshReassignments();
             api.refreshCluster(true);
         });

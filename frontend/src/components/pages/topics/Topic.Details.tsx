@@ -246,7 +246,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         const topicConfig = this.topicConfig;
 
-        setImmediate(() => topicConfig && this.addBaseFavs(topicConfig));
+        setTimeout(() => topicConfig && this.addBaseFavs(topicConfig));
 
         return (
             <>
