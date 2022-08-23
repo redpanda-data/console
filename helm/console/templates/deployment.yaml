@@ -228,6 +228,9 @@ spec:
             {{- with .Values.extraEnvFrom }}
             {{- tpl . $ | nindent 12 }}
             {{- end }}
+        {{- with .Values.extraContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}           
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
