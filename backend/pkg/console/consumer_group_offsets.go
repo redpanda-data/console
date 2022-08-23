@@ -71,12 +71,17 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 	}
 
 	// 2. Fetch all partition watermarks so that we can calculate the consumer group lags
-	// Fetch all consumed topics and their partitions so that we know whose partitions we want the high water marks for
-	topicNames := make([]string, 0)
+	// Fetch all consumed topics and their partitions so that we know whose partitions we want the high water marks for.
+	// Use a (hash) map so that we filter duplicates
+	topicsByName := make(map[string]struct{}, 0)
 	for _, topicOffset := range offsetsByGroup {
 		for topic := range topicOffset {
-			topicNames = append(topicNames, topic)
+			topicsByName[topic] = struct{}{}
 		}
+	}
+	topicNames := make([]string, 0, len(topicsByName))
+	for topicName, _ := range topicsByName {
+		topicNames = append(topicNames, topicName)
 	}
 
 	metadata, err := s.kafkaSvc.GetMetadata(ctx, topicNames)
