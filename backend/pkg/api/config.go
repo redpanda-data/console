@@ -73,6 +73,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Console config: %w", err)
 	}
 
+	err = c.Redpanda.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate Redpanda config: %w", err)
+	}
+
 	err = c.Connect.Validate()
 	if err != nil {
 		return fmt.Errorf("failed to validate Connect config: %w", err)

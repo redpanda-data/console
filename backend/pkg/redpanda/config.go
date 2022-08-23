@@ -9,7 +9,10 @@
 
 package redpanda
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+)
 
 type Config struct {
 	AdminAPI AdminAPIConfig `yaml:"adminApi"`
@@ -24,5 +27,9 @@ func (c *Config) SetDefaults() {
 }
 
 func (c *Config) Validate() error {
-	return c.AdminAPI.Validate()
+	err := c.AdminAPI.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate admin api config: %w", err)
+	}
+	return nil
 }
