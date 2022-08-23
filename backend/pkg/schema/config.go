@@ -12,6 +12,7 @@ package schema
 import (
 	"flag"
 	"fmt"
+	"net/url"
 )
 
 // Config for using a (Confluent) Schema Registry
@@ -41,6 +42,25 @@ func (c *Config) Validate() error {
 
 	if len(c.URLs) == 0 {
 		return fmt.Errorf("schema registry is enabled but no URL is configured")
+	}
+
+	for _, u := range c.URLs {
+		urlParsed, err := url.Parse(u)
+		if err != nil {
+			return fmt.Errorf("failed to parse schema registry url %q: %w", u, err)
+		}
+		switch urlParsed.Scheme {
+		case "http":
+			if c.TLS.Enabled {
+				return fmt.Errorf("URL scheme is http (given URL: %q), but you have TLS enabled. Change URL schema to https", u)
+			}
+		case "https":
+			if !c.TLS.Enabled {
+				return fmt.Errorf("URL scheme is https (given URL: %q), but you have TLS disabled. Change URL scheme to http", u)
+			}
+		default:
+			return fmt.Errorf("URL scheme must either be http or https, but got %q in url: %q", urlParsed.Scheme, u)
+		}
 	}
 
 	return nil

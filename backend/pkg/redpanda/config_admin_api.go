@@ -12,6 +12,7 @@ package redpanda
 import (
 	"flag"
 	"fmt"
+	"net/url"
 )
 
 type AdminAPIConfig struct {
@@ -37,6 +38,25 @@ func (c *AdminAPIConfig) SetDefaults() {
 func (c *AdminAPIConfig) Validate() error {
 	if !c.Enabled {
 		return nil
+	}
+
+	for _, u := range c.URLs {
+		urlParsed, err := url.Parse(u)
+		if err != nil {
+			return fmt.Errorf("failed to parse redpanda admin api url %q: %w", u, err)
+		}
+		switch urlParsed.Scheme {
+		case "http":
+			if c.TLS.Enabled {
+				return fmt.Errorf("URL scheme is http (given URL: %q), but you have TLS enabled. Change URL schema to https", u)
+			}
+		case "https":
+			if !c.TLS.Enabled {
+				return fmt.Errorf("URL scheme is https (given URL: %q), but you have TLS disabled. Change URL scheme to http", u)
+			}
+		default:
+			return fmt.Errorf("URL scheme must either be http or https, but got %q in url: %q", urlParsed.Scheme, u)
+		}
 	}
 
 	if err := c.TLS.Validate(); err != nil {
