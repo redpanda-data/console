@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
@@ -24,6 +25,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/runtime/protoiface"
 )
 
 type RecordPropertyType int
@@ -171,7 +173,9 @@ func (s *Service) deserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 		return nil, fmt.Errorf("failed to unmarshal payload into protobuf message: %w", err)
 	}
 
-	jsonBytes, err := msg.MarshalJSON()
+	jsonBytes, err := msg.MarshalJSONPB(&jsonpb.Marshaler{
+		AnyResolver: &anyResolver{s.registry},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal protobuf message to JSON: %w", err)
 	}
@@ -472,4 +476,31 @@ func (s *Service) getFileDescriptorBySchemaID(schemaID int) (*desc.FileDescripto
 
 	desc, exists := s.fileDescriptorsBySchemaID[schemaID]
 	return desc, exists
+}
+
+// AnyResolver is used to resolve the google.protobuf.Any type.
+// It takes a type URL, present in an Any message, and resolves 
+// it into an instance of the associated message.
+// 
+// This custom resolver is required because the built-in / default
+// any resolver in the protoreflect library, does not consider any
+// types that are used in referenced types that are not directly
+// part of the schema that is deserialized. This is described in
+// more detail as part of the pull request that addresses the
+// deserialization issue with the any types: 
+// https://github.com/redpanda-data/console/pull/425
+type anyResolver struct {
+	mr *msgregistry.MessageRegistry
+}
+
+func (r *anyResolver) Resolve(typeURL string) (protoiface.MessageV1, error) {
+	// Protoreflect registers the type by stripping the contents before the last
+	// slash. Therefore we need to mimic this behaviour in order to resolve
+	// the type by it's given type url.
+	mname := typeURL
+	if slash := strings.LastIndex(mname, "/"); slash >= 0 {
+		mname = mname[slash+1:]
+	}
+
+	return r.mr.Resolve(mname)
 }
