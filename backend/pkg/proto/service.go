@@ -478,11 +478,25 @@ func (s *Service) getFileDescriptorBySchemaID(schemaID int) (*desc.FileDescripto
 	return desc, exists
 }
 
+// AnyResolver is used to resolve the google.protobuf.Any type.
+// It takes a type URL, present in an Any message, and resolves 
+// it into an instance of the associated message.
+// 
+// This custom resolver is required because the built-in / default
+// any resolver in the protoreflect library, does not consider any
+// types that are used in referenced types that are not directly
+// part of the schema that is deserialized. This is described in
+// more detail as part of the pull request that addresses the
+// deserialization issue with the any types: 
+// https://github.com/redpanda-data/console/pull/425
 type anyResolver struct {
 	mr *msgregistry.MessageRegistry
 }
 
 func (r *anyResolver) Resolve(typeURL string) (protoiface.MessageV1, error) {
+	// Protoreflect registers the type by stripping the contents before the last
+	// slash. Therefore we need to mimic this behaviour in order to resolve
+	// the type by it's given type url.
 	mname := typeURL
 	if slash := strings.LastIndex(mname, "/"); slash >= 0 {
 		mname = mname[slash+1:]
