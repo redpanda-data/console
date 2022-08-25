@@ -605,7 +605,7 @@ const apiStore = {
     },
 
     refreshTopicAcls(topicName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: 'Topic', resourceName: topicName });
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourcePatternTypeFilter: 'Match', resourceType: 'Topic', resourceName: topicName });
         cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => {
                 if (v)
@@ -705,7 +705,7 @@ const apiStore = {
     },
 
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
-        const query = aclRequestToQuery({ ...AclRequestDefault, resourceType: 'Group', resourceName: groupName });
+        const query = aclRequestToQuery({ ...AclRequestDefault, resourcePatternTypeFilter: 'Match', resourceType: 'Group', resourceName: groupName });
         cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
             .then(v => {
                 if (v) {
