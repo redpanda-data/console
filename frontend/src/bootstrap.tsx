@@ -8,10 +8,13 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+import ReactDOM from 'react-dom';
+import EmbeddedApp from './EmbeddedApp';
+import { basePathS } from './utils/env';
 
-export { };
 
-import('react');
-import('react-dom');
-
-import('./bootstrap');
+const root = document.getElementById('root');
+ReactDOM.render(
+    <EmbeddedApp bearerToken={''} basePath={basePathS} />,
+    root
+);
