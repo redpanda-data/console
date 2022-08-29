@@ -59,7 +59,7 @@ export interface PageDefinition<TRouteParams = {}> {
 
 export const RouteMenu = observer(() =>
     <Menu mode="inline"
-        theme="dark"
+        theme="light"
         selectedKeys={uiState.selectedMenuKeys}
         style={{ border: 0, background: 'none' }}
         items={CreateRouteMenuItems(APP_ROUTES)}
@@ -99,11 +99,9 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
                     trigger={isDisabled ? 'hover' : 'none'}
                     mouseEnterDelay={0.05}
                 >
-                    <div style={{ display: isDisabled ? 'block' : 'contents', width: '100%' }}>
-                        <span style={{ pointerEvents: isEnabled ? 'all' : 'none' }}>
-                            {entry.title}
-                        </span>
-                    </div>
+                    <span style={{ display: isDisabled ? 'block' : 'contents', width: '100%' }}>
+                        {entry.title}
+                    </span>
                 </Tooltip>
             ),
             disabled: isDisabled,
