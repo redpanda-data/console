@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { Menu, Tooltip } from 'antd';
-import { Link, Switch } from 'react-router-dom';
 import React from 'react';
+import { Menu, Tooltip } from 'antd';
+import { Switch, useHistory } from 'react-router-dom';
 import { Section } from './misc/common';
 import { Route, Redirect } from 'react-router';
 import { queryToObj } from '../utils/queryHelper';
@@ -59,7 +59,7 @@ export interface PageDefinition<TRouteParams = {}> {
 
 export const RouteMenu = observer(() =>
     <Menu mode="inline"
-        theme="dark"
+        theme="light"
         selectedKeys={uiState.selectedMenuKeys}
         style={{ border: 0, background: 'none' }}
         items={CreateRouteMenuItems(APP_ROUTES)}
@@ -69,6 +69,7 @@ export const RouteMenu = observer(() =>
 
 // Generate content for <Menu> from all routes
 export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
+    const history = useHistory();
     const routeItems = entries.map((entry) => {
         // Menu entry for Page
         if (entry.path.includes(':'))
@@ -89,6 +90,7 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
         return {
             key: entry.path,
             icon: entry.icon,
+            onClick: () => { history.push(entry.path)},
             label: (
                 <Tooltip
                     overlayClassName="menu-permission-tooltip"
@@ -97,11 +99,9 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
                     trigger={isDisabled ? 'hover' : 'none'}
                     mouseEnterDelay={0.05}
                 >
-                    <div style={{ display: isDisabled ? 'block' : 'contents', width: '100%' }}>
-                        <Link to={entry.path} style={{ pointerEvents: isEnabled ? 'all' : 'none' }}>
-                            {entry.title}
-                        </Link>
-                    </div>
+                    <span style={{ display: isDisabled ? 'block' : 'contents', width: '100%' }}>
+                        {entry.title}
+                    </span>
                 </Tooltip>
             ),
             disabled: isDisabled,
