@@ -8,7 +8,7 @@ on:
     tags:
       - '*'
     branches:
-      - "master"
+      - "*"
 
 jobs:
   dispatch:
@@ -30,4 +30,4 @@ jobs:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           repository: redpanda-data/console-enterprise
           event-type: push
-          client-payload: '{"branch": "master", "commit_sha": "${{ github.sha }}"}'
+          client-payload: '{"branch": "${{ github.ref_name }}", "commit_sha": "${{ github.sha }}"}'
