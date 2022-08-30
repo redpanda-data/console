@@ -13,9 +13,6 @@ const webpackConfigPath = 'react-scripts/config/webpack.config';
 const webpackConfig = require(webpackConfigPath);
 
 const { ModuleFederationPlugin } = require('webpack').container;
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-
-const deps = require('../../package.json').dependencies;
 
 const override = (config) => {
     if (config.mode != 'development') {
@@ -39,17 +36,26 @@ const override = (config) => {
                 {
                     react: {
                         singleton: true,
-                        requiredVersion: deps.react
                     },
                     'react-dom': {
                         singleton: true,
-                        requiredVersion: deps['react-dom']
                     },
                 }
             ],
         }
     ));
+    config.plugins.push(new ModuleFederationPlugin(require('../../module-federation')));
+    const addedHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization'
+    };
+    const existingHeaders = webpackConfig.devServer?.headers;
+    const newHeaders = Object.assign({}, existingHeaders, addedHeaders);
+    if (config.devServer == null) config.devServer = {};
+    config.devServer.headers = newHeaders;
 
+    config.devServer.allowedHosts = 'all'
     return config;
 };
 
