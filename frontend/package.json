@@ -67,6 +67,7 @@
         "@typescript-eslint/eslint-plugin": "^5.33",
         "@typescript-eslint/parser": "^5.33",
         "cross-env": "^7.0.3",
+        "eslint-plugin-react-hooks": "^4.6.0",
         "node-fetch": "^3.2.10",
         "sass": "^1.52.0",
         "tar-stream": "^2.2.0",
