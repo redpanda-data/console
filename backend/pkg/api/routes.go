@@ -10,6 +10,9 @@
 package api
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
@@ -47,6 +50,17 @@ func (api *API) routes() *chi.Mux {
 			instrument.Wrap,
 			// TODO: Add timeout middleware which allows route excludes
 		)
+
+		router.Use(func(next http.Handler) http.Handler {
+			fn := func(w http.ResponseWriter, r *http.Request) {
+				origin := r.Header.Get("Origin")
+				if strings.Contains(origin, "://localhost") {
+					w.Header().Add("Access-Control-Allow-Origin", origin)
+				}
+				next.ServeHTTP(w, r)
+			}
+			return http.HandlerFunc(fn)
+		})
 
 		// This should be called here so that you can still add middlewares in the hook function.
 		// Middlewares must be defined before routes.
