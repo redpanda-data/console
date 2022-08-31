@@ -26,7 +26,7 @@ import { appGlobal } from '../state/appGlobal';
 import RedpandaLogo from '../assets/redpanda/redpanda-color.svg';
 import RedpandaIcon from '../assets/redpanda/icon-color.svg';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsDev, basePathS, IsCI, AppFeatures } from '../utils/env';
+import { IsDev, getBasePath, IsCI, AppFeatures } from '../utils/env';
 import { UserProfile } from './misc/UserButton';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
@@ -282,7 +282,7 @@ export default class App extends Component {
             return null;
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
-        const path = window.location.pathname.removePrefix(basePathS ?? '');
+        const path = window.location.pathname.removePrefix(getBasePath() ?? '');
         const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); };
 
         if (path.startsWith('/login'))
@@ -290,7 +290,7 @@ export default class App extends Component {
 
         if (api.userData === null && !path.startsWith('/login')) {
             devPrint('known not logged in, hard redirect');
-            window.location.pathname = basePathS + '/login'; // definitely not logged in, and in wrong url: hard redirect!
+            window.location.pathname = getBasePath() + '/login'; // definitely not logged in, and in wrong url: hard redirect!
             return preLogin;
         }
 

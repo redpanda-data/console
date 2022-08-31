@@ -825,8 +825,25 @@ export function encodeBase64(rawData: string) {
 }
 
 export function delay(timeoutMs: number): Promise<void> {
-
     return new Promise((resolve, _) => {
         setTimeout(resolve, timeoutMs);
     });
+}
+
+
+export function setHeader(init: RequestInit, name: string, value: string) {
+    if (init.headers == null) {
+        init.headers = [
+            [name, value]
+        ];
+    }
+    else if (Array.isArray(init.headers)) {
+        init.headers.push([name, value]);
+    }
+    else if (typeof init.headers.set == 'function') {
+        init.headers.set(name, value);
+    } else {
+        // Record<string, string>
+        (init.headers as Record<string, string>)[name] = value;
+    }
 }

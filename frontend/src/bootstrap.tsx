@@ -10,11 +10,10 @@
  */
 import ReactDOM from 'react-dom';
 import EmbeddedApp from './EmbeddedApp';
-import { basePathS } from './utils/env';
 
 
 const root = document.getElementById('root');
 ReactDOM.render(
-    <EmbeddedApp bearerToken={''} basePath={basePathS} />,
+    <EmbeddedApp basePath={''} bearerToken={''} />,
     root
 );
