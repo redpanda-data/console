@@ -12,9 +12,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import EmbeddedApp from './EmbeddedApp';
-import { basePathS } from './utils/env';
+import { EmbeddedProps } from './utils/embeddedProps';
+// import { basePathS } from './utils/env';
 
-const injector = (parentElementId: string) =>
-  void ReactDOM.render(<EmbeddedApp bearerToken={''} basePath={basePathS} />, document.getElementById(parentElementId));
+const injector = async (parentElementId: string, props: EmbeddedProps) => {
+  return  void ReactDOM.render(<EmbeddedApp {...props} />, document.getElementById(parentElementId));
+
+}
 
 export default injector;
