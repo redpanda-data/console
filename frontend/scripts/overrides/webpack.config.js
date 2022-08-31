@@ -23,27 +23,6 @@ const override = (config) => {
 
 
     config.output.publicPath = 'auto';
-    config.plugins.push(new ModuleFederationPlugin(
-        {
-            filename: 'embedded.js',
-            name: 'rp_console',
-
-            exposes: {
-                './EmbeddedApp': './src/EmbeddedApp',
-            },
-
-            shared: [
-                {
-                    react: {
-                        singleton: true,
-                    },
-                    'react-dom': {
-                        singleton: true,
-                    },
-                }
-            ],
-        }
-    ));
     config.plugins.push(new ModuleFederationPlugin(require('../../module-federation')));
     const addedHeaders = {
         'Access-Control-Allow-Origin': '*',
