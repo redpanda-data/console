@@ -50,24 +50,7 @@ const override = (config) => {
         }
     ));
 
-    config.plugins.push(new HtmlWebpackPlugin({
-        template: './public/index.html',
-    }));
-
-
-    const addedHeaders = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-        "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
-    };
-    const existingHeaders = webpackConfig.devServer?.headers;
-    const newHeaders = Object.assign({}, existingHeaders, addedHeaders);
-    if (config.devServer == null) config.devServer = {};
-    config.devServer.headers = newHeaders;
-
-    config.devServer.allowedHosts = 'all';
-
-  return config;
+    return config;
 };
 
 require.cache[require.resolve(webpackConfigPath)].exports = (env) => override(webpackConfig(env));
