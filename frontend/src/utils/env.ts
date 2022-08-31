@@ -11,6 +11,7 @@
 
 import { toJson } from './jsonUtils';
 import './extensions';
+import { embeddedProps } from './embeddedProps';
 
 const envNames = [
     'NODE_ENV',
@@ -64,9 +65,20 @@ const basePathRaw: string = (window as any)['BASE_URL'];
 const basePath = (typeof basePathRaw === 'string' && !basePathRaw.startsWith('__BASE_PATH'))
     ? basePathRaw
     : '';
-export const basePathNo = basePath ? basePath.removePrefix('/').removeSuffix('/') : '';
-export const basePathS = basePathNo ? '/' + basePathNo : '';
-export const basePathE = basePathNo ? basePathNo + '/' : '';
+const basePathTrimmed = basePath
+    ? basePath.removePrefix('/').removeSuffix('/')
+    : '';
+
+const basePathS = basePathTrimmed
+    ? '/' + basePathTrimmed
+    : '';
+
+
+export function getBasePath() {
+    if (embeddedProps.basePath)
+        return embeddedProps.basePath;
+    return basePathS;
+}
 
 
 export function getBuildDate(): Date | undefined {

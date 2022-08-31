@@ -22,7 +22,7 @@ import './index.scss';
 
 import App from './components/App';
 import { appGlobal } from './state/appGlobal';
-import { AppFeatures, basePathS } from './utils/env';
+import { AppFeatures, getBasePath, IsDev } from './utils/env';
 import { api } from './state/backendApi';
 import { ConfigProvider } from 'antd';
 
@@ -32,33 +32,23 @@ import './assets/fonts/quicksand.css';
 import './assets/fonts/kumbh-sans.css';
 
 import colors from './colors';
+import { embeddedProps, EmbeddedProps } from './utils/embeddedProps';
 
 const HistorySetter = withRouter((p: RouteComponentProps) => {
     appGlobal.history = p.history;
     return <></>;
 });
 
-export type EmbeddedProps = {
-    // This will be used as the 'Authorization' header in every api request
-    bearerToken: string;
 
-    // This is the base url that is used:
-    //   - when making api requests
-    //   - to setup the 'basename' in react-router
-    //
-    // In the simplest case this would be the exact url where the host is running,
-    // for example "http://localhost:3001/"
-    //
-    // When running in cloud-ui the base most likely need to include a few more
-    // things like cluster id, etc...
-    // So the base would probably be "https://cloud.redpanda.com/NAMESPACE/CLUSTER/"
-    //
-    basePath: string;
-};
+let setupDone = false;
+function setup() {
+    if (setupDone) {
+        if (IsDev)
+            console.error('setup was already called');
+        return;
+    }
+    setupDone = true;
 
-let setupCount = 0;
-function setup(p: EmbeddedProps) {
-    setupCount++;
 
     // Set theme color for ant-design
     ConfigProvider.config({
@@ -74,7 +64,7 @@ function setup(p: EmbeddedProps) {
     });
 
     // Tell monaco editor where to load dependencies from
-    loader.config({ paths: { vs: (p.basePath ?? basePathS) + '/static/js/vendor/monaco/package/min/vs' } });
+    loader.config({ paths: { vs: getBasePath() + '/static/js/vendor/monaco/package/min/vs' } });
 
     // Configure MobX
     configure({
@@ -100,11 +90,15 @@ function setup(p: EmbeddedProps) {
 }
 
 export default function EmbeddedApp(p: EmbeddedProps) {
-    if (setupCount == 0)
-        setup(p);
+    if (p.basePath || p.bearerToken) {
+        // Store props we got from the host app
+        Object.assign(embeddedProps, p);
+    }
+
+    setup();
 
     return (
-        <BrowserRouter basename={p.basePath ?? basePathS}>
+        <BrowserRouter basename={getBasePath()}>
             <HistorySetter />
             <App />
         </BrowserRouter>

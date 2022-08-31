@@ -13,12 +13,13 @@
 
 import { notification } from 'antd';
 import { comparer, computed, observable, transaction } from 'mobx';
-import { AppFeatures, basePathS, IsDev } from '../utils/env';
+import { embeddedProps } from '../utils/embeddedProps';
+import { AppFeatures, getBasePath, IsDev } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
-import { decodeBase64, TimeSince } from '../utils/utils';
+import { decodeBase64, setHeader, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
 import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError, CreateACLRequest, DeleteACLsRequest, RedpandaLicense, AclResource } from './restInterfaces';
 import { Features } from './supportedFeatures';
@@ -32,6 +33,13 @@ export const REST_CACHE_DURATION_SEC = 20;
     - 2xx does not mean complete success, for some endpoints (e.g.: broker log dirs) we can get partial responses (array with some result entries and some error entries)
 */
 export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T | null> {
+    if (embeddedProps.bearerToken) {
+        requestInit ??= {};
+        requestInit.credentials = 'include';
+
+        setHeader(requestInit, 'Authorization', `Bearer ${embeddedProps.bearerToken}`);
+    }
+
     const res = await fetchWithTimeout(url, REST_TIMEOUT_SEC * 1000, requestInit);
 
     if (res.status == 401) { // Unauthorized
@@ -238,7 +246,7 @@ const apiStore = {
         const isHttps = window.location.protocol.startsWith('https');
         const protocol = isHttps ? 'wss://' : 'ws://';
         const host = IsDev ? 'localhost:9090' : window.location.host;
-        const url = protocol + host + basePathS + '/api/topics/' + searchRequest.topicName + '/messages';
+        const url = protocol + host + getBasePath() + '/api/topics/' + searchRequest.topicName + '/messages';
 
         console.debug('connecting to "' + url + '"');
 
@@ -460,7 +468,9 @@ const apiStore = {
     async deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName: string, pairs: Array<{ partitionId: number, offset: number; }>) {
         return rest<DeleteRecordsResponseData>(`./api/topics/${topicName}/records`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
             body: JSON.stringify({ partitions: pairs })
         }).catch(addError);
     },
