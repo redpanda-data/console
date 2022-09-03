@@ -20,6 +20,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/sasl/aws"
 	"github.com/twmb/franz-go/pkg/sasl/oauth"
+	"golang.org/x/net/proxy"
 
 	"github.com/jcmturner/gokrb5/v8/client"
 	krbconfig "github.com/jcmturner/gokrb5/v8/config"
@@ -45,6 +46,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		// We keep control records because we need to consume them in order to know whether the last message in a
 		// a partition is worth waiting for or not (because it's a control record which we would never receive otherwise)
 		kgo.KeepControlRecords(),
+		kgo.Dialer(proxy.FromEnvironmentUsing(&net.Dialer{Timeout: 10 * time.Second}).(proxy.ContextDialer).DialContext),
 	}
 
 	// Create Logger
@@ -206,7 +208,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 				RootCAs:            caCertPool,
 			},
 		}
-		opts = append(opts, kgo.Dialer(tlsDialer.DialContext))
+		opts = append(opts, kgo.Dialer(proxy.FromEnvironmentUsing(tlsDialer).(proxy.ContextDialer).DialContext))
 	}
 
 	return opts, nil
