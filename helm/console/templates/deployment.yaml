@@ -143,13 +143,6 @@ spec:
                   name: {{ include "console.fullname" . }}
                   key: kafka-schema-registry-password
             {{- end }}
-            {{- if .Values.secret.login.schemaRegistryPassword }}
-            - name: KAFKA_SCHEMAREGISTRY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "console.fullname" . }}
-                  key: kafka-schema-registry-password
-            {{- end }}
             - name: LOGIN_JWTSECRET
               valueFrom:
                 secretKeyRef:
