@@ -80,7 +80,13 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         case 'INT':
         case 'LONG':
         case 'SHORT':
-            inputComp = <InputNumber style={{ display: 'block' }} value={Number(p.value)} onChange={e => p.value = e} />
+        case 'DOUBLE':
+        case 'FLOAT':
+            inputComp = <InputNumber
+                style={{ display: 'block' }}
+                value={Number(p.value)}
+                onChange={e => p.value = e}
+            />
             break;
 
         case 'BOOLEAN':

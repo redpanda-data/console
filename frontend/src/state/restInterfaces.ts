@@ -1229,9 +1229,11 @@ export enum DataType {
     Int = 'INT',
     List = 'LIST',
     Long = 'LONG',
-    Password = 'PASSWORD',
+    Float = 'FLOAT',
+    Double = 'DOUBLE',
     Short = 'SHORT',
     String = 'STRING',
+    Password = 'PASSWORD',
 }
 
 export enum PropertyWidth {
