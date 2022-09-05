@@ -163,9 +163,8 @@ const DataRefreshButton = observer(() => {
 });
 
 const AppPageHeader = observer(() => {
-
+    
     const breadcrumbs = uiState.pageBreadcrumbs.map(v => ({ path: v.linkTo, breadcrumbName: v.title }));
-
     const selectedClusterName = uiState.selectedClusterName;
     if (selectedClusterName) {
         //const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: selectedClusterName };

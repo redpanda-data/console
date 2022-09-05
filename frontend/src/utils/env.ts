@@ -11,7 +11,6 @@
 
 import { toJson } from './jsonUtils';
 import './extensions';
-import { embeddedProps } from './embeddedProps';
 
 const envNames = [
     'NODE_ENV',
@@ -73,10 +72,7 @@ const basePathS = basePathTrimmed
     ? '/' + basePathTrimmed
     : '';
 
-
 export function getBasePath() {
-    if (embeddedProps.basePath)
-        return embeddedProps.basePath;
     return basePathS;
 }
 

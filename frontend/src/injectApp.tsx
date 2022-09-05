@@ -11,8 +11,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import EmbeddedApp from './EmbeddedApp';
-import { EmbeddedProps } from './utils/embeddedProps';
+import EmbeddedApp, { EmbeddedProps } from './EmbeddedApp';
 // import { basePathS } from './utils/env';
 
 const injector = async (parentElementId: string, props: EmbeddedProps) => {
