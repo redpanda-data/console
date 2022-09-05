@@ -2,7 +2,10 @@ apiVersion: v2
 name: console
 description: Helm chart to deploy Redpanda Console.
 
-# A chart can be either an 'application' or a 'library' chart.
+maintainers:
+  - name: Martin Schneppenheim
+    url: https://github.com/weeco
+
 #
 # Application charts are a collection of templates that can be packaged into versioned archives
 # to be deployed.
