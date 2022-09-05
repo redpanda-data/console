@@ -12,12 +12,14 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/cloudhut/common/rest"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
-	"net/http"
-	"sync"
-	"time"
 )
 
 type websocketClient struct {
@@ -26,12 +28,26 @@ type websocketClient struct {
 	Logger     *zap.Logger
 	Connection *websocket.Conn
 	Mutex      *sync.RWMutex
+
+	access_token string
 }
 
 func (wc *websocketClient) upgrade(w http.ResponseWriter, r *http.Request) *rest.Error {
 	upgrader := websocket.Upgrader{
 		EnableCompression: true,
 		CheckOrigin:       func(r *http.Request) bool { return true },
+	}
+
+	subprotocols := websocket.Subprotocols(r)
+	for _, p := range subprotocols {
+		parts := strings.SplitN(p, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		if parts[0] == "access_token" {
+			wc.access_token = parts[1]
+			break
+		}
 	}
 
 	// TODO: Add user information to logger?

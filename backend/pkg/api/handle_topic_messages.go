@@ -92,6 +92,10 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 		defer wsClient.sendClose()
 
+		if len(wsClient.access_token) > 0 {
+			api.Logger.Info("client has provided an access_token in messages request")
+		}
+
 		sendError := func(msg string) {
 			wsClient.writeJSON(struct {
 				Type    string `json:"type"`
