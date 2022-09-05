@@ -13,17 +13,39 @@
 
 import { notification } from 'antd';
 import { comparer, computed, observable, transaction } from 'mobx';
-import { embeddedProps } from '../utils/embeddedProps';
-import { AppFeatures, getBasePath, IsDev } from '../utils/env';
+import { AppFeatures} from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
-import { decodeBase64, setHeader, TimeSince } from '../utils/utils';
+import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
-import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo, AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError, Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors, ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType, ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse, DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse, DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic, DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest, EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic, EditConsumerGroupOffsetsTopic, EndpointCompatibility, EndpointCompatibilityResponse, GetAllPartitionsResponse, GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse, GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse, GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors, PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest, PartitionReassignments, PartitionReassignmentsResponse, PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse, PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails, SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType, Topic, TopicConfigResponse, TopicConsumer, TopicDescription, TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset, TopicPermissions, UserData, WrappedApiError, CreateACLRequest, DeleteACLsRequest, RedpandaLicense, AclResource } from './restInterfaces';
+import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
+    AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError,
+    Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors,
+    ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType,
+    ConnectorValidationResult, CreateTopicRequest, CreateTopicResponse,
+    DeleteConsumerGroupOffsetsRequest, DeleteConsumerGroupOffsetsResponse,
+    DeleteConsumerGroupOffsetsResponseTopic, DeleteConsumerGroupOffsetsTopic,
+    DeleteRecordsResponseData, EditConsumerGroupOffsetsRequest,
+    EditConsumerGroupOffsetsResponse, EditConsumerGroupOffsetsResponseTopic,
+    EditConsumerGroupOffsetsTopic, EndpointCompatibility,
+    EndpointCompatibilityResponse, GetAllPartitionsResponse,
+    GetConsumerGroupResponse, GetConsumerGroupsResponse, GetPartitionsResponse,
+    GetTopicConsumersResponse, GetTopicOffsetsByTimestampResponse,
+    GetTopicsResponse, GroupDescription, isApiError, KafkaConnectors,
+    PartialTopicConfigsResponse, Partition, PartitionReassignmentRequest,
+    PartitionReassignments, PartitionReassignmentsResponse,
+    PatchConfigsRequest, PatchConfigsResponse, ProduceRecordsResponse,
+    PublishRecordsRequest, QuotaResponse, ResourceConfig, SchemaDetails,
+    SchemaDetailsResponse, SchemaOverview, SchemaOverviewResponse, SchemaType,
+    Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
+    TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
+    TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
+    DeleteACLsRequest, RedpandaLicense, AclResource } from './restInterfaces';
 import { Features } from './supportedFeatures';
 import { uiState } from './uiState';
+import { config as appConfig } from '../config';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -32,14 +54,11 @@ export const REST_CACHE_DURATION_SEC = 20;
     - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
     - 2xx does not mean complete success, for some endpoints (e.g.: broker log dirs) we can get partial responses (array with some result entries and some error entries)
 */
+
+/*
+* allow custom fetch or websocket interceptors
+* */
 export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T | null> {
-    if (embeddedProps.bearerToken) {
-        requestInit ??= {};
-        requestInit.credentials = 'include';
-
-        setHeader(requestInit, 'Authorization', `Bearer ${embeddedProps.bearerToken}`);
-    }
-
     const res = await fetchWithTimeout(url, REST_TIMEOUT_SEC * 1000, requestInit);
 
     if (res.status == 401) { // Unauthorized
@@ -223,7 +242,7 @@ const apiStore = {
     // null = call completed, and we're not logged in
     userData: undefined as (UserData | null | undefined),
     async logout() {
-        await fetch('./logout');
+        await appConfig.fetch('./logout');
         this.userData = null;
     },
 
@@ -242,11 +261,7 @@ const apiStore = {
 
 
     async startMessageSearch(searchRequest: MessageSearchRequest): Promise<void> {
-
-        const isHttps = window.location.protocol.startsWith('https');
-        const protocol = isHttps ? 'wss://' : 'ws://';
-        const host = IsDev ? 'localhost:9090' : window.location.host;
-        const url = protocol + host + getBasePath() + '/api/topics/' + searchRequest.topicName + '/messages';
+        const url = `${appConfig.websocketBasePath}/topics/${searchRequest.topicName}/messages`;
 
         console.debug('connecting to "' + url + '"');
 
@@ -365,7 +380,7 @@ const apiStore = {
     },
 
     refreshTopics(force?: boolean) {
-        cachedApiRequest<GetTopicsResponse>('./api/topics', force)
+        cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force)
             .then(v => {
                 for (const t of v.topics) {
                     if (!t.allowedActions) continue;
@@ -384,7 +399,7 @@ const apiStore = {
     },
 
     async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
-        const promise = cachedApiRequest<TopicConfigResponse | null>(`./api/topics/${topicName}/configuration`, force)
+        const promise = cachedApiRequest<TopicConfigResponse | null>(`${appConfig.restBasePath}/topics/${topicName}/configuration`, force)
             .then(v => {
                 if (!v) {
                     this.topicConfig.delete(topicName);
@@ -409,7 +424,7 @@ const apiStore = {
 
     async getTopicOffsetsByTimestamp(topicNames: string[], timestampUnixMs: number): Promise<TopicOffset[]> {
         const query = `topicNames=${encodeURIComponent(topicNames.join(','))}&timestamp=${timestampUnixMs}`;
-        const response = await fetch('./api/topics-offsets?' + query, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/topics-offsets?${query}`, {
             method: 'GET',
             headers: [
                 ['Content-Type', 'application/json']
@@ -421,7 +436,7 @@ const apiStore = {
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
-        cachedApiRequest<TopicDocumentationResponse>(`./api/topics/${topicName}/documentation`, force)
+        cachedApiRequest<TopicDocumentationResponse>(`${appConfig.restBasePath}/topics/${topicName}/documentation`, force)
             .then(v => {
                 const text = v.documentation.markdown == null ? null : decodeBase64(v.documentation.markdown);
                 v.documentation.text = text;
@@ -432,12 +447,12 @@ const apiStore = {
     refreshTopicPermissions(topicName: string, force?: boolean) {
         if (!AppFeatures.SINGLE_SIGN_ON) return; // without SSO there can't be a permissions endpoint
         if (this.userData?.user?.providerID == -1) return; // debug user
-        cachedApiRequest<TopicPermissions | null>(`./api/permissions/topics/${topicName}`, force)
+        cachedApiRequest<TopicPermissions | null>(`${appConfig.restBasePath}/permissions/topics/${topicName}`, force)
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
     async deleteTopic(topicName: string) {
-        return rest(`./api/topics/${encodeURIComponent(topicName)}`, { method: 'DELETE' }).catch(addError);
+        return rest(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}`, { method: 'DELETE' }).catch(addError);
     },
 
     async deleteTopicRecords(topicName: string, offset: number, partitionId?: number) {
@@ -466,7 +481,7 @@ const apiStore = {
     },
 
     async deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName: string, pairs: Array<{ partitionId: number, offset: number; }>) {
-        return rest<DeleteRecordsResponseData>(`./api/topics/${topicName}/records`, {
+        return rest<DeleteRecordsResponseData>(`${appConfig.restBasePath}/topics/${topicName}/records`, {
             method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
@@ -481,8 +496,8 @@ const apiStore = {
             topics = topics.sort().map(t => encodeURIComponent(t));
 
         const url = topics == 'all'
-            ? './api/operations/topic-details'
-            : `./api/operations/topic-details?topicNames=${topics.joinStr(',')}`;
+            ? `${appConfig.restBasePath}/operations/topic-details`
+            : `${appConfig.restBasePath}/operations/topic-details?topicNames=${topics.joinStr(',')}`;
 
         return cachedApiRequest<GetAllPartitionsResponse | null>(url, force)
             .then(response => {
@@ -548,7 +563,7 @@ const apiStore = {
     },
 
     refreshPartitionsForTopic(topicName: string, force?: boolean) {
-        cachedApiRequest<GetPartitionsResponse | null>(`./api/topics/${topicName}/partitions`, force)
+        cachedApiRequest<GetPartitionsResponse | null>(`${appConfig.restBasePath}/topics/${topicName}/partitions`, force)
             .then(response => {
                 if (response?.partitions) {
                     const partitionErrors: Array<{ id: number, partitionError: string; }> = [], waterMarksErrors: Array<{ id: number, waterMarksError: string; }> = [];
@@ -616,7 +631,7 @@ const apiStore = {
 
     refreshTopicAcls(topicName: string, force?: boolean) {
         const query = aclRequestToQuery({ ...AclRequestDefault, resourcePatternTypeFilter: 'Match', resourceType: 'Topic', resourceName: topicName });
-        cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
+        cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
             .then(v => {
                 if (v)
                     normalizeAcls(v.aclResources);
@@ -625,13 +640,13 @@ const apiStore = {
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
-        cachedApiRequest<GetTopicConsumersResponse>(`./api/topics/${topicName}/consumers`, force)
+        cachedApiRequest<GetTopicConsumersResponse>(`${appConfig.restBasePath}/topics/${topicName}/consumers`, force)
             .then(v => this.topicConsumers.set(topicName, v.topicConsumers), addError);
     },
 
     async refreshAcls(request: GetAclsRequest, force?: boolean): Promise<void> {
         const query = aclRequestToQuery(request);
-        await cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
+        await cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
             .then(v => {
                 if (v) {
                     normalizeAcls(v.aclResources);
@@ -644,12 +659,12 @@ const apiStore = {
     },
 
     refreshQuotas(force?: boolean) {
-        cachedApiRequest<QuotaResponse | null>('./api/quotas', force)
+        cachedApiRequest<QuotaResponse | null>(`${appConfig.restBasePath}/quotas`, force)
             .then(v => this.Quotas = v ?? null, addError);
     },
 
     async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
-        const r = await rest<EndpointCompatibilityResponse>('./api/console/endpoints');
+        const r = await rest<EndpointCompatibilityResponse>(`${appConfig.restBasePath}/console/endpoints`);
         if (!r)
             return null;
         this.endpointCompatibility = r.endpointCompatibility;
@@ -658,7 +673,7 @@ const apiStore = {
     },
 
     refreshCluster(force?: boolean) {
-        cachedApiRequest<ClusterInfoResponse>('./api/cluster', force)
+        cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force)
             .then(v => {
                 transaction(() => {
                     // add 'type' to each synonym entry
@@ -682,7 +697,7 @@ const apiStore = {
     },
 
     refreshBrokerConfig(brokerId: number, force?: boolean) {
-        cachedApiRequest<BrokerConfigResponse>(`./api/brokers/${brokerId}/config`, force)
+        cachedApiRequest<BrokerConfigResponse>(`${appConfig.restBasePath}/brokers/${brokerId}/config`, force)
             .then(v => {
                 prepareSynonyms(v.brokerConfigs);
                 this.brokerConfigs.set(brokerId, v.brokerConfigs);
@@ -693,7 +708,7 @@ const apiStore = {
     },
 
     refreshConsumerGroup(groupId: string, force?: boolean) {
-        cachedApiRequest<GetConsumerGroupResponse>(`./api/consumer-groups/${groupId}`, force)
+        cachedApiRequest<GetConsumerGroupResponse>(`${appConfig.restBasePath}/consumer-groups/${groupId}`, force)
             .then(v => {
                 addFrontendFieldsForConsumerGroup(v.consumerGroup);
                 this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup);
@@ -701,7 +716,7 @@ const apiStore = {
     },
 
     refreshConsumerGroups(force?: boolean) {
-        cachedApiRequest<GetConsumerGroupsResponse>('./api/consumer-groups', force)
+        cachedApiRequest<GetConsumerGroupsResponse>(`${appConfig.restBasePath}/consumer-groups`, force)
             .then(v => {
                 for (const g of v.consumerGroups)
                     addFrontendFieldsForConsumerGroup(g);
@@ -716,7 +731,7 @@ const apiStore = {
 
     refreshConsumerGroupAcls(groupName: string, force?: boolean) {
         const query = aclRequestToQuery({ ...AclRequestDefault, resourcePatternTypeFilter: 'Match', resourceType: 'Group', resourceName: groupName });
-        cachedApiRequest<GetAclOverviewResponse | null>(`./api/acls?${query}`, force)
+        cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force)
             .then(v => {
                 if (v) {
                     normalizeAcls(v.aclResources);
@@ -732,7 +747,7 @@ const apiStore = {
             topics: topics
         };
 
-        const response = await fetch('./api/consumer-groups/' + encodeURIComponent(groupId), {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
             method: 'PATCH',
             headers: [
                 ['Content-Type', 'application/json']
@@ -751,7 +766,7 @@ const apiStore = {
             topics: topics
         };
 
-        const response = await fetch('./api/consumer-groups/' + encodeURIComponent(groupId), {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
             method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
@@ -765,7 +780,7 @@ const apiStore = {
 
 
     refreshAdminInfo(force?: boolean) {
-        cachedApiRequest<AdminInfo | null>('./api/admin', force)
+        cachedApiRequest<AdminInfo | null>(`${appConfig.restBasePath}/admin`, force)
             .then(info => {
                 if (info == null) {
                     this.adminInfo = null;
@@ -805,7 +820,7 @@ const apiStore = {
     },
 
     refreshSchemaOverview(force?: boolean) {
-        const rq = cachedApiRequest('./api/schemas', force) as Promise<SchemaOverviewResponse>;
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schemas`, force) as Promise<SchemaOverviewResponse>;
         return rq
             .then(({ schemaOverview, isConfigured }) => [this.schemaOverview, this.schemaOverviewIsConfigured] = [schemaOverview, isConfigured])
             .catch(addError);
@@ -814,7 +829,7 @@ const apiStore = {
     refreshSchemaDetails(subjectName: string, version: number | 'latest', force?: boolean) {
         if (version == null) version = 'latest';
 
-        const rq = cachedApiRequest(`./api/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
 
         return rq
             .then(({ schemaDetails }) => {
@@ -835,7 +850,7 @@ const apiStore = {
     },
 
     refreshPartitionReassignments(force?: boolean): Promise<void> {
-        return cachedApiRequest<PartitionReassignmentsResponse | null>('./api/operations/reassign-partitions', force)
+        return cachedApiRequest<PartitionReassignmentsResponse | null>(`${appConfig.restBasePath}/operations/reassign-partitions`, force)
             .then(v => {
                 if (v === null)
                     this.partitionReassignments = null;
@@ -845,7 +860,7 @@ const apiStore = {
     },
 
     async startPartitionReassignment(request: PartitionReassignmentRequest): Promise<AlterPartitionReassignmentsResponse> {
-        const response = await fetch('./api/operations/reassign-partitions', {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/operations/reassign-partitions`, {
             method: 'PATCH',
             headers: [
                 ['Content-Type', 'application/json']
@@ -955,7 +970,7 @@ const apiStore = {
     },
 
     async changeConfig(request: PatchConfigsRequest): Promise<PatchConfigsResponse> {
-        const response = await fetch('./api/operations/configs', {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/operations/configs`, {
             method: 'PATCH',
             headers: [
                 ['Content-Type', 'application/json']
@@ -967,7 +982,7 @@ const apiStore = {
 
 
     async refreshConnectClusters(force?: boolean): Promise<void> {
-        return cachedApiRequest<KafkaConnectors | null>('./api/kafka-connect/connectors', force)
+        return cachedApiRequest<KafkaConnectors | null>(`${appConfig.restBasePath}/kafka-connect/connectors`, force)
             .then(v => {
                 // backend error
                 if (!v) {
@@ -991,7 +1006,7 @@ const apiStore = {
 
     // AdditionalInfo = list of plugins
     refreshClusterAdditionalInfo(clusterName: string, force?: boolean): void {
-        cachedApiRequest<ClusterAdditionalInfo | null>(`./api/kafka-connect/clusters/${clusterName}`, force)
+        cachedApiRequest<ClusterAdditionalInfo | null>(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}`, force)
             .then(v => {
                 if (!v) {
                     this.connectAdditionalClusterInfo.delete(clusterName);
@@ -1020,7 +1035,7 @@ const apiStore = {
             // if we don't have any info yet, or we don't know about that cluster, we need a full refresh
             return this.refreshConnectClusters(force);
 
-        return cachedApiRequest<ClusterConnectorInfo | null>(`./api/kafka-connect/clusters/${clusterName}/connectors/${connectorName}`, force)
+        return cachedApiRequest<ClusterConnectorInfo | null>(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connectorName}`, force)
             .then(v => {
                 if (!v) return; // backend error
 
@@ -1057,7 +1072,7 @@ const apiStore = {
         refreshConnectors(clusterName?: string, force?: boolean): Promise<void> {
             const url = clusterName == null
                 ? './api/kafka-connect/connectors'
-                : `./api/kafka-connect/clusters/${clusterName}/connectors`;
+                : `${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors`;
             return cachedApiRequest<KafkaConnectors | null>(url, force)
                 .then(v => {
                     if (v == null) {
@@ -1072,7 +1087,7 @@ const apiStore = {
 
     async deleteConnector(clusterName: string, connector: string): Promise<void> {
         // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
-        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
             method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1083,7 +1098,7 @@ const apiStore = {
 
     async pauseConnector(clusterName: string, connector: string): Promise<void> {
         // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
-        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/pause`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}/pause`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1094,7 +1109,7 @@ const apiStore = {
 
     async resumeConnector(clusterName: string, connector: string): Promise<void> {
         // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
-        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/resume`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}/resume`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1105,7 +1120,7 @@ const apiStore = {
 
     async restartConnector(clusterName: string, connector: string): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
-        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/restart`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}/restart`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1116,7 +1131,7 @@ const apiStore = {
 
     async updateConnector(clusterName: string, connector: string, config: object): Promise<void> {
         // PUT "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
-        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1128,7 +1143,7 @@ const apiStore = {
 
     async restartTask(clusterName: string, connector: string, taskID: number): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart"
-        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors/${connector}/tasks/${String(taskID)}/restart`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}/tasks/${String(taskID)}/restart`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1140,7 +1155,7 @@ const apiStore = {
 
     async validateConnectorConfig(clusterName: string, pluginClassName: string, config: object): Promise<ConnectorValidationResult> {
         // PUT "/kafka-connect/clusters/{clusterName}/connector-plugins/{pluginClassName}/config/validate"
-        const response = await fetch(`./api/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connector-plugins/${encodeURIComponent(pluginClassName)}/config/validate`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connector-plugins/${encodeURIComponent(pluginClassName)}/config/validate`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1152,7 +1167,7 @@ const apiStore = {
 
     async createConnector(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors"
-        const response = await fetch(`./api/kafka-connect/clusters/${clusterName}/connectors`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1167,7 +1182,7 @@ const apiStore = {
 
     async publishRecords(request: PublishRecordsRequest): Promise<ProduceRecordsResponse> {
         // POST "/topics-records"
-        const response = await fetch('./api/topics-records', {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/topics-records`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1179,7 +1194,7 @@ const apiStore = {
 
     async createTopic(request: CreateTopicRequest): Promise<CreateTopicResponse> {
         // POST "/topics"
-        const response = await fetch('./api/topics', {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/topics`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1190,7 +1205,7 @@ const apiStore = {
     },
 
     async createACL(request: CreateACLRequest): Promise<void> {
-        const response = await fetch('./api/acls', {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/acls`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1202,7 +1217,7 @@ const apiStore = {
     },
 
     async deleteACLs(request: DeleteACLsRequest): Promise<void> {
-        const response = await fetch('./api/acls', {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/acls`, {
             method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1330,7 +1345,7 @@ export async function partialTopicConfigs(configKeys: string[], topics?: string[
         ? `topicNames=${topicNames}&configKeys=${keys}`
         : `configKeys=${keys}`;
 
-    const response = await fetch('./api/topics-configs?' + query);
+    const response = await appConfig.fetch(`${appConfig.restBasePath}/topics-configs?${query}`);
     return parseOrUnwrap<PartialTopicConfigsResponse>(response, null);
 }
 

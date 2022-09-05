@@ -15,6 +15,6 @@ import EmbeddedApp from './EmbeddedApp';
 
 const root = document.getElementById('root');
 ReactDOM.render(
-    <EmbeddedApp basePath={''} bearerToken={''} />,
+    <EmbeddedApp />,
     root
 );
