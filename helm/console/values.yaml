@@ -149,6 +149,9 @@ secret:
     # tlsKey:
     # tlsPassphrase:
     # schemaRegistryPassword:
+    # schemaRegistryTlsCa:
+    # schemaRegistryTlsCert:
+    # schemaRegistryTlsKey:
     # protobufGitBasicAuthPassword
   # Enterprise version secrets
   # SSO secrets (enterprise version)
