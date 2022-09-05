@@ -136,14 +136,19 @@ spec:
             - name: KAFKA_TLS_KEYFILEPATH
               value: "/etc/console/secrets/kafka-tls-key"
             {{- end }}
-            {{- if .Values.secret.kafka.schemaRegistryPassword }}
-            - name: KAFKA_SCHEMAREGISTRY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "console.fullname" . }}
-                  key: kafka-schema-registry-password
+            {{- if .Values.secret.kafka.schemaRegistryTlsCa }}
+            - name: KAFKA_SCHEMAREGISTRY_TLS_CAFILEPATH
+              value: "/etc/console/secrets/kafka-schemaregistry-tls-ca"
             {{- end }}
-            {{- if .Values.secret.login.schemaRegistryPassword }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsCert }}
+            - name: KAFKA_SCHEMAREGISTRY_TLS_CERTFILEPATH
+              value: "/etc/console/secrets/kafka-schemaregistry-tls-cert"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsKey }}
+            - name: KAFKA_SCHEMAREGISTRY_TLS_KEYFILEPATH
+              value: "/etc/console/secrets/kafka-schemaregistry-tls-key"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryPassword }}
             - name: KAFKA_SCHEMAREGISTRY_PASSWORD
               valueFrom:
                 secretKeyRef:
