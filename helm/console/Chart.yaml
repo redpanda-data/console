@@ -3,7 +3,7 @@ name: console
 description: Helm chart to deploy Redpanda Console.
 
 maintainers:
-  - name: Martin Schneppenheim
+  - name: weeco
     url: https://github.com/weeco
 
 #
