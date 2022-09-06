@@ -35,7 +35,9 @@ import AmazonS3 from '../../../assets/connectors/amazon-s3.png';
 import PostgresqlLogo from '../../../assets/connectors/postgres.png';
 import SalesforceLogo from '../../../assets/connectors/salesforce.png';
 import ServicenowLogo from '../../../assets/connectors/servicenow.png';
+import RedpandaLogo from '../../../assets/connectors/redpanda.svg';
 import BigQueryLogo from '../../../assets/connectors/google-bigquery.svg';
+import GoogleCloudStorageLogo from '../../../assets/connectors/google-cloud-storage.png';
 import PubSubLogo from '../../../assets/connectors/google-pub-sub.svg';
 import SnowflakeLogo from '../../../assets/connectors/snowflake.png';
 import CassandraLogo from '../../../assets/connectors/cassandra.png';
@@ -140,6 +142,18 @@ const connectorMetadata: ConnectorMetadata[] = [
         author: 'Debezium'
     } as const,
 
+    // Redpanda Connectors
+    {
+        classNamePrefix: 'com.redpanda.kafka.connect.s3.',
+        logo: <img src={AmazonS3} alt="Amazon S3 logo" className="connectorLogo" />,
+        author: 'Redpanda'
+    } as const,
+    {
+        classNamePrefix: 'com.redpanda.kafka.connect.gcs.',
+        logo: <img src={GoogleCloudStorageLogo} alt="Google Cloud Storage logo" className="connectorLogo" />,
+        author: 'Redpanda'
+    } as const,
+
     // Stream Reactor / Lenses
     {
         classNamePrefix: 'com.datamountaineer.streamreactor.connect.cassandra.',
@@ -183,6 +197,11 @@ const connectorMetadata: ConnectorMetadata[] = [
         classNamePrefix: 'io.confluent.',
         logo: <img src={ConfluentLogo} alt="Confluent logo" className="connectorLogo" />,
         author: 'Confluent',
+    } as const,
+    {
+        classNamePrefix: 'com.redpanda.',
+        logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" />,
+        author: 'Redpanda',
     } as const,
     {
         classNamePrefix: 'org.apache.kafka.',
