@@ -220,13 +220,17 @@ spec:
                   name: {{ include "console.fullname" . }}
                   key: redpanda-admin-api-password
             {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsCa }}
+            - name: REDPANDA_ADMINAPI_TLS_CAFILEPATH
+              value: "/etc/console/secrets/redpanda-admin-api-tls-ca"
+            {{- end }}
             {{- if .Values.secret.redpanda.adminApi.tlsKey }}
             - name: REDPANDA_ADMINAPI_TLS_KEYFILEPATH
-              value: "/etc/console/secrets/kafka-tls-key"
+              value: "/etc/console/secrets/redpanda-admin-api-tls-key"
             {{- end }}
             {{- if .Values.secret.redpanda.adminApi.tlsCert }}
             - name: REDPANDA_ADMINAPI_TLS_CERTFILEPATH
-              value: "/etc/console/secrets/kafka-tls-cert"
+              value: "/etc/console/secrets/redpanda-admin-api-tls-cert"
             {{- end }}
             {{- end }}
           envFrom:
