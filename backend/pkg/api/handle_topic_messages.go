@@ -12,6 +12,7 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -27,8 +28,8 @@ type GetTopicMessagesResponse struct {
 	KafkaMessages *console.ListMessageResponse `json:"kafkaMessages"`
 }
 
-// ListMessageRequest represents a search message request with all search parameter. This must be public as it's
-// used in Kowl business to implement the hooks.
+// ListMessagesRequest represents a search message request with all search parameter. This must be public as it's
+// used in Console Enterprise to implement the hooks.
 type ListMessagesRequest struct {
 	TopicName             string `json:"topicName"`
 	StartOffset           int64  `json:"startOffset"`    // -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp
@@ -36,6 +37,10 @@ type ListMessagesRequest struct {
 	PartitionID           int32  `json:"partitionId"`    // -1 for all partition ids
 	MaxResults            int    `json:"maxResults"`
 	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
+
+	// Enterprise may only be set in the Enterprise mode. The JSON deserialization is deferred
+	// to the enterprise backend.
+	Enterprise json.RawMessage `json:"enterprise,omitempty"`
 }
 
 func (l *ListMessagesRequest) OK() error {
@@ -121,7 +126,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		// Check if logged in user is allowed to list messages for the given request
-		canViewMessages, restErr := api.Hooks.Console.CanViewTopicMessages(r.Context(), req.TopicName)
+		canViewMessages, restErr := api.Hooks.Console.CanViewTopicMessages(r.Context(), req.TopicName, &req)
 		if restErr != nil {
 			wsClient.writeJSON(restErr)
 			return
