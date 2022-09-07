@@ -52,7 +52,7 @@ type ConsoleHooks interface {
 	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(ctx context.Context, topicName string, req *ListMessagesRequest) (bool, *rest.Error)
+	CanViewTopicMessages(ctx context.Context, req *ListMessagesRequest) (bool, *rest.Error)
 	CanUseMessageSearchFilters(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
@@ -138,7 +138,7 @@ func (*defaultHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, 
 func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
-func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ string, _ *ListMessagesRequest) (bool, *rest.Error) {
+func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ *ListMessagesRequest) (bool, *rest.Error) {
 	return true, nil
 }
 func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ string) (bool, *rest.Error) {
