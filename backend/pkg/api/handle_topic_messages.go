@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/rest"
 )
@@ -112,6 +113,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		var req ListMessagesRequest
 		err := wsClient.readJSON(&req)
 		if err != nil {
+			api.Logger.Error("failed to parse list message request on Websocket", zap.Error(err))
 			sendError("Failed to parse list message request")
 			return
 		}
