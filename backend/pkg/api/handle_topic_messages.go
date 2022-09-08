@@ -139,7 +139,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		if len(req.FilterInterpreterCode) > 0 {
-			canUseMessageSearchFilters, restErr := api.Hooks.Console.CanUseMessageSearchFilters(r.Context(), req.TopicName)
+			canUseMessageSearchFilters, restErr := api.Hooks.Console.CanUseMessageSearchFilters(r.Context(), &req)
 			if restErr != nil {
 				sendError(restErr.Message)
 				return
