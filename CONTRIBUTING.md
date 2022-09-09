@@ -1,14 +1,14 @@
-# Contributing to Kowl
+# Contributing to Redpanda Console
 
 Welcome! This guide is intended to help developers that are new to the community
-navigate the process of making contributions to the Kowl project. Please be 
+navigate the process of making contributions to Redpanda Console. Please be
 sure to also checkout our [code of conduct](https://github.com/redpanda-data/redpanda/blob/dev/CODE_OF_CONDUCT.md).
 We work hard to make this a welcoming community for all, and we're excited that 
 you are here!
 
 The basics:
 
-* Use the [Issue Tracker](https://github.com/redpanda-data/kowl/issues) to
+* Use the [Issue Tracker](https://github.com/redpanda-data/console/issues) to
   report bugs, crashes, performance issues, etc... Please include as much detail
   as possible.
 
@@ -32,7 +32,7 @@ Prerequisites that should be installed before proceeding:
 - Latest Go version (currently v1.18)
 - Docker (required to start a local redpanda cluster)
 
-Kowl consists of two components:
+Redpanda Console consists of two components:
 
 1. React single page application for the frontend
 2. Go backend, which hosts the HTTP / RESTish API
