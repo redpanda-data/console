@@ -260,7 +260,12 @@ const apiStore = {
     messagesTotalConsumed: 0,
 
 
-    async startMessageSearch(searchRequest: MessageSearchRequest): Promise<void> {
+    async startMessageSearch(_searchRequest: MessageSearchRequest): Promise<void> {
+        const searchRequest = {..._searchRequest, ...(appConfig.jwt ?  { enterprise: {
+        redpandaCloud: {
+            accessToken: appConfig.jwt
+        }
+        }}: {})}
         const url = `${appConfig.websocketBasePath}/topics/${searchRequest.topicName}/messages`;
 
         console.debug('connecting to "' + url + '"');
@@ -1355,6 +1360,11 @@ export interface MessageSearchRequest {
     partitionId: number,
     maxResults: number, // should also support '-1' soon, so we can do live tailing
     filterInterpreterCode: string, // js code, base64 encoded
+    enterprise?: {
+        redpandaCloud?: {
+            accessToken: string;
+        }
+    }
 }
 
 async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
