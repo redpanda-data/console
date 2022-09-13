@@ -6,6 +6,7 @@ module.exports = {
     exposes: {
         './EmbeddedApp': './src/EmbeddedApp',
         './injectApp': './src/injectApp',
+        './config': './src/config.ts',
     },
 
     shared: [

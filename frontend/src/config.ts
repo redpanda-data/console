@@ -44,6 +44,7 @@ interface Config {
     jwt?: string,
 
 }
+
 export let config: Config = {
     websocketBasePath: getWebsocketBasePath(),
     restBasePath: getRestBasePath(),
