@@ -11,12 +11,12 @@
 import { observable } from 'mobx';
 import { getBasePath, IsDev } from './utils/env';
 
-declare const  __webpack_public_path__: string;
+declare const __webpack_public_path__: string;
 
 const DEFAULT_HOST = 'localhost:9090';
 const DEFAULT_API_BASE = './api';
 
-const getWebsocketBasePath = (overrideUrl?: string):string => {
+const getWebsocketBasePath = (overrideUrl?: string): string => {
     if (overrideUrl) return overrideUrl;
     const isHttps = window.location.protocol.startsWith('https');
     const protocol = isHttps ? 'wss://' : 'ws://';
@@ -37,6 +37,17 @@ export interface SetConfigArguments {
     }
 }
 
+export interface SidebarItem {
+    title: string; // "Topics"
+    to: string; // '/topics'
+    icon?: JSX.Element;
+}
+
+export interface Breadcrumb {
+    title: string; // "Topics"
+    to: string; // '/topics'
+}
+
 interface Config {
     websocketBasePath: string;
     restBasePath: string;
@@ -44,6 +55,8 @@ interface Config {
     assetsPath: string,
     jwt?: string,
 
+    setSidebarItems: (items: SidebarItem[]) => void,
+    setBreadcrumbs: (items: Breadcrumb[]) => void,
 }
 
 export const config: Config = observable({
@@ -51,6 +64,9 @@ export const config: Config = observable({
     restBasePath: getRestBasePath(),
     fetch: window.fetch,
     assetsPath: getBasePath(),
+
+    setSidebarItems: () => { },
+    setBreadcrumbs: () => { },
 });
 
 export const setConfig = ({
@@ -59,7 +75,7 @@ export const setConfig = ({
     jwt,
 }: SetConfigArguments) => {
 
-    const assetsUrl = urlOverride?.assets === 'WEBPACK' ?  String(__webpack_public_path__).removeSuffix('/'): urlOverride?.assets;
+    const assetsUrl = urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
     Object.assign(config, {
         jwt,
         websocketBasePath: getWebsocketBasePath(urlOverride?.ws),
