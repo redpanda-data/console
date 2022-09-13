@@ -17,13 +17,12 @@ import { computed, makeObservable, observable } from 'mobx';
 import { QuickTable } from '../../../../utils/tsxUtils';
 import { sortField } from '../../../misc/common';
 import { uiSettings } from '../../../../state/ui';
-import { ColumnProps } from 'antd/lib/table';
 import { Message, prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
 import { ReassignmentState } from '../logic/reassignmentTracker';
 import { observer } from 'mobx-react';
 import { reassignmentTracker } from '../ReassignPartitions';
 import { BandwidthSlider } from './BandwidthSlider';
-import { KowlTable } from '../../../misc/KowlTable';
+import { KowlColumnType, KowlTable } from '../../../misc/KowlTable';
 import { BrokerList } from '../../../misc/BrokerList';
 
 
@@ -42,7 +41,7 @@ export class ActiveReassignments extends Component<{ throttledTopics: string[], 
     }
 
     render() {
-        const columnsActiveReassignments: ColumnProps<ReassignmentState>[] = [
+        const columnsActiveReassignments: KowlColumnType<ReassignmentState>[] = [
             {
                 title: 'Topic', width: '1%',
                 render: (v, t) => <TopicNameCol state={t} />,

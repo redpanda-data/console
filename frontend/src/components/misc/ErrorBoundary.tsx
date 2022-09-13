@@ -47,7 +47,7 @@ interface InfoItem {
 }
 
 @observer
-export class ErrorBoundary extends React.Component {
+export class ErrorBoundary extends React.Component<{ children?: React.ReactNode }> {
     @observable hasError = false;
     error: Error | null = null;
     errorInfo: object | null = null;

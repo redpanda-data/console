@@ -19,7 +19,7 @@ import { prettyMilliseconds } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route, Link } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { animProps_logo, MotionDiv } from '../utils/animationProps';
+import { AnimatePresence, animProps_logo, MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
@@ -39,12 +39,13 @@ import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
 import { renderErrorModals } from './misc/ErrorModal';
 import { SyncIcon, ChevronRightIcon } from '@primer/octicons-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const { Content, Footer, Sider } = Layout;
 
 
 const siderCollapsedWidth = 80;
+
 
 
 const VersionInfo = () => {

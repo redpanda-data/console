@@ -12,7 +12,7 @@
 import React, { Component, CSSProperties } from 'react';
 
 
-class Card extends Component<{ id?: string, style?: CSSProperties, className?: string }> {
+class Card extends Component<{ id?: string, style?: CSSProperties, className?: string, children?: React.ReactNode }> {
 
     render() {
         return <div id={this.props.id} className={'kowlCard ' + (this.props.className ?? '')} style={this.props.style}>

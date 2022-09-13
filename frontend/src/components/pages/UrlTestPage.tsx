@@ -12,8 +12,8 @@
 import React from 'react';
 import { PageComponent, PageInitHelper } from './Page';
 
-import { motion, AnimatePresence } from 'framer-motion'
-import { animProps, MotionDiv } from '../../utils/animationProps';
+import { motion } from 'framer-motion'
+import { AnimatePresence, animProps, MotionDiv } from '../../utils/animationProps';
 import { observer } from 'mobx-react';
 import { Checkbox } from 'antd';
 import { makeObservable, observable } from 'mobx';

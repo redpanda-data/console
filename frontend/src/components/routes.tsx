@@ -22,7 +22,6 @@ import { observer } from 'mobx-react';
 import GroupList from './pages/consumers/Group.List';
 import GroupDetails from './pages/consumers/Group.Details';
 import BrokerList from './pages/brokers/Broker.List';
-import { AnimatePresence } from 'framer-motion';
 import { uiState } from '../state/uiState';
 import AdminPage from './pages/admin/AdminPage';
 import { api } from '../state/backendApi';
@@ -40,6 +39,7 @@ import CreateConnector from './pages/connect/CreateConnector';
 import QuotasList from './pages/quotas/Quotas.List';
 import { AppFeature, AppFeatures } from '../utils/env';
 import { ItemType } from 'antd/lib/menu/hooks/useItems';
+import { AnimatePresence } from '../utils/animationProps';
 
 //
 //	Route Types

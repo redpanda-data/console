@@ -11,7 +11,6 @@
 
 import { observer } from 'mobx-react';
 import { Empty, Input, Button, Alert, Tag, Popconfirm, message } from 'antd';
-import { ColumnProps } from 'antd/lib/table';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -24,7 +23,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import Card from '../../misc/Card';
 import { Code, DefaultSkeleton, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import { clone } from '../../../utils/jsonUtils';
-import { KowlTable } from '../../misc/KowlTable';
+import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import { LockIcon } from '@primer/octicons-react';
 import { TrashIcon } from '@heroicons/react/outline';
 import { QuestionCircleOutlined } from '@ant-design/icons';
@@ -35,7 +34,7 @@ import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 @observer
 class AclList extends PageComponent {
 
-    columns: ColumnProps<AclPrincipalGroup>[] = [
+    columns: KowlColumnType<AclPrincipalGroup>[] = [
         {
             width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principalName'),
             render: (_value: string, record: AclPrincipalGroup) => {

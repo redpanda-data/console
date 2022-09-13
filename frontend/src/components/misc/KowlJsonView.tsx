@@ -12,7 +12,7 @@
 import { message, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import React, { useState } from 'react';
-import JsonView, { ReactJsonViewProps } from 'react-json-view';
+import JsonView, { ReactJsonViewProps } from '@textea/json-viewer';
 import { uiSettings } from '../../state/ui';
 import styles from './KowlJsonView.module.scss';
 const { setTimeout } = window;

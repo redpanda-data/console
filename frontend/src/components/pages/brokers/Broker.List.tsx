@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
+import { Component } from 'react';
 import { observer } from 'mobx-react';
 import { Empty, Statistic, Row, Tooltip, Space } from 'antd';
-import Table, { ColumnProps } from 'antd/lib/table';
+import Table from 'antd/lib/table';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -27,7 +27,7 @@ import Card from '../../misc/Card';
 import { CrownOutlined } from '@ant-design/icons';
 import { DefaultSkeleton, findPopupContainer, OptionGroup } from '../../../utils/tsxUtils';
 import { ConfigList } from '../../misc/ConfigList';
-import { KowlTable } from '../../misc/KowlTable';
+import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 
 
 
@@ -75,7 +75,7 @@ class BrokerList extends PageComponent {
             </>
         };
 
-        const columns: ColumnProps<Broker>[] = [
+        const columns: KowlColumnType<Broker>[] = [
             { width: '80px', title: 'ID', dataIndex: 'brokerId', render: renderIdColumn, sorter: sortField('brokerId'), defaultSortOrder: 'ascend' },
             Table.EXPAND_COLUMN,
             { width: 'auto', title: 'Address', dataIndex: 'address', sorter: sortField('address'), },

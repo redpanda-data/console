@@ -10,11 +10,10 @@
  */
 
 import { Checkbox, Input } from 'antd';
-import { AnimatePresence } from 'framer-motion';
 import { autorun, IReactionDisposer, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import { animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
+import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
 
 // todo: extract out where the filterText is retreived from / saved.

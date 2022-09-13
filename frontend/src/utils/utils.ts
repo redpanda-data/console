@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, } from 'react';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
@@ -24,29 +23,6 @@ import { TopicMessage } from '../state/restInterfaces';
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
 export const nameof = <T>(name: Extract<keyof T, string>): string => name;
 
-export class AutoRefresh extends Component {
-
-    timerId: NodeJS.Timeout;
-
-    componentDidMount() {
-        this.reload = this.reload.bind(this);
-        this.timerId = setInterval(() => this.reload(), 1000);
-    }
-
-    componentWillUnmount() {
-        clearInterval(this.timerId);
-    }
-
-    reload() {
-        this.forceUpdate();
-    }
-
-    render() {
-        //let c = this.props.children as ReactNodeArray;
-        //console.log('AutoRefresh.render(): ' + c.length + ' children');
-        return (this.props.children);
-    }
-}
 
 export class TimeSince {
     timestamp: number = Date.now();
