@@ -41,6 +41,7 @@ export interface SidebarItem {
     title: string; // "Topics"
     to: string; // '/topics'
     icon?: JSX.Element;
+    order: number;
 }
 
 export interface Breadcrumb {
