@@ -8,6 +8,7 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+import { observable } from 'mobx';
 import { getBasePath, IsDev } from './utils/env';
 
 declare const  __webpack_public_path__: string;
@@ -20,8 +21,8 @@ const getWebsocketBasePath = (overrideUrl?: string):string => {
     const isHttps = window.location.protocol.startsWith('https');
     const protocol = isHttps ? 'wss://' : 'ws://';
     const host = IsDev ? DEFAULT_HOST : window.location.host;
-    return `${protocol + host + getBasePath()}/api`; 
-} 
+    return `${protocol + host + getBasePath()}/api`;
+}
 
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
 
@@ -32,7 +33,7 @@ export interface SetConfigArguments {
     urlOverride?: {
         rest?: string;
         ws?: string;
-        assets?: string; 
+        assets?: string;
     }
 }
 
@@ -45,26 +46,27 @@ interface Config {
 
 }
 
-export let config: Config = {
+export const config: Config = observable({
     websocketBasePath: getWebsocketBasePath(),
     restBasePath: getRestBasePath(),
     fetch: window.fetch,
-    assetsPath:getBasePath(),
-} 
+    assetsPath: getBasePath(),
+});
 
 export const setConfig = ({
     fetch,
     urlOverride,
     jwt,
 }: SetConfigArguments) => {
-  
+
     const assetsUrl = urlOverride?.assets === 'WEBPACK' ?  String(__webpack_public_path__).removeSuffix('/'): urlOverride?.assets;
-    config = {
+    Object.assign(config, {
         jwt,
         websocketBasePath: getWebsocketBasePath(urlOverride?.ws),
         restBasePath: getRestBasePath(urlOverride?.rest),
         fetch: fetch ?? window.fetch.bind(window),
         assetsPath: assetsUrl ?? getBasePath(),
-    }
+    });
+
     return config;
 };
