@@ -14,7 +14,6 @@ import { observer } from 'mobx-react';
 import { Layout, PageHeader, Button, Popover } from 'antd';
 import { uiSettings } from '../state/ui';
 import { RouteView, RouteMenu, } from './routes';
-import { RenderTrap } from './misc/common';
 import { prettyMilliseconds } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route, Link } from 'react-router-dom';
@@ -227,8 +226,6 @@ const AppFooter = () => {
 
 const AppContent = observer(() =>
     <Layout className="overflowYOverlay" id="mainLayout">
-
-        <RenderTrap name="AppContentLayout" />
 
         {/* Page */}
         <Content style={{ display: 'flex', flexDirection: 'column', padding: '8px 6px 0px 4px', zIndex: 1 }}>
