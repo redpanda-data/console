@@ -165,9 +165,6 @@ const DataRefreshButton = observer(() => {
 
 const AppPageHeader = observer(() => {
 
-    if (isEmbedded())
-        return null;
-
     const breadcrumbs = uiState.pageBreadcrumbs.map(v => ({ path: v.linkTo, breadcrumbName: v.title }));
     const selectedClusterName = uiState.selectedClusterName;
     if (selectedClusterName) {
@@ -175,6 +172,9 @@ const AppPageHeader = observer(() => {
         const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: 'Cluster' };
         breadcrumbs.unshift(rootBreadcrumb);
     }
+
+    if (isEmbedded())
+        breadcrumbs.splice(0, breadcrumbs.length - 1);
 
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
         ? <>
@@ -268,7 +268,7 @@ export default class App extends Component {
                     {/* Default View */}
                     <Route path="*">
                         <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
-                            <AppSide />
+                            {isEmbedded() ? null : <AppSide />}
                             <AppContent />
                         </Layout>
                     </Route>

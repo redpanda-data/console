@@ -8,7 +8,9 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-import { observable } from 'mobx';
+import { autorun, observable } from 'mobx';
+import { APP_ROUTES } from './components/routes';
+import { uiState } from './state/uiState';
 import { getBasePath, IsDev } from './utils/env';
 
 declare const __webpack_public_path__: string;
@@ -88,6 +90,36 @@ export const setConfig = ({
     return config;
 };
 
+autorun(() => {
+    const setBreadcrumbs = config.setBreadcrumbs;
+    if (!setBreadcrumbs) return;
+
+    let breadcrumbs = uiState.pageBreadcrumbs.map(v => ({
+        title: v.title,
+        to: v.linkTo
+    }));
+
+    // remove first ("Cluster") and last ("Page Title") entries
+    breadcrumbs = breadcrumbs.slice(1, -1);
+
+    setBreadcrumbs(breadcrumbs);
+});
+
+autorun(() => {
+    const setSidebarItems = config.setSidebarItems;
+    if (!setSidebarItems) return;
+
+    const sidebarItems = APP_ROUTES.map((r, i) => ({
+        title: r.title,
+        to: r.path,
+        icon: r.icon,
+        order: i,
+    } as SidebarItem));
+
+    setSidebarItems(sidebarItems);
+});
+
 export function isEmbedded() {
     return config.jwt != null;
+
 }
