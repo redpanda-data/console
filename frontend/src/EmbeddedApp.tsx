@@ -4,7 +4,7 @@
  * As of the Change Date specified in that file, in accordance with
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
- */ 
+ */
 
 import { loader } from '@monaco-editor/react';
 import {
@@ -57,12 +57,16 @@ export interface EmbeddedProps extends SetConfigArguments {
 
 let setupDone = false;
 function setup(setupArgs: SetConfigArguments) {
+    const config = setConfig(setupArgs);
+
+    // Tell monaco editor where to load dependencies from
+    loader.config({ paths: { vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs` } });
+
     if (setupDone) {
         if (IsDev)
             console.error('setup was already called');
         return;
     }
-    const config = setConfig(setupArgs)
     // Set theme color for ant-design
     ConfigProvider.config({
         theme: {
@@ -76,8 +80,6 @@ function setup(setupArgs: SetConfigArguments) {
         },
     });
 
-    // Tell monaco editor where to load dependencies from
-    loader.config({ paths: { vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs` } });
 
     // Configure MobX
     configure({
