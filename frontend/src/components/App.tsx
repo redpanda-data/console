@@ -39,6 +39,7 @@ import { featureErrors } from '../state/supportedFeatures';
 import { renderErrorModals } from './misc/ErrorModal';
 import { SyncIcon, ChevronRightIcon } from '@primer/octicons-react';
 import { motion } from 'framer-motion';
+import { isEmbedded } from '../config';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -163,7 +164,10 @@ const DataRefreshButton = observer(() => {
 });
 
 const AppPageHeader = observer(() => {
-    
+
+    if (isEmbedded())
+        return null;
+
     const breadcrumbs = uiState.pageBreadcrumbs.map(v => ({ path: v.linkTo, breadcrumbName: v.title }));
     const selectedClusterName = uiState.selectedClusterName;
     if (selectedClusterName) {
