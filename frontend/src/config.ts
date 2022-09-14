@@ -87,3 +87,7 @@ export const setConfig = ({
 
     return config;
 };
+
+export function isEmbedded() {
+    return config.jwt != null;
+}
