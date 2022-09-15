@@ -9,13 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import EmbeddedApp, { EmbeddedProps } from './EmbeddedApp';
 // import { basePathS } from './utils/env';
 
 const injector = async (parentElementId: string, props: EmbeddedProps) => {
-  return  void ReactDOM.render(<EmbeddedApp {...props} />, document.getElementById(parentElementId));
+
+const container = document.getElementById(parentElementId)  
+const root = createRoot(container!)
+  return  root.render(<EmbeddedApp {...props} />);
 
 }
 

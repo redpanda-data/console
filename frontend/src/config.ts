@@ -37,6 +37,9 @@ export interface SetConfigArguments {
         ws?: string;
         assets?: string;
     }
+    setSidebarItems?: (items: SidebarItem[]) => void;
+    setBreadcrumbs?: (items: Breadcrumb[]) => void;
+
 }
 
 export interface SidebarItem {
@@ -76,6 +79,7 @@ export const setConfig = ({
     fetch,
     urlOverride,
     jwt,
+    ...args
 }: SetConfigArguments) => {
 
     const assetsUrl = urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
@@ -85,6 +89,7 @@ export const setConfig = ({
         restBasePath: getRestBasePath(urlOverride?.rest),
         fetch: fetch ?? window.fetch.bind(window),
         assetsPath: assetsUrl ?? getBasePath(),
+        ...args,
     });
 
     return config;
