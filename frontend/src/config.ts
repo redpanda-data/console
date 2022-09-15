@@ -114,12 +114,14 @@ autorun(() => {
     const setSidebarItems = config.setSidebarItems;
     if (!setSidebarItems) return;
 
-    const sidebarItems = APP_ROUTES.map((r, i) => ({
-        title: r.title,
-        to: r.path,
-        icon: r.icon,
-        order: i,
-    } as SidebarItem));
+    const sidebarItems = APP_ROUTES
+        .filter(x => x.icon != null)
+        .map((r, i) => ({
+            title: r.title,
+            to: r.path,
+            icon: r.icon,
+            order: i,
+        } as SidebarItem));
 
     setSidebarItems(sidebarItems);
 });
