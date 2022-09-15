@@ -99,9 +99,8 @@ extraEnv: ""
 
 # Additional environment variables for Console mapped from Secret or ConfigMap
 extraEnvFrom: ""
-# - secretKeyRef:
+# - secretRef:
 #     name: kowl-config-secret
-#     key: kowl.config
 
 # Add additional volumes, e. g. for tls keys
 extraVolumes: ""
