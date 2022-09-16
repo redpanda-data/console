@@ -8,7 +8,7 @@ on:
     tags:
       - '*'
     branches:
-      - "*"
+      - '**'
 
 jobs:
   dispatch:
