@@ -99,13 +99,10 @@ autorun(() => {
     const setBreadcrumbs = config.setBreadcrumbs;
     if (!setBreadcrumbs) return;
 
-    let breadcrumbs = uiState.pageBreadcrumbs.map(v => ({
+    const breadcrumbs = uiState.pageBreadcrumbs.map(v => ({
         title: v.title,
         to: v.linkTo
     }));
-
-    // remove first ("Cluster") and last ("Page Title") entries
-    breadcrumbs = breadcrumbs.slice(1, -1);
 
     setBreadcrumbs(breadcrumbs);
 });
