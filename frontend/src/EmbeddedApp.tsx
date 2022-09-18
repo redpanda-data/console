@@ -6,11 +6,12 @@
  * by the Apache License, Version 2.0
  */
 
+import { useEffect } from 'react';
 import { loader } from '@monaco-editor/react';
 import {
     BrowserRouter,
     withRouter,
-    RouteComponentProps
+    RouteComponentProps, 
 } from 'react-router-dom';
 import { configure, when } from 'mobx';
 
@@ -106,6 +107,31 @@ function setup(setupArgs: SetConfigArguments) {
 }
 
 export default function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
+
+    useEffect(
+        () => {
+            const shellNavigationHandler = (event: Event) => {
+                const pathname = (event as CustomEvent<string>).detail;
+                const { pathname: currentPathname } = appGlobal.history.location;
+                if (currentPathname === pathname) {
+                    return;
+                }
+                appGlobal.history.push(pathname);
+            };
+
+            window.addEventListener(
+                '[shell] navigated',
+                shellNavigationHandler
+            );
+
+            return () => {
+                window.removeEventListener(
+                    '[shell] navigated',
+                    shellNavigationHandler
+                );
+            };
+    },[]);
+
 
     setup(p);
 
