@@ -18,7 +18,7 @@ import { CloseCircleOutlined } from '@ant-design/icons'
 
 
 @observer
-export class ErrorDisplay extends React.Component {
+export class ErrorDisplay extends React.Component<{ children?: React.ReactNode }> {
 
     render() {
         if (api.errors.length === 0)

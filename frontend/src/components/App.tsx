@@ -14,19 +14,18 @@ import { observer } from 'mobx-react';
 import { Layout, PageHeader, Button, Popover } from 'antd';
 import { uiSettings } from '../state/ui';
 import { RouteView, RouteMenu, } from './routes';
-import { RenderTrap } from './misc/common';
 import { prettyMilliseconds } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route, Link } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { animProps_logo, MotionDiv } from '../utils/animationProps';
+import { AnimatePresence, animProps_logo, MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
 import RedpandaLogo from '../assets/redpanda/redpanda-color.svg';
 import RedpandaIcon from '../assets/redpanda/icon-color.svg';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsDev, basePathS, IsCI, AppFeatures } from '../utils/env';
+import { IsDev, getBasePath, IsCI, AppFeatures } from '../utils/env';
 import { UserProfile } from './misc/UserButton';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
@@ -39,12 +38,14 @@ import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
 import { renderErrorModals } from './misc/ErrorModal';
 import { SyncIcon, ChevronRightIcon } from '@primer/octicons-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { isEmbedded } from '../config';
 
 const { Content, Footer, Sider } = Layout;
 
 
 const siderCollapsedWidth = 80;
+
 
 
 const VersionInfo = () => {
@@ -165,13 +166,15 @@ const DataRefreshButton = observer(() => {
 const AppPageHeader = observer(() => {
 
     const breadcrumbs = uiState.pageBreadcrumbs.map(v => ({ path: v.linkTo, breadcrumbName: v.title }));
-
     const selectedClusterName = uiState.selectedClusterName;
     if (selectedClusterName) {
         //const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: selectedClusterName };
         const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: 'Cluster' };
         breadcrumbs.unshift(rootBreadcrumb);
     }
+
+    if (isEmbedded())
+        breadcrumbs.splice(0, breadcrumbs.length - 1);
 
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
         ? <>
@@ -228,8 +231,6 @@ const AppFooter = () => {
 const AppContent = observer(() =>
     <Layout className="overflowYOverlay" id="mainLayout">
 
-        <RenderTrap name="AppContentLayout" />
-
         {/* Page */}
         <Content style={{ display: 'flex', flexDirection: 'column', padding: '8px 6px 0px 4px', zIndex: 1 }}>
             <LicenseNotification />
@@ -267,7 +268,7 @@ export default class App extends Component {
                     {/* Default View */}
                     <Route path="*">
                         <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
-                            <AppSide />
+                            {isEmbedded() ? null : <AppSide />}
                             <AppContent />
                         </Layout>
                     </Route>
@@ -282,7 +283,7 @@ export default class App extends Component {
             return null;
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
-        const path = window.location.pathname.removePrefix(basePathS ?? '');
+        const path = window.location.pathname.removePrefix(getBasePath() ?? '');
         const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); };
 
         if (path.startsWith('/login'))
@@ -290,7 +291,7 @@ export default class App extends Component {
 
         if (api.userData === null && !path.startsWith('/login')) {
             devPrint('known not logged in, hard redirect');
-            window.location.pathname = basePathS + '/login'; // definitely not logged in, and in wrong url: hard redirect!
+            window.location.pathname = getBasePath() + '/login'; // definitely not logged in, and in wrong url: hard redirect!
             return preLogin;
         }
 

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { FC, CSSProperties, Component } from 'react';
+import React, { CSSProperties, Component } from 'react';
 import { PropsWithChildren } from 'react';
 import { TablePaginationConfig } from 'antd/lib/table';
 import { CompareFn } from 'antd/lib/table/interface';
@@ -25,16 +25,6 @@ import { TopicLogDirSummary } from '../../state/restInterfaces';
 import { AlertIcon } from '@primer/octicons-react';
 
 const { useBreakpoint } = Grid;
-
-
-const renderCount = new Map<string, number>();
-export const RenderTrap: FC<{ name: string }> = ({ name }) => {
-    let currentCount = renderCount.get(name) || 0;
-    currentCount += 1;
-    renderCount.set(name, currentCount);
-
-    return null;
-}
 
 export const Section = ((p: PropsWithChildren<{ title: string }>) =>
     <section style={{ padding: '1em 2em' }}>

@@ -22,7 +22,6 @@ import { observer } from 'mobx-react';
 import GroupList from './pages/consumers/Group.List';
 import GroupDetails from './pages/consumers/Group.Details';
 import BrokerList from './pages/brokers/Broker.List';
-import { AnimatePresence } from 'framer-motion';
 import { uiState } from '../state/uiState';
 import AdminPage from './pages/admin/AdminPage';
 import { api } from '../state/backendApi';
@@ -40,6 +39,7 @@ import CreateConnector from './pages/connect/CreateConnector';
 import QuotasList from './pages/quotas/Quotas.List';
 import { AppFeature, AppFeatures } from '../utils/env';
 import { ItemType } from 'antd/lib/menu/hooks/useItems';
+import { AnimatePresence } from '../utils/animationProps';
 
 //
 //	Route Types
@@ -51,7 +51,7 @@ export interface PageDefinition<TRouteParams = {}> {
     path: string;
     pageType: PageComponentType<TRouteParams>;
     routeJsx: JSX.Element;
-    icon?: JSX.Element;
+    icon?: (props: React.ComponentProps<'svg'>) => JSX.Element;
     menuItemKey?: string; // set by 'CreateRouteMenuItems'
     visibilityCheck?: () => MenuItemState;
 }
@@ -87,9 +87,10 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
         }
         const isDisabled = !isEnabled;
 
+        const Icon = entry.icon as unknown as typeof React.Component;
         return {
             key: entry.path,
-            icon: entry.icon,
+            icon: entry.icon && <span className="menuIcon anticon"><Icon /></span>,
             onClick: () => { history.push(entry.path)},
             label: (
                 <Tooltip
@@ -159,7 +160,12 @@ interface MenuItemState {
     disabledReasons: DisabledReasons[];
 }
 
-function MakeRoute<TRouteParams>(path: string, page: PageComponentType<TRouteParams>, title: string, icon?: JSX.Element, exact: boolean = true, showCallback?: () => MenuItemState): PageDefinition<TRouteParams> {
+function MakeRoute<TRouteParams>(
+    path: string,
+    page: PageComponentType<TRouteParams>,
+    title: string,
+    icon?: (props: React.ComponentProps<'svg'>) => JSX.Element,
+    exact: boolean = true, showCallback?: () => MenuItemState): PageDefinition<TRouteParams> {
 
     const route: PageDefinition<TRouteParams> = {
         title,
@@ -243,33 +249,33 @@ function routeVisibility(
 //
 export const APP_ROUTES: IRouteEntry[] = [
 
-    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', <span className="menuIcon anticon"><ChipIcon /></span>),
+    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', ChipIcon),
 
-    MakeRoute<{}>('/topics', TopicList, 'Topics', <span className="menuIcon anticon"><CollectionIcon /></span>),
+    MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
-    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', <span className="menuIcon anticon"><CubeTransparentIcon /></span>),
+    MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
     MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
-    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', <span className="menuIcon anticon"><FilterIcon /></span>, undefined,
+    MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', FilterIcon, undefined,
         routeVisibility(true, [Feature.ConsumerGroups])
     ),
     MakeRoute<{ groupId: string }>('/groups/:groupId/', GroupDetails, 'Consumer Groups'),
 
-    MakeRoute<{}>('/acls', AclList, 'Security', <span className="menuIcon anticon"><ShieldCheckIcon /></span>, true,
+    MakeRoute<{}>('/acls', AclList, 'Security', ShieldCheckIcon, true,
         routeVisibility(true, [], ['canListAcls'])
     ),
 
-    MakeRoute<{}>('/quotas', QuotasList, 'Quotas', <span className="menuIcon anticon"><ScaleIcon /></span>, true,
+    MakeRoute<{}>('/quotas', QuotasList, 'Quotas', ScaleIcon, true,
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/kafka-connect', KafkaConnectOverview, 'Kafka Connect', <span className="menuIcon anticon"><LinkIcon /></span>, true),
+    MakeRoute<{}>('/kafka-connect', KafkaConnectOverview, 'Kafka Connect', LinkIcon, true),
     MakeRoute<{ clusterName: string }>('/kafka-connect/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string, connector: string }>('/kafka-connect/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
     MakeRoute<{}>('/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
 
-    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', <span className="menuIcon anticon"><BeakerIcon /></span>, false,
+    MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,
             [Feature.GetReassignments, Feature.PatchReassignments],
             ['canPatchConfigs', 'canReassignPartitions'],
@@ -277,7 +283,7 @@ export const APP_ROUTES: IRouteEntry[] = [
         )
     ),
 
-    MakeRoute<{}>('/admin', AdminPage, 'Admin', <span className="menuIcon anticon"><CogIcon /></span>, false,
+    MakeRoute<{}>('/admin', AdminPage, 'Admin', CogIcon, false,
         routeVisibility(() => api.userData?.canViewConsoleUsers ?? false)
     ),
 

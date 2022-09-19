@@ -15,13 +15,11 @@ import { Alert, Button, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu
 import { ColumnProps } from 'antd/lib/table';
 import { SortOrder } from 'antd/lib/table/interface';
 import Paragraph from 'antd/lib/typography/Paragraph';
-import { AnimatePresence } from 'framer-motion';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import * as moment from 'moment';
 import queryString from 'query-string';
 import React, { Component, ReactNode } from 'react';
-import { CollapsedFieldProps } from 'react-json-view';
 import FilterEditor from './Editor';
 
 import filterExample1 from '../../../../assets/filter-example-1.png';
@@ -31,7 +29,7 @@ import { CompressionType, compressionTypeToNum, EncodingType, Payload, PublishRe
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
 import { ColumnList, FilterEntry, PreviewTagV2, PartitionOffsetOrigin } from '../../../../state/ui';
 import { uiState } from '../../../../state/uiState';
-import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
+import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
 import { IsDev } from '../../../../utils/env';
 import { isClipboardAvailable } from '../../../../utils/featureDetection';
@@ -50,6 +48,7 @@ import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import colors from '../../../../colors';
+import { CollapsedFieldProps } from '@textea/json-viewer';
 
 
 const { Text } = Typography;
@@ -1260,6 +1259,7 @@ class MessageSearchFilterBar extends Component {
 
         return <div className={styles.filterbar}>
 
+
             <div className={styles.filters}>
                 {/* Existing Tags List  */}
                 {settings.filters?.map(e =>
@@ -1299,8 +1299,6 @@ class MessageSearchFilterBar extends Component {
                     {/* <span>New Filter</span> */}
                 </Tag>
             </div>
-
-            {IsDev && console.debug(api.messageSearchPhase)}
 
             {api.messageSearchPhase === null || api.messageSearchPhase === 'Done'
                 ? (

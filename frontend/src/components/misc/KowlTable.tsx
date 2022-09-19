@@ -649,7 +649,9 @@ function customComparerIsSame<T>(a: T, b: T, remainingDepth?: number): boolean {
         return true;    // ignore changes to react components
 
     // normal object
+    ///@ts-ignore
     const aKeys = Object.keys(a);
+    ///@ts-ignore
     const bKeys = Object.keys(b);
 
     if (aKeys.length != bKeys.length) return false;

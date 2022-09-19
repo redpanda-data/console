@@ -41,7 +41,7 @@ export class RoleBindingComponent extends Component<{ binding: RoleBinding }>{
     }
 }
 
-export class Expander extends Component<{ title: ReactNode, className?: string }> {
+export class Expander extends Component<{ title: ReactNode, className?: string, children?: React.ReactNode }> {
     render() {
         return <Collapse bordered={false} className={'expander ' + this.props.className}>
             <Collapse.Panel key={0} header={this.props.title}>{this.props.children}</Collapse.Panel>

@@ -11,7 +11,6 @@
 
 import { observer } from 'mobx-react';
 import { Empty, Button, Alert } from 'antd';
-import { ColumnProps } from 'antd/lib/table';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -22,7 +21,7 @@ import { computed, makeObservable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import Card from '../../misc/Card';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import { KowlTable } from '../../misc/KowlTable';
+import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import { LockIcon, SkipIcon } from '@primer/octicons-react';
 import { toJson } from '../../../utils/jsonUtils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
@@ -61,7 +60,7 @@ class QuotasList extends PageComponent {
         const formatRate = (x: undefined | number) => x ? prettyNumber(x) : <span style={{ opacity: 0.30 }}><SkipIcon /></span>
         const formatPercentage = (x: undefined | number) => x ? `${x}%` : <span style={{ opacity: 0.30 }}><SkipIcon /></span>
 
-        const columns: ColumnProps<typeof resources[0]>[] = [
+        const columns: KowlColumnType<typeof resources[0]>[] = [
             { width: '100px', title: 'Type', dataIndex: 'entityType', sorter: sortField('entityType'), defaultSortOrder: 'ascend' },
             { width: 'auto', title: 'Name', dataIndex: 'entityName', sorter: sortField('entityName') },
             { width: '100px', title: 'Producer Rate', render: (_, e) => formatBytes(e.settings.first(k => k.key == QuotaType.PRODUCER_BYTE_RATE)?.value) },

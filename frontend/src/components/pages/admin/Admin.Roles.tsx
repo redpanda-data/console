@@ -17,7 +17,6 @@ import { Table } from 'antd';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
 import { sortField } from '../../misc/common';
-import { MotionAlways } from '../../../utils/animationProps';
 import '../../../utils/arrayExtensions';
 import { QuickTable, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { RoleBindingComponent } from './Admin.RoleBindings';
@@ -33,7 +32,7 @@ export class AdminRoles extends Component<{}> {
         if (!api.adminInfo) return DefaultSkeleton;
         const roles = api.adminInfo.roles;
 
-        const table = <Table
+        return <Table
             size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
             showSorterTooltip={false}
             dataSource={roles}
@@ -50,10 +49,6 @@ export class AdminRoles extends Component<{}> {
                 expandedRowRender: (r: Role) => <RoleComponent key={r.name} role={r} />
             }}
         />
-
-        return <MotionAlways>
-            {table}
-        </MotionAlways>
     }
 }
 

@@ -17,8 +17,8 @@ import { MessageType } from 'antd/lib/message';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
 import { observer } from 'mobx-react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { animProps, animProps_radioOptionGroup, MotionDiv } from './animationProps';
+import { motion } from 'framer-motion';
+import { AnimatePresence, animProps, animProps_radioOptionGroup, MotionDiv } from './animationProps';
 import { SizeType } from 'antd/lib/config-provider/SizeContext';
 import { makeObservable, observable } from 'mobx';
 import { TooltipPlacement } from 'antd/lib/tooltip';
@@ -424,7 +424,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
     }
 }
 
-export class ZeroSizeWrapper extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string, positionContentAbsolute?: boolean, transform?: string, wrapperStyle?: CSSProperties }> {
+export class ZeroSizeWrapper extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string, positionContentAbsolute?: boolean, transform?: string, wrapperStyle?: CSSProperties, children?: React.ReactNode }> {
 
     static readonly style: CSSProperties = {
         display: 'inline-flex',
