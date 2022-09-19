@@ -111,8 +111,11 @@ autorun(() => {
     const setSidebarItems = config.setSidebarItems;
     if (!setSidebarItems) return;
 
+    const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin'];
+
     const sidebarItems = APP_ROUTES
         .filter(x => x.icon != null)
+        .filter(x => !ignoredRoutes.includes(x.path))
         .map((r, i) => ({
             title: r.title,
             to: r.path,
