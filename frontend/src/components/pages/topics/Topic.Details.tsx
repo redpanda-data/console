@@ -37,6 +37,7 @@ import { TopicPartitions } from './Tab.Partitions';
 import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
+import { history } from '../../../providers/history.provider';
 
 const { Text } = Typography;
 

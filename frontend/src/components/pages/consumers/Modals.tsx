@@ -25,6 +25,7 @@ import { Message } from '../../../utils/utils';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
+import { history } from '../../../providers/history.provider';
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup';
 

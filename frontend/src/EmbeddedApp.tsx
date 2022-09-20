@@ -123,7 +123,7 @@ export default function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
                     shellNavigationHandler
                 );
             };
-    },[]);
+    }, [navigate]);
 
 
     setup(p);
