@@ -25,7 +25,7 @@ import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
-
+import { history } from '../../../providers/history.provider';
 
 import './helper';
 
@@ -396,7 +396,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
                     onOk={async (c) => {
                         await api.deleteConnector(clusterName, c);
-                        appGlobal.history.push(`/kafka-connect/${clusterName}`);
+                        history.push(`/kafka-connect/${clusterName}`);
                         await this.refreshData(true);
                     }}
                 />

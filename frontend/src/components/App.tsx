@@ -16,7 +16,7 @@ import { uiSettings } from '../state/ui';
 import { RouteView, RouteMenu, } from './routes';
 import { prettyMilliseconds } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
-import { NavLink, Switch, Route, Link } from 'react-router-dom';
+import { NavLink, Routes, Route, Link } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
 import { AnimatePresence, animProps_logo, MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
@@ -260,10 +260,10 @@ export default class App extends Component {
         return (
             <ErrorBoundary>
                 {/* {IsDev && <DebugDisplay />} */}
-                <Switch>
+                <Routes>
                     {/* Login (and callbacks) */}
-                    <Route exact path="/login" component={Login} />
-                    <Route path="/login/callbacks/:provider" render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/login/callbacks/:provider" element={<LoginCompletePage provider={p.match.params.provider} match={p.match} />} />
 
                     {/* Default View */}
                     <Route path="*">
@@ -272,7 +272,7 @@ export default class App extends Component {
                             <AppContent />
                         </Layout>
                     </Route>
-                </Switch>
+                </Routes>
                 <FeatureErrorCheck />
             </ErrorBoundary>
         );

@@ -26,7 +26,7 @@ import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 import { Link } from 'react-router-dom';
-
+import { history } from '../../../providers/history.provider';
 
 
 @observer
@@ -92,7 +92,7 @@ class TabClusters extends Component {
                         }
 
                         return <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                            onClick={() => appGlobal.history.push(`/kafka-connect/${r.clusterName}`)}>
+                            onClick={() => history.push(`/kafka-connect/${r.clusterName}`)}>
                             {r.clusterName}
                         </span>
                     },
@@ -146,7 +146,7 @@ class TabConnectors extends Component {
                     render: (_, r) => (
                         <Tooltip placement="topLeft" title={r.name} getPopupContainer={findPopupContainer}>
                             <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                                onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
+                                onClick={() => history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
                                 {r.name}
                             </span>
                         </Tooltip>
@@ -225,7 +225,7 @@ class TabTasks extends Component {
                     width: '35%',
                     sorter: sortField('connectorName'), defaultSortOrder: 'ascend',
                     render: (_, r) => (
-                        <span className="hoverLink" onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.connectorName}`)}>
+                        <span className="hoverLink" onClick={() => history.push(`/kafka-connect/${r.cluster.clusterName}/${r.connectorName}`)}>
                             {r.connectorName}
                         </span>
                     )

@@ -21,6 +21,7 @@ import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
+import { history } from '../../../providers/history.provider';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TasksColumn, TaskState } from './helper';
 
 
@@ -79,7 +80,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     width: '35%',
                                     render: (_, r) => (
                                         <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                                            onClick={() => appGlobal.history.push(`/kafka-connect/${clusterName}/${r.name}`)}>
+                                            onClick={() => history.push(`/kafka-connect/${clusterName}/${r.name}`)}>
                                             {r.name}
                                         </span>
                                     ),

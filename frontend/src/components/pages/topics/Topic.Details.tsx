@@ -205,7 +205,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     get selectedTabId(): TopicTabId {
         function computeTabId() {
             // use url anchor if possible
-            let key = appGlobal.history.location.hash.replace('#', '');
+            let key = history.location.hash.replace('#', '');
             if (TopicTabIds.includes(key as any)) return key as TopicTabId;
 
             // use settings (last visited tab)
@@ -227,10 +227,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     componentDidMount() {
         // fix anchor
         const anchor = '#' + this.selectedTabId;
-        const location = appGlobal.history.location;
+        const location = history.location;
         if (location.hash !== anchor) {
             location.hash = anchor;
-            appGlobal.history.replace(location);
+            history.replace(location);
         }
     }
 
@@ -297,9 +297,9 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
     setTabPage = (activeKey: string): void => {
         uiSettings.topicDetailsActiveTabKey = activeKey as any;
 
-        const loc = appGlobal.history.location;
+        const loc = history.location;
         loc.hash = String(activeKey);
-        appGlobal.history.replace(loc);
+        history.replace(loc);
 
         this.refreshData(false);
     };
@@ -316,7 +316,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                     </>
                 }
                 extra={
-                    <Button type="primary" onClick={() => appGlobal.history.goBack()}>
+                    <Button type="primary" onClick={() => history.goBack()}>
                         Go Back
                     </Button>
                 }

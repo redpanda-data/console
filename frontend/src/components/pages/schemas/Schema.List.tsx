@@ -23,6 +23,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { SchemaOverviewRequestError } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 
+import { history } from '../../../providers/history.provider';
 import './Schema.List.scss';
 import SearchBar from '../../misc/SearchBar';
 import { makeObservable, observable } from 'mobx';
@@ -130,7 +131,7 @@ class SchemaList extends PageComponent<{}> {
                         rowClassName={() => 'hoverLink'}
                         rowKey="name"
                         onRow={({ name }) => ({
-                            onClick: () => appGlobal.history.push(`/schema-registry/${name}`),
+                            onClick: () => history.push(`/schema-registry/${name}`),
                         })}
                     />
                 </Card>

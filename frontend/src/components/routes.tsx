@@ -11,9 +11,9 @@
 
 import React from 'react';
 import { Menu, Tooltip } from 'antd';
-import { Switch, useHistory } from 'react-router-dom';
+import { Routes } from 'react-router-dom';
 import { Section } from './misc/common';
-import { Route, Redirect } from 'react-router';
+import { Route, Navigate, useNavigate } from 'react-router';
 import { queryToObj } from '../utils/queryHelper';
 import { PageComponentType, PageProps } from './pages/Page';
 import TopicList from './pages/topics/Topic.List';
@@ -69,7 +69,8 @@ export const RouteMenu = observer(() =>
 
 // Generate content for <Menu> from all routes
 export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
-    const history = useHistory();
+    const navigate = useNavigate();
+
     const routeItems = entries.map((entry) => {
         // Menu entry for Page
         if (entry.path.includes(':'))
@@ -91,7 +92,7 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
         return {
             key: entry.path,
             icon: entry.icon && <span className="menuIcon anticon"><Icon /></span>,
-            onClick: () => { history.push(entry.path)},
+            onClick: () => { navigate(entry.path)},
             label: (
                 <Tooltip
                     overlayClassName="menu-permission-tooltip"
@@ -118,25 +119,29 @@ function EmitRouteViews(entries: IRouteEntry[]): JSX.Element[] {
 
 export const RouteView = (() =>
     <AnimatePresence exitBeforeEnter>
-        <Switch>
+        <Routes>
             {/* Index */}
-            {/* <Route exact path='/' component={IndexPage} /> */}
-            <Route exact path="/" render={() => <Redirect to="/topics" />} />
+            {/* <Route path='/' component={IndexPage} /> */}
+            <Route path="/" element={<Navigate to="/topics" />} />
 
             {/* Emit all <Route/> elements */}
             {EmitRouteViews(APP_ROUTES)}
 
-            <Route render={rp => {
+            {/* <Route element={rp => {
                 uiState.pageTitle = '404';
                 return (
-                    <Section title="404">
-                        <div><h4>Path:</h4> <span>{rp.location.pathname}</span></div>
-                        <div><h4>Query:</h4> <pre>{JSON.stringify(rp.location.search, null, 4)}</pre></div>
-                    </Section>
-                )
-            }} />
 
-        </Switch>
+                )
+            }} /> */}
+            <Route element={
+                <Section title="404">
+                    <>{uiState.pageTitle = '404'}</>
+                    <div><h4>Path:</h4> <span>{document.location.pathname}</span></div>
+                    <div><h4>Query:</h4> <pre>{JSON.stringify(document.location.search, null, 4)}</pre></div>
+                </Section>
+            } />
+
+        </Routes>
     </AnimatePresence>
 )
 
@@ -165,7 +170,7 @@ function MakeRoute<TRouteParams>(
     page: PageComponentType<TRouteParams>,
     title: string,
     icon?: (props: React.ComponentProps<'svg'>) => JSX.Element,
-    exact: boolean = true, showCallback?: () => MenuItemState): PageDefinition<TRouteParams> {
+    showCallback?: () => MenuItemState): PageDefinition<TRouteParams> {
 
     const route: PageDefinition<TRouteParams> = {
         title,
@@ -177,7 +182,8 @@ function MakeRoute<TRouteParams>(
     }
 
     // todo: verify that path and route params match
-    route.routeJsx = <Route path={route.path} key={route.title} exact={exact ? true : undefined} render={rp => {
+    // TODO: useQueryParams, useRouteMatch
+    route.routeJsx = <Route path={route.path} key={route.title} element={rp => {
         const matchedPath = rp.match.url;
         const query = queryToObj(rp.location.search);
         const { ...params } = rp.match.params;

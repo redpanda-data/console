@@ -32,7 +32,7 @@ import { ShortNum } from '../../misc/ShortNum';
 import Tabs from '../../misc/tabs/Tabs';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-
+import { history } from '../../../providers/history.provider';
 
 @observer
 class GroupDetails extends PageComponent<{ groupId: string }> {
@@ -287,7 +287,7 @@ class GroupByTopics extends Component<{
                         <Button
                             size="small"
                             style={{ marginLeft: 'auto' }}
-                            onClick={() => appGlobal.history.push('/topics/' + g.topicName)}
+                            onClick={() => history.push('/topics/' + g.topicName)}
                         >View Topic</Button>
                     </div>
                 }>
@@ -433,7 +433,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                                 width: 130, title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'),
                                 render: (_, record) => <div
                                     className="hoverLink"
-                                    onClick={() => appGlobal.history.push('/topics/' + record.topicName)}>
+                                    onClick={() => history.push('/topics/' + record.topicName)}>
                                     {record.topicName}
                                 </div>
                             },

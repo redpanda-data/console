@@ -16,7 +16,7 @@ import { MotionDiv } from '../../utils/animationProps';
 import { observer } from 'mobx-react';
 import { Modal, Typography, Select } from 'antd';
 import { makeObservable, observable } from 'mobx';
-import { appGlobal } from '../../state/appGlobal';
+import { history } from '../../providers/history.provider';
 import { uiSettings } from '../../state/ui';
 
 const { Text } = Typography;
@@ -82,7 +82,7 @@ export class SettingsPage extends PageComponent {
             onOk() {
                 // todo:
                 console.log('clearing settings...');
-                appGlobal.history.push(appGlobal.history.location);
+                history.push(history.location);
             },
             onCancel() {
                 /* do nothing */

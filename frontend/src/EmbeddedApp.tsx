@@ -8,19 +8,17 @@
 
 import { useEffect } from 'react';
 import { loader } from '@monaco-editor/react';
-import {
-    BrowserRouter,
-    withRouter,
-    RouteComponentProps, 
-} from 'react-router-dom';
+import { unstable_HistoryRouter as ReactRouter, useNavigate } from 'react-router-dom';
 import { configure, when } from 'mobx';
 
 // import "antd/dist/antd.css";
 import 'antd/dist/antd.variable.min.css';
 import './index.scss';
 
+// see https://github.com/remix-run/react-router/issues/8264
+import { history } from './providers/history.provider';
+
 import App from './components/App';
-import { appGlobal } from './state/appGlobal';
 import { AppFeatures, IsDev } from './utils/env';
 import { api } from './state/backendApi';
 import { ConfigProvider } from 'antd';
@@ -32,12 +30,6 @@ import './assets/fonts/kumbh-sans.css';
 
 import colors from './colors';
 import { setConfig, SetConfigArguments } from './config';
-
-const HistorySetter = withRouter((p: RouteComponentProps) => {
-    appGlobal.history = p.history;
-    return <></>;
-});
-
 
 export interface EmbeddedProps extends SetConfigArguments {
     // This is the base url that is used:
@@ -107,16 +99,17 @@ function setup(setupArgs: SetConfigArguments) {
 }
 
 export default function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
+    const navigate = useNavigate();
 
     useEffect(
         () => {
             const shellNavigationHandler = (event: Event) => {
                 const pathname = (event as CustomEvent<string>).detail;
-                const { pathname: currentPathname } = appGlobal.history.location;
+                const { pathname: currentPathname } = history.location;
                 if (currentPathname === pathname) {
                     return;
                 }
-                appGlobal.history.push(pathname);
+                navigate(pathname);
             };
 
             window.addEventListener(
@@ -136,9 +129,8 @@ export default function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
     setup(p);
 
     return (
-        <BrowserRouter basename={basePath}>
-            <HistorySetter />
+        <ReactRouter history={history} basename={basePath}>
             <App />
-        </BrowserRouter>
+        </ReactRouter>
     );
 }

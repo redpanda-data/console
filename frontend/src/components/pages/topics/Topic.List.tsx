@@ -31,6 +31,7 @@ import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-reac
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import { UInt64Max } from '../../../utils/utils';
+import { history } from '../../../providers/history.provider';
 
 @observer
 class TopicList extends PageComponent {
@@ -183,7 +184,7 @@ class TopicList extends PageComponent {
 
                         observableSettings={uiSettings.topicList}
                         onRow={(record) => ({
-                            onClick: () => appGlobal.history.push('/topics/' + record.topicName),
+                            onClick: () => history.push('/topics/' + record.topicName),
                         })}
                         rowClassName="hoverLink"
                     />

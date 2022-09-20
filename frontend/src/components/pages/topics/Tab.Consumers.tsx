@@ -21,10 +21,9 @@ import { observer } from 'mobx-react';
 import '../../../utils/arrayExtensions';
 
 import { api } from '../../../state/backendApi';
-import { appGlobal } from '../../../state/appGlobal';
 import { sortField, makePaginationConfig } from '../../misc/common';
 import { uiState } from '../../../state/uiState';
-
+import { history } from '../../../providers/history.provider';
 @observer
 export class TopicConsumers extends Component<{ topic: Topic }> {
 
@@ -42,7 +41,7 @@ export class TopicConsumers extends Component<{ topic: Topic }> {
                     showSorterTooltip={false}
                     onRow={(record) =>
                     ({
-                        onClick: () => appGlobal.history.push('/groups/' + record.groupId),
+                        onClick: () => history.push('/groups/' + record.groupId),
                     })}
                     pagination={this.pageConfig}
                     onChange={(pagination) => {

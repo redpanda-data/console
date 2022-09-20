@@ -25,7 +25,7 @@ import { uiSettings } from '../../../state/ui';
 import { ClipboardCopyIcon } from '@heroicons/react/outline';
 import { NoClipboardPopover } from '../../misc/NoClipboardPopover';
 import { isClipboardAvailable } from '../../../utils/featureDetection';
-
+import { history } from '../../../providers/history.provider';
 export interface SchemaDetailsProps {
     subjectName: string;
     query: {
@@ -165,7 +165,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                         <Label text="Version">
                             <Select style={{ minWidth: '200px' }}
                                 defaultValue={defaultVersion}
-                                onChange={(version) => appGlobal.history.push(`/schema-registry/${this.props.subjectName}?version=${version}`)}
+                                onChange={(version) => history.push(`/schema-registry/${this.props.subjectName}?version=${version}`)}
                                 disabled={versions.length == 0}
                             >
                                 {versions.map(v => <Select.Option value={v} key={v}>Version {v} {v == versions[versions.length - 1] ? '(latest)' : null}</Select.Option>)}

@@ -30,7 +30,7 @@ import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
 import { ShortNum } from '../../misc/ShortNum';
 import { KowlTable } from '../../misc/KowlTable';
-
+import { history } from '../../../providers/history.provider';
 
 @observer
 class GroupList extends PageComponent {
@@ -129,7 +129,7 @@ class GroupList extends PageComponent {
                         rowClassName="hoverLink"
                         onRow={(record) =>
                         ({
-                            onClick: () => appGlobal.history.push('/groups/' + record.groupId),
+                            onClick: () => history.push('/groups/' + record.groupId),
                         })}
                     />
                 </Card>

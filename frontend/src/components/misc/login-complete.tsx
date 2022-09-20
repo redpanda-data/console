@@ -13,15 +13,13 @@ import { Component } from 'react';
 import { Spin } from 'antd';
 import { api } from '../../state/backendApi';
 import { ApiError, UserData } from '../../state/restInterfaces';
-import { appGlobal } from '../../state/appGlobal';
 import fetchWithTimeout from '../../utils/fetchWithTimeout';
 import { uiState } from '../../state/uiState';
 import { getBasePath } from '../../utils/env';
-import { match } from 'react-router-dom';
+import { history } from '../../providers/history.provider';
 import { queryToObj } from '../../utils/queryHelper';
 
-class LoginCompletePage extends Component<{ provider: string, match: match<any> }> {
-
+class LoginCompletePage extends Component<{ provider: string, match: any }> {
     componentDidMount() {
         this.completeLogin(this.props.provider, window.location);
     }
@@ -35,7 +33,7 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
             if (queryObj.error) errorString += `Error: ${queryObj.error}\n`;
             if (queryObj.error_description) errorString += `Description: ${queryObj.error_description}\n`;
             uiState.loginError = errorString.trim();
-            appGlobal.history.replace(getBasePath() + '/login');
+            history.replace(getBasePath() + '/login');
             return;
         }
 
@@ -55,7 +53,7 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
             }
         } catch (err) {
             uiState.loginError = String(err);
-            appGlobal.history.push(getBasePath() + '/login');
+            history.push(getBasePath() + '/login');
             return;
         }
 

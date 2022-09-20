@@ -23,7 +23,6 @@ import { api } from '../../../state/backendApi';
 import { WarningOutlined } from '@ant-design/icons';
 import { Message } from '../../../utils/utils';
 import { showErrorModal } from '../../misc/ErrorModal';
-import { appGlobal } from '../../../state/appGlobal';
 import { KowlTimePicker } from '../../misc/KowlTimePicker';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon } from '@primer/octicons-react';
 
@@ -728,7 +727,7 @@ export class DeleteOffsetsModal extends Component<{
             const remainingOffsets = group.topicOffsets.sum(t => t.partitionOffsets.length) - offsets.length;
             if (remainingOffsets == 0) {
                 // Group is fully deleted, go back to list
-                appGlobal.history.replace('/groups');
+                history.replace('/groups');
             }
             else {
                 this.props.onClose();

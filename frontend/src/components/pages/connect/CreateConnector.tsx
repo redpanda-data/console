@@ -32,7 +32,7 @@ import { HiddenRadioList } from '../../misc/HiddenRadioList';
 import { ConnectorBoxCard, ConnectorPlugin } from './ConnectorBoxCard';
 import { ConfigPage } from './dynamic-ui/components';
 import KowlEditor from '../../misc/KowlEditor';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import styles from './CreateConnector.module.scss';
 
@@ -114,7 +114,7 @@ interface ConnectorWizardProps {
 }
 
 function ConnectorWizard({ connectClusters }: ConnectorWizardProps) {
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const [currentStep, setCurrentStep] = useState(0);
     const [activeCluster, setActiveCluster] = useState<string | null>(null);
@@ -239,7 +239,7 @@ function ConnectorWizard({ connectClusters }: ConnectorWizardProps) {
             }
 
             if (isLast()) {
-                return history.push(`/kafka-connect/${activeCluster}`);
+                return navigate(`/kafka-connect/${activeCluster}`);
             }
 
             return currentStep < steps.length - 1
