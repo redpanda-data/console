@@ -24,22 +24,21 @@ const getWebsocketBasePath = (overrideUrl?: string): string => {
     const protocol = isHttps ? 'wss://' : 'ws://';
     const host = IsDev ? DEFAULT_HOST : window.location.host;
     return `${protocol + host + getBasePath()}/api`;
-}
+};
 
 const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
-
 
 export interface SetConfigArguments {
     fetch?: WindowOrWorkerGlobalScope['fetch'];
     jwt?: string;
+    clusterId?: string;
     urlOverride?: {
         rest?: string;
         ws?: string;
         assets?: string;
-    }
+    };
     setSidebarItems?: (items: SidebarItem[]) => void;
     setBreadcrumbs?: (items: Breadcrumb[]) => void;
-
 }
 
 export interface SidebarItem {
@@ -58,11 +57,11 @@ interface Config {
     websocketBasePath: string;
     restBasePath: string;
     fetch: WindowOrWorkerGlobalScope['fetch'];
-    assetsPath: string,
-    jwt?: string,
-
-    setSidebarItems: (items: SidebarItem[]) => void,
-    setBreadcrumbs: (items: Breadcrumb[]) => void,
+    assetsPath: string;
+    jwt?: string;
+    clusterId?: string;
+    setSidebarItems: (items: SidebarItem[]) => void;
+    setBreadcrumbs: (items: Breadcrumb[]) => void;
 }
 
 export const config: Config = observable({
@@ -70,18 +69,12 @@ export const config: Config = observable({
     restBasePath: getRestBasePath(),
     fetch: window.fetch,
     assetsPath: getBasePath(),
-
-    setSidebarItems: () => { },
-    setBreadcrumbs: () => { },
+    clusterId: 'default',
+    setSidebarItems: () => {},
+    setBreadcrumbs: () => {},
 });
 
-export const setConfig = ({
-    fetch,
-    urlOverride,
-    jwt,
-    ...args
-}: SetConfigArguments) => {
-
+export const setConfig = ({ fetch, urlOverride, jwt, ...args }: SetConfigArguments) => {
     const assetsUrl = urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
     Object.assign(config, {
         jwt,
@@ -99,9 +92,9 @@ autorun(() => {
     const setBreadcrumbs = config.setBreadcrumbs;
     if (!setBreadcrumbs) return;
 
-    const breadcrumbs = uiState.pageBreadcrumbs.map(v => ({
+    const breadcrumbs = uiState.pageBreadcrumbs.map((v) => ({
         title: v.title,
-        to: v.linkTo
+        to: v.linkTo,
     }));
 
     setBreadcrumbs(breadcrumbs);
@@ -113,20 +106,21 @@ autorun(() => {
 
     const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin'];
 
-    const sidebarItems = APP_ROUTES
-        .filter(x => x.icon != null)
-        .filter(x => !ignoredRoutes.includes(x.path))
-        .map((r, i) => ({
-            title: r.title,
-            to: r.path,
-            icon: r.icon,
-            order: i,
-        } as SidebarItem));
+    const sidebarItems = APP_ROUTES.filter((x) => x.icon != null)
+        .filter((x) => !ignoredRoutes.includes(x.path))
+        .map(
+            (r, i) =>
+                ({
+                    title: r.title,
+                    to: r.path,
+                    icon: r.icon,
+                    order: i,
+                } as SidebarItem)
+        );
 
     setSidebarItems(sidebarItems);
 });
 
 export function isEmbedded() {
     return config.jwt != null;
-
 }
