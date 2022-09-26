@@ -17,8 +17,8 @@ const injector = async (parentElementId: string, props: EmbeddedProps) => {
 
 const container = document.getElementById(parentElementId)  
 const root = createRoot(container!)
-  return  root.render(<EmbeddedApp {...props} />);
-
+  root.render(<EmbeddedApp {...props} />);
+  return root;
 }
 
 export default injector;
