@@ -15,6 +15,7 @@ import { Result } from 'antd';
 import { Button } from 'antd';
 import { api } from '../../state/backendApi';
 import { CloseCircleOutlined } from '@ant-design/icons'
+import { Section } from '@redpanda-data/ui';
 
 
 @observer
@@ -29,11 +30,11 @@ export class ErrorDisplay extends React.Component<{ children?: React.ReactNode }
             <div style={{ margin: '2em 2em', display: 'flex', flexDirection: 'column' }}>
                 <Button type="primary" size="large" style={{ width: '12em', alignSelf: 'center' }} onClick={clearErrors}>Retry</Button>
 
-                <div className="error-list">
+                <Section mt={4}>
                     {api.errors.map((e, i) => <div key={i}>
                         <CloseCircleOutlined style={{ color: 'red' }} /> {formatError(e)}
                     </div>)}
-                </div>
+                </Section>
             </div>
         </>;
     }

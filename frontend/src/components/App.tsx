@@ -11,19 +11,18 @@
 
 import React, { Component, ReactNode } from 'react';
 import { observer } from 'mobx-react';
-import { Layout, PageHeader, Button, Popover } from 'antd';
+import { Layout, PageHeader, Popover, Button } from 'antd';
+import { ColorModeSwitch, Sidebar } from '@redpanda-data/ui';
 import { uiSettings } from '../state/ui';
-import { RouteView, RouteMenu, } from './routes';
+import { RouteView } from './routes';
 import { prettyMilliseconds } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
-import { NavLink, Switch, Route, Link } from 'react-router-dom';
+import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { AnimatePresence, animProps_logo, MotionDiv } from '../utils/animationProps';
+import { MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
-import RedpandaLogo from '../assets/redpanda/redpanda-color.svg';
-import RedpandaIcon from '../assets/redpanda/icon-color.svg';
 import { ErrorBoundary } from './misc/ErrorBoundary';
 import { IsDev, getBasePath, IsCI, AppFeatures } from '../utils/env';
 import { UserProfile } from './misc/UserButton';
@@ -32,14 +31,15 @@ import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
-import { MenuFoldOutlined, MenuUnfoldOutlined, GithubFilled, TwitterOutlined, LinkedinFilled, SlackSquareOutlined } from '@ant-design/icons';
+import { GithubFilled, TwitterOutlined, LinkedinFilled, SlackSquareOutlined } from '@ant-design/icons';
 import { ZeroSizeWrapper, } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
 import { renderErrorModals } from './misc/ErrorModal';
 import { SyncIcon, ChevronRightIcon } from '@primer/octicons-react';
-import { motion } from 'framer-motion';
 import { isEmbedded } from '../config';
+import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
+import { APP_ROUTES } from './routes';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -75,38 +75,24 @@ const VersionInfo = () => {
     </>;
 };
 
-const SideBar = observer(() =>
-    <Layout className="sideBar" >
-        {/* Logo */}
-        <div>
-            <Link to="/">
-                {/* Logo Image */}
-                <AnimatePresence initial={false} presenceAffectsLayout >
-                    {uiSettings.sideBarOpen
-                        ? <motion.img alt="logo" key="logoExpanded" src={RedpandaLogo} {...animProps_logo} />
-                        : <motion.img alt="logo" key="logoCollapsed" src={RedpandaIcon}   {...animProps_logo} />
-                    }
-                </AnimatePresence>
-            </Link>
-        </div>
+const SideBar = observer(() => {
+    const ignoredRoutes = [''];
 
-        {/* Menu */}
-        <Content className="scroll-on-hover-y">
-            <RouteMenu />
-        </Content>
+    const sidebarItems = APP_ROUTES.filter((x) => x.icon != null)
+      .filter((x) => !ignoredRoutes.includes(x.path))
+      .filter((x) => x.visibilityCheck ? x.visibilityCheck().visible : true)
+      .map((item) => ({
+          name: item.title,
+          to: item.path,
+          icon: item.icon,
+        })
+      );
 
-        {/* Profile */}
+    return (
+    <Sidebar items={sidebarItems}>
         <UserProfile />
-
-
-        {/* Toggle */}
-        <Footer className="sideBarToggle" onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen; }}>
-            {uiSettings.sideBarOpen
-                ? <MenuFoldOutlined className="icon" />
-                : <MenuUnfoldOutlined className="icon" />}
-        </Footer>
-    </Layout>
-);
+    </Sidebar>
+)});
 
 const sideBarWidthDefault = '230px';
 const AppSide = observer(() => (
@@ -198,6 +184,7 @@ const AppPageHeader = observer(() => {
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UserPreferencesButton />
+            {!isEmbedded() && <ColorModeSwitch/>}
         </div>
     </MotionDiv>;
 });
@@ -258,23 +245,25 @@ export default class App extends Component {
         if (r) return r;
 
         return (
-            <ErrorBoundary>
-                {/* {IsDev && <DebugDisplay />} */}
-                <Switch>
-                    {/* Login (and callbacks) */}
-                    <Route exact path="/login" component={Login} />
-                    <Route path="/login/callbacks/:provider" render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
+            <ChakraProvider theme={redpandaTheme}>
+                <ErrorBoundary>
+                    {/* {IsDev && <DebugDisplay />} */}
+                    <Switch>
+                        {/* Login (and callbacks) */}
+                        <Route exact path="/login" component={Login} />
+                        <Route path="/login/callbacks/:provider" render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
 
-                    {/* Default View */}
-                    <Route path="*">
-                        <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
-                            {isEmbedded() ? null : <AppSide />}
-                            <AppContent />
-                        </Layout>
-                    </Route>
-                </Switch>
-                <FeatureErrorCheck />
-            </ErrorBoundary>
+                        {/* Default View */}
+                        <Route path="*">
+                            <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
+                                {isEmbedded() ? null : <AppSide />}
+                                <AppContent />
+                            </Layout>
+                        </Route>
+                    </Switch>
+                    <FeatureErrorCheck />
+                </ErrorBoundary>
+            </ChakraProvider>
         );
     }
 

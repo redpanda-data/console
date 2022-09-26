@@ -1,0 +1,25 @@
+// Dan's overrides for console integration 
+// - this file is intended to be TEMPORARY
+// - these rules can be removed when ant design is removed
+
+// Background color
+#mainLayout, 
+.ant-layout-footer {
+  background: transparent !important;
+}
+
+// Default font color
+div[class^="ant-"],
+.ant-breadcrumb,
+.ant-breadcrumb li,
+.ant-breadcrumb li:last-child,
+.ant-breadcrumb li:last-child a {
+  color: unset;
+}
+
+// Gray font color
+.ant-breadcrumb a,
+.ant-breadcrumb-separator {
+  color: unset !important;
+  opacity: 0.6 !important;
+}

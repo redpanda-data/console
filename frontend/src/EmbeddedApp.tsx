@@ -18,6 +18,7 @@ import { configure, when } from 'mobx';
 // import "antd/dist/antd.css";
 import 'antd/dist/antd.variable.min.css';
 import './index.scss';
+import './index-cloud-integration.scss';
 
 import App from './components/App';
 import { appGlobal } from './state/appGlobal';
