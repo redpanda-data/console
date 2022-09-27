@@ -14,7 +14,7 @@ import { observer } from 'mobx-react';
 import { Layout, PageHeader, Popover, Button } from 'antd';
 import { ColorModeSwitch, Sidebar } from '@redpanda-data/ui';
 import { uiSettings } from '../state/ui';
-import { RouteView } from './routes';
+import { createVisibleSidebarItems, RouteView } from './routes';
 import { prettyMilliseconds } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
 import { NavLink, Switch, Route } from 'react-router-dom';
@@ -76,23 +76,13 @@ const VersionInfo = () => {
 };
 
 const SideBar = observer(() => {
-    const ignoredRoutes = [''];
-
-    const sidebarItems = APP_ROUTES.filter((x) => x.icon != null)
-      .filter((x) => !ignoredRoutes.includes(x.path))
-      .filter((x) => x.visibilityCheck ? x.visibilityCheck().visible : true)
-      .map((item) => ({
-          name: item.title,
-          to: item.path,
-          icon: item.icon,
-        })
-      );
-
+    const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
     return (
-    <Sidebar items={sidebarItems}>
-        <UserProfile />
-    </Sidebar>
-)});
+        <Sidebar items={sidebarItems}>
+            <UserProfile />
+        </Sidebar>
+    )
+});
 
 const sideBarWidthDefault = '230px';
 const AppSide = observer(() => (
