@@ -131,11 +131,11 @@ export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[
         const isDisabled = !isEnabled;
 
         return {
-            title: entry.title,
-            to: entry.path,
-            icon: entry.icon,
-            isDisabled: isDisabled,
-            disabledText: disabledText,
+            title: entry.title as string,
+            to: entry.path as string,
+            icon: entry.icon as any,
+            isDisabled: isDisabled as boolean,
+            disabledText: disabledText as unknown as string,
         };
     }).filter(x => x != null && x != undefined) as NavLinkProps[];
 }
