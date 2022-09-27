@@ -12,7 +12,7 @@
 import React, { Component, ReactNode } from 'react';
 import { observer } from 'mobx-react';
 import { Layout, PageHeader, Popover, Button } from 'antd';
-import { ColorModeSwitch, Sidebar } from '@redpanda-data/ui';
+import { ColorModeSwitch, Container, Grid, Sidebar } from '@redpanda-data/ui';
 import { uiSettings } from '../state/ui';
 import { createVisibleSidebarItems, RouteView } from './routes';
 import { prettyMilliseconds } from '../utils/utils';
@@ -41,12 +41,7 @@ import { isEmbedded } from '../config';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
 import { APP_ROUTES } from './routes';
 
-const { Content, Footer, Sider } = Layout;
-
-
-const siderCollapsedWidth = 80;
-
-
+const { Footer } = Layout;
 
 const VersionInfo = () => {
     const appName = 'Redpanda Console';
@@ -78,25 +73,13 @@ const VersionInfo = () => {
 const SideBar = observer(() => {
     const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
     return (
-        <Sidebar items={sidebarItems}>
+        <Sidebar items={sidebarItems} isCollapsed={!uiSettings.sideBarOpen}>
             <UserProfile />
         </Sidebar>
     )
 });
 
-const sideBarWidthDefault = '230px';
-const AppSide = observer(() => (
-    <Sider
-        collapsible
-        collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth}
-        trigger={null}
-        width={sideBarWidthDefault}
-        className="sider"
-        style={{ cursor: 'default' }}
-    >
-        <SideBar />
-    </Sider>
-));
+const AppSide = observer(() => <SideBar  />);
 
 
 let lastRequestCount = 0;
@@ -206,26 +189,24 @@ const AppFooter = () => {
 };
 
 const AppContent = observer(() =>
-    <Layout className="overflowYOverlay" id="mainLayout">
+    <div className="overflowYOverlay" id="mainLayout">
 
         {/* Page */}
-        <Content style={{ display: 'flex', flexDirection: 'column', padding: '8px 6px 0px 4px', zIndex: 1 }}>
-            <LicenseNotification />
+        <LicenseNotification />
 
-            <AppPageHeader />
+        <AppPageHeader />
 
-            <ErrorDisplay>
-                <RouteView />
-            </ErrorDisplay>
+        <ErrorDisplay>
+            <RouteView />
+        </ErrorDisplay>
 
-            <AppFooter />
-        </Content>
+        <AppFooter />
 
         {/* Currently disabled, read todo comment on UpdatePopup */}
         {/* <UpdatePopup /> */}
         {renderErrorModals()}
 
-    </Layout>
+    </div>
 );
 
 @observer
@@ -245,10 +226,16 @@ export default class App extends Component {
 
                         {/* Default View */}
                         <Route path="*">
-                            <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
-                                {isEmbedded() ? null : <AppSide />}
-                                <AppContent />
-                            </Layout>
+                            {isEmbedded() ? (
+                                <AppContent/>
+                            ) : (
+                                <Grid templateColumns="auto 1fr" minH="100vh">
+                                    <AppSide />
+                                    <Container width="full" maxWidth="1500px" as="main" p="8" zIndex={1}>
+                                        <AppContent />
+                                    </Container>
+                                </Grid>
+                            )}
                         </Route>
                     </Switch>
                     <FeatureErrorCheck />

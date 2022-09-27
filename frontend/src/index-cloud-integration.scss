@@ -23,3 +23,17 @@ div[class^="ant-"],
   color: unset !important;
   opacity: 0.6 !important;
 }
+
+// Remove padding
+.pageTitle {
+  padding: 0 0 24px 0 !important;
+}
+.ant-page-header.has-breadcrumb {
+  padding: 0;
+}
+.ant-page-header {
+  padding: 0;
+}
+#mainLayout > div {
+  margin: 0 !important;
+}
