@@ -40,7 +40,7 @@ import QuotasList from './pages/quotas/Quotas.List';
 import { AppFeature, AppFeatures } from '../utils/env';
 import { ItemType } from 'antd/lib/menu/hooks/useItems';
 import { AnimatePresence } from '../utils/animationProps';
-import { NavLinkProps } from "@redpanda-data/ui/dist/components/Nav/NavLink";
+import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 
 //
 //	Route Types
