@@ -1776,6 +1776,8 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
 }
 
 .statisticsBar {
+    position: relative;
+    overflow: hidden;
     &:hover {
         .hideStatsBarButton {
             opacity: 1;

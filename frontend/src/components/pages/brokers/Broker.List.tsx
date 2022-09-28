@@ -18,16 +18,15 @@ import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { makePaginationConfig, sortField } from '../../misc/common';
 import { Broker, ConfigEntry } from '../../../state/restInterfaces';
-import { motion } from 'framer-motion';
-import { animProps } from '../../../utils/animationProps';
 import { observable, computed, makeObservable } from 'mobx';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
-import Card from '../../misc/Card';
 import { CrownOutlined } from '@ant-design/icons';
 import { DefaultSkeleton, findPopupContainer, OptionGroup } from '../../../utils/tsxUtils';
 import { ConfigList } from '../../misc/ConfigList';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 
 
@@ -85,32 +84,37 @@ class BrokerList extends PageComponent {
         if (this.hasRack)
             columns.push({ width: '100px', title: 'Rack', dataIndex: 'rack', sorter: sortField('rack') });
 
-        return <>
-            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-                <Card>
-                    <Row> {/* type="flex" */}
-                        <Statistic title="ControllerID" value={info.controllerId} />
-                        <Statistic title="Broker Count" value={brokers.length} />
-                        <Statistic title="Cluster Version" value={info.kafkaVersion} />
-                    </Row>
-                </Card>
-
-                <Card>
-                    <KowlTable
-                        dataSource={brokers}
-                        columns={columns}
-
-                        observableSettings={uiSettings.brokerList}
-
-                        rowKey={x => x.brokerId.toString()}
-                        rowClassName={() => 'pureDisplayRow'}
-                        expandable={{
-                            expandedRowRender: record => <BrokerDetails brokerId={record.brokerId} />
-                        }}
+        return (
+          <>
+            <PageContent>
+                <Section py={4}>
+                  <Row>
+                    <Statistic title="ControllerID" value={info.controllerId} />
+                    <Statistic title="Broker Count" value={brokers.length} />
+                    <Statistic
+                      title="Cluster Version"
+                      value={info.kafkaVersion}
                     />
-                </Card>
-            </motion.div>
-        </>
+                  </Row>
+                </Section>
+
+                <Section>
+                  <KowlTable
+                    dataSource={brokers}
+                    columns={columns}
+                    observableSettings={uiSettings.brokerList}
+                    rowKey={(x) => x.brokerId.toString()}
+                    rowClassName={() => 'pureDisplayRow'}
+                    expandable={{
+                      expandedRowRender: (record) => (
+                        <BrokerDetails brokerId={record.brokerId} />
+                      ),
+                    }}
+                  />
+                </Section>
+            </PageContent>
+          </>
+        );
     }
 
     isMatch(filter: string, item: Broker) {

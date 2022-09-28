@@ -10,16 +10,15 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { motion } from 'framer-motion';
+import Section from '../../misc/Section';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
-import { animProps } from '../../../utils/animationProps';
-import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
+import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TasksColumn, TaskState } from './helper';
 
@@ -60,11 +59,11 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
         const additionalInfo = api.connectAdditionalClusterInfo.get(clusterName);
 
         return (
-            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
+            <PageContent>
                 <ClusterStatisticsCard clusterName={clusterName} />
 
                 {/* Main Card */}
-                <Card>
+                <Section>
                     {/* Connectors List */}
                     <div>
                         <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>
@@ -174,8 +173,8 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                         />
 
                     </div>
-                </Card>
-            </motion.div>
+                </Section>
+            </PageContent>
         );
     }
 }

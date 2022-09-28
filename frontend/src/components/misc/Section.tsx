@@ -9,16 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, CSSProperties } from 'react';
+import React, { ReactNode } from 'react';
+import { ChakraProps, Section as ChakraSection } from '@redpanda-data/ui';
 
-
-class Card extends Component<{ id?: string, style?: CSSProperties, className?: string, children?: React.ReactNode }> {
-
-    render() {
-        return <div id={this.props.id} className={'kowlCard ' + (this.props.className ?? '')} style={this.props.style}>
-            {this.props.children}
-        </div>
-    }
+// Note: this component is intended to be temporary until all components are migrated @redpanda-data/ui
+function Section(props: { children: ReactNode; id?: string; } & ChakraProps) {
+    return <ChakraSection px={6} py={6} {...props} />;
 }
 
-export default Card;
+export default Section;

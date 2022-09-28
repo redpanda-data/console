@@ -11,7 +11,6 @@
 
 /* eslint-disable no-useless-escape */
 import { Button, message, Tooltip } from 'antd';
-import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
@@ -19,9 +18,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectorInfo } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { animProps } from '../../../utils/animationProps';
 import { Code, findPopupContainer } from '../../../utils/tsxUtils';
-import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
@@ -35,6 +32,8 @@ import Editor from '@monaco-editor/react';
 // Monaco Type
 import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
 import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, okIcon, TaskState, warnIcon } from './helper';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 export type Monaco = typeof monacoType;
 
 
@@ -147,11 +146,11 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
 
         return (
-            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
+            <PageContent>
                 <ConnectorStatisticsCard clusterName={clusterName} connectorName={connectorName} />
 
                 {/* Main Card */}
-                <Card>
+                <Section>
                     {/* Title + Pause/Restart + Delete */}
                     <div style={{ display: 'flex', alignItems: 'center', margin: '.5em 0', paddingLeft: '2px' }}>
                         <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
@@ -325,7 +324,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                             }}
                         />
                     </div>
-                </Card>
+                </Section>
 
                 {/* Pause/Resume */}
                 <ConfirmModal<ClusterConnectorInfo>
@@ -401,7 +400,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                     }}
                 />
 
-            </motion.div>
+            </PageContent>
         );
     }
 }

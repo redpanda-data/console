@@ -22,7 +22,6 @@ import { animProps, } from '../../../utils/animationProps';
 import { observable, computed, autorun, IReactionDisposer, transaction, makeObservable } from 'mobx';
 import { clone, toJson } from '../../../utils/jsonUtils';
 import { appGlobal } from '../../../state/appGlobal';
-import Card from '../../misc/Card';
 import { CheckCircleOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { StepSelectBrokers } from './Step2.Brokers';
@@ -36,6 +35,8 @@ import { ActiveReassignments } from './components/ActiveReassignments';
 import { ReassignmentTracker } from './logic/reassignmentTracker';
 import { showErrorModal } from '../../misc/ErrorModal';
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 
 const { Step } = Steps;
@@ -179,9 +180,10 @@ class ReassignPartitions extends PageComponent {
         const nextButtonHelp = typeof nextButtonCheck === 'string' ? nextButtonCheck as string : null;
 
         return <>
-            <motion.div className="reassignPartitions" {...animProps} style={{ margin: '0 1rem', paddingBottom: '12em' }}>
+            <div className="reassignPartitions" style={{ paddingBottom: '12em' }}>
+            <PageContent>
                 {/* Statistics */}
-                <Card>
+                <Section py={4}>
                     <Row>
                         <Statistic title="Broker Count" value={api.clusterInfo?.brokers.length} />
                         <Statistic title="Leader Partitions" value={partitionCountLeaders ?? '...'} />
@@ -190,19 +192,19 @@ class ReassignPartitions extends PageComponent {
                             ? (partitionCountLeaders + partitionCountOnlyReplicated)
                             : '...'} />
                     </Row>
-                </Card>
+                </Section>
 
 
                 {/* Active Reassignments */}
-                <Card id="activeReassignments">
+                <Section id="activeReassignments">
                     <ActiveReassignments
                         throttledTopics={this.topicsWithThrottle}
                         onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
                     />
-                </Card>
+                </Section>
 
                 {/* Content */}
-                <Card id="wizard">
+                <Section id="wizard">
                     {/* Steps */}
                     <div style={{ margin: '.75em 1em 1em 1em' }}>
                         <Steps current={this.currentStep}>
@@ -260,9 +262,10 @@ class ReassignPartitions extends PageComponent {
                             </Button>
                         </div>
                     </div>
-                </Card>
+                </Section>
 
-            </motion.div>
+            </PageContent>
+            </div>
         </>
     }
 
