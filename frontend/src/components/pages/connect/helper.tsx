@@ -12,15 +12,12 @@
 
 
 import { Alert, Button, Empty, message, Modal, Popover, Statistic } from 'antd';
-import { motion } from 'framer-motion';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties, useState } from 'react';
 
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
-import { animProps } from '../../../utils/animationProps';
 import { findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
-import Card from '../../misc/Card';
 
 import ElasticLogo from '../../../assets/connectors/elastic.svg';
 import MsSqlLogo from '../../../assets/connectors/mssql.png';
@@ -47,6 +44,8 @@ import Neo4jLogo from '../../../assets/connectors/neo4j.svg';
 import { action, makeObservable, observable, runInAction } from 'mobx';
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
 import { QuestionMarkCircleIcon } from '@heroicons/react/solid';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -298,12 +297,12 @@ export const OverviewStatisticsCard = observer(() => {
     const totalClusters = api.connectConnectors?.clusters?.length ?? '...';
     const totalConnectors = api.connectConnectors?.clusters?.sum(c => c.totalConnectors) ?? '...';
 
-    return <Card>
+    return <Section py={4}>
         <div style={{ display: 'flex', gap: '1em' }}>
             <Statistic title="Connect Clusters" value={totalClusters} />
             <Statistic title="Total Connectors" value={totalConnectors} />
         </div>
-    </Card>
+    </Section>
 });
 
 export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
@@ -315,7 +314,7 @@ export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
     const addr = cluster?.clusterAddress ?? '...';
     const version = cluster?.clusterInfo.version ?? '...';
 
-    return <Card>
+    return <Section py={4}>
         <div style={{ display: 'flex', gap: '1em' }}>
             <Statistic title="Cluster" value={cluster?.clusterName} />
 
@@ -324,21 +323,21 @@ export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
             <Statistic title="Version" value={version} />
 
         </div>
-    </Card>
+    </Section>
 });
 
 export const ConnectorStatisticsCard = observer((p: { clusterName: string, connectorName: string }) => {
     const cluster = api.connectConnectors?.clusters?.first(x => x.clusterName == p.clusterName);
     const connector = cluster?.connectors.first(x => x.name == p.connectorName);
 
-    return <Card>
+    return <Section py={4}>
         <div style={{ display: 'flex', gap: '1em' }}>
             <Statistic title="Cluster" value={cluster?.clusterName} />
             <Statistic title="Connector" value={connector?.name} />
 
             <Statistic title="Tasks" value={`${connector?.runningTasks} / ${connector?.totalTasks}`} />
         </div>
-    </Card>
+    </Section>
 });
 
 
@@ -346,8 +345,8 @@ export const ConnectorStatisticsCard = observer((p: { clusterName: string, conne
 
 export function NotConfigured() {
     return (
-        <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
-            <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
+        <PageContent key="b">
+            <Section>
                 <Empty description={null}>
                     <div style={{ marginBottom: '1.5rem' }}>
                         <h2>Not Configured</h2>
@@ -363,8 +362,8 @@ export function NotConfigured() {
                         <Button type="primary">Redpanda Console Config Documentation</Button>
                     </a>
                 </Empty>
-            </Card>
-        </motion.div>
+            </Section>
+        </PageContent>
     );
 }
 

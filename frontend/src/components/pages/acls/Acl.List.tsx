@@ -16,11 +16,8 @@ import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { sortField } from '../../misc/common';
 import { AclRequestDefault } from '../../../state/restInterfaces';
-import { motion } from 'framer-motion';
-import { animProps } from '../../../utils/animationProps';
 import { comparer, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import Card from '../../misc/Card';
 import { Code, DefaultSkeleton, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import { clone } from '../../../utils/jsonUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
@@ -29,6 +26,8 @@ import { TrashIcon } from '@heroicons/react/outline';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 
 @observer
@@ -131,7 +130,7 @@ class AclList extends PageComponent {
         const groups = this.principalGroups;
 
         return <>
-            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
+            <PageContent>
 
                 {this.edittingPrincipalGroup != null
                     ? <AclPrincipalGroupEditor
@@ -145,7 +144,7 @@ class AclList extends PageComponent {
                     : undefined
                 }
 
-                <Card>
+                <Section>
                     <this.SearchControls />
 
                     {warning}
@@ -172,8 +171,8 @@ class AclList extends PageComponent {
                             isRowMatch
                         }}
                     />
-                </Card>
-            </motion.div>
+                </Section>
+            </PageContent>
         </>
     }
 
@@ -300,8 +299,8 @@ function isRowMatch(entry: AclPrincipalGroup, regex: RegExp): boolean {
 
 
 const PermissionDenied = <>
-    <motion.div {...animProps} key={'aclNoPerms'} style={{ margin: '0 1rem' }}>
-        <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
+    <PageContent key="aclNoPerms">
+        <Section>
             <Empty description={null}>
                 <div style={{ marginBottom: '1.5rem' }}>
                     <h2><span><LockIcon verticalAlign="middle" size={20} /></span> Permission Denied</h2>
@@ -316,7 +315,7 @@ const PermissionDenied = <>
                     <Button type="primary">Redpanda Console documentation for roles and permissions</Button>
                 </a>
             </Empty>
-        </Card>
-    </motion.div>
+        </Section>
+    </PageContent>
 </>
 

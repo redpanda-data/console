@@ -12,17 +12,14 @@
 import React from 'react';
 import { TrashIcon } from '@heroicons/react/outline';
 import { Alert, Button, Modal, notification, Popover, Row, Statistic, Tooltip } from 'antd';
-import { motion } from 'framer-motion';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
-import Card from '../../misc/Card';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
@@ -31,6 +28,8 @@ import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-reac
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import { UInt64Max } from '../../../utils/utils';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 @observer
 class TopicList extends PageComponent {
@@ -107,96 +106,138 @@ class TopicList extends PageComponent {
         );
 
         return (
-            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-                <Card>
-                    <Row>
-                        <Statistic title="Total Topics" value={topics.length} />
-                        <Popover title="Partition Details" content={partitionDetails} placement="right" mouseEnterDelay={0} trigger="hover">
-                            <div className="hoverLink" style={{ display: 'flex', verticalAlign: 'middle', cursor: 'default' }}>
-                                <Statistic title="Total Partitions" value={partitionCountReal + partitionCountOnlyReplicated} />
-                            </div>
-                        </Popover>
-                    </Row>
-                </Card>
-
-                <Card>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button
-                            onClick={() => this.showCreateTopicModal()}
-                            style={{ minWidth: '160px', marginBottom: '12px' }}
-                        >
-                            Create Topic
-                        </Button>
-                        <this.CreateTopicModal />
+          <PageContent>
+              <Section py={4}>
+                <Row>
+                  <Statistic title="Total Topics" value={topics.length} />
+                  <Popover
+                    title="Partition Details"
+                    content={partitionDetails}
+                    placement="right"
+                    mouseEnterDelay={0}
+                    trigger="hover"
+                  >
+                    <div
+                      className="hoverLink"
+                      style={{
+                        display: 'flex',
+                        verticalAlign: 'middle',
+                        cursor: 'default',
+                      }}
+                    >
+                      <Statistic
+                        title="Total Partitions"
+                        value={
+                          partitionCountReal + partitionCountOnlyReplicated
+                        }
+                      />
                     </div>
-                    <KowlTable
-                        dataSource={topics}
-                        rowKey={(x) => x.topicName}
-                        columns={[
-                            { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', defaultSortOrder: 'ascend' },
-                            { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
-                            { title: 'Replicas', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
-                            {
-                                title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1,
-                                filterType: {
-                                    type: 'enum',
-                                    optionClassName: 'capitalize'
-                                },
-                                sorter: sortField('cleanupPolicy'),
-                            },
-                            {
-                                title: 'Size', render: (t, r) => renderLogDirSummary(r.logDirSummary), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes, width: '140px',
-                            },
-                            {
-                                width: 1,
-                                title: ' ',
-                                key: 'action',
-                                className: 'msgTableActionColumn',
-                                render: (text, record) => (
-                                    <div style={{ display: 'flex', gap: '4px' }}>
-                                        <DeleteDisabledTooltip topic={record}>
-                                            <Button
-                                                type="text"
-                                                className="iconButton"
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    this.topicToDelete = record.topicName;
-                                                }}
-                                            >
-                                                <TrashIcon />
-                                            </Button>
-                                        </DeleteDisabledTooltip>
-                                    </div>
-                                ),
-                            },
-                        ]}
+                  </Popover>
+                </Row>
+              </Section>
 
-                        search={{
-                            searchColumnIndex: 0,
-                            isRowMatch: (row, regex) => {
-                                if (regex.test(row.topicName)) return true;
-                                if (regex.test(row.cleanupPolicy)) return true;
-                                return false;
-                            },
-
-                        }}
-
-                        observableSettings={uiSettings.topicList}
-                        onRow={(record) => ({
-                            onClick: () => appGlobal.history.push('/topics/' + record.topicName),
-                        })}
-                        rowClassName="hoverLink"
-                    />
-                </Card>
-                <ConfirmDeletionModal
-                    topicToDelete={this.topicToDelete}
-                    onCancel={() => (this.topicToDelete = null)}
-                    onFinish={() => {
-                        this.topicToDelete = null;
-                        this.refreshData(true);
-                    }}
+              <Section>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    onClick={() => this.showCreateTopicModal()}
+                    style={{ minWidth: '160px', marginBottom: '12px' }}
+                  >
+                    Create Topic
+                  </Button>
+                  <this.CreateTopicModal />
+                </div>
+                <KowlTable
+                  dataSource={topics}
+                  rowKey={(x) => x.topicName}
+                  columns={[
+                    {
+                      title: 'Name',
+                      dataIndex: 'topicName',
+                      render: (t, r) => renderName(r),
+                      sorter: sortField('topicName'),
+                      className: 'whiteSpaceDefault',
+                      defaultSortOrder: 'ascend',
+                    },
+                    {
+                      title: 'Partitions',
+                      dataIndex: 'partitions',
+                      render: (t, r) => r.partitionCount,
+                      sorter: (a, b) => a.partitionCount - b.partitionCount,
+                      width: 1,
+                    },
+                    {
+                      title: 'Replicas',
+                      dataIndex: 'replicationFactor',
+                      sorter: sortField('replicationFactor'),
+                      width: 1,
+                    },
+                    {
+                      title: 'CleanupPolicy',
+                      dataIndex: 'cleanupPolicy',
+                      width: 1,
+                      filterType: {
+                        type: 'enum',
+                        optionClassName: 'capitalize',
+                      },
+                      sorter: sortField('cleanupPolicy'),
+                    },
+                    {
+                      title: 'Size',
+                      render: (t, r) => renderLogDirSummary(r.logDirSummary),
+                      sorter: (a, b) =>
+                        a.logDirSummary.totalSizeBytes -
+                        b.logDirSummary.totalSizeBytes,
+                      width: '140px',
+                    },
+                    {
+                      width: 1,
+                      title: ' ',
+                      key: 'action',
+                      className: 'msgTableActionColumn',
+                      render: (text, record) => (
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <DeleteDisabledTooltip topic={record}>
+                            <Button
+                              type="text"
+                              className="iconButton"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                this.topicToDelete = record.topicName;
+                              }}
+                            >
+                              <TrashIcon />
+                            </Button>
+                          </DeleteDisabledTooltip>
+                        </div>
+                      ),
+                    },
+                  ]}
+                  search={{
+                    searchColumnIndex: 0,
+                    isRowMatch: (row, regex) => {
+                      if (regex.test(row.topicName)) return true;
+                      if (regex.test(row.cleanupPolicy)) return true;
+                      return false;
+                    },
+                  }}
+                  observableSettings={uiSettings.topicList}
+                  onRow={(record) => ({
+                    onClick: () =>
+                      appGlobal.history.push('/topics/' + record.topicName),
+                  })}
+                  rowClassName="hoverLink"
                 />
-            </motion.div>
+              </Section>
+
+              <ConfirmDeletionModal
+                topicToDelete={this.topicToDelete}
+                onCancel={() => (this.topicToDelete = null)}
+                onFinish={() => {
+                  this.topicToDelete = null;
+                  this.refreshData(true);
+                }}
+              />
+          </PageContent>
         );
     }
 }

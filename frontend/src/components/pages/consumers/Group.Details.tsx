@@ -16,11 +16,9 @@ import { observer } from 'mobx-react';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
 import { makePaginationConfig, sortField } from '../../misc/common';
-import { MotionDiv } from '../../../utils/animationProps';
 import { GroupDescription, } from '../../../state/restInterfaces';
 import { action, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import Card from '../../misc/Card';
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { TablePaginationConfig } from 'antd/lib/table';
 import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString } from '../../../utils/tsxUtils';
@@ -32,6 +30,8 @@ import { ShortNum } from '../../misc/ShortNum';
 import Tabs from '../../misc/tabs/Tabs';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
+import { Section } from '@redpanda-data/ui';
+import PageContent from '../../misc/PageContent';
 
 
 @observer
@@ -128,48 +128,81 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds.length);
 
         return (
-            <MotionDiv style={{ margin: '0 1rem' }} className="groupDetails">
-                {/* Statistics Card */}
-                {uiSettings.consumerGroupDetails.showStatisticsBar && (
-                    <Card className="statisticsBar">
-                        <Row>
-                            <HideStatisticsBarButton onClick={() => (uiSettings.consumerGroupDetails.showStatisticsBar = false)} />
-                            <Statistic title="State" valueRender={() => <GroupState group={group} />} />
-                            <ProtocolType group={group} />
-                            <Statistic title="Members" value={group.members.length} />
-                            <Statistic title="Assigned Topics" value={requiredTopics.length} />
-                            <Statistic title="Assigned Partitions" value={totalPartitions} />
-                            <Statistic title="Protocol Type" value={group.protocolType} />
-                            <Statistic title="Protocol" value={group.protocol} />
-                            <Statistic title="Coordinator ID" value={group.coordinatorId} />
-                            <Statistic title="Total Lag" value={group.lagSum} />
-                        </Row>
-                    </Card>
-                )}
+          <PageContent className="groupDetails">
+            {/* Statistics Card */}
+            {uiSettings.consumerGroupDetails.showStatisticsBar && (
+              <Section py={4}>
+                <div className="statisticsBar">
+                    <Row>
+                        <HideStatisticsBarButton
+                            onClick={() =>
+                            (uiSettings.consumerGroupDetails.showStatisticsBar =
+                                false)
+                            }
+                        />
+                        <Statistic
+                            title="State"
+                            valueRender={() => <GroupState group={group} />}
+                        />
+                        <ProtocolType group={group} />
+                        <Statistic title="Members" value={group.members.length} />
+                        <Statistic
+                            title="Assigned Topics"
+                            value={requiredTopics.length}
+                        />
+                        <Statistic
+                            title="Assigned Partitions"
+                            value={totalPartitions}
+                        />
+                        <Statistic title="Protocol Type" value={group.protocolType} />
+                        <Statistic title="Protocol" value={group.protocol} />
+                        <Statistic
+                            title="Coordinator ID"
+                            value={group.coordinatorId}
+                        />
+                        <Statistic title="Total Lag" value={group.lagSum} />
+                    </Row>
+                </div>
+              </Section>
+            )}
 
-                {/* Main Card */}
-                <Card>
-                    {/* View Buttons */}
-                    <Tabs
-                        tabs={[{
-                            key: 'partitions',
-                            title: 'Partitions',
-                            content: this.renderPartitions(group)
-                        }, {
-                            key: 'acl',
-                            title: 'ACL',
-                            content: <AclList acl={api.consumerGroupAcls.get(group.groupId)} />
-                        }]}
-                    />
-                </Card>
+            {/* Main Card */}
+            <Section>
+              {/* View Buttons */}
+              <Tabs
+                tabs={[
+                  {
+                    key: 'partitions',
+                    title: 'Partitions',
+                    content: this.renderPartitions(group),
+                  },
+                  {
+                    key: 'acl',
+                    title: 'ACL',
+                    content: (
+                      <AclList acl={api.consumerGroupAcls.get(group.groupId)} />
+                    ),
+                  },
+                ]}
+              />
+            </Section>
 
-                {/* Modals */}
-                <>
-                    <EditOffsetsModal group={group} offsets={this.edittingOffsets} onClose={() => (this.edittingOffsets = null)} />
+            {/* Modals */}
+            <>
+              <EditOffsetsModal
+                group={group}
+                offsets={this.edittingOffsets}
+                onClose={() => (this.edittingOffsets = null)}
+              />
 
-                    <DeleteOffsetsModal group={group} mode={this.deletingMode} offsets={this.deletingOffsets} onClose={() => (this.deletingOffsets = null)} />
-                </>
-            </MotionDiv>
+              <DeleteOffsetsModal
+                group={group}
+                mode={this.deletingMode}
+                offsets={this.deletingOffsets}
+                onClose={() => (this.deletingOffsets = null)}
+              />
+            </>
+          </PageContent>
         );
     }
 

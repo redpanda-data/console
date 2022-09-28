@@ -11,15 +11,12 @@
 
 import React, { useState } from 'react';
 import { PageComponent, PageInitHelper } from '../Page';
-import { animProps } from '../../../utils/animationProps';
-import { motion } from 'framer-motion';
 import {
     ApiOutlined,
     DatabaseOutlined,
     SearchOutlined,
 } from '@ant-design/icons';
 import { Wizard, WizardStep } from '../../misc/Wizard';
-import Card from '../../misc/Card';
 import { observer } from 'mobx-react';
 import { api } from '../../../state/backendApi';
 import { appGlobal } from '../../../state/appGlobal';
@@ -35,6 +32,8 @@ import KowlEditor from '../../misc/KowlEditor';
 import { useHistory } from 'react-router-dom';
 
 import styles from './CreateConnector.module.scss';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 const { Option } = Select;
 
@@ -100,11 +99,13 @@ class CreateConnector extends PageComponent {
         if (clusters == null) return null;
 
         return (
-            <motion.div {...animProps} className={styles.motionContainer}>
-                <Card className={styles.wizardView}>
-                    <ConnectorWizard connectClusters={clusters} />
-                </Card>
-            </motion.div>
+            <PageContent>
+                <Section>
+                    <div className={styles.wizardView}>
+                        <ConnectorWizard connectClusters={clusters} />
+                    </div>
+                </Section>
+            </PageContent>
         );
     }
 }
