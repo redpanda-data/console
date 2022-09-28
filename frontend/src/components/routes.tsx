@@ -40,6 +40,7 @@ import QuotasList from './pages/quotas/Quotas.List';
 import { AppFeature, AppFeatures } from '../utils/env';
 import { ItemType } from 'antd/lib/menu/hooks/useItems';
 import { AnimatePresence } from '../utils/animationProps';
+import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 
 //
 //	Route Types
@@ -109,6 +110,34 @@ export function CreateRouteMenuItems(entries: IRouteEntry[]): ItemType[] {
         } as ItemType;
     }).filter(x => x != null && x != undefined);
     return routeItems as ItemType[];
+}
+
+export function createVisibleSidebarItems(entries: IRouteEntry[]): NavLinkProps[] {
+    return entries.map((entry) => {
+        // Menu entry for Page
+        if (entry.path.includes(':'))
+            return null; // only root-routes (no param) can be in menu
+
+        let isEnabled = true;
+        let disabledText: JSX.Element = <></>;
+        if (entry.visibilityCheck) {
+            const visibility = entry.visibilityCheck();
+            if (!visibility.visible) return null;
+
+            isEnabled = visibility.disabledReasons.length == 0;
+            if (!isEnabled)
+                disabledText = disabledReasonText[visibility.disabledReasons[0]];
+        }
+        const isDisabled = !isEnabled;
+
+        return {
+            title: entry.title as string,
+            to: entry.path as string,
+            icon: entry.icon as any,
+            isDisabled: isDisabled as boolean,
+            disabledText: disabledText as unknown as string,
+        };
+    }).filter(x => x != null && x != undefined) as NavLinkProps[];
 }
 
 // Convert routes to <Route/> JSX declarations

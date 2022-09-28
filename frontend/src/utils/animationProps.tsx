@@ -25,7 +25,7 @@ const dx50em = [(dist * 0.5 * -1) + 'em', 0, (dist * 0.5) + 'em'];
 // "linear" | "easeIn" | "easeOut" | "easeInOut" | "circIn" | "circOut" | "circInOut" | "backIn" | "backOut" | "backInOut" | "anticipate"
 
 const transition: Transition = {
-    ease: 'circOut', //staggerChildren: 0,
+    ease: 'easeInOut', //staggerChildren: 0,
     duration: time,
 };
 
@@ -33,9 +33,9 @@ const transition: Transition = {
 // Page switch
 export const animProps = {
     transition: transition,
-    initial: { opacity: 0, x: dx100em[0], position: 'static' as PositionProp },
-    animate: { opacity: 1, x: dx100em[1], position: 'static' as PositionProp },
-    exit: { opacity: 0, x: dx100em[2], position: 'absolute' as PositionProp, width: 'auto' },
+    initial: { opacity: 0, position: 'static' as PositionProp },
+    animate: { opacity: 1, position: 'static' as PositionProp },
+    exit: { opacity: 0, position: 'absolute' as PositionProp, width: 'auto' },
 };
 
 export const animProps_span_searchResult = {
