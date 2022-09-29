@@ -10,22 +10,21 @@
  */
 
 import {Button, Tooltip} from 'antd';
-import { motion } from 'framer-motion';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectors } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { animProps } from '../../../utils/animationProps';
 import { Code, DefaultSkeleton, findPopupContainer } from '../../../utils/tsxUtils';
-import Card from '../../misc/Card';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import Tabs, { Tab } from '../../misc/tabs/Tabs';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectorClass, ConnectorsColumn, errIcon, mr05, NotConfigured, OverviewStatisticsCard, TasksColumn, TaskState } from './helper';
 import { Link } from 'react-router-dom';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 
 
@@ -50,16 +49,16 @@ class KafkaConnectOverview extends PageComponent {
         const settings = uiSettings.kafkaConnect;
 
         return (
-            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
+            <PageContent>
                 <OverviewStatisticsCard />
 
-                <Card>
+                <Section>
                     <Tabs tabs={connectTabs}
                         onChange={() => settings.selectedTab}
                         selectedTabKey={settings.selectedTab}
                     />
-                </Card>
-            </motion.div>
+                </Section>
+            </PageContent>
         );
     }
 }

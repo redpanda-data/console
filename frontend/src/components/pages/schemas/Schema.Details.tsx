@@ -11,20 +11,19 @@
 
 import React from 'react';
 import { Button, message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
-import Card from '../../misc/Card';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
 import { DefaultSkeleton, Label, OptionGroup, toSafeString } from '../../../utils/tsxUtils';
-import { motion } from 'framer-motion';
-import { animProps } from '../../../utils/animationProps';
 import { KowlJsonView } from '../../misc/KowlJsonView';
 import { JsonField, JsonFieldType, JsonSchema, Schema, SchemaField, SchemaType } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { ClipboardCopyIcon } from '@heroicons/react/outline';
 import { NoClipboardPopover } from '../../misc/NoClipboardPopover';
 import { isClipboardAvailable } from '../../../utils/featureDetection';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 export interface SchemaDetailsProps {
     subjectName: string;
@@ -150,8 +149,8 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
         const defaultVersion = this.props.query.version ?? (versions.length > 0 ? versions[versions.length - 1] : 'latest');
 
         return (
-            <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
-                <Card>
+            <PageContent key="b">
+                <Section py={4}>
                     <Row>
                         <Statistic title="Type" value={schemaType}></Statistic>
                         <Statistic title="Subject" value={this.props.subjectName}></Statistic>
@@ -159,8 +158,9 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                         <Statistic title="Version" value={version}></Statistic>
                         <Statistic title="Compatibility" value={compatibility.toLowerCase()} style={{ textTransform: 'capitalize' }}></Statistic>
                     </Row>
-                </Card>
-                <Card>
+                </Section>
+
+                <Section>
                     <div style={{ display: 'flex', alignItems: 'flex-start', columnGap: '1.5em', marginBottom: '1em' }}>
                         <Label text="Version">
                             <Select style={{ minWidth: '200px' }}
@@ -253,8 +253,8 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                         }
 
                     </div>
-                </Card>
-            </motion.div>
+                </Section>
+            </PageContent>
         );
     }
 }

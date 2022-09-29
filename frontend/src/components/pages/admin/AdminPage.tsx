@@ -14,14 +14,13 @@ import { observer } from 'mobx-react';
 import { Alert, Tabs } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { motion } from 'framer-motion';
-import { animProps } from '../../../utils/animationProps';
 import { toJson } from '../../../utils/jsonUtils';
 import { appGlobal } from '../../../state/appGlobal';
-import Card from '../../misc/Card';
 import { AdminUsers } from './Admin.Users';
 import { AdminRoles } from './Admin.Roles';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 
 @observer
@@ -45,8 +44,8 @@ export default class AdminPage extends PageComponent {
         if (api.adminInfo === undefined) return DefaultSkeleton;
         const hasAdminPermissions = api.adminInfo !== null;
 
-        return <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-            <Card>
+        return <PageContent>
+            <Section>
                 {hasAdminPermissions ?
                     <Tabs style={{ overflow: 'visible' }} animated={false} >
 
@@ -74,8 +73,8 @@ export default class AdminPage extends PageComponent {
                         />
                     </div>
                 }
-            </Card>
-        </motion.div>
+            </Section>
+        </PageContent>
 
     }
 }

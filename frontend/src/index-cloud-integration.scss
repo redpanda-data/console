@@ -16,6 +16,9 @@ div[class^="ant-"],
 .ant-breadcrumb li:last-child a {
   color: unset;
 }
+.ant-breadcrumb ol {
+  margin-left: -4px;
+}
 
 // Gray font color
 .ant-breadcrumb a,

@@ -14,10 +14,7 @@ import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { Alert, Button, Empty, Row, Statistic } from 'antd';
-import Card from '../../misc/Card';
 import { appGlobal } from '../../../state/appGlobal';
-import { motion } from 'framer-motion';
-import { animProps } from '../../../utils/animationProps';
 import { sortField } from '../../misc/common';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { SchemaOverviewRequestError } from '../../../state/restInterfaces';
@@ -27,6 +24,8 @@ import './Schema.List.scss';
 import SearchBar from '../../misc/SearchBar';
 import { makeObservable, observable } from 'mobx';
 import { KowlTable } from '../../misc/KowlTable';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     if (!requestErrors || requestErrors.length === 0) {
@@ -34,18 +33,20 @@ function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
     }
 
     return (
-        <Card className="SchemaList__error-card">
-            {requestErrors.map(({ errorMessage, requestDescription }, idx) => (
-                <Alert key={idx} type="error" message={errorMessage} description={requestDescription} closable className="SchemaList__alert" />
-            ))}
-        </Card>
+        <Section>
+            <div className="SchemaList__error-card">
+                {requestErrors.map(({ errorMessage, requestDescription }, idx) => (
+                    <Alert key={idx} type="error" message={errorMessage} description={requestDescription} closable className="SchemaList__alert" />
+                ))}
+            </div>
+        </Section>
     );
 }
 
 function renderNotConfigured() {
     return (
-        <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
-            <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
+        <PageContent>
+            <Section>
                 <Empty description={null}>
                     <div style={{ marginBottom: '1.5rem' }}>
                         <h2>Not Configured</h2>
@@ -62,8 +63,8 @@ function renderNotConfigured() {
                         <Button type="primary">Redpanda Console Config Documentation</Button>
                     </a>
                 </Empty>
-            </Card>
-        </motion.div>
+            </Section>
+        </PageContent>
     );
 }
 
@@ -99,15 +100,17 @@ class SchemaList extends PageComponent<{}> {
         const { mode, compatibilityLevel, requestErrors } = { ...api.schemaOverview };
 
         return (
-            <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
-                <Card>
+            <PageContent key="b">
+                <Section py={4}>
                     <Row>
                         <Statistic title="Mode" value={mode}></Statistic>
                         <Statistic title="Compatibility Level" value={compatibilityLevel}></Statistic>
                     </Row>
-                </Card>
+                </Section>
+
                 {renderRequestErrors(requestErrors)}
-                <Card>
+
+                <Section>
                     <SearchBar<{ name: string }>
                         dataSource={() => (api.schemaOverview?.subjects || []).map(str => ({ name: str }))}
                         isFilterMatch={this.isFilterMatch}
@@ -133,8 +136,8 @@ class SchemaList extends PageComponent<{}> {
                             onClick: () => appGlobal.history.push(`/schema-registry/${name}`),
                         })}
                     />
-                </Card>
-            </motion.div>
+                </Section>
+            </PageContent>
         );
     }
 }

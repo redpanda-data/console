@@ -15,7 +15,7 @@ import { Result } from 'antd';
 import { Button } from 'antd';
 import { api } from '../../state/backendApi';
 import { CloseCircleOutlined } from '@ant-design/icons'
-import { Section } from '@redpanda-data/ui';
+import Section from '../misc/Section';
 
 
 @observer

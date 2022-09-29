@@ -11,7 +11,6 @@
 
 import React from 'react';
 import { Button, Popover, Result, Tooltip, Typography } from 'antd';
-import { motion } from 'framer-motion';
 import { computed, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
@@ -19,10 +18,8 @@ import { api } from '../../../state/backendApi';
 import { ConfigEntry, Topic, TopicAction } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { uiState } from '../../../state/uiState';
-import { animProps } from '../../../utils/animationProps';
 import '../../../utils/arrayExtensions';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
-import Card from '../../misc/Card';
 import { makePaginationConfig } from '../../misc/common';
 import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
 import Tabs from '../../misc/tabs/Tabs';
@@ -37,6 +34,8 @@ import { TopicPartitions } from './Tab.Partitions';
 import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
 import { AppFeatures } from '../../../utils/env';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 const { Text } = Typography;
 
@@ -250,16 +249,18 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
         return (
             <>
-                <motion.div {...animProps} key={'b'} style={{ margin: '0 1rem' }}>
+                <PageContent key={'b'}>
                     {uiSettings.topicDetailsShowStatisticsBar && (
-                        <Card className="statisticsBar">
-                            <HideStatisticsBarButton onClick={() => (uiSettings.topicDetailsShowStatisticsBar = false)} />
-                            <TopicQuickInfoStatistic topic={topic} />
-                        </Card>
+                        <Section py={4}>
+                            <div className="statisticsBar">
+                                <HideStatisticsBarButton onClick={() => (uiSettings.topicDetailsShowStatisticsBar = false)} />
+                                <TopicQuickInfoStatistic topic={topic} />
+                            </div>
+                        </Section>
                     )}
 
                     {/* Tabs:  Messages, Configuration */}
-                    <Card>
+                    <Section>
                         <Tabs
                             tabs={this.topicTabs.map(({ id, title, content, isDisabled }) => ({
                                 key: id,
@@ -270,8 +271,8 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                             onChange={this.setTabPage}
                             selectedTabKey={this.selectedTabId}
                         />
-                    </Card>
-                </motion.div>
+                    </Section>
+                </PageContent>
             </>
         );
     }
