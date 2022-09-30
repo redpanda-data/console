@@ -26,7 +26,7 @@
         "@heroicons/react": "^1.0.6",
         "@monaco-editor/react": "^4.4",
         "@primer/octicons-react": "^17",
-        "antd": "^4.21",
+        "antd": "^4.23.0",
         "array-move": "^4",
         "framer-motion": "^7",
         "mobx": "^6.6",
