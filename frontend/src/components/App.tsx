@@ -163,20 +163,24 @@ const AppPageHeader = observer(() => {
 });
 
 const AppFooter = () => {
+    const gitHub = (link: string, title: string) => <>
+        <a href={link} title={title} target="_blank" rel="noopener noreferrer">
+            <GithubFilled />
+        </a>
+    </>;
 
     return <Footer className="footer">
         {/* Social Media Links */}
         <div className="links">
-            <a href="https://github.com/redpanda-data/console" title="Visit Redpanda Console's GitHub repository" target="_blank" rel="noopener noreferrer">
-                <GithubFilled />
-            </a>
+            {isEmbedded() ? gitHub('https://github.com/redpanda-data/redpanda', 'Visit Redpanda\'s GitHub repository') :
+                gitHub('https://github.com/redpanda-data/console', 'Visit Redpanda Console\'s GitHub repository')}
             <a href="https://redpanda.com/slack" title="Slack" target="_blank" rel="noopener noreferrer">
                 <SlackSquareOutlined />
             </a>
             <a href="https://twitter.com/redpandadata" title="Twitter" target="_blank" rel="noopener noreferrer">
                 <TwitterOutlined />
             </a>
-            <a href="https://www.linkedin.com/company/vectorized-io" title="LinkedIn" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.linkedin.com/company/redpanda-data" title="LinkedIn" target="_blank" rel="noopener noreferrer">
                 <LinkedinFilled />
             </a>
         </div>
