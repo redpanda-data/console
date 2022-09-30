@@ -28,7 +28,7 @@ import { promisify } from 'util';
 import * as path from 'path';
 
 const directory = process.env.MONACO_EDITOR_PATH ?? './public/static/js/vendor/monaco';
-const version = process.env.MONACO_EDITOR_VERSION ?? '0.33.0';
+const version = process.env.MONACO_EDITOR_VERSION ?? '0.34.0';
 const packageUrl = `https://registry.npmjs.org/monaco-editor/-/monaco-editor-${version}.tgz`;
 
 const unzip = zlib.createUnzip();
