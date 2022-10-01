@@ -6,7 +6,7 @@ require (
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/cloudhut/common v0.6.0
-	github.com/cloudhut/connect-client v0.0.0-20211109055846-c9f53449bdc5
+	github.com/cloudhut/connect-client v0.0.0-20220929214026-6c714f7b6651
 	github.com/dop251/goja v0.0.0-20220516123900-4418d4575a41
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-git/go-billy/v5 v5.3.1
@@ -30,7 +30,7 @@ require (
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.0.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	go.uber.org/zap v1.21.0
-	golang.org/x/net v0.0.0-20220708220712-1185a9018129
+	golang.org/x/net v0.0.0-20220927171203-f486391704dc
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 )
 
@@ -87,7 +87,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20220621134657-43db42f103f7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
