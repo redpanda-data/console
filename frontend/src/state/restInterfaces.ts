@@ -1094,6 +1094,7 @@ export interface ClusterConnectorInfo {
 
     totalTasks: number;
     runningTasks: number;
+    trace?: string;
     tasks: ClusterConnectorTaskInfo[];
 
     // added by frontend
