@@ -10,37 +10,36 @@
  */
 
 import React, { Component, ReactNode } from 'react';
-import { observer } from "mobx-react";
-import { Layout, Menu, PageHeader, Button, Tooltip, Popover, Dropdown } from 'antd';
+import { observer } from 'mobx-react';
+import { Layout, PageHeader, Button, Popover } from 'antd';
 import { uiSettings } from '../state/ui';
-import { CreateRouteMenuItems, RouteView, RouteMenu, } from './routes';
-import { RenderTrap, DebugDisplay, UpdatePopup } from './misc/common';
-import { DebugTimerStore, prettyMilliseconds } from '../utils/utils';
-import { toJson } from "../utils/jsonUtils";
+import { RouteView, RouteMenu, } from './routes';
+import { prettyMilliseconds } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
-import { NavLink, Switch, Route } from 'react-router-dom';
+import { NavLink, Switch, Route, Link } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { MotionDiv } from '../utils/animationProps';
+import { AnimatePresence, animProps_logo, MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
-
-import logo2 from '../assets/logo2.png';
+import RedpandaLogo from '../assets/redpanda/redpanda-color.svg';
+import RedpandaIcon from '../assets/redpanda/icon-color.svg';
 import { ErrorBoundary } from './misc/ErrorBoundary';
-import { IsDev, AppName, IsBusiness, basePathS } from '../utils/env';
+import { IsDev, getBasePath, IsCI, AppFeatures } from '../utils/env';
 import { UserProfile } from './misc/UserButton';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
-import { MenuFoldOutlined, MenuUnfoldOutlined, ReloadOutlined, GithubFilled, UserOutlined, TwitterOutlined, LinkedinFilled } from '@ant-design/icons';
-import { makeObservable, observable } from 'mobx';
-import { LayoutBypass, RadioOptionGroup, toSafeString } from '../utils/tsxUtils';
+import { MenuFoldOutlined, MenuUnfoldOutlined, GithubFilled, TwitterOutlined, LinkedinFilled, SlackSquareOutlined } from '@ant-design/icons';
+import { ZeroSizeWrapper, } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
 import { renderErrorModals } from './misc/ErrorModal';
 import { SyncIcon, ChevronRightIcon } from '@primer/octicons-react';
+import { motion } from 'framer-motion';
+import { isEmbedded } from '../config';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -48,103 +47,47 @@ const { Content, Footer, Sider } = Layout;
 const siderCollapsedWidth = 80;
 
 
-const DebugUserInfoBar = () => (
-    <div style={{ background: '#FFCD22', padding: '2rem', fontSize: '120%', fontWeight: 'bold', textAlign: 'center', display: 'flex', placeContent: 'center' }}>
-        This frontend has been compiled for usage with Kowl-Business, but the backend server is the free version of Kowl. <br />
-        You have been logged in as a locally created fake user to help debugging.
-    </div>
-);
 
 const VersionInfo = () => {
-    // Local Development Mode
-    //   Kowl - DEV
-    if (IsDev) return <>
-        <div className='versionTitle'>{AppName} DEV</div>
-        <div className='versionDate'>Built {new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })}</div>
-        <div className='versionGitData'>{"abcdef0"}/{"0fedcba"}</div>
-    </>;
+    const appName = 'Redpanda Console';
+    let mode = '';
+    if (IsDev) mode = ' - DEV';
+    if (IsCI) mode = ' - CI';
 
-    // Continuous Delivery Mode
-    //   Kowl Business - CI
-    //   b27c2a3f f3acf4b7
-    if (env.REACT_APP_BUILT_FROM_PUSH) return <>
-        <div className='versionTitle'>{AppName} CI</div>
-        <div>
-            <span>{env.REACT_APP_KOWL_GIT_REF != 'master' && env.REACT_APP_KOWL_GIT_REF + "-"}</span>
-            <span>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 7)}</span>
-        </div>
+    if (env.REACT_APP_CONSOLE_PLATFORM_VERSION)
+        mode += ` (Platform Version ${env.REACT_APP_CONSOLE_PLATFORM_VERSION})`;
 
-        <div className='versionDate'>
-            (built {getBuildDate()?.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })})
-        </div>
+    let ref = env.REACT_APP_CONSOLE_GIT_REF;
+    if (!ref || ref == 'master') ref = '';
 
-        {IsBusiness && <div className='versionGitData'>
-            <span>{env.REACT_APP_KOWL_BUSINESS_GIT_REF != 'master' &&
-                env.REACT_APP_KOWL_BUSINESS_GIT_REF + "-"}</span>
-            <span>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 7)}</span>
-        </div>}
-    </>;
+    const sha = IsDev
+        ? '<no git sha in dev>'
+        : env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7);
 
-    // Release
-    //   Kowl Business v1.2.3
-    //   b27c2a3f f3acf4b7
+    const buildDate = IsDev
+        ? new Date()
+        : getBuildDate();
+
     return <>
-        <div className='versionTitle'>{AppName} - {IsBusiness ? env.REACT_APP_KOWL_BUSINESS_GIT_REF : env.REACT_APP_KOWL_GIT_REF}</div>
-        <div className='versionDate'>
-            (built {getBuildDate()?.toDateString()})
-        </div>
-        <div className='versionGitData'>{env.REACT_APP_KOWL_GIT_SHA.slice(0, 7)}</div>
-        {IsBusiness && <div className='versionGitData'>{env.REACT_APP_KOWL_BUSINESS_GIT_SHA.slice(0, 7)}</div>}
+        <div className="versionTitle">{appName} {mode}</div>
+        <div className="versionDate">(built {buildDate?.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })})</div>
+        <div className="versionGitData">{ref} {sha}</div>
     </>;
-
 };
+
 const SideBar = observer(() =>
-    <Layout style={{
-        display: 'flex', flex: 1, flexDirection: 'column',
-        height: '100vh',
-        background: 'hsl(217deg, 27%, 20%)'
-    }}>
-        <RenderTrap name='SideBarContent' />
-
+    <Layout className="sideBar" >
         {/* Logo */}
-        <div style={{ background: 'rgba(0,0,0, 0)', padding: '1px' }}>
-
-            <div style={{ position: 'relative' }}>
-
+        <div>
+            <Link to="/">
                 {/* Logo Image */}
-                <img src={logo2} alt="logo" style={{
-                    height: uiSettings.sideBarOpen ? '130px' : '65px',
-                    transition: 'all 200ms',
-                    width: 'auto', display: 'block', margin: 'auto', cursor: 'pointer',
-                    opacity: 0.8, mixBlendMode: 'overlay',
-                    marginTop: uiSettings.sideBarOpen ? '3em' : '.5em'
-                }}
-                    onClick={() => { appGlobal.history.push('/'); }}
-                />
-
-                {/* Title Text */}
-                <div style={{
-                    position: 'absolute',
-                    transition: 'all 200ms',
-                    width: '100%',
-                    top: uiSettings.sideBarOpen ? '-40px' : '-80px',
-                    opacity: uiSettings.sideBarOpen ? 1 : 0,
-
-                    fontFamily: "'Quicksand', sans-serif",
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '6px',
-                    transform: 'translateX(4px)',
-                    fontSize: '1.8rem',
-                    textAlign: 'center',
-                    color: 'hsl(217deg, 26%, 38%)',
-                }}>
-                    Kowl
-                </div>
-
-                {/* Separator Line */}
-                <div style={{ position: 'relative', borderTop: '0px solid hsla(0deg, 0%, 100%, 0.13)', margin: '.5em 1em', marginTop: '1em' }} />
-            </div>
+                <AnimatePresence initial={false} presenceAffectsLayout >
+                    {uiSettings.sideBarOpen
+                        ? <motion.img alt="logo" key="logoExpanded" src={RedpandaLogo} {...animProps_logo} />
+                        : <motion.img alt="logo" key="logoCollapsed" src={RedpandaIcon}   {...animProps_logo} />
+                    }
+                </AnimatePresence>
+            </Link>
         </div>
 
         {/* Menu */}
@@ -155,21 +98,25 @@ const SideBar = observer(() =>
         {/* Profile */}
         <UserProfile />
 
+
         {/* Toggle */}
-        <Footer className='sideBarToggle' onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen; }}>
+        <Footer className="sideBarToggle" onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen; }}>
             {uiSettings.sideBarOpen
-                ? <MenuFoldOutlined className='icon' />
-                : <MenuUnfoldOutlined className='icon' />}
+                ? <MenuFoldOutlined className="icon" />
+                : <MenuUnfoldOutlined className="icon" />}
         </Footer>
     </Layout>
 );
 
 const sideBarWidthDefault = '230px';
 const AppSide = observer(() => (
-    <Sider collapsible collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth}
+    <Sider
+        collapsible
+        collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth}
         trigger={null}
         width={sideBarWidthDefault}
-        style={{ background: 'white', cursor: 'default' }}
+        className="sider"
+        style={{ cursor: 'default' }}
     >
         <SideBar />
     </Sider>
@@ -183,7 +130,7 @@ const DataRefreshButton = observer(() => {
     const refreshTextFunc = (): ReactNode => {
         return <div style={{ maxWidth: '350px' }}>
             Click to force a refresh of the data shown in the current page.
-            When switching pages, any data older than <span className='codeBox'>{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be refreshed automatically.
+            When switching pages, any data older than <span className="codeBox">{prettyMilliseconds(REST_CACHE_DURATION_SEC * 1000)}</span> will be refreshed automatically.
         </div>;
         // TODO: small table that shows what cached data we have and how old it is
     };
@@ -194,35 +141,23 @@ const DataRefreshButton = observer(() => {
 
     const countStr = lastRequestCount > 1
         ? `${lastRequestCount - api.activeRequests.length} / ${lastRequestCount}`
-        : "";
+        : '';
 
     // maybe we need to use the same 'no vertical expansion' trick:
-    return <div style={{
-        height: '32px',
-        display: 'inline-flex',
-        marginLeft: '10px',
-
-        background: 'hsl(216, 66%, 92%)',
-        color: 'hsl(205, 100%, 50%)',
-
-        borderRadius: '30px',
-        placeContent: 'center',
-        placeItems: 'center',
-        whiteSpace: 'nowrap',
-    }}>
+    return <div className="dataRefreshButton">
         {
             api.activeRequests.length == 0
                 ?
                 <>
-                    <Popover title='Force Refresh' content={refreshTextFunc} placement='rightTop' overlayClassName='popoverSmall' >
-                        <Button icon={< SyncIcon size={16} />} shape='circle' className='hoverButton' style={{ color: 'hsl(205, 100%, 50%)', background: 'transparent' }} onClick={() => appGlobal.onRefresh()} />
+                    <Popover title="Force Refresh" content={refreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
+                        <Button icon={< SyncIcon size={16} />} shape="circle" className="hoverButton" onClick={() => appGlobal.onRefresh()} />
                     </Popover>
                     {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
                 </>
                 :
                 <>
-                    <span className='spinner' style={{ marginLeft: '8px', width: spinnerSize, height: spinnerSize }} />
-                    <span className='pulsating' style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data... {countStr}</span>
+                    <span className="spinner" style={{ marginLeft: '8px', width: spinnerSize, height: spinnerSize }} />
+                    <span className="pulsating" style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data... {countStr}</span>
                 </>
         }
     </div>;
@@ -231,7 +166,6 @@ const DataRefreshButton = observer(() => {
 const AppPageHeader = observer(() => {
 
     const breadcrumbs = uiState.pageBreadcrumbs.map(v => ({ path: v.linkTo, breadcrumbName: v.title }));
-
     const selectedClusterName = uiState.selectedClusterName;
     if (selectedClusterName) {
         //const rootBreadcrumb: AntBreadcrumbRoute = { path: '', breadcrumbName: selectedClusterName };
@@ -239,20 +173,23 @@ const AppPageHeader = observer(() => {
         breadcrumbs.unshift(rootBreadcrumb);
     }
 
+    if (isEmbedded())
+        breadcrumbs.splice(0, breadcrumbs.length - 1);
+
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
-        ? <span>
-            <div className='breadcrumbLast'>{r.breadcrumbName}</div>
-            <LayoutBypass justifyContent='start'>
+        ? <>
+            <div className="breadcrumbLast">{r.breadcrumbName}</div>
+            <ZeroSizeWrapper justifyContent="start">
                 <DataRefreshButton />
-            </LayoutBypass>
-        </span>
+            </ZeroSizeWrapper>
+        </>
         : <NavLink to={r.path}>{r.breadcrumbName}</NavLink>;
 
-    return <MotionDiv identityKey={uiState.pageTitle} className='pageTitle' style={{ display: 'flex', paddingRight: '16px', alignItems: 'center', marginBottom: '10px' }}>
+    return <MotionDiv identityKey={uiState.pageTitle} className="pageTitle" style={{ display: 'flex', paddingRight: '16px', alignItems: 'center', marginBottom: '10px' }}>
         <PageHeader
             breadcrumb={{
                 routes: breadcrumbs,
-                separator: <LayoutBypass width='10px'><ChevronRightIcon size={14} verticalAlign='unset' /></LayoutBypass>,
+                separator: <ZeroSizeWrapper width="10px"><ChevronRightIcon size={14} verticalAlign="unset" /></ZeroSizeWrapper>,
                 params: breadcrumbs.last(),
                 itemRender: breadcrumbRender
             }}
@@ -266,44 +203,38 @@ const AppPageHeader = observer(() => {
 });
 
 const AppFooter = () => {
-    const discordIcon = <svg viewBox="0 0 245 240" height="1em" fill="currentColor"><path d="M104.4 103.9c-5.7 0-10.2 5-10.2 11.1s4.6 11.1 10.2 11.1c5.7 0 10.2-5 10.2-11.1.1-6.1-4.5-11.1-10.2-11.1zM140.9 103.9c-5.7 0-10.2 5-10.2 11.1s4.6 11.1 10.2 11.1c5.7 0 10.2-5 10.2-11.1s-4.5-11.1-10.2-11.1z" /><path d="M189.5 20h-134C44.2 20 35 29.2 35 40.6v135.2c0 11.4 9.2 20.6 20.5 20.6h113.4l-5.3-18.5 12.8 11.9 12.1 11.2 21.5 19V40.6c0-11.4-9.2-20.6-20.5-20.6zm-38.6 130.6s-3.6-4.3-6.6-8.1c13.1-3.7 18.1-11.9 18.1-11.9-4.1 2.7-8 4.6-11.5 5.9-5 2.1-9.8 3.5-14.5 4.3-9.6 1.8-18.4 1.3-25.9-.1-5.7-1.1-10.6-2.7-14.7-4.3-2.3-.9-4.8-2-7.3-3.4-.3-.2-.6-.3-.9-.5-.2-.1-.3-.2-.4-.3-1.8-1-2.8-1.7-2.8-1.7s4.8 8 17.5 11.8c-3 3.8-6.7 8.3-6.7 8.3-22.1-.7-30.5-15.2-30.5-15.2 0-32.2 14.4-58.3 14.4-58.3 14.4-10.8 28.1-10.5 28.1-10.5l1 1.2c-18 5.2-26.3 13.1-26.3 13.1s2.2-1.2 5.9-2.9c10.7-4.7 19.2-6 22.7-6.3.6-.1 1.1-.2 1.7-.2 6.1-.8 13-1 20.2-.2 9.5 1.1 19.7 3.9 30.1 9.6 0 0-7.9-7.5-24.9-12.7l1.4-1.6s13.7-.3 28.1 10.5c0 0 14.4 26.1 14.4 58.3 0 0-8.5 14.5-30.6 15.2z" /></svg>;
 
     return <Footer className="footer">
         {/* Social Media Links */}
         <div className="links">
-            <a href="https://github.com/cloudhut/kowl" title="Visit Kowl's GitHub repository" target='_blank' rel='noopener'>
+            <a href="https://github.com/redpanda-data/console" title="Visit Redpanda Console's GitHub repository" target="_blank" rel="noopener noreferrer">
                 <GithubFilled />
             </a>
-            <a href="https://discord.gg/KQj7P6v" target='_blank' rel='noopener'>
-                <span role='img' className='anticon' style={{ fontSize: '120%' }}>
-                    {discordIcon}
-                </span>
+            <a href="https://redpanda.com/slack" title="Slack" target="_blank" rel="noopener noreferrer">
+                <SlackSquareOutlined />
             </a>
-            <a href="https://twitter.com/cloudhut_kowl" target='_blank' rel='noopener'>
+            <a href="https://twitter.com/redpandadata" title="Twitter" target="_blank" rel="noopener noreferrer">
                 <TwitterOutlined />
             </a>
-            <a href="https://www.linkedin.com/company/kowl" target='_blank' rel='noopener'>
+            <a href="https://www.linkedin.com/company/vectorized-io" title="LinkedIn" target="_blank" rel="noopener noreferrer">
                 <LinkedinFilled />
             </a>
         </div>
 
         {/* Version Info */}
-        <div className='versionText'>
+        <div className="versionText">
             <VersionInfo />
         </div>
     </Footer>;
 };
 
 const AppContent = observer(() =>
-    <Layout className='overflowYOverlay' style={{ borderLeft: '1px solid #ddd' }} id="mainLayout">
-
-        <RenderTrap name='AppContentLayout' />
-
-        {/* Debug User */}
-        {uiState.isUsingDebugUserLogin && <DebugUserInfoBar />}
+    <Layout className="overflowYOverlay" id="mainLayout">
 
         {/* Page */}
         <Content style={{ display: 'flex', flexDirection: 'column', padding: '8px 6px 0px 4px', zIndex: 1 }}>
+            <LicenseNotification />
+
             <AppPageHeader />
 
             <ErrorDisplay>
@@ -313,7 +244,8 @@ const AppContent = observer(() =>
             <AppFooter />
         </Content>
 
-        <UpdatePopup />
+        {/* Currently disabled, read todo comment on UpdatePopup */}
+        {/* <UpdatePopup /> */}
         {renderErrorModals()}
 
     </Layout>
@@ -330,13 +262,13 @@ export default class App extends Component {
                 {/* {IsDev && <DebugDisplay />} */}
                 <Switch>
                     {/* Login (and callbacks) */}
-                    <Route exact path='/login' component={Login} />
-                    <Route path='/login/callbacks/:provider' render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
+                    <Route exact path="/login" component={Login} />
+                    <Route path="/login/callbacks/:provider" render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
 
                     {/* Default View */}
                     <Route path="*">
                         <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
-                            <AppSide />
+                            {isEmbedded() ? null : <AppSide />}
                             <AppContent />
                         </Layout>
                     </Route>
@@ -347,11 +279,11 @@ export default class App extends Component {
     }
 
     loginHandling(): JSX.Element | null {
-        if (!IsBusiness)
-            return null; // free version has no login handling
+        if (!AppFeatures.SINGLE_SIGN_ON)
+            return null;
 
         const preLogin = <div style={{ background: 'rgb(233, 233, 233)', height: '100vh' }} />;
-        const path = window.location.pathname.removePrefix(basePathS ?? '');
+        const path = window.location.pathname.removePrefix(getBasePath() ?? '');
         const devPrint = function (str: string) { if (IsDev) console.log(`loginHandling (${path}): ` + str); };
 
         if (path.startsWith('/login'))
@@ -359,7 +291,7 @@ export default class App extends Component {
 
         if (api.userData === null && !path.startsWith('/login')) {
             devPrint('known not logged in, hard redirect');
-            window.location.pathname = basePathS + '/login'; // definitely not logged in, and in wrong url: hard redirect!
+            window.location.pathname = getBasePath() + '/login'; // definitely not logged in, and in wrong url: hard redirect!
             return preLogin;
         }
 
@@ -377,7 +309,7 @@ export default class App extends Component {
                     devPrint('frontend is configured as business-version, but backend is non-business-version -> will create a local fake user for debugging');
                     uiState.isUsingDebugUserLogin = true;
                     api.userData = {
-                        canManageKowl: false,
+                        canViewConsoleUsers: false,
                         canListAcls: true,
                         canListQuotas: true,
                         canPatchConfigs: true,
@@ -403,9 +335,74 @@ class FeatureErrorCheck extends Component {
 
     render() {
         if (featureErrors.length > 0) {
-            const allErrors = featureErrors.join(" ");
+            const allErrors = featureErrors.join(' ');
             throw new Error(allErrors);
         }
         return null;
     }
 }
+
+@observer
+class LicenseNotification extends Component {
+
+    render() {
+        if (!api.licenses || !api.licenses.length)
+            return null;
+
+        const unixNow = new Date().getTime() / 1000;
+        const sourceNames: { [key in string]: string } = {
+            'console': 'Console',
+            'cluster': 'Cluster',
+        };
+        const typeNames: { [key in string]: string } = {
+            'free_trial': 'Free Trial',
+            'open_source': 'Open Source',
+            'enterprise': 'Enterprise',
+        };
+
+        const withRemainingTime = api.licenses.map(x => {
+            const remainingSec = x.expiresAt - unixNow;
+            const remainingDays = remainingSec / (60 * 60 * 24);
+
+            const expiredForMoreThanAYear = (remainingSec < 0 && remainingDays < -365);
+            const prettyDuration = expiredForMoreThanAYear
+                ? 'over a year'
+                : prettyMilliseconds(Math.abs(remainingSec) * 1000, { unitCount: 2, verbose: true, secondsDecimalDigits: 0 });
+
+            return {
+                ...x,
+                remainingSec,
+                remainingDays,
+                isExpiringSoon: remainingDays < 30,
+                isExpired: remainingSec <= 0,
+                sourceDisplayName: sourceNames[x.source] ?? x.source,
+                typeDisplayName: typeNames[x.type] ?? x.type,
+                prettyDuration,
+                prettyDateTime: new Date(x.expiresAt * 1000).toLocaleDateString(),
+            };
+        });
+
+        const warnings = withRemainingTime.filter(x => x.isExpiringSoon || x.isExpired);
+        if (!warnings.length)
+            return null;
+
+        return <div className="expiringLicenses">
+            {warnings.map(e =>
+                <div key={e.source}>
+                    <div>
+                        Your Redpanda Enterprise license (<span className="source">{e.sourceDisplayName}</span>)
+                        {e.isExpired
+                            ? <> has expired <span className="date">{e.prettyDateTime}</span> ({e.prettyDuration} ago)</>
+                            : <> will expire <span className="date">{e.prettyDateTime}</span> ({e.prettyDuration} remaining)</>
+                        }
+                    </div>
+                    <div>
+                        To renew your license key, request a new/trial license at:{' '}
+                        <a href="https://redpanda.com/license-request" target="_blank" rel="noreferrer">https://redpanda.com/license-request</a>
+                    </div>
+                </div>
+            )}
+        </div>
+    }
+}
+

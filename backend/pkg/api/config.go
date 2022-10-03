@@ -16,19 +16,20 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/flagext"
-	"github.com/cloudhut/kowl/backend/pkg/connect"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/mitchellh/mapstructure"
+	"github.com/redpanda-data/console/backend/pkg/connect"
+	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
@@ -36,13 +37,13 @@ type Config struct {
 	ConfigFilepath   string
 	MetricsNamespace string `yaml:"metricsNamespace"`
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
-	FrontendPath     string `yaml:"frontendPath"`  // path to frontend files (index.html), set to './build' by default
 
-	Owl     owl.Config     `yaml:"owl"`
-	Connect connect.Config `yaml:"connect"`
-	REST    rest.Config    `yaml:"server"`
-	Kafka   kafka.Config   `yaml:"kafka"`
-	Logger  logging.Config `yaml:"logger"`
+	Console  console.Config  `yaml:"console"`
+	Redpanda redpanda.Config `yaml:"redpanda"`
+	Connect  connect.Config  `yaml:"connect"`
+	REST     rest.Config     `yaml:"server"`
+	Kafka    kafka.Config    `yaml:"kafka"`
+	Logger   logging.Config  `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs
@@ -51,7 +52,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 
 	// Package flags for sensitive input like passwords
 	c.Kafka.RegisterFlags(f)
-	c.Owl.RegisterFlags(f)
+	c.Console.RegisterFlags(f)
 	c.Connect.RegisterFlags(f)
 }
 
@@ -67,9 +68,14 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("failed to validate Kafka config: %w", err)
 	}
 
-	err = c.Owl.Validate()
+	err = c.Console.Validate()
 	if err != nil {
-		return fmt.Errorf("failed to validate Owl config: %w", err)
+		return fmt.Errorf("failed to validate Console config: %w", err)
+	}
+
+	err = c.Redpanda.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate Redpanda config: %w", err)
 	}
 
 	err = c.Connect.Validate()
@@ -83,13 +89,12 @@ func (c *Config) Validate() error {
 // SetDefaults for all root and child config structs
 func (c *Config) SetDefaults() {
 	c.ServeFrontend = true
-	c.FrontendPath = "./build"
-	c.MetricsNamespace = "kowl"
+	c.MetricsNamespace = "console"
 
 	c.Logger.SetDefaults()
 	c.REST.SetDefaults()
 	c.Kafka.SetDefaults()
-	c.Owl.SetDefaults()
+	c.Console.SetDefaults()
 	c.Connect.SetDefaults()
 }
 
@@ -161,16 +166,19 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 	// Lowercase the keys that are stored internally within Koanf and reload them. This is a workaround because
 	// internally keys are stored case sensitive. This causes the problem that environment variables can't match
 	// the exact key and therefore will not be unmarshalled as expected anymore. Example:
-	// YAML path: owl.topicDocumentation.git.basicAuth.password
-	// ENV path: OWL_TOPICDOCUMENTATION_GIT_BASICAUTH_PASSWORD => owl.topicdocumentation.git.basicauth.password
-	// Internal key: owl.topicDocumentation.git.basicAuth.password
+	// YAML path: console.topicDocumentation.git.basicAuth.password
+	// ENV path: CONSOLE_TOPICDOCUMENTATION_GIT_BASICAUTH_PASSWORD => console.topicdocumentation.git.basicauth.password
+	// Internal key: console.topicDocumentation.git.basicAuth.password
 	// See issue: https://github.com/cloudhut/kowl/issues/305
 	keys := make(map[string]interface{}, len(k.Keys()))
 	for _, key := range k.Keys() {
 		keys[strings.ToLower(key)] = k.Get(key)
 	}
 	k.Delete("")
-	k.Load(confmap.Provider(keys, "."), nil)
+	err = k.Load(confmap.Provider(keys, "."), nil)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to unmarshal confmap variables into config struct: %w", err)
+	}
 
 	unmarshalCfg.DecoderConfig.ErrorUnused = false
 	err = k.UnmarshalWithConf("", &cfg, unmarshalCfg)

@@ -12,23 +12,25 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"github.com/redpanda-data/console/backend/pkg/console"
+	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/rest"
 )
 
 // GetTopicMessagesResponse is a wrapper for an array of TopicMessage
 type GetTopicMessagesResponse struct {
-	KafkaMessages *owl.ListMessageResponse `json:"kafkaMessages"`
+	KafkaMessages *console.ListMessageResponse `json:"kafkaMessages"`
 }
 
-// ListMessageRequest represents a search message request with all search parameter. This must be public as it's
-// used in Kowl business to implement the hooks.
+// ListMessagesRequest represents a search message request with all search parameter. This must be public as it's
+// used in Console Enterprise to implement the hooks.
 type ListMessagesRequest struct {
 	TopicName             string `json:"topicName"`
 	StartOffset           int64  `json:"startOffset"`    // -1 for recent (newest - results), -2 for oldest offset, -3 for newest, -4 for timestamp
@@ -36,6 +38,10 @@ type ListMessagesRequest struct {
 	PartitionID           int32  `json:"partitionId"`    // -1 for all partition ids
 	MaxResults            int    `json:"maxResults"`
 	FilterInterpreterCode string `json:"filterInterpreterCode"` // Base64 encoded code
+
+	// Enterprise may only be set in the Enterprise mode. The JSON deserialization is deferred
+	// to the enterprise backend.
+	Enterprise json.RawMessage `json:"enterprise,omitempty"`
 }
 
 func (l *ListMessagesRequest) OK() error {
@@ -92,6 +98,10 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 		defer wsClient.sendClose()
 
+		if len(wsClient.access_token) > 0 {
+			api.Logger.Info("client has provided an access_token in messages request")
+		}
+
 		sendError := func(msg string) {
 			wsClient.writeJSON(struct {
 				Type    string `json:"type"`
@@ -103,6 +113,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		var req ListMessagesRequest
 		err := wsClient.readJSON(&req)
 		if err != nil {
+			api.Logger.Error("failed to parse list message request on Websocket", zap.Error(err))
 			sendError("Failed to parse list message request")
 			return
 		}
@@ -117,7 +128,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		// Check if logged in user is allowed to list messages for the given request
-		canViewMessages, restErr := api.Hooks.Owl.CanViewTopicMessages(r.Context(), req.TopicName)
+		canViewMessages, restErr := api.Hooks.Console.CanViewTopicMessages(r.Context(), &req)
 		if restErr != nil {
 			wsClient.writeJSON(restErr)
 			return
@@ -128,7 +139,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		if len(req.FilterInterpreterCode) > 0 {
-			canUseMessageSearchFilters, restErr := api.Hooks.Owl.CanUseMessageSearchFilters(r.Context(), req.TopicName)
+			canUseMessageSearchFilters, restErr := api.Hooks.Console.CanUseMessageSearchFilters(r.Context(), &req)
 			if restErr != nil {
 				sendError(restErr.Message)
 				return
@@ -142,7 +153,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		interpreterCode, _ := req.DecodeInterpreterCode() // Error has been checked in validation function
 
 		// Request messages from kafka and return them once we got all the messages or the context is done
-		listReq := owl.ListMessageRequest{
+		listReq := console.ListMessageRequest{
 			TopicName:             req.TopicName,
 			PartitionID:           req.PartitionID,
 			StartOffset:           req.StartOffset,
@@ -150,11 +161,11 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			MessageCount:          req.MaxResults,
 			FilterInterpreterCode: interpreterCode,
 		}
-		api.Hooks.Owl.PrintListMessagesAuditLog(r, &listReq)
+		api.Hooks.Console.PrintListMessagesAuditLog(r, &listReq)
 
 		// Use 30min duration if we want to search a whole topic or forward messages as they arrive
 		duration := 45 * time.Second
-		if listReq.FilterInterpreterCode != "" || listReq.StartOffset == owl.StartOffsetNewest {
+		if listReq.FilterInterpreterCode != "" || listReq.StartOffset == console.StartOffsetNewest {
 			duration = 30 * time.Minute
 		}
 		childCtx, cancel := context.WithTimeout(ctx, duration)
@@ -171,7 +182,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 		progress.Start()
 
-		err = api.OwlSvc.ListMessages(childCtx, listReq, progress)
+		err = api.ConsoleSvc.ListMessages(childCtx, listReq, progress)
 		if err != nil {
 			progress.OnError(err.Error())
 		}

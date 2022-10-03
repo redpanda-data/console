@@ -1,0 +1,26 @@
+.keyValuePairEditor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+
+    .deleteButton {
+        padding: 4px 12px;
+    }
+
+    .addButton {
+        align-self: flex-start;
+
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0px 16px;
+
+        svg {
+            opacity: 0.75;
+            font-size: 15px;
+            transform: translateY(1px);
+            height: 1em;
+        }
+    }
+}

@@ -1,0 +1,67 @@
+name: Package Helm chart
+
+on:
+  workflow_dispatch:
+    inputs:
+      chartVersion:
+        description: 'Chart Version (e.g. 1.0.0)'
+        required: true
+
+jobs:
+  helm-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up latest stable Helm version
+        uses: azure/setup-helm@v3
+
+      # Python is required for ct lint
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.2.1
+
+      - name: Run chart-testing (list-changed)
+        id: list-changed
+        run: |
+          changed=$(ct list-changed --target-branch ${{ github.event.repository.default_branch }})
+          if [[ -n "$changed" ]]; then
+            echo "::set-output name=changed::true"
+          fi
+
+      - name: Run chart-testing (lint)
+        run: ct lint --debug --chart-dirs helm --target-branch ${{ github.event.repository.default_branch }}
+
+  helm-release:
+    permissions:
+      contents: write
+    needs: helm-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+
+      - name: Install Cloudsmith CLI
+        run: pip install --upgrade cloudsmith-cli
+
+      - name: Set up latest stable Helm version
+        uses: azure/setup-helm@v3
+
+      - name: Package Helm Chart
+        working-directory: helm
+        run: helm package -u console --version ${{ github.event.inputs.chartVersion }}
+
+      - name: Push Helm package to Cloudsmith repo
+        working-directory: helm
+        run: cloudsmith push helm redpanda/console console-${{ github.event.inputs.chartVersion }}.tgz
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_VBOT_API_KEY }}

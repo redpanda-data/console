@@ -9,10 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { PlusIcon, TrashIcon } from "@primer/octicons-react";
-import { Button, Input } from "antd";
-import { observer } from "mobx-react";
-import React, { Component } from "react";
+import { PlusIcon, TrashIcon } from '@primer/octicons-react';
+import { Button, Input } from 'antd';
+import { observer } from 'mobx-react';
 import './headersEditor.scss';
 
 interface Header {
@@ -24,22 +23,22 @@ export interface Props {
     items: Header[];
 }
 const HeadersEditor = observer((p: Props): JSX.Element => {
-    return <div className='headersEditor'>
+    return <div className="headersEditor">
         <table>
             <thead>
                 <tr>
-                    <th className='index'>#</th>
-                    <th className='name'>Header Name</th>
-                    <th className='value'>Value</th>
-                    <th className='actions'>Action</th>
+                    <th className="index">#</th>
+                    <th className="name">Header Name</th>
+                    <th className="value">Value</th>
+                    <th className="actions">Action</th>
                 </tr>
             </thead>
             <tbody>
                 {p.items.map((h, i) => <HeaderComp key={String(i)} list={p.items} header={h} index={i} />)}
             </tbody>
         </table>
-        <Button block type='dashed' onClick={() => { p.items.push({ key: "", value: "" }) }}>
-            <span style={{ opacity: 0.66 }}><PlusIcon size='small' /></span>
+        <Button block type="dashed" onClick={() => { p.items.push({ key: '', value: '' }) }}>
+            <span style={{ opacity: 0.66 }}><PlusIcon size="small" /></span>
             Add Row
         </Button>
     </div>;
@@ -49,17 +48,15 @@ export default HeadersEditor;
 
 const HeaderComp = observer((p: { list: Header[], header: Header, index: number }) => {
     const { key, value } = p.header;
-    const { index } = p;
     return <tr>
-        <td className='index'>{p.index + 1}</td>
-        <td className='name'><Input placeholder="Key" spellCheck={false} value={key} onChange={e => p.header.key = e.target.value} /></td>
-        <td className='value'><Input placeholder="Value" spellCheck={false} value={value} onChange={e => p.header.value = e.target.value} /></td>
-        <td className='actions'>
-            <Button type='text'
+        <td className="index">{p.index + 1}</td>
+        <td className="name"><Input placeholder="Key" spellCheck={false} value={key} onChange={e => p.header.key = e.target.value} /></td>
+        <td className="value"><Input placeholder="Value" spellCheck={false} value={value} onChange={e => p.header.value = e.target.value} /></td>
+        <td className="actions">
+            <Button type="text"
                 className="iconButton"
                 onClick={(event) => {
                     event.stopPropagation();
-                    console.log('remove', { p, indexOfCur: p.list.indexOf(p.header), passedIndex: index });
                     p.list.remove(p.header);
                 }}>
                 <TrashIcon size={20} />

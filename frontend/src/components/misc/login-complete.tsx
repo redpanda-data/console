@@ -9,16 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from "react";
-import { Spin } from "antd";
-import { api } from "../../state/backendApi";
-import { ApiError, UserData } from "../../state/restInterfaces";
-import { appGlobal } from "../../state/appGlobal";
-import fetchWithTimeout from "../../utils/fetchWithTimeout";
-import { uiState } from "../../state/uiState";
-import { basePathS } from "../../utils/env";
-import { match } from "react-router-dom";
-import { queryToObj } from "../../utils/queryHelper";
+import { Component } from 'react';
+import { Spin } from 'antd';
+import { api } from '../../state/backendApi';
+import { ApiError, UserData } from '../../state/restInterfaces';
+import { appGlobal } from '../../state/appGlobal';
+import fetchWithTimeout from '../../utils/fetchWithTimeout';
+import { uiState } from '../../state/uiState';
+import { getBasePath } from '../../utils/env';
+import { match } from 'react-router-dom';
+import { queryToObj } from '../../utils/queryHelper';
 
 class LoginCompletePage extends Component<{ provider: string, match: match<any> }> {
 
@@ -35,17 +35,17 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
             if (queryObj.error) errorString += `Error: ${queryObj.error}\n`;
             if (queryObj.error_description) errorString += `Description: ${queryObj.error_description}\n`;
             uiState.loginError = errorString.trim();
-            appGlobal.history.replace(basePathS + '/login');
+            appGlobal.history.replace(getBasePath() + '/login');
             return;
         }
 
-        const url = "./auth/callbacks/" + provider + query;
+        const url = './auth/callbacks/' + provider + query;
 
         try {
             const response = await fetchWithTimeout(url, 10 * 1000, { method: 'GET', cache: 'no-cache', mode: 'no-cors' });
             const text = await response.text();
             const obj = JSON.parse(text);
-            console.log("complete login response: " + text);
+            console.log('complete login response: ' + text);
             if (response.ok) {
                 api.userData = obj as UserData;
             } else {
@@ -55,7 +55,7 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
             }
         } catch (err) {
             uiState.loginError = String(err);
-            appGlobal.history.push(basePathS + '/login');
+            appGlobal.history.push(getBasePath() + '/login');
             return;
         }
 
@@ -68,7 +68,7 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
         // } else{
         //     navigate('/');
         // }
-        window.location.assign(basePathS || '/');
+        window.location.assign(getBasePath() || '/');
     }
 
     render() {

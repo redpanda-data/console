@@ -9,21 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, Col, Descriptions, Dropdown, message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
+import React from 'react';
+import { Button, message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
 import Card from '../../misc/Card';
 import { observer } from 'mobx-react';
-import React from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
-import { DefaultSkeleton, Label, OptionGroup, QuickTable, toSafeString } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, Label, OptionGroup, toSafeString } from '../../../utils/tsxUtils';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
 import { KowlJsonView } from '../../misc/KowlJsonView';
-import { sortField } from '../../misc/common';
 import { JsonField, JsonFieldType, JsonSchema, Schema, SchemaField, SchemaType } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { title } from 'process';
 import { ClipboardCopyIcon } from '@heroicons/react/outline';
 import { NoClipboardPopover } from '../../misc/NoClipboardPopover';
 import { isClipboardAvailable } from '../../../utils/featureDetection';
@@ -35,7 +33,7 @@ export interface SchemaDetailsProps {
     };
 }
 
-function renderSchemaType(value: any, record: SchemaField, index: number) {
+function renderSchemaType(value: any, _record: SchemaField, _index: number) {
     return toSafeString(value);
 }
 
@@ -174,18 +172,18 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                             </Select>
                         </Label>
 
-                        <Label text='Details' style={{ alignSelf: 'stretch' }}>
+                        <Label text="Details" style={{ alignSelf: 'stretch' }}>
                             <div style={{ display: 'inline-flex', flexWrap: 'wrap', minHeight: '32px', alignItems: 'center', rowGap: '.3em' }}>
                                 {Object.entries({
-                                    "Type": type,
-                                    "Name": name,
-                                    "Namespace": namespace,
+                                    'Type': type,
+                                    'Name': name,
+                                    'Namespace': namespace,
                                 }).map(([k, v]) => {
                                     if (!k || v === undefined || v === null) return null;
-                                    return <Tag color='blue' key={k}><span style={{ color: '#2d5b86' }}>{k}:</span> {toSafeString(v)}</Tag>
+                                    return <Tag color="blue" key={k}><span style={{ color: '#2d5b86' }}>{k}:</span> {toSafeString(v)}</Tag>
                                 })}
                                 {!!doc && <a href={doc}>
-                                    <Tag color='blue' style={{ cursor: 'pointer' }}><span style={{ color: '#2d5b86' }}>Documentation:</span> <a style={{ textDecoration: 'underline' }} href={doc}>{doc}</a></Tag>
+                                    <Tag color="blue" style={{ cursor: 'pointer' }}><span style={{ color: '#2d5b86' }}>Documentation:</span> <a style={{ textDecoration: 'underline' }} href={doc}>{doc}</a></Tag>
                                 </a>}
                             </div>
 
@@ -193,24 +191,24 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                     </div>
 
                     <div style={{ marginBottom: '1.5em', display: 'flex', gap: '1em' }}>
-                        <OptionGroup label=''
+                        <OptionGroup label=""
                             options={{
-                                "Show Fields": 'fields',
-                                "Show JSON": 'json',
+                                'Show Fields': 'fields',
+                                'Show JSON': 'json',
                             }}
                             value={uiSettings.schemaDetails.viewMode}
                             onChange={s => uiSettings.schemaDetails.viewMode = s}
                         />
 
-                        <NoClipboardPopover placement='top'>
+                        <NoClipboardPopover placement="top">
                             <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                                <Tooltip overlay='Copy raw JSON to clipboard'>
+                                <Tooltip overlay="Copy raw JSON to clipboard">
                                     <Button
                                         disabled={!isClipboardAvailable}
                                         icon={<ClipboardCopyIcon style={{ width: '18px', color: '#555' }} />}
                                         onClick={() => {
                                             navigator.clipboard.writeText(rawSchema);
-                                            message.success("Schema copied to clipboard", 1.2);
+                                            message.success('Schema copied to clipboard', 1.2);
                                         }}
                                     />
                                 </Tooltip>

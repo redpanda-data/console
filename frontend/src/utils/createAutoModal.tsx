@@ -9,13 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import { EditorProps, Monaco } from '@monaco-editor/react';
-import { Button, Modal, ModalProps as AntdModalProps, Result, Select, Tooltip } from "antd";
-import { action, computed, observable } from "mobx";
-import { Observer, observer } from "mobx-react";
-import React, { Component, ReactElement } from "react";
+import { Button, Modal, ModalProps as AntdModalProps, Result } from 'antd';
+import { action, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import React from 'react';
 import { toJson } from './jsonUtils';
-import { Code } from './tsxUtils';
 
 export type AutoModalProps = Omit<AntdModalProps, 'visible' | 'onCancel' | 'onOk' | 'afterClose' | 'modalRender'> & {
     // skipSuccess?: boolean,
@@ -51,7 +49,6 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 
 }): AutoModal<TShowArg> {
 
-    let showArg: TShowArg | null = null;
     let userState: TModalState | undefined = undefined;
     const state = observable({
         modalProps: null as AntdModalProps | null,
@@ -62,7 +59,6 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 
     // Called by user to create a new modal instance
     const show = action((arg: TShowArg) => {
-        showArg = arg;
         userState = options.onCreate(arg);
         state.modalProps = Object.assign({}, options.modalProps, {
             onCancel: () => {
@@ -93,7 +89,6 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
                     options.onSuccess?.(userState!, state.result.returnValue);
             },
             afterClose: () => {
-                showArg = null;
                 state.modalProps = null;
                 state.result = null;
                 state.visible = false;
@@ -117,10 +112,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
         else if (err instanceof Error) {
             // Error
             title = err.name;
-            content = <div style={codeBoxStyle}>
-                <div style={{ fontSize: '1.1em', fontWeight: 600 }}>{err.name}</div>
-                {err.message}
-            </div>;
+            content = <div style={codeBoxStyle}>{err.message}</div>;
         }
         else {
             // Object
@@ -144,9 +136,9 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 
         return <>
             <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="success"
-                title={options.modalProps.successTitle ?? "Success"}
+                title={options.modalProps.successTitle ?? 'Success'}
                 subTitle={response}
-                extra={<Button type="primary" size='large' style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
+                extra={<Button type="default" size="large" style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
             />
         </>;
     };
@@ -185,5 +177,5 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
 }
 
 const styleHidden = { style: { display: 'none' } };
-const propsOnError = { cancelButtonProps: styleHidden, okText: "Back" } as AntdModalProps;
+const propsOnError = { cancelButtonProps: styleHidden, okText: 'Back' } as AntdModalProps;
 const propsOnSuccess = { footer: null, title: null } as AntdModalProps; //  cancelButtonProps: styleHidden, okButtonProps: styleHidden,

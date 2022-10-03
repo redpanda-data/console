@@ -1,102 +1,60 @@
 {
-    "root": true,
     "env": {
         "browser": true,
-        "es6": true
-    },
-    "extends": [
-        // "eslint:recommended",
-        "react-app",
-        "plugin:@typescript-eslint/recommended"
-    ],
-    "globals": {
-        "Atomics": "readonly",
-        "SharedArrayBuffer": "readonly"
-    },
-    "parserOptions": {
-        "ecmaFeatures": {
-            "jsx": true
-        },
-        "ecmaVersion": 2019,
-        "sourceType": "module"
+        "node": true,
+        "es6": true,
+        "jest": true
     },
     "plugins": [
-        "react",
-        "@typescript-eslint"
+        "@typescript-eslint",
+        "react"
     ],
-    "settings": {
-        "import/extensions": [
-            // ".js",
-            // ".jsx",
-            ".ts",
-            ".tsx"
-        ],
-        "import/resolver": {
-            "node": {
-                "extensions": [
-                    // ".js",
-                    // ".jsx",
-                    // ".json",
-                    ".ts",
-                    ".tsx"
-                ]
-            }
-        }
+    "extends": [
+        "react-app",
+        "react-app/jest",
+        "plugin:react/recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:react-hooks/recommended"
+    ],
+    "parserOptions": {
+        "ecmaVersion": 2018,
+        "sourceType": "module"
     },
     "rules": {
-        "no-useless-constructor": "off",
-        "@typescript-eslint/no-useless-constructor": "off",
-        "@typescript-eslint/no-inferrable-types": "off", // extra type defs help to alert against updated apis
-        "no-constant-condition": "off", // while(true) { if(x)  break;  } is much clearer
-        "@typescript-eslint/ban-types": "off", // will be fixed later
-        "no-this-before-super": "warn",
-        "constructor-super": "warn",
-        "valid-typeof": "warn",
-        "@typescript-eslint/no-unused-vars": "off", // keep imports
-        "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/explicit-module-boundary-types": "off",
-        "@typescript-eslint/no-non-null-assertion": "off", // override is sometimes needed
-        "react/jsx-filename-extension": [
+        "no-console": "off",
+        "strict": [
             "error",
+            "global"
+        ],
+        "curly": "off",
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "jsx-quotes": [
+            "error",
+            "prefer-double"
+        ],
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": [
+            2,
             {
-                "extensions": [
-                    ".jsx",
-                    ".tsx"
-                ]
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_"
             }
         ],
-        // "semi": [
-        //     "warn",
-        //     "always",
-        //     {
-        //         "omitLastInOneLineBlock": false
-        //     }
-        // ],
-        "semi": "off",
-        "no-extra-semi": "warn",
-        "semi-spacing": [
-            "warn",
-            {
-                "before": false,
-                "after": true
-            }
+        "@typescript-eslint/no-inferrable-types": "off",
+        "react/no-unescaped-entities": "off",
+        "react/react-in-jsx-scope": "off",
+        "react/prop-types": [2, { "ignore": ["children"]}],
+        "react/no-children-prop": "off",
+        "eol-last": [
+            "error",
+            "always"
         ],
-        "eqeqeq": "off",
-        "no-extend-native": "off", // extensions are on purpose
-        // "no-mixed-operators": "off"
-        // "no-mixed-operators": ["error", {"groups": [ ["&&", "??"], ["||", "??"] ], "allowSamePrecedence": false } ]
-        // "react/jsx-no-target-blank": [
-        //     2,
-        //     {
-        //         "enforceDynamicLinks": true,
-        //         "allowReferrer": true, // noopener is enough
-        //         "warnOnSpreadAttributes": true // spread = pretty much guaranteed that something goes wrong
-        //     }
-        // ],
-        "react/jsx-no-target-blank": "off",
-        "no-useless-concat": "off",
-        "prefer-const": "warn",
-        "@typescript-eslint/no-empty-function": "off"
-    },
-    "parser": "@typescript-eslint/parser"
+        "eqeqeq": [
+            "off"
+        ]
+    }
 }

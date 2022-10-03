@@ -12,8 +12,9 @@ package proto
 import (
 	"flag"
 	"fmt"
-	"github.com/cloudhut/kowl/backend/pkg/filesystem"
-	"github.com/cloudhut/kowl/backend/pkg/git"
+
+	"github.com/redpanda-data/console/backend/pkg/filesystem"
+	"github.com/redpanda-data/console/backend/pkg/git"
 )
 
 type Config struct {

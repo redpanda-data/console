@@ -1,0 +1,254 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "console.fullname" . }}
+  labels:
+    {{- include "console.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "console.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "console.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "console.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: configs
+          configMap:
+            name: {{ include "console.fullname" . }}
+        {{- if .Values.secret.create }}
+        - name: secrets
+          secret:
+            secretName: {{ include "console.fullname" . }}
+        {{- end }}
+        {{- range .Values.secretMounts }}
+        - name: {{ .name }}
+          secret:
+            secretName: {{ .secretName }}
+            {{- if .defaultMode }}
+            defaultMode: {{ .defaultMode }}
+            {{- end }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- tpl . $ | nindent 8 }}
+        {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          args:
+            - "--config.filepath=/etc/console/configs/config.yaml"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ include "console.imageRegistry" . }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ include "console.server.listenPort" . }}
+              protocol: TCP
+          volumeMounts:
+            - name: configs
+              mountPath: /etc/console/configs
+              readOnly: true
+            {{- if .Values.secret.create }}
+            - name: secrets
+              mountPath: /etc/console/secrets
+              readOnly: true
+            {{- end }}
+            {{- range .Values.secretMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .path }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- tpl . $ | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+            httpGet:
+              path: /admin/health
+              port: http
+          readinessProbe:
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+            httpGet:
+              path: /admin/health
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            {{- with .Values.extraEnv }}
+            {{- tpl . $ | nindent 12 }}
+            {{- end }}
+            {{- if .Values.secret.create }}
+            {{- if .Values.secret.kafka.saslPassword }}
+            - name: KAFKA_SASL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: kafka-sasl-password
+            {{- end }}
+            {{- if .Values.secret.kafka.protobufGitBasicAuthPassword }}
+            - name: KAFKA_PROTOBUF_GIT_BASICAUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: kafka-protobuf-git-basicauth-password
+            {{- end }}
+            {{- if .Values.secret.kafka.awsMskIamSecretKey }}
+            - name: KAFKA_SASL_AWSMSKIAM_SECRETKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: kafka-sasl-aws-msk-iam-secret-key
+            {{- end }}
+            {{- if .Values.secret.kafka.tlsCa }}
+            - name: KAFKA_TLS_CAFILEPATH
+              value: "/etc/console/secrets/kafka-tls-ca"
+            {{- end }}
+            {{- if .Values.secret.kafka.tlsCert }}
+            - name: KAFKA_TLS_CERTFILEPATH
+              value: "/etc/console/secrets/kafka-tls-cert"
+            {{- end }}
+            {{- if .Values.secret.kafka.tlsKey }}
+            - name: KAFKA_TLS_KEYFILEPATH
+              value: "/etc/console/secrets/kafka-tls-key"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsCa }}
+            - name: KAFKA_SCHEMAREGISTRY_TLS_CAFILEPATH
+              value: "/etc/console/secrets/kafka-schemaregistry-tls-ca"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsCert }}
+            - name: KAFKA_SCHEMAREGISTRY_TLS_CERTFILEPATH
+              value: "/etc/console/secrets/kafka-schemaregistry-tls-cert"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsKey }}
+            - name: KAFKA_SCHEMAREGISTRY_TLS_KEYFILEPATH
+              value: "/etc/console/secrets/kafka-schemaregistry-tls-key"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryPassword }}
+            - name: KAFKA_SCHEMAREGISTRY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: kafka-schema-registry-password
+            {{- end }}
+            - name: LOGIN_JWTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: login-jwt-secret
+            {{- if .Values.secret.login.google.clientSecret }}
+            - name: LOGIN_GOOGLE_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: login-google-oauth-client-secret
+            {{- end }}
+            {{- if .Values.secret.login.google.groupsServiceAccount }}
+            - name: LOGIN_GOOGLE_DIRECTORY_SERVICEACCOUNTFILEPATH
+              value: /etc/console/secrets/login-google-groups-service-account.json
+            {{- end }}
+            {{- if .Values.secret.login.github.clientSecret }}
+            - name: LOGIN_GITHUB_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: login-github-oauth-client-secret
+            {{- end }}
+            {{- if .Values.secret.login.github.personalAccessToken }}
+            - name: LOGIN_GITHUB_DIRECTORY_PERSONALACCESSTOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: login-github-personal-access-token
+            {{- end }}
+            {{- if .Values.secret.login.okta.clientSecret }}
+            - name: LOGIN_OKTA_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: login-okta-client-secret
+            {{- end }}
+            {{- if .Values.secret.login.okta.directoryApiToken }}
+            - name: LOGIN_OKTA_DIRECTORY_APITOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: login-okta-directory-api-token
+            {{- end }}
+            {{- if .Values.secret.login.oidc.clientSecret }}
+            - name: LOGIN_OIDC_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: login-oidc-client-secret
+            {{- end }}
+            {{- if .Values.secret.enterprise.license }}
+            - name: LICENSE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: enterprise-license
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.password }}
+            - name: REDPANDA_ADMINAPI_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "console.fullname" . }}
+                  key: redpanda-admin-api-password
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsCa }}
+            - name: REDPANDA_ADMINAPI_TLS_CAFILEPATH
+              value: "/etc/console/secrets/redpanda-admin-api-tls-ca"
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsKey }}
+            - name: REDPANDA_ADMINAPI_TLS_KEYFILEPATH
+              value: "/etc/console/secrets/redpanda-admin-api-tls-key"
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsCert }}
+            - name: REDPANDA_ADMINAPI_TLS_CERTFILEPATH
+              value: "/etc/console/secrets/redpanda-admin-api-tls-cert"
+            {{- end }}
+            {{- end }}
+          envFrom:
+            {{- with .Values.extraEnvFrom }}
+            {{- tpl . $ | nindent 12 }}
+            {{- end }}
+        {{- with .Values.extraContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}           
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

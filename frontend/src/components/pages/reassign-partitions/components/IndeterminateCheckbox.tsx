@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from "react";
-import { observer } from "mobx-react";
+import React, { Component } from 'react';
+import { observer } from 'mobx-react';
 
 
 @observer

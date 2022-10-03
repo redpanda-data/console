@@ -20,10 +20,10 @@ export const DebugEditor = observer((p: { observable: { jsonText: string } }) =>
     return <div style={{ marginTop: '1.5em' }}>
         <h4>Debug Editor</h4>
         <KowlEditor
-            language='json'
+            language="json"
 
             value={obs.jsonText}
-            onChange={(v, e) => {
+            onChange={(v) => {
                 if (v) {
                     if (!obs.jsonText && !v)
                         return; // dont replace undefiend with empty (which would trigger our 'autorun')

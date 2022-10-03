@@ -13,12 +13,12 @@ import React, { RefObject } from 'react';
 import { observer } from 'mobx-react';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
-import { Alert, Button, Empty, Row, Statistic, Table } from 'antd';
+import { Alert, Button, Empty, Row, Statistic } from 'antd';
 import Card from '../../misc/Card';
 import { appGlobal } from '../../../state/appGlobal';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
-import { makePaginationConfig, sortField } from '../../misc/common';
+import { sortField } from '../../misc/common';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { SchemaOverviewRequestError } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
@@ -35,8 +35,8 @@ function renderRequestErrors(requestErrors?: SchemaOverviewRequestError[]) {
 
     return (
         <Card className="SchemaList__error-card">
-            {requestErrors.map(({ errorMessage, requestDescription }) => (
-                <Alert type="error" message={errorMessage} description={requestDescription} closable className="SchemaList__alert" />
+            {requestErrors.map(({ errorMessage, requestDescription }, idx) => (
+                <Alert key={idx} type="error" message={errorMessage} description={requestDescription} closable className="SchemaList__alert" />
             ))}
         </Card>
     );
@@ -51,15 +51,15 @@ function renderNotConfigured() {
                         <h2>Not Configured</h2>
 
                         <p>
-                            Schema Registry is not configured in Kowl.
+                            Schema Registry is not configured in Redpanda Console.
                             <br />
-                            To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Kowl config.
+                            To view all registered schemas, their documentation and their versioned history simply provide the connection credentials in the Redpanda Console config.
                         </p>
                     </div>
 
                     {/* todo: fix link once we have a better guide */}
-                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/config/kowl.yaml">
-                        <Button type="primary">Kowl Config Documentation</Button>
+                    <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/console/blob/master/docs/config/console.yaml">
+                        <Button type="primary">Redpanda Console Config Documentation</Button>
                     </a>
                 </Empty>
             </Card>

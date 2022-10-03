@@ -9,25 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, ReactNode } from 'react';
-import { observer } from "mobx-react";
-import { Menu, Select, Avatar, Popconfirm, Dropdown, Button, Modal, Input, message, Checkbox, InputNumber } from 'antd';
+import { Component, ReactNode } from 'react';
+import { observer } from 'mobx-react';
+import { Menu, Button, Modal, Input, message, Checkbox, InputNumber } from 'antd';
 import { clearSettings, uiSettings } from '../../state/ui';
-import { RenderTrap, Spacer } from './common';
-import { api } from '../../state/backendApi';
-import Icon, { UserOutlined } from '@ant-design/icons';
-import { IsBusiness } from '../../utils/env';
 import { Label } from '../../utils/tsxUtils';
 import { makeObservable, observable, transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
 
-const { Option } = Select;
 type Action = () => void;
 
 const settingsTabs: { name: string, component: () => ReactNode }[] = [
-    { name: "Statistics Bar", component: () => <StatsBarTab /> },
-    { name: "Json Viewer", component: () => <JsonViewerTab /> },
-    { name: "Import/Export", component: () => <ImportExportTab /> },
+    { name: 'Statistics Bar', component: () => <StatsBarTab /> },
+    { name: 'Json Viewer', component: () => <JsonViewerTab /> },
+    { name: 'Import/Export', component: () => <ImportExportTab /> },
 
     // pagination position
     // { name: "Message Search", component: () => <MessageSearchTab /> },
@@ -47,7 +42,7 @@ export class UserPreferencesButton extends Component {
 
         return <>
             <UserPreferencesDialog visible={this.isOpen} onClose={() => this.isOpen = false} />
-            <Button shape='circle' icon={<ToolsIcon size={17} />} className='hoverButton userPreferencesButton'
+            <Button shape="circle" icon={<ToolsIcon size={17} />} className="hoverButton userPreferencesButton"
                 onClick={() => this.isOpen = true}
             />
         </>;
@@ -80,20 +75,20 @@ export class UserPreferencesDialog extends Component<{ visible: boolean, onClose
                     <div style={{ fontFamily: '"Open Sans", sans-serif', fontSize: '10.5px', color: '#828282' }}>
                         Changes are saved automatically
                     </div>
-                    <Button type='primary' onClick={onClose} >Close</Button>
+                    <Button type="primary" onClick={onClose} >Close</Button>
                 </div>}
-                className='preferencesDialog'
+                className="preferencesDialog"
                 bodyStyle={{ padding: '0', display: 'flex', flexDirection: 'column' }}
             >
                 {/* Title */}
-                <div className='h3' style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid hsl(0 0% 90% / 1)' }}>
+                <div className="h3" style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid hsl(0 0% 90% / 1)' }}>
                     User Preferences
                 </div>
 
                 {/* Body */}
                 <div style={{ display: 'flex', flexGrow: 1 }}>
                     {/* Menu */}
-                    <Menu mode='vertical' style={{ width: '160px', height: '100%' }} selectedKeys={[this.selectedTab]} onClick={p => this.selectedTab = p.key.toString()}>
+                    <Menu mode="vertical" style={{ width: '160px', height: '100%' }} selectedKeys={[this.selectedTab]} onClick={p => this.selectedTab = p.key.toString()}>
                         {settingsTabs.map(t => <Menu.Item key={t.name} >{t.name}</Menu.Item>)}
                     </Menu>
 
@@ -102,7 +97,7 @@ export class UserPreferencesDialog extends Component<{ visible: boolean, onClose
                         display: 'flex', flexGrow: 1, gap: '16px', flexDirection: 'column',
                         padding: '0 20px', paddingBottom: '40px',
                     }}>
-                        <div className='h3' style={{ marginTop: '16px', marginBottom: '8px' }}>{tab?.name}</div>
+                        <div className="h3" style={{ marginTop: '16px', marginBottom: '8px' }}>{tab?.name}</div>
                         {tab?.component()}
                     </div>
                 </div>
@@ -116,13 +111,13 @@ export class UserPreferencesDialog extends Component<{ visible: boolean, onClose
 class StatsBarTab extends Component {
     render() {
         return <div>
-            <p>Controls on what pages kowl shows the statistics bar</p>
+            <p>Controls on what pages Redpanda Console shows the statistics bar</p>
             <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
-                <Label text='Topic Details' >
-                    <Checkbox children='Enabled' checked={uiSettings.topicDetailsShowStatisticsBar} onChange={e => uiSettings.topicDetailsShowStatisticsBar = e.target.checked} />
+                <Label text="Topic Details" >
+                    <Checkbox children="Enabled" checked={uiSettings.topicDetailsShowStatisticsBar} onChange={e => uiSettings.topicDetailsShowStatisticsBar = e.target.checked} />
                 </Label>
-                <Label text='Consumer Group Details' >
-                    <Checkbox children='Enabled' checked={uiSettings.consumerGroupDetails.showStatisticsBar} onChange={e => uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked} />
+                <Label text="Consumer Group Details" >
+                    <Checkbox children="Enabled" checked={uiSettings.consumerGroupDetails.showStatisticsBar} onChange={e => uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked} />
                 </Label>
             </div>
         </div>;
@@ -138,13 +133,13 @@ class JsonViewerTab extends Component {
             <p>Settings for the JsonViewer</p>
 
             <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
-                <Label text='Font Size'>
+                <Label text="Font Size">
                     <Input value={settings.fontSize} onChange={e => settings.fontSize = e.target.value} style={{ maxWidth: '150px' }} />
                 </Label>
-                <Label text='Line Height'>
+                <Label text="Line Height">
                     <Input value={settings.lineHeight} onChange={e => settings.lineHeight = e.target.value} style={{ maxWidth: '150px' }} />
                 </Label>
-                <Label text='Maximum string length before collapsing'>
+                <Label text="Maximum string length before collapsing">
                     <InputNumber value={settings.maxStringLength} onChange={e => settings.maxStringLength = e} min={0} max={10000} style={{ maxWidth: '150px' }} />
                 </Label>
             </div>
@@ -164,14 +159,14 @@ class ImportExportTab extends Component {
 
     render() {
         return <>
-            <Label text='Import'>
+            <Label text="Import">
                 <div style={{ display: 'flex' }}>
                     <Input
                         style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }} spellCheck={false}
-                        placeholder='Paste a previously exported settings string...'
+                        placeholder="Paste a previously exported settings string..."
                         value={this.importCode}
                         onChange={e => this.importCode = e.target.value}
-                        size='small'
+                        size="small"
                     />
                     <Button onClick={() => {
                         try {
@@ -189,7 +184,7 @@ class ImportExportTab extends Component {
                                 message.warn('Some properties were skipped during import:\n' + skipped.join(', '));
                             else
                                 message.success('Settings imported successfully');
-                            this.importCode = "";
+                            this.importCode = '';
                         } catch (e) {
                             message.error('Unable to import settings. See console for more information.');
                             console.error('unable to import settings', { error: e });
@@ -199,7 +194,7 @@ class ImportExportTab extends Component {
                 </div>
             </Label>
 
-            <Label text='Export'>
+            <Label text="Export">
                 <Button onClick={() => {
                     try {
                         navigator.clipboard.writeText(JSON.stringify(uiSettings));
@@ -213,7 +208,7 @@ class ImportExportTab extends Component {
                 </Button>
             </Label>
 
-            <Label text='Reset'>
+            <Label text="Reset">
                 <>
                     <div>
                         <Input style={{ maxWidth: '360px', marginRight: '8px', fontFamily: 'monospace', fontSize: '0.85em' }} spellCheck={false}
@@ -226,7 +221,7 @@ class ImportExportTab extends Component {
                             this.resetConfirm = '';
                         }} danger disabled={this.resetConfirm != 'reset'}>Reset</Button>
                     </div>
-                    <span className='smallText'>Clear all your user settings, resetting them to the default values</span>
+                    <span className="smallText">Clear all your user settings, resetting them to the default values</span>
                 </>
             </Label>
         </>;

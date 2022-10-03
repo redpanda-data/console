@@ -19,15 +19,15 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/cloudhut/kowl/backend/pkg/proto"
+	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/twmb/franz-go/pkg/kbin"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/vmihailenco/msgpack/v5"
 
 	xj "github.com/basgys/goxml2json"
-	kmsgpack "github.com/cloudhut/kowl/backend/pkg/msgpack"
-	"github.com/cloudhut/kowl/backend/pkg/schema"
+	kmsgpack "github.com/redpanda-data/console/backend/pkg/msgpack"
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // deserializer can deserialize messages from various formats (json, xml, avro, ..) into a Go native form.
@@ -149,8 +149,10 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 
 	// 2. Test for json schema
 	if d.SchemaService != nil && len(payload) > 5 && payload[0] == byte(0) {
+		// TODO: For more confidence we could just ask the schema service for the given
+		// schema and based on the response we can check the schema type (avro, json, ..)
 		schemaID := binary.BigEndian.Uint32(payload[1:5])
-		trimmed := bytes.TrimLeft(payload[5:], " \t\r\n")
+		trimmed := payload[5:]
 		startsWithJSON := trimmed[0] == '[' || trimmed[0] == '{'
 		if startsWithJSON {
 			var obj interface{}

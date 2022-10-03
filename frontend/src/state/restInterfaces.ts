@@ -25,11 +25,11 @@ export function isApiError(obj: any): obj is ApiError {
 
 export class WrappedApiError extends Error {
     statusCode: number;
-    message: string;
     path: string;
 
     constructor(response: Response, apiError: ApiError) {
         super(apiError.message);
+        Object.setPrototypeOf(this, WrappedApiError.prototype);
 
         this.statusCode = apiError.statusCode;
 
@@ -53,7 +53,7 @@ export interface Topic {
     partitionCount: number;
     replicationFactor: number;
     cleanupPolicy: string;
-    documentation: "UNKNOWN" | "NOT_CONFIGURED" | "NOT_EXISTENT" | "AVAILABLE";
+    documentation: 'UNKNOWN' | 'NOT_CONFIGURED' | 'NOT_EXISTENT' | 'AVAILABLE';
     logDirSummary: TopicLogDirSummary;
     allowedActions: TopicAction[] | undefined;
 }
@@ -140,13 +140,13 @@ export interface GetTopicConsumersResponse {
 
 export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'consumerOffsets' | 'binary' | 'msgpack';
 export enum CompressionType {
-    Unknown = "unknown",
+    Unknown = 'unknown',
 
-    Uncompressed = "uncompressed",
-    GZip = "gzip",
-    Snappy = "snappy",
-    LZ4 = "lz4",
-    ZStd = "zstd"
+    Uncompressed = 'uncompressed',
+    GZip = 'gzip',
+    Snappy = 'snappy',
+    LZ4 = 'lz4',
+    ZStd = 'zstd'
 }
 
 export interface Payload {
@@ -442,9 +442,18 @@ export interface BrokerConfig {
 }
 
 
-
 export interface EndpointCompatibilityResponse {
+    licenses: RedpandaLicense[];
     endpointCompatibility: EndpointCompatibility;
+}
+
+export interface RedpandaLicense {
+    // Source is where the license is used (e.g. Redpanda Cluster, Console)
+    source: 'console' | 'cluster' | string;
+    // Type is the type of license (free, trial, enterprise)
+    type: 'free_trial' | 'open_source' | 'enterprise' | string;
+    // unix seconds
+    expiresAt: number;
 }
 
 export interface EndpointCompatibility {
@@ -485,7 +494,7 @@ export interface Seat {
 export interface UserData {
     user: User;
     seat: Seat;
-    canManageKowl: boolean;
+    canViewConsoleUsers: boolean;
     canListAcls: boolean;
     canListQuotas: boolean;
     canReassignPartitions: boolean;
@@ -574,95 +583,193 @@ export interface TopicPermissions {
 
 
 //
-// ACLs
+// Listing ACLs
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L47
 export enum AclResourceType {
-    AclResourceUnknown,
-    AclResourceAny,
-    AclResourceTopic,
-    AclResourceGroup,
-    AclResourceCluster,
-    AclResourceTransactionalID,
-    AclDelegationToken,
+    Unknown,
+    Any,
+    Topic,
+    Group,
+    Cluster,
+    TransactionalID,
+    DelegationToken,
 }
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L59
-export enum AclResourcePatternTypeFilter {
-    AclPatternUnknown,
-    AclPatternAny,
-    AclPatternMatch,
-    AclPatternLiteral,
-    AclPatternPrefixed
+export enum AclResourcePatternType {
+    Unknown,
+    Any,
+    Match,
+    Literal,
+    Prefixed
 }
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L81
 export enum AclOperation {
-    AclOperationUnknown,
-    AclOperationAny,
-    AclOperationAll,
-    AclOperationRead,
-    AclOperationWrite,
-    AclOperationCreate,
-    AclOperationDelete,
-    AclOperationAlter,
-    AclOperationDescribe,
-    AclOperationClusterAction,
-    AclOperationDescribeConfigs,
-    AclOperationAlterConfigs,
-    AclOperationIdempotentWrite
+    Unknown,
+    Any,
+    All,
+    Read,
+    Write,
+    Create,
+    Delete,
+    Alter,
+    Describe,
+    ClusterAction,
+    DescribeConfigs,
+    AlterConfigs,
+    IdempotentWrite
 }
 
 // https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L71
-export enum AclPermissionType {
-    AclPermissionUnknown,
-    AclPermissionAny,
-    AclPermissionDeny,
-    AclPermissionAllow
+export enum AclPermission {
+    Unknown,
+    Any,
+    Deny,
+    Allow
 }
 
 // list all:
 //   /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
-export interface AclRequest {
-    resourceType: AclResourceType;
+export interface GetAclsRequest {
+    resourceType: AclStrResourceType;
     resourceName?: string;
-    resourcePatternTypeFilter: AclResourcePatternTypeFilter;
+    resourcePatternTypeFilter: AclStrResourcePatternType;
     principal?: string;
     host?: string;
-    operation: AclOperation;
-    permissionType: AclPermissionType;
+    operation: AclStrOperation;
+    permissionType: AclStrPermission;
 }
 
 export const AclRequestDefault = {
-    resourceType: AclResourceType.AclResourceAny,
-    resourceName: "",
-    resourcePatternTypeFilter: AclResourcePatternTypeFilter.AclPatternAny,
-    principal: "",
-    host: "",
-    operation: AclOperation.AclOperationAny,
-    permissionType: AclPermissionType.AclPermissionAny,
+    resourceType: 'Any',
+    resourceName: '',
+    resourcePatternTypeFilter: 'Any',
+    principal: '',
+    host: '',
+    operation: 'Any',
+    permissionType: 'Any',
 } as const;
 
-export interface AclResponse {
+
+
+
+
+export type AclStrResourceType =
+    | 'Unknown'
+    | 'Any'
+    | 'Topic'
+    | 'Group'
+    | 'Cluster'
+    | 'TransactionalID'
+    | 'DelegationToken'
+    ;
+
+export type AclStrResourcePatternType =
+    | 'Unknown'
+    | 'Any'
+    | 'Match'
+    | 'Literal'
+    | 'Prefixed'
+    ;
+
+export type AclStrOperation =
+    | 'Unknown'
+    | 'Any'
+    | 'All'
+    | 'Read'
+    | 'Write'
+    | 'Create'
+    | 'Delete'
+    | 'Alter'
+    | 'Describe'
+    | 'ClusterAction'
+    | 'DescribeConfigs'
+    | 'AlterConfigs'
+    | 'IdempotentWrite'
+    ;
+
+export type AclStrPermission =
+    | 'Unknown'
+    | 'Any'
+    | 'Deny'
+    | 'Allow'
+    ;
+
+
+export interface GetAclOverviewResponse {
     aclResources: AclResource[];
     isAuthorizerEnabled: boolean;
 }
 
-export enum ResourcePatternType {
-    'UNKNOWN', 'MATCH', 'LITERAL', 'PREFIXED'
-}
 export interface AclResource {
-    resourceType: string;
+    resourceType: AclStrResourceType;
     resourceName: string;
-    resourcePatternType: ResourcePatternType;
+    resourcePatternType: AclStrResourcePatternType;
     acls: AclRule[];
 }
 
 export interface AclRule {
     principal: string;
     host: string;
-    operation: string;
-    permissionType: string;
+    operation: AclStrOperation;
+    permissionType: AclStrPermission;
+}
+
+
+export interface CreateACLRequest {
+    // ResourceType is the type of resource this acl entry will be on.
+    // It is invalid to use UNKNOWN or ANY.
+    resourceType: AclStrResourceType;
+
+    // ResourceName is the name of the resource this acl entry will be on.
+    // For CLUSTER, this must be "kafka-cluster".
+    resourceName: string;
+
+    // ResourcePatternType is the pattern type to use for the resource name.
+    // This cannot be UNKNOWN or MATCH (i.e. this must be LITERAL or PREFIXED).
+    // The default for pre-Kafka 2.0.0 is effectively LITERAL.
+    //
+    // This field has a default of 3 (prefixed).
+    resourcePatternType: ('Literal' | 'Prefixed') & AclStrResourcePatternType;
+
+    // Principal is the user to apply this acl for. With the Kafka simple
+    // authorizer, this must begin with "User:".
+    principal: string;
+
+    // Host is the host address to use for this acl. Each host to allow
+    // the principal access from must be specified as a new creation. KIP-252
+    // might solve this someday. The special wildcard host "*" allows all hosts.
+    host: '*' | string;
+
+    // Operation is the operation this acl is for. This must not be UNKNOWN or
+    // ANY.
+    operation: Exclude<AclStrOperation, 'Unknown' | 'Any'>;
+
+    // PermissionType is the permission of this acl. This must be either ALLOW
+    // or DENY.
+    permissionType: ('Allow' | 'Deny') & AclStrPermission;
+}
+
+
+export interface DeleteACLsRequest {
+    resourceType: AclStrResourceType;
+
+    // Unset will match any resource name
+    resourceName?: string;
+
+    resourcePatternType: AclStrResourcePatternType;
+
+    // Unset will match any principal
+    principal?: string;
+
+    // Unset will match any host
+    host?: string;
+
+    operation: AclStrOperation;
+
+    permissionType: AclStrPermission;
 }
 
 export interface QuotaResponse {
@@ -718,9 +825,9 @@ export interface SchemaDetailsResponse {
 }
 
 export enum SchemaType {
-    AVRO = "AVRO",
-    JSON = "JSON",
-    PROTOBUF = "PROTOBUF",
+    AVRO = 'AVRO',
+    JSON = 'JSON',
+    PROTOBUF = 'PROTOBUF',
 }
 
 export interface SchemaDetails {
@@ -747,13 +854,13 @@ export interface Schema {
 }
 
 export enum JsonFieldType {
-    STRING = "string",
-    NUMBER = "number",
-    INTEGER = "integer",
-    OBJECT = "object",
-    ARRAY = "array",
-    BOOLEAN = "boolean",
-    NULL = "null"
+    STRING = 'string',
+    NUMBER = 'number',
+    INTEGER = 'integer',
+    OBJECT = 'object',
+    ARRAY = 'array',
+    BOOLEAN = 'boolean',
+    NULL = 'null'
 }
 
 export interface JsonSchema {
@@ -1111,27 +1218,29 @@ export interface ConnectorProperty {
 }
 
 export enum PropertyImportance {
-    Low = "LOW",
-    Medium = "MEDIUM",
-    High = "HIGH",
+    Low = 'LOW',
+    Medium = 'MEDIUM',
+    High = 'HIGH',
 }
 
 export enum DataType {
-    Boolean = "BOOLEAN",
-    Class = "CLASS",
-    Int = "INT",
-    List = "LIST",
-    Long = "LONG",
-    Password = "PASSWORD",
-    Short = "SHORT",
-    String = "STRING",
+    Boolean = 'BOOLEAN',
+    Class = 'CLASS',
+    Int = 'INT',
+    List = 'LIST',
+    Long = 'LONG',
+    Float = 'FLOAT',
+    Double = 'DOUBLE',
+    Short = 'SHORT',
+    String = 'STRING',
+    Password = 'PASSWORD',
 }
 
 export enum PropertyWidth {
-    None = "NONE",
-    Short = "SHORT",
-    Medium = "MEDIUM",
-    Long = "LONG",
+    None = 'NONE',
+    Short = 'SHORT',
+    Medium = 'MEDIUM',
+    Long = 'LONG',
 }
 
 
@@ -1159,10 +1268,10 @@ export function compressionTypeToNum(type: CompressionType) {
 
 // For UI only
 export type EncodingType =
-    | "none"   // use null as value, aka tombstone
-    | "utf8"   // use text as it is, use utf8 to get bytes
-    | "base64" // text is base64, so server should just use base64decode to get the bytes
-    | "json"   // parse the text as json, stringify it again to reduce whitespace, use utf8 to get bytes
+    | 'none'   // use null as value, aka tombstone
+    | 'utf8'   // use text as it is, use utf8 to get bytes
+    | 'base64' // text is base64, so server should just use base64decode to get the bytes
+    | 'json'   // parse the text as json, stringify it again to reduce whitespace, use utf8 to get bytes
 
 
 export interface PublishRecordsRequest {

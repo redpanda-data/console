@@ -11,9 +11,8 @@ package api
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,8 +20,8 @@ import (
 )
 
 var (
-	// helper to avoid allocations, idea taken from chi
-	BasePathCtxKey = &struct{ name string }{"KowlURLPrefix"}
+	// BasePathCtxKey is a helper to avoid allocations, idea taken from chi
+	BasePathCtxKey = &struct{ name string }{"ConsoleURLPrefix"}
 )
 
 // Uses checks if X-Forwarded-Prefix or settings.basePath are set,
@@ -124,47 +123,21 @@ func ensurePrefixFormat(path string) string {
 	return path
 }
 
-// Creates a middlware that adds 'app-version' as a header to each response:
-// - app-build-time     (unix timestamp)
-// - app-sha            (git sha)
-// - app-branch         (git branch)
-// - app-sha-business   (git sha)
-// - app-branch-busines (git branch)
-// The frontend uses this object to detect if the backend server has been updated
-// todo: can be optimized later; only buildTime is really needed, after that the frontend could check another endpoint (something like /api/version)
-func createSetVersionInfoHeader(version versionInfo) func(next http.Handler) http.Handler {
-	buildTimestamp := version.timestamp
-	if buildTimestamp.IsZero() {
-		buildTimestamp = time.Now()
+// Creates a middleware that adds the build timestamp as a header to each response.
+// The frontend uses this object to detect if the backend server has been updated,
+// and therefore knows when the Single Page Application should be reloaded as well.
+func createSetVersionInfoHeader(builtAt string) func(next http.Handler) http.Handler {
+	buildTimestamp := time.Now()
+	// Try to parse given string from ldflags as a timestamp
+	if timestampInt, err := strconv.Atoi(builtAt); err == nil {
+		buildTimestamp = time.Unix(int64(timestampInt), 0)
 	}
 
-	versionInfo := struct {
-		BuildTime      string `json:"ts,omitempty"`
-		Branch         string `json:"branch,omitempty"`
-		Sha            string `json:"sha,omitempty"`
-		BranchBusiness string `json:"branchBusiness,omitempty"`
-		ShaBusiness    string `json:"shaBusiness,omitempty"`
-	}{
-		BuildTime:      fmt.Sprintf("%v", buildTimestamp.Unix()),
-		Branch:         version.gitRef,
-		Sha:            version.gitSha,
-		BranchBusiness: version.gitRefBusiness,
-		ShaBusiness:    version.gitShaBusiness,
-	}
-	versionInfoJSONBytes, err := json.Marshal(versionInfo)
-	versionInfoJSON := string(versionInfoJSONBytes)
-
-	if err != nil {
-		panic(fmt.Errorf("Could not construct versionInfo object from: %v", versionInfo))
-	}
-
-	m := func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("app-version", versionInfoJSON)
+			w.Header().Add("app-build-timestamp", strconv.Itoa(int(buildTimestamp.Unix())))
 			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)
 	}
-
-	return m
 }

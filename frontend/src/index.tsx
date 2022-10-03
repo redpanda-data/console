@@ -9,55 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import React from "react";
-import ReactDOM from "react-dom";
-import {
-    BrowserRouter,
-    withRouter,
-    RouteComponentProps
-} from "react-router-dom";
-import { configure, when } from "mobx";
+export { };
 
-import "antd/dist/antd.css";
-import "./index.scss";
+import('react');
+import('react-dom');
 
-import App from "./components/App";
-import { appGlobal } from "./state/appGlobal";
-import { basePathS, IsBusiness } from "./utils/env";
-import { api } from "./state/backendApi";
-
-import './assets/fonts/open-sans.css';
-import './assets/fonts/poppins.css';
-import './assets/fonts/quicksand.css';
-
-const HistorySetter = withRouter((p: RouteComponentProps) => {
-    appGlobal.history = p.history;
-    return <></>;
-});
-
-// Configure MobX
-configure({
-    enforceActions: 'never',
-    safeDescriptors: true,
-});
-
-// Get supported endpoints / kafka cluster version
-// In the business version, that endpoint (like any other api endpoint) is
-// protected, so we need to delay the call until the user is logged in.
-if (!IsBusiness) {
-    api.refreshSupportedEndpoints(true);
-} else {
-    when(() => Boolean(api.userData), () => {
-        setImmediate(() => {
-            api.refreshSupportedEndpoints(true);
-        });
-    });
-}
-
-ReactDOM.render(
-    <BrowserRouter basename={basePathS}>
-        <HistorySetter />
-        <App />
-    </BrowserRouter>,
-    document.getElementById("root")
-);
+import('./bootstrap');

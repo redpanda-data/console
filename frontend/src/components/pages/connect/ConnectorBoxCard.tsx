@@ -15,7 +15,7 @@ import React from 'react';
 import BoxCard, { BoxCardProps } from '../../misc/BoxCard';
 import { HiddenRadioOption } from '../../misc/HiddenRadioList';
 
-interface ConnectorBoxCardProps extends Omit<BoxCardProps, "children">, Omit<HiddenRadioOption<string>, "render" | "value"> {
+interface ConnectorBoxCardProps extends Omit<BoxCardProps, 'children'>, Omit<HiddenRadioOption<string>, 'render' | 'value'> {
     connectorPlugin: ConnectorPlugin;
     id?: string;
 }

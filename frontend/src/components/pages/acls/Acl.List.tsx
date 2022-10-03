@@ -9,40 +9,93 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { } from "react";
-import { observer } from "mobx-react";
-import { Empty, Table, Select, Input, Button, Alert } from "antd";
-import { ColumnProps } from "antd/lib/table";
-import { PageComponent, PageInitHelper } from "../Page";
-import { api } from "../../../state/backendApi";
-import { uiSettings } from "../../../state/ui";
-import { makePaginationConfig, sortField } from "../../misc/common";
-import { AclRequestDefault, AclResource, AclRule, Broker } from "../../../state/restInterfaces";
-import { motion } from "framer-motion";
-import { animProps } from "../../../utils/animationProps";
-import { comparer, computed, makeObservable, observable } from "mobx";
-import { containsIgnoreCase } from "../../../utils/utils";
-import { appGlobal } from "../../../state/appGlobal";
-import Card from "../../misc/Card";
-import { DefaultSkeleton, Label } from "../../../utils/tsxUtils";
-import { toJson } from "../../../utils/jsonUtils";
-import { KowlTable } from "../../misc/KowlTable";
-import { LockIcon } from "@primer/octicons-react";
+import { observer } from 'mobx-react';
+import { Empty, Input, Button, Alert, Tag, Popconfirm, message } from 'antd';
+import { PageComponent, PageInitHelper } from '../Page';
+import { api } from '../../../state/backendApi';
+import { uiSettings } from '../../../state/ui';
+import { sortField } from '../../misc/common';
+import { AclRequestDefault } from '../../../state/restInterfaces';
+import { motion } from 'framer-motion';
+import { animProps } from '../../../utils/animationProps';
+import { comparer, computed, makeObservable, observable } from 'mobx';
+import { appGlobal } from '../../../state/appGlobal';
+import Card from '../../misc/Card';
+import { Code, DefaultSkeleton, ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import { clone } from '../../../utils/jsonUtils';
+import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
+import { LockIcon } from '@primer/octicons-react';
+import { TrashIcon } from '@heroicons/react/outline';
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl } from './Models';
+import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 
-
-type AclRuleFlat = AclResource & AclRule
-
-// todo:
-// - remove debug code
-// - add filter controls
-// - make each "resource" row expandable to show all the AclRules that apply
 
 @observer
 class AclList extends PageComponent {
 
-    @observable filteredBrokers: Broker[];
-    @observable resourceTypeFilter: string = "";
-    @observable filterText = "";
+    columns: KowlColumnType<AclPrincipalGroup>[] = [
+        {
+            width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principalName'),
+            render: (_value: string, record: AclPrincipalGroup) => {
+                return <>
+                    <Tag>{record.principalType}</Tag>
+                    <span>{record.principalName}</span>
+                </>
+            },
+            defaultSortOrder: 'ascend'
+        },
+        {
+            width: 'auto', title: 'Host', dataIndex: 'host', sorter: sortField('host'),
+            render: v => (!v || v == '*') ? <Tag>Any</Tag> : v
+        },
+        {
+            width: '200px', title: 'ACL Entries',
+            render: (_, record) => {
+                return <>
+                    <span style={{ display: 'flex', alignItems: 'center' }}
+                        onClick={e => {
+                            e.stopPropagation();
+                        }}
+                    >
+                        <span>{record.sourceEntries.length}</span>
+
+                        <ZeroSizeWrapper height="21px" width="auto" wrapperStyle={{ marginLeft: 'auto' }}>
+                            <Popconfirm
+                                title={<>Delete all ACL entries for principal <Code>{record.principalName}</Code> ?</>}
+                                icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
+                                placement="left"
+                                okText="Delete"
+
+                                okButtonProps={{ danger: true }}
+                                onConfirm={async () => {
+                                    await api.deleteACLs({
+                                        resourceType: 'Any',
+                                        resourceName: undefined,
+                                        resourcePatternType: 'Any',
+                                        principal: record.principalType + ':' + record.principalName,
+                                        host: record.host,
+                                        operation: 'Any',
+                                        permissionType: 'Any',
+                                    });
+                                    await this.refreshData(true);
+                                    message.success(<>Deleted ACLs for principal <Code>{record.principalName}</Code></>);
+                                }}
+                            >
+                                <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}>
+                                    <TrashIcon />
+                                </Button>
+                            </Popconfirm>
+                        </ZeroSizeWrapper>
+                    </span>
+                </>
+            },
+            sorter: (a, b) => a.sourceEntries.length - b.sourceEntries.length,
+        },
+    ];
+
+    editorType: 'create' | 'edit' = 'create';
+    @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
     constructor(p: any) {
         super(p);
@@ -50,16 +103,17 @@ class AclList extends PageComponent {
     }
 
     initPage(p: PageInitHelper): void {
-        p.title = 'ACLs';
-        p.addBreadcrumb('ACLs', '/acls');
+        p.title = 'Kafka Access Control';
+        p.addBreadcrumb('Kafka Access Control', '/acls');
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
-    refreshData(force: boolean) {
+    async refreshData(force: boolean) {
         if (api.userData != null && !api.userData.canListAcls) return;
-        api.refreshAcls(AclRequestDefault, force);
+        await api.refreshAcls(AclRequestDefault, force);
+
     }
 
     render() {
@@ -74,20 +128,22 @@ class AclList extends PageComponent {
             ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} />
             : null;
 
-        const resources = this.filteredResources;
-
-        const columns: ColumnProps<typeof resources[0]>[] = [
-            { width: '120px', title: 'Resource', dataIndex: 'resourceType', sorter: sortField('resourceType'), defaultSortOrder: 'ascend' },
-            { width: '120px', title: 'Permission', dataIndex: 'permissionType', sorter: sortField('permissionType') },
-            { width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principal') },
-            { width: '160px', title: 'Operation', dataIndex: 'operation', sorter: sortField('operation') },
-            { width: 'auto', title: 'PatternType', dataIndex: 'resourcePatternType', sorter: sortField('resourcePatternType') },
-            { width: 'auto', title: 'Name', dataIndex: 'resourceName', sorter: sortField('resourceName') },
-            { width: '120px', title: 'Host', dataIndex: 'host', sorter: sortField('host') },
-        ];
+        const groups = this.principalGroups;
 
         return <>
             <motion.div {...animProps} style={{ margin: '0 1rem' }}>
+
+                {this.edittingPrincipalGroup != null
+                    ? <AclPrincipalGroupEditor
+                        principalGroup={this.edittingPrincipalGroup}
+                        type={this.editorType}
+                        onClose={() => {
+                            this.edittingPrincipalGroup = undefined;
+                            this.refreshData(true);
+                        }}
+                    />
+                    : undefined
+                }
 
                 <Card>
                     <this.SearchControls />
@@ -96,108 +152,159 @@ class AclList extends PageComponent {
                     {noAclAuthorizer}
 
                     <KowlTable
-                        dataSource={resources}
-                        columns={columns}
+                        dataSource={groups}
+                        columns={this.columns}
 
-                        observableSettings={uiSettings.brokerList.configTable}
+                        observableSettings={uiSettings.aclList.configTable}
 
-                        rowKey={x => x.eqKey}
-                        rowClassName={() => 'pureDisplayRow'}
+                        rowKey={x => x.principalType + ' :: ' + x.principalName + ' :: ' + x.host}
+
+                        rowClassName="hoverLink"
+                        onRow={(record) => ({
+                            onClick: () => {
+                                this.editorType = 'edit';
+                                this.edittingPrincipalGroup = clone(record);
+                            },
+                        })}
+
+                        search={{
+                            searchColumnIndex: 0,
+                            isRowMatch
+                        }}
                     />
                 </Card>
             </motion.div>
         </>
     }
 
-    @computed.struct get availableResourceTypes(): { value: string, label: string }[] {
+    @computed({ equals: comparer.structural }) get flatAcls() {
         const acls = api.ACLs;
-        if (acls?.aclResources == null) return [];
-        // issue: we can't easily filter by 'resourceType' (because it is a string, and we have to use an enum for requests...)
-        // so we have to cheat by building our own list of what types are available
-        const ar = acls.aclResources.map(res => res.resourceType).distinct().map(str => ({ value: str, label: capitalize(str.toLowerCase()) }));
-        ar.unshift({ label: 'Any', value: '' });
-        return ar;
+        if (!acls || !acls.aclResources || acls.aclResources.length == 0)
+            return [];
+
+        const flattened: AclFlat[] = [];
+        for (const res of acls.aclResources) {
+            for (const rule of res.acls) {
+
+                const flattenedEntry: AclFlat = {
+                    resourceType: res.resourceType,
+                    resourceName: res.resourceName,
+                    resourcePatternType: res.resourcePatternType,
+
+                    principal: rule.principal,
+                    host: rule.host,
+                    operation: rule.operation,
+                    permissionType: rule.permissionType
+                };
+
+                flattened.push(flattenedEntry);
+            }
+        }
+
+        return flattened;
     }
 
-    @computed({ equals: comparer.structural }) get filteredResources() {
 
-        const filtered = this.flatResourceList
-            // filter by category
-            .filter(res => (this.resourceTypeFilter == "") || (this.resourceTypeFilter == res.resourceType))
-            // filter by name
-            .filter(this.isFilterMatch)
-            .sort((a, b) => a.resourceName.localeCompare(b.resourceName))
-            .sort((a, b) => a.operation.localeCompare(b.operation))
-            .sort((a, b) => a.principal.localeCompare(b.principal));
-        return filtered;
+    @computed({ equals: comparer.structural }) get principalGroups(): AclPrincipalGroup[] {
+        const flat = this.flatAcls;
+
+        const g = flat.groupInto(f => {
+            const groupingKey = (f.principal ?? 'Any') + ' ' + (f.host ?? 'Any');
+            return groupingKey;
+        });
+
+        const result: AclPrincipalGroup[] = [];
+
+        for (const { items } of g) {
+            const { principal, host } = items[0];
+
+            let principalType: string;
+            let principalName: string;
+            if (principal.includes(':')) {
+                const split = principal.split(':', 2);
+                principalType = split[0];
+                principalName = split[1];
+            } else {
+                principalType = 'User';
+                principalName = principal;
+            }
+
+            const principalGroup: AclPrincipalGroup = {
+                principalType,
+                principalName,
+                host,
+
+                topicAcls: collectTopicAcls(items),
+                consumerGroupAcls: collectConsumerGroupAcls(items),
+                clusterAcls: collectClusterAcls(items),
+
+                sourceEntries: items,
+            };
+            result.push(principalGroup);
+        }
+
+        return result;
     }
 
-    @computed get flatResourceList() {
-        const acls = api.ACLs;
-        if (acls?.aclResources == null) return [];
-        const flatResources = acls.aclResources
-            .map(res => res.acls.map(rule => ({ ...res, ...rule })))
-            .flat()
-            .map(x => ({ ...x, eqKey: toJson(x) }));
-        return flatResources;
-    }
-
-    isFilterMatch = (item: AclRuleFlat) => {
-        const text = this.filterText;
-        if (containsIgnoreCase(item.host, text)) return true;
-        if (containsIgnoreCase(item.operation, text)) return true;
-        if (containsIgnoreCase(item.permissionType, text)) return true;
-        if (containsIgnoreCase(item.principal, text)) return true;
-        if (containsIgnoreCase(item.resourceName, text)) return true;
-        if (containsIgnoreCase(String(item.resourcePatternType), text)) return true;
-        if (containsIgnoreCase(item.resourceType, text)) return true;
-
-        return false;
-    };
 
     SearchControls = observer(() => {
 
         return (
-            <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <Label text='Resource Type'>
-                    <Select
-                        options={this.availableResourceTypes}
-                        value={this.resourceTypeFilter}
-                        onChange={(val) => {
-                            this.resourceTypeFilter = val;
-                        }}
-                        style={{ width: '11em' }}
-                        size='middle' />
-                </Label>
-
-                <Input allowClear={true} placeholder='Quick Search' style={{ width: '250px', marginLeft: 'auto' }}
-                    onChange={x => this.filterText = x.target.value}
-                    value={this.filterText}
+            <div style={{ margin: '0 1px', marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <Input allowClear={true} placeholder="Quick Search" style={{ width: '250px' }}
+                    onChange={x => uiSettings.aclList.configTable.quickSearch = x.target.value}
+                    value={uiSettings.aclList.configTable.quickSearch}
                 />
+
+                <span style={{ marginLeft: 'auto' }} >{' '}</span>
+
+                {/* <Button>Create Service Account</Button> */}
+
+                <Button onClick={() => {
+                    this.editorType = 'create';
+                    this.edittingPrincipalGroup = {
+                        host: '',
+                        principalType: 'User',
+                        principalName: '',
+                        topicAcls: [
+                            createEmptyTopicAcl()
+                        ],
+                        consumerGroupAcls: [
+                            createEmptyConsumerGroupAcl()
+                        ],
+                        clusterAcls: createEmptyClusterAcl(),
+                        sourceEntries: []
+                    };
+                }}>Create ACL</Button>
+
             </div>
         );
     })
 }
 
-type FlatResource = AclList["flatResourceList"][0];
 
 export default AclList;
 
-function capitalize(str: string): string {
-    if (!str) return str;
-    return str.charAt(0).toUpperCase() + str.slice(1);
+function isRowMatch(entry: AclPrincipalGroup, regex: RegExp): boolean {
+    if (regex.test(entry.host)) return true;
+    if (regex.test(entry.principalName)) return true;
+
+    for (const e of entry.sourceEntries) {
+        if (regex.test(e.operation)) return true;
+        if (regex.test(e.resourceType)) return true;
+        if (regex.test(e.resourceName)) return true;
+    }
+
+    return false;
 }
 
-
-//console.log('enum entries are:', resourceTypes.map(e => ({ name: e.name.replace(/([A-Z]+)/g, " $1"), value: e.value })));
-// console.log('enum entries are:', OptionValues);
 
 const PermissionDenied = <>
     <motion.div {...animProps} key={'aclNoPerms'} style={{ margin: '0 1rem' }}>
         <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
             <Empty description={null}>
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <h2><span><LockIcon verticalAlign='middle' size={20} /></span> Permission Denied</h2>
+                    <h2><span><LockIcon verticalAlign="middle" size={20} /></span> Permission Denied</h2>
                     <p>
                         You are not allowed to view this page.
                         <br />
@@ -205,10 +312,11 @@ const PermissionDenied = <>
                     </p>
                 </div>
 
-                <a target="_blank" rel="noopener noreferrer" href="https://github.com/cloudhut/kowl/blob/master/docs/authorization/roles.md">
-                    <Button type="primary">Kowl documentation for roles and permissions</Button>
+                <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/console/blob/master/docs/authorization/roles.md">
+                    <Button type="primary">Redpanda Console documentation for roles and permissions</Button>
                 </a>
             </Empty>
         </Card>
     </motion.div>
 </>
+

@@ -10,13 +10,11 @@
  */
 
 import { Checkbox, Input } from 'antd';
-import { AnimatePresence } from 'framer-motion';
-import { autorun, IReactionDisposer, makeObservable, transaction, untracked } from 'mobx';
+import { autorun, IReactionDisposer, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
-import { animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
+import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
-import { clone } from '../../utils/jsonUtils';
 
 // todo: extract out where the filterText is retreived from / saved.
 //       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
@@ -52,7 +50,7 @@ class SearchBar<TItem> extends Component<{
             const data = this.filteredSource.data;
 
             transaction(() => {
-                setImmediate(() => {
+                setTimeout(() => {
                     this.props.onFilteredDataChanged(data);
                 });
             });
@@ -76,7 +74,7 @@ class SearchBar<TItem> extends Component<{
                 onChange={v => this.filteredSource.filterText = String(v)}
                 dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
             > */}
-            <Input allowClear={true} placeholder='Quick Search' size='large' style={{ width: '350px' }}
+            <Input allowClear={true} placeholder="Quick Search" size="large" style={{ width: '350px' }}
                 onChange={this.onChange}
                 value={this.props.filterText}
             // addonAfter={

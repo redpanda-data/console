@@ -9,14 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, useState } from "react";
-import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } from "react-beautiful-dnd";
-import arrayMove from "array-move";
-import { action, autorun, computed, IReactionDisposer, makeObservable, observable } from "mobx";
-import { observer } from "mobx-react";
-
-import { Button, Input, Tooltip, Typography } from "antd";
-import { ThreeBarsIcon, XIcon } from "@primer/octicons-react";
+import React, { Component, useState } from 'react';
+import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } from 'react-beautiful-dnd';
+import { arrayMoveMutable } from 'array-move';
+import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
+import { observer } from 'mobx-react';
+import { Button, Input, Tooltip } from 'antd';
+import { ThreeBarsIcon, XIcon } from '@primer/octicons-react';
 
 
 @observer
@@ -62,7 +61,7 @@ export class CommaSeparatedStringList extends Component<{
     }
 
     render() {
-        return <div className='stringList' style={{ maxWidth: '500px' }}>
+        return <div className="stringList" style={{ maxWidth: '500px' }}>
             <this.AddButton />
             <List
                 observableAr={this.data}
@@ -75,14 +74,14 @@ export class CommaSeparatedStringList extends Component<{
         const { item, index } = props;
 
         const [hasFocus, setHasFocus] = useState(false);
-        const [valuePending, setValuePending] = useState("");
+        const [valuePending, setValuePending] = useState('');
 
         return < >
             {/* Input */}
-            <Tooltip overlay="[Enter] confirm, [ESC] cancel" visible={hasFocus} placement='top' autoAdjustOverflow={false} overlayClassName='inputHintTooltip' align={{ offset: [0, 4] }} >
+            <Tooltip overlay="[Enter] confirm, [ESC] cancel" visible={hasFocus} placement="top" autoAdjustOverflow={false} overlayClassName="inputHintTooltip" align={{ offset: [0, 4] }} >
 
                 <Input
-                    className='ghostInput'
+                    className="ghostInput"
                     size="small"
                     style={{ flexGrow: 1, flexBasis: '400px' }}
 
@@ -132,8 +131,8 @@ export class CommaSeparatedStringList extends Component<{
         </>
     })
 
-    AddButton = observer((props: {}) => {
-        return <div className='createEntryRow'>
+    AddButton = observer(() => {
+        return <div className="createEntryRow">
             <div className={'inputWrapper' + (this.newEntryError ? ' hasError' : '')} style={{ height: '100%' }}>
                 <Input
                     style={{ flexGrow: 1, height: '100%', flexBasis: '260px' }}
@@ -148,23 +147,23 @@ export class CommaSeparatedStringList extends Component<{
                             return;
 
                         if (this.data.any(x => x.id == this.newEntry))
-                            this.newEntryError = "Entry already exists";
+                            this.newEntryError = 'Entry already exists';
 
                         if (/^[a-z][a-z_\d]*$/i.test(this.newEntry) == false)
-                            this.newEntryError = "Name is not valid (only letters, digits, underscore)";
+                            this.newEntryError = 'Name is not valid (only letters, digits, underscore)';
                     }}
 
-                    placeholder={this.props.locale?.addInputPlaceholder ?? "Enter a name..."}
+                    placeholder={this.props.locale?.addInputPlaceholder ?? 'Enter a name...'}
 
                     spellCheck={false}
                 />
 
-                <div className='validationFeedback'>{this.newEntryError ?? null}</div>
+                <div className="validationFeedback">{this.newEntryError ?? null}</div>
             </div>
 
             <Button
                 style={{ padding: '0px 16px', height: '100%', minWidth: '120px' }}
-                type='primary'
+                type="primary"
                 disabled={this.newEntryError != null || !this.newEntry || this.newEntry.trim().length == 0}
                 onClick={() => {
                     this.data.push({ id: this.newEntry! });
@@ -185,26 +184,26 @@ export class List<T extends { id: string }> extends Component<{
     render() {
         const { observableAr: list, renderItem } = this.props;
 
-        const onDragEnd = (result: DropResult, provided: ResponderProvided) => {
+        const onDragEnd = (result: DropResult, _provided: ResponderProvided) => {
             if (!result.destination)
                 return;
-            arrayMove.mutate(this.props.observableAr, result.source.index, result.destination.index);
+            arrayMoveMutable(this.props.observableAr, result.source.index, result.destination.index);
         }
 
         return <div className="reorderableList">
             <DragDropContext onDragEnd={onDragEnd} >
                 <Droppable droppableId="droppable" ignoreContainerClipping={false}>
-                    {(droppableProvided, droppableSnapshot) => (
+                    {(droppableProvided, _droppableSnapshot) => (
                         <div
                             ref={droppableProvided.innerRef}
                             style={{ display: 'flex', flexDirection: 'column' }}
                         >
                             {list.map((tag, index) => (
                                 <Draggable key={String(index)} draggableId={String(index)} index={index} >
-                                    {(draggableProvided, draggableSnapshot) => (
+                                    {(draggableProvided, _draggableSnapshot) => (
                                         <div ref={draggableProvided.innerRef} {...draggableProvided.draggableProps}>
-                                            <div className='draggableItem'>
-                                                <div className='dragHandle' {...draggableProvided.dragHandleProps}><ThreeBarsIcon /></div>
+                                            <div className="draggableItem">
+                                                <div className="dragHandle" {...draggableProvided.dragHandleProps}><ThreeBarsIcon /></div>
                                                 {renderItem(tag, index)}
                                             </div>
                                         </div>

@@ -9,36 +9,33 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { ReactNode, Component } from "react";
-import { observer } from "mobx-react";
-import { Table, Statistic, Row, Skeleton, Checkbox, Steps, Button, message, Select, notification, ConfigProvider, Modal } from "antd";
-import { PageComponent, PageInitHelper } from "../Page";
-import { api, partialTopicConfigs } from "../../../state/backendApi";
-import { uiSettings } from "../../../state/ui";
-import { makePaginationConfig, range, sortField } from "../../misc/common";
-import { Broker, Partition, PartitionReassignmentRequest, TopicAssignment, Topic, ConfigResourceType, AlterConfigOperation, PatchConfigsRequest, ResourceConfig, AlterPartitionReassignmentsPartitionResponse } from "../../../state/restInterfaces";
-import { motion } from "framer-motion";
-import { animProps, } from "../../../utils/animationProps";
-import { observable, computed, autorun, IReactionDisposer, transaction, untracked, makeObservable } from "mobx";
-import { clone, toJson } from "../../../utils/jsonUtils";
-import { appGlobal } from "../../../state/appGlobal";
-import Card from "../../misc/Card";
-import Icon, { CheckCircleOutlined, CheckSquareOutlined, ContainerOutlined, CrownOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined, YahooFilled } from '@ant-design/icons';
-import { DefaultSkeleton, ObjToKv, OptionGroup, QuickTable } from "../../../utils/tsxUtils";
-import { stringify } from "query-string";
-import { StepSelectBrokers } from "./Step2.Brokers";
-import { BrokerList } from "./components/BrokerList";
-import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
-import { SelectPartitionTable, StepSelectPartitions } from "./Step1.Partitions";
-import { PartitionWithMoves, StepReview, TopicWithMoves } from "./Step3.Review";
-import { ApiData, computeReassignments, TopicPartitions } from "./logic/reassignLogic";
-import { computeMovedReplicas, partitionSelectionToTopicPartitions, removeRedundantReassignments, topicAssignmentsToReassignmentRequest } from "./logic/utils";
-import { IsDev } from "../../../utils/env";
-import { Message, scrollTo, scrollToTop } from "../../../utils/utils";
-import { ActiveReassignments } from "./components/ActiveReassignments";
-import { ReassignmentTracker } from "./logic/reassignmentTracker";
-import { showErrorModal } from "../../misc/ErrorModal";
-import { ChevronLeftIcon, ChevronRightIcon } from "@primer/octicons-react";
+import React, { } from 'react';
+import { observer } from 'mobx-react';
+import { Statistic, Row, Steps, Button, message, notification, Modal } from 'antd';
+import { PageComponent, PageInitHelper } from '../Page';
+import { api, partialTopicConfigs } from '../../../state/backendApi';
+import { uiSettings } from '../../../state/ui';
+import { makePaginationConfig } from '../../misc/common';
+import { Broker, Partition, PartitionReassignmentRequest, Topic, AlterPartitionReassignmentsPartitionResponse } from '../../../state/restInterfaces';
+import { motion } from 'framer-motion';
+import { animProps, } from '../../../utils/animationProps';
+import { observable, computed, autorun, IReactionDisposer, transaction, makeObservable } from 'mobx';
+import { clone, toJson } from '../../../utils/jsonUtils';
+import { appGlobal } from '../../../state/appGlobal';
+import Card from '../../misc/Card';
+import { CheckCircleOutlined, ExclamationCircleOutlined, HddOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { StepSelectBrokers } from './Step2.Brokers';
+import { StepSelectPartitions } from './Step1.Partitions';
+import { StepReview, TopicWithMoves } from './Step3.Review';
+import { ApiData, computeReassignments, TopicPartitions } from './logic/reassignLogic';
+import { computeMovedReplicas, partitionSelectionToTopicPartitions, topicAssignmentsToReassignmentRequest } from './logic/utils';
+import { IsDev } from '../../../utils/env';
+import { Message, scrollTo, scrollToTop } from '../../../utils/utils';
+import { ActiveReassignments } from './components/ActiveReassignments';
+import { ReassignmentTracker } from './logic/reassignmentTracker';
+import { showErrorModal } from '../../misc/ErrorModal';
+import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 
 
 const { Step } = Steps;
@@ -186,10 +183,10 @@ class ReassignPartitions extends PageComponent {
                 {/* Statistics */}
                 <Card>
                     <Row>
-                        <Statistic title='Broker Count' value={api.clusterInfo?.brokers.length} />
-                        <Statistic title='Leader Partitions' value={partitionCountLeaders ?? '...'} />
-                        <Statistic title='Replica Partitions' value={partitionCountOnlyReplicated ?? '...'} />
-                        <Statistic title='Total Partitions' value={(partitionCountLeaders != null && partitionCountOnlyReplicated != null)
+                        <Statistic title="Broker Count" value={api.clusterInfo?.brokers.length} />
+                        <Statistic title="Leader Partitions" value={partitionCountLeaders ?? '...'} />
+                        <Statistic title="Replica Partitions" value={partitionCountOnlyReplicated ?? '...'} />
+                        <Statistic title="Total Partitions" value={(partitionCountLeaders != null && partitionCountOnlyReplicated != null)
                             ? (partitionCountLeaders + partitionCountOnlyReplicated)
                             : '...'} />
                     </Row>
@@ -197,7 +194,7 @@ class ReassignPartitions extends PageComponent {
 
 
                 {/* Active Reassignments */}
-                <Card id='activeReassignments'>
+                <Card id="activeReassignments">
                     <ActiveReassignments
                         throttledTopics={this.topicsWithThrottle}
                         onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
@@ -205,7 +202,7 @@ class ReassignPartitions extends PageComponent {
                 </Card>
 
                 {/* Content */}
-                <Card id='wizard'>
+                <Card id="wizard">
                     {/* Steps */}
                     <div style={{ margin: '.75em 1em 1em 1em' }}>
                         <Steps current={this.currentStep}>
@@ -214,7 +211,7 @@ class ReassignPartitions extends PageComponent {
                     </div>
 
                     {/* Content */}
-                    <motion.div {...animProps} key={"step" + this.currentStep}> {(() => {
+                    <motion.div {...animProps} key={'step' + this.currentStep}> {(() => {
                         switch (this.currentStep) {
                             case 0: return <StepSelectPartitions
                                 partitionSelection={this.partitionSelection}
@@ -252,7 +249,7 @@ class ReassignPartitions extends PageComponent {
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2em' }}>
                             <div>{nextButtonHelp}</div>
                             <Button
-                                type='primary'
+                                type="primary"
                                 style={{ minWidth: '14em', height: 'auto', marginLeft: 'auto' }}
                                 disabled={!nextButtonEnabled || this.requestInProgress}
                                 onClick={this.onNextPage}
@@ -287,7 +284,7 @@ class ReassignPartitions extends PageComponent {
             if (scrollTop)
                 setTimeout(() => {
                     this.currentStep = 0;
-                    setImmediate(() => scrollToTop());
+                    setTimeout(() => scrollToTop());
                 }, 300);
         });
     }
@@ -348,7 +345,7 @@ class ReassignPartitions extends PageComponent {
                 return;
             }
 
-            setImmediate(async () => {
+            setTimeout(async () => {
                 try {
                     this.requestInProgress = true;
                     // todo: Don't use returns and execeptions for control flow
@@ -360,7 +357,7 @@ class ReassignPartitions extends PageComponent {
                 }
                 catch (err) {
                     message.error('Error starting partition reassignment.\nSee console for more information.', 3);
-                    console.error("error starting partition reassignment", { error: err });
+                    console.error('error starting partition reassignment', { error: err });
                 }
                 finally {
                     this.requestInProgress = false;
@@ -432,7 +429,7 @@ class ReassignPartitions extends PageComponent {
                 const brokersNew = p.replicas;
 
                 if (brokersOld == null || brokersNew == null) {
-                    console.log("traffic limit: skipping partition because old or new brokers can't be found", { topicName, partitionId, brokersOld, brokersNew, });
+                    console.log('traffic limit: skipping partition because old or new brokers can\'t be found', { topicName, partitionId, brokersOld, brokersNew, });
                     continue;
                 }
 
@@ -453,25 +450,25 @@ class ReassignPartitions extends PageComponent {
             })
         }
 
-        const msg = new Message("Setting bandwidth throttle... 1/2");
+        const msg = new Message('Setting bandwidth throttle... 1/2');
         try {
             let response = await api.setReplicationThrottleRate(api.clusterInfo!.brokers.map(b => b.brokerId), maxBytesPerSecond);
             let errors = response.patchedConfigs.filter(c => c.error);
             if (errors.length > 0)
                 throw new Error(toJson(errors));
 
-            msg.setLoading("Setting bandwidth throttle... 2/2");
+            msg.setLoading('Setting bandwidth throttle... 2/2');
 
             response = await api.setThrottledReplicas(topicReplicas);
             errors = response.patchedConfigs.filter(c => c.error);
             if (errors.length > 0)
                 throw new Error(toJson(errors));
 
-            msg.setSuccess("Setting bandwidth throttle... done");
+            msg.setSuccess('Setting bandwidth throttle... done');
             return true;
         } catch (err) {
             msg.hide();
-            console.error("error setting throttle", err);
+            console.error('error setting throttle', err);
             return false;
         }
     }
@@ -482,7 +479,7 @@ class ReassignPartitions extends PageComponent {
     }[]) {
 
         showErrorModal(
-            "Reassign Partitions",
+            'Reassign Partitions',
             `Reassignment request returned errors for ${errors.sum(e => e.partitions.length)} / ${startedCount} partitions.`,
             <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {errors.map((r, i) => <div key={i}>
@@ -519,8 +516,8 @@ class ReassignPartitions extends PageComponent {
             if (this.refreshTopicConfigsRequestsInProgress > 0) return;
             this.refreshTopicConfigsRequestsInProgress++;
             const topicConfigs = await partialTopicConfigs([
-                "follower.replication.throttled.replicas",
-                "leader.replication.throttled.replicas"
+                'follower.replication.throttled.replicas',
+                'leader.replication.throttled.replicas'
             ]);
 
             // Only get the names of the topics that have throttles applied
@@ -533,12 +530,12 @@ class ReassignPartitions extends PageComponent {
             newThrottledTopics.removeAll(t => inProgress.includes(t));
 
             // Update observable
-            const changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
+            const _changes = this.topicsWithThrottle.updateWith(newThrottledTopics);
             // if (changes.added || changes.removed)
             //     if (IsDev) console.log('refreshTopicConfigs updated', changes);
 
         } catch (err) {
-            console.error("error while refreshing topic configs, stopping auto refresh", { error: err });
+            console.error('error while refreshing topic configs, stopping auto refresh', { error: err });
             this.stopRefreshingTopicConfigs();
         } finally {
             this.refreshTopicConfigsRequestsInProgress--;
@@ -560,9 +557,9 @@ class ReassignPartitions extends PageComponent {
                         There are {this.topicsWithThrottle.length} topics with throttling applied to their replicas.<br />
                         Kowl implements throttling of reassignments by
                         setting{' '}
-                        <span className='tooltip' style={{ textDecoration: 'dotted underline' }}>
+                        <span className="tooltip" style={{ textDecoration: 'dotted underline' }}>
                             two configuration values
-                            <span className='tooltiptext' style={{ textAlign: 'left', width: '500px' }}>
+                            <span className="tooltiptext" style={{ textAlign: 'left', width: '500px' }}>
                                 Kowl sets those two configuration entries when throttling a topic reassignment:
                                 <div style={{ marginTop: '.5em' }}>
                                     <code>leader.replication.throttled.replicas</code><br />
@@ -594,11 +591,11 @@ class ReassignPartitions extends PageComponent {
                 const errors = result.patchedConfigs.filter(r => r.error);
 
                 if (errors.length == 0) {
-                    msg.setSuccess(baseText + " - Done");
+                    msg.setSuccess(baseText + ' - Done');
                 }
                 else {
-                    msg.setError(baseText + ": " + errors.length + " errors");
-                    console.error("errors in removeThrottleFromTopics", errors);
+                    msg.setError(baseText + ': ' + errors.length + ' errors');
+                    console.error('errors in removeThrottleFromTopics', errors);
                 }
 
                 refreshTopicConfigs();
@@ -709,10 +706,10 @@ const steps: WizardStep[] = [
 
                 if (selectedRacks.length == 1 && allRacks.length >= 2) {
                     let selectedRack = selectedRacks[0];
-                    if (!selectedRack || selectedRack.length == 0) selectedRack = "(empty)";
-                    const msgStart = selectedBrokers.length == 1
+                    if (!selectedRack || selectedRack.length == 0) selectedRack = '(empty)';
+                    const _msgStart = selectedBrokers.length == 1
                         ? `Your selected Brokers, Your cluster contains ${allBrokers.length} brokers across `
-                        : "";
+                        : '';
 
 
                 }
@@ -725,7 +722,7 @@ const steps: WizardStep[] = [
         backButton: 'Select Target Brokers',
         nextButton: {
             text: 'Start Reassignment',
-            isEnabled: c => true,
+            isEnabled: () => true,
         }
     },
 ];

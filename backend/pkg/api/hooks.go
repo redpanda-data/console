@@ -11,21 +11,21 @@ package api
 
 import (
 	"context"
+	"math"
 	"net/http"
 
-	"github.com/cloudhut/kowl/backend/pkg/owl"
-
 	"github.com/cloudhut/common/rest"
-
 	"github.com/go-chi/chi"
+	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
-// Hooks are a way to extend the Kafka Owl functionality from the outside. By default all hooks have no
-// additional functionality. In order to run your own Hooks you must construct an Hooks instance and
+// Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
+// additional functionality. In order to run your own Hooks you must construct a Hooks instance and
 // run attach them to your own instance of Api.
 type Hooks struct {
-	Route RouteHooks
-	Owl   OwlHooks
+	Route   RouteHooks
+	Console ConsoleHooks
 }
 
 // RouteHooks allow you to modify the Router
@@ -41,8 +41,9 @@ type RouteHooks interface {
 	ConfigRouter(router chi.Router)
 }
 
-// OwlHooks include all functions which allow you to modify
-type OwlHooks interface {
+// ConsoleHooks include all functions which allow you to intercept the requests at various
+// endpoints where RBAC rules may be applied.
+type ConsoleHooks interface {
 	// Topic Hooks
 	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
@@ -51,14 +52,16 @@ type OwlHooks interface {
 	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicPartitions(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanViewTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanViewTopicMessages(ctx context.Context, topicName string) (bool, *rest.Error)
-	CanUseMessageSearchFilters(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanViewTopicMessages(ctx context.Context, req *ListMessagesRequest) (bool, *rest.Error)
+	CanUseMessageSearchFilters(ctx context.Context, req *ListMessagesRequest) (bool, *rest.Error)
 	CanViewTopicConsumers(ctx context.Context, topicName string) (bool, *rest.Error)
 	AllowedTopicActions(ctx context.Context, topicName string) ([]string, *rest.Error)
-	PrintListMessagesAuditLog(r *http.Request, req *owl.ListMessageRequest)
+	PrintListMessagesAuditLog(r *http.Request, req *console.ListMessageRequest)
 
 	// ACL Hooks
 	CanListACLs(ctx context.Context) (bool, *rest.Error)
+	CanCreateACL(ctx context.Context) (bool, *rest.Error)
+	CanDeleteACL(ctx context.Context) (bool, *rest.Error)
 
 	// Quotas Hookas
 	CanListQuotas(ctx context.Context) (bool, *rest.Error)
@@ -78,6 +81,23 @@ type OwlHooks interface {
 	CanEditConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
 	CanDeleteConnectCluster(ctx context.Context, clusterName string) (bool, *rest.Error)
 	AllowedConnectClusterActions(ctx context.Context, clusterName string) ([]string, *rest.Error)
+
+	// Kafka User Hooks
+	CanListKafkaUsers(ctx context.Context) (bool, *rest.Error)
+	CanCreateKafkaUsers(ctx context.Context) (bool, *rest.Error)
+	CanDeleteKafkaUsers(ctx context.Context) (bool, *rest.Error)
+
+	// Console Hooks
+	// ConsoleLicenseInformation returns the license information for Console.
+	// Based on the returned license the frontend will display the
+	// appropriate UI and also warnings if the license is (about to be) expired.
+	ConsoleLicenseInformation(ctx context.Context) redpanda.License
+
+	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
+	// Only toggleable features that require conditional rendering in the Frontend will be returned.
+	// The information will be baked into the index.html so that the Frontend knows about it
+	// at startup, which might be important to not block rendering (e.g. SSO enabled -> render login).
+	EnabledFeatures() []string
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -86,8 +106,8 @@ type defaultHooks struct{}
 func newDefaultHooks() *Hooks {
 	d := &defaultHooks{}
 	return &Hooks{
-		Route: d,
-		Owl:   d,
+		Route:   d,
+		Console: d,
 	}
 }
 
@@ -96,7 +116,7 @@ func (*defaultHooks) ConfigAPIRouter(_ chi.Router) {}
 func (*defaultHooks) ConfigWsRouter(_ chi.Router)  {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)    {}
 
-// Owl Hooks
+// Console Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
@@ -118,10 +138,10 @@ func (*defaultHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, 
 func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
-func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ string) (bool, *rest.Error) {
+func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ *ListMessagesRequest) (bool, *rest.Error) {
 	return true, nil
 }
-func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ string) (bool, *rest.Error) {
+func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ *ListMessagesRequest) (bool, *rest.Error) {
 	return true, nil
 }
 func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
@@ -131,8 +151,14 @@ func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string,
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
 }
-func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *owl.ListMessageRequest) {}
+func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *console.ListMessageRequest) {}
 func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanCreateACL(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanDeleteACL(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
 func (*defaultHooks) CanListQuotas(_ context.Context) (bool, *rest.Error) {
@@ -169,4 +195,19 @@ func (*defaultHooks) CanDeleteConnectCluster(_ context.Context, _ string) (bool,
 func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) ([]string, *rest.Error) {
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
+}
+func (*defaultHooks) CanListKafkaUsers(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanCreateKafkaUsers(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
+	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
+}
+func (*defaultHooks) EnabledFeatures() []string {
+	return []string{}
 }

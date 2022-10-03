@@ -10,18 +10,19 @@
 package api
 
 import (
-	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"net/http"
+
+	"github.com/cloudhut/common/rest"
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 func (api *API) handleDescribeCluster() http.HandlerFunc {
 	type response struct {
-		ClusterInfo *owl.ClusterInfo `json:"clusterInfo"`
+		ClusterInfo *console.ClusterInfo `json:"clusterInfo"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		clusterInfo, err := api.OwlSvc.GetClusterInfo(r.Context())
+		clusterInfo, err := api.ConsoleSvc.GetClusterInfo(r.Context())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

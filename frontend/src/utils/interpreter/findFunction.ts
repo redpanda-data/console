@@ -15,7 +15,7 @@
 //   tsc --project ./tsconfig.json
 //
 
-
+import { IsDev } from '../env';
 declare let value: any; // set/injected by backend
 
 // declare function find(propName: string, ignoreCase?:boolean): any;
@@ -101,8 +101,7 @@ function findByCallback(obj: any, isMatch: (object: any, key: string | number) =
 
 function findByPattern(obj: any, patternObj: object, caseSensitive: boolean, returnFirstResult: boolean): any[] {
 
-    // const log = console.log;
-    const log = (...args: any) => { /* do nothing */ };
+    const log = IsDev ?  console.debug : (..._args) => { /* do nothing */ };
 
     const isPatternMatch = (obj: object, pattern: object): boolean => {
         if (typeof obj !== typeof pattern) { log(`  type mismatch obj<>pattern: '${typeof obj}' != '${typeof pattern}'`); return false; }

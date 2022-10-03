@@ -11,6 +11,29 @@
 
 @use 'sass:math';
 
+/*
+    In index.tsx we use ConfigProvider to define theme color(s),
+    from which a whole pallete of css-variables become defined.
+
+        --ant-primary-color
+        --ant-primary-color-disabled
+        --ant-primary-color-hover
+        ... (20 more)
+
+    Full list of variables:
+        node_modules/antd/dist/antd.variable.css
+
+    In our own components we want to use the same colors that ant-design uses.
+    So we define our own css variables and copy the antd values.
+*/
+$color-brand-secondary: var(--ant-primary-color);
+$color-brand-secondary-hover: var(--ant-primary-color-hover);
+
+$color-reload-spinner: var(--ant-primary-6);
+$color-reload-spinner-bg: var(--ant-primary-1);
+
+$color-light-background: #F6F6F6;
+
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
@@ -26,6 +49,10 @@ code {
 
 h2 {
     font-size: 1.4em;
+}
+
+b {
+    font-weight: 600;
 }
 
 @mixin tlrb {
@@ -56,6 +83,26 @@ h2 {
 
 .scroll-on-hover-y:hover {
     overflow-y: auto;
+    overflow-y: overlay;
+
+    // scrollbar-width: 8px;
+    &::-webkit-scrollbar {
+        display: block;
+        width: 6px;
+        // height: 8px;
+
+        // background-color: transparent;
+        background-color: hsl(0, 0%, 85%);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: hsl(0, 0%, 55%);
+        border-radius: 1px;
+    }
+
+    &::-webkit-scrollbar-button {
+        display: none;
+    }
 }
 
 .cell {
@@ -117,7 +164,7 @@ h2 {
         }
     }
 
-    span > .icon-container ~ span {
+    span>.icon-container~span {
         display: inline !important;
     }
 
@@ -138,6 +185,29 @@ h2 {
 // allow copy tooltip to attach to this
 .ant-tabs-tabpane {
     position: relative;
+}
+
+.dataRefreshButton {
+    height: 32px;
+    display: inline-flex;
+    margin-left: 10px;
+
+    background: $color-reload-spinner-bg;
+    color: $color-reload-spinner;
+
+    border-radius: 30px;
+    place-content: center;
+    place-items: center;
+    white-space: nowrap;
+
+    .hoverButton {
+        color: currentColor;
+        background: transparent;
+
+        &:hover {
+            border-color: currentColor;
+        }
+    }
 }
 
 .hoverButton {
@@ -171,8 +241,8 @@ h2 {
     border-radius: 100%;
 
     border: 2px solid transparent;
-    border-bottom-color: hsl(205, 100%, 50%);
-    border-top-color: hsl(205, 100%, 50%);
+    border-bottom-color: hsl(14deg, 100%, 50%);
+    border-top-color: hsl(14deg, 100%, 50%);
     animation:
         rotateIn 1.2s cubic-bezier(0.25, 0.80, 0.9, 0.9) 0s 1,
         rotate 0.7s linear 1.2s infinite,
@@ -270,7 +340,7 @@ h2 {
 
 .hoverLink:hover {
     cursor: pointer;
-    color: hsl(205, 100%, 50%);
+    color: var(--ant-primary-color);
 }
 
 .pureDisplayRow {
@@ -291,17 +361,17 @@ h2 {
     --padOutside: 16px;
 }
 
-.ant-table.ant-table-middle .ant-table-thead > tr > th {
+.ant-table.ant-table-middle .ant-table-thead>tr>th {
     /* Header: middle (normal + sorter)*/
     padding: var(--headerVertical) var(--padCells);
 }
 
-.ant-table.ant-table-middle .ant-table-thead > tr > th:first-child:not(.ant-table-row-expand-icon-cell) {
+.ant-table.ant-table-middle .ant-table-thead>tr>th:first-child:not(.ant-table-row-expand-icon-cell) {
     /* Header: first (normal + sorter)*/
     padding-left: var(--padOutside);
 }
 
-.ant-table.ant-table-middle .ant-table-thead > tr > th:last-child {
+.ant-table.ant-table-middle .ant-table-thead>tr>th:last-child {
     /* Header: last (normal + sorter)*/
     padding-right: var(--padOutside);
 }
@@ -314,31 +384,31 @@ h2 {
     padding: var(--headerVertical) var(--padCells);
 }
 
-.ant-table.ant-table-middle .ant-table-tbody > tr > td {
+.ant-table.ant-table-middle .ant-table-tbody>tr>td {
     /* Cell: middle */
     padding: var(--padRowHeight) var(--padCells);
 }
 
-.ant-table.ant-table-middle .ant-table-tbody > tr > td:first-child:not(.ant-table-row-expand-icon-cell) {
+.ant-table.ant-table-middle .ant-table-tbody>tr>td:first-child:not(.ant-table-row-expand-icon-cell) {
     /* Cell: first */
     padding-left: var(--padOutside);
 }
 
-.ant-table.ant-table-middle .ant-table-tbody > tr > td:last-child {
+.ant-table.ant-table-middle .ant-table-tbody>tr>td:last-child {
     /* Cell: last */
     padding-right: var(--padOutside);
 }
 
-.ant-table-tbody > tr:hover > td {
+.ant-table-tbody>tr:hover>td {
     transition-duration: 0s, 0s !important;
 }
 
-.ant-table-tbody > tr > td {
+.ant-table-tbody>tr>td {
     transition-duration: 0s, 0s !important;
 }
 
 /* never break table headers */
-.ant-table-thead > tr > th {
+.ant-table-thead>tr>th {
     white-space: nowrap;
 }
 
@@ -349,7 +419,7 @@ h2 {
     overflow: visible;
 }
 
-.ant-table-tbody > tr.ant-table-row:hover > td {
+.ant-table-tbody>tr.ant-table-row:hover>td {
     background-color: unset;
 }
 
@@ -357,7 +427,7 @@ td.ant-table-column-sort {
     background-color: unset;
 }
 
-.ant-table-tbody > tr.ant-table-row-selected > td {
+.ant-table-tbody>tr.ant-table-row-selected>td {
     background-color: unset;
 }
 
@@ -376,13 +446,14 @@ td.ant-table-column-sort {
     margin-bottom: 4px;
 }
 
-/* .ant-pagination-item a {
-    color: hsl(205, 100%, 55%)
-}
-*/
+
 .ant-pagination-item-active a {
     font-weight: bold;
     cursor: default;
+    // does not fit well
+    // color: $color-brand-secondary;
+    // color: hsl(357deg 95% 72%);
+    color: var(--ant-primary-4);
 }
 
 .fadeIn3d {
@@ -415,7 +486,8 @@ td.ant-table-column-sort {
 .codeBox {
     display: inline-block;
     margin: 0;
-    padding: 0em 0.4em 0em;
+    padding: 0.1em 0.4em;
+    padding-bottom: 0.05em;
     white-space: pre-wrap;
     font-size: 85%;
     font-family: monospace;
@@ -430,6 +502,54 @@ td.ant-table-column-sort {
 }
 
 
+#mainLayout {
+    // border-left: 1px solid #ddd;
+    background: #f3f3f3;
+}
+
+.sider {
+    box-shadow: 0px 0px 6px 0px #00000024;
+    transition-timing-function: ease-out;
+}
+
+.sideBar {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    height: 100vh;
+    background: white;
+
+    img[alt="logo"] {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        height: 80px;
+        margin: auto;
+        // padding: 25px;
+        padding: 27px 50px 27px 0px;
+        transition: all 200ms;
+    }
+
+    .titleText {
+        position: absolute;
+        transition: all 200ms;
+        width: 100%;
+        font-family: 'Kumbh Sans', sans-serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 6px;
+        transform: translateX(4px);
+        font-size: 1.8rem;
+        text-align: center;
+        color: hsl(14deg 1% 55% / 55%);
+    }
+}
+
+.ant-layout-sider-collapsed {
+    img[alt="logo"] {
+        padding: 25px;
+    }
+}
 
 .sideBarToggle {
     display: flex;
@@ -437,17 +557,17 @@ td.ant-table-column-sort {
     justify-content: center;
     padding: 0;
     height: 40px;
-    background: rgba(0, 0, 0, 0.25);
+    background: hsla(0, 0%, 50%, 0.07);
     cursor: pointer;
 
     .icon {
-        font-size: 19px;
-        color: hsl(217deg, 20%, 45%);
+        font-size: 20px;
+        color: hsl(0deg 0% 60%);
         transition: color 100ms;
     }
 
     &:hover .icon {
-        color: hsl(217deg, 38%, 70%);
+        color: hsl(0deg 0% 30%);
     }
 }
 
@@ -526,7 +646,6 @@ td.ant-table-column-sort {
     /* or 107% */
     display: flex;
     align-items: center;
-    // color: #498FC2;
     color: gray;
 }
 
@@ -602,7 +721,7 @@ td.ant-table-column-sort {
     font-size: 1.5em;
     font-weight: bold;
     color: rgb(255, 255, 255);
-    background: #F15D61;
+    background: $color-brand-secondary;
     border-radius: 2px;
     display: flex;
     place-content: center;
@@ -617,7 +736,7 @@ td.ant-table-column-sort {
 
 .loginButton2:hover {
     color: #fff;
-    background: #cd3e43;
+    background: $color-brand-secondary-hover;
     transition: all 0.3s ease;
 }
 
@@ -627,9 +746,61 @@ td.ant-table-column-sort {
     transition: all 0.3s ease;
 }
 
+ul.ant-menu.ant-menu-root.ant-menu-inline-collapsed {
+    font-family: 'Poppins', sans-serif;
+    color: #828080;
 
-ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline,
-ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
+    .menuIcon {
+        $size: 22px;
+
+        width: $size;
+
+        transition:
+            margin 200ms ease-out,
+            margin-left 200ms ease-out;
+        margin: 0 auto;
+
+        // Safari
+        // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
+        svg {
+            width: $size;
+        }
+    }
+
+    li.ant-menu-item {
+
+        text-overflow: clip;
+        padding: 0 calc(50% - 10px);
+        transition:
+            width 2000ms,
+            color 0ms ease-out,
+            background-color 100ms ease;
+
+        line-height: 50px;
+
+        &-disabled {
+            cursor: default;
+            user-select: none;
+            opacity: .35;
+
+        }
+
+        &:not(&-disabled):not(&-selected):not([class*="disabled"]) {
+            &:hover {
+                background: hsla(0, 0%, 50%, 0.07);
+                color: $color-brand-secondary;
+            }
+        }
+    }
+
+    >li.ant-menu-item-selected {
+        background: hsla(0deg, 0%, 50%, 0.07);
+        font-weight: 500;
+        color: var(--ant-primary-color);
+    }
+}
+
+ul.ant-menu.ant-menu-root.ant-menu-inline {
 
     width: auto;
 
@@ -637,6 +808,7 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
     flex-direction: column;
     gap: 6px;
 
+    $baseColor: #828080;
     font-family: 'Poppins', sans-serif;
 
     li.ant-menu-item {
@@ -655,71 +827,75 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
             color 0ms ease-out,
             background-color 100ms ease;
 
-        a {
-            display: flex; // fix vertical alignment of menu items in sidebar
-            color: hsl(218deg, 16%, 66%);
+        color: $baseColor;
 
-            gap: 10px;
+        .menuIcon {
+            $size: 22px;
+
+            display: inline-flex;
+            width: $size;
+            margin: 0;
+            margin-left: 5px;
+
             transition:
-                gap 500ms,
-                color 50ms ease-out;
+                margin 200ms ease-out,
+                margin-left 200ms ease-out;
 
-            .anticon + span {
-                transition: none;
-            }
-
-            .menuIcon {
-                $size: 22px;
-
-                display: inline-flex;
+            // Safari
+            // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
+            svg {
                 width: $size;
-                margin: 0;
-
-                transition:
-                    margin 200ms ease-out,
-                    margin-left 200ms ease-out;
-
-                // Safari
-                // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
-                svg {
-                    width: $size;
-                }
             }
+        }
 
-            &::before {
-                @include tlrb;
-                left: -20px;
-                right: -20px;
-                // background-color: red;
-                content: '';
-            }
+        &::before {
+            @include tlrb;
+            left: -20px;
+            right: -20px;
+            // background-color: red;
+            content: '';
+        }
 
-            & > span {
-                color: unset; // remove antd default
-            }
+        &>span {
+            color: unset; // remove antd default
+        }
 
+
+        &:not(&-disabled):not(&-selected):not([class*="disabled"]) {
             &:hover {
-                color: hsl(218deg, 16%, 90%);
+                background: hsla(0, 0%, 50%, 0.07);
+                color: $color-brand-secondary;
             }
         }
 
         &-selected {
-            background-color: hsl(220deg, 35%, 13%);
+            background: hsla(0, 0%, 50%, 0.07);
+            font-weight: 500;
 
-            a,
-            .menuIcon {
-                color: hsl(216deg, 13%, 90%);
-            }
+            color: $color-brand-secondary;
         }
+
 
         &-disabled {
             cursor: default;
             user-select: none;
-            opacity: .5;
+            opacity: .35;
+
+            color: $baseColor  !important;
 
             a {
-                color: hsl(205deg, 50%, 70%) !important;
+                color: $baseColor  !important;
             }
+        }
+
+        a {
+            transition:
+                gap 200ms,
+                color 50ms ease-out;
+        }
+
+        &::after {
+            display: none;
         }
 
     }
@@ -728,9 +904,10 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
     &::before {
         display: none;
     }
+
 }
 
-ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
+ul.ant-menu.ant-menu-root.ant-menu-inline-collapsed {
     li.ant-menu-item {
         // place-content: center;
 
@@ -773,19 +950,33 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 }
 
 .ant-checkbox-checked .ant-checkbox-inner {
-    background-color: hsla(209, 75%, 66%, 1);
-    border-color: hsla(209, 50%, 55%, 1);
+    background-color: var(--ant-primary-color);
+    border-color: var(--ant-primary-color-outline);
 }
 
 .ant-btn-primary,
 .ant-switch-checked {
-    background-color: hsla(209, 66%, 55%, 1);
+    background-color: var(--ant-primary-color);
     border-color: transparent;
 }
 
+.ant-btn-primary:hover {
+    // background-color: hsl(0deg 100% 68%);
+    // background-color: transparent;
+    border-color: hsl(0deg 100% 65%);
+    border-color: var(--ant-primary-color-outline);
+    background-color: var(--ant-primary-color-hover);
+}
+
+.ant-btn-primary:active {
+    border-color: hsl(0deg 100% 45%);
+    border-color: var(--ant-primary-color-outline);
+    background-color: var(--ant-primary-color-active);
+}
+
 .ant-tabs-nav .ant-tabs-tab-active {
-    color: hsla(206, 80%, 55%, 1);
-    background: #00b9ff17;
+    color: var(--ant-primary-color);
+    background: $color-light-background  !important;
 }
 
 .ant-tabs-nav-list {
@@ -797,10 +988,10 @@ ul.ant-menu.ant-menu-dark.ant-menu-root.ant-menu-inline-collapsed {
 }
 
 .ant-tabs-ink-bar {
-    background-color: hsla(209, 75%, 60%, 1);
+    background-color: var(--ant-primary-color-active);
 }
 
-button.ant-btn-circle > i.anticon:only-child {
+button.ant-btn-circle>i.anticon:only-child {
     transform: translateY(-2px)
 }
 
@@ -823,7 +1014,7 @@ tr.tombstone {
     width: 100%;
 }
 
-.ant-tabs-nav > div {
+.ant-tabs-nav>div {
     display: flex;
 }
 
@@ -873,6 +1064,10 @@ tr td:nth-last-child(1) {
     transition-timing-function: ease-out;
     transition-delay: 0ms;
     color: hsl(0, 0%, 45%);
+
+    &:hover {
+        z-index: 1;
+    }
 }
 
 .disableAnimation {
@@ -910,15 +1105,15 @@ tr td.ellipsis {
     text-overflow: ellipsis;
 }
 
-.ant-table-middle > .ant-table-content > .ant-table-body > table > .ant-table-tbody > tr > td.msgTableActionColumn {
+.ant-table-middle>.ant-table-content>.ant-table-body>table>.ant-table-tbody>tr>td.msgTableActionColumn {
     padding-left: 0;
 }
 
-.ant-table.ant-table-middle .ant-table-tbody > tr > td.msgTableActionColumn {
+.ant-table.ant-table-middle .ant-table-tbody>tr>td.msgTableActionColumn {
     padding: 0;
 }
 
-tr > td.msgTableActionColumn {
+tr>td.msgTableActionColumn {
     text-align: right;
 }
 
@@ -956,11 +1151,11 @@ th.msgTableActionColumn .ant-table-filter-trigger-container {
     /* border-bottom: solid 1px rgba(0, 0, 0, 0.1); */
 }
 
-.ant-table-thead > tr > th.ant-table-cell.ant-table-row-expand-icon-cell {
+.ant-table-thead>tr>th.ant-table-cell.ant-table-row-expand-icon-cell {
     padding: 0px;
 }
 
-.ant-table-tbody > tr > td.ant-table-cell.ant-table-row-expand-icon-cell {
+.ant-table-tbody>tr>td.ant-table-cell.ant-table-row-expand-icon-cell {
     padding: 0px;
 }
 
@@ -1001,8 +1196,8 @@ tr.consumerGroupNoMemberAssigned {
     flex-wrap: wrap;
 }
 
-.ant-tabs .ant-tabs-top-content > .ant-tabs-tabpane,
-.ant-tabs .ant-tabs-bottom-content > .ant-tabs-tabpane {
+.ant-tabs .ant-tabs-top-content>.ant-tabs-tabpane,
+.ant-tabs .ant-tabs-bottom-content>.ant-tabs-tabpane {
     transition-duration: 0.15s;
     transition-timing-function: ease-out
 }
@@ -1030,6 +1225,17 @@ tr.consumerGroupNoMemberAssigned {
     color: hsla(0, 0%, 50%, 0.85);
 }
 
+.ant-table-column-sorter-up,
+.ant-table-column-sorter-down {
+    &.active {
+        // does not fit well
+        // color: $color-brand-secondary;
+        color: hsl(357deg 84% 75%);
+        color: var(--ant-primary-4);
+    }
+}
+
+
 .messagesSpecialIconButton {
     padding: 0px 15px;
 }
@@ -1041,7 +1247,6 @@ tr.consumerGroupNoMemberAssigned {
 svg {
     display: inline-block;
     height: 100%;
-    margin: auto;
 }
 
 .ant-popover {
@@ -1082,7 +1287,7 @@ svg {
     }
 }
 
-.ant-tag.filterTag > .anticon + span {
+.ant-tag.filterTag>.anticon+span {
     margin-left: 0;
 }
 
@@ -1287,7 +1492,7 @@ svg {
 //     background-color: #f7fafc;
 // }
 
-.ant-collapse > .ant-collapse-item > .ant-collapse-header {
+.ant-collapse>.ant-collapse-item>.ant-collapse-header {
     padding: 6px;
     padding-left: 40px;
 }
@@ -1308,12 +1513,12 @@ svg {
 }
 
 // arrows are not centered by default (maybe it has something to do with the font size of the title, or other elements in there?)
-div.ant-collapse.ant-collapse-borderless > div > div > span {
+div.ant-collapse.ant-collapse-borderless>div>div>span {
     // top: 0px;
     padding: 0px 0 0 !important;
 }
 
-.ant-collapse > .ant-collapse-item > .ant-collapse-header .ant-collapse-arrow {
+.ant-collapse>.ant-collapse-item>.ant-collapse-header .ant-collapse-arrow {
     top: 2px;
 }
 
@@ -1343,13 +1548,13 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     }
 
     .ant-collapse-item {
-        & > .ant-collapse-header:hover {
+        &>.ant-collapse-header:hover {
             background: hsl(203deg, 20%, 97%);
             border-radius: 5px;
             transition: background-color 0ms;
         }
 
-        & > .ant-collapse-header .issuesTag {
+        &>.ant-collapse-header .issuesTag {
             margin-top: 2px;
             padding: 0px 6px;
             border-radius: 4px;
@@ -1369,7 +1574,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
                 opacity 150ms ease-out;
         }
 
-        &.hasErrors > .ant-collapse-header .issuesTag {
+        &.hasErrors>.ant-collapse-header .issuesTag {
             opacity: 1;
             transform: translateX(0);
         }
@@ -1384,20 +1589,20 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     padding: 0;
 }
 
-.subjectListExpander.ant-collapse > .ant-collapse-item > .ant-collapse-header {
+.subjectListExpander.ant-collapse>.ant-collapse-item>.ant-collapse-header {
     padding: 0 0 0 24px;
     border-radius: 3px;
     /* border: 1px transparent solid; */
     color: #777;
 }
 
-.subjectListExpander.ant-collapse > .ant-collapse-item > .ant-collapse-header:hover {
+.subjectListExpander.ant-collapse>.ant-collapse-item>.ant-collapse-header:hover {
     /* border-color: hsla(205, 100%, 50%, 0.15); */
     transition-duration: 0ms;
     background-color: hsla(0, 0%, 0%, 0.08);
 }
 
-.subjectListExpander.ant-collapse > .ant-collapse-item > .ant-collapse-header span[role=img] {
+.subjectListExpander.ant-collapse>.ant-collapse-item>.ant-collapse-header span[role=img] {
     left: 8px;
     font-size: 10px;
 }
@@ -1441,6 +1646,10 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
             border-radius: 5px;
         }
     }
+
+    ol {
+        align-items: center;
+    }
 }
 
 .ant-page-header.has-breadcrumb {
@@ -1470,9 +1679,18 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     transform: rotateZ(45deg);
 }
 
-/* ant design menuitem hover is barely visible */
+.ant-select-item:not(:last-of-type) {
+    border-bottom: 2px solid white;
+}
+
 .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
-    background-color: hsla(205, 100%, 70%, 1);
+    background-color: $color-light-background;
+    color: $color-brand-secondary;
+}
+
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background-color: $color-light-background;
+    color: $color-brand-secondary;
 }
 
 .ant-menu-item,
@@ -1554,8 +1772,8 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     transform: translate(-27px, -20px);
 
     &:hover {
-        background: #b0e2ff7a;
-        color: hsla(205, 50%, 50%, 1);
+        background: var(--ant-primary-2);
+        color: var(--ant-primary-6);
     }
 
     svg {
@@ -1588,9 +1806,17 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
 }
 
 .filterTagDisabled {
+    color: rgba(46, 46, 46, 0.66);
+    background: rgba(46, 46, 46, 0.1);
+
     .filterName {
-        text-decoration: line-through rgba(46, 46, 46, 0.66);
+        text-decoration: line-through black;
     }
+}
+
+.ant-alert-info {
+    border: 1px solid hsl(220, 19%, 90%);
+    background: hsl(220, 19%, 98%);
 }
 
 .messageHeaders {
@@ -1734,7 +1960,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
 
     user-select: none;
 
-    & > .ant-radio-wrapper {
+    &>.ant-radio-wrapper {
         display: flex;
         align-items: center;
         padding: 10px 20px;
@@ -1750,7 +1976,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
         transition-duration: 200ms;
         transition-timing-function: ease-out;
 
-        & > span:nth-child(2) {
+        &>span:nth-child(2) {
             display: contents;
         }
 
@@ -1759,23 +1985,23 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
         }
     }
 
-    & > .ant-radio-wrapper:first-child {
+    &>.ant-radio-wrapper:first-child {
         border-radius: $borderRadius $borderRadius 0px 0px;
     }
 
-    & > .ant-radio-wrapper:last-child {
+    &>.ant-radio-wrapper:last-child {
         border-radius: 0px 0px $borderRadius $borderRadius;
     }
 
-    & > .ant-radio-wrapper:not(:last-child) {
+    &>.ant-radio-wrapper:not(:last-child) {
         border-bottom: 1px solid hsl(0deg, 0%, 94%);
     }
 
-    & > .ant-radio-wrapper:hover:not(.ant-radio-wrapper-checked) {
+    &>.ant-radio-wrapper:hover:not(.ant-radio-wrapper-checked) {
         background: hsl(0deg, 0%, 99%);
     }
 
-    & > .ant-radio-wrapper-checked {
+    &>.ant-radio-wrapper-checked {
         background: hsl(198deg, 100%, 98%);
         box-shadow: 0px 0px 2px 1px hsla(209deg, 100%, 55%, 0.66);
         z-index: 1;
@@ -1794,14 +2020,6 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
         color: inherit;
     }
 
-    40% {
-        color: rgb(79, 173, 245);
-    }
-
-    60% {
-        color: rgb(79, 173, 245);
-    }
-
     100% {
         color: inherit;
     }
@@ -1815,7 +2033,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     @include beforeAfter;
 
     border-radius: 4px;
-    box-shadow: 0 0 8px 4px #3098e8;
+    box-shadow: 0 0 8px 4px #7e8a93b0;
 
     animation: waitingForMessagesBoxPulseShadow 1.5s ease-in-out 0s infinite;
 }
@@ -1826,7 +2044,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     }
 
     50% {
-        box-shadow: 0 0 8px 2px #3098e8b0;
+        box-shadow: 0 0 8px 2px #7e8a93b0;
     }
 
     100% {
@@ -1838,7 +2056,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     .ant-steps-item-custom {
         user-select: none;
 
-        .ant-steps-item-icon > .ant-steps-icon {
+        .ant-steps-item-icon>.ant-steps-icon {
             font-size: 20px;
         }
     }
@@ -1847,7 +2065,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
         cursor: default;
     }
 
-    .ant-table-expanded-row > td {
+    .ant-table-expanded-row>td {
         &::before {
             content: ' ';
             display: block;
@@ -1900,11 +2118,11 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
         background: hsl(0deg, 0%, 98%) !important;
     }
 
-    & > th {
+    &>th {
         padding: 8px 2px !important;
     }
 
-    & > td {
+    &>td {
         padding: 3px 2px !important;
     }
 }
@@ -2031,7 +2249,7 @@ table tr td.ant-table-selection-column {
     min-width: 0;
 }
 
-.ant-picker-time-panel-column > li.ant-picker-time-panel-cell .ant-picker-time-panel-cell-inner {
+.ant-picker-time-panel-column>li.ant-picker-time-panel-cell .ant-picker-time-panel-cell-inner {
     padding: 0 0 0 14px;
     text-align: unset;
 }
@@ -2070,8 +2288,8 @@ mark {
     margin-bottom: 1px;
 
     border: 2px solid hsl(0, 0%, 85%);
-    border-bottom-color: hsl(205, 100%, 50%);
-    border-top-color: hsl(205, 100%, 50%);
+    border-bottom-color: var(--ant-primary-color);
+    border-top-color: var(--ant-primary-color);
     animation: rotate 1.5s linear 0s infinite;
 
     @keyframes rotate {
@@ -2086,12 +2304,14 @@ mark {
 }
 
 .ant-table-filter-trigger {
-    width: 32px;
-    background: linear-gradient(to right, transparent, hsl(0deg, 0%, 94%));
-    // mix-blend-mode: multiply;
-
+    width: 30px;
+    border-radius: 4px;
     transition: background-color ease-out 0.1s;
-    color: hsl(0deg, 0%, 67%);
+    color: hsl(0deg, 0%, 66%);
+    justify-content: center;
+    align-items: center;
+
+    background: hsl(208deg 0% 96%);
 
     &.active {
         background: hsl(208deg, 100%, 93%);
@@ -2109,14 +2329,17 @@ mark {
     }
 
     .tableFilterIcon {
-        @include tlrb;
         position: absolute;
-        color: hsl(0deg, 0%, 67%);
-        font-size: 14px;
+        inset: 0px;
+        display: flex;
+        justify-content: center;
+        border-radius: 4px;
+
+        font-size: 15px;
 
         &.active {
             background: hsl(208deg, 100%, 93%);
-            color: #1890ff;
+            color: $color-brand-secondary;
         }
     }
 }
@@ -2143,7 +2366,8 @@ mark {
 
         $zoom: 0.96;
         $aspectRatio: 5;
-        $initialScale: $zoom, (($zoom - 1) * $aspectRatio) + 1;
+        $initialScale: $zoom,
+        (($zoom - 1) * $aspectRatio)+1;
 
 
         @keyframes visible {
@@ -2182,7 +2406,7 @@ mark {
         cursor: pointer;
 
         &:hover {
-            color: hsl(205, 100%, 50%);
+            color: var(--ant-primary-color);
             background: hsl(205, 100%, 98%);
         }
     }
@@ -2394,10 +2618,10 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 // Reduce paddings for small table
 .ant-table.ant-table-small .ant-table-title,
 .ant-table.ant-table-small .ant-table-footer,
-.ant-table.ant-table-small .ant-table-thead > tr > th,
-.ant-table.ant-table-small .ant-table-tbody > tr > td,
-.ant-table.ant-table-small tfoot > tr > th,
-.ant-table.ant-table-small tfoot > tr > td {
+.ant-table.ant-table-small .ant-table-thead>tr>th,
+.ant-table.ant-table-small .ant-table-tbody>tr>td,
+.ant-table.ant-table-small tfoot>tr>th,
+.ant-table.ant-table-small tfoot>tr>td {
     padding: 6px 8px;
 }
 
@@ -2418,17 +2642,17 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
         .ant-table-tbody,
         .ant-table-thead {
-            & > tr {
+            &>tr {
 
                 &.unchanged {
                     color: rgba(0, 0, 0, 0.3);
                 }
 
-                & > th.ant-table-cell {
+                &>th.ant-table-cell {
                     padding-left: 10px;
                 }
 
-                & > td {
+                &>td {
                     padding-top: 5px;
                     padding-bottom: 5px;
 
@@ -2455,10 +2679,10 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
 .ant-table.ant-table-small .ant-table-title,
 .ant-table.ant-table-small .ant-table-footer,
-.ant-table.ant-table-small .ant-table-thead > tr > th,
-.ant-table.ant-table-small .ant-table-tbody > tr > td,
-.ant-table.ant-table-small tfoot > tr > th,
-.ant-table.ant-table-small tfoot > tr > td {
+.ant-table.ant-table-small .ant-table-thead>tr>th,
+.ant-table.ant-table-small .ant-table-tbody>tr>td,
+.ant-table.ant-table-small tfoot>tr>th,
+.ant-table.ant-table-small tfoot>tr>td {
     // color: red;
 }
 
@@ -2476,28 +2700,29 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     justify-content: center;
     align-items: center;
 
-    gap: 8px;
+    gap: 10px;
     padding: 0;
     padding-top: 3em;
-    padding-bottom: 1em;
+    padding-bottom: 8px;
     margin-top: auto;
 
     color: hsl(216deg, 11%, 66%);
 
     .links {
         display: flex;
-        justify-content: center;
-        align-items: flex-start;
+        grid-gap: 1em;
         gap: 1em;
-        font-size: 20px;
+        font-size: 27px;
 
         a {
-            width: 32px;
-            height: 32px;
+            display: flex;
+            align-items: center;
+            width: auto;
+            height: 1em;
+            aspect-ratio: 1;
         }
 
         .anticon {
-            padding: 6px;
             cursor: pointer;
 
             color: hsl(216deg, 11%, 66%);
@@ -2505,6 +2730,11 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
             &:hover {
                 color: hsl(216deg, 11%, 50%);
             }
+        }
+
+        .anticon-github {
+            // github is the only logo that doesn't have built-in padding, looks out of place
+            font-size: calc(100% - 1px);
         }
     }
 
@@ -2518,9 +2748,11 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
         .versionGitData {
             font-family: monospace;
+            text-transform: uppercase;
+            font-size: 110%;
         }
 
-        font-family: "Poppins",
+        font-family: "Kumbh Sans",
         sans-serif;
         font-size: 12px;
         // font-weight: 600;
@@ -2537,7 +2769,10 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     padding: 0 18px;
     gap: 11px;
 
-    background: hsl(216deg, 21%, 24%);
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+    border-color: hsl(216deg, 21%, 93%);
+    background: hsl(0deg 0% 97% / 50%);
     font-family: 'Poppins', sans-serif;
     cursor: pointer;
     user-select: none;
@@ -2583,7 +2818,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         .userName {
             max-width: 100%;
             font-size: 12.5px;
-            color: #fff;
+            color: hsl(0deg 0% 50%);
             padding-bottom: 1px;
 
             overflow: hidden;
@@ -2593,12 +2828,12 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         .prefText {
             max-width: 100%;
             font-size: 11.5px;
-            color: #9FA6B2;
+            color: hsl(218, 11%, 60%);
         }
     }
 
     &:hover {
-        background: hsl(216deg, 21%, 27%);
+        background: hsl(0deg 0% 95%);
     }
 
     @at-root .ant-layout-sider-collapsed & {
@@ -2832,7 +3067,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
 .linkBtn {
     cursor: pointer;
-    color: hsl(205, 100%, 50%);
+    color: var(--ant-primary-color);
 
     &:hover {
         text-decoration: solid underline;
@@ -2942,7 +3177,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         opacity: 0;
         $scaleY: 1.5;
         $scaleFactor: 20;
-        $scaleX: math.div($scaleY - 1, $scaleFactor) + 1;
+        $scaleX: math.div($scaleY - 1, $scaleFactor)+1;
 
         transform: scale($scaleX, $scaleY);
 
@@ -3022,7 +3257,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
 }
 
-.dynamicInputs > div {
+.dynamicInputs>div {
 
     .importanceTag {
 
@@ -3092,8 +3327,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
 
         margin: 6px 0px;
 
-        & > input,
-        & > button {
+        &>input,
+        &>button {
             height: 100%;
         }
     }
@@ -3173,7 +3408,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
                 opacity: 0; // only visible on hover
                 transition: opacity 300ms;
 
-                & > svg {
+                &>svg {
                     transform: scale(1.1);
                 }
 
@@ -3183,7 +3418,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
                 }
             }
 
-            &:hover > .deleteButton {
+            &:hover>.deleteButton {
                 opacity: 1;
                 transition: opacity 120ms;
             }
@@ -3198,7 +3433,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     cursor: default !important;
 }
 
-.inputHintTooltip > .ant-tooltip-content {
+.inputHintTooltip>.ant-tooltip-content {
     .ant-tooltip-arrow {
         display: none;
     }
@@ -3313,10 +3548,10 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     display: inline-flex;
     flex-grow: 1;
 
-    > input.ant-input,
-    > div.ant-select,
-    > .ant-btn-default,
-    > .ant-btn-primary {
+    >input.ant-input,
+    >div.ant-select,
+    >.ant-btn-default,
+    >.ant-btn-primary {
         margin-right: -1px;
         flex-grow: 1;
         width: auto;
@@ -3372,7 +3607,8 @@ input::placeholder {
     $numericInputBtnSize: 26px;
     padding-right: 0;
 
-    .ant-input-suffix, .ant-input-prefix {
+    .ant-input-suffix,
+    .ant-input-prefix {
         // min-width: 18px;
 
         .btnWrapper {
@@ -3396,14 +3632,14 @@ input::placeholder {
 
             cursor: pointer;
 
-            > svg {
+            >svg {
                 transform: scale(0.8) translate(1px, 0);
             }
 
             transition: all ease-out 150ms;
 
             &:hover {
-                color: #40a9ff;
+                color: $color-brand-secondary;
 
                 &::after {
                     background: hsl(207deg 7% 76% / 14%);
@@ -3430,5 +3666,101 @@ input::placeholder {
             pointer-events: none;
             cursor: default;
         }
+    }
+}
+
+.expiringLicenses {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
+    margin: 1em;
+    padding: 0.5em;
+    border: solid 2px #e142267a;
+    background: #e1422638;
+    color: #ff2f00;
+    font-weight: 500;
+
+
+    a {
+        text-decoration: underline 1px solid;
+    }
+}
+
+
+.iconSelectOption {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    svg {
+        height: 1.0em;
+        margin: 0;
+    }
+}
+
+.aclOperationSelect {
+    .ant-select-selector {
+        border-radius: 100px !important;
+        padding-inline: 10px !important;
+        // different padding on right side because icons unfortunately have built-in padding
+        padding-right: 12px !important;
+        // strangely the element already has some flex props properly configured, but it doesn't have display set
+        display: flex;
+
+        height: 25px !important;
+
+        .ant-select-selection-item {
+            display: flex;
+            line-height: normal;
+        }
+    }
+
+    &:not(.ant-select-borderless) .ant-select-selector {
+        background: hsla(0, 0%, 100%, 0.75);
+    }
+
+    .ant-select-disabled svg {
+        filter: grayscale(0.5);
+        opacity: .5;
+    }
+
+    &:not(:hover) {
+        .ant-select-selector {
+            background: transparent !important;
+            border-color: transparent !important;
+        }
+    }
+}
+
+// Fix button order in popover.
+// The right-most button is usually "cancel", with the "confirm" button usually being pushed towards the center/left
+.ant-popover-buttons {
+    flex-direction: row-reverse;
+    display: flex;
+}
+
+.ant-input-group {
+    .ant-select {
+        .ant-select-selector {
+            background-color: transparent;
+        }
+    }
+}
+
+.ant-tooltip-inner code {
+    background: hsl(0deg 0% 0% / 25%);
+    padding: 2px 4px;
+    border: 1px solid rgb(0 0 0 / 20%);
+    border-radius: 2px;
+    font-size: 95%;
+}
+
+// Used in Create ACLs modal.
+// The help icon is very small. Visually that is fine, but the cursor hitbox should be larger
+.labelText span.anticon {
+    &::after {
+        @include beforeAfter();
+        inset: -5px;
     }
 }

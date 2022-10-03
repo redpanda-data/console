@@ -2,7 +2,13 @@
 
 ## Master / unreleased
 
+- [FEATURE] Rebrand Kowl to Redpanda Console
+- [FEATURE] Create Topics
+- [FEATURE] Publish Kafka records (JSON, Text & Hex/Binary as of today, no schema registry support yet)
 - [FEATURE] Add Quotas pages that lists all kinds of configured Kafka Quotas (requires Kafka v2.6+)
+- [ENHANCEMENT] Retry connecting if initial bootstrap connection fails with a backoff timer
+- [CHANGE] Rename `owl` config property to `console` (breaking change)
+- [BUGFIX] Configurations with camel cased YAML properties can now be specified via environment variables as well
 
 ## 1.5.0 / 2021-11-10
 

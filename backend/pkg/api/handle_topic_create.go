@@ -100,7 +100,7 @@ func (api *API) handleCreateTopic() http.HandlerFunc {
 		}
 
 		// 2. Check if logged in user is allowed to view partitions for the given topic
-		canCreate, restErr := api.Hooks.Owl.CanCreateTopic(r.Context(), req.TopicName)
+		canCreate, restErr := api.Hooks.Console.CanCreateTopic(r.Context(), req.TopicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -117,7 +117,7 @@ func (api *API) handleCreateTopic() http.HandlerFunc {
 		}
 
 		// 3. Try to create topic
-		createTopicResponse, restErr := api.OwlSvc.CreateTopic(r.Context(), req.ToKmsg())
+		createTopicResponse, restErr := api.ConsoleSvc.CreateTopic(r.Context(), req.ToKmsg())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

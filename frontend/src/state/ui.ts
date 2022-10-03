@@ -9,17 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { observable, autorun, makeObservable, transaction } from "mobx";
-import { assignDeep, randomId } from "../utils/utils";
-import { clone } from "../utils/jsonUtils";
-import { DEFAULT_TABLE_PAGE_SIZE } from "../components/misc/common";
-import { TopicTabId } from "../components/pages/topics/Topic.Details";
-import { AclRequest, AclRequestDefault, EncodingType } from "./restInterfaces";
-import { ConnectTabKeys } from "../components/pages/connect/Overview";
+import { observable, autorun, makeObservable, transaction } from 'mobx';
+import { assignDeep, randomId } from '../utils/utils';
+import { clone } from '../utils/jsonUtils';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../components/misc/common';
+import { TopicTabId } from '../components/pages/topics/Topic.Details';
+import { GetAclsRequest, AclRequestDefault, EncodingType } from './restInterfaces';
+import { ConnectTabKeys } from '../components/pages/connect/Overview';
 
 const settingsName = 'uiSettings-v3';
 
-export type ValueDisplay = 'friendly' | 'both' | 'raw'
+export type ValueDisplay = 'friendly' | 'both' | 'raw';
 
 export interface PreviewTag {
     id: string;
@@ -47,23 +47,7 @@ export interface ColumnList {
     dataIndex: string;
 }
 
-export type FilterType = 'simple' | 'code'
-export const FilterOperators = [
-    {
-        name: '==',
-    },
-    {
-        name: '!=',
-    },
-    {
-        name: '<',
-    },
-    {
-        name: '<=',
-    },
-] as const;
-export type FilterOperator = (typeof FilterOperators[number])['name']
-
+export type FilterType = 'code';
 export class FilterEntry {
     constructor() {
         makeObservable(this);
@@ -74,30 +58,35 @@ export class FilterEntry {
 
     @observable isActive = true;
 
-    // Simple
-    @observable property: string = ''; // ex: 'battle.type'
-    @observable operator: FilterOperator = '==';
-    @observable value: string = ''; // any js expression: string, number, or array
-
     // Code
     @observable name: string = ''; // name of the filter, shown instead of the code when set
+    @observable transpiledCode: string = 'return true;\n';
     @observable code: string = 'return true\n//allow all messages'; // js code the user entered
 }
-
 
 export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 'onlyTime' | 'unixSeconds' | 'relative';
 export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
     switch (timestampType) {
-        case 'default': return true; // 'localDateTime'
-        case 'onlyDate': return true;
-        case 'onlyTime': return true;
-        case 'relative': return true;
+        case 'default':
+            return true; // 'localDateTime'
+        case 'onlyDate':
+            return true;
+        case 'onlyTime':
+            return true;
+        case 'relative':
+            return true;
     }
     return false;
 }
 
-export enum TopicOffsetOrigin { EndMinusResults = -1, Start = -2, End = -3, Timestamp = -4, Custom = 0 }
-export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams']
+export enum PartitionOffsetOrigin {
+    EndMinusResults = -1,
+    Start = -2,
+    End = -3,
+    Timestamp = -4,
+    Custom = 0,
+}
+export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams'];
 // Settings for an individual topic
 export class TopicDetailsSettings {
     constructor() {
@@ -107,7 +96,7 @@ export class TopicDetailsSettings {
     topicName: string;
 
     @observable searchParams = {
-        offsetOrigin: -1 as TopicOffsetOrigin, // start, end, custom
+        offsetOrigin: -1 as PartitionOffsetOrigin, // start, end, custom
         startOffset: -1, // used when offsetOrigin is custom
         startTimestamp: -1, // used when offsetOrigin is timestamp
         startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
@@ -143,7 +132,6 @@ export class TopicDetailsSettings {
     @observable produceRecordEncoding = 'json' as EncodingType;
 
     @observable quickSearch = '';
-
 }
 
 const defaultUiSettings = {
@@ -172,10 +160,11 @@ const defaultUiSettings = {
         configTable: {
             pageSize: 100,
             quickSearch: '',
-        }
+        },
     },
 
-    reassignment: { // partition reassignment
+    reassignment: {
+        // partition reassignment
         // Active
         activeReassignments: {
             quickSearch: '',
@@ -214,7 +203,14 @@ const defaultUiSettings = {
         showStatisticsBar: true,
     },
 
-    aclSearchParams: clone(AclRequestDefault) as AclRequest,
+    aclList: {
+        configTable: {
+            quickSearch: '',
+            pageSize: 20,
+        }
+    },
+
+    aclSearchParams: clone(AclRequestDefault) as GetAclsRequest,
 
     quotasList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
@@ -223,7 +219,7 @@ const defaultUiSettings = {
 
     schemaList: {
         pageSize: DEFAULT_TABLE_PAGE_SIZE,
-        quickSearch: ''
+        quickSearch: '',
     },
 
     schemaDetails: {
@@ -235,35 +231,35 @@ const defaultUiSettings = {
 
         clusters: {
             pageSize: undefined as any as number,
-            quickSearch: ''
+            quickSearch: '',
         },
         connectors: {
             pageSize: undefined as any as number,
-            quickSearch: ''
+            quickSearch: '',
         },
         tasks: {
             pageSize: undefined as any as number,
-            quickSearch: ''
+            quickSearch: '',
         },
 
         clusterDetails: {
             pageSize: undefined as any as number,
-            quickSearch: ''
+            quickSearch: '',
         },
         clusterDetailsPlugins: {
             pageSize: undefined as any as number,
-            quickSearch: ''
+            quickSearch: '',
         },
 
         connectorDetails: {
             pageSize: undefined as any as number,
-            quickSearch: ''
-        }
+            quickSearch: '',
+        },
     },
 
     userDefaults: {
-        paginationPosition: 'bottomRight' as ('bottomRight' | 'topRight'),
-    }
+        paginationPosition: 'bottomRight' as 'bottomRight' | 'topRight',
+    },
 };
 Object.freeze(defaultUiSettings);
 
@@ -272,12 +268,10 @@ export { uiSettings };
 
 export function clearSettings() {
     transaction(() => {
-        for (const k in uiSettings)
-            delete (uiSettings as any)[k];
+        for (const k in uiSettings) delete (uiSettings as any)[k];
         assignDeep(uiSettings, clone(defaultUiSettings));
     });
 }
-
 
 //
 // Settings save/load
@@ -323,18 +317,19 @@ function isPreviewTagV1(tag: PreviewTag | PreviewTagV2): tag is PreviewTag {
     return (tag as PreviewTag).text !== undefined;
 }
 
-
 // Auto save (timed)
-autorun(() => {
-    const json = JSON.stringify(uiSettings);
-    localStorage.setItem(settingsName, json);
-    //console.log('settings: ' + json);
-}, { delay: 2000 });
+autorun(
+    () => {
+        const json = JSON.stringify(uiSettings);
+        localStorage.setItem(settingsName, json);
+        //console.log('settings: ' + json);
+    },
+    { delay: 2000 }
+);
 
 // Auto save (on exit)
-window.addEventListener("visibilitychange", () => {
-    if (document.visibilityState == 'visible')
-        return; // only save on close, minimize, tab-switch
+window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState == 'visible') return; // only save on close, minimize, tab-switch
 
     const json = JSON.stringify(uiSettings);
     localStorage.setItem(settingsName, json);
@@ -342,7 +337,7 @@ window.addEventListener("visibilitychange", () => {
 
 // When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
 // So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
-window.addEventListener('storage', e => {
+window.addEventListener('storage', (e) => {
     if (e.newValue == null) return;
     try {
         const newSettings = JSON.parse(e.newValue);
@@ -351,8 +346,8 @@ window.addEventListener('storage', e => {
             // Applying changes here will of course trigger the auto-save, but that's fine.
             // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
             assignDeep(uiSettings, newSettings);
-        })
+        });
     } catch (err) {
-        console.error('error applying settings update from another tab', { storageEvent: e, error: err, });
+        console.error('error applying settings update from another tab', { storageEvent: e, error: err });
     }
 });

@@ -16,7 +16,7 @@ import { isClipboardAvailable } from '../../utils/featureDetection';
 const popoverContent = (
     <>
         <p>Due to browser restrictions, the clipboard is not accessible on unsecure connections.</p>
-        <p>Please make sure to run Kowl with SSL enabled to use this feature.</p>
+        <p>Please make sure to run Redpanda Console with SSL enabled to use this feature.</p>
     </>
 );
 

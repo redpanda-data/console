@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-
+import { config } from '../config';
 
 export class RestTimeoutError extends Error {
     constructor(m: string) {
@@ -21,7 +21,7 @@ export class RestTimeoutError extends Error {
 export default function fetchWithTimeout(url: RequestInfo, timeoutMs: number, options?: RequestInit): Promise<Response> {
     return new Promise<Response>((resolve, reject) => {
         let hasSettled = false;
-        fetch(url, options).then(
+        config.fetch(url, options).then(
             result => {
                 hasSettled = true;
                 resolve(result);

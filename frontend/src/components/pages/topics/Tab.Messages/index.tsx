@@ -11,48 +11,44 @@
 
 import { ClockCircleOutlined, DeleteOutlined, DownloadOutlined, DownOutlined, EllipsisOutlined, FilterOutlined, SettingFilled, SettingOutlined } from '@ant-design/icons';
 import { DownloadIcon, PlusIcon, SkipIcon, SyncIcon, XCircleIcon } from '@primer/octicons-react';
-import { Alert, Button, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu, message, Modal, Popover, Radio, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from "antd";
-import { ColumnProps } from "antd/lib/table";
-import { SortOrder } from "antd/lib/table/interface";
-import Paragraph from "antd/lib/typography/Paragraph";
-import { AnimatePresence } from "framer-motion";
-import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from "mobx";
-import { observer } from "mobx-react";
+import { Alert, Button, ConfigProvider, DatePicker, Dropdown, Empty, Input, Menu, message, Modal, Popover, Radio, Row, Select, Space, Switch, Table, Tabs, Tag, Tooltip, Typography } from 'antd';
+import { ColumnProps } from 'antd/lib/table';
+import { SortOrder } from 'antd/lib/table/interface';
+import Paragraph from 'antd/lib/typography/Paragraph';
+import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
+import { observer } from 'mobx-react';
 import * as moment from 'moment';
-import Prism, { languages as PrismLanguages } from "prismjs";
-import 'prismjs/components/prism-javascript';
-import "prismjs/components/prism-js-extras";
-import 'prismjs/prism.js';
-import 'prismjs/themes/prism.css';
 import queryString from 'query-string';
-import React, { Component, ReactNode } from "react";
-import { CollapsedFieldProps } from 'react-json-view';
-import Editor from 'react-simple-code-editor';
+import React, { Component, ReactNode } from 'react';
+import FilterEditor from './Editor';
+
 import filterExample1 from '../../../../assets/filter-example-1.png';
 import filterExample2 from '../../../../assets/filter-example-2.png';
-import { api } from "../../../../state/backendApi";
-import { CompressionType, CompressionTypeNum, compressionTypeToNum, EncodingType, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from "../../../../state/restInterfaces";
+import { api } from '../../../../state/backendApi';
+import { CompressionType, compressionTypeToNum, EncodingType, Payload, PublishRecord, Topic, TopicAction, TopicMessage } from '../../../../state/restInterfaces';
 import { Feature, isSupported } from '../../../../state/supportedFeatures';
-import { ColumnList, FilterEntry, PreviewTagV2, TopicOffsetOrigin } from "../../../../state/ui";
-import { uiState } from "../../../../state/uiState";
-import { animProps_span_messagesStatus, MotionDiv, MotionSpan } from "../../../../utils/animationProps";
+import { ColumnList, FilterEntry, PreviewTagV2, PartitionOffsetOrigin } from '../../../../state/ui';
+import { uiState } from '../../../../state/uiState';
+import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
-import { IsDev } from "../../../../utils/env";
-import { isClipboardAvailable } from "../../../../utils/featureDetection";
-import { FilterableDataSource } from "../../../../utils/filterableDataSource";
-import { sanitizeString, wrapFilterFragment } from "../../../../utils/filterHelper";
-import { toJson } from "../../../../utils/jsonUtils";
-import { editQuery } from "../../../../utils/queryHelper";
-import { Ellipsis, findPopupContainer, Label, LayoutBypass, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from "../../../../utils/tsxUtils";
-import { cullText, delay, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from "../../../../utils/utils";
-import { makePaginationConfig, range, sortField } from "../../../misc/common";
-import { KowlJsonView } from "../../../misc/KowlJsonView";
-import { NoClipboardPopover } from "../../../misc/NoClipboardPopover";
+import { IsDev } from '../../../../utils/env';
+import { isClipboardAvailable } from '../../../../utils/featureDetection';
+import { FilterableDataSource } from '../../../../utils/filterableDataSource';
+import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
+import { toJson } from '../../../../utils/jsonUtils';
+import { editQuery } from '../../../../utils/queryHelper';
+import { Ellipsis, findPopupContainer, Label, ZeroSizeWrapper, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
+import { cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
+import { makePaginationConfig, range, sortField } from '../../../misc/common';
+import { KowlJsonView } from '../../../misc/KowlJsonView';
+import { NoClipboardPopover } from '../../../misc/NoClipboardPopover';
 import DeleteRecordsModal from '../DeleteRecordsModal/DeleteRecordsModal';
 import { PublishMessageModalProps, PublishMessagesModalContent } from '../PublishMessagesModal/PublishMessagesModal';
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
+import colors from '../../../../colors';
+import { CollapsedFieldProps } from '@textea/json-viewer';
 
 
 const { Text } = Typography;
@@ -116,7 +112,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         if (query.s != null) searchParams.maxResults = Number(query.s);
         if (query.o != null) {
             searchParams.startOffset = Number(query.o);
-            searchParams.offsetOrigin = (searchParams.startOffset >= 0) ? TopicOffsetOrigin.Custom : searchParams.startOffset;
+            searchParams.offsetOrigin = (searchParams.startOffset >= 0) ? PartitionOffsetOrigin.Custom : searchParams.startOffset;
         }
         if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
 
@@ -127,7 +123,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
                 const q = String(uiState.topicSettings.quickSearch);
-                query["q"] = q ? q : null;
+                query['q'] = q ? q : null;
             });
         }, { name: 'update query string' });
 
@@ -152,14 +148,14 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     message="Backend API Error"
                     description={<div>
                         <Text>Please check and modify the request before resubmitting.</Text>
-                        <div className='codeBox'>{((this.fetchError as Error).message ?? String(this.fetchError))}</div>
+                        <div className="codeBox">{((this.fetchError as Error).message ?? String(this.fetchError))}</div>
                         <Button onClick={() => this.executeMessageSearch()}>
                             Retry Search
                         </Button>
                     </div>}
                 />
                 : <>
-                    <Row align='middle' style={{ marginBottom: '0rem', display: 'flex', alignItems: 'center' }} >
+                    <Row align="middle" style={{ marginBottom: '0rem', display: 'flex', alignItems: 'center' }} >
                         {/*
                             todo: move this below the table (aligned left)
                             This requires more work becasue we'd have to remove the pagination controls from the table and provide our own
@@ -201,42 +197,42 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         return <React.Fragment>
             <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 {/* Search Settings*/}
-                <Label text='Partition' style={{ ...spaceStyle }}>
-                    <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }} size='middle'>
-                        <Select.Option key='all' value={-1}>All</Select.Option>
+                <Label text="Partition" style={{ ...spaceStyle }}>
+                    <Select<number> value={searchParams.partitionID} onChange={c => searchParams.partitionID = c} style={{ width: '9em' }} size="middle">
+                        <Select.Option key="all" value={-1}>All</Select.Option>
                         {range(0, topic.partitionCount).map(i =>
                             <Select.Option key={i} value={i}>Partition {i.toString()}</Select.Option>)}
                     </Select>
                 </Label>
-                <Label text='Start Offset' style={{ ...spaceStyle }}>
+                <Label text="Start Offset" style={{ ...spaceStyle }}>
                     <InputGroup compact style={{ display: 'inline-block', width: 'auto' }}>
-                        <Select<TopicOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => searchParams.offsetOrigin = e} size='middle'
+                        <Select<PartitionOffsetOrigin> value={searchParams.offsetOrigin} onChange={e => searchParams.offsetOrigin = e} size="middle"
                             dropdownMatchSelectWidth={false} style={{ width: '9em' }}
                         >
-                            <Option value={TopicOffsetOrigin.End}>Newest</Option>
-                            <Option value={TopicOffsetOrigin.EndMinusResults}>Newest<span style={{ opacity: '0.9' }}>-{searchParams.maxResults}</span></Option>
-                            <Option value={TopicOffsetOrigin.Start}>Oldest</Option>
-                            <Option value={TopicOffsetOrigin.Custom}>Custom</Option>
-                            <Option value={TopicOffsetOrigin.Timestamp}>Timestamp</Option>
+                            <Option value={PartitionOffsetOrigin.End}>Newest</Option>
+                            <Option value={PartitionOffsetOrigin.EndMinusResults}>Newest<span style={{ opacity: '0.9' }}>-{searchParams.maxResults}</span></Option>
+                            <Option value={PartitionOffsetOrigin.Start}>Oldest</Option>
+                            <Option value={PartitionOffsetOrigin.Custom}>Custom</Option>
+                            <Option value={PartitionOffsetOrigin.Timestamp}>Timestamp</Option>
                         </Select>
                         {
-                            searchParams.offsetOrigin == TopicOffsetOrigin.Custom &&
+                            searchParams.offsetOrigin == PartitionOffsetOrigin.Custom &&
                             <Input style={{ width: '7.5em' }} maxLength={20}
                                 value={searchParams.startOffset} onChange={e => searchParams.startOffset = +e.target.value}
-                                disabled={searchParams.offsetOrigin != TopicOffsetOrigin.Custom} />
+                                disabled={searchParams.offsetOrigin != PartitionOffsetOrigin.Custom} />
                         }
                         {
-                            searchParams.offsetOrigin == TopicOffsetOrigin.Timestamp &&
+                            searchParams.offsetOrigin == PartitionOffsetOrigin.Timestamp &&
                             <StartOffsetDateTimePicker />
                         }
                     </InputGroup>
                 </Label>
-                <Label text='Max Results' style={{ ...spaceStyle }}>
-                    <Select<number> value={searchParams.maxResults} onChange={c => searchParams.maxResults = c} style={{ width: '9em' }} size='middle'>
+                <Label text="Max Results" style={{ ...spaceStyle }}>
+                    <Select<number> value={searchParams.maxResults} onChange={c => searchParams.maxResults = c} style={{ width: '9em' }} size="middle">
                         {[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => <Select.Option key={i} value={i}>{i.toString()}</Select.Option>)}
                     </Select>
                 </Label>
-                <Label text='Filter' style={{ ...spaceStyle }}>
+                <Label text="Filter" style={{ ...spaceStyle }}>
                     <div style={{ height: '32px', paddingTop: '4px' }}>
                         <Tooltip title="You don't have permissions to use search filters in this topic" trigger={canUseFilters ? 'none' : 'hover'}>
                             <Switch checked={searchParams.filtersEnabled && canUseFilters} onChange={v => searchParams.filtersEnabled = v} disabled={!canUseFilters} />
@@ -245,26 +241,26 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 </Label>
 
                 {/* Refresh Button */}
-                <Label text='' style={{ ...spaceStyle }}>
+                <Label text="" style={{ ...spaceStyle }}>
                     <div style={{ display: 'flex' }}>
 
                         <AnimatePresence>
                             {api.messageSearchPhase == null &&
-                                <MotionSpan identityKey='btnRefresh' overrideAnimProps={animProps_span_messagesStatus}>
-                                    <Tooltip title='Repeat current search' getPopupContainer={findPopupContainer}>
-                                        <Button type='primary' onClick={() => this.searchFunc('manual')}>
+                                <MotionSpan identityKey="btnRefresh" overrideAnimProps={animProps_span_messagesStatus}>
+                                    <Tooltip title="Repeat current search" getPopupContainer={findPopupContainer}>
+                                        <Button type="default" onClick={() => this.searchFunc('manual')}>
                                             <SyncIcon size={16} />
                                         </Button>
                                     </Tooltip>
                                 </MotionSpan>
                             }
                             {api.messageSearchPhase != null &&
-                                <MotionSpan identityKey='btnCancelSearch' overrideAnimProps={animProps_span_messagesStatus}>
-                                    <Tooltip title='Stop searching' getPopupContainer={findPopupContainer}>
-                                        <Button type='primary' danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
-                                            <LayoutBypass >
+                                <MotionSpan identityKey="btnCancelSearch" overrideAnimProps={animProps_span_messagesStatus}>
+                                    <Tooltip title="Stop searching" getPopupContainer={findPopupContainer}>
+                                        <Button type="primary" danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
+                                            <ZeroSizeWrapper >
                                                 <XCircleIcon size={20} />
-                                            </LayoutBypass>
+                                            </ZeroSizeWrapper>
                                         </Button>
                                     </Tooltip>
                                 </MotionSpan>
@@ -279,7 +275,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         <Menu.Item key="1" onClick={() => this.showPublishRecordsModal({ topicName: this.props.topic.topicName })}>
                             Publish Message
                         </Menu.Item>
-                        {DeleteRecordsMenuItem("2", isCompacted, topic.allowedActions ?? [], () => this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true)}
+                        {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true)}
                     </Menu>}>
                         <Button style={{ minWidth: '120px' }}>Actions<DownOutlined /></Button>
                     </Dropdown>
@@ -288,7 +284,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                 {/* Quick Search */}
                 <div className={styles.quickSearchWrapper}>
-                    <Input placeholder='Quick Search' allowClear={true} size='middle'
+                    <Input placeholder="Quick Search" allowClear={true} size="middle"
                         className={styles.quickSearchInput}
                         value={uiState.topicSettings.quickSearch}
                         onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
@@ -300,7 +296,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 {
                     Boolean(api.messageSearchPhase && api.messageSearchPhase.length > 0) &&
                     <StatusIndicator
-                        identityKey='messageSearch'
+                        identityKey="messageSearch"
                         fillFactor={(api.messages?.length ?? 0) / searchParams.maxResults}
                         statusText={api.messageSearchPhase!}
                         progressText={`${api.messages?.length ?? 0} / ${searchParams.maxResults}`}
@@ -339,12 +335,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const params = uiState.topicSettings.searchParams;
         const searchParams = String(params.offsetOrigin) + params.maxResults + params.partitionID + params.startOffset + params.startTimestamp;
 
-        if (this.currentSearchRun)
-            return console.warn(`searchFunc: function already in progress (trigger:${source})`);
+        if (this.currentSearchRun) {
+            if (IsDev) console.warn(`searchFunc: function already in progress (trigger:${source})`);
+            return;
+        }
 
         const phase = untracked(() => api.messageSearchPhase);
-        if (phase)
-            return console.warn(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
+        if (phase) {
+            if (IsDev) console.warn(`searchFunc: previous search still in progress (trigger:${source}, phase:${phase})`);
+            return;
+        }
 
         try {
             this.currentSearchRun = searchParams;
@@ -383,7 +383,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         return <div style={{ marginRight: '1em' }}>
             <MotionDiv identityKey={displayText}>
-                <Text type='secondary'>{displayText}</Text>
+                <Text type="secondary">{displayText}</Text>
             </MotionDiv>
         </div>;
     }
@@ -399,7 +399,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
         const previewButton = <>
             <span style={{ display: 'inline-flex', alignItems: 'center', height: 0, marginLeft: '4px' }}>
-                <Button shape='round' className='hoverBorder' onClick={() => setShowPreviewSettings(true)} style={{ color: '#1890ff', padding: '0 0.5em', background: 'transparent' }}>
+                <Button shape="round" className="hoverBorder" onClick={() => setShowPreviewSettings(true)} style={{ color: colors.brandOrange, padding: '0 0.5em', background: 'transparent' }}>
                     <SettingOutlined style={{ fontSize: '1rem', transform: 'translateY(1px)' }} />
                     <span style={{ marginLeft: '.3em', fontSize: '85%' }}>Preview</span>
                     {(() => {
@@ -417,7 +417,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const tsFormat = uiState.topicSettings.previewTimestamps;
         const IsColumnSettingsEnabled = uiState.topicSettings.previewColumnFields.length || uiState.topicSettings.previewTimestamps !== 'default';
         const hasKeyTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageKey) > 0;
-        const hasValueTags = uiState.topicSettings.previewTags.count(x => x.isActive && x.searchInMessageValue) > 0;
 
         const columns: ColumnProps<TopicMessage>[] = [
             { width: 1, title: 'Offset', dataIndex: 'offset', sorter: sortField('offset'), defaultSortOrder: 'descend', render: (t: number) => numberToThousandsString(t) },
@@ -432,7 +431,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 dataIndex: 'value',
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
-                render: (t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
+                render: (_t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
@@ -442,26 +441,19 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 filterDropdownVisible: false,
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
-                    return <Tooltip title='Column Settings' mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement='left'>
-                        <SettingFilled style={IsColumnSettingsEnabled ? { color: '#1890ff' } : { color: '#a092a0' }} />
+                    return <Tooltip title="Column Settings" mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement="left">
+                        <SettingFilled style={IsColumnSettingsEnabled ? { color: colors.brandOrange } : { color: '#a092a0' }} />
                     </Tooltip>;
                 },
-                render: (text, record) => !record.isValueNull && (
-                    <NoClipboardPopover placement='left'>
+                render: (_text, record) => !record.isValueNull && (
+                    <NoClipboardPopover placement="left">
                         <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
-                            <Dropdown disabled={!isClipboardAvailable} overlayClassName='disableAnimation' overlay={this.copyDropdown(record)} trigger={['click']}>
-                                <Button className='iconButton' style={{ height: '100%', width: '100%', verticalAlign: 'middle', pointerEvents: isClipboardAvailable ? 'auto' : 'none' }} type='link'
-                                    icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size='middle' />
+                            <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={this.copyDropdown(record)} trigger={['click']}>
+                                <Button className="iconButton" style={{ height: '100%', width: '100%', verticalAlign: 'middle', pointerEvents: isClipboardAvailable ? 'auto' : 'none' }} type="link"
+                                    icon={<EllipsisOutlined style={{ fontSize: '32px', display: 'flex', alignContent: 'center', justifyContent: 'center' }} />} size="middle" />
                             </Dropdown>
                         </div>
                     </NoClipboardPopover>
-                    // <ZeroSizeWrapper width={32} height={0}>
-                    //     <Button className='iconButton' style={{ height: '40px', width: '40px' }} type='link' icon={<CopyOutlined />} size='middle' onClick={() => this.copyMessage(record)} />
-                    // </ZeroSizeWrapper>
-                    // <ZeroSizeWrapper width={32} height={0}>
-                    //     <Button className='iconButton fill' style={{ height: '40px', width: '40px' }} type='link' icon={<LinkOutlined />} size='middle' onClick={() => this.copyLinkToMessage(record)} />
-                    // </ZeroSizeWrapper>
-                    // <Divider type="vertical" />
                 ),
             },
             // todo: size was a guess anyway, might be added back later
@@ -489,7 +481,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             <ConfigProvider renderEmpty={this.empty}>
                 <Table
                     style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }}
-                    size='middle'
+                    size="middle"
                     showSorterTooltip={false}
                     pagination={this.pageConfig}
                     onChange={(pagination) => {
@@ -508,7 +500,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 // Double clicking a row should expand/collapse it
                                 // But not when the user double-clicks the expand/collapse button
                                 if (e.target instanceof HTMLElement)
-                                    if (e.target.classList.contains("ant-table-row-expand-icon"))
+                                    if (e.target.classList.contains('ant-table-row-expand-icon'))
                                         return;
                                 this.toggleRecordExpand(r);
                             },
@@ -521,7 +513,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
                         expandedRowRender: record => renderExpandedMessage(record),
                         expandedRowKeys: this.expandedKeys.slice(),
-                        onExpand: (p, r) => {
+                        onExpand: (_p, r) => {
                             this.toggleRecordExpand(r);
                         }
                     }}
@@ -530,7 +522,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 />
 
                 <Button
-                    type='primary' style={{ marginTop: '4px', marginLeft: '-2px' }}
+                    type="primary" style={{ marginTop: '4px', marginLeft: '-2px' }}
                     icon={<span style={{ paddingRight: '4px' }}><DownloadIcon /></span>}
                     onClick={() => { this.downloadMessages = api.messages; }}
                     disabled={!api.messages || api.messages.length == 0}
@@ -559,9 +551,9 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
             this.expandedKeys.push(key);
     }
 
-    keySorter(a: TopicMessage, b: TopicMessage, sortOrder?: SortOrder): number {
-        const ta = String(a.key) ?? "";
-        const tb = String(b.key) ?? "";
+    keySorter(a: TopicMessage, b: TopicMessage, _sortOrder?: SortOrder): number {
+        const ta = String(a.key) ?? '';
+        const tb = String(b.key) ?? '';
         return ta.localeCompare(tb);
     }
 
@@ -589,7 +581,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         url.search = query;
 
         const newUrl = url.href;
-        console.log("copied url: " + newUrl);
+        console.log('copied url: ' + newUrl);
 
         //navigator.clipboard.writeText(record.valueJson);
         //message.success('Message content (JSON) copied to clipboard', 5);
@@ -599,33 +591,32 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const searchParams = uiState.topicSettings.searchParams;
         const canUseFilters = api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
 
-        if (searchParams.offsetOrigin != TopicOffsetOrigin.Custom)
+        if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
             searchParams.startOffset = searchParams.offsetOrigin;
 
         editQuery(query => {
-            query["p"] = String(searchParams.partitionID); // p = partition
-            query["s"] = String(searchParams.maxResults); // s = size
-            query["o"] = String(searchParams.startOffset); // o = offset
+            query['p'] = String(searchParams.partitionID); // p = partition
+            query['s'] = String(searchParams.maxResults); // s = size
+            query['o'] = String(searchParams.startOffset); // o = offset
         });
 
-        let filterCode: string = "";
+        let filterCode: string = '';
         if (searchParams.filtersEnabled && canUseFilters) {
             const functionNames: string[] = [];
             const functions: string[] = [];
 
-            searchParams.filters.filter(e => e.isActive && e.code).forEach(e => {
+            searchParams.filters.filter(e => e.isActive && e.code && e.transpiledCode).forEach(e => {
                 const name = `filter${functionNames.length + 1}`;
                 functionNames.push(name);
-                functions.push(`
-function ${name}() {
-    ${wrapFilterFragment(e.code)}
-}`);
+                functions.push(`function ${name}() {
+                    ${wrapFilterFragment(e.transpiledCode)}
+                }`);
             });
 
             if (functions.length > 0) {
-                filterCode = functions.join('\n\n') + "\n\n"
-                    + `return ${functionNames.map(f => f + "()").join(' && ')}`;
-                if (IsDev) console.log(`constructed filter code (${functions.length} functions)`, "\n\n" + filterCode);
+                filterCode = functions.join('\n\n') + '\n\n'
+                    + `return ${functionNames.map(f => f + '()').join(' && ')}`;
+                if (IsDev) console.log(`constructed filter code (${functions.length} functions)`, '\n\n' + filterCode);
             }
         }
 
@@ -690,24 +681,37 @@ function ${name}() {
     formatTypeToTag(type: string) {
         type = String(type);
         switch (type) {
-            case 'json': return <Tag key={1} color='orange'>JSON</Tag>;
-            case 'xml': return <Tag key={2} color='green'>XML</Tag>;
-            case 'avro': return <Tag key={3} color='blue'>Avro</Tag>;
-            case 'binary': return <Tag key={4} color='red'>Binary</Tag>;
-            case 'text': return <Tag key={5} color='gold'>Text</Tag>;
+            case 'json': return <Tag key={1} color="orange">JSON</Tag>;
+            case 'xml': return <Tag key={2} color="green">XML</Tag>;
+            case 'avro': return <Tag key={3} color="blue">Avro</Tag>;
+            case 'binary': return <Tag key={4} color="red">Binary</Tag>;
+            case 'text': return <Tag key={5} color="gold">Text</Tag>;
             case '': return null;
         }
-        return <Tag key={6} color='black'>Unknown: {type}</Tag>;
+        return <Tag key={6} color="black">Unknown: {type}</Tag>;
     }
 
-    empty = () => <Empty description={<>
-        <Text type='secondary' strong style={{ fontSize: '125%' }}>No messages</Text>
-        <br />
-        <span>
-            The selected topic/partition does not contain any messages.<br />
-            If you have any filters active, check if they actually match the messages you are looking for.<br />
-            If you are using live tailing (StartOffset = 'Newest'), make sure messages are being sent to the topic <i>while</i> kowl is waiting for messages.</span>
-    </>} />;
+    empty = () => {
+        const searchParams = uiState.topicSettings.searchParams;
+        const filterCount = searchParams.filtersEnabled ? searchParams.filters.filter(x => x.isActive).length : 0;
+
+        const hints: JSX.Element[] = [];
+        if (filterCount > 0)
+            hints.push(<>There are <b>{filterCount} filters</b> in use by the current search. Keep in mind that messages must pass <b>every</b> filter when using more than one filter at the same time.</>);
+        if (searchParams.startOffset == PartitionOffsetOrigin.End)
+            hints.push(<><b>Start offset</b> is set to "Newest". Make sure messages are being sent to the topic.</>);
+
+        const hintBox = hints.length ? <ul className={styles.noMessagesHint}>
+            {hints.map((x, i) => <li key={i}>{x}</li>)}
+        </ul> : null;
+
+        return (
+            <Empty description={<>
+                <Text type="secondary" strong style={{ fontSize: '125%' }}>No messages</Text>
+                {hintBox}
+            </>} />
+        );
+    };
 }
 
 @observer
@@ -725,11 +729,11 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
     render() {
         const { messages, onClose } = this.props;
         const count = (messages?.length ?? 0);
-        const title = count > 1 ? "Save Messages" : "Save Message";
+        const title = count > 1 ? 'Save Messages' : 'Save Message';
 
         // Keep dialog open after closing it, so it can play its closing animation
-        if (count > 0 && !this.isOpen) setImmediate(() => this.isOpen = true);
-        if (this.isOpen && count == 0) setImmediate(() => this.isOpen = false);
+        if (count > 0 && !this.isOpen) setTimeout(() => this.isOpen = true);
+        if (this.isOpen && count == 0) setTimeout(() => this.isOpen = false);
 
         return <Modal
             title={title} centered closable={false}
@@ -739,10 +743,10 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
             afterClose={onClose}
             okText="Save Messages"
         >
-            <div>Select the format in which you want to save {count == 1 ? "the message" : "all messages"}</div>
+            <div>Select the format in which you want to save {count == 1 ? 'the message' : 'all messages'}</div>
             <Radio.Group value={this.format} onChange={e => this.format = e.target.value}>
-                <Radio value='json' style={this.radioStyle}>JSON</Radio>
-                <Radio value='csv' disabled={true} style={this.radioStyle}>CSV</Radio>
+                <Radio value="json" style={this.radioStyle}>JSON</Radio>
+                <Radio value="csv" disabled={true} style={this.radioStyle}>CSV</Radio>
             </Radio.Group>
         </Modal>;
     }
@@ -752,10 +756,10 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
 
         const json = toJson(cleanMessages, 4);
 
-        const link = document.createElement("a");
+        const link = document.createElement('a');
         const file = new Blob([json], { type: 'application/json' });
         link.href = URL.createObjectURL(file);
-        link.download = "messages.json";
+        link.download = 'messages.json';
         document.body.appendChild(link); // required in firefox
         link.click();
 
@@ -809,14 +813,14 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: ()
         const text = typeof value === 'string' ? value : toJson(value);
 
         if (value == undefined || value == null || text.length == 0 || text == '{}')
-            return renderEmptyIcon("Empty Key");
+            return renderEmptyIcon('Empty Key');
 
         if (typeof value == 'object') {
             const previewTags = this.props.previewFields().filter(t => t.searchInMessageKey);
             if (previewTags.length > 0) {
                 const tags = getPreviewTags(value, previewTags);
-                return <span className='cellDiv fade' style={{ fontSize: '95%' }}>
-                    <div className={"previewTags previewTags-" + uiState.topicSettings.previewDisplayMode}>
+                return <span className="cellDiv fade" style={{ fontSize: '95%' }}>
+                    <div className={'previewTags previewTags-' + uiState.topicSettings.previewDisplayMode}>
                         {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
                     </div>
                 </span>;
@@ -827,7 +831,7 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: ()
             ? <>{text.slice(0, 44)}&hellip;</>
             : text;
 
-        return <span className='cellDiv' style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
+        return <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
             <code style={{ fontSize: '95%' }}>{content}</code>
         </span>;
     }
@@ -853,14 +857,14 @@ class StartOffsetDateTimePicker extends Component {
         // new Date().getTimezoneOffset()
 
         // startTimestamp is always in unixSeconds, so for display we might have to convert
-        let format = "DD.MM.YYYY HH:mm:ss";
+        let format = 'DD.MM.YYYY HH:mm:ss';
         let current: moment.Moment | undefined = searchParams.startTimestamp <= 0 ? undefined : moment.utc(searchParams.startTimestamp);
 
         if (uiState.topicSettings.searchParametersLocalTimeMode) {
             current = current?.local();
-            format += " [(Local)]";
+            format += ' [(Local)]';
         } else {
-            format += " [(UTC)]";
+            format += ' [(UTC)]';
         }
 
         return <DatePicker showTime={true} allowClear={false}
@@ -889,8 +893,8 @@ class DateTimePickerExtraFooter extends Component {
                 // console.log("date mode changed", { newValue: e.target.value, isLocalMode: uiState.topicSettings.searchParametersLocalTimeMode });
                 uiState.topicSettings.searchParametersLocalTimeMode = e.target.value == 'local';
             }}>
-            <Radio value='local'>Local</Radio>
-            <Radio value='utc'>UTC</Radio>
+            <Radio value="local">Local</Radio>
+            <Radio value="utc">UTC</Radio>
         </Radio.Group>;
     }
 }
@@ -928,8 +932,8 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 const previewTags = this.props.previewFields().filter(t => t.searchInMessageValue);
                 if (previewTags.length > 0) {
                     const tags = getPreviewTags(value, previewTags);
-                    text = <span className='cellDiv fade' style={{ fontSize: '95%' }}>
-                        <div className={"previewTags previewTags-" + uiState.topicSettings.previewDisplayMode}>
+                    text = <span className="cellDiv fade" style={{ fontSize: '95%' }}>
+                        <div className={'previewTags previewTags-' + uiState.topicSettings.previewDisplayMode}>
                             {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
                         </div>
                     </span>;
@@ -942,7 +946,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 }
             }
 
-            return <code><span className='cellDiv' style={{ fontSize: '95%' }}>{text}</span></code>;
+            return <code><span className="cellDiv" style={{ fontSize: '95%' }}>{text}</span></code>;
         }
         catch (e) {
             return <span style={{ color: 'red' }}>Error in RenderPreview: {((e as Error).message ?? String(e))}</span>;
@@ -952,18 +956,18 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
 
 
 function renderExpandedMessage(msg: TopicMessage, shouldExpand?: ((x: CollapsedFieldProps) => boolean)) {
-    return <div className='expandedMessage'>
+    return <div className="expandedMessage">
         <MessageMetaData msg={msg} />
 
         {/* .ant-tabs-nav { width: ??; } */}
-        <Tabs animated={false} defaultActiveKey='value'>
-            <Tabs.TabPane key='key' tab='Key' disabled={msg.key == null || msg.key.size == 0}>
+        <Tabs animated={false} defaultActiveKey="value">
+            <Tabs.TabPane key="key" tab="Key" disabled={msg.key == null || msg.key.size == 0}>
                 {renderPayload(msg.key, shouldExpand)}
             </Tabs.TabPane>
-            <Tabs.TabPane key='value' tab='Value'>
+            <Tabs.TabPane key="value" tab="Value">
                 {renderPayload(msg.value, shouldExpand)}
             </Tabs.TabPane>
-            <Tabs.TabPane key='headers' tab='Headers' disabled={msg.headers.length == 0}>
+            <Tabs.TabPane key="headers" tab="Headers" disabled={msg.headers.length == 0}>
                 <MessageHeaders msg={msg} />
             </Tabs.TabPane>
         </Tabs>
@@ -1014,7 +1018,7 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
         }
 
         if (isPrimitive) {
-            return <div className='codeBox'>{String(val)}</div>;
+            return <div className="codeBox">{String(val)}</div>;
         }
 
         return <KowlJsonView src={val} shouldCollapse={shouldCollapse} />;
@@ -1027,11 +1031,11 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
 const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
     const msg = props.msg;
     const data = {
-        "Key": `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
-        "Value": `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
-        "Headers": msg.headers.length > 0 ? `${msg.headers.length}` : "No headers set",
-        "Compression": msg.compression,
-        "Transactional": msg.isTransactional ? 'true' : 'false',
+        'Key': `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
+        'Value': `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
+        'Headers': msg.headers.length > 0 ? `${msg.headers.length}` : 'No headers set',
+        'Compression': msg.compression,
+        'Transactional': msg.isTransactional ? 'true' : 'false',
         // "Producer ID": "(msg.producerId)",
     };
 
@@ -1047,20 +1051,20 @@ const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
 
 const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
 
-    return <div className='messageHeaders'>
+    return <div className="messageHeaders">
         <div>
             <Table
-                size='small' style={{ margin: '0', padding: '0' }}
+                size="small" style={{ margin: '0', padding: '0' }}
                 indentSize={0}
                 dataSource={props.msg.headers}
                 pagination={false}
                 columns={[
                     {
                         width: 200, title: 'Key', dataIndex: 'key',
-                        render: headerKey => <span className='cellDiv' style={{ width: 'auto' }}>
+                        render: headerKey => <span className="cellDiv" style={{ width: 'auto' }}>
                             {headerKey
                                 ? <Ellipsis>{toSafeString(headerKey)}</Ellipsis>
-                                : renderEmptyIcon("Empty Key")}
+                                : renderEmptyIcon('Empty Key')}
                         </span>
                     },
                     {
@@ -1071,15 +1075,15 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                             if (typeof headerValue.payload === 'number') return <span>{String(headerValue.payload)}</span>;
 
                             if (typeof headerValue.payload === 'string')
-                                return <span className='cellDiv'>{headerValue.payload}</span>;
+                                return <span className="cellDiv">{headerValue.payload}</span>;
 
                             // object
-                            return <span className='cellDiv'>{toSafeString(headerValue.payload)}</span>;
+                            return <span className="cellDiv">{toSafeString(headerValue.payload)}</span>;
                         },
                     },
                     {
                         width: 120, title: 'Encoding', dataIndex: 'value',
-                        render: payload => <span className='nowrap'>{payload.encoding}</span>
+                        render: payload => <span className="nowrap">{payload.encoding}</span>
                     },
                 ]}
                 expandable={{
@@ -1087,7 +1091,7 @@ const MessageHeaders = observer((props: { msg: TopicMessage; }) => {
                     expandIconColumnIndex: 1,
                     expandRowByClick: true,
                     expandedRowRender: header => typeof header.value?.payload !== 'object'
-                        ? <div className='codeBox' style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
+                        ? <div className="codeBox" style={{ margin: '0', width: '100%' }}>{toSafeString(header.value.payload)}</div>
                         : <KowlJsonView src={header.value.payload as object} style={{ margin: '2em 0' }} />,
                 }}
                 rowKey={r => r.key}
@@ -1114,8 +1118,8 @@ class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDi
             </div>
             <div style={{ marginTop: '1em' }}>
                 <h3 style={{ marginBottom: '0.5em' }}>More Settings</h3>
-                <Space size='large'>
-                    <OptionGroup label='Timestamp' options={{
+                <Space size="large">
+                    <OptionGroup label="Timestamp" options={{
                         'Local DateTime': 'default',
                         'Unix DateTime': 'unixTimestamp',
                         'Relative': 'relative',
@@ -1136,7 +1140,7 @@ class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDi
             onOk={() => this.props.setShowDialog(false)}
             onCancel={() => this.props.setShowDialog(false)}
             width={750}
-            okText='Close'
+            okText="Close"
             cancelButtonProps={{ style: { display: 'none' } }}
             closable={false}
             maskClosable={true}
@@ -1192,9 +1196,9 @@ class ColumnOptions extends Component<{ tags: ColumnList[]; }> {
 
 
 const makeHelpEntry = (title: string, content: ReactNode, popTitle?: string): ReactNode => (
-    <Popover key={title} trigger='click' title={popTitle} content={content} overlayClassName='noArrow' overlayStyle={{ maxWidth: '600px' }}
+    <Popover key={title} trigger="click" title={popTitle} content={content} overlayClassName="noArrow" overlayStyle={{ maxWidth: '600px' }}
     >
-        <Button type='link' size='small' style={{ fontSize: '1.2em' }}>{title}</Button>
+        <Button type="link" size="small" style={{ fontSize: '1.2em' }}>{title}</Button>
     </Popover>
 );
 
@@ -1211,22 +1215,22 @@ const helpEntries = [
         <li>The context is re-used between messages, but every partition has its own context</li>
     </ul>),
     makeHelpEntry('Parameters', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li><span className='codeBox'>offset</span> (number)</li>
-        <li><span className='codeBox'>partitionId</span> (number)</li>
-        <li><span className='codeBox'>key</span> (string)</li>
-        <li><span className='codeBox'>value</span> (object)</li>
-        <li><span className='codeBox'>headers</span> (object)</li>
+        <li><span className="codeBox">offset</span> (number)</li>
+        <li><span className="codeBox">partitionID</span> (number)</li>
+        <li><span className="codeBox">key</span> (string)</li>
+        <li><span className="codeBox">value</span> (object)</li>
+        <li><span className="codeBox">headers</span> (object)</li>
     </ul>),
     makeHelpEntry('Examples', <ul style={{ margin: 0, paddingInlineStart: '15px' }}>
-        <li style={{ margin: '1em 0' }}><span className='codeBox'>offset &gt; 10000</span></li>
-        <li style={{ margin: '1em 0' }}><span className='codeBox'>value != null</span> Skips tombstone messages</li>
-        <li style={{ margin: '1em 0' }}><span className='codeBox'>if (key == 'example') return true</span></li>
-        <li style={{ margin: '1em 0' }}><span className='codeBox'>headers.myVersionHeader &amp;&amp; (headers.myVersionHeader &gt;&eq; 2)</span> Only messages that have a header entry like {'{key: "myVersionHeader", "value:" 12345}'}</li>
-        <li style={{ margin: '1em 0' }}><span className='codeBox'>return (partitionId == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
-        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} alt="Filter Example 1" loading='lazy' /></div></li>
-        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} alt="Filter Example 2" loading='lazy' /></div></li>
+        <li style={{ margin: '1em 0' }}><span className="codeBox">offset &gt; 10000</span></li>
+        <li style={{ margin: '1em 0' }}><span className="codeBox">value != null</span> Skips tombstone messages</li>
+        <li style={{ margin: '1em 0' }}><span className="codeBox">if (key == 'example') return true</span></li>
+        <li style={{ margin: '1em 0' }}><span className="codeBox">headers.myVersionHeader &amp;&amp; (headers.myVersionHeader &gt;&eq; 2)</span> Only messages that have a header entry like {'{key: "myVersionHeader", "value:" 12345}'}</li>
+        <li style={{ margin: '1em 0' }}><span className="codeBox">return (partitionID == 2) &amp;&amp; (value.someProperty == 'test-value')</span></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample1} alt="Filter Example 1" loading="lazy" /></div></li>
+        <li style={{ margin: '1em 0' }}><div style={{ border: '1px solid #ccc', borderRadius: '4px' }}><img src={filterExample2} alt="Filter Example 2" loading="lazy" /></div></li>
     </ul>),
-].genericJoin((last, cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
+].genericJoin((_last, _cur, curIndex) => <div key={'separator_' + curIndex} style={{ display: 'inline', borderLeft: '1px solid #0003' }} />);
 
 @observer
 class MessageSearchFilterBar extends Component {
@@ -1255,6 +1259,7 @@ class MessageSearchFilterBar extends Component {
 
         return <div className={styles.filterbar}>
 
+
             <div className={styles.filters}>
                 {/* Existing Tags List  */}
                 {settings.filters?.map(e =>
@@ -1263,11 +1268,10 @@ class MessageSearchFilterBar extends Component {
                         className={e.isActive ? 'filterTag' : 'filterTag filterTagDisabled'}
                         key={e.id}
                         closable
-                        color={e.isActive ? 'blue' : undefined}
                         onClose={() => settings.filters.remove(e)}
                     >
                         <SettingOutlined
-                            className='settingIconFilter'
+                            className="settingIconFilter"
                             onClick={() => {
                                 this.currentIsNew = false;
                                 this.currentFilterBackup = toJson(e);
@@ -1290,19 +1294,17 @@ class MessageSearchFilterBar extends Component {
                     settings.filters.push(this.currentFilter);
                 })}>
                     <span className={styles.addFilter}> {/* marginRight: '4px' */}
-                        <PlusIcon size='small' />
+                        <PlusIcon size="small" />
                     </span>
                     {/* <span>New Filter</span> */}
                 </Tag>
             </div>
 
-            {console.log(api.messageSearchPhase)}
-
             {api.messageSearchPhase === null || api.messageSearchPhase === 'Done'
                 ? (
                     <div className={styles.metaSection}>
                         <span><DownloadOutlined className={styles.bytesIcon} /> {prettyBytes(api.messagesBytesConsumed)}</span>
-                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {api.messagesElapsedMs ? prettyMilliseconds(api.messagesElapsedMs) : ""}</span>
+                        <span className={styles.time}><ClockCircleOutlined className={styles.timeIcon} /> {api.messagesElapsedMs ? prettyMilliseconds(api.messagesElapsedMs) : ''}</span>
                     </div>
                 )
                 : (
@@ -1327,14 +1329,14 @@ class MessageSearchFilterBar extends Component {
                 destroyOnClose={true}
                 // footer={null}
 
-                okText='Close'
+                okText="Close"
                 cancelButtonProps={{ style: { display: 'none' } }}
                 maskClosable={true}
                 footer={<div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'flex-end' }}>
                     <div style={{ fontFamily: '"Open Sans", sans-serif', fontSize: '10.5px', color: '#828282' }}>
                         Changes are saved automatically
                     </div>
-                    <Button type='primary' onClick={() => this.currentFilter = null} >Close</Button>
+                    <Button type="primary" onClick={() => this.currentFilter = null} >Close</Button>
                 </div>}
 
                 bodyStyle={{ paddingTop: '18px', paddingBottom: '12px', display: 'flex', gap: '12px', flexDirection: 'column' }}
@@ -1343,7 +1345,7 @@ class MessageSearchFilterBar extends Component {
 
                     {/* Title */}
                     <span style={{ display: 'inline-flex', alignItems: 'center', marginBottom: '8px' }}>
-                        <span className='h3' style={{ marginRight: '0.3em' }}>Edit Filter</span>
+                        <span className="h3" style={{ marginRight: '0.3em' }}>Edit Filter</span>
                         <Button style={{
                             opacity: this.hasChanges ? 1 : 0,
                             transform: this.hasChanges ? '' : 'translate(-10px 0px)',
@@ -1351,7 +1353,7 @@ class MessageSearchFilterBar extends Component {
                             fontFamily: '"Open Sans", sans-serif',
                             fontSize: '73%',
                         }}
-                            danger type='dashed' size='small'
+                            danger type="dashed" size="small"
                             onClick={() => this.revertChanges()}
                         >
                             Revert Changes
@@ -1359,37 +1361,28 @@ class MessageSearchFilterBar extends Component {
                     </span>
 
                     {/* Name */}
-                    <Label text='Display Name'>
+                    <Label text="Display Name">
                         <Input
                             style={{ padding: '2px 8px' }}
                             value={this.currentFilter!.name}
                             onChange={e => { this.currentFilter!.name = e.target.value; this.hasChanges = true; }}
-                            placeholder='will be shown instead of the code'
-                            size='small' />
+                            placeholder="will be shown instead of the code"
+                            size="small" />
                     </Label>
 
                     {/* Code Box */}
-                    <Label text='Filter Code'>
-                        <Editor
-                            value={this.currentFilter!.code}
-                            onValueChange={code => { this.currentFilter!.code = code; this.hasChanges = true; }}
-                            highlight={code => Prism.highlight(code, PrismLanguages["javascript"], "javascript")}
-                            padding={10}
-                            style={{
-                                fontFamily: '"Fira code", "Fira Mono", monospace',
-                                fontSize: 12,
-                                minWidth: '300px',
-                                minHeight: '200px',
-                                border: '1px solid #0004',
-                                outline: 'none',
-                                borderRadius: '2px',
-                            }}
-                            textareaClassName='code-editor-textarea'
-                        />
+                    <Label text="Filter Code">
+                        <>
+                            <FilterEditor
+                                value={this.currentFilter!.code}
+                                onValueChange={(code, transpiled) => { this.currentFilter!.code = code; this.currentFilter!.transpiledCode = transpiled; this.hasChanges = true; }}
+
+                            />
+                        </>
                     </Label>
 
                     {/* Help Bar */}
-                    <Alert type='info' style={{ margin: '0px', padding: '3px 8px', }} message={<>
+                    <Alert type="info" style={{ margin: '0px', padding: '3px 8px', }} message={<>
                         <span style={{ fontFamily: '"Open Sans", sans-serif', fontWeight: 600, fontSize: '80%', color: '#0009' }}>
                             <span>Help:</span>
                             {helpEntries}
@@ -1412,7 +1405,7 @@ class MessageSearchFilterBar extends Component {
 }
 
 function renderEmptyIcon(tooltipText?: string) {
-    if (!tooltipText) tooltipText = "Empty";
+    if (!tooltipText) tooltipText = 'Empty';
     return <Tooltip title={tooltipText} mouseEnterDelay={0.1} getPopupContainer={findPopupContainer}><span style={{ opacity: 0.66, marginLeft: '2px' }}><SkipIcon /></span></Tooltip>;
 }
 
@@ -1425,16 +1418,16 @@ function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions
 
     let errorText: string | undefined;
     if (isCompacted)
-        errorText = "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
+        errorText = 'Records on Topics with the \'compact\' cleanup policy cannot be deleted.';
     else if (!hasDeleteRecordsPrivilege(allowedActions))
-        errorText = "You're not permitted to delete records on this topic.";
+        errorText = 'You\'re not permitted to delete records on this topic.';
     else if (!isSupported(Feature.DeleteRecords))
-        errorText = "The cluster doesn't support deleting records.";
+        errorText = 'The cluster doesn\'t support deleting records.';
 
 
-    let content: JSX.Element | string = "Delete Records";
+    let content: JSX.Element | string = 'Delete Records';
     if (errorText)
-        content = <Tooltip placement="top" title="Records on Topics with the 'compact' cleanup policy cannot be deleted.">{content}</Tooltip>;
+        content = <Tooltip placement="top" title={errorText}>{content}</Tooltip>;
 
     return <Menu.Item key={key} disabled={!isEnabled} onClick={onClick}>{content}</Menu.Item>;
 }
@@ -1443,21 +1436,21 @@ function DeleteRecordsMenuItem(key: string, isCompacted: boolean, allowedActions
 
 
 // we can only write text to the clipboard, so rawKey/rawValue have been removed for now
-function copyMessage(record: TopicMessage, field: "jsonKey" | "jsonValue" | "timestamp") {
+function copyMessage(record: TopicMessage, field: 'jsonKey' | 'jsonValue' | 'timestamp') {
     switch (field) {
-        case "jsonKey":
+        case 'jsonKey':
             typeof record.key.payload === 'string'
                 ? navigator.clipboard.writeText(record.key.payload as string)
                 : navigator.clipboard.writeText(JSON.stringify(record.key.payload, null, 4));
             message.success('Key copied to clipboard', 5);
             break;
-        case "jsonValue":
+        case 'jsonValue':
             typeof record.value.payload === 'string'
                 ? navigator.clipboard.writeText(record.value.payload as string)
                 : navigator.clipboard.writeText(JSON.stringify(record.value.payload, null, 4));
             message.success('Value copied to clipboard', 5);
             break;
-        case "timestamp":
+        case 'timestamp':
             navigator.clipboard.writeText(record.timestamp.toString());
             message.success('Epoch Timestamp copied to clipboard', 5);
             break;
@@ -1488,8 +1481,8 @@ function createPublishRecordsModal(parent: TopicMessageView) {
                 compressionType: CompressionType.Uncompressed,
                 encodingType: uiState.topicSettings.produceRecordEncoding || 'json',
 
-                key: "",
-                value: "",
+                key: '',
+                value: '',
                 headers: [{ key: '', value: '' }],
             } as PublishMessageModalProps['state']);
         },
@@ -1501,7 +1494,7 @@ function createPublishRecordsModal(parent: TopicMessageView) {
                 JSON.parse(state.value);
 
             const convert: { [key in EncodingType]: (x: string) => string | null } = {
-                'none': x => null,
+                'none': () => null,
                 'base64': x => x.trim(),
                 'json': x => encodeBase64(x.trim()),
                 'utf8': x => encodeBase64(x),
@@ -1532,11 +1525,11 @@ function createPublishRecordsModal(parent: TopicMessageView) {
                 throw new Error(errors.join('\n\n'));
 
             if (result.records.length == 1)
-                return <>Record published on partition <span className='codeBox'>{result.records[0].partitionId}</span> with offset <span className='codeBox'>{result.records[0].offset}</span></>
+                return <>Record published on partition <span className="codeBox">{result.records[0].partitionId}</span> with offset <span className="codeBox">{result.records[0].offset}</span></>
             return <>{result.records.length} records published successfully</>;
 
         },
-        onSuccess: (state, result) => {
+        onSuccess: (state) => {
             uiState.topicSettings.produceRecordEncoding = state.encodingType;
             parent.props.refreshTopicData(true);
             parent.searchFunc('auto');
@@ -1545,3 +1538,4 @@ function createPublishRecordsModal(parent: TopicMessageView) {
     })
 
 }
+

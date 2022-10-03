@@ -21,9 +21,9 @@ import OktaLogo from '../../utils/svg/OktaLogo';
 
 
 const iconMap = new Map([
-    ["google", <GoogleOutlined style={{ marginBottom: '6px' }} />],
-    ["github", <GithubOutlined style={{ marginBottom: '6px' }} />],
-    ["okta", <span style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{OktaLogo}</span>],
+    ['google', <GoogleOutlined key="google-icon" style={{ marginBottom: '6px' }} />],
+    ['github', <GithubOutlined key="github-icon" style={{ marginBottom: '6px' }} />],
+    ['okta', <span key="okata-icon" style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{OktaLogo}</span>],
 ]);
 
 interface ProvidersResponse {
@@ -84,7 +84,7 @@ class Login extends Component {
         if (ar)
             ar = ar.slice().sort((a, b) => a.displayName.localeCompare(b.displayName));
 
-        return <div className='login'>
+        return <div className="login">
 
             <Modal
                 title="Access Denied"
@@ -97,20 +97,20 @@ class Login extends Component {
                 <p style={{ whiteSpace: 'pre-wrap' }}>{uiState.loginError}</p>
             </Modal>
 
-            <div className='loginContainer'>
+            <div className="loginContainer">
 
-                <div className='loginLeft'>
-                    <div className='loginLogo' style={{ height: '60px', marginBottom: 'auto', marginTop: '2rem' }}>
+                <div className="loginLeft">
+                    <div className="loginLogo" style={{ height: '60px', marginBottom: 'auto', marginTop: '2rem' }}>
                         <img src={SvgLogo} style={{ width: '100%' }} alt="Redpanda Console Logo" />
                     </div>
 
                     <div style={{ justifySelf: 'center', marginBottom: 'auto' }}>
-                        <p style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{this.providersResponse?.loginTitle ?? "Howdy!"}</p>
+                        <p style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{this.providersResponse?.loginTitle ?? 'Howdy!'}</p>
                         <p style={{ width: '230px', lineHeight: '1.2em' }}>Login with an OAuth provider to continue</p>
                     </div>
                 </div>
 
-                <div className='loginRight'>
+                <div className="loginRight">
                     <div className="loginContainerRight">
 
                         <div style={{ marginTop: 'auto' }}>
@@ -118,10 +118,10 @@ class Login extends Component {
                                 <span>Sign in</span><br />
                                 <span style={{ fontSize: '0.66em' }}>to access Redpanda Console</span>
                             </div>
-                            <div className='loginButtonList'>
-                                {ar?.map(p => <LoginProviderButton provider={p} />)
+                            <div className="loginButtonList">
+                                {ar?.map(p => <LoginProviderButton key={p.displayName} provider={p} />)
                                     || (this.providersError && <ProvidersError error={this.providersError} />)
-                                    || <div style={{ fontSize: '14px', marginTop: '32px', color: '#ddd' }}><Spin size='large' /><br />Retreiving login method from backend...</div>}
+                                    || <div style={{ fontSize: '14px', marginTop: '32px', color: '#ddd' }}><Spin size="large" /><br />Retreiving login method from backend...</div>}
                             </div>
                         </div>
 
@@ -138,7 +138,7 @@ export default Login;
 function LoginProviderButton(props: { provider: Provider }): JSX.Element {
     const p = props.provider;
 
-    return <div key={p.displayName} className='loginButton2' onClick={() => window.location.replace(p.url)}>
+    return <div key={p.displayName} className="loginButton2" onClick={() => window.location.replace(p.url)}>
         {iconMap.get(p.displayName.toLowerCase())}
         <span>{p.displayName}</span>
     </div>

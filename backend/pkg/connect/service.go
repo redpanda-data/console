@@ -42,7 +42,7 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 			zap.String("cluster_name", clusterCfg.Name),
 			zap.String("cluster_address", clusterCfg.URL))
 
-		opts := []con.ClientOption{con.WithTimeout(cfg.ReadTimeout), con.WithUserAgent("Kowl")}
+		opts := []con.ClientOption{con.WithTimeout(cfg.ReadTimeout), con.WithUserAgent("Redpanda Console")}
 
 		opts = append(opts, con.WithHost(clusterCfg.URL))
 		// TLS Config

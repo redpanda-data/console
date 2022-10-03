@@ -9,25 +9,25 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component, useRef } from "react";
-import { observer } from "mobx-react";
-import { ConfigProvider, Empty, Input, Popover, Table, Tooltip } from "antd";
-import { makePaginationConfig, renderLogDirSummary, sortField, WarningToolip } from "../../misc/common";
-import { Partition, PartitionReassignmentsPartition, Topic } from "../../../state/restInterfaces";
-import { BrokerList } from "./components/BrokerList";
-import { IndeterminateCheckbox } from "./components/IndeterminateCheckbox";
-import { SelectionInfoBar } from "./components/StatisticsBars";
-import { DebugTimerStore, prettyBytesOrNA } from "../../../utils/utils";
-import { ColumnProps } from "antd/lib/table/Column";
-import { DefaultSkeleton, findPopupContainer, LayoutBypass, OptionGroup, InfoText } from "../../../utils/tsxUtils";
-import { api } from "../../../state/backendApi";
-import { computed, IReactionDisposer, makeObservable, observable, transaction } from "mobx";
-import { PartitionSelection } from "./ReassignPartitions";
+import React, { Component } from 'react';
+import { observer } from 'mobx-react';
+import { ConfigProvider, Popover, Table } from 'antd';
+import { makePaginationConfig, renderLogDirSummary, sortField, WarningToolip } from '../../misc/common';
+import { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/restInterfaces';
+import { BrokerList } from '../../misc/BrokerList';
+import { IndeterminateCheckbox } from './components/IndeterminateCheckbox';
+import { SelectionInfoBar } from './components/StatisticsBar';
+import { prettyBytesOrNA } from '../../../utils/utils';
+import { ColumnProps } from 'antd/lib/table/Column';
+import { DefaultSkeleton, findPopupContainer, ZeroSizeWrapper, InfoText } from '../../../utils/tsxUtils';
+import { api } from '../../../state/backendApi';
+import { computed, IReactionDisposer, makeObservable, observable, transaction } from 'mobx';
+import { PartitionSelection } from './ReassignPartitions';
 import Highlighter from 'react-highlight-words';
-import { uiSettings } from "../../../state/ui";
-import { ColumnFilterItem, ColumnsType, ExpandableConfig, FilterDropdownProps, TableRowSelection } from "antd/lib/table/interface";
-import { SearchOutlined, WarningTwoTone } from "@ant-design/icons";
-import { SearchTitle } from "../../misc/KowlTable";
+import { uiSettings } from '../../../state/ui';
+import { ColumnFilterItem, ColumnsType, ExpandableConfig, TableRowSelection } from 'antd/lib/table/interface';
+import { SearchOutlined, WarningTwoTone } from '@ant-design/icons';
+import { SearchTitle } from '../../misc/KowlTable';
 
 export type TopicWithPartitions = Topic & { partitions: Partition[], activeReassignments: PartitionReassignmentsPartition[] };
 
@@ -80,7 +80,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
     render() {
         if (!api.topics) return DefaultSkeleton;
 
-        const query = uiSettings.reassignment.quickSearch ?? "";
+        const query = uiSettings.reassignment.quickSearch ?? '';
         const filterActive = query.length > 1;
 
         let searchRegex: RegExp | undefined = undefined;
@@ -90,9 +90,9 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
         const columns: ColumnProps<TopicWithPartitions>[] = [
             {
-                title: <SearchTitle title='Topic' observableFilterOpen={this} observableSettings={uiSettings.reassignment} />,
+                title: <SearchTitle title="Topic" observableFilterOpen={this} observableSettings={uiSettings.reassignment} />,
                 dataIndex: 'topicName',
-                render: (v, record) => {
+                render: (_v, record) => {
                     const content = filterActive
                         ? <Highlighter searchWords={[query]} textToHighlight={record.topicName} />
                         : record.topicName;
@@ -110,7 +110,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
 
                 // to support both filters at the same time (topic and brokers), both filters *must* be in controlled mode
                 filteredValue: filterActive ? [query] : undefined,
-                onFilter: (value, record) => searchRegex?.test(record.topicName) ?? false,
+                onFilter: (_value, record) => searchRegex?.test(record.topicName) ?? false,
 
                 filterIcon: filterIcon(filterActive),
                 filterDropdown: <></>,
@@ -135,7 +135,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                 sorter: sortField('partitionCount')
             },
             {
-                title: 'Replication Factor', width: 160, render: (t, r) => {
+                title: 'Replication Factor', width: 160, render: (_t, r) => {
                     if (r.activeReassignments.length == 0) return r.replicationFactor;
                     return <InfoText tooltip="While reassignment is active, replication factor is temporarily doubled." maxWidth="180px">
                         {r.replicationFactor}
@@ -145,7 +145,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             },
             {
                 title: 'Brokers', width: 160, dataIndex: 'partitions',
-                render: (value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A',
+                render: (_value, record) => record.partitions?.map(p => p.leader).distinct().length ?? 'N/A',
 
                 // to support both filters at the same time (topic and brokers), both filters *must* be in controlled mode
                 filteredValue: this.selectedBrokerFilters,
@@ -167,7 +167,7 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
             },
             {
                 title: 'Size', width: 110,
-                render: (v, r) => renderLogDirSummary(r.logDirSummary),
+                render: (_v, r) => renderLogDirSummary(r.logDirSummary),
                 sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes
             },
         ];
@@ -184,13 +184,13 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                     let c = t as HTMLElement | null | undefined;
                     while (c && c.tagName != 'TH' && c.tagName != 'TD')
                         c = c.parentElement;
-                    return c ?? t;
+                    return c ?? t ?? document.body;
                 }}>
 
                     <Table
                         style={{ margin: '0', }} size={'middle'}
                         pagination={this.pageConfig}
-                        onChange={(p, filters, sorters) => {
+                        onChange={(p, filters, _sorters) => {
                             if (p.pageSize) uiSettings.reassignment.pageSizeSelect = p.pageSize;
                             this.pageConfig.current = p.current;
                             this.pageConfig.pageSize = p.pageSize;
@@ -220,19 +220,19 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
                                 <InfoText tooltip={<>
                                     If you want to select multiple adjacent items, you can use the SHIFT key.<br />
                                     Shift-Click selects the first item, last item and all items in between.
-                                </>} iconSize='16px' placement='right' />
+                                </>} iconSize="16px" placement="right" />
                             </div>,
-                            renderCell: (value: boolean, record, index, originNode: React.ReactNode) => {
+                            renderCell: (_value: boolean, record, _index, originNode: React.ReactNode) => {
                                 return <IndeterminateCheckbox
                                     originalCheckbox={originNode}
                                     getCheckState={() => this.getTopicCheckState(record.topicName)}
                                 />
                             },
-                            onSelect: (record, selected: boolean, selectedRows) => {
+                            onSelect: (record, selected: boolean, _selectedRows) => {
                                 if (!record.partitions) return;
                                 this.setTopicSelection(record, selected);
                             },
-                            onSelectMultiple: (selected, selectedRows, changeRows) => {
+                            onSelectMultiple: (selected, _selectedRows, changeRows) => {
                                 transaction(() => {
                                     for (const r of changeRows)
                                         for (const p of r.partitions)
@@ -350,14 +350,14 @@ export class StepSelectPartitions extends Component<{ partitionSelection: Partit
         const brokerItems = brokers.map(b => ({ text: b.address, value: b.brokerId }));
         if (brokerItems.length > 0)
             brokerFilters.push({
-                text: "Brokers", value: "Brokers",
+                text: 'Brokers', value: 'Brokers',
                 children: brokerItems,
             });
 
         // Racks
         if (racks.length > 0)
             brokerFilters.push({
-                text: "Racks", value: "Racks",
+                text: 'Racks', value: 'Racks',
                 children: racks.map(r => ({ text: r, value: r })),
             });
 
@@ -386,14 +386,14 @@ export class SelectPartitionTable extends Component<{
                     : renderPartitionError(p)
         },
         {
-            width: 100, title: 'Size', render: (v, p) => prettyBytesOrNA(p.replicaSize),
+            width: 100, title: 'Size', render: (_v, p) => prettyBytesOrNA(p.replicaSize),
             sortOrder: 'ascend', sorter: (a, b) => a.replicaSize - b.replicaSize
         },
     ];
 
     render() {
         return <div style={{ paddingTop: '4px', paddingBottom: '8px', width: 0, minWidth: '100%' }}>
-            <Table size='small' className='nestedTable'
+            <Table size="small" className="nestedTable"
                 dataSource={this.props.topicPartitions}
                 pagination={this.partitionsPageConfig}
                 scroll={this.scroll}
@@ -438,8 +438,8 @@ function renderPartitionError(partition: Partition) {
     const txt = [partition.partitionError, partition.waterMarksError].join('\n\n');
 
     return <Popover
-        title='Partition Error'
-        placement='rightTop' overlayClassName='popoverSmall'
+        title="Partition Error"
+        placement="rightTop" overlayClassName="popoverSmall"
         getPopupContainer={findPopupContainer}
         content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
             {txt}
@@ -447,19 +447,19 @@ function renderPartitionError(partition: Partition) {
         }
     >
         <span>
-            <LayoutBypass justifyContent='center' alignItems='center' width='20px' height='18px'>
+            <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
                 <span style={{ fontSize: '19px' }}>
-                    <WarningTwoTone twoToneColor='orange' />
+                    <WarningTwoTone twoToneColor="orange" />
                 </span>
-            </LayoutBypass>
+            </ZeroSizeWrapper>
         </span>
     </Popover>
 }
 
-function renderPartitionErrorsForTopic(partitionsWithErrors: number) {
+function renderPartitionErrorsForTopic(_partitionsWithErrors: number) {
     return <Popover
-        title='Partition Error'
-        placement='rightTop' overlayClassName='popoverSmall'
+        title="Partition Error"
+        placement="rightTop" overlayClassName="popoverSmall"
         getPopupContainer={findPopupContainer}
         content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
             Some partitions could not be retreived.<br />
@@ -468,11 +468,11 @@ function renderPartitionErrorsForTopic(partitionsWithErrors: number) {
         }
     >
         <span>
-            <LayoutBypass justifyContent='center' alignItems='center' width='20px' height='18px'>
+            <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
                 <span style={{ fontSize: '19px' }}>
-                    <WarningTwoTone twoToneColor='orange' />
+                    <WarningTwoTone twoToneColor="orange" />
                 </span>
-            </LayoutBypass>
+            </ZeroSizeWrapper>
         </span>
     </Popover>
 }

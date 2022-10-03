@@ -11,16 +11,17 @@ package api
 
 import (
 	"fmt"
-	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
-	"github.com/twmb/franz-go/pkg/kmsg"
 	"net/http"
 	"strings"
+
+	"github.com/cloudhut/common/rest"
+	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
 	type response struct {
-		Topics []owl.TopicDetails `json:"topics"`
+		Topics []console.TopicDetails `json:"topics"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -30,17 +31,17 @@ func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
 			topicNames = strings.Split(requestedTopicNames, ",")
 		}
 
-		topicDetails, restErr := api.OwlSvc.GetTopicDetails(r.Context(), topicNames)
+		topicDetails, restErr := api.ConsoleSvc.GetTopicDetails(r.Context(), topicNames)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
 		// Kowl business hook - only include topics the user is allowed to see
-		visibleTopics := make([]owl.TopicDetails, 0, len(topicDetails))
+		visibleTopics := make([]console.TopicDetails, 0, len(topicDetails))
 		for _, topic := range topicDetails {
 			// Check if logged in user is allowed to see this topic, if not - don't add it to the list of returned topics
-			canSee, restErr := api.Hooks.Owl.CanSeeTopic(r.Context(), topic.TopicName)
+			canSee, restErr := api.Hooks.Console.CanSeeTopic(r.Context(), topic.TopicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -61,12 +62,12 @@ func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
 
 func (api *API) handleGetPartitionReassignments() http.HandlerFunc {
 	type response struct {
-		Topics []owl.PartitionReassignments `json:"topics"`
+		Topics []console.PartitionReassignments `json:"topics"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Check if logged in user (Kowl business) is allowed to list reassignments
-		isAllowed, restErr := api.Hooks.Owl.CanPatchPartitionReassignments(r.Context())
+		// 1. Check if logged in user (Console Business) is allowed to list reassignments
+		isAllowed, restErr := api.Hooks.Console.CanPatchPartitionReassignments(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -82,7 +83,7 @@ func (api *API) handleGetPartitionReassignments() http.HandlerFunc {
 		}
 
 		// 2. Fetch in progress reassignments (supported by Kafka 2.4.0+)
-		topics, err := api.OwlSvc.ListPartitionReassignments(r.Context())
+		topics, err := api.ConsoleSvc.ListPartitionReassignments(r.Context())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
@@ -132,7 +133,7 @@ func (p *patchPartitionsRequest) OK() error {
 
 func (api *API) handlePatchPartitionAssignments() http.HandlerFunc {
 	type response struct {
-		ReassignPartitionsResponse []owl.AlterPartitionReassignmentsResponse `json:"reassignPartitionsResponses"`
+		ReassignPartitionsResponse []console.AlterPartitionReassignmentsResponse `json:"reassignPartitionsResponses"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -144,8 +145,9 @@ func (api *API) handlePatchPartitionAssignments() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged in user is allowed to reassign partitions (always true for Kowl, but not for Kowl Business)
-		isAllowed, restErr := api.Hooks.Owl.CanPatchPartitionReassignments(r.Context())
+		// 2. Check if logged in user is allowed to reassign partitions (always true for Console OSS, but not
+		// for RP Console Business)
+		isAllowed, restErr := api.Hooks.Console.CanPatchPartitionReassignments(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -178,7 +180,7 @@ func (api *API) handlePatchPartitionAssignments() http.HandlerFunc {
 		}
 
 		// 4. Check response and pass it to the frontend
-		owlRes, err := api.OwlSvc.AlterPartitionAssignments(r.Context(), kmsgReq)
+		owlRes, err := api.ConsoleSvc.AlterPartitionAssignments(r.Context(), kmsgReq)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
@@ -280,7 +282,7 @@ func (p *patchConfigsRequestResourceConfig) OK() error {
 
 func (api *API) handlePatchConfigs() http.HandlerFunc {
 	type response struct {
-		PatchedConfigs []owl.IncrementalAlterConfigsResourceResponse `json:"patchedConfigs"`
+		PatchedConfigs []console.IncrementalAlterConfigsResourceResponse `json:"patchedConfigs"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -293,7 +295,7 @@ func (api *API) handlePatchConfigs() http.HandlerFunc {
 		}
 
 		// 2. Check if logged in user is allowed to alter configs (always true for Kowl, but not for Kowl Business)
-		isAllowed, restErr := api.Hooks.Owl.CanPatchConfigs(r.Context())
+		isAllowed, restErr := api.Hooks.Console.CanPatchConfigs(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -327,7 +329,7 @@ func (api *API) handlePatchConfigs() http.HandlerFunc {
 		}
 
 		// 4. Check response and pass it to the frontend
-		patchedCfgs, restErr := api.OwlSvc.IncrementalAlterConfigs(r.Context(), kmsgReq)
+		patchedCfgs, restErr := api.ConsoleSvc.IncrementalAlterConfigs(r.Context(), kmsgReq)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

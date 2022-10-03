@@ -11,15 +11,13 @@
 
 /* eslint-disable no-useless-escape */
 import { Collapse, Skeleton } from 'antd';
-import { action, autorun, comparer, IReactionDisposer, makeObservable, observable, reaction } from 'mobx';
+import { action, comparer, IReactionDisposer, makeObservable, observable, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { api } from '../../../../state/backendApi';
 import { ConnectorProperty, DataType, PropertyWidth } from '../../../../state/restInterfaces';
-import { IsDev } from '../../../../utils/env';
-import { scrollTo } from "../../../../utils/utils";
+import { scrollTo } from '../../../../utils/utils';
 import { removeNamespace } from '../helper';
-import { DebugEditor } from './DebugEditor';
 import { PropertyGroupComponent } from './PropertyGroup';
 
 
@@ -35,11 +33,11 @@ export class ConfigPage extends Component<ConfigPageProps> {
 
     @observable allGroups: PropertyGroup[] = [];
     propsByName = new Map<string, Property>();
-    @observable jsonText = "";
+    @observable jsonText = '';
     @observable error: string | undefined = undefined;
 
     @observable initPending = true;
-    fallbackGroupName: string = "";
+    fallbackGroupName: string = '';
     reactionDisposers: IReactionDisposer[] = [];
 
     constructor(p: any) {
@@ -65,10 +63,10 @@ export class ConfigPage extends Component<ConfigPageProps> {
         try {
             // Validate with empty object to get all properties initially
             const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, {
-                "connector.class": pluginClassName,
-                "name": "",
-                "topic": "topic",
-                "topics": "topics",
+                'connector.class': pluginClassName,
+                'name': '',
+                'topic': 'topic',
+                'topics': 'topics',
             });
             const allProps = createCustomProperties(validationResult.configs, this.fallbackGroupName);
 
@@ -149,7 +147,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
 
                 // Skip empty values for strings
                 if (StringLikeTypes.includes(p.entry.definition.type))
-                    if (p.value == null || p.value == "")
+                    if (p.value == null || p.value == '')
                         continue;
 
                 // Include the value
@@ -268,7 +266,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
         if (this.error)
             return <div>
                 <h3>Error</h3>
-                <div className='codeBox'>{this.error}</div>
+                <div className="codeBox">{this.error}</div>
             </div>
 
         if (this.initPending)
@@ -287,7 +285,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
                         key={g.groupName}
                         header={<div style={{ display: 'flex', alignItems: 'center', gap: '1em' }}>
                             <span style={{ fontSize: 'larger', fontWeight: 600, fontFamily: 'Open Sans' }}>{g.groupName}</span>
-                            <span className='issuesTag'>{g.propertiesWithErrors.length} issues</span>
+                            <span className="issuesTag">{g.propertiesWithErrors.length} issues</span>
                         </div>}
                     >
                         <PropertyGroupComponent group={g} allGroups={this.allGroups} />
@@ -301,24 +299,24 @@ export class ConfigPage extends Component<ConfigPageProps> {
 }
 
 const hiddenProperties = [
-    "connector.class" // user choses that in the first page of the wizard
+    'connector.class' // user choses that in the first page of the wizard
 ];
 
 const converters = [
-    "io.confluent.connect.avro.AvroConverter",
-    "io.confluent.connect.protobuf.ProtobufConverter",
-    "org.apache.kafka.connect.storage.StringConverter",
-    "org.apache.kafka.connect.json.JsonConverter",
-    "io.confluent.connect.json.JsonSchemaConverter",
-    "org.apache.kafka.connect.converters.ByteArrayConverter",
+    'io.confluent.connect.avro.AvroConverter',
+    'io.confluent.connect.protobuf.ProtobufConverter',
+    'org.apache.kafka.connect.storage.StringConverter',
+    'org.apache.kafka.connect.json.JsonConverter',
+    'io.confluent.connect.json.JsonSchemaConverter',
+    'org.apache.kafka.connect.converters.ByteArrayConverter',
 ];
 const suggestedValues: { [key: string]: string[] } = {
-    "key.converter": converters,
-    "value.converter": converters,
-    "header.converter": converters,
-    "config.action.reload": [
-        "restart",
-        "none"
+    'key.converter': converters,
+    'value.converter': converters,
+    'header.converter': converters,
+    'config.action.reload': [
+        'restart',
+        'none'
     ]
 };
 

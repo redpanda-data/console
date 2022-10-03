@@ -9,12 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { observable, computed, makeObservable } from "mobx";
-import { PageDefinition } from "../components/routes";
-import { clone } from "../utils/jsonUtils";
-import { api } from "./backendApi";
-import { AclRequest, AclRequestDefault } from "./restInterfaces";
-import { uiSettings, TopicDetailsSettings as TopicSettings } from "./ui";
+import { observable, computed, makeObservable } from 'mobx';
+import { PageDefinition } from '../components/routes';
+import { api } from './backendApi';
+import { uiSettings, TopicDetailsSettings as TopicSettings } from './ui';
 
 
 export interface BreadcrumbEntry {
@@ -31,7 +29,7 @@ class UIState {
 
     @observable private _pageTitle: string = ' '
     @computed get pageTitle() { return this._pageTitle; }
-    set pageTitle(title: string) { this._pageTitle = title; document.title = title + ' - Kowl'; }
+    set pageTitle(title: string) { this._pageTitle = title; document.title = title + ' - Redpanda Console'; }
 
     @observable pageBreadcrumbs: BreadcrumbEntry[] = []
 
@@ -49,7 +47,7 @@ class UIState {
         let path = this.pathName;
 
         const i = path.indexOf('/', 1);
-        if (i > -1) path = path.substr(0, i);
+        if (i > -1) path = path.slice(0, i);
 
         return [path];
     }
@@ -88,8 +86,7 @@ class UIState {
     // Every response from the backend contains, amongst others, the 'app-sha' header (was previously named 'app-version' which was confusing).
     // If the version doesn't match the current frontend version a promt is shown (like 'new version available, want to reload to update?').
     // If the user declines, updatePromtHiddenUntil is set to prevent the promt from showing up for some time.
-    @observable.shallow serverVersion: ServerVersionInfo | undefined = undefined;
-    @observable updatePromtHiddenUntil: number | undefined = undefined;
+    @observable serverBuildTimestamp: number | undefined = undefined;
 }
 
 export interface ServerVersionInfo {

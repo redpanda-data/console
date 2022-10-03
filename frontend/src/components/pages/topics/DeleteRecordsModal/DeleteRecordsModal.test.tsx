@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Topic } from '../../../../state/restInterfaces';
 import DeleteRecordsModal from './DeleteRecordsModal';
 
@@ -19,6 +19,7 @@ const testTopic: Topic = {
     partitionCount: 3,
     replicationFactor: 3,
     isInternal: false,
+    documentation: 'UNKNOWN',
     topicName: 'test_topic',
     logDirSummary: {
         totalSizeBytes: 1024,
@@ -28,26 +29,26 @@ const testTopic: Topic = {
 };
 
 it('renders all expected elements in step 1', () => {
-    const { getByLabelText, getByText } = render(<DeleteRecordsModal topic={testTopic} visible={true} onCancel={jest.fn()} />);
+    render(<DeleteRecordsModal topic={testTopic} visible={true} onCancel={jest.fn()} onFinish={jest.fn()} afterClose={jest.fn()} />);
 
-    expect(getByText('Delete records in topic')).toBeInTheDocument();
-    expect(getByText('All Partitions')).toBeInTheDocument();
-    expect(getByText('Specific Partition')).toBeInTheDocument();
-    expect(getByText('Cancel')).toBeInTheDocument();
-    expect(getByText('Choose End Offset')).toBeInTheDocument();
+    expect(screen.getByText('Delete records in topic')).toBeInTheDocument();
+    expect(screen.getByText('All Partitions')).toBeInTheDocument();
+    expect(screen.getByText('Specific Partition')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByText('Choose End Offset')).toBeInTheDocument();
 
-    expect(getByLabelText(/All Partitions/)).toBeChecked();
+    expect(screen.getByLabelText(/All Partitions/)).toBeChecked();
 });
 
 it('renders all expected elements in step 2', () => {
-    const { getByLabelText, getByText } = render(<DeleteRecordsModal topic={testTopic} visible={true} onCancel={jest.fn()} />);
+    render(<DeleteRecordsModal topic={testTopic} visible={true} onCancel={jest.fn()} onFinish={jest.fn()} afterClose={jest.fn()} />);
 
-    fireEvent.click(getByText('Choose End Offset'));
+    fireEvent.click(screen.getByText('Choose End Offset'));
 
-    expect(getByText('Manual Offset')).toBeInTheDocument();
-    expect(getByText('Timestamp')).toBeInTheDocument();
-    expect(getByText('Cancel')).toBeInTheDocument();
-    expect(getByText('Delete Records')).toBeInTheDocument();
-    
-    expect(getByLabelText(/Manual Offset/)).toBeChecked();
+    expect(screen.getByText('Manual Offset')).toBeInTheDocument();
+    expect(screen.getByText('Timestamp')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByText('Delete Records')).toBeInTheDocument();
+
+    expect(screen.getByLabelText(/Manual Offset/)).toBeChecked();
 });

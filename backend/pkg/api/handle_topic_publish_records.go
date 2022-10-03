@@ -11,9 +11,10 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"net/http"
 )
 
 type recordsRequest struct {
@@ -109,7 +110,7 @@ func (api *API) handlePublishTopicsRecords() http.HandlerFunc {
 
 		// 2. Check if logged-in user is allowed to publish records to all the specified topics
 		for _, topicName := range req.TopicNames {
-			canPublish, restErr := api.Hooks.Owl.CanPublishTopicRecords(r.Context(), topicName)
+			canPublish, restErr := api.Hooks.Console.CanPublishTopicRecords(r.Context(), topicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -127,7 +128,7 @@ func (api *API) handlePublishTopicsRecords() http.HandlerFunc {
 		}
 
 		// 3. Submit publish topic records request
-		publishRes := api.OwlSvc.ProduceRecords(r.Context(), req.KgoRecords(), req.UseTransactions, req.CompressionType)
+		publishRes := api.ConsoleSvc.ProduceRecords(r.Context(), req.KgoRecords(), req.UseTransactions, req.CompressionType)
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, publishRes)
 	}

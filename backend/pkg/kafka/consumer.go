@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudhut/kowl/backend/pkg/interpreter"
 	"github.com/dop251/goja"
+	"github.com/redpanda-data/console/backend/pkg/interpreter"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
 )

@@ -10,13 +10,13 @@
  */
 
 import { Component } from 'react';
-import { observer } from "mobx-react"
-import { Select, Avatar, Dropdown } from 'antd';
+import { observer } from 'mobx-react'
+import { Avatar, Dropdown } from 'antd';
 import { api } from '../../state/backendApi';
 import { UserOutlined } from '@ant-design/icons';
-import { IsBusiness } from '../../utils/env';
 import { makeObservable, observable } from 'mobx';
 import { UserPreferencesDialog } from './UserPreferences';
+import { AppFeatures } from '../../utils/env';
 
 @observer
 export class UserProfile extends Component {
@@ -29,7 +29,7 @@ export class UserProfile extends Component {
     }
 
     render() {
-        if (!IsBusiness) return null;
+        if (!AppFeatures.SINGLE_SIGN_ON) return null;
         if (!api.userData || !api.userData.user || !api.userData.user.meta.name) return null;
         const user = api.userData.user;
 
@@ -74,19 +74,19 @@ export class UserMenu extends Component<{ onOpenPreferences: () => void }> {
         const userName = api.userData?.user?.meta?.name ?? 'null';
 
         return (
-            <div className='userMenu'>
-                <div className='menuItem header'>
+            <div className="userMenu">
+                <div className="menuItem header">
                     Signed in as<br />
                     <span style={{ fontWeight: 'bold' }}>{userName}</span>
                 </div>
 
-                <div className='divider' />
+                <div className="divider" />
 
-                <div className='menuItem' onClick={() => this.props.onOpenPreferences()}>
+                <div className="menuItem" onClick={() => this.props.onOpenPreferences()}>
                     Preferences
                 </div>
 
-                <div className='menuItem' onClick={() => { api.logout(); window.location.reload(); }}>
+                <div className="menuItem" onClick={() => { api.logout(); window.location.reload(); }}>
                     Logout
                 </div>
             </div>

@@ -11,32 +11,33 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/go-chi/chi"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 // GetConsumerGroupsResponse represents the data which is returned for listing topics
 type GetConsumerGroupsResponse struct {
-	ConsumerGroups []owl.ConsumerGroupOverview `json:"consumerGroups"`
+	ConsumerGroups []console.ConsumerGroupOverview `json:"consumerGroups"`
 }
 
 func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		describedGroups, restErr := api.OwlSvc.GetConsumerGroupsOverview(r.Context(), nil)
+		describedGroups, restErr := api.ConsoleSvc.GetConsumerGroupsOverview(r.Context(), nil)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
-		visibleGroups := make([]owl.ConsumerGroupOverview, 0, len(describedGroups))
+		visibleGroups := make([]console.ConsumerGroupOverview, 0, len(describedGroups))
 		for _, group := range describedGroups {
-			canSee, restErr := api.Hooks.Owl.CanSeeConsumerGroup(r.Context(), group.GroupID)
+			canSee, restErr := api.Hooks.Console.CanSeeConsumerGroup(r.Context(), group.GroupID)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -46,7 +47,7 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 			}
 
 			// Attach allowed actions for each topic
-			group.AllowedActions, restErr = api.Hooks.Owl.AllowedConsumerGroupActions(r.Context(), group.GroupID)
+			group.AllowedActions, restErr = api.Hooks.Console.AllowedConsumerGroupActions(r.Context(), group.GroupID)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -63,12 +64,12 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 
 func (api *API) handleGetConsumerGroup() http.HandlerFunc {
 	type response struct {
-		ConsumerGroup owl.ConsumerGroupOverview `json:"consumerGroup"`
+		ConsumerGroup console.ConsumerGroupOverview `json:"consumerGroup"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		groupID := chi.URLParam(r, "groupId")
 
-		canSee, restErr := api.Hooks.Owl.CanSeeConsumerGroup(r.Context(), groupID)
+		canSee, restErr := api.Hooks.Console.CanSeeConsumerGroup(r.Context(), groupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -84,7 +85,7 @@ func (api *API) handleGetConsumerGroup() http.HandlerFunc {
 			return
 		}
 
-		describedGroups, restErr := api.OwlSvc.GetConsumerGroupsOverview(r.Context(), []string{groupID})
+		describedGroups, restErr := api.ConsoleSvc.GetConsumerGroupsOverview(r.Context(), []string{groupID})
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -134,7 +135,7 @@ func (p *patchConsumerGroupRequest) OK() error {
 
 func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 	type response struct {
-		*owl.EditConsumerGroupOffsetsResponse
+		*console.EditConsumerGroupOffsetsResponse
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse and validate request
@@ -145,8 +146,9 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged in user is allowed to edit Consumer Group (always true for Kowl, but not for Kowl Business)
-		canEdit, restErr := api.Hooks.Owl.CanEditConsumerGroup(r.Context(), req.GroupID)
+		// 2. Check if logged-in user is allowed to edit
+		// Consumer Group (always true for Console OSS, but not for Console Business)
+		canEdit, restErr := api.Hooks.Console.CanEditConsumerGroup(r.Context(), req.GroupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -179,7 +181,7 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 		}
 
 		// 4. Check response and pass it to the frontend
-		res, restErr := api.OwlSvc.EditConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
+		res, restErr := api.ConsoleSvc.EditConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -217,7 +219,7 @@ func (p *deleteConsumerGroupRequest) OK() error {
 
 func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 	type response struct {
-		Topics []owl.DeleteConsumerGroupOffsetsResponseTopic `json:"topics"`
+		Topics []console.DeleteConsumerGroupOffsetsResponseTopic `json:"topics"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse and validate request
@@ -228,8 +230,9 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 			return
 		}
 
-		// 2. Check if logged in user is allowed to delete Consumer Group (always true for Kowl, but not for Kowl Business)
-		canDelete, restErr := api.Hooks.Owl.CanDeleteConsumerGroup(r.Context(), req.GroupID)
+		// 2. Check if logged in user is allowed to delete Consumer Group (always true for Console OSS, but not for
+		// Console Business)
+		canDelete, restErr := api.Hooks.Console.CanDeleteConsumerGroup(r.Context(), req.GroupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -261,7 +264,7 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 		}
 
 		// 4. Check response and pass it to the frontend
-		deletedTopics, err := api.OwlSvc.DeleteConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
+		deletedTopics, err := api.ConsoleSvc.DeleteConsumerGroupOffsets(r.Context(), req.GroupID, kmsgReq)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,

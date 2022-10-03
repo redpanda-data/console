@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+/* eslint-disable no-extend-native */
 
 export { }
 
@@ -21,18 +22,18 @@ declare global {
 
 
 String.prototype.removePrefix = function (this: string, prefix: string) {
-    if (prefix.length == 0) return this;
+    if (prefix.length === 0) return this;
 
     if (this.toLowerCase().startsWith(prefix.toLowerCase()))
-        return this.substr(prefix.length);
+        return this.slice(prefix.length);
     return this;
 }
 
 String.prototype.removeSuffix = function (this: string, suffix: string) {
-    if (suffix.length == 0) return this;
+    if (suffix.length === 0) return this;
 
     if (this.toLowerCase().endsWith(suffix.toLowerCase()))
-        return this.substr(0, this.length - suffix.length);
+        return this.slice(0, this.length - suffix.length);
     return this;
 }
 

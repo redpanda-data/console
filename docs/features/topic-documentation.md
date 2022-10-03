@@ -5,13 +5,13 @@ path: /docs/features/topic-documentation
 
 # Topic Documentation
 
-If you wish to embed your topic's documentation into the Kowl user interface you can do this by providing access to a git repository which hosts your documentations in Markdown format. In practice this could look like this:
+If you wish to embed your topic's documentation into the Redpanda Console user interface you can do this by providing access to a git repository which hosts your documentations in Markdown format. In practice this could look like this:
 
-![Kowl Topic documentation embedded](../assets/topic-documentation.png)
+![Console Topic documentation embedded](../assets/topic-documentation.png)
 
 ## How does it work
 
-Kowl clones the provided git repository, recursively iterates through all directories in the repository (up to a max depth of 5) and stores all `.md` files it finds in memory.
+Console clones the provided git repository, recursively iterates through all directories in the repository (up to a max depth of 5) and stores all `.md` files it finds in memory.
 The "Documentation" tab in the frontend will show the markdown of the file matching the name of the Kafka topic.
 
 | Path/Filename        | Kafka Topic Name | Matches            |
@@ -35,9 +35,9 @@ owl:
     git:
       enabled: true
       repository:
-        url: https://github.com/cloudhut/topic-docs
+        url: https://github.com/redpanda-data/topic-docs
         branch: master
-      # How often Kowl shall pull the repository to look for new files. Set 0 to disable periodic pulls
+      # How often Console shall pull the repository to look for new files. Set 0 to disable periodic pulls
       refreshInterval: 1m
       # Basic Auth
       # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password

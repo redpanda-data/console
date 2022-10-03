@@ -10,12 +10,17 @@
 package api
 
 import (
+	"io/fs"
+
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/connect"
-	"github.com/cloudhut/kowl/backend/pkg/git"
-	"github.com/cloudhut/kowl/backend/pkg/kafka"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
+	"github.com/redpanda-data/console/backend/pkg/connect"
+	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/embed"
+	"github.com/redpanda-data/console/backend/pkg/git"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/version"
 	"go.uber.org/zap"
 )
 
@@ -23,46 +28,41 @@ import (
 type API struct {
 	Cfg *Config
 
-	Logger     *zap.Logger
-	KafkaSvc   *kafka.Service
-	OwlSvc     *owl.Service
-	ConnectSvc *connect.Service
-	GitSvc     *git.Service
+	Logger      *zap.Logger
+	KafkaSvc    *kafka.Service
+	ConsoleSvc  *console.Service
+	ConnectSvc  *connect.Service
+	GitSvc      *git.Service
+	RedpandaSvc *redpanda.Service
 
-	Hooks *Hooks // Hooks to add additional functionality from the outside at different places (used by Kafka Owl Business)
+	// FrontendResources is an in-memory Filesystem with all go:embedded frontend resources.
+	// The index.html is expected to be at the root of the filesystem. This prop will only be accessed
+	// if the config property serveFrontend is set to true.
+	FrontendResources fs.FS
 
-	version versionInfo
+	// Hooks to add additional functionality from the outside at different places
+	Hooks *Hooks
 }
 
 // New creates a new API instance
-func New(cfg *Config) *API {
+func New(cfg *Config, opts ...Option) *API {
 	logger := logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
 
-	version := loadVersionInfo(logger)
-
-	// Print startup message
-	if version.isBusiness {
-		logger.Info("started "+version.productName,
-			zap.String("version", version.gitRef),
-			zap.String("git_sha", version.gitSha),
-			zap.String("built", version.timestampFriendly),
-			zap.String("version_business", version.gitRefBusiness),
-			zap.String("git_sha_business", version.gitShaBusiness),
-		)
-	} else {
-		logger.Info("started "+version.productName,
-			zap.String("version", version.gitRef),
-			zap.String("git_sha", version.gitSha),
-			zap.String("built", version.timestampFriendly),
-		)
-	}
+	logger.Info("started Redpanda Console",
+		zap.String("version", version.Version),
+		zap.String("built_at", version.BuiltAt))
 
 	kafkaSvc, err := kafka.NewService(cfg.Kafka, logger, cfg.MetricsNamespace)
 	if err != nil {
 		logger.Fatal("failed to create kafka service", zap.Error(err))
 	}
 
-	owlSvc, err := owl.NewService(cfg.Owl, logger, kafkaSvc)
+	redpandaSvc, err := redpanda.NewService(cfg.Redpanda, logger)
+	if err != nil {
+		logger.Fatal("failed to create Redpanda service", zap.Error(err))
+	}
+
+	consoleSvc, err := console.NewService(cfg.Console, logger, kafkaSvc, redpandaSvc)
 	if err != nil {
 		logger.Fatal("failed to create owl service", zap.Error(err))
 	}
@@ -72,15 +72,28 @@ func New(cfg *Config) *API {
 		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
 	}
 
-	return &API{
-		Cfg:        cfg,
-		Logger:     logger,
-		KafkaSvc:   kafkaSvc,
-		OwlSvc:     owlSvc,
-		ConnectSvc: connectSvc,
-		Hooks:      newDefaultHooks(),
-		version:    version,
+	// Use default frontend resources from embeds. They may be overridden via functional options.
+	// We don't use hooks here because we may want to use the API struct without providing all hooks.
+	fsys, err := fs.Sub(embed.FrontendFiles, "frontend")
+	if err != nil {
+		logger.Fatal("failed to build subtree from embedded frontend files", zap.Error(err))
 	}
+
+	a := &API{
+		Cfg:               cfg,
+		Logger:            logger,
+		KafkaSvc:          kafkaSvc,
+		ConsoleSvc:        consoleSvc,
+		ConnectSvc:        connectSvc,
+		RedpandaSvc:       redpandaSvc,
+		Hooks:             newDefaultHooks(),
+		FrontendResources: fsys,
+	}
+	for _, opt := range opts {
+		opt(a)
+	}
+
+	return a
 }
 
 // Start the API server and block
@@ -90,9 +103,9 @@ func (api *API) Start() {
 		api.Logger.Fatal("failed to start kafka service", zap.Error(err))
 	}
 
-	err = api.OwlSvc.Start()
+	err = api.ConsoleSvc.Start()
 	if err != nil {
-		api.Logger.Fatal("failed to start owl service", zap.Error(err))
+		api.Logger.Fatal("failed to start console service", zap.Error(err))
 	}
 
 	// Server

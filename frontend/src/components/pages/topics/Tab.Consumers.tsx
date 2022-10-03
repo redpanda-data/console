@@ -9,24 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from "react";
-import { Topic } from "../../../state/restInterfaces";
+import React, { Component } from 'react';
+import { Topic } from '../../../state/restInterfaces';
 import {
     Table,
     Skeleton,
     ConfigProvider
-} from "antd";
-import { observer } from "mobx-react";
+} from 'antd';
+import { observer } from 'mobx-react';
 
-import "../../../utils/arrayExtensions";
+import '../../../utils/arrayExtensions';
 
-import { api } from "../../../state/backendApi";
-import { motion } from "framer-motion";
-import { animProps } from "../../../utils/animationProps";
-import { appGlobal } from "../../../state/appGlobal";
-import { sortField, makePaginationConfig } from "../../misc/common";
-import { uiState } from "../../../state/uiState";
-import { DefaultSkeleton } from "../../../utils/tsxUtils";
+import { api } from '../../../state/backendApi';
+import { appGlobal } from '../../../state/appGlobal';
+import { sortField, makePaginationConfig } from '../../misc/common';
+import { uiState } from '../../../state/uiState';
 
 @observer
 export class TopicConsumers extends Component<{ topic: Topic }> {
@@ -41,7 +38,7 @@ export class TopicConsumers extends Component<{ topic: Topic }> {
         return <div>
             <ConfigProvider renderEmpty={isLoading ? renderEmpty : undefined}>
                 <Table
-                    style={{ margin: '0', padding: '0' }} size='middle'
+                    style={{ margin: '0', padding: '0' }} size="middle"
                     showSorterTooltip={false}
                     onRow={(record) =>
                     ({

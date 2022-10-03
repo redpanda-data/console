@@ -14,11 +14,11 @@
 // - manages timers for refreshing current reassignments
 // - tracks progress history for each reassignment to estimate speed and ETA
 
-import { autorun, IReactionDisposer, observable, transaction, untracked } from "mobx";
-import { api } from "../../../../state/backendApi";
-import { PartitionReassignments } from "../../../../state/restInterfaces";
-import { IsDev } from "../../../../utils/env";
-import { clone, toJson } from "../../../../utils/jsonUtils";
+import { observable, transaction } from 'mobx';
+import { api } from '../../../../state/backendApi';
+import { PartitionReassignments } from '../../../../state/restInterfaces';
+import { IsDev } from '../../../../utils/env';
+import { clone, toJson } from '../../../../utils/jsonUtils';
 
 const refreshIntervals = {
     cluster: 6000,
@@ -95,7 +95,7 @@ export class ReassignmentTracker {
         this.clusterTimer = setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
 
         // Immediately refresh as well
-        setImmediate(() => {
+        setTimeout(() => {
             this.refreshReassignments();
             api.refreshCluster(true);
         });
@@ -120,7 +120,7 @@ export class ReassignmentTracker {
                     // console.log('adding new state', { id: r.id, reassignment: r });
                     const state = this.createReassignmentState(r);
                     this.trackingReassignments.push(state);
-                    if (IsDev) console.log("tracking reassignment", r.topicName);
+                    if (IsDev) console.log('tracking reassignment', r.topicName);
                 }
             }
 
@@ -134,7 +134,7 @@ export class ReassignmentTracker {
                     r.actualTimeCompleted = new Date();
                     r.progressPercent = 100;
                     r.remaining = { value: 0, timestamp: new Date() };
-                    if (IsDev) console.log("completed reassignment", r.topicName);
+                    if (IsDev) console.log('completed reassignment', r.topicName);
                 }
             }
 
@@ -148,7 +148,7 @@ export class ReassignmentTracker {
                 if (x.actualTimeCompleted == null) return false; // not yet complete
                 const age = (new Date().getTime() - x.actualTimeCompleted.getTime()) / 1000;
                 if (age > 8) {
-                    if (IsDev) console.log("removing reassignment", x.topicName);
+                    if (IsDev) console.log('removing reassignment', x.topicName);
                     return true;
                 }
                 return false;

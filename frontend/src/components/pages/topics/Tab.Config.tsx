@@ -11,7 +11,7 @@
 
 import React, { Component } from 'react';
 import { KafkaError, ConfigEntry, Topic } from '../../../state/restInterfaces';
-import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result, Statistic } from 'antd';
+import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
 import topicConfigInfo from '../../../assets/topicConfigInfo.json';
@@ -26,7 +26,7 @@ import { appGlobal } from '../../../state/appGlobal';
 import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { ConfigList } from '../../misc/ConfigList';
-import { prettyBytesOrNA, prettyMilliseconds } from "../../../utils/utils";
+import colors from '../../../colors';
 
 const { Text } = Typography;
 
@@ -106,7 +106,7 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
                         title="Kafka Error"
                         subTitle={
                             <>
-                                Kowl received the following error while fetching the configuration for topic <Text code>{topicName}</Text> from Kafka:
+                                Redpanda Console received the following error while fetching the configuration for topic <Text code>{topicName}</Text> from Kafka:
                             </>
                         }
                     ></Result>
@@ -168,7 +168,7 @@ const ConfigDisplaySettings = observer(() => (
     </div>
 ));
 
-const markerIcon = <HighlightTwoTone twoToneColor="#1890ff" style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
+const markerIcon = <HighlightTwoTone twoToneColor={colors.brandOrange} style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
 
 export const FavoritePopover = observer((p: { configEntry: ConfigEntry, children: React.ReactNode }) => {
     const { configEntry, children } = p;
@@ -183,8 +183,8 @@ export const FavoritePopover = observer((p: { configEntry: ConfigEntry, children
         <div>
             <Paragraph style={{ maxWidth: '400px' }}>
                 {infoEntry
-                    ? <div className='configPropDescription'>{infoEntry.Description}</div>
-                    : <div className='configPropDescription unknownConfigProp'>No description available, unknown property</div>
+                    ? <div className="configPropDescription">{infoEntry.Description}</div>
+                    : <div className="configPropDescription unknownConfigProp">No description available, unknown property</div>
                 }
             </Paragraph>
 

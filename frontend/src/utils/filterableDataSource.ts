@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { observable, autorun, IReactionDisposer, computed, transaction, action, makeObservable } from "mobx";
+import { observable, autorun, IReactionDisposer, computed, transaction, makeObservable } from 'mobx';
 
 /*
     Intended use:

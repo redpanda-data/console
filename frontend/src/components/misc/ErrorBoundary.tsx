@@ -9,17 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { CSSProperties } from "react";
-import { observer } from "mobx-react";
-import { makeObservable, observable } from "mobx";
-import { toJson } from "../../utils/jsonUtils";
-import { Button, Layout, message, Space, Skeleton } from "antd";
-import { CopyOutlined, CloseOutlined } from "@ant-design/icons";
-import { envVarDebugAr } from "../../utils/env";
-import { NoClipboardPopover } from "./NoClipboardPopover";
-import { isClipboardAvailable } from "../../utils/featureDetection";
-import { DefaultSkeleton, ObjToKv } from "../../utils/tsxUtils";
-import StackTrace from "stacktrace-js";
+import React, { CSSProperties } from 'react';
+import { observer } from 'mobx-react';
+import { makeObservable, observable } from 'mobx';
+import { toJson } from '../../utils/jsonUtils';
+import { Button, Layout, message, Space } from 'antd';
+import { CopyOutlined, CloseOutlined } from '@ant-design/icons';
+import { envVarDebugAr } from '../../utils/env';
+import { NoClipboardPopover } from './NoClipboardPopover';
+import { isClipboardAvailable } from '../../utils/featureDetection';
+import { ObjToKv } from '../../utils/tsxUtils';
+import StackTrace from 'stacktrace-js';
 
 const { Content } = Layout;
 
@@ -47,7 +47,7 @@ interface InfoItem {
 }
 
 @observer
-export class ErrorBoundary extends React.Component {
+export class ErrorBoundary extends React.Component<{ children?: React.ReactNode }> {
     @observable hasError = false;
     error: Error | null = null;
     errorInfo: object | null = null;
@@ -69,13 +69,13 @@ export class ErrorBoundary extends React.Component {
 
         // Type
         if (this.error?.name && this.error.name.toLowerCase() != 'error')
-            this.infoItems.push({ name: "Type", value: this.error.name });
+            this.infoItems.push({ name: 'Type', value: this.error.name });
 
         // Message
         if (this.error?.message)
-            this.infoItems.push({ name: "Message", value: this.error.message });
+            this.infoItems.push({ name: 'Message', value: this.error.message });
         else
-            this.infoItems.push({ name: "Message", value: "(no message)" });
+            this.infoItems.push({ name: 'Message', value: '(no message)' });
 
         // Call Stack
         if (this.error?.stack) {
@@ -98,27 +98,29 @@ export class ErrorBoundary extends React.Component {
                 this.decodingDone = true;
             }).catch(err => {
                 // Decode Error
-                dataHolder.value = "Unable to decode stacktrace\n" + String(err);
+                dataHolder.value = 'Unable to decode stacktrace\n' + String(err);
                 this.decodingDone = true;
             });
 
 
             // Normal stack trace
             let s = this.error.stack;
-            if (s.toLowerCase().startsWith("error:")) s = s.substr(6).trim(); // todo removePrefix()
+            // remove "Error: " prefix
+            s = s.removePrefix('error:').trim();
+            // remove the error message as well, leaving only the stack trace
             if (this.error.message && s.startsWith(this.error.message))
-                s = s.substr(this.error.message.length).trimStart();
-            this.infoItems.push({ name: "Stack (Raw)", value: s });
+                s = s.slice(this.error.message.length).trimStart();
+            this.infoItems.push({ name: 'Stack (Raw)', value: s });
         }
 
         // Component Stack
         if (this.errorInfo && (this.errorInfo as any).componentStack)
-            this.infoItems.push({ name: "Components", value: (this.errorInfo as any).componentStack });
+            this.infoItems.push({ name: 'Components', value: (this.errorInfo as any).componentStack });
         else
             this.infoItems.push({
-                name: "Components", value: this.errorInfo
-                    ? "(componentStack not set) errorInfo as Json: \n" + toJson(this.errorInfo)
-                    : "(errorInfo was not set)"
+                name: 'Components', value: this.errorInfo
+                    ? '(componentStack not set) errorInfo as Json: \n' + toJson(this.errorInfo)
+                    : '(errorInfo was not set)'
             });
 
 
@@ -126,35 +128,35 @@ export class ErrorBoundary extends React.Component {
         try {
             const padLength = envVarDebugAr.max(e => e.name.length);
             this.infoItems.push({
-                name: "Environment",
-                value: envVarDebugAr.map(e => e.name.padEnd(padLength) + ': ' + e.value).join("\n")
+                name: 'Environment',
+                value: envVarDebugAr.map(e => e.name.padEnd(padLength) + ': ' + e.value).join('\n')
             })
         } catch (ex) {
-            this.infoItems.push({ name: "Environment", value: "(error retreiving env list)" });
+            this.infoItems.push({ name: 'Environment', value: '(error retreiving env list)' });
         }
 
         // Location
         try {
             const locationItems = ObjToKv({
-                "Protocol": window?.location?.protocol ?? '<null>',
-                "Path": window?.location?.pathname ?? '<null>',
-                "Search": window?.location?.search ?? '<null>',
-                "Hash": window?.location?.hash ?? '<null>',
+                'Protocol': window?.location?.protocol ?? '<null>',
+                'Path': window?.location?.pathname ?? '<null>',
+                'Search': window?.location?.search ?? '<null>',
+                'Hash': window?.location?.hash ?? '<null>',
             });
             const padLength = locationItems.max(e => e.key.length);
             this.infoItems.push({
-                name: "Location",
-                value: locationItems.map(e => e.key.padEnd(padLength) + ': ' + e.value).join("\n")
+                name: 'Location',
+                value: locationItems.map(e => e.key.padEnd(padLength) + ': ' + e.value).join('\n')
             })
         } catch (ex) {
-            this.infoItems.push({ name: "Location", value: "(error printing location, please include the url in your bug report)" });
+            this.infoItems.push({ name: 'Location', value: '(error printing location, please include the url in your bug report)' });
         }
 
         this.hasError = true;
     }
 
     copyError() {
-        let data = "";
+        let data = '';
 
         for (const e of this.infoItems) {
             const str = getStringFromInfo(e);
@@ -178,13 +180,13 @@ export class ErrorBoundary extends React.Component {
         return <Layout style={{ minHeight: '100vh', overflow: 'visible', padding: '2rem 4rem' }}>
             <div>
                 <h1>Rendering Error!</h1>
-                <p>Please report this at <a style={{ textDecoration: 'underline', fontWeight: 'bold' }} href="https://github.com/cloudhut/kowl/issues">our GitHub Repo</a></p>
+                <p>Please report this at <a style={{ textDecoration: 'underline', fontWeight: 'bold' }} href="https://github.com/redpanda-data/console/issues">our GitHub Repo</a></p>
                 <Space size={'large'} style={{ marginTop: '0', marginBottom: '2rem' }}>
-                    <Button icon={<CloseOutlined />} type='primary' size='large' style={{ width: '16rem' }} onClick={() => this.dismiss()}>
+                    <Button icon={<CloseOutlined />} type="primary" size="large" style={{ width: '16rem' }} onClick={() => this.dismiss()}>
                         Dismiss
                     </Button>
                     <NoClipboardPopover>
-                        <Button type='primary' size='large' ghost icon={<CopyOutlined />}
+                        <Button type="primary" size="large" ghost icon={<CopyOutlined />}
                             disabled={!isClipboardAvailable || !this.decodingDone}
                             loading={!this.decodingDone}
                             onClick={() => this.copyError()}>
@@ -194,7 +196,7 @@ export class ErrorBoundary extends React.Component {
                 </Space>
             </div>
             <Content>
-                <Space direction='vertical' size={30} style={{ width: '100%' }}>
+                <Space direction="vertical" size={30} style={{ width: '100%' }}>
                     {this.infoItems.map(e => <InfoItemDisplay key={e.name} data={e} />)}
                 </Space>
             </Content>
@@ -203,14 +205,14 @@ export class ErrorBoundary extends React.Component {
 }
 
 function getStringFromInfo(info: InfoItem) {
-    if (!info) return "";
+    if (!info) return '';
 
     if (typeof info.value === 'string') return info.value;
     try {
         const r = info.value();
         return String(r);
     } catch (err) {
-        return "Error calling infoItem func: " + err;
+        return 'Error calling infoItem func: ' + err;
     }
 }
 
@@ -228,12 +230,12 @@ export class InfoItemDisplay extends React.Component<{ data: InfoItem }> {
             try {
                 content = value();
             } catch (err) {
-                content = "error rendering: " + String(err);
+                content = 'error rendering: ' + String(err);
             }
         }
 
         if (typeof content === 'string') {
-            content = content.replace(/\n\s*/g, "\n").trim();
+            content = content.replace(/\n\s*/g, '\n').trim();
         }
 
         return (

@@ -42,7 +42,7 @@ func newClient(cfg Config) (*Client, error) {
 
 	client := resty.New().
 		SetBaseURL(registryUrl).
-		SetHeader("User-Agent", "Kowl").
+		SetHeader("User-Agent", "Redpanda Console").
 		SetHeader("Accept", "application/vnd.schemaregistry.v1+json").
 		SetError(&RestError{}).
 		SetTimeout(5 * time.Second)

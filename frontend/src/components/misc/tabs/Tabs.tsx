@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { CSSProperties, useCallback, useEffect, useState } from 'react';
+import React, { CSSProperties, useState } from 'react';
 import styles from './Tabs.module.scss';
 
 export interface Tab {
@@ -42,15 +42,17 @@ interface TabsProps {
 function renderContent(tabs: Array<Tab>, key: string): JSX.Element {
     const tab = tabs.find((tab) => tab.key === key);
     if (!tab || !tab.content) return <></>;
-    let content = tab.content;
+    const content = tab.content;
 
-    if (typeof content === 'function' && content.length === 0)
-        content = content();
+    if (typeof content === 'function' && content.length === 0) {
+        const node = content();
+        if (React.isValidElement(node))
+            return node;
+    }
     if (React.isValidElement(content))
         return content;
 
-    console.error('tabs.renderContent: invalid element', { content });
-    return <></>;
+    return <>{content}</>
 }
 
 function getClass(active: boolean, disabled: boolean | undefined) {

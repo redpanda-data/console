@@ -10,13 +10,12 @@
 package api
 
 import (
-	"path/filepath"
-
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redpanda-data/console/backend/pkg/version"
 	"go.uber.org/zap"
 )
 
@@ -65,7 +64,7 @@ func (api *API) routes() *chi.Mux {
 
 		// API routes
 		router.Group(func(r chi.Router) {
-			r.Use(createSetVersionInfoHeader(api.version))
+			r.Use(createSetVersionInfoHeader(version.BuiltAt))
 			api.Hooks.Route.ConfigAPIRouter(r)
 
 			r.Route("/api", func(r chi.Router) {
@@ -73,7 +72,16 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/api-versions", api.handleGetAPIVersions())
 				r.Get("/brokers/{brokerID}/config", api.handleBrokerConfig())
 				r.Get("/cluster", api.handleDescribeCluster())
+
+				// ACLs
 				r.Get("/acls", api.handleGetACLsOverview())
+				r.Post("/acls", api.handleCreateACL())
+				r.Delete("/acls", api.handleDeleteACLs())
+
+				// Kafka Users/Principals
+				r.Get("/users", api.handleGetUsers())
+				r.Post("/users", api.handleCreateUser())
+				r.Delete("/users/{principalID}", api.handleDeleteUser())
 
 				// Topics
 				r.Get("/topics-configs", api.handleGetTopicsConfigs())
@@ -121,23 +129,15 @@ func (api *API) routes() *chi.Mux {
 				r.Post("/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart", api.handleRestartConnector())
 				r.Post("/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart", api.handleRestartConnectorTask())
 
-				// Kowl
-				r.Get("/kowl/endpoints", api.handleGetEndpoints())
+				// Console Endpoints
+				r.Get("/console/endpoints", api.handleGetEndpoints())
 			})
 		})
 
 		if api.Cfg.ServeFrontend {
-			// Check if the frontend directory 'build' exists
-			frontendDir, err := filepath.Abs(api.Cfg.FrontendPath)
-			if err != nil {
-				api.Logger.Fatal("given frontend directory is invalid", zap.String("directory", frontendDir), zap.Error(err))
-			}
-
 			// SPA Files
 			router.Group(func(r chi.Router) {
-				handleIndex, handleResources := api.createFrontendHandlers(frontendDir)
-				r.Get("/", handleIndex)
-				r.Get("/*", handleResources)
+				r.Get("/*", api.handleFrontendResources())
 			})
 		} else {
 			api.Logger.Info("no static files will be served as serving the frontend has been disabled")

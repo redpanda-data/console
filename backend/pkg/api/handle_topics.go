@@ -23,17 +23,17 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/cloudhut/kowl/backend/pkg/owl"
 	"github.com/go-chi/chi"
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 func (api *API) handleGetTopics() http.HandlerFunc {
 	type response struct {
-		Topics []*owl.TopicSummary `json:"topics"`
+		Topics []*console.TopicSummary `json:"topics"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		topics, err := api.OwlSvc.GetTopicsOverview(r.Context())
+		topics, err := api.ConsoleSvc.GetTopicsOverview(r.Context())
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
@@ -45,10 +45,10 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 			return
 		}
 
-		visibleTopics := make([]*owl.TopicSummary, 0, len(topics))
+		visibleTopics := make([]*console.TopicSummary, 0, len(topics))
 		for _, topic := range topics {
 			// Check if logged in user is allowed to see this topic. If not remove the topic from the list.
-			canSee, restErr := api.Hooks.Owl.CanSeeTopic(r.Context(), topic.TopicName)
+			canSee, restErr := api.Hooks.Console.CanSeeTopic(r.Context(), topic.TopicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -59,7 +59,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 			}
 
 			// Attach allowed actions for each topic
-			topic.AllowedActions, restErr = api.Hooks.Owl.AllowedTopicActions(r.Context(), topic.TopicName)
+			topic.AllowedActions, restErr = api.Hooks.Console.AllowedTopicActions(r.Context(), topic.TopicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -76,8 +76,8 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 // handleGetPartitions returns an overview of all partitions and their watermarks in the given topic
 func (api *API) handleGetPartitions() http.HandlerFunc {
 	type response struct {
-		TopicName  string                      `json:"topicName"`
-		Partitions []owl.TopicPartitionDetails `json:"partitions"`
+		TopicName  string                          `json:"topicName"`
+		Partitions []console.TopicPartitionDetails `json:"partitions"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +85,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Owl.CanViewTopicPartitions(r.Context(), topicName)
+		canView, restErr := api.Hooks.Console.CanViewTopicPartitions(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -101,7 +101,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 			return
 		}
 
-		topicDetails, restErr := api.OwlSvc.GetTopicDetails(r.Context(), []string{topicName})
+		topicDetails, restErr := api.ConsoleSvc.GetTopicDetails(r.Context(), []string{topicName})
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -111,7 +111,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("expected exactly one topic detail in response, but got '%d'", len(topicDetails)),
 				Status:   http.StatusInternalServerError,
-				Message:  "Internal server error in Kowl, please file a issue in GitHub if you face this issue. The backend logs will contain more information.",
+				Message:  "Internal server error in RP Console, please file a issue in GitHub if you face this issue. The backend logs will contain more information.",
 				IsSilent: false,
 			}
 			rest.SendRESTError(w, r, logger, restErr)
@@ -129,7 +129,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 // handleGetTopicConfig returns all set configuration options for a specific topic
 func (api *API) handleGetTopicConfig() http.HandlerFunc {
 	type response struct {
-		TopicDescription *owl.TopicConfig `json:"topicDescription"`
+		TopicDescription *console.TopicConfig `json:"topicDescription"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +137,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Owl.CanViewTopicConfig(r.Context(), topicName)
+		canView, restErr := api.Hooks.Console.CanViewTopicConfig(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -153,7 +153,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 			return
 		}
 
-		description, restErr := api.OwlSvc.GetTopicConfigs(r.Context(), topicName, nil)
+		description, restErr := api.ConsoleSvc.GetTopicConfigs(r.Context(), topicName, nil)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -175,7 +175,7 @@ func (api *API) handleDeleteTopic() http.HandlerFunc {
 		topicName := chi.URLParam(r, "topicName")
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canDelete, restErr := api.Hooks.Owl.CanDeleteTopic(r.Context(), topicName)
+		canDelete, restErr := api.Hooks.Console.CanDeleteTopic(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -191,7 +191,7 @@ func (api *API) handleDeleteTopic() http.HandlerFunc {
 			return
 		}
 
-		restErr = api.OwlSvc.DeleteTopic(r.Context(), topicName)
+		restErr = api.ConsoleSvc.DeleteTopic(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -244,7 +244,7 @@ func (api *API) handleDeleteTopicRecords() http.HandlerFunc {
 		}
 
 		// 2. Check if logged in user is allowed to view partitions for the given topic
-		canDelete, restErr := api.Hooks.Owl.CanDeleteTopicRecords(r.Context(), topicName)
+		canDelete, restErr := api.Hooks.Console.CanDeleteTopicRecords(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -271,7 +271,7 @@ func (api *API) handleDeleteTopicRecords() http.HandlerFunc {
 			deleteReq.Partitions[i] = pReq
 		}
 
-		deleteRes, restErr := api.OwlSvc.DeleteTopicRecords(r.Context(), deleteReq)
+		deleteRes, restErr := api.ConsoleSvc.DeleteTopicRecords(r.Context(), deleteReq)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -284,7 +284,7 @@ func (api *API) handleDeleteTopicRecords() http.HandlerFunc {
 // handleGetTopicsConfigs returns all set configuration options for one or more topics
 func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 	type response struct {
-		TopicDescriptions []*owl.TopicConfig `json:"topicDescriptions"`
+		TopicDescriptions []*console.TopicConfig `json:"topicDescriptions"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -306,7 +306,7 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 		// 2. Fetch all topic names from metadata as no topic filter has been specified
 		if len(topicNames) == 0 {
 			var err error
-			topicNames, err = api.OwlSvc.GetAllTopicNames(r.Context(), nil)
+			topicNames, err = api.ConsoleSvc.GetAllTopicNames(r.Context(), nil)
 			if err != nil {
 				restErr := &rest.Error{
 					Err:      fmt.Errorf("failed to request metadata to fetch topic names: %w", err),
@@ -321,7 +321,7 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 
 		// 3. Check if user is allowed to view the config for these topics
 		for _, topicName := range topicNames {
-			canView, restErr := api.Hooks.Owl.CanViewTopicConfig(r.Context(), topicName)
+			canView, restErr := api.Hooks.Console.CanViewTopicConfig(r.Context(), topicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, logger, restErr)
 				return
@@ -339,7 +339,7 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 		}
 
 		// 4. Request topics configs and return them
-		descriptions, err := api.OwlSvc.GetTopicsConfigs(r.Context(), topicNames, configKeys)
+		descriptions, err := api.ConsoleSvc.GetTopicsConfigs(r.Context(), topicNames, configKeys)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("failed to describe topic configs: %w", err),
@@ -350,7 +350,7 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
 		}
-		result := make([]*owl.TopicConfig, 0, len(descriptions))
+		result := make([]*console.TopicConfig, 0, len(descriptions))
 		for _, description := range descriptions {
 			result = append(result, description)
 		}
@@ -365,8 +365,8 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 // handleGetTopicConsumers returns all consumers along with their summed lag which consume the given topic
 func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 	type response struct {
-		TopicName string                    `json:"topicName"`
-		Consumers []*owl.TopicConsumerGroup `json:"topicConsumers"`
+		TopicName string                        `json:"topicName"`
+		Consumers []*console.TopicConsumerGroup `json:"topicConsumers"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -374,7 +374,7 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Owl.CanViewTopicConsumers(r.Context(), topicName)
+		canView, restErr := api.Hooks.Console.CanViewTopicConsumers(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -390,7 +390,7 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 			return
 		}
 
-		consumers, err := api.OwlSvc.ListTopicConsumers(r.Context(), topicName)
+		consumers, err := api.ConsoleSvc.ListTopicConsumers(r.Context(), topicName)
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      err,
@@ -412,7 +412,7 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 
 func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 	type response struct {
-		TopicOffsets []owl.TopicOffset `json:"topicOffsets"`
+		TopicOffsets []console.TopicOffset `json:"topicOffsets"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -455,7 +455,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 
 		// 2. Check if logged in user is allowed list partitions (always true for Kowl, but not for Kowl Business)
 		for _, topic := range topicNames {
-			canView, restErr := api.Hooks.Owl.CanViewTopicPartitions(r.Context(), topic)
+			canView, restErr := api.Hooks.Console.CanViewTopicPartitions(r.Context(), topic)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -475,7 +475,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 		}
 
 		// 3. Request topic
-		topicOffsets, err := api.OwlSvc.ListOffsets(r.Context(), topicNames, int64(timestamp))
+		topicOffsets, err := api.ConsoleSvc.ListOffsets(r.Context(), topicNames, int64(timestamp))
 		if err != nil {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("failed to list offsets: %w", err),

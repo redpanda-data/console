@@ -17,11 +17,11 @@ import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { Topic, TopicAction, TopicActions } from '../../../state/restInterfaces';
+import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
-import { DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
 import Card from '../../misc/Card';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
@@ -276,7 +276,7 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
         onFinish();
         cleanup();
         notification['success']({
-            message: `Topic \`${topicToDelete}\` deleted successfully`,
+            message: <>Topic <Code>{topicToDelete}</Code> deleted successfully</>,
         });
     };
 
@@ -310,7 +310,8 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
             <>
                 {error && <Alert type="error" message={`An error occurred: ${typeof error === 'string' ? error : error.message}`} />}
                 <p>
-                    Are you sure you want to delete topic <strong>{topicToDelete}</strong>? This action is irrevocable.
+                    Are you sure you want to delete topic <Code>{topicToDelete}</Code>?<br />
+                    This action cannot be undone.
                 </p>
             </>
         </Modal>
@@ -331,7 +332,7 @@ function DeleteDisabledTooltip(props: { topic: Topic; children: JSX.Element }): 
         </Tooltip>
     );
 
-    return <>{hasDeletePrivilege(topic.allowedActions) ? deleteButton : wrap(deleteButton, "You don't have 'deleteTopic' permission for this topic.")}</>;
+    return <>{hasDeletePrivilege(topic.allowedActions) ? deleteButton : wrap(deleteButton, 'You don\'t have \'deleteTopic\' permission for this topic.')}</>;
 }
 
 function hasDeletePrivilege(allowedActions?: Array<TopicAction>) {
@@ -398,9 +399,8 @@ function makeCreateTopicModal(parent: TopicList) {
         modalProps: {
             title: 'Create Topic',
             width: '80%',
-            style: { minWidth: '600px', maxWidth: '1000px' },
+            style: { minWidth: '600px', maxWidth: '1000px', top: '50px' },
             bodyStyle: { paddingTop: '1em' },
-            centered: true,
 
             okText: 'Create',
             successTitle: 'Topic created!',
@@ -425,7 +425,9 @@ function makeCreateTopicModal(parent: TopicList) {
             minInSyncReplicas: undefined,
             replicationFactor: undefined,
 
-            additionalConfig: [],
+            additionalConfig: [
+                { name: '', value: '' },
+            ],
 
             defaults: {
                 get retentionTime() { return tryGetBrokerConfig('log.retention.ms'); },
@@ -434,7 +436,7 @@ function makeCreateTopicModal(parent: TopicList) {
                 get partitions() { return tryGetBrokerConfig('num.partitions'); },
                 get cleanupPolicy() { return tryGetBrokerConfig('log.cleanup.policy'); },
                 get minInSyncReplicas() {
-                    return "1"; // todo, what is the name of the default value? is it the same for apache and redpanda?
+                    return '1'; // todo, what is the name of the default value? is it the same for apache and redpanda?
                 },
             }
         }),
@@ -444,11 +446,15 @@ function makeCreateTopicModal(parent: TopicList) {
             if (!state.topicName) throw new Error('"Topic Name" must be set');
             if (!state.cleanupPolicy) throw new Error('"Cleanup Policy" must be set');
 
+            const config: TopicConfigEntry[] = [];
             const setVal = (name: string, value: string | number | undefined) => {
                 if (value === undefined) return;
-                state.additionalConfig.removeAll(x => x.name === name);
-                state.additionalConfig.push({ name, value: String(value) });
+                config.removeAll(x => x.name === name);
+                config.push({ name, value: String(value) });
             };
+
+            for (const x of state.additionalConfig)
+                setVal(x.name, x.value);
 
             if (state.retentionTimeUnit != 'default')
                 setVal('retention.ms', getRetentionTimeFinalValue(state.retentionTimeMs, state.retentionTimeUnit));
@@ -463,7 +469,7 @@ function makeCreateTopicModal(parent: TopicList) {
                 topicName: state.topicName,
                 partitionCount: state.partitions ?? Number(state.defaults.partitions ?? '-1'),
                 replicationFactor: state.replicationFactor ?? Number(state.defaults.replicationFactor ?? '-1'),
-                configs: state.additionalConfig,
+                configs: config.filter(x => x.name.length > 0),
             });
 
             return <div style={{
@@ -479,7 +485,7 @@ function makeCreateTopicModal(parent: TopicList) {
                 <span>Replication Factor:</span><span style={{ justifySelf: 'start' }}>{String(result.replicationFactor).replace('-1', '(Default)')}</span>
             </div>
         },
-        onSuccess: (state, result) => {
+        onSuccess: (_state, _result) => {
             parent.refreshData(true);
         },
         content: (state) => <CreateTopicModalContent state={state} />,

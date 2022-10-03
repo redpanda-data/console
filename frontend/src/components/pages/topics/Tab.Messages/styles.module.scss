@@ -28,6 +28,7 @@
 .addFilter {
     vertical-align: middle;
     margin-top: -3px;
+    cursor: pointer;
 }
 
 .metaSection {
@@ -41,8 +42,9 @@
     font-weight: 500;
     padding: 0 5px;
 
+    gap: 6px;
     .bytesIcon {
-        color: #1890ff;
+        color: var(--ant-primary-color);
     }
 
     .time {
@@ -50,7 +52,7 @@
     }
 
     .timeIcon {
-        color: #1890ff;
+        color: var(--ant-primary-color);
     }
 }
 
@@ -75,4 +77,35 @@
     padding: 2px 8px;
     white-space: nowrap;
     height: 32px;
+}
+.noMessagesHint {
+    max-width: 700px;
+    font-size: 13px;
+
+    margin: auto;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+
+    padding: 8px 16px;
+
+    background: hsl(40deg 100% 50% / 18%);
+    border: 1px solid rgb(255 165 0 / 10%);
+    border-radius: 3px;
+    color: hsl(40deg 75% 60%);
+
+    text-align: start;
+
+    white-space: normal;
+
+    list-style: disc;
+
+
+    li {
+        margin-left: 1.25em;
+
+        &:not(:last-child) {
+            margin-bottom: 0.5em;
+        }
+    }
+
 }

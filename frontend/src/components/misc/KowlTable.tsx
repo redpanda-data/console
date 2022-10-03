@@ -9,19 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { ReactNode, Component, CSSProperties } from "react";
-import { Button, Checkbox, Input, Menu, Pagination, Table } from "antd";
-import { ColumnType } from "antd/lib/table";
+import React, { Component } from 'react';
+import { Checkbox, Input, InputRef, Pagination, Table } from 'antd';
+import { ColumnType } from 'antd/lib/table';
 import styles from './KowlTable.module.scss';
-import { ColumnFilterItem, ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from "antd/lib/table/interface";
-import { uiState } from "../../state/uiState";
-import { DEFAULT_TABLE_PAGE_SIZE } from "./common";
-import { action, autorun, comparer, computed, IReactionDisposer, IReactionPublic, isObservable, makeObservable, observable, reaction, transaction, untracked } from "mobx";
-import { observer } from "mobx-react";
-import { clone, toJson } from "../../utils/jsonUtils";
-import { SearchOutlined } from "@ant-design/icons";
-import Highlighter from "react-highlight-words";
-import { findPopupContainer } from "../../utils/tsxUtils";
+import { ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from 'antd/lib/table/interface';
+import { DEFAULT_TABLE_PAGE_SIZE } from './common';
+import { action, computed, IReactionDisposer, IReactionPublic, isObservable, makeObservable, observable, reaction } from 'mobx';
+import { observer } from 'mobx-react';
+import { clone } from '../../utils/jsonUtils';
+import { SearchOutlined } from '@ant-design/icons';
+import Highlighter from 'react-highlight-words';
+import { findPopupContainer } from '../../utils/tsxUtils';
 
 type EnumFilter = {
     type: 'enum',
@@ -115,7 +114,7 @@ export class KowlTable<T extends object = any> extends Component<{
 
             hideOnSinglePage: false,
 
-            showTotal: action((total, range) => {
+            showTotal: action((total, _range) => {
                 this.filteredTotal = total;
                 return null;
             }),
@@ -135,7 +134,7 @@ export class KowlTable<T extends object = any> extends Component<{
         const disposers = this.reactionDisposers;
         const ar = function <T>(data: () => T, effect: (prev: T, cur: T, count: number) => void, delay?: number) {
             let count = 0;
-            const newEffect = (cur: any, prev: any, r: IReactionPublic) => {
+            const newEffect = (cur: any, prev: any, _r: IReactionPublic) => {
                 effect(prev, cur, ++count);
             };
             const d = reaction(data, newEffect, {
@@ -149,18 +148,18 @@ export class KowlTable<T extends object = any> extends Component<{
         }
 
         // Ensure our custom columns are up to date
-        ar(() => this.props.columns, (prev, cur, count) => {
+        ar(() => this.props.columns, (_prev, cur, _count) => {
             // console.log('columns changed ' + count, { prev, cur });
             this.updateCustomColumns(cur);
         });
 
         // Keep our columns up to date (to learn about new values for filtering)
-        ar(() => ({ data: this.props.dataSource, oriCols: this.props.columns }), (prev, cur, count) => {
+        ar(() => ({ data: this.props.dataSource, oriCols: this.props.columns }), (_prev, cur, _count) => {
             this.ensureFiltersAreUpdated(cur.data);
         });
 
         // Keep search column up to date ('active state' of the filter icon etc)
-        ar(() => ({ query: this.observableSettings.quickSearch, searchColumn: this.searchColumn, filterOpen: this.filterOpen, oriCols: this.props.columns }), (prev, cur, count) => {
+        ar(() => ({ query: this.observableSettings.quickSearch, searchColumn: this.searchColumn, filterOpen: this.filterOpen, oriCols: this.props.columns }), (_prev, cur, _count) => {
             const { searchColumn } = cur;
 
             if (cur.query && cur.query.length > 0) {
@@ -191,13 +190,12 @@ export class KowlTable<T extends object = any> extends Component<{
                 filterActive: this.filterActive,
                 query: this.observableSettings?.quickSearch
             }),
-            (prev, cur, count) => {
-                const { data, filterActive, query, dataLength } = cur;
+            (_prev, cur, _count) => {
+                const { data, filterActive } = cur;
                 // Clone ensures re-render on every change; which (for now) is somewhat wasteful
                 // since many tables already use observer components.
                 // However, in order for us to (eventually) be able to fully eliminate those redundant updates,
                 // we'll also have to consider the effects of sorters and filters (a change in some nested property might end up changing the order of entries in the table...)
-                const a = clone(data);
 
                 if (data == null) {
                     return;
@@ -218,7 +216,11 @@ export class KowlTable<T extends object = any> extends Component<{
 
     @action updateCustomColumns(cols: KowlColumnType<T>[]) {
         // console.count('table update columns');
-        this.customColumns = cols.map(col => Object.assign({}, col)) as KowlColumnTypeInternal<T>[];
+        this.customColumns = cols.map(col => {
+            if (Object.is(col, Table.EXPAND_COLUMN) || Object.is(col, Table.SELECTION_COLUMN))
+                return col;
+            return Object.assign({}, col);
+        }) as KowlColumnTypeInternal<T>[];
 
         // for (const col of this.customColumns)
         //     col.onHeaderCell = () => ({ style: { background: '#dbeeff' } });
@@ -242,7 +244,7 @@ export class KowlTable<T extends object = any> extends Component<{
 
         // Title
         const originalTitle = String(this.searchColumn.title);
-        this.searchColumn.title = (props: ColumnTitleProps<T>) => {
+        this.searchColumn.title = (_props: ColumnTitleProps<T>) => {
             return <SearchTitle
                 title={originalTitle}
                 observableFilterOpen={this}
@@ -275,7 +277,7 @@ export class KowlTable<T extends object = any> extends Component<{
             }
         };
 
-        this.searchColumn.filterDropdown = (p) => null;
+        this.searchColumn.filterDropdown = () => null;
         this.searchColumn.onFilterDropdownVisibleChange = visible => {
             // only accept requests to open the filter
             if (visible)
@@ -337,7 +339,7 @@ export class KowlTable<T extends object = any> extends Component<{
                     return <>
                         <div style={{ minWidth: '200px' }}>
                             {p.filters?.map(f =>
-                                <li key={f.text + String(f.value)} className='ant-dropdown-menu-item' style={{ position: 'relative' }}>
+                                <li key={f.text + String(f.value)} className="ant-dropdown-menu-item" style={{ position: 'relative' }}>
                                     <Checkbox
                                         className={'filterCheckbox ' + optionClass}
                                         checked={p.selectedKeys.includes(f.value as React.Key)}
@@ -372,16 +374,17 @@ export class KowlTable<T extends object = any> extends Component<{
         const pagination = this.pagination;
 
         // trigger mobx update
+        /* eslint-disable  @typescript-eslint/no-unused-vars */
         const unused1 = pagination.pageSize;
         const unused2 = pagination.current;
         const unused3 = this.currentDataSource?.length;
         const unused4 = this.displayData?.length;
-
+        /* eslint-enable @typescript-eslint/no-unused-vars*/
         return <Table<T>
             style={{ margin: '0', padding: '0' }}
             size="middle"
             showSorterTooltip={false}
-            className={styles.kowlTable + " " + (p.className ?? '')}
+            className={styles.kowlTable + ' ' + (p.className ?? '')}
 
             dataSource={this.displayData}
             columns={this.customColumns}
@@ -392,10 +395,12 @@ export class KowlTable<T extends object = any> extends Component<{
 
             pagination={pagination}
 
+
+
             getPopupContainer={findPopupContainer}
             expandable={p.expandable}
             footer={this.renderFooter}
-            onChange={(pagination: TablePaginationConfig, filters: Record<string, FilterValue | null>, sorter: SorterResult<T> | SorterResult<T>[], extra: TableCurrentDataSource<T>) => {
+            onChange={(_pagination: TablePaginationConfig, _filters: Record<string, FilterValue | null>, _sorter: SorterResult<T> | SorterResult<T>[], _extra: TableCurrentDataSource<T>) => {
                 //
             }}
 
@@ -464,16 +469,16 @@ export class KowlTable<T extends object = any> extends Component<{
             showTotal={() => {
                 let text: string;
                 if (sourceTotal == 0)
-                    text = "";
+                    text = '';
                 else if (usingFilters)
                     if (currentView.length == 0)
-                        text = `No matches`;
+                        text = 'No matches';
                     else
                         text = `Showing ${filteredTotal} matches (out of ${sourceTotal} total)`;
                 else
                     text = `Total ${sourceTotal} items`;
 
-                return <span className='paginationTotal'>{text}</span>
+                return <span className="paginationTotal">{text}</span>
             }}
             pageSize={pagination.pageSize}
             pageSizeOptions={pagination.pageSizeOptions}
@@ -533,7 +538,7 @@ export class SearchTitle extends Component<{
     observableSettings: { quickSearch: string },
 }>
 {
-    inputRef = React.createRef<Input>(); // reference to input, used to focus it
+    inputRef = React.createRef<InputRef>(); // reference to input, used to focus it
 
     constructor(p: any) {
         super(p);
@@ -551,7 +556,7 @@ export class SearchTitle extends Component<{
         // Render the actual search bar
 
         // inputRef won't be set yet, so we delay by one frame
-        setImmediate(this.focusInput);
+        setTimeout(this.focusInput);
 
         return <span>
             <span >{this.props.title}</span>
@@ -560,7 +565,7 @@ export class SearchTitle extends Component<{
                 onMouseDown={e => e.stopPropagation()}
                 onMouseUp={e => e.stopPropagation()}
                 style={{
-                    position: 'absolute', top: 0, right: '36px', bottom: 0, left: 0,
+                    position: 'absolute', inset: '0px 0px 0px -8px',
                     display: 'flex', placeContent: 'center', placeItems: 'center',
                     padding: '4px 6px',
                 }}
@@ -573,7 +578,7 @@ export class SearchTitle extends Component<{
 
                         if (focusInside) {
                             // Most likely a click on the "clear" button
-                            props.observableSettings.quickSearch = "";
+                            props.observableSettings.quickSearch = '';
                             this.hideSearchBar();
                         } else {
                             setTimeout(this.hideSearchBar);
@@ -644,7 +649,9 @@ function customComparerIsSame<T>(a: T, b: T, remainingDepth?: number): boolean {
         return true;    // ignore changes to react components
 
     // normal object
+    ///@ts-ignore
     const aKeys = Object.keys(a);
+    ///@ts-ignore
     const bKeys = Object.keys(b);
 
     if (aKeys.length != bKeys.length) return false;

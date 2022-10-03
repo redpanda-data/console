@@ -9,19 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, ReactNode } from "react";
-import React from "react";
-import { Partition, Topic, } from "../../../state/restInterfaces";
-import { Table, Alert, Tooltip, Popover, } from "antd";
-import { observer } from "mobx-react";
-import { api, } from "../../../state/backendApi";
-import { sortField, makePaginationConfig } from "../../misc/common";
-import { MotionAlways } from "../../../utils/animationProps";
+import { Component } from 'react';
+import React from 'react';
+import { Partition, Topic, } from '../../../state/restInterfaces';
+import { Table, Alert, Popover, } from 'antd';
+import { observer } from 'mobx-react';
+import { api, } from '../../../state/backendApi';
+import { sortField, makePaginationConfig } from '../../misc/common';
 import '../../../utils/arrayExtensions';
-import { uiState } from "../../../state/uiState";
-import { numberToThousandsString, DefaultSkeleton, InfoText, findPopupContainer, LayoutBypass } from "../../../utils/tsxUtils";
-import { BrokerList } from "../reassign-partitions/components/BrokerList";
-import { WarningTwoTone } from "@ant-design/icons";
+import { uiState } from '../../../state/uiState';
+import { numberToThousandsString, DefaultSkeleton, InfoText, findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import { BrokerList } from '../../misc/BrokerList';
+import { WarningTwoTone } from '@ant-design/icons';
 
 
 @observer
@@ -96,8 +95,8 @@ function renderPartitionError(partition: Partition) {
     const txt = [partition.partitionError, partition.waterMarksError].join('\n\n');
 
     return <Popover
-        title='Partition Error'
-        placement='rightTop' overlayClassName='popoverSmall'
+        title="Partition Error"
+        placement="rightTop" overlayClassName="popoverSmall"
         getPopupContainer={findPopupContainer}
         content={<div style={{ maxWidth: '500px', whiteSpace: 'pre-wrap' }}>
             {txt}
@@ -105,11 +104,11 @@ function renderPartitionError(partition: Partition) {
         }
     >
         <span>
-            <LayoutBypass justifyContent='center' alignItems='center' width='20px' height='18px'>
+            <ZeroSizeWrapper justifyContent="center" alignItems="center" width="20px" height="18px">
                 <span style={{ fontSize: '19px' }}>
-                    <WarningTwoTone twoToneColor='orange' />
+                    <WarningTwoTone twoToneColor="orange" />
                 </span>
-            </LayoutBypass>
+            </ZeroSizeWrapper>
         </span>
     </Popover>
 

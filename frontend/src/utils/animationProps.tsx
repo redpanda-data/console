@@ -9,11 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { FC, CSSProperties } from "react";
-import { Transition, motion } from "framer-motion";
-import { alwaysChanging } from "./utils";
+import React, { FC, CSSProperties } from 'react';
+import { Transition, motion, AnimatePresence as AnimatePresenceRaw, AnimatePresenceProps } from 'framer-motion';
+import { alwaysChanging } from './utils';
 
-export type PositionProp = "static" | "absolute" | "initial" | "inherit" | "-moz-initial" | "revert" | "unset" | "-webkit-sticky" | "fixed" | "relative" | "sticky" | undefined;
+export const AnimatePresence = AnimatePresenceRaw as React.FunctionComponent<React.PropsWithChildren<AnimatePresenceProps>>;
+
+export type PositionProp = 'static' | 'absolute' | 'initial' | 'inherit' | '-moz-initial' | 'revert' | 'unset' | '-webkit-sticky' | 'fixed' | 'relative' | 'sticky' | undefined;
 
 const time = 0.25; // 0.15
 const dist = 2;
@@ -83,18 +85,41 @@ export const animProps_modalPage = {
     exit: { opacity: 0, x: '-1em', height: 'auto', },
 };
 
+const logoRotation = 60;
+export const animProps_logo = {
+    transition: {
+        transition: 'circOut',
+        duration: 0.15,
+    },
+    initial: {
+        opacity: 0,
+        transform: `perspective(1000px) rotateX(-${logoRotation}deg)`,
+        position: 'static' as PositionProp
+    },
+    animate: {
+        opacity: 1,
+        transform: 'perspective(1000px) rotateX(0deg)',
+        position: 'static' as PositionProp
+    },
+    exit: {
+        opacity: 0,
+        transform: `perspective(1000px) rotateX(${logoRotation}deg)`,
+        position: 'absolute' as PositionProp, width: 'auto'
+    },
+};
+
 
 export const MotionAlways: FC = (p: { children?: React.ReactNode, style?: CSSProperties }) =>
     <motion.div key={alwaysChanging()} {...animProps} style={p.style} >
         {p.children}
     </motion.div>;
 
-export const MotionDiv: FC<{ identityKey?: any, positionTransition?: boolean, layoutTransition?: boolean, animProps?: any, style?: CSSProperties, className?: string }> = (p) =>
+export const MotionDiv: FC<{ identityKey?: any, children?: React.ReactNode, positionTransition?: boolean, layoutTransition?: boolean, animProps?: any, style?: CSSProperties, className?: string }> = (p) =>
     <motion.div className={p.className} key={p.identityKey} positionTransition={p.positionTransition} layoutTransition={p.layoutTransition} style={p.style} {...(p.animProps ?? animProps)} >
         {p.children}
     </motion.div>;
 
-export const MotionSpan: FC<{ identityKey?: any, overrideAnimProps?: any, style?: CSSProperties }> = (p) =>
+export const MotionSpan: FC<{ identityKey?: any, children?: React.ReactNode, overrideAnimProps?: any, style?: CSSProperties }> = (p) =>
     <motion.span key={p.identityKey} style={p.style} {...(p.overrideAnimProps ?? animProps)}>
         {p.children}
     </motion.span>;

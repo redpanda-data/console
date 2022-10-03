@@ -10,17 +10,15 @@
  */
 
 import React from 'react';
-import { observer } from "mobx-react";
+import { observer } from 'mobx-react';
 import { Result } from 'antd';
 import { Button } from 'antd';
 import { api } from '../../state/backendApi';
 import { CloseCircleOutlined } from '@ant-design/icons'
-import { toJson } from "../../utils/jsonUtils";
-import { makeObservable } from 'mobx';
 
 
 @observer
-export class ErrorDisplay extends React.Component {
+export class ErrorDisplay extends React.Component<{ children?: React.ReactNode }> {
 
     render() {
         if (api.errors.length === 0)

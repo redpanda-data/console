@@ -11,15 +11,15 @@
 
 
 //
-// We know what features the cluster supports by calling './api/kowl/endpoints'.
+// We know what features the cluster supports by calling './api/console/endpoints'.
 // That only tells us the actual routes we can use though.
 // This file translates supported routes to specific frontend features.
 // That way we can easily check if (for example) "partition reassignment" should be visible/allowed.
 //
 
-import { computed, observable, when } from "mobx";
-import { clone } from "../utils/jsonUtils";
-import { api } from "./backendApi";
+import { computed, observable, when } from 'mobx';
+import { clone } from '../utils/jsonUtils';
+import { api } from './backendApi';
 
 export interface FeatureEntry {
     endpoint: string;
@@ -27,19 +27,19 @@ export interface FeatureEntry {
 }
 
 export class Feature {
-    static readonly ClusterConfig: FeatureEntry = { endpoint: "/api/cluster/config", method: 'GET' };
-    static readonly ConsumerGroups: FeatureEntry = { endpoint: "/api/consumer-groups", method: 'GET' };
-    static readonly GetReassignments: FeatureEntry = { endpoint: "/api/operations/reassign-partitions", method: 'GET' };
-    static readonly PatchReassignments: FeatureEntry = { endpoint: "/api/operations/reassign-partitions", method: 'PATCH' };
-    static readonly PatchGroup: FeatureEntry = { endpoint: "/api/consumer-groups/{groupId}", method: 'PATCH' };
-    static readonly DeleteGroup: FeatureEntry = { endpoint: "/api/consumer-groups/{groupId}", method: 'DELETE' };
-    static readonly DeleteRecords: FeatureEntry = { endpoint: "/api/topics/{topicName}/records", method: 'DELETE' };
-    static readonly GetQuotas: FeatureEntry = { endpoint: "/api/quotas", method: 'GET' };
+    static readonly ClusterConfig: FeatureEntry = { endpoint: '/api/cluster/config', method: 'GET' };
+    static readonly ConsumerGroups: FeatureEntry = { endpoint: '/api/consumer-groups', method: 'GET' };
+    static readonly GetReassignments: FeatureEntry = { endpoint: '/api/operations/reassign-partitions', method: 'GET' };
+    static readonly PatchReassignments: FeatureEntry = { endpoint: '/api/operations/reassign-partitions', method: 'PATCH' };
+    static readonly PatchGroup: FeatureEntry = { endpoint: '/api/consumer-groups/{groupId}', method: 'PATCH' };
+    static readonly DeleteGroup: FeatureEntry = { endpoint: '/api/consumer-groups/{groupId}', method: 'DELETE' };
+    static readonly DeleteRecords: FeatureEntry = { endpoint: '/api/topics/{topicName}/records', method: 'DELETE' };
+    static readonly GetQuotas: FeatureEntry = { endpoint: '/api/quotas', method: 'GET' };
 }
 
 // As soon as the supported endpoints are available we should check if
 // the backend has returned a feature that we don't know of yet.
-setImmediate(() => {
+setTimeout(() => {
     when(() => api.endpointCompatibility != null, () => {
         if (!api.endpointCompatibility) return;
         // Copy features, then remove the ones we know, report any leftover features.
@@ -56,8 +56,8 @@ setImmediate(() => {
         removeMatch(Feature.GetQuotas)
 
         if (features.length > 0) {
-            const names = features.map(f => `"${f.method} ${f.endpoint}"\n`).join("");
-            console.warn("Backend reported new/unknown endpoints for endpointCompatibility:\n" + names);
+            const names = features.map(f => `"${f.method} ${f.endpoint}"\n`).join('');
+            console.warn('Backend reported new/unknown endpoints for endpointCompatibility:\n' + names);
         }
     });
 });

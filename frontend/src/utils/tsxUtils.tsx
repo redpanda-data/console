@@ -9,25 +9,26 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState, Component, CSSProperties, ReactNode } from "react";
-import { toJson } from "./jsonUtils";
-import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from "./utils";
+import React, { useState, Component, CSSProperties, ReactNode } from 'react';
+import { toJson } from './jsonUtils';
+import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
 import { Radio, message, Progress, Skeleton, Tooltip } from 'antd';
-import { MessageType } from "antd/lib/message";
-import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
-import { TimestampDisplayFormat } from "../state/ui";
-import { observer } from "mobx-react";
-import { AnimatePresence, motion, transform } from "framer-motion";
-import { animProps, animProps_radioOptionGroup, MotionDiv } from "./animationProps";
-import { SizeType } from "antd/lib/config-provider/SizeContext";
-import { makeObservable, observable } from "mobx";
-import { TooltipPlacement } from "antd/lib/tooltip";
-import { InfoIcon } from "@primer/octicons-react";
+import { MessageType } from 'antd/lib/message';
+import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { TimestampDisplayFormat } from '../state/ui';
+import { observer } from 'mobx-react';
+import { motion } from 'framer-motion';
+import { AnimatePresence, animProps, animProps_radioOptionGroup, MotionDiv } from './animationProps';
+import { SizeType } from 'antd/lib/config-provider/SizeContext';
+import { makeObservable, observable } from 'mobx';
+import { TooltipPlacement } from 'antd/lib/tooltip';
+import { InfoIcon } from '@primer/octicons-react';
+import colors from '../colors';
 
 
 const defaultLocale = 'en'
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
-const decimalSeperator = (0.123).toLocaleString(defaultLocale)[1];
+// const decimalSeperator = (0.123).toLocaleString(defaultLocale)[1];
 
 const nbsp = '\xA0'; // non breaking space
 
@@ -46,7 +47,7 @@ export function numberToThousandsString(n: number): JSX.Element {
 
         // Add a dot
         if (!last)
-            result.push(<span key={i + '.'} className='noSelect nbspSeparator'>{separator}</span>);
+            result.push(<span key={i + '.'} className="noSelect nbspSeparator">{separator}</span>);
     }
 
     return <>{result}</>
@@ -74,7 +75,7 @@ export class TimestampDisplay extends Component<{ unixEpochSecond: number, forma
 
 
 export const copyIcon = <svg viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true">
-    <path fill-rule="evenodd" d="M2 13h4v1H2v-1zm5-6H2v1h5V7zm2 3V8l-3 3 3 3v-2h5v-2H9zM4.5 9H2v1h2.5V9zM2 12h2.5v-1H2v1zm9 1h1v2c-.02.28-.11.52-.3.7-.19.18-.42.28-.7.3H1c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1h3c0-1.11.89-2 2-2 1.11 0 2 .89 2 2h3c.55 0 1 .45 1 1v5h-1V6H1v9h10v-2zM2 5h8c0-.55-.45-1-1-1H8c-.55 0-1-.45-1-1s-.45-1-1-1-1 .45-1 1-.45 1-1 1H3c-.55 0-1 .45-1 1z"></path></svg>
+    <path fillRule="evenodd" d="M2 13h4v1H2v-1zm5-6H2v1h5V7zm2 3V8l-3 3 3 3v-2h5v-2H9zM4.5 9H2v1h2.5V9zM2 12h2.5v-1H2v1zm9 1h1v2c-.02.28-.11.52-.3.7-.19.18-.42.28-.7.3H1c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1h3c0-1.11.89-2 2-2 1.11 0 2 .89 2 2h3c.55 0 1 .45 1 1v5h-1V6H1v9h10v-2zM2 5h8c0-.55-.45-1-1-1H8c-.55 0-1-.45-1-1s-.45-1-1-1-1 .45-1 1-.45 1-1 1H3c-.55 0-1 .45-1 1z"></path></svg>
 
 
 const DefaultQuickTableOptions = {
@@ -120,16 +121,16 @@ export function QuickTable(data: { key: any, value: any }[] | { [key: string]: a
     const o = Object.assign({} as QuickTableOptions, DefaultQuickTableOptions, options);
 
     const showVerticalGutter = (typeof o.gapHeight === 'number' && o.gapHeight > 0) || typeof o.gapHeight === 'string';
-    const classNames = [o.tableClassName, "quickTable"].joinStr(" ");
+    const classNames = [o.tableClassName, 'quickTable'].joinStr(' ');
 
     return <table className={classNames} style={o.tableStyle}>
         <tbody>
             {entries.map((obj, i) =>
                 <React.Fragment key={i}>
                     <tr>
-                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className='keyCell'>{React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}</td>
+                        <td style={{ textAlign: o.keyAlign, ...o.keyStyle }} className="keyCell">{React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}</td>
                         <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }}></td>
-                        <td style={{ textAlign: o.valueAlign, ...o.valueStyle }} className='valueCell'>{React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}</td>
+                        <td style={{ textAlign: o.valueAlign, ...o.valueStyle }} className="valueCell">{React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}</td>
                     </tr>
 
                     {showVerticalGutter && (i < entries.length - 1) &&
@@ -144,7 +145,7 @@ export function QuickTable(data: { key: any, value: any }[] | { [key: string]: a
 }
 
 export function toSafeString(x: any): string {
-    if (typeof x === 'undefined' || x === null) return "";
+    if (typeof x === 'undefined' || x === null) return '';
     if (typeof x === 'string') return x;
     if (typeof x === 'boolean' || typeof x === 'number') return String(x);
     return toJson(x);
@@ -227,7 +228,7 @@ export const InfoText = (p: {
     const gap = p.gap ?? '4px';
 
     const gray = 'hsl(0deg, 0%, 50%)';
-    const blue = 'hsl(209deg, 100%, 55%)';
+    // const blue = 'hsl(209deg, 100%, 55%)';
     const color = p.iconColor ?? gray;
 
     const icon = <span style={{ color: color, display: 'inline-flex', boxSizing: 'content-box', width: size, height: size, marginLeft: gap, transform: p.transform }}>{p.icon ?? <InfoIcon />}</span>
@@ -293,7 +294,7 @@ export class RadioOptionGroup<T> extends Component<{
         const p = this.props;
 
         const radioGroup = (
-            <Radio.Group className='radioOptionGroup' value={p.value} onChange={e => p.onChange(e.target.value)}>
+            <Radio.Group className="radioOptionGroup" value={p.value} onChange={e => p.onChange(e.target.value)}>
                 {p.options.map(kv =>
                     <Radio key={kv.key ?? kv.value} value={kv.value} disabled={p.disabled}>
                         <div style={{ fontWeight: 500, display: 'inline-block', paddingBottom: '2px', paddingLeft: '10px', verticalAlign: 'middle' }}>{kv.title}</div>
@@ -366,7 +367,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
         this.customRender();
     }
 
-    lastPropsJson = "";
+    lastPropsJson = '';
     lastProps = {};
     componentDidUpdate() {
 
@@ -395,25 +396,25 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
     customRender() {
         const content = <div style={{ marginBottom: '0.2em' }} className={this.showWaitingText ? 'waitingForMessagesBox waitingForMessagesText' : ''}>
             <div style={StatusIndicator.progressStyle}>
-                <Progress percent={this.props.fillFactor * 100} showInfo={false} status='active' size='small' style={{ lineHeight: 1 }} />
+                <Progress percent={this.props.fillFactor * 100} showInfo={false} status="active" size="small" style={{ lineHeight: 1 }} />
             </div>
             <div style={StatusIndicator.statusBarStyle}>
-                <div>{this.showWaitingText ? "Kafka is waiting for new messages..." : this.props.statusText}</div>
+                <div>{this.showWaitingText ? 'Kafka is waiting for new messages...' : this.props.statusText}</div>
                 <div style={StatusIndicator.progressTextStyle}>{this.props.progressText}</div>
             </div>
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
                 <div style={StatusIndicator.statusBarStyle}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <DownloadOutlined /> {this.props.bytesConsumed}
+                        <DownloadOutlined style={{color: colors.brandOrange}} /> {this.props.bytesConsumed}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-                        <CopyOutlined />{this.props.messagesConsumed} messages
+                        <CopyOutlined style={{color: colors.brandOrange}} />{this.props.messagesConsumed} messages
                     </div>
                 </div>
             }
         </div>
 
-        this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: null, type: 'loading' });
+        this.hide = message.open({ content: content, key: this.props.identityKey, icon: <span />, duration: 0, type: 'loading' });
     }
 
     render() {
@@ -423,8 +424,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
     }
 }
 
-// todo: layoutbypass and zerosizewrapper do the same thing, merge them.
-export class LayoutBypass extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string, positionContentAbsolute?: boolean, transform?: string }> {
+export class ZeroSizeWrapper extends Component<{ width?: string, height?: string, justifyContent?: string, alignItems?: string, positionContentAbsolute?: boolean, transform?: string, wrapperStyle?: CSSProperties, children?: React.ReactNode }> {
 
     static readonly style: CSSProperties = {
         display: 'inline-flex',
@@ -437,28 +437,18 @@ export class LayoutBypass extends Component<{ width?: string, height?: string, j
 
     render() {
         const p = this.props;
-        let style = LayoutBypass.style;
-        if (p.width || p.height || p.justifyContent || p.alignItems || p.transform) {
-            style = Object.assign({}, style, p);
+        let style = ZeroSizeWrapper.style;
+        if (p.width || p.height || p.justifyContent || p.alignItems || p.transform || p.wrapperStyle) {
+            style = Object.assign({}, style, p, p.wrapperStyle);
         }
 
-        return <span className='verticalCenter' style={style}>
+        return <span className="verticalCenter" style={style}>
             <span style={p.positionContentAbsolute ? { position: 'absolute' } : undefined}>
                 {this.props.children}
             </span>
         </span>
     }
 }
-
-export const ZeroSizeWrapper = (p: { width: number, height: number, children?: React.ReactNode }) => {
-    return <span style={{
-        width: p.width, height: p.height,
-        display: 'inline-flex', placeContent: 'center', placeItems: 'center',
-
-    }}>
-        {p.children}
-    </span>;
-};
 
 
 const defaultSkeletonStyle = { margin: '2rem' };
@@ -470,15 +460,15 @@ export const DefaultSkeleton = (
 );
 
 // Single line string, no wrapping, will not overflow and display ellipsis instead
-const ellipsisDivStyle: CSSProperties = {
-    display: 'inline-block',
-    width: 0,
-    minWidth: '100%',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    verticalAlign: 'text-bottom',
-};
+// const ellipsisDivStyle: CSSProperties = {
+//     display: 'inline-block',
+//     width: 0,
+//     minWidth: '100%',
+//     overflow: 'hidden',
+//     textOverflow: 'ellipsis',
+//     whiteSpace: 'nowrap',
+//     verticalAlign: 'text-bottom',
+// };
 const ellipsisSpanStyle: CSSProperties = {
     whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',
@@ -491,7 +481,34 @@ export const Ellipsis = (p: { children?: React.ReactNode, className?: string }) 
 }
 
 export const Code = (p: { children?: React.ReactNode, nowrap?: boolean }) => {
-    const className = p.nowrap ? 'codeBox nowrap' : 'codebox';
+    const className = p.nowrap ? 'codeBox nowrap' : 'codeBox';
     return <span className={className}>{p.children}</span>
 }
 
+
+export function LabelTooltip(p: { children?: React.ReactNode, width?: number, nowrap?: boolean, left?: boolean }) {
+    const style: CSSProperties = {};
+
+    if (typeof p.width == 'number')
+        style.width = p.width + 'px';
+    if (p.nowrap === true)
+        style.whiteSpace = 'nowrap';
+    if (p.left === true)
+        style.textAlign = 'left';
+
+    const content = <div style={style}>
+        {p.children}
+    </div>
+
+    return <Tooltip
+        overlay={content}
+        trigger="hover"
+        getPopupContainer={findPopupContainer}>
+        <QuestionCircleOutlined style={{
+            color: 'hsl(0deg 0% 66%)',
+            fontSize: '13px',
+            transform: 'translateY(1px)',
+            marginLeft: '3px'
+        }} />
+    </Tooltip>
+}
