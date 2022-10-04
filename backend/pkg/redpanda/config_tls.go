@@ -26,9 +26,15 @@ type TLSConfig struct {
 }
 
 func (c *TLSConfig) BuildTLSConfig() (*tls.Config, error) {
-	// If TLS is not enabled, return a TLS Config with the system's default cert pool.
-	caCertPool := x509.NewCertPool()
 	if !c.Enabled {
+		return nil, nil
+	}
+
+	caCertPool := x509.NewCertPool()
+
+	// No ca certificate specified, so let's return a TLS config that uses
+	// the system cert pool.
+	if c.CaFilepath == "" {
 		return &tls.Config{
 			RootCAs:            caCertPool,
 			InsecureSkipVerify: c.InsecureSkipTLSVerify,
