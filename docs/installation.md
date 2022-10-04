@@ -34,9 +34,9 @@ helm repo update
 helm install redpanda-console/console
 ```
 
-We maintain a [Helm chart](https://dl.redpanda.com/public/console/helm/charts/) as well as a [Legacy Terraform module](https://github.com/cloudhut/terraform-modules) which makes it easy to deploy Console on Kubernetes. Please refer to these repos for further documentation and/or help.
+We maintain a [Helm chart](https://dl.redpanda.com/public/console/helm/charts/) which makes it easy to deploy Console on Kubernetes. Please refer to these repos for further documentation and/or help.
 
-If you want to create your own manifest you can either browse through the Helm chart or Terraform module linked above or refer to the [below section](#other).
+If you want to create your own manifest you can browse through the Helm chart linked above or refer to the [below section](#other).
 
 ### Configuration
 
