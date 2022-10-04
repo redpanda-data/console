@@ -565,7 +565,7 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
 
     let errBtn: JSX.Element | undefined = undefined;
     let modal: JSX.Element | undefined = undefined;
-    if (task.taskId != null && task.trace) {
+    if (task.trace) {
         errBtn = <ZeroSizeWrapper height="12px" width="autos">
             <Button danger onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
                 {stateContent}
@@ -581,7 +581,11 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
             okText="Close" width="60%"
         >
             <>
-                <h3>{`Error trace of task ${task.taskId}`}</h3>
+                {
+                    task.taskId == null
+                        ? <h3>Error in Connector</h3>
+                        : <h3>{`Error trace of task ${task.taskId}`}</h3>
+                }
                 <div className="codeBox" style={{ whiteSpace: 'pre', overflow: 'scroll', width: '100%', padding: '10px 8px' }}>{err}</div>
             </>
         </Modal>;
