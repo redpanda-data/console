@@ -26,10 +26,17 @@ While RP Console was written to be deployed in Kubernetes it does not have any s
 If you want to host Console under a sub path (e.g. `domain.com/some/sub/path` instead of `domain.com/`) take a look at [/docs/features/hosting.md](./features/hosting.md) for more information.
 
 ### Kubernetes
+You can use the Redpanda Console Helm chart to deploy Redpanda Console into your Kubernetes cluster. To install the Helm repository and chart, run:
 
-We maintain a [Helm chart](https://github.com/cloudhut/charts) as well as a [Terraform module](https://github.com/cloudhut/terraform-modules) which makes it easy to deploy Console on Kubernetes. Please refer to these repos for further documentation and/or help.
+```bash
+helm repo add redpanda-console 'https://dl.redpanda.com/public/console/helm/charts/' 
+helm repo update
+helm install redpanda-console/console
+```
 
-If you want to create your own manifest you can either browse through the Helm chart or Terraform module linked above or refer to the [below section](#other).
+We maintain a [Helm chart](https://dl.redpanda.com/public/console/helm/charts/) which makes it easy to deploy Console on Kubernetes. Please refer to these repos for further documentation and/or help.
+
+If you want to create your own manifest you can browse through the Helm chart linked above or refer to the [below section](#other).
 
 ### Configuration
 
