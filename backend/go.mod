@@ -84,6 +84,7 @@ require (
 	github.com/twmb/tlscfg v1.2.0 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
+	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
