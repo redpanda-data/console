@@ -1,43 +1,32 @@
 /* Use of this software is governed by the Business Source License
- * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
- *
- * As of the Change Date specified in that file, in accordance with
- * the Business Source License, use of this software will be governed
- * by the Apache License, Version 2.0
- */
+* included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+*
+* As of the Change Date specified in that file, in accordance with
+* the Business Source License, use of this software will be governed
+* by the Apache License, Version 2.0
+*/
 
 import { useEffect } from 'react';
-import { loader } from '@monaco-editor/react';
 import {
     BrowserRouter,
-    withRouter,
-    RouteComponentProps, 
 } from 'react-router-dom';
-import { configure, when } from 'mobx';
 
-// import "antd/dist/antd.css";
+/* start global stylesheets */
+
 import 'antd/dist/antd.variable.min.css';
 import './index.scss';
 import './index-cloud-integration.scss';
 
-import App from './components/App';
+/* end global stylesheet */
+
+
 import { appGlobal } from './state/appGlobal';
-import { AppFeatures, IsDev } from './utils/env';
-import { api } from './state/backendApi';
-import { ConfigProvider } from 'antd';
 
-import './assets/fonts/open-sans.css';
-import './assets/fonts/poppins.css';
-import './assets/fonts/quicksand.css';
-import './assets/fonts/kumbh-sans.css';
-
-import colors from './colors';
-import { setConfig, SetConfigArguments } from './config';
-
-const HistorySetter = withRouter((p: RouteComponentProps) => {
-    appGlobal.history = p.history;
-    return <></>;
-});
+import { SetConfigArguments, setup } from './config';
+import HistorySetter from './components/misc/HistorySetter';
+import RequireAuth from './components/RequireAuth';
+import AppContent from './components/layout/Content';
+import { observer } from 'mobx-react';
 
 
 export interface EmbeddedProps extends SetConfigArguments {
@@ -55,59 +44,7 @@ export interface EmbeddedProps extends SetConfigArguments {
     basePath?: string;
 };
 
-
-
-let setupDone = false;
-function setup(setupArgs: SetConfigArguments) {
-    const config = setConfig(setupArgs);
-
-    // Tell monaco editor where to load dependencies from
-    loader.config({ paths: { vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs` } });
-
-    if (setupDone) {
-        if (IsDev)
-            console.error('setup was already called');
-        return;
-    }
-    // Set theme color for ant-design
-    ConfigProvider.config({
-        theme: {
-            primaryColor: colors.brandOrange,
-
-            infoColor: colors.brandBlue,
-            successColor: colors.brandSuccess,
-            // processingColor: colors.debugRed,
-            errorColor: colors.brandError,
-            warningColor: colors.brandWarning,
-        },
-    });
-
-
-    // Configure MobX
-    configure({
-        enforceActions: 'never',
-        safeDescriptors: true,
-    });
-
-    // Get supported endpoints / kafka cluster version
-    // In the business version, that endpoint (like any other api endpoint) is
-    // protected, so we need to delay the call until the user is logged in.
-    if (!AppFeatures.SINGLE_SIGN_ON) {
-        api.refreshSupportedEndpoints();
-    } else {
-        when(
-            () => Boolean(api.userData),
-            () => {
-                setTimeout(() => {
-                    api.refreshSupportedEndpoints();
-                });
-            }
-        );
-    }
-    setupDone = true;
-}
-
-export default function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
+function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
 
     useEffect(
         () => {
@@ -117,6 +54,7 @@ export default function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
                 if (currentPathname === pathname) {
                     return;
                 }
+
                 appGlobal.history.push(pathname);
             };
 
@@ -131,7 +69,7 @@ export default function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
                     shellNavigationHandler
                 );
             };
-    },[]);
+        },[]);
 
 
     setup(p);
@@ -139,7 +77,11 @@ export default function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
     return (
         <BrowserRouter basename={basePath}>
             <HistorySetter />
-            <App />
+            <RequireAuth>
+                <AppContent/>
+            </RequireAuth>
         </BrowserRouter>
     );
 }
+
+export default observer(EmbeddedApp);

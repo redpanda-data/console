@@ -12,7 +12,7 @@
 import { observable, autorun, makeObservable, transaction } from 'mobx';
 import { assignDeep, randomId } from '../utils/utils';
 import { clone } from '../utils/jsonUtils';
-import { DEFAULT_TABLE_PAGE_SIZE } from '../components/misc/common';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../components/constants';
 import { TopicTabId } from '../components/pages/topics/Topic.Details';
 import { GetAclsRequest, AclRequestDefault, EncodingType } from './restInterfaces';
 import { ConnectTabKeys } from '../components/pages/connect/Overview';
