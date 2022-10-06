@@ -1361,3 +1361,17 @@ export interface CreateTopicResponse {
     replicationFactor: number;
     configs: TopicConfigEntry[];
 }
+
+
+// GET api/users
+export interface GetUsersResponse {
+    users: string[];
+    isComplete: boolean;
+}
+
+// POST api/users
+export interface CreateUserRequest {
+    username: string;
+    password: string;
+    mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512';
+}
