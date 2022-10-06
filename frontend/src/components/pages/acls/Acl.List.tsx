@@ -10,24 +10,25 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, Button, Alert, Tag, Popconfirm, message } from 'antd';
+import { Empty, Input, Button, Alert, Tag, message, Dropdown, Menu, Tooltip } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { sortField } from '../../misc/common';
-import { AclRequestDefault } from '../../../state/restInterfaces';
+import { AclRequestDefault, CreateUserRequest } from '../../../state/restInterfaces';
 import { comparer, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import { Code, DefaultSkeleton, ZeroSizeWrapper } from '../../../utils/tsxUtils';
+import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
 import { clone } from '../../../utils/jsonUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
-import { LockIcon } from '@primer/octicons-react';
+import { LockIcon, QuestionIcon } from '@primer/octicons-react';
 import { TrashIcon } from '@heroicons/react/outline';
-import { QuestionCircleOutlined } from '@ant-design/icons';
 import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import createAutoModal from '../../../utils/createAutoModal';
+import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 
 
 @observer
@@ -37,9 +38,16 @@ class AclList extends PageComponent {
         {
             width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principalName'),
             render: (_value: string, record: AclPrincipalGroup) => {
+                const userExists = api.serviceAccounts?.users.includes(record.principalName);
+                const showWarning = !userExists && !record.principalName.includes('*');
                 return <>
                     <Tag>{record.principalType}</Tag>
                     <span>{record.principalName}</span>
+                    {showWarning && <Tooltip overlay="User / ServiceAccount does not exist">
+                        <span style={{ marginLeft: '4px' }}>
+                            <QuestionIcon fill="orange" size={16} />
+                        </span>
+                    </Tooltip>}
                 </>
             },
             defaultSortOrder: 'ascend'
@@ -49,56 +57,136 @@ class AclList extends PageComponent {
             render: v => (!v || v == '*') ? <Tag>Any</Tag> : v
         },
         {
-            width: '200px', title: 'ACL Entries',
+            width: '60px', title: '',
             render: (_, record) => {
-                return <>
-                    <span style={{ display: 'flex', alignItems: 'center' }}
-                        onClick={e => {
-                            e.stopPropagation();
-                        }}
+                const userExists = api.serviceAccounts?.users.includes(record.principalName);
+
+                const onDelete = async (user: boolean, acls: boolean) => {
+                    const promises = [];
+                    if (acls)
+                        promises.push(api.deleteACLs({
+                            resourceType: 'Any',
+                            resourceName: undefined,
+                            resourcePatternType: 'Any',
+                            principal: record.principalType + ':' + record.principalName,
+                            host: record.host,
+                            operation: 'Any',
+                            permissionType: 'Any',
+                        }));
+                    if (user)
+                        promises.push(api.deleteServiceAccount(record.principalName));
+
+                    await Promise.allSettled(promises);
+                    await this.refreshData(true);
+                }
+
+
+                return <Dropdown trigger={['click']} overlay={
+                    <Menu>
+                        <Menu.Item key="1" disabled={!userExists} onClick={async () => {
+                            onDelete(true, true);
+                            message.success(<>Deleted ACLs and user <Code>{record.principalName}</Code></>);
+                        }}>
+                            Delete (User and ACLs)
+                        </Menu.Item>
+
+                        <Menu.Item key="2" disabled={!userExists} onClick={async () => {
+                            onDelete(true, false);
+                            message.success(<>Deleted ACLs for <Code>{record.principalName}</Code></>);
+                        }}>
+                            Delete (User only)
+                        </Menu.Item>
+
+                        <Menu.Item key="3" onClick={async () => {
+                            onDelete(false, true);
+                            message.success(<>Deleted ACLs for <Code>{record.principalName}</Code></>);
+                        }}>
+                            Delete (ACLs only)
+                        </Menu.Item>
+                    </Menu>}>
+                    <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}
+                        onClick={e => e.stopPropagation()}
                     >
-                        <span>{record.sourceEntries.length}</span>
+                        <TrashIcon />
+                    </Button>
+                </Dropdown>
 
-                        <ZeroSizeWrapper height="21px" width="auto" wrapperStyle={{ marginLeft: 'auto' }}>
-                            <Popconfirm
-                                title={<>Delete all ACL entries for principal <Code>{record.principalName}</Code> ?</>}
-                                icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
-                                placement="left"
-                                okText="Delete"
 
-                                okButtonProps={{ danger: true }}
-                                onConfirm={async () => {
-                                    await api.deleteACLs({
-                                        resourceType: 'Any',
-                                        resourceName: undefined,
-                                        resourcePatternType: 'Any',
-                                        principal: record.principalType + ':' + record.principalName,
-                                        host: record.host,
-                                        operation: 'Any',
-                                        permissionType: 'Any',
-                                    });
-                                    await this.refreshData(true);
-                                    message.success(<>Deleted ACLs for principal <Code>{record.principalName}</Code></>);
-                                }}
-                            >
-                                <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}>
-                                    <TrashIcon />
-                                </Button>
-                            </Popconfirm>
-                        </ZeroSizeWrapper>
-                    </span>
-                </>
-            },
-            sorter: (a, b) => a.sourceEntries.length - b.sourceEntries.length,
+            }
         },
     ];
 
     editorType: 'create' | 'edit' = 'create';
     @observable edittingPrincipalGroup?: AclPrincipalGroup;
 
+    CreateServiceAccountModal;
+    showCreateServiceAccountModal;
+
     constructor(p: any) {
         super(p);
         makeObservable(this);
+
+        const m = createAutoModal({
+            modalProps: {
+                title: 'Create Service Account',
+                width: '80%',
+                style: { minWidth: '400px', maxWidth: '600px', top: '50px' },
+                bodyStyle: { paddingTop: '1em' },
+
+                okText: 'Create',
+                successTitle: 'Service Account Created',
+
+                closable: false,
+                keyboard: false,
+                maskClosable: false,
+            },
+
+            onCreate: () => observable({
+                username: '',
+                password: generatePassword(30),
+                mechanism: 'SCRAM-SHA-256',
+            } as CreateUserRequest),
+
+            isOkEnabled: state => {
+                const noWhitespaceRegex = /^\S+$/;
+                if (!noWhitespaceRegex.test(state.username))
+                    return false;
+                return true;
+            },
+            onOk: async state => {
+                await api.createServiceAccount({
+                    username: state.username,
+                    password: state.password,
+                    mechanism: state.mechanism,
+                });
+
+                return <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'auto auto',
+                    justifyContent: 'center',
+                    justifyItems: 'end',
+                    alignItems: 'center',
+                    columnGap: '8px',
+                    rowGap: '4px'
+                }}>
+                    <span>Username:</span><span style={{ justifySelf: 'start' }}>
+                        <Code>{state.username}</Code>
+                    </span>
+                    <span>Password:</span><span style={{ justifySelf: 'start' }}>
+                        <Input.Password value={state.password} readOnly />
+                    </span>
+                    <span>Mechanism:</span><span style={{ justifySelf: 'start' }}>
+                        <Code>{state.mechanism}</Code>
+                    </span>
+                </div>
+            },
+            onSuccess: (_state, _result) => {
+                this.refreshData(true);
+            },
+            content: (state) => <CreateServiceAccountEditor state={state} />,
+        });
+        this.CreateServiceAccountModal = m.Component;
+        this.showCreateServiceAccountModal = m.show;
     }
 
     initPage(p: PageInitHelper): void {
@@ -111,8 +199,11 @@ class AclList extends PageComponent {
 
     async refreshData(force: boolean) {
         if (api.userData != null && !api.userData.canListAcls) return;
-        await api.refreshAcls(AclRequestDefault, force);
 
+        await Promise.allSettled([
+            api.refreshAcls(AclRequestDefault, force),
+            api.refreshServiceAccounts(true)
+        ]);
     }
 
     render() {
@@ -132,17 +223,17 @@ class AclList extends PageComponent {
         return <>
             <PageContent>
 
-                {this.edittingPrincipalGroup != null
-                    ? <AclPrincipalGroupEditor
+                {this.edittingPrincipalGroup &&
+                    <AclPrincipalGroupEditor
                         principalGroup={this.edittingPrincipalGroup}
                         type={this.editorType}
                         onClose={() => {
                             this.edittingPrincipalGroup = undefined;
                             this.refreshData(true);
                         }}
-                    />
-                    : undefined
-                }
+                    />}
+
+                <this.CreateServiceAccountModal />
 
                 <Section>
                     <this.SearchControls />
@@ -242,6 +333,25 @@ class AclList extends PageComponent {
             result.push(principalGroup);
         }
 
+        // Add service accounts that exist but have no associated acl rules
+        const serviceAccounts = api.serviceAccounts?.users;
+        if (serviceAccounts) {
+            for (const acc of serviceAccounts) {
+                if (!result.any(g => g.principalName == acc)) {
+                    // Doesn't have a group yet, create one
+                    result.push({
+                        principalType: 'User',
+                        host: '',
+                        principalName: acc,
+                        topicAcls: [createEmptyTopicAcl()],
+                        consumerGroupAcls: [createEmptyConsumerGroupAcl()],
+                        clusterAcls: createEmptyClusterAcl(),
+                        sourceEntries: [],
+                    });
+                }
+            }
+        }
+
         return result;
     }
 
@@ -257,7 +367,9 @@ class AclList extends PageComponent {
 
                 <span style={{ marginLeft: 'auto' }} >{' '}</span>
 
-                {/* <Button>Create Service Account</Button> */}
+                <Button onClick={this.showCreateServiceAccountModal}>
+                    Create Service Account
+                </Button>
 
                 <Button onClick={() => {
                     this.editorType = 'create';
@@ -274,7 +386,7 @@ class AclList extends PageComponent {
                         clusterAcls: createEmptyClusterAcl(),
                         sourceEntries: []
                     };
-                }}>Create ACL</Button>
+                }}>Create ACLs</Button>
 
             </div>
         );
@@ -318,4 +430,5 @@ const PermissionDenied = <>
         </Section>
     </PageContent>
 </>
+
 

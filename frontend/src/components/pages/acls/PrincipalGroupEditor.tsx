@@ -58,15 +58,16 @@ export const AclPrincipalGroupEditor = observer((p: {
 
                 // Delete all ACLs in group
                 if (p.type == 'edit') {
-                    await api.deleteACLs({
-                        resourceType: 'Any',
-                        resourceName: undefined,
-                        resourcePatternType: 'Any',
-                        principal: group.principalType + ':' + group.principalName,
-                        host: group.host,
-                        operation: 'Any',
-                        permissionType: 'Any',
-                    });
+                    if (group.sourceEntries.length > 0)
+                        await api.deleteACLs({
+                            resourceType: 'Any',
+                            resourceName: undefined,
+                            resourcePatternType: 'Any',
+                            principal: group.principalType + ':' + group.principalName,
+                            host: group.host,
+                            operation: 'Any',
+                            permissionType: 'Any',
+                        });
                 }
 
                 // Create all ACLs in group
