@@ -22,7 +22,7 @@ import './index-cloud-integration.scss';
 
 import { appGlobal } from './state/appGlobal';
 
-import { SetConfigArguments, setup } from './config';
+import { SetConfigArguments, setup, embeddedAvailableRoutes } from './config';
 import HistorySetter from './components/misc/HistorySetter';
 import RequireAuth from './components/RequireAuth';
 import AppContent from './components/layout/Content';
@@ -45,13 +45,12 @@ export interface EmbeddedProps extends SetConfigArguments {
 };
 
 function EmbeddedApp({basePath, ...p}: EmbeddedProps) {
-
     useEffect(
         () => {
             const shellNavigationHandler = (event: Event) => {
                 const pathname = (event as CustomEvent<string>).detail;
                 const { pathname: currentPathname } = appGlobal.history.location;
-                if (currentPathname === pathname) {
+                if (currentPathname === pathname || !embeddedAvailableRoutes.some((r) => r.path === pathname )) {
                     return;
                 }
 
