@@ -91,6 +91,13 @@ export const setConfig = ({ fetch, urlOverride, jwt, ...args }: SetConfigArgumen
     return config;
 };
 
+
+
+const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin'];
+
+export const embeddedAvailableRoutes =  APP_ROUTES.filter((x) => x.icon != null)
+        .filter((x) => !ignoredRoutes.includes(x.path))
+
 autorun(() => {
     const setBreadcrumbs = config.setBreadcrumbs;
     if (!setBreadcrumbs) return;
@@ -107,11 +114,8 @@ autorun(() => {
     const setSidebarItems = config.setSidebarItems;
     if (!setSidebarItems) return;
 
-    const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin'];
 
-    const sidebarItems = APP_ROUTES.filter((x) => x.icon != null)
-        .filter((x) => !ignoredRoutes.includes(x.path))
-        .map(
+    const sidebarItems = embeddedAvailableRoutes.map(
             (r, i) =>
                 ({
                     title: r.title,
