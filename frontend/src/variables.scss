@@ -1,0 +1,35 @@
+
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+/*
+    In index.tsx we use ConfigProvider to define theme color(s),
+    from which a whole pallete of css-variables become defined.
+
+        --ant-primary-color
+        --ant-primary-color-disabled
+        --ant-primary-color-hover
+        ... (20 more)
+
+    Full list of variables:
+        node_modules/antd/dist/antd.variable.css
+
+    In our own components we want to use the same colors that ant-design uses.
+    So we define our own css variables and copy the antd values.
+*/
+$color-brand-secondary: var(--ant-primary-color);
+$color-brand-secondary-hover: var(--ant-primary-color-hover);
+
+$color-reload-spinner: var(--ant-primary-6);
+$color-reload-spinner-bg: var(--ant-primary-1);
+
+$color-light-background: #F6F6F6;
+
