@@ -14,6 +14,7 @@ import (
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/embed"
@@ -26,7 +27,7 @@ import (
 
 // API represents the server and all it's dependencies to serve incoming user requests
 type API struct {
-	Cfg *Config
+	Cfg *config.Config
 
 	Logger      *zap.Logger
 	KafkaSvc    *kafka.Service
@@ -45,14 +46,14 @@ type API struct {
 }
 
 // New creates a new API instance
-func New(cfg *Config, opts ...Option) *API {
+func New(cfg *config.Config, opts ...Option) *API {
 	logger := logging.NewLogger(&cfg.Logger, cfg.MetricsNamespace)
 
 	logger.Info("started Redpanda Console",
 		zap.String("version", version.Version),
 		zap.String("built_at", version.BuiltAt))
 
-	kafkaSvc, err := kafka.NewService(cfg.Kafka, logger, cfg.MetricsNamespace)
+	kafkaSvc, err := kafka.NewService(cfg, logger, cfg.MetricsNamespace)
 	if err != nil {
 		logger.Fatal("failed to create kafka service", zap.Error(err))
 	}

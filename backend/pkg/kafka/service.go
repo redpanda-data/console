@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kversion"
 
@@ -28,7 +29,7 @@ import (
 
 // Service acts as interface to interact with the Kafka Cluster
 type Service struct {
-	Config Config
+	Config *config.Config
 	Logger *zap.Logger
 
 	KafkaClientHooks kgo.Hook
@@ -41,13 +42,13 @@ type Service struct {
 
 // NewService creates a new Kafka service and immediately checks connectivity to all components. If any of these external
 // dependencies fail an error wil be returned.
-func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Service, error) {
+func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string) (*Service, error) {
 	// Kafka client
 	hooksChildLogger := logger.With(zap.String("source", "kafka_client_hooks"))
 	clientHooks := newClientHooks(hooksChildLogger, metricsNamespace)
 
-	logger.Debug("creating new kafka client", zap.Any("config", cfg.RedactedConfig()))
-	kgoOpts, err := NewKgoConfig(&cfg, logger, clientHooks)
+	logger.Debug("creating new kafka client", zap.Any("config", cfg.Kafka.RedactedConfig()))
+	kgoOpts, err := NewKgoConfig(&cfg.Kafka, logger, clientHooks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
 	}
@@ -79,9 +80,9 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 
 	// Schema Registry
 	var schemaSvc *schema.Service
-	if cfg.Schema.Enabled {
+	if cfg.Kafka.Schema.Enabled {
 		logger.Info("creating schema registry client and testing connectivity")
-		schemaSvc, err = schema.NewService(cfg.Schema, logger)
+		schemaSvc, err = schema.NewService(cfg.Kafka.Schema, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create schema service: %w", err)
 		}
@@ -95,8 +96,8 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 
 	// Proto Service
 	var protoSvc *proto.Service
-	if cfg.Protobuf.Enabled {
-		svc, err := proto.NewService(cfg.Protobuf, logger, schemaSvc)
+	if cfg.Kafka.Protobuf.Enabled {
+		svc, err := proto.NewService(cfg.Kafka.Protobuf, logger, schemaSvc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create protobuf service: %w", err)
 		}
@@ -105,8 +106,8 @@ func NewService(cfg Config, logger *zap.Logger, metricsNamespace string) (*Servi
 
 	// Msgpack service
 	var msgPackSvc *msgpack.Service
-	if cfg.MessagePack.Enabled {
-		msgPackSvc, err = msgpack.NewService(cfg.MessagePack)
+	if cfg.Kafka.MessagePack.Enabled {
+		msgPackSvc, err = msgpack.NewService(cfg.Kafka.MessagePack)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create msgpack service: %w", err)
 		}
@@ -138,7 +139,7 @@ func (s *Service) Start() error {
 }
 
 func (s *Service) NewKgoClient(additionalOpts ...kgo.Opt) (*kgo.Client, error) {
-	kgoOpts, err := NewKgoConfig(&s.Config, s.Logger, s.KafkaClientHooks)
+	kgoOpts, err := NewKgoConfig(&s.Config.Kafka, s.Logger, s.KafkaClientHooks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
 	}

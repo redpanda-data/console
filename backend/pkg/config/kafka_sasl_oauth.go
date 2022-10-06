@@ -7,24 +7,24 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package kafka
+package config
 
 import (
 	"flag"
 	"fmt"
 )
 
-// SASLOAuthBearer is the config struct for the SASL OAuthBearer mechanism
-type SASLOAuthBearer struct {
+// KafkaSASLOAuthBearer is the config struct for the SASL OAuthBearer mechanism
+type KafkaSASLOAuthBearer struct {
 	Token string `yaml:"token"`
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag
-func (c *SASLOAuthBearer) RegisterFlags(f *flag.FlagSet) {
+func (c *KafkaSASLOAuthBearer) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Token, "kafka.sasl.oauth.token", "", "OAuth Bearer Token")
 }
 
-func (c *SASLOAuthBearer) Validate() error {
+func (c *KafkaSASLOAuthBearer) Validate() error {
 	if c.Token == "" {
 		return fmt.Errorf("OAuth Bearer token must be set")
 	}

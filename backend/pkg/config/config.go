@@ -7,7 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package api
+package config
 
 import (
 	"flag"
@@ -22,14 +22,10 @@ import (
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/mitchellh/mapstructure"
-	"github.com/redpanda-data/console/backend/pkg/connect"
-	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"go.uber.org/zap"
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 // Config holds all (subdependency)Configs needed to run the API
@@ -38,12 +34,12 @@ type Config struct {
 	MetricsNamespace string `yaml:"metricsNamespace"`
 	ServeFrontend    bool   `yaml:"serveFrontend"` // useful for local development where we want the frontend from 'npm run start'
 
-	Console  console.Config  `yaml:"console"`
-	Redpanda redpanda.Config `yaml:"redpanda"`
-	Connect  connect.Config  `yaml:"connect"`
-	REST     rest.Config     `yaml:"server"`
-	Kafka    kafka.Config    `yaml:"kafka"`
-	Logger   logging.Config  `yaml:"logger"`
+	Console  Console        `yaml:"console"`
+	Redpanda Redpanda       `yaml:"redpanda"`
+	Connect  Connect        `yaml:"connect"`
+	REST     rest.Config    `yaml:"server"`
+	Kafka    Kafka          `yaml:"kafka"`
+	Logger   logging.Config `yaml:"logger"`
 }
 
 // RegisterFlags for all (sub)configs

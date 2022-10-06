@@ -12,6 +12,7 @@ package console
 import (
 	"fmt"
 
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
@@ -28,7 +29,7 @@ type Service struct {
 }
 
 // NewService for the Console package
-func NewService(cfg Config, logger *zap.Logger, kafkaSvc *kafka.Service, redpandaSvc *redpanda.Service) (*Service, error) {
+func NewService(cfg config.Console, logger *zap.Logger, kafkaSvc *kafka.Service, redpandaSvc *redpanda.Service) (*Service, error) {
 	var gitSvc *git.Service
 	cfg.TopicDocumentation.Git.AllowedFileExtensions = []string{"md"}
 	if cfg.TopicDocumentation.Enabled && cfg.TopicDocumentation.Git.Enabled {

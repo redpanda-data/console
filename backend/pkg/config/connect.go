@@ -1,13 +1,13 @@
 // Copyright 2022 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
-// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+// included in the file licenses/BSL.md
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package connect
+package config
 
 import (
 	"flag"
@@ -15,15 +15,15 @@ import (
 	"time"
 )
 
-type Config struct {
-	Enabled        bool            `yaml:"enabled"`
-	Clusters       []ConfigCluster `yaml:"clusters"`
-	ConnectTimeout time.Duration   `yaml:"connectTimeout"` // used for connectivity test
-	ReadTimeout    time.Duration   `yaml:"readTimeout"`    // overall REST/HTTP read timeout
-	RequestTimeout time.Duration   `yaml:"requestTimeout"` // timeout for REST requests to Kafka Connect
+type Connect struct {
+	Enabled        bool             `yaml:"enabled"`
+	Clusters       []ConnectCluster `yaml:"clusters"`
+	ConnectTimeout time.Duration    `yaml:"connectTimeout"` // used for connectivity test
+	ReadTimeout    time.Duration    `yaml:"readTimeout"`    // overall REST/HTTP read timeout
+	RequestTimeout time.Duration    `yaml:"requestTimeout"` // timeout for REST requests to Kafka Connect
 }
 
-func (c *Config) SetDefaults() {
+func (c *Connect) SetDefaults() {
 	for _, cluster := range c.Clusters {
 		cluster.SetDefaults()
 	}
@@ -33,14 +33,14 @@ func (c *Config) SetDefaults() {
 }
 
 // RegisterFlags registers all nested config flags.
-func (c *Config) RegisterFlags(f *flag.FlagSet) {
+func (c *Connect) RegisterFlags(f *flag.FlagSet) {
 	for i, cluster := range c.Clusters {
 		flagNamePrefix := fmt.Sprintf("connect.clusters.%d.", i)
 		cluster.RegisterFlagsWithPrefix(f, flagNamePrefix)
 	}
 }
 
-func (c *Config) Validate() error {
+func (c *Connect) Validate() error {
 	for i, cluster := range c.Clusters {
 		err := cluster.Validate()
 		if err != nil {

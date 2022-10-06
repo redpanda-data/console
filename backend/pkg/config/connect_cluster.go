@@ -1,20 +1,20 @@
 // Copyright 2022 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
-// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+// included in the file licenses/BSL.md
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package connect
+package config
 
 import (
 	"flag"
 	"fmt"
 )
 
-type ConfigCluster struct {
+type ConnectCluster struct {
 	// Name will be shown in the Frontend to identify a connect cluster
 	Name string `yaml:"name"`
 	// URL is the HTTP address that will be set as base url for all requests
@@ -22,23 +22,23 @@ type ConfigCluster struct {
 
 	// Authentication configuration
 	//
-	TLS      ConfigClusterTLS `yaml:"tls"`
-	Username string           `yaml:"username"`
-	Password string           `yaml:"password"`
-	Token    string           `yaml:"token"`
+	TLS      ConnectClusterTLS `yaml:"tls"`
+	Username string            `yaml:"username"`
+	Password string            `yaml:"password"`
+	Token    string            `yaml:"token"`
 }
 
 // RegisterFlagsWithPrefix registers all nested config flags.
-func (c *ConfigCluster) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
+func (c *ConnectCluster) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
 	f.StringVar(&c.Password, prefix+"password", "", "Basic auth password for connect cluster authentication")
 	f.StringVar(&c.Token, prefix+"token", "", "Bearer token for connect cluster authentication")
 }
 
-func (c *ConfigCluster) SetDefaults() {
+func (c *ConnectCluster) SetDefaults() {
 	c.TLS.SetDefaults()
 }
 
-func (c *ConfigCluster) Validate() error {
+func (c *ConnectCluster) Validate() error {
 	if c.Name == "" {
 		return fmt.Errorf("a cluster name must be set to identify the connect cluster")
 	}

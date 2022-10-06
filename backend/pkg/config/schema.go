@@ -7,7 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package redpanda
+package config
 
 import (
 	"flag"
@@ -15,35 +15,39 @@ import (
 	"net/url"
 )
 
-type AdminAPIConfig struct {
+// Schema Config for using a (Confluent) Schema Registry
+type Schema struct {
 	Enabled bool     `yaml:"enabled"`
 	URLs    []string `yaml:"urls"`
 
-	// Basic Auth Credentials
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	// Credentials
+	Username    string `yaml:"username"`
+	Password    string `yaml:"password"`
+	BearerToken string `yaml:"bearerToken"`
 
-	// TLS Config
-	TLS TLSConfig `yaml:"tls"`
+	// TLS / Custom CA
+	TLS SchemaTLS `yaml:"tls"`
 }
 
-func (c *AdminAPIConfig) RegisterFlags(flags *flag.FlagSet) {
-	flags.BoolVar(&c.Enabled, "redpanda.admin-api.password", c.Enabled, "Basic Auth password to authenticate against the Redpanda Admin API")
+// RegisterFlags registers all nested config flags.
+func (c *Schema) RegisterFlags(f *flag.FlagSet) {
+	f.StringVar(&c.Password, "schema.registry.password", "", "Password for authenticating against the schema registry (optional)")
+	f.StringVar(&c.BearerToken, "schema.registry.token", "", "Bearer token for authenticating against the schema registry (optional)")
 }
 
-func (c *AdminAPIConfig) SetDefaults() {
-	c.Enabled = false
-}
-
-func (c *AdminAPIConfig) Validate() error {
-	if !c.Enabled {
+func (c *Schema) Validate() error {
+	if c.Enabled == false {
 		return nil
+	}
+
+	if len(c.URLs) == 0 {
+		return fmt.Errorf("schema registry is enabled but no URL is configured")
 	}
 
 	for _, u := range c.URLs {
 		urlParsed, err := url.Parse(u)
 		if err != nil {
-			return fmt.Errorf("failed to parse redpanda admin api url %q: %w", u, err)
+			return fmt.Errorf("failed to parse schema registry url %q: %w", u, err)
 		}
 		switch urlParsed.Scheme {
 		case "http":
@@ -57,10 +61,6 @@ func (c *AdminAPIConfig) Validate() error {
 		default:
 			return fmt.Errorf("URL scheme must either be http or https, but got %q in url: %q", urlParsed.Scheme, u)
 		}
-	}
-
-	if err := c.TLS.Validate(); err != nil {
-		return fmt.Errorf("invalid TLS config: %w", err)
 	}
 
 	return nil

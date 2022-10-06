@@ -1,22 +1,21 @@
 // Copyright 2022 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
-// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+// included in the file licenses/BSL.md
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package git
+package config
 
 import (
-	"flag"
 	"fmt"
 	"time"
 )
 
-// Config for Git Service
-type Config struct {
+// Filesystem Config for Filesystem service
+type Filesystem struct {
 	Enabled bool `yaml:"enabled"`
 
 	// AllowedFileExtensions specifies file extensions that shall be picked up. If at least one is specified all other
@@ -32,37 +31,25 @@ type Config struct {
 	// RefreshInterval specifies how often the repository shall be pulled to check for new changes.
 	RefreshInterval time.Duration `yaml:"refreshInterval"`
 
-	// Repository that contains markdown files that document a Kafka topic.
-	Repository RepositoryConfig `yaml:"repository"`
-
-	// Authentication Configs
-	BasicAuth BasicAuthConfig `yaml:"basicAuth"`
-	SSH       SSHConfig       `yaml:"ssh"`
-}
-
-// RegisterFlagsWithPrefix for all (sub)configs
-func (c *Config) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string) {
-	c.BasicAuth.RegisterFlagsWithPrefix(f, prefix)
-	c.SSH.RegisterFlagsWithPrefix(f, prefix)
+	// Paths whose files shall be watched. Subdirectories and their files will be included.
+	Paths []string `yaml:"paths"`
 }
 
 // Validate all root and child config structs
-func (c *Config) Validate() error {
+func (c *Filesystem) Validate() error {
 	if !c.Enabled {
 		return nil
 	}
 	if c.RefreshInterval == 0 {
-		return fmt.Errorf("git config is enabled but refresh interval is set to 0 (disabled)")
+		return fmt.Errorf("filesystem provider is enabled but refresh interval is set to 0")
 	}
 
-	return c.Repository.Validate()
+	return nil
 }
 
 // SetDefaults for all root and child config structs
-func (c *Config) SetDefaults() {
-	c.Repository.SetDefaults()
-	
-	c.RefreshInterval = time.Minute
+func (c *Filesystem) SetDefaults() {
 	c.MaxFileSize = 500 * 1000 // 500KB
 	c.IndexByFullFilepath = false
+	c.RefreshInterval = 5 * time.Minute
 }

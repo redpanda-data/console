@@ -1,13 +1,13 @@
 // Copyright 2022 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
-// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+// included in the file licenses/BSL.md
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package schema
+package config
 
 import (
 	"flag"
@@ -15,39 +15,35 @@ import (
 	"net/url"
 )
 
-// Config for using a (Confluent) Schema Registry
-type Config struct {
+type RedpandaAdminAPI struct {
 	Enabled bool     `yaml:"enabled"`
 	URLs    []string `yaml:"urls"`
 
-	// Credentials
-	Username    string `yaml:"username"`
-	Password    string `yaml:"password"`
-	BearerToken string `yaml:"bearerToken"`
+	// Basic Auth Credentials
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 
-	// TLS / Custom CA
-	TLS TLSConfig `yaml:"tls"`
+	// TLS Config
+	TLS RedpandaAdminAPITLS `yaml:"tls"`
 }
 
-// RegisterFlags registers all nested config flags.
-func (c *Config) RegisterFlags(f *flag.FlagSet) {
-	f.StringVar(&c.Password, "schema.registry.password", "", "Password for authenticating against the schema registry (optional)")
-	f.StringVar(&c.BearerToken, "schema.registry.token", "", "Bearer token for authenticating against the schema registry (optional)")
+func (c *RedpandaAdminAPI) RegisterFlags(flags *flag.FlagSet) {
+	flags.BoolVar(&c.Enabled, "redpanda.admin-api.password", c.Enabled, "Basic Auth password to authenticate against the Redpanda Admin API")
 }
 
-func (c *Config) Validate() error {
-	if c.Enabled == false {
+func (c *RedpandaAdminAPI) SetDefaults() {
+	c.Enabled = false
+}
+
+func (c *RedpandaAdminAPI) Validate() error {
+	if !c.Enabled {
 		return nil
-	}
-
-	if len(c.URLs) == 0 {
-		return fmt.Errorf("schema registry is enabled but no URL is configured")
 	}
 
 	for _, u := range c.URLs {
 		urlParsed, err := url.Parse(u)
 		if err != nil {
-			return fmt.Errorf("failed to parse schema registry url %q: %w", u, err)
+			return fmt.Errorf("failed to parse redpanda admin api url %q: %w", u, err)
 		}
 		switch urlParsed.Scheme {
 		case "http":
@@ -61,6 +57,10 @@ func (c *Config) Validate() error {
 		default:
 			return fmt.Errorf("URL scheme must either be http or https, but got %q in url: %q", urlParsed.Scheme, u)
 		}
+	}
+
+	if err := c.TLS.Validate(); err != nil {
+		return fmt.Errorf("invalid TLS config: %w", err)
 	}
 
 	return nil

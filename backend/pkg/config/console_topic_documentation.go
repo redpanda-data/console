@@ -1,31 +1,29 @@
 // Copyright 2022 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
-// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+// included in the file licenses/BSL.md
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package console
+package config
 
 import (
 	"flag"
 	"fmt"
-
-	"github.com/redpanda-data/console/backend/pkg/git"
 )
 
-type ConfigTopicDocumentation struct {
-	Enabled bool       `yaml:"enabled"`
-	Git     git.Config `yaml:"git"`
+type ConsoleTopicDocumentation struct {
+	Enabled bool `yaml:"enabled"`
+	Git     Git  `yaml:"git"`
 }
 
-func (c *ConfigTopicDocumentation) RegisterFlags(f *flag.FlagSet) {
+func (c *ConsoleTopicDocumentation) RegisterFlags(f *flag.FlagSet) {
 	c.Git.RegisterFlagsWithPrefix(f, "owl.topic-documentation.")
 }
 
-func (c *ConfigTopicDocumentation) Validate() error {
+func (c *ConsoleTopicDocumentation) Validate() error {
 	if !c.Enabled {
 		return nil
 	}
@@ -36,7 +34,7 @@ func (c *ConfigTopicDocumentation) Validate() error {
 	return c.Git.Validate()
 }
 
-func (c *ConfigTopicDocumentation) SetDefaults() {
+func (c *ConsoleTopicDocumentation) SetDefaults() {
 	c.Git.SetDefaults()
 	c.Git.AllowedFileExtensions = []string{".md"}
 }

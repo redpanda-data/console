@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/api/admin"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/net"
 	"go.uber.org/zap"
@@ -25,7 +26,7 @@ type Service struct {
 	logger      *zap.Logger
 }
 
-func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
+func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 	if !cfg.AdminAPI.Enabled {
 		return nil, nil
 	}

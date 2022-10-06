@@ -11,7 +11,6 @@ package filesystem
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -21,11 +20,14 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
+	"go.uber.org/zap"
 )
 
 // Service provides functionality to serve files from a git repository. The contents are stored in memory.
 type Service struct {
-	Cfg    Config
+	Cfg    config.Filesystem
 	logger *zap.Logger
 
 	// In memory cache for markdowns. Map key is the filename with stripped ".md" suffix.
@@ -36,7 +38,7 @@ type Service struct {
 }
 
 // NewService creates a new Git service with preconfigured Auth
-func NewService(cfg Config, logger *zap.Logger, onFilesUpdatedHook func()) (*Service, error) {
+func NewService(cfg config.Filesystem, logger *zap.Logger, onFilesUpdatedHook func()) (*Service, error) {
 	childLogger := logger.With(zap.String("source", "file_provider"))
 
 	return &Service{

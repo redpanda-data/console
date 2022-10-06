@@ -16,13 +16,14 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"go.uber.org/zap"
 
 	con "github.com/cloudhut/connect-client"
 )
 
 type Service struct {
-	Cfg              Config
+	Cfg              config.Connect
 	Logger           *zap.Logger
 	ClientsByCluster map[ /*ClusterName*/ string]*ClientWithConfig
 	OverrideSvc      *OverrideService
@@ -30,10 +31,10 @@ type Service struct {
 
 type ClientWithConfig struct {
 	Client *con.Client
-	Cfg    ConfigCluster
+	Cfg    config.ConnectCluster
 }
 
-func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
+func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 	logger.Info("creating Kafka connect HTTP clients and testing connectivity to all clusters")
 
 	// 1. Create a client for each configured Connect cluster
@@ -102,7 +103,7 @@ func (s *Service) TestConnectivity(ctx context.Context) {
 	wg := sync.WaitGroup{}
 	for _, clientInfo := range s.ClientsByCluster {
 		wg.Add(1)
-		go func(cfg ConfigCluster, c *con.Client) {
+		go func(cfg config.ConnectCluster, c *con.Client) {
 			defer wg.Done()
 			_, err := c.GetRoot(ctx)
 			if err != nil {

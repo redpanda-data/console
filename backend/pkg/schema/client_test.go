@@ -14,12 +14,13 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestClient_GetSchemaByID(t *testing.T) {
 	baseURL := "https://schema-registry.company.com"
-	c, _ := newClient(Config{
+	c, _ := newClient(config.Schema{
 		Enabled: true,
 		URLs:    []string{baseURL},
 	})
@@ -44,7 +45,7 @@ func TestClient_GetSchemaByID(t *testing.T) {
 
 func TestClient_GetSubjects(t *testing.T) {
 	baseURL := "https://schema-registry.company.com"
-	c, _ := newClient(Config{
+	c, _ := newClient(config.Schema{
 		Enabled: true,
 		URLs:    []string{baseURL},
 	})
@@ -67,7 +68,7 @@ func TestClient_GetSubjects(t *testing.T) {
 
 func TestClient_GetSubjectVersions(t *testing.T) {
 	baseURL := "https://schema-registry.company.com"
-	c, _ := newClient(Config{
+	c, _ := newClient(config.Schema{
 		Enabled: true,
 		URLs:    []string{baseURL},
 	})

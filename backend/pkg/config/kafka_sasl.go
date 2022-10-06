@@ -7,7 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package kafka
+package config
 
 import (
 	"flag"
@@ -23,19 +23,19 @@ const (
 	SASLMechanismAWSManagedStreamingIAM = "AWS_MSK_IAM"
 )
 
-// SASLConfig for Kafka client
-type SASLConfig struct {
-	Enabled      bool             `yaml:"enabled"`
-	Username     string           `yaml:"username"`
-	Password     string           `yaml:"password"`
-	Mechanism    string           `yaml:"mechanism"`
-	OAUth        SASLOAuthBearer  `yaml:"oauth"`
-	GSSAPIConfig SASLGSSAPIConfig `yaml:"gssapi"`
-	AWSMskIam    SASLAwsMskIam    `yaml:"awsMskIam"`
+// KafkaSASL for Kafka client
+type KafkaSASL struct {
+	Enabled      bool                 `yaml:"enabled"`
+	Username     string               `yaml:"username"`
+	Password     string               `yaml:"password"`
+	Mechanism    string               `yaml:"mechanism"`
+	OAUth        KafkaSASLOAuthBearer `yaml:"oauth"`
+	GSSAPIConfig KafkaSASLGSSAPI      `yaml:"gssapi"`
+	AWSMskIam    KafkaSASLAwsMskIam   `yaml:"awsMskIam"`
 }
 
 // RegisterFlags for all sensitive Kafka SASL configs.
-func (c *SASLConfig) RegisterFlags(f *flag.FlagSet) {
+func (c *KafkaSASL) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Password, "kafka.sasl.password", "", "SASL password")
 	c.OAUth.RegisterFlags(f)
 	c.GSSAPIConfig.RegisterFlags(f)
@@ -43,13 +43,13 @@ func (c *SASLConfig) RegisterFlags(f *flag.FlagSet) {
 }
 
 // SetDefaults for SASL Config
-func (c *SASLConfig) SetDefaults() {
+func (c *KafkaSASL) SetDefaults() {
 	c.Mechanism = SASLMechanismPlain
 	c.GSSAPIConfig.SetDefaults()
 }
 
 // Validate SASL config input
-func (c *SASLConfig) Validate() error {
+func (c *KafkaSASL) Validate() error {
 	switch c.Mechanism {
 	case SASLMechanismPlain, SASLMechanismScramSHA256, SASLMechanismScramSHA512:
 		// Valid and supported
