@@ -12,11 +12,12 @@ package connect
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"net/http"
 )
 
 type ClusterConnectors struct {
@@ -42,6 +43,7 @@ type ClusterConnectorInfo struct {
 	State        string                     `json:"state"` // Running, ..
 	TotalTasks   int                        `json:"totalTasks"`
 	RunningTasks int                        `json:"runningTasks"`
+	Trace        string                     `json:"trace,omitempty"`
 	Tasks        []ClusterConnectorTaskInfo `json:"tasks"`
 }
 
@@ -225,6 +227,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 			Type:         c.Info.Type,
 			State:        c.Status.Connector.State,
 			Tasks:        tasks,
+			Trace:        c.Status.Connector.Trace,
 			TotalTasks:   len(c.Status.Tasks),
 			RunningTasks: runningTasks,
 		})
