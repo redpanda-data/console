@@ -105,7 +105,7 @@ class AclList extends PageComponent {
                         </Menu.Item>
                     </Menu>}>
                     <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}
-                        onClick={e => e.stopPropagation()}
+                        onClick={e => { e.stopPropagation(); e.preventDefault(); }}
                     >
                         <TrashIcon />
                     </Button>
@@ -128,13 +128,13 @@ class AclList extends PageComponent {
 
         const m = createAutoModal({
             modalProps: {
-                title: 'Create Service Account',
+                title: 'Create User',
                 width: '80%',
                 style: { minWidth: '400px', maxWidth: '600px', top: '50px' },
                 bodyStyle: { paddingTop: '1em' },
 
                 okText: 'Create',
-                successTitle: 'Service Account Created',
+                successTitle: 'User Created',
 
                 closable: false,
                 keyboard: false,
@@ -368,7 +368,7 @@ class AclList extends PageComponent {
                 <span style={{ marginLeft: 'auto' }} >{' '}</span>
 
                 <Button onClick={this.showCreateServiceAccountModal}>
-                    Create Service Account
+                    Create User
                 </Button>
 
                 <Button onClick={() => {
