@@ -42,7 +42,8 @@ import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
-    DeleteACLsRequest, RedpandaLicense, AclResource } from './restInterfaces';
+    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest
+} from './restInterfaces';
 import { Features } from './supportedFeatures';
 import { uiState } from './uiState';
 import { config as appConfig } from '../config';
@@ -226,6 +227,7 @@ const apiStore = {
     topicConsumers: new Map<string, TopicConsumer[]>(),
     topicAcls: new Map<string, GetAclOverviewResponse | null>(),
 
+    serviceAccounts: undefined as GetUsersResponse | undefined | null,
     ACLs: undefined as GetAclOverviewResponse | undefined | null,
 
     Quotas: undefined as QuotaResponse | undefined | null,
@@ -1228,6 +1230,31 @@ const apiStore = {
                 ['Content-Type', 'application/json']
             ],
             body: JSON.stringify(request),
+        });
+
+        return parseOrUnwrap<void>(response, null);
+    },
+
+    async refreshServiceAccounts(force?: boolean): Promise<void> {
+        await cachedApiRequest<GetUsersResponse | null>(`${appConfig.restBasePath}/users`, force)
+            .then(v => this.serviceAccounts = v ?? null, addError);
+    },
+
+    async createServiceAccount(request: CreateUserRequest): Promise<void> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/users`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify(request),
+        });
+
+        return parseOrUnwrap<void>(response, null);
+    },
+
+    async deleteServiceAccount(principalId: string): Promise<void> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/users/${principalId}`, {
+            method: 'DELETE',
         });
 
         return parseOrUnwrap<void>(response, null);

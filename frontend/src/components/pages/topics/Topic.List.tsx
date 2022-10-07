@@ -11,18 +11,15 @@
 
 import React from 'react';
 import { TrashIcon } from '@heroicons/react/outline';
-import { Alert, Button, Modal, notification, Popover, Row, Statistic, Tooltip } from 'antd';
-import { motion } from 'framer-motion';
+import { Alert, Button, Checkbox, Modal, notification, Popover, Row, Statistic, Tooltip } from 'antd';
 import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { animProps } from '../../../utils/animationProps';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
-import Card from '../../misc/Card';
 import { makePaginationConfig, renderLogDirSummary, sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
@@ -31,12 +28,15 @@ import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-reac
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
 import { UInt64Max } from '../../../utils/utils';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 @observer
 class TopicList extends PageComponent {
     pageConfig = makePaginationConfig(uiSettings.topicList.pageSize);
     quickSearchReaction: IReactionDisposer;
-    @observable topicToDelete: null | string = null;
+
+    @observable topicToDelete: null | Topic = null;
 
     CreateTopicModal;
     showCreateTopicModal;
@@ -88,7 +88,10 @@ class TopicList extends PageComponent {
     render() {
         if (!api.topics) return DefaultSkeleton;
 
-        const topics = api.topics;
+        let topics = api.topics;
+        if (uiSettings.topicList.hideInternalTopics) {
+            topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
+        }
 
         const partitionCountReal = topics.sum((x) => x.partitionCount);
         const partitionCountOnlyReplicated = topics.sum((x) => x.partitionCount * (x.replicationFactor - 1));
@@ -107,45 +110,95 @@ class TopicList extends PageComponent {
         );
 
         return (
-            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-                <Card>
+            <PageContent>
+                <Section py={4}>
                     <Row>
                         <Statistic title="Total Topics" value={topics.length} />
-                        <Popover title="Partition Details" content={partitionDetails} placement="right" mouseEnterDelay={0} trigger="hover">
-                            <div className="hoverLink" style={{ display: 'flex', verticalAlign: 'middle', cursor: 'default' }}>
-                                <Statistic title="Total Partitions" value={partitionCountReal + partitionCountOnlyReplicated} />
+                        <Popover
+                            title="Partition Details"
+                            content={partitionDetails}
+                            placement="right"
+                            mouseEnterDelay={0}
+                            trigger="hover"
+                        >
+                            <div
+                                className="hoverLink"
+                                style={{
+                                    display: 'flex',
+                                    verticalAlign: 'middle',
+                                    cursor: 'default',
+                                }}
+                            >
+                                <Statistic
+                                    title="Total Partitions"
+                                    value={
+                                        partitionCountReal + partitionCountOnlyReplicated
+                                    }
+                                />
                             </div>
                         </Popover>
                     </Row>
-                </Card>
+                </Section>
 
-                <Card>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Section>
+                    <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
                         <Button
                             onClick={() => this.showCreateTopicModal()}
                             style={{ minWidth: '160px', marginBottom: '12px' }}
                         >
                             Create Topic
                         </Button>
+                        <Checkbox
+                            value={uiSettings.topicList.hideInternalTopics}
+                            onChange={x => uiSettings.topicList.hideInternalTopics = x.target.checked}
+                            style={{ marginLeft: 'auto' }}
+                        >
+                            Show internal topics
+                        </Checkbox>
                         <this.CreateTopicModal />
                     </div>
                     <KowlTable
                         dataSource={topics}
                         rowKey={(x) => x.topicName}
                         columns={[
-                            { title: 'Name', dataIndex: 'topicName', render: (t, r) => renderName(r), sorter: sortField('topicName'), className: 'whiteSpaceDefault', defaultSortOrder: 'ascend' },
-                            { title: 'Partitions', dataIndex: 'partitions', render: (t, r) => r.partitionCount, sorter: (a, b) => a.partitionCount - b.partitionCount, width: 1 },
-                            { title: 'Replicas', dataIndex: 'replicationFactor', sorter: sortField('replicationFactor'), width: 1 },
                             {
-                                title: 'CleanupPolicy', dataIndex: 'cleanupPolicy', width: 1,
+                                title: 'Name',
+                                dataIndex: 'topicName',
+                                render: (t, r) => renderName(r),
+                                sorter: sortField('topicName'),
+                                className: 'whiteSpaceDefault',
+                                defaultSortOrder: 'ascend',
+                            },
+                            {
+                                title: 'Partitions',
+                                dataIndex: 'partitions',
+                                render: (t, r) => r.partitionCount,
+                                sorter: (a, b) => a.partitionCount - b.partitionCount,
+                                width: 1,
+                            },
+                            {
+                                title: 'Replicas',
+                                dataIndex: 'replicationFactor',
+                                sorter: sortField('replicationFactor'),
+                                width: 1,
+                            },
+                            {
+                                title: 'CleanupPolicy',
+                                dataIndex: 'cleanupPolicy',
+                                width: 1,
                                 filterType: {
                                     type: 'enum',
-                                    optionClassName: 'capitalize'
+                                    optionClassName: 'capitalize',
                                 },
                                 sorter: sortField('cleanupPolicy'),
                             },
                             {
-                                title: 'Size', render: (t, r) => renderLogDirSummary(r.logDirSummary), sorter: (a, b) => a.logDirSummary.totalSizeBytes - b.logDirSummary.totalSizeBytes, width: '140px',
+                                title: 'Size',
+                                render: (t, r) => renderLogDirSummary(r.logDirSummary),
+                                sorter: (a, b) =>
+                                    a.logDirSummary.totalSizeBytes -
+                                    b.logDirSummary.totalSizeBytes,
+                                width: '140px',
                             },
                             {
                                 width: 1,
@@ -160,7 +213,7 @@ class TopicList extends PageComponent {
                                                 className="iconButton"
                                                 onClick={(event) => {
                                                     event.stopPropagation();
-                                                    this.topicToDelete = record.topicName;
+                                                    this.topicToDelete = record;
                                                 }}
                                             >
                                                 <TrashIcon />
@@ -170,7 +223,6 @@ class TopicList extends PageComponent {
                                 ),
                             },
                         ]}
-
                         search={{
                             searchColumnIndex: 0,
                             isRowMatch: (row, regex) => {
@@ -178,16 +230,16 @@ class TopicList extends PageComponent {
                                 if (regex.test(row.cleanupPolicy)) return true;
                                 return false;
                             },
-
                         }}
-
                         observableSettings={uiSettings.topicList}
                         onRow={(record) => ({
-                            onClick: () => appGlobal.history.push('/topics/' + record.topicName),
+                            onClick: () =>
+                                appGlobal.history.push('/topics/' + record.topicName),
                         })}
                         rowClassName="hoverLink"
                     />
-                </Card>
+                </Section>
+
                 <ConfirmDeletionModal
                     topicToDelete={this.topicToDelete}
                     onCancel={() => (this.topicToDelete = null)}
@@ -196,7 +248,7 @@ class TopicList extends PageComponent {
                         this.refreshData(true);
                     }}
                 />
-            </motion.div>
+            </PageContent>
         );
     }
 }
@@ -263,7 +315,7 @@ const renderName = (topic: Topic) => {
     );
 };
 
-function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDelete: string | null; onFinish: () => void; onCancel: () => void }) {
+function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDelete: Topic | null; onFinish: () => void; onCancel: () => void }) {
     const [deletionPending, setDeletionPending] = useState(false);
     const [error, setError] = useState<string | Error | null>(null);
 
@@ -276,7 +328,7 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
         onFinish();
         cleanup();
         notification['success']({
-            message: <>Topic <Code>{topicToDelete}</Code> deleted successfully</>,
+            message: <>Topic <Code>{topicToDelete?.topicName}</Code> deleted successfully</>,
         });
     };
 
@@ -297,11 +349,12 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
             confirmLoading={deletionPending}
             okType="danger"
             cancelText="No"
+            width="570px"
             cancelButtonProps={{ disabled: deletionPending }}
             onCancel={cancel}
             onOk={() => {
                 setDeletionPending(true);
-                api.deleteTopic(topicToDelete!) // modal is not shown when topic is null
+                api.deleteTopic(topicToDelete!.topicName) // modal is not shown when topic is null
                     .then(finish)
                     .catch(setError)
                     .finally(() => { setDeletionPending(false) });
@@ -309,8 +362,9 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
         >
             <>
                 {error && <Alert type="error" message={`An error occurred: ${typeof error === 'string' ? error : error.message}`} />}
+                {topicToDelete?.isInternal && <Alert type="error" showIcon message="This is an internal topic, deleting it might have unintended side-effects!" />}
                 <p>
-                    Are you sure you want to delete topic <Code>{topicToDelete}</Code>?<br />
+                    Are you sure you want to delete topic <Code>{topicToDelete?.topicName}</Code>?<br />
                     This action cannot be undone.
                 </p>
             </>

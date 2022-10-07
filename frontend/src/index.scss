@@ -40,7 +40,7 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     list-style-type: none;
-    background: #f0f2f5;
+    // background: #f0f2f5;
 }
 
 code {
@@ -499,12 +499,6 @@ td.ant-table-column-sort {
 
 .w100 {
     width: 100%;
-}
-
-
-#mainLayout {
-    // border-left: 1px solid #ddd;
-    background: #f3f3f3;
 }
 
 .sider {
@@ -1782,6 +1776,8 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
 }
 
 .statisticsBar {
+    position: relative;
+    overflow: hidden;
     &:hover {
         .hideStatsBarButton {
             opacity: 1;

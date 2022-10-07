@@ -15,17 +15,16 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { sortField } from '../../misc/common';
-import { motion } from 'framer-motion';
-import { animProps } from '../../../utils/animationProps';
 import { computed, makeObservable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
-import Card from '../../misc/Card';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import { LockIcon, SkipIcon } from '@primer/octicons-react';
 import { toJson } from '../../../utils/jsonUtils';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import { QuotaType } from '../../../state/restInterfaces';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 @observer
 class QuotasList extends PageComponent {
@@ -70,9 +69,8 @@ class QuotasList extends PageComponent {
         ];
 
         return <>
-            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-
-                <Card>
+            <PageContent>
+                <Section>
                     {warning}
 
                     <KowlTable
@@ -84,8 +82,8 @@ class QuotasList extends PageComponent {
                         rowKey={x => x.eqKey}
                         rowClassName={() => 'pureDisplayRow'}
                     />
-                </Card>
-            </motion.div>
+                </Section>
+            </PageContent>
         </>
     }
 
@@ -98,8 +96,8 @@ class QuotasList extends PageComponent {
 }
 
 const PermissionDenied = <>
-    <motion.div {...animProps} key={'quotasNoPerms'} style={{ margin: '0 1rem' }}>
-        <Card style={{ padding: '2rem 2rem', paddingBottom: '3rem' }}>
+    <PageContent key="quotasNoPerms">
+        <Section>
             <Empty description={null}>
                 <div style={{ marginBottom: '1.5rem' }}>
                     <h2><span><LockIcon verticalAlign="middle" size={20} /></span> Permission Denied</h2>
@@ -114,8 +112,8 @@ const PermissionDenied = <>
                     <Button type="primary">Redpanda Console documentation for roles and permissions</Button>
                 </a>
             </Empty>
-        </Card>
-    </motion.div>
+        </Section>
+    </PageContent>
 </>
 
 export default QuotasList;

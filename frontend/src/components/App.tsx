@@ -11,19 +11,18 @@
 
 import React, { Component, ReactNode } from 'react';
 import { observer } from 'mobx-react';
-import { Layout, PageHeader, Button, Popover } from 'antd';
+import { Layout, PageHeader, Popover, Button } from 'antd';
+import { ColorModeSwitch, Container, Grid, Sidebar } from '@redpanda-data/ui';
 import { uiSettings } from '../state/ui';
-import { RouteView, RouteMenu, } from './routes';
+import { createVisibleSidebarItems, RouteView } from './routes';
 import { prettyMilliseconds } from '../utils/utils';
 import { api, REST_CACHE_DURATION_SEC } from '../state/backendApi';
-import { NavLink, Switch, Route, Link } from 'react-router-dom';
+import { NavLink, Switch, Route } from 'react-router-dom';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
-import { AnimatePresence, animProps_logo, MotionDiv } from '../utils/animationProps';
+import { MotionDiv } from '../utils/animationProps';
 import { ErrorDisplay } from './misc/ErrorDisplay';
 import { uiState } from '../state/uiState';
 import { appGlobal } from '../state/appGlobal';
-import RedpandaLogo from '../assets/redpanda/redpanda-color.svg';
-import RedpandaIcon from '../assets/redpanda/icon-color.svg';
 import { ErrorBoundary } from './misc/ErrorBoundary';
 import { IsDev, getBasePath, IsCI, AppFeatures } from '../utils/env';
 import { UserProfile } from './misc/UserButton';
@@ -32,21 +31,17 @@ import { UserData } from '../state/restInterfaces';
 import Login from './misc/login';
 import LoginCompletePage from './misc/login-complete';
 import env, { getBuildDate } from '../utils/env';
-import { MenuFoldOutlined, MenuUnfoldOutlined, GithubFilled, TwitterOutlined, LinkedinFilled, SlackSquareOutlined } from '@ant-design/icons';
+import { GithubFilled, TwitterOutlined, LinkedinFilled, SlackSquareOutlined } from '@ant-design/icons';
 import { ZeroSizeWrapper, } from '../utils/tsxUtils';
 import { UserPreferencesButton } from './misc/UserPreferences';
 import { featureErrors } from '../state/supportedFeatures';
 import { renderErrorModals } from './misc/ErrorModal';
 import { SyncIcon, ChevronRightIcon } from '@primer/octicons-react';
-import { motion } from 'framer-motion';
 import { isEmbedded } from '../config';
+import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
+import { APP_ROUTES } from './routes';
 
-const { Content, Footer, Sider } = Layout;
-
-
-const siderCollapsedWidth = 80;
-
-
+const { Footer } = Layout;
 
 const VersionInfo = () => {
     const appName = 'Redpanda Console';
@@ -75,52 +70,16 @@ const VersionInfo = () => {
     </>;
 };
 
-const SideBar = observer(() =>
-    <Layout className="sideBar" >
-        {/* Logo */}
-        <div>
-            <Link to="/">
-                {/* Logo Image */}
-                <AnimatePresence initial={false} presenceAffectsLayout >
-                    {uiSettings.sideBarOpen
-                        ? <motion.img alt="logo" key="logoExpanded" src={RedpandaLogo} {...animProps_logo} />
-                        : <motion.img alt="logo" key="logoCollapsed" src={RedpandaIcon}   {...animProps_logo} />
-                    }
-                </AnimatePresence>
-            </Link>
-        </div>
+const SideBar = observer(() => {
+    const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
+    return (
+        <Sidebar items={sidebarItems} isCollapsed={!uiSettings.sideBarOpen}>
+            <UserProfile />
+        </Sidebar>
+    )
+});
 
-        {/* Menu */}
-        <Content className="scroll-on-hover-y">
-            <RouteMenu />
-        </Content>
-
-        {/* Profile */}
-        <UserProfile />
-
-
-        {/* Toggle */}
-        <Footer className="sideBarToggle" onClick={() => { uiSettings.sideBarOpen = !uiSettings.sideBarOpen; }}>
-            {uiSettings.sideBarOpen
-                ? <MenuFoldOutlined className="icon" />
-                : <MenuUnfoldOutlined className="icon" />}
-        </Footer>
-    </Layout>
-);
-
-const sideBarWidthDefault = '230px';
-const AppSide = observer(() => (
-    <Sider
-        collapsible
-        collapsed={!uiSettings.sideBarOpen} collapsedWidth={siderCollapsedWidth}
-        trigger={null}
-        width={sideBarWidthDefault}
-        className="sider"
-        style={{ cursor: 'default' }}
-    >
-        <SideBar />
-    </Sider>
-));
+const AppSide = observer(() => <SideBar  />);
 
 
 let lastRequestCount = 0;
@@ -198,25 +157,30 @@ const AppPageHeader = observer(() => {
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UserPreferencesButton />
+            {!isEmbedded() && <ColorModeSwitch/>}
         </div>
     </MotionDiv>;
 });
 
 const AppFooter = () => {
+    const gitHub = (link: string, title: string) => <>
+        <a href={link} title={title} target="_blank" rel="noopener noreferrer">
+            <GithubFilled />
+        </a>
+    </>;
 
     return <Footer className="footer">
         {/* Social Media Links */}
         <div className="links">
-            <a href="https://github.com/redpanda-data/console" title="Visit Redpanda Console's GitHub repository" target="_blank" rel="noopener noreferrer">
-                <GithubFilled />
-            </a>
+            {isEmbedded() ? gitHub('https://github.com/redpanda-data/redpanda', 'Visit Redpanda\'s GitHub repository') :
+                gitHub('https://github.com/redpanda-data/console', 'Visit Redpanda Console\'s GitHub repository')}
             <a href="https://redpanda.com/slack" title="Slack" target="_blank" rel="noopener noreferrer">
                 <SlackSquareOutlined />
             </a>
             <a href="https://twitter.com/redpandadata" title="Twitter" target="_blank" rel="noopener noreferrer">
                 <TwitterOutlined />
             </a>
-            <a href="https://www.linkedin.com/company/vectorized-io" title="LinkedIn" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.linkedin.com/company/redpanda-data" title="LinkedIn" target="_blank" rel="noopener noreferrer">
                 <LinkedinFilled />
             </a>
         </div>
@@ -229,26 +193,24 @@ const AppFooter = () => {
 };
 
 const AppContent = observer(() =>
-    <Layout className="overflowYOverlay" id="mainLayout">
+    <div className="overflowYOverlay" id="mainLayout">
 
         {/* Page */}
-        <Content style={{ display: 'flex', flexDirection: 'column', padding: '8px 6px 0px 4px', zIndex: 1 }}>
-            <LicenseNotification />
+        <LicenseNotification />
 
-            <AppPageHeader />
+        <AppPageHeader />
 
-            <ErrorDisplay>
-                <RouteView />
-            </ErrorDisplay>
+        <ErrorDisplay>
+            <RouteView />
+        </ErrorDisplay>
 
-            <AppFooter />
-        </Content>
+        <AppFooter />
 
         {/* Currently disabled, read todo comment on UpdatePopup */}
         {/* <UpdatePopup /> */}
         {renderErrorModals()}
 
-    </Layout>
+    </div>
 );
 
 @observer
@@ -258,23 +220,31 @@ export default class App extends Component {
         if (r) return r;
 
         return (
-            <ErrorBoundary>
-                {/* {IsDev && <DebugDisplay />} */}
-                <Switch>
-                    {/* Login (and callbacks) */}
-                    <Route exact path="/login" component={Login} />
-                    <Route path="/login/callbacks/:provider" render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
+            <ChakraProvider theme={redpandaTheme}>
+                <ErrorBoundary>
+                    {/* {IsDev && <DebugDisplay />} */}
+                    <Switch>
+                        {/* Login (and callbacks) */}
+                        <Route exact path="/login" component={Login} />
+                        <Route path="/login/callbacks/:provider" render={p => <LoginCompletePage provider={p.match.params.provider} match={p.match} />}></Route>
 
-                    {/* Default View */}
-                    <Route path="*">
-                        <Layout style={{ height: '100vh', background: 'transparent', overflow: 'hidden' }}>
-                            {isEmbedded() ? null : <AppSide />}
-                            <AppContent />
-                        </Layout>
-                    </Route>
-                </Switch>
-                <FeatureErrorCheck />
-            </ErrorBoundary>
+                        {/* Default View */}
+                        <Route path="*">
+                            {isEmbedded() ? (
+                                <AppContent/>
+                            ) : (
+                                <Grid templateColumns="auto 1fr" minH="100vh">
+                                    <AppSide />
+                                    <Container width="full" maxWidth="1500px" as="main" p="8" zIndex={1}>
+                                        <AppContent />
+                                    </Container>
+                                </Grid>
+                            )}
+                        </Route>
+                    </Switch>
+                    <FeatureErrorCheck />
+                </ErrorBoundary>
+            </ChakraProvider>
         );
     }
 

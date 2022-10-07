@@ -16,20 +16,19 @@ import { observer } from 'mobx-react';
 import { api } from '../../../state/backendApi';
 import { PageComponent, PageInitHelper } from '../Page';
 import { GroupMemberDescription, GroupDescription } from '../../../state/restInterfaces';
-import { motion } from 'framer-motion';
-import { animProps } from '../../../utils/animationProps';
 import { makePaginationConfig, sortField } from '../../misc/common';
 import { uiSettings } from '../../../state/ui';
 import { appGlobal } from '../../../state/appGlobal';
 import { GroupState } from './Group.Details';
 import { autorun, IReactionDisposer } from 'mobx';
 import { containsIgnoreCase } from '../../../utils/utils';
-import Card from '../../misc/Card';
 import { editQuery } from '../../../utils/queryHelper';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
 import { ShortNum } from '../../misc/ShortNum';
 import { KowlTable } from '../../misc/KowlTable';
+import Section from '../../misc/Section';
+import PageContent from '../../misc/PageContent';
 
 
 @observer
@@ -76,23 +75,45 @@ class GroupList extends PageComponent {
         const stateGroups = groups.groupInto(g => g.state);
         const tableSettings = uiSettings.consumerGroupList ?? {};
 
-        return <>
-            <motion.div {...animProps} style={{ margin: '0 1rem' }}>
-                <Card>
-                    <Row>
-                        <Statistic title="Total Groups" value={groups.length} />
-                        <div style={{ width: '1px', background: '#8883', margin: '0 1.5rem', marginLeft: 0 }} />
-                        {stateGroups.map(g =>
-                            <Statistic style={{ marginRight: '1.5rem' }} key={g.key} title={g.key} value={g.items.length} />
-                        )}
-                    </Row>
-                </Card>
+        return (
+          <>
+            <PageContent>
+                <Section py={4}>
+                  <Row>
+                    <Statistic title="Total Groups" value={groups.length} />
+                    <div
+                      style={{
+                        width: '1px',
+                        background: '#8883',
+                        margin: '0 1.5rem',
+                        marginLeft: 0,
+                      }}
+                    />
+                    {stateGroups.map((g) => (
+                      <Statistic
+                        style={{ marginRight: '1.5rem' }}
+                        key={g.key}
+                        title={g.key}
+                        value={g.items.length}
+                      />
+                    ))}
+                  </Row>
+                </Section>
 
-                <Card>
-                    {/* Searchbar */} {/* Filters */}
-                    <div style={{ marginBottom: '.5rem', padding: '0', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '2em' }}>
-                        <this.SearchBar />
-                        {/*
+                <Section>
+                  {/* Searchbar */} {/* Filters */}
+                  <div
+                    style={{
+                      marginBottom: '.5rem',
+                      padding: '0',
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2em',
+                    }}
+                  >
+                    <this.SearchBar />
+                    {/*
                         <Checkbox
                             value={uiSettings.consumerGroupList.hideEmpty}
                             onChange={c => uiSettings.consumerGroupList.hideEmpty = c.target.checked}
@@ -100,41 +121,67 @@ class GroupList extends PageComponent {
                             Hide Empty
                         </Checkbox>
                         */}
-                    </div>
-
-                    {/* Content */}
-                    <KowlTable
-                        dataSource={groups}
-                        columns={[
-                            {
-                                title: 'State', dataIndex: 'state', width: '130px', sorter: sortField('state'), render: (t, r) => <GroupState group={r} />,
-                                filterType: { type: 'enum', }
-                            },
-                            {
-                                title: 'ID', dataIndex: 'groupId',
-                                sorter: sortField('groupId'),
-                                filteredValue: [tableSettings.quickSearch],
-                                onFilter: (filterValue, record: GroupDescription) => (!filterValue) || containsIgnoreCase(record.groupId, String(filterValue)),
-                                render: (t, r) => <this.GroupId group={r} />, className: 'whiteSpaceDefault'
-                            },
-                            { title: 'Coordinator', dataIndex: 'coordinatorId', width: 1, render: (x: number) => <BrokerList brokerIds={[x]} /> },
-                            { title: 'Protocol', dataIndex: 'protocol', width: 1 },
-                            { title: 'Members', dataIndex: 'members', width: 1, render: (t: GroupMemberDescription[]) => t.length, sorter: (a, b) => a.members.length - b.members.length, defaultSortOrder: 'descend' },
-                            { title: 'Lag (Sum)', dataIndex: 'lagSum', render: v => ShortNum({ value: v }), sorter: (a, b) => a.lagSum - b.lagSum },
-                        ]}
-
-                        observableSettings={tableSettings}
-
-                        rowKey={x => x.groupId}
-                        rowClassName="hoverLink"
-                        onRow={(record) =>
-                        ({
-                            onClick: () => appGlobal.history.push('/groups/' + record.groupId),
-                        })}
-                    />
-                </Card>
-            </motion.div>
-        </>;
+                  </div>
+                  {/* Content */}
+                  <KowlTable
+                    dataSource={groups}
+                    columns={[
+                      {
+                        title: 'State',
+                        dataIndex: 'state',
+                        width: '130px',
+                        sorter: sortField('state'),
+                        render: (t, r) => <GroupState group={r} />,
+                        filterType: { type: 'enum' },
+                      },
+                      {
+                        title: 'ID',
+                        dataIndex: 'groupId',
+                        sorter: sortField('groupId'),
+                        filteredValue: [tableSettings.quickSearch],
+                        onFilter: (filterValue, record: GroupDescription) =>
+                          !filterValue ||
+                          containsIgnoreCase(
+                            record.groupId,
+                            String(filterValue)
+                          ),
+                        render: (t, r) => <this.GroupId group={r} />,
+                        className: 'whiteSpaceDefault',
+                      },
+                      {
+                        title: 'Coordinator',
+                        dataIndex: 'coordinatorId',
+                        width: 1,
+                        render: (x: number) => <BrokerList brokerIds={[x]} />,
+                      },
+                      { title: 'Protocol', dataIndex: 'protocol', width: 1 },
+                      {
+                        title: 'Members',
+                        dataIndex: 'members',
+                        width: 1,
+                        render: (t: GroupMemberDescription[]) => t.length,
+                        sorter: (a, b) => a.members.length - b.members.length,
+                        defaultSortOrder: 'descend',
+                      },
+                      {
+                        title: 'Lag (Sum)',
+                        dataIndex: 'lagSum',
+                        render: (v) => ShortNum({ value: v }),
+                        sorter: (a, b) => a.lagSum - b.lagSum,
+                      },
+                    ]}
+                    observableSettings={tableSettings}
+                    rowKey={(x) => x.groupId}
+                    rowClassName="hoverLink"
+                    onRow={(record) => ({
+                      onClick: () =>
+                        appGlobal.history.push('/groups/' + record.groupId),
+                    })}
+                  />
+                </Section>
+            </PageContent>
+          </>
+        );
     }
 
     SearchBar = observer(() => {
