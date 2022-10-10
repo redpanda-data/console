@@ -10,50 +10,7 @@
  */
 
 @use 'sass:math';
-
-/*
-    In index.tsx we use ConfigProvider to define theme color(s),
-    from which a whole pallete of css-variables become defined.
-
-        --ant-primary-color
-        --ant-primary-color-disabled
-        --ant-primary-color-hover
-        ... (20 more)
-
-    Full list of variables:
-        node_modules/antd/dist/antd.variable.css
-
-    In our own components we want to use the same colors that ant-design uses.
-    So we define our own css variables and copy the antd values.
-*/
-$color-brand-secondary: var(--ant-primary-color);
-$color-brand-secondary-hover: var(--ant-primary-color-hover);
-
-$color-reload-spinner: var(--ant-primary-6);
-$color-reload-spinner-bg: var(--ant-primary-1);
-
-$color-light-background: #F6F6F6;
-
-body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    list-style-type: none;
-    // background: #f0f2f5;
-}
-
-code {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
-}
-
-h2 {
-    font-size: 1.4em;
-}
-
-b {
-    font-weight: 600;
-}
+@import './variables.scss';
 
 @mixin tlrb {
     top: 0;
@@ -142,8 +99,8 @@ b {
 
 
 /*
-    Fixes for react-json-view
-*/
+Fixes for react-json-view
+ */
 .react-json-view {
     padding-left: 1em;
     font-size: 22px;
@@ -244,9 +201,9 @@ b {
     border-bottom-color: hsl(14deg, 100%, 50%);
     border-top-color: hsl(14deg, 100%, 50%);
     animation:
-        rotateIn 1.2s cubic-bezier(0.25, 0.80, 0.9, 0.9) 0s 1,
-        rotate 0.7s linear 1.2s infinite,
-        spinnerFadeIn 0.5s ease 0s 1;
+    rotateIn 1.2s cubic-bezier(0.25, 0.80, 0.9, 0.9) 0s 1,
+    rotate 0.7s linear 1.2s infinite,
+    spinnerFadeIn 0.5s ease 0s 1;
 
 
     @keyframes rotateIn {
@@ -671,8 +628,8 @@ td.ant-table-column-sort {
     flex-grow: 1;
     /* background      : url('assets/pattern.png') repeat-x;
     background-position: bottom; */
-    /* background      : linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('assets/pattern.png') repeat; */
-    overflow-y: hidden;
+/* background      : linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('assets/pattern.png') repeat; */
+overflow-y: hidden;
 }
 
 .loginRight::after {
@@ -750,8 +707,8 @@ ul.ant-menu.ant-menu-root.ant-menu-inline-collapsed {
         width: $size;
 
         transition:
-            margin 200ms ease-out,
-            margin-left 200ms ease-out;
+        margin 200ms ease-out,
+        margin-left 200ms ease-out;
         margin: 0 auto;
 
         // Safari
@@ -766,9 +723,9 @@ ul.ant-menu.ant-menu-root.ant-menu-inline-collapsed {
         text-overflow: clip;
         padding: 0 calc(50% - 10px);
         transition:
-            width 2000ms,
-            color 0ms ease-out,
-            background-color 100ms ease;
+        width 2000ms,
+        color 0ms ease-out,
+        background-color 100ms ease;
 
         line-height: 50px;
 
@@ -817,9 +774,9 @@ ul.ant-menu.ant-menu-root.ant-menu-inline {
 
 
         transition:
-            width 2000ms,
-            color 0ms ease-out,
-            background-color 100ms ease;
+        width 2000ms,
+        color 0ms ease-out,
+        background-color 100ms ease;
 
         color: $baseColor;
 
@@ -832,8 +789,8 @@ ul.ant-menu.ant-menu-root.ant-menu-inline {
             margin-left: 5px;
 
             transition:
-                margin 200ms ease-out,
-                margin-left 200ms ease-out;
+            margin 200ms ease-out,
+            margin-left 200ms ease-out;
 
             // Safari
             // workaround because safari calculates width as 0 for some reason, 'auto' doesn't work either
@@ -884,8 +841,8 @@ ul.ant-menu.ant-menu-root.ant-menu-inline {
 
         a {
             transition:
-                gap 200ms,
-                color 50ms ease-out;
+            gap 200ms,
+            color 50ms ease-out;
         }
 
         &::after {
@@ -1036,11 +993,11 @@ tr.tombstone {
 }
 
 /* tr td:nth-child(1) {
-    padding-left: 30px !important;
+padding-left: 30px !important;
 }
 
 tr td:nth-last-child(1) {
-    padding-right: 30px !important;
+padding-right: 30px !important;
 } */
 .ant-statistic {
     margin-right: 2rem;
@@ -1183,7 +1140,7 @@ tr.consumerGroupNoMemberAssigned {
     text-transform: uppercase;
     /* background: linear-gradient(90deg, rgba(0, 0, 0, 20%) 5%, rgba(0, 0, 0, 0) 100%) bottom no-repeat;
     background-size: 100% 1px; */
-    user-select: none;
+user-select: none;
 }
 
 .ant-space-horizontal {
@@ -1564,8 +1521,8 @@ div.ant-collapse.ant-collapse-borderless>div>div>span {
             opacity: 0;
             transform: translateX(6px);
             transition:
-                transform 150ms ease-out,
-                opacity 150ms ease-out;
+            transform 150ms ease-out,
+            opacity 150ms ease-out;
         }
 
         &.hasErrors>.ant-collapse-header .issuesTag {
@@ -2342,9 +2299,9 @@ mark {
 
 .ant-table-filter-dropdown {
     box-shadow:
-        0px 1px 3px 1px rgba(0, 0, 0, 0.05),
-        0px 2px 4px 2px rgba(0, 0, 0, 0.06),
-        0px 1px 5px 2px rgba(0, 0, 0, 0.10);
+    0px 1px 3px 1px rgba(0, 0, 0, 0.05),
+    0px 2px 4px 2px rgba(0, 0, 0, 0.06),
+    0px 1px 5px 2px rgba(0, 0, 0, 0.10);
     border-radius: 3px;
 }
 
@@ -2581,8 +2538,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         opacity: 1;
 
         transition:
-            opacity $fadeTimeIn $easeOutCirc,
-            transform $fadeTimeIn $easeOutCirc;
+        opacity $fadeTimeIn $easeOutCirc,
+        transform $fadeTimeIn $easeOutCirc;
 
         transform: translateX(0) scale(1);
     }
@@ -2598,15 +2555,15 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         transform: translateX(10px) scale(1);
 
         transition:
-            opacity $fadeTimeOut $easeOutCirc,
-            transform $fadeTimeOut $easeOutCirc;
+        opacity $fadeTimeOut $easeOutCirc,
+        transform $fadeTimeOut $easeOutCirc;
     }
 
 
     &-height {
         transition:
-            height $fadeTimeHeight $easeOutCirc,
-            width $fadeTimeHeight $easeOutCirc;
+        height $fadeTimeHeight $easeOutCirc,
+        width $fadeTimeHeight $easeOutCirc;
     }
 }
 
@@ -2808,8 +2765,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         overflow: hidden;
 
         transition:
-            max-width 200ms,
-            opacity 300ms;
+        max-width 200ms,
+        opacity 300ms;
 
         .userName {
             max-width: 100%;
@@ -3027,9 +2984,9 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         white-space: nowrap;
 
         $maskImg: linear-gradient(to left,
-            transparent,
-            white 40px,
-            white);
+        transparent,
+        white 40px,
+        white);
         mask-image: $maskImg;
         -webkit-mask-image: $maskImg;
 
@@ -3178,7 +3135,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         transform: scale($scaleX, $scaleY);
 
         transition: opacity 150ms ease-out,
-            transform 250ms ease-out;
+        transform 250ms ease-out;
     }
 
     .validationFeedback {
@@ -3206,7 +3163,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         // animate
         opacity: 0;
         transition: opacity 150ms ease-out,
-            transform 250ms ease-out;
+        transform 250ms ease-out;
 
         user-select: none;
 
@@ -3276,7 +3233,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         // opacity: 0.66;
         opacity: 1;
         transition:
-            opacity 300ms ease-out;
+        opacity 300ms ease-out;
 
         &.high {
             // background: #f20;
@@ -3371,8 +3328,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
                 background-color: transparent;
 
                 transition:
-                    border-color 350ms ease-out,
-                    background-color 100ms ease-out;
+                border-color 350ms ease-out,
+                background-color 100ms ease-out;
             }
 
             // Hover
@@ -3385,8 +3342,8 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
             .ghostInput {
 
                 transition:
-                    border-color 80ms ease-out,
-                    background-color 80ms ease-out;
+                border-color 80ms ease-out,
+                background-color 80ms ease-out;
             }
 
 
