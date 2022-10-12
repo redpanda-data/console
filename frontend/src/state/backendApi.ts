@@ -1265,9 +1265,9 @@ function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {
     const allowedActions = cluster.allowedActions ?? ['all'];
     const allowAll = allowedActions.includes('all');
 
-    cluster.canViewCluster = allowAll || allowedActions.includes('canViewConnectCluster');
-    cluster.canEditCluster = allowAll || allowedActions.includes('canEditConnectCluster');
-    cluster.canDeleteCluster = allowAll || allowedActions.includes('canDeleteConnectCluster');
+    cluster.canViewCluster = allowAll || allowedActions.includes('viewConnectCluster');
+    cluster.canEditCluster = allowAll || allowedActions.includes('editConnectCluster');
+    cluster.canDeleteCluster = allowAll || allowedActions.includes('deleteConnectCluster');
 
     for (const connector of cluster.connectors)
         if (connector.config)
