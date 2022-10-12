@@ -23,6 +23,7 @@ import { ZeroSizeWrapper } from '../../utils/tsxUtils';
 import { clone } from '../../utils/jsonUtils';
 import { TopicLogDirSummary } from '../../state/restInterfaces';
 import { AlertIcon } from '@primer/octicons-react';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../constants';
 
 const { useBreakpoint } = Grid;
 
@@ -76,7 +77,6 @@ function constant(constantValue: JSX.Element): () => JSX.Element {
 export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />)
 
 
-export const DEFAULT_TABLE_PAGE_SIZE = 50;
 export function makePaginationConfig(pageSize: number = DEFAULT_TABLE_PAGE_SIZE, hideOnSinglePage?: boolean): TablePaginationConfig {
     return {
         position: ['none' as any, 'bottomRight'],

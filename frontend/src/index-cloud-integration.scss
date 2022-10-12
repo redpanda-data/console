@@ -1,9 +1,9 @@
-// Dan's overrides for console integration 
+// Dan's overrides for console integration
 // - this file is intended to be TEMPORARY
 // - these rules can be removed when ant design is removed
 
 // Background color
-#mainLayout, 
+#mainLayout,
 .ant-layout-footer {
   background: transparent !important;
 }
@@ -16,6 +16,7 @@ div[class^="ant-"],
 .ant-breadcrumb li:last-child a {
   color: unset;
 }
+
 .ant-breadcrumb ol {
   margin-left: -4px;
 }
@@ -31,12 +32,15 @@ div[class^="ant-"],
 .pageTitle {
   padding: 0 0 24px 0 !important;
 }
+
 .ant-page-header.has-breadcrumb {
   padding: 0;
 }
+
 .ant-page-header {
   padding: 0;
 }
+
 #mainLayout > div {
   margin: 0 !important;
 }

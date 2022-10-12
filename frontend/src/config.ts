@@ -8,15 +8,18 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-import { autorun, observable } from 'mobx';
+import { loader } from '@monaco-editor/react';
+import { ConfigProvider } from 'antd';
+import { autorun, configure, observable, when } from 'mobx';
+import colors from './colors';
 import { APP_ROUTES } from './components/routes';
+import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
-import { getBasePath, IsDev } from './utils/env';
+import { AppFeatures, getBasePath, IsDev } from './utils/env';
+import memoizeOne from 'memoize-one';
+import { DEFAULT_API_BASE, DEFAULT_HOST } from './components/constants';
 
 declare const __webpack_public_path__: string;
-
-const DEFAULT_HOST = 'localhost:9090';
-const DEFAULT_API_BASE = './api';
 
 const getWebsocketBasePath = (overrideUrl?: string): string => {
     if (overrideUrl) return overrideUrl;
@@ -88,6 +91,13 @@ export const setConfig = ({ fetch, urlOverride, jwt, ...args }: SetConfigArgumen
     return config;
 };
 
+
+
+const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin'];
+
+export const embeddedAvailableRoutes =  APP_ROUTES.filter((x) => x.icon != null)
+        .filter((x) => !ignoredRoutes.includes(x.path))
+
 autorun(() => {
     const setBreadcrumbs = config.setBreadcrumbs;
     if (!setBreadcrumbs) return;
@@ -104,11 +114,8 @@ autorun(() => {
     const setSidebarItems = config.setSidebarItems;
     if (!setSidebarItems) return;
 
-    const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin'];
 
-    const sidebarItems = APP_ROUTES.filter((x) => x.icon != null)
-        .filter((x) => !ignoredRoutes.includes(x.path))
-        .map(
+    const sidebarItems = embeddedAvailableRoutes.map(
             (r, i) =>
                 ({
                     title: r.title,
@@ -124,3 +131,47 @@ autorun(() => {
 export function isEmbedded() {
     return config.jwt != null;
 }
+
+export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
+    const config = setConfig(setupArgs);
+
+    // Tell monaco editor where to load dependencies from
+    loader.config({ paths: { vs: `${config.assetsPath}/static/js/vendor/monaco/package/min/vs` } });
+
+    // Set theme color for ant-design
+    ConfigProvider.config({
+        theme: {
+            primaryColor: colors.brandOrange,
+
+            infoColor: colors.brandBlue,
+            successColor: colors.brandSuccess,
+            // processingColor: colors.debugRed,
+            errorColor: colors.brandError,
+            warningColor: colors.brandWarning,
+        },
+    });
+
+
+    // Configure MobX
+    configure({
+        enforceActions: 'never',
+        safeDescriptors: true,
+    });
+
+    // Get supported endpoints / kafka cluster version
+    // In the business version, that endpoint (like any other api endpoint) is
+    // protected, so we need to delay the call until the user is logged in.
+    if (!AppFeatures.SINGLE_SIGN_ON) {
+        api.refreshSupportedEndpoints();
+    } else {
+        when(
+            () => Boolean(api.userData),
+            () => {
+                setTimeout(() => {
+                    api.refreshSupportedEndpoints();
+                });
+            }
+        );
+    }
+});
+

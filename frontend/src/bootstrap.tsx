@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 import { createRoot } from 'react-dom/client';
-import EmbeddedApp from './EmbeddedApp';
+import App from './App';
 
 const rootElement = document.getElementById('root');
 const root = createRoot(rootElement!);
-root.render(<EmbeddedApp />);
+root.render(<App />);

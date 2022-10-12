@@ -15,6 +15,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/zencoder/go-smile/smile"
 	"strings"
 	"unicode/utf8"
 
@@ -48,6 +49,7 @@ const (
 	messageEncodingConsumerOffsets messageEncoding = "consumerOffsets"
 	messageEncodingBinary          messageEncoding = "binary"
 	messageEncodingMsgP            messageEncoding = "msgpack"
+	messageEncodingSmile           messageEncoding = "smile"
 )
 
 // normalizedPayload is a wrapper of the original message with the purpose of having a custom JSON marshal method
@@ -241,7 +243,22 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		}
 	}
 
-	// 7. Test for UTF-8 validity
+	// 7. Test for valid Smile
+	startsWithSmile := len(payload) > 3 && payload[0] == ':' && payload[1] == ')' && payload[2] == '\n'
+	if startsWithSmile {
+		obj, err := smile.DecodeToObject(payload)
+		if err == nil {
+			jsonBytes, err := json.Marshal(obj)
+			if err == nil {
+				return &deserializedPayload{Payload: normalizedPayload{
+					Payload:            jsonBytes,
+					RecognizedEncoding: messageEncodingSmile,
+				}, Object: obj, RecognizedEncoding: messageEncodingSmile, Size: len(payload)}
+			}
+		}
+	}
+
+	// 8. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(payload)
 	if isUTF8 {
 		return &deserializedPayload{Payload: normalizedPayload{

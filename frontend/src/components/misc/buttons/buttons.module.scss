@@ -1,0 +1,139 @@
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+@import '../../../variables.scss';
+
+.dataRefreshButton {
+    height: 32px;
+    display: inline-flex;
+    margin-left: 10px;
+
+    background: $color-reload-spinner-bg;
+    color: $color-reload-spinner;
+
+    border-radius: 30px;
+    place-content: center;
+    place-items: center;
+    white-space: nowrap;
+
+    .hoverButton {
+        color: currentColor;
+        background: transparent;
+
+        &:hover {
+            border-color: currentColor;
+        }
+    }
+}
+
+.hoverButton {
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.hoverButton:hover .ant-avatar {
+    border-radius: 4px;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+}
+
+.showOnHover {
+    opacity: 0.2;
+}
+
+.showOnHover:hover {
+    opacity: 1;
+}
+
+.spinnerText {
+    user-select: none;
+    margin-left: 10px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 100%;
+
+    border: 2px solid transparent;
+    border-bottom-color: hsl(14deg, 100%, 50%);
+    border-top-color: hsl(14deg, 100%, 50%);
+    animation:
+    rotateIn 1.2s cubic-bezier(0.25, 0.80, 0.9, 0.9) 0s 1,
+    rotate 0.7s linear 1.2s infinite,
+    spinnerFadeIn 0.5s ease 0s 1;
+
+
+    @keyframes rotateIn {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(1800deg);
+        }
+    }
+
+    @keyframes rotate {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes spinnerFadeIn {
+        from {
+            opacity: 0;
+            scale: 120%;
+        }
+
+        to {
+            opacity: 1;
+            scale: 100%;
+        }
+    }
+}
+
+
+.pulsating {
+    animation: pulse 0.5s linear 0s infinite;
+}
+
+@keyframes pulse {
+    from {
+        opacity: 1.0;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    to {
+        transform: 1.0;
+    }
+}
+
+.fadeIn {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}

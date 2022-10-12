@@ -14,7 +14,7 @@ import { Checkbox, Input, InputRef, Pagination, Table } from 'antd';
 import { ColumnType } from 'antd/lib/table';
 import styles from './KowlTable.module.scss';
 import { ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from 'antd/lib/table/interface';
-import { DEFAULT_TABLE_PAGE_SIZE } from './common';
+import { DEFAULT_TABLE_PAGE_SIZE } from '../constants';
 import { action, computed, IReactionDisposer, IReactionPublic, isObservable, makeObservable, observable, reaction } from 'mobx';
 import { observer } from 'mobx-react';
 import { clone } from '../../utils/jsonUtils';
