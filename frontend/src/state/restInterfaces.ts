@@ -1050,7 +1050,7 @@ export interface KafkaConnectors { // response
     isConfigured: boolean;
 }
 
-export const ConnectClusterActions = ['canViewConnectCluster', 'canEditConnectCluster', 'canDeleteConnectCluster'] as const;
+export const ConnectClusterActions = ['viewConnectCluster', 'editConnectCluster', 'deleteConnectCluster'] as const;
 export type ConnectClusterAction = 'all' | typeof ConnectClusterActions[number];
 
 export interface ClusterConnectors { // ClusterConnectors
