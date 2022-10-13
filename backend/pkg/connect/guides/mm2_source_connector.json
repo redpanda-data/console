@@ -1,0 +1,41 @@
+{
+  "connectorClass": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+  "configOverrides": [
+    {
+      "nameSelector": "topics",
+      "definition": {
+        "display_name": "Topics"
+      }
+    },
+    {
+      "nameSelector": "topics.exclude",
+      "definition": {
+        "display_name": "Topics exclude",
+        "importance": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "config.properties.exclude",
+      "definition": {
+        "display_name": "Config properties exclude",
+        "importance": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "tasks.max",
+      "definition": {
+        "display_name": "Max tasks",
+        "importance": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "replication.policy.class",
+      "definition": {
+        "display_name": "Replication policy class",
+        "custom_default_value": "org.apache.kafka.connect.mirror.IdentityReplicationPolicy"
+      }
+    }
+
+  ],
+  "configRemovals": ["/ssl.*/"]
+}

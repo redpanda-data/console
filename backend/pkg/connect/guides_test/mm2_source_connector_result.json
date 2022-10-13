@@ -1,0 +1,1844 @@
+{
+  "name": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+  "error_count": 2,
+  "groups": [
+    "Common",
+    "Transforms",
+    "Predicates",
+    "Error Handling",
+    "Topic Creation"
+  ],
+  "configs": [
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "Connector name",
+        "documentation": "Globally unique name to use for this connector.",
+        "group": "Common",
+        "importance": "HIGH",
+        "name": "name",
+        "order": 1,
+        "required": true,
+        "type": "STRING",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [
+          "Missing required configuration \"name\" which has no default value."
+        ],
+        "name": "name",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "Connector class",
+        "documentation": "Name or alias of the class for this connector. Must be a subclass of org.apache.kafka.connect.connector.Connector. If the connector is org.apache.kafka.connect.file.FileStreamSinkConnector, you can either specify this full name,  or use \"FileStreamSink\" or \"FileStreamSinkConnector\" to make the configuration a bit shorter",
+        "group": "Common",
+        "importance": "HIGH",
+        "name": "connector.class",
+        "order": 2,
+        "required": true,
+        "type": "STRING",
+        "width": "LONG"
+      },
+      "value": {
+        "errors": [],
+        "name": "connector.class",
+        "recommended_values": [],
+        "value": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "1",
+        "dependents": [],
+        "display_name": "Max tasks",
+        "documentation": "Maximum number of tasks to use for this connector.",
+        "group": "Common",
+        "importance": "MEDIUM",
+        "name": "tasks.max",
+        "order": 3,
+        "required": false,
+        "type": "INT",
+        "width": "SHORT"
+      },
+      "value": {
+        "errors": [],
+        "name": "tasks.max",
+        "recommended_values": [],
+        "value": "1",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "Key converter class",
+        "documentation": "Converter class used to convert between Kafka Connect format and the serialized form that is written to Kafka. This controls the format of the keys in messages written to or read from Kafka, and since this is independent of connectors it allows any connector to work with any serialization format. Examples of common formats include JSON and Avro.",
+        "group": "Common",
+        "importance": "LOW",
+        "name": "key.converter",
+        "order": 4,
+        "required": false,
+        "type": "CLASS",
+        "width": "SHORT"
+      },
+      "value": {
+        "errors": [],
+        "name": "key.converter",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "Value converter class",
+        "documentation": "Converter class used to convert between Kafka Connect format and the serialized form that is written to Kafka. This controls the format of the values in messages written to or read from Kafka, and since this is independent of connectors it allows any connector to work with any serialization format. Examples of common formats include JSON and Avro.",
+        "group": "Common",
+        "importance": "LOW",
+        "name": "value.converter",
+        "order": 5,
+        "required": false,
+        "type": "CLASS",
+        "width": "SHORT"
+      },
+      "value": {
+        "errors": [],
+        "name": "value.converter",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "Header converter class",
+        "documentation": "HeaderConverter class used to convert between Kafka Connect format and the serialized form that is written to Kafka. This controls the format of the header values in messages written to or read from Kafka, and since this is independent of connectors it allows any connector to work with any serialization format. Examples of common formats include JSON and Avro. By default, the SimpleHeaderConverter is used to serialize header values to strings and deserialize them by inferring the schemas.",
+        "group": "Common",
+        "importance": "LOW",
+        "name": "header.converter",
+        "order": 6,
+        "required": false,
+        "type": "CLASS",
+        "width": "SHORT"
+      },
+      "value": {
+        "errors": [],
+        "name": "header.converter",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "",
+        "dependents": [],
+        "display_name": "Transforms",
+        "documentation": "Aliases for the transformations to be applied to records.",
+        "group": "Transforms",
+        "importance": "LOW",
+        "name": "transforms",
+        "order": 7,
+        "required": false,
+        "type": "LIST",
+        "width": "LONG"
+      },
+      "value": {
+        "errors": [],
+        "name": "transforms",
+        "recommended_values": [],
+        "value": "",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "",
+        "dependents": [],
+        "display_name": "Predicates",
+        "documentation": "Aliases for the predicates used by transformations.",
+        "group": "Predicates",
+        "importance": "LOW",
+        "name": "predicates",
+        "order": 8,
+        "required": false,
+        "type": "LIST",
+        "width": "LONG"
+      },
+      "value": {
+        "errors": [],
+        "name": "predicates",
+        "recommended_values": [],
+        "value": "",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "restart",
+        "dependents": [],
+        "display_name": "Reload Action",
+        "documentation": "The action that Connect should take on the connector when changes in external configuration providers result in a change in the connector's configuration properties. A value of 'none' indicates that Connect will do nothing. A value of 'restart' indicates that Connect should restart/reload the connector with the updated configuration properties.The restart may actually be scheduled in the future if the external configuration provider indicates that a configuration value will expire in the future.",
+        "group": "Common",
+        "importance": "LOW",
+        "name": "config.action.reload",
+        "order": 9,
+        "required": false,
+        "type": "STRING",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [],
+        "name": "config.action.reload",
+        "recommended_values": [],
+        "value": "restart",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "0",
+        "dependents": [],
+        "display_name": "Retry Timeout for Errors",
+        "documentation": "The maximum duration in milliseconds that a failed operation will be reattempted. The default is 0, which means no retries will be attempted. Use -1 for infinite retries.",
+        "group": "Error Handling",
+        "importance": "MEDIUM",
+        "name": "errors.retry.timeout",
+        "order": 1,
+        "required": false,
+        "type": "LONG",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [],
+        "name": "errors.retry.timeout",
+        "recommended_values": [],
+        "value": "0",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "60000",
+        "dependents": [],
+        "display_name": "Maximum Delay Between Retries for Errors",
+        "documentation": "The maximum duration in milliseconds between consecutive retry attempts. Jitter will be added to the delay once this limit is reached to prevent thundering herd issues.",
+        "group": "Error Handling",
+        "importance": "MEDIUM",
+        "name": "errors.retry.delay.max.ms",
+        "order": 2,
+        "required": false,
+        "type": "LONG",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [],
+        "name": "errors.retry.delay.max.ms",
+        "recommended_values": [],
+        "value": "60000",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "none",
+        "dependents": [],
+        "display_name": "Error Tolerance",
+        "documentation": "Behavior for tolerating errors during connector operation. 'none' is the default value and signals that any error will result in an immediate connector task failure; 'all' changes the behavior to skip over problematic records.",
+        "group": "Error Handling",
+        "importance": "MEDIUM",
+        "name": "errors.tolerance",
+        "order": 3,
+        "required": false,
+        "type": "STRING",
+        "width": "SHORT"
+      },
+      "value": {
+        "errors": [],
+        "name": "errors.tolerance",
+        "recommended_values": [],
+        "value": "none",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "false",
+        "dependents": [],
+        "display_name": "Log Errors",
+        "documentation": "If true, write each error and the details of the failed operation and problematic record to the Connect application log. This is 'false' by default, so that only errors that are not tolerated are reported.",
+        "group": "Error Handling",
+        "importance": "MEDIUM",
+        "name": "errors.log.enable",
+        "order": 4,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "SHORT"
+      },
+      "value": {
+        "errors": [],
+        "name": "errors.log.enable",
+        "recommended_values": [],
+        "value": "false",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "false",
+        "dependents": [],
+        "display_name": "Log Error Details",
+        "documentation": "Whether to include in the log the Connect record that resulted in a failure.For sink records, the topic, partition, offset, and timestamp will be logged. For source records, the key and value (and their schemas), all headers, and the timestamp, Kafka topic, Kafka partition, source partition, and source offset will be logged. This is 'false' by default, which will prevent record keys, values, and headers from being written to log files.",
+        "group": "Error Handling",
+        "importance": "MEDIUM",
+        "name": "errors.log.include.messages",
+        "order": 5,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "SHORT"
+      },
+      "value": {
+        "errors": [],
+        "name": "errors.log.include.messages",
+        "recommended_values": [],
+        "value": "false",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "",
+        "dependents": [],
+        "display_name": "Topic Creation Groups",
+        "documentation": "Groups of configurations for topics created by source connectors",
+        "group": "Topic Creation",
+        "importance": "LOW",
+        "name": "topic.creation.groups",
+        "order": 1,
+        "required": false,
+        "type": "LIST",
+        "width": "LONG"
+      },
+      "value": {
+        "errors": [],
+        "name": "topic.creation.groups",
+        "recommended_values": [],
+        "value": "",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "true",
+        "dependents": [],
+        "display_name": "enabled",
+        "documentation": "Whether to replicate source-\u003etarget.",
+        "group": null,
+        "importance": "LOW",
+        "name": "enabled",
+        "order": -1,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "enabled",
+        "recommended_values": [],
+        "value": "true",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": ".*",
+        "dependents": [],
+        "display_name": "Topics",
+        "documentation": "Topics to replicate. Supports comma-separated topic names and regexes.",
+        "group": null,
+        "importance": "HIGH",
+        "name": "topics",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "topics",
+        "recommended_values": [],
+        "value": "topics",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": ".*[\\-\\.]internal,.*\\.replica,__.*",
+        "dependents": [],
+        "display_name": "Topics exclude",
+        "documentation": "Excluded topics. Supports comma-separated topic names and regexes. Excludes take precedence over includes.",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "topics.exclude",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "topics.exclude",
+        "recommended_values": [],
+        "value": ".*[\\-\\.]internal,.*\\.replica,__.*",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "topics.blacklist",
+        "documentation": "Deprecated. Use topics.exclude instead.",
+        "group": null,
+        "importance": "HIGH",
+        "name": "topics.blacklist",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "topics.blacklist",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": ".*",
+        "dependents": [],
+        "display_name": "groups",
+        "documentation": "Consumer groups to replicate. Supports comma-separated group IDs and regexes.",
+        "group": null,
+        "importance": "HIGH",
+        "name": "groups",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "groups",
+        "recommended_values": [],
+        "value": ".*",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "console-consumer-.*,connect-.*,__.*",
+        "dependents": [],
+        "display_name": "groups.exclude",
+        "documentation": "Exclude groups. Supports comma-separated group IDs and regexes. Excludes take precedence over includes.",
+        "group": null,
+        "importance": "HIGH",
+        "name": "groups.exclude",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "groups.exclude",
+        "recommended_values": [],
+        "value": "console-consumer-.*,connect-.*,__.*",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "groups.blacklist",
+        "documentation": "Deprecated. Use groups.exclude instead.",
+        "group": null,
+        "importance": "HIGH",
+        "name": "groups.blacklist",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "groups.blacklist",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "follower\\.replication\\.throttled\\.replicas,leader\\.replication\\.throttled\\.replicas,message\\.timestamp\\.difference\\.max\\.ms,message\\.timestamp\\.type,unclean\\.leader\\.election\\.enable,min\\.insync\\.replicas",
+        "dependents": [],
+        "display_name": "Config properties exclude",
+        "documentation": "Topic config properties that should not be replicated. Supports comma-separated property names and regexes.",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "config.properties.exclude",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "config.properties.exclude",
+        "recommended_values": [],
+        "value": "follower\\.replication\\.throttled\\.replicas,leader\\.replication\\.throttled\\.replicas,message\\.timestamp\\.difference\\.max\\.ms,message\\.timestamp\\.type,unclean\\.leader\\.election\\.enable,min\\.insync\\.replicas",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "config.properties.blacklist",
+        "documentation": "Deprecated. Use config.properties.exclude instead.",
+        "group": null,
+        "importance": "HIGH",
+        "name": "config.properties.blacklist",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "config.properties.blacklist",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "org.apache.kafka.connect.mirror.DefaultTopicFilter",
+        "dependents": [],
+        "display_name": "topic.filter.class",
+        "documentation": "TopicFilter to use. Selects topics to replicate.",
+        "group": null,
+        "importance": "LOW",
+        "name": "topic.filter.class",
+        "order": -1,
+        "required": false,
+        "type": "CLASS",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "topic.filter.class",
+        "recommended_values": [],
+        "value": "org.apache.kafka.connect.mirror.DefaultTopicFilter",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "org.apache.kafka.connect.mirror.DefaultGroupFilter",
+        "dependents": [],
+        "display_name": "group.filter.class",
+        "documentation": "GroupFilter to use. Selects consumer groups to replicate.",
+        "group": null,
+        "importance": "LOW",
+        "name": "group.filter.class",
+        "order": -1,
+        "required": false,
+        "type": "CLASS",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "group.filter.class",
+        "recommended_values": [],
+        "value": "org.apache.kafka.connect.mirror.DefaultGroupFilter",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "org.apache.kafka.connect.mirror.DefaultConfigPropertyFilter",
+        "dependents": [],
+        "display_name": "config.property.filter.class",
+        "documentation": "ConfigPropertyFilter to use. Selects topic config  properties to replicate.",
+        "group": null,
+        "importance": "LOW",
+        "name": "config.property.filter.class",
+        "order": -1,
+        "required": false,
+        "type": "CLASS",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "config.property.filter.class",
+        "recommended_values": [],
+        "value": "org.apache.kafka.connect.mirror.DefaultConfigPropertyFilter",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "source.cluster.alias",
+        "documentation": "Alias of source cluster",
+        "group": null,
+        "importance": "HIGH",
+        "name": "source.cluster.alias",
+        "order": -1,
+        "required": true,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [
+          "Missing required configuration \"source.cluster.alias\" which has no default value."
+        ],
+        "name": "source.cluster.alias",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "target",
+        "dependents": [],
+        "display_name": "target.cluster.alias",
+        "documentation": "Alias of target cluster. Used in metrics reporting.",
+        "group": null,
+        "importance": "HIGH",
+        "name": "target.cluster.alias",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "target.cluster.alias",
+        "recommended_values": [],
+        "value": "target",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "1000",
+        "dependents": [],
+        "display_name": "consumer.poll.timeout.ms",
+        "documentation": "Timeout when polling source cluster.",
+        "group": null,
+        "importance": "LOW",
+        "name": "consumer.poll.timeout.ms",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "consumer.poll.timeout.ms",
+        "recommended_values": [],
+        "value": "1000",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "60000",
+        "dependents": [],
+        "display_name": "admin.timeout.ms",
+        "documentation": "Timeout for administrative tasks, e.g. detecting new topics.",
+        "group": null,
+        "importance": "LOW",
+        "name": "admin.timeout.ms",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "admin.timeout.ms",
+        "recommended_values": [],
+        "value": "60000",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "true",
+        "dependents": [],
+        "display_name": "refresh.topics.enabled",
+        "documentation": "Whether to periodically check for new topics and partitions.",
+        "group": null,
+        "importance": "LOW",
+        "name": "refresh.topics.enabled",
+        "order": -1,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "refresh.topics.enabled",
+        "recommended_values": [],
+        "value": "true",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "600",
+        "dependents": [],
+        "display_name": "refresh.topics.interval.seconds",
+        "documentation": "Frequency of topic refresh.",
+        "group": null,
+        "importance": "LOW",
+        "name": "refresh.topics.interval.seconds",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "refresh.topics.interval.seconds",
+        "recommended_values": [],
+        "value": "600",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "true",
+        "dependents": [],
+        "display_name": "refresh.groups.enabled",
+        "documentation": "Whether to periodically check for new consumer groups.",
+        "group": null,
+        "importance": "LOW",
+        "name": "refresh.groups.enabled",
+        "order": -1,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "refresh.groups.enabled",
+        "recommended_values": [],
+        "value": "true",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "600",
+        "dependents": [],
+        "display_name": "refresh.groups.interval.seconds",
+        "documentation": "Frequency of group refresh.",
+        "group": null,
+        "importance": "LOW",
+        "name": "refresh.groups.interval.seconds",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "refresh.groups.interval.seconds",
+        "recommended_values": [],
+        "value": "600",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "true",
+        "dependents": [],
+        "display_name": "sync.topic.configs.enabled",
+        "documentation": "Whether to periodically configure remote topics to match their corresponding upstream topics.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sync.topic.configs.enabled",
+        "order": -1,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sync.topic.configs.enabled",
+        "recommended_values": [],
+        "value": "true",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "600",
+        "dependents": [],
+        "display_name": "sync.topic.configs.interval.seconds",
+        "documentation": "Frequency of topic config sync.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sync.topic.configs.interval.seconds",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sync.topic.configs.interval.seconds",
+        "recommended_values": [],
+        "value": "600",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "true",
+        "dependents": [],
+        "display_name": "sync.topic.acls.enabled",
+        "documentation": "Whether to periodically configure remote topic ACLs to match their corresponding upstream topics.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sync.topic.acls.enabled",
+        "order": -1,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sync.topic.acls.enabled",
+        "recommended_values": [],
+        "value": "true",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "600",
+        "dependents": [],
+        "display_name": "sync.topic.acls.interval.seconds",
+        "documentation": "Frequency of topic ACL sync.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sync.topic.acls.interval.seconds",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sync.topic.acls.interval.seconds",
+        "recommended_values": [],
+        "value": "600",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "true",
+        "dependents": [],
+        "display_name": "emit.heartbeats.enabled",
+        "documentation": "Whether to emit heartbeats to target cluster.",
+        "group": null,
+        "importance": "LOW",
+        "name": "emit.heartbeats.enabled",
+        "order": -1,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "emit.heartbeats.enabled",
+        "recommended_values": [],
+        "value": "true",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "1",
+        "dependents": [],
+        "display_name": "emit.heartbeats.interval.seconds",
+        "documentation": "Frequency of heartbeats.",
+        "group": null,
+        "importance": "LOW",
+        "name": "emit.heartbeats.interval.seconds",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "emit.heartbeats.interval.seconds",
+        "recommended_values": [],
+        "value": "1",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "true",
+        "dependents": [],
+        "display_name": "emit.checkpoints.enabled",
+        "documentation": "Whether to replicate consumer offsets to target cluster.",
+        "group": null,
+        "importance": "LOW",
+        "name": "emit.checkpoints.enabled",
+        "order": -1,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "emit.checkpoints.enabled",
+        "recommended_values": [],
+        "value": "true",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "60",
+        "dependents": [],
+        "display_name": "emit.checkpoints.interval.seconds",
+        "documentation": "Frequency of checkpoints.",
+        "group": null,
+        "importance": "LOW",
+        "name": "emit.checkpoints.interval.seconds",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "emit.checkpoints.interval.seconds",
+        "recommended_values": [],
+        "value": "60",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "false",
+        "dependents": [],
+        "display_name": "sync.group.offsets.enabled",
+        "documentation": "Whether to periodically write the translated offsets to __consumer_offsets topic in target cluster, as long as no active consumers in that group are connected to the target cluster",
+        "group": null,
+        "importance": "LOW",
+        "name": "sync.group.offsets.enabled",
+        "order": -1,
+        "required": false,
+        "type": "BOOLEAN",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sync.group.offsets.enabled",
+        "recommended_values": [],
+        "value": "false",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "60",
+        "dependents": [],
+        "display_name": "sync.group.offsets.interval.seconds",
+        "documentation": "Frequency of consumer group offset sync.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sync.group.offsets.interval.seconds",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sync.group.offsets.interval.seconds",
+        "recommended_values": [],
+        "value": "60",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "org.apache.kafka.connect.mirror.DefaultReplicationPolicy",
+        "custom_default_value": "org.apache.kafka.connect.mirror.IdentityReplicationPolicy",
+        "dependents": [],
+        "display_name": "Replication policy class",
+        "documentation": "Class which defines the remote topic naming convention.",
+        "group": null,
+        "importance": "LOW",
+        "name": "replication.policy.class",
+        "order": -1,
+        "required": false,
+        "type": "CLASS",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "replication.policy.class",
+        "recommended_values": [],
+        "value": "org.apache.kafka.connect.mirror.DefaultReplicationPolicy",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": ".",
+        "dependents": [],
+        "display_name": "replication.policy.separator",
+        "documentation": "Separator used in remote topic naming convention.",
+        "group": null,
+        "importance": "LOW",
+        "name": "replication.policy.separator",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "replication.policy.separator",
+        "recommended_values": [],
+        "value": ".",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "2",
+        "dependents": [],
+        "display_name": "replication.factor",
+        "documentation": "Replication factor for newly created remote topics.",
+        "group": null,
+        "importance": "LOW",
+        "name": "replication.factor",
+        "order": -1,
+        "required": false,
+        "type": "INT",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "replication.factor",
+        "recommended_values": [],
+        "value": "2",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "3",
+        "dependents": [],
+        "display_name": "heartbeats.topic.replication.factor",
+        "documentation": "Replication factor for heartbeats topic.",
+        "group": null,
+        "importance": "LOW",
+        "name": "heartbeats.topic.replication.factor",
+        "order": -1,
+        "required": false,
+        "type": "SHORT",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "heartbeats.topic.replication.factor",
+        "recommended_values": [],
+        "value": "3",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "3",
+        "dependents": [],
+        "display_name": "checkpoints.topic.replication.factor",
+        "documentation": "Replication factor for checkpoints topic.",
+        "group": null,
+        "importance": "LOW",
+        "name": "checkpoints.topic.replication.factor",
+        "order": -1,
+        "required": false,
+        "type": "SHORT",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "checkpoints.topic.replication.factor",
+        "recommended_values": [],
+        "value": "3",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "3",
+        "dependents": [],
+        "display_name": "offset-syncs.topic.replication.factor",
+        "documentation": "Replication factor for offset-syncs topic.",
+        "group": null,
+        "importance": "LOW",
+        "name": "offset-syncs.topic.replication.factor",
+        "order": -1,
+        "required": false,
+        "type": "SHORT",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "offset-syncs.topic.replication.factor",
+        "recommended_values": [],
+        "value": "3",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "100",
+        "dependents": [],
+        "display_name": "offset.lag.max",
+        "documentation": "How out-of-sync a remote partition can be before it is resynced.",
+        "group": null,
+        "importance": "LOW",
+        "name": "offset.lag.max",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "offset.lag.max",
+        "recommended_values": [],
+        "value": "100",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "source",
+        "dependents": [],
+        "display_name": "offset-syncs.topic.location",
+        "documentation": "The location (source/target) of the offset-syncs topic.",
+        "group": null,
+        "importance": "LOW",
+        "name": "offset-syncs.topic.location",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "offset-syncs.topic.location",
+        "recommended_values": [],
+        "value": "source",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "metric.reporters",
+        "documentation": "A list of classes to use as metrics reporters. Implementing the \u003ccode\u003eorg.apache.kafka.common.metrics.MetricsReporter\u003c/code\u003e interface allows plugging in classes that will be notified of new metric creation. The JmxReporter is always included to register JMX statistics.",
+        "group": null,
+        "importance": "LOW",
+        "name": "metric.reporters",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "metric.reporters",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "PLAINTEXT",
+        "dependents": [],
+        "display_name": "security.protocol",
+        "documentation": "Protocol used to communicate with brokers. Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "security.protocol",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "security.protocol",
+        "recommended_values": [],
+        "value": "PLAINTEXT",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.kerberos.service.name",
+        "documentation": "The Kerberos principal name that Kafka runs as. This can be defined either in Kafka's JAAS config or in Kafka's config.",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "sasl.kerberos.service.name",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.kerberos.service.name",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "/usr/bin/kinit",
+        "dependents": [],
+        "display_name": "sasl.kerberos.kinit.cmd",
+        "documentation": "Kerberos kinit command path.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.kerberos.kinit.cmd",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.kerberos.kinit.cmd",
+        "recommended_values": [],
+        "value": "/usr/bin/kinit",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "0.8",
+        "dependents": [],
+        "display_name": "sasl.kerberos.ticket.renew.window.factor",
+        "documentation": "Login thread will sleep until the specified window factor of time from last refresh to ticket's expiry has been reached, at which time it will try to renew the ticket.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.kerberos.ticket.renew.window.factor",
+        "order": -1,
+        "required": false,
+        "type": "DOUBLE",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.kerberos.ticket.renew.window.factor",
+        "recommended_values": [],
+        "value": "0.8",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "0.05",
+        "dependents": [],
+        "display_name": "sasl.kerberos.ticket.renew.jitter",
+        "documentation": "Percentage of random jitter added to the renewal time.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.kerberos.ticket.renew.jitter",
+        "order": -1,
+        "required": false,
+        "type": "DOUBLE",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.kerberos.ticket.renew.jitter",
+        "recommended_values": [],
+        "value": "0.05",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "60000",
+        "dependents": [],
+        "display_name": "sasl.kerberos.min.time.before.relogin",
+        "documentation": "Login thread sleep time between refresh attempts.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.kerberos.min.time.before.relogin",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.kerberos.min.time.before.relogin",
+        "recommended_values": [],
+        "value": "60000",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "0.8",
+        "dependents": [],
+        "display_name": "sasl.login.refresh.window.factor",
+        "documentation": "Login refresh thread will sleep until the specified window factor relative to the credential's lifetime has been reached, at which time it will try to refresh the credential. Legal values are between 0.5 (50%) and 1.0 (100%) inclusive; a default value of 0.8 (80%) is used if no value is specified. Currently applies only to OAUTHBEARER.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.login.refresh.window.factor",
+        "order": -1,
+        "required": false,
+        "type": "DOUBLE",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.refresh.window.factor",
+        "recommended_values": [],
+        "value": "0.8",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "0.05",
+        "dependents": [],
+        "display_name": "sasl.login.refresh.window.jitter",
+        "documentation": "The maximum amount of random jitter relative to the credential's lifetime that is added to the login refresh thread's sleep time. Legal values are between 0 and 0.25 (25%) inclusive; a default value of 0.05 (5%) is used if no value is specified. Currently applies only to OAUTHBEARER.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.login.refresh.window.jitter",
+        "order": -1,
+        "required": false,
+        "type": "DOUBLE",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.refresh.window.jitter",
+        "recommended_values": [],
+        "value": "0.05",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "60",
+        "dependents": [],
+        "display_name": "sasl.login.refresh.min.period.seconds",
+        "documentation": "The desired minimum time for the login refresh thread to wait before refreshing a credential, in seconds. Legal values are between 0 and 900 (15 minutes); a default value of 60 (1 minute) is used if no value is specified.  This value and  sasl.login.refresh.buffer.seconds are both ignored if their sum exceeds the remaining lifetime of a credential. Currently applies only to OAUTHBEARER.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.login.refresh.min.period.seconds",
+        "order": -1,
+        "required": false,
+        "type": "SHORT",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.refresh.min.period.seconds",
+        "recommended_values": [],
+        "value": "60",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "300",
+        "dependents": [],
+        "display_name": "sasl.login.refresh.buffer.seconds",
+        "documentation": "The amount of buffer time before credential expiration to maintain when refreshing a credential, in seconds. If a refresh would otherwise occur closer to expiration than the number of buffer seconds then the refresh will be moved up to maintain as much of the buffer time as possible. Legal values are between 0 and 3600 (1 hour); a default value of  300 (5 minutes) is used if no value is specified. This value and sasl.login.refresh.min.period.seconds are both ignored if their sum exceeds the remaining lifetime of a credential. Currently applies only to OAUTHBEARER.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.login.refresh.buffer.seconds",
+        "order": -1,
+        "required": false,
+        "type": "SHORT",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.refresh.buffer.seconds",
+        "recommended_values": [],
+        "value": "300",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "GSSAPI",
+        "dependents": [],
+        "display_name": "sasl.mechanism",
+        "documentation": "SASL mechanism used for client connections. This may be any mechanism for which a security provider is available. GSSAPI is the default mechanism.",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "sasl.mechanism",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.mechanism",
+        "recommended_values": [],
+        "value": "GSSAPI",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.jaas.config",
+        "documentation": "JAAS login context parameters for SASL connections in the format used by JAAS configuration files. JAAS configuration file format is described \u003ca href=\"http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/LoginConfigFile.html\"\u003ehere\u003c/a\u003e. The format for the value is: \u003ccode\u003eloginModuleClass controlFlag (optionName=optionValue)*;\u003c/code\u003e. For brokers, the config must be prefixed with listener prefix and SASL mechanism name in lower-case. For example, listener.name.sasl_ssl.scram-sha-256.sasl.jaas.config=com.example.ScramLoginModule required;",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "sasl.jaas.config",
+        "order": -1,
+        "required": false,
+        "type": "PASSWORD",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.jaas.config",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.client.callback.handler.class",
+        "documentation": "The fully qualified name of a SASL client callback handler class that implements the AuthenticateCallbackHandler interface.",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "sasl.client.callback.handler.class",
+        "order": -1,
+        "required": false,
+        "type": "CLASS",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.client.callback.handler.class",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.login.callback.handler.class",
+        "documentation": "The fully qualified name of a SASL login callback handler class that implements the AuthenticateCallbackHandler interface. For brokers, login callback handler config must be prefixed with listener prefix and SASL mechanism name in lower-case. For example, listener.name.sasl_ssl.scram-sha-256.sasl.login.callback.handler.class=com.example.CustomScramLoginCallbackHandler",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "sasl.login.callback.handler.class",
+        "order": -1,
+        "required": false,
+        "type": "CLASS",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.callback.handler.class",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.login.class",
+        "documentation": "The fully qualified name of a class that implements the Login interface. For brokers, login config must be prefixed with listener prefix and SASL mechanism name in lower-case. For example, listener.name.sasl_ssl.scram-sha-256.sasl.login.class=com.example.CustomScramLogin",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "sasl.login.class",
+        "order": -1,
+        "required": false,
+        "type": "CLASS",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.class",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.login.connect.timeout.ms",
+        "documentation": "The (optional) value in milliseconds for the external authentication provider connection timeout. Currently applies only to OAUTHBEARER.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.login.connect.timeout.ms",
+        "order": -1,
+        "required": false,
+        "type": "INT",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.connect.timeout.ms",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.login.read.timeout.ms",
+        "documentation": "The (optional) value in milliseconds for the external authentication provider read timeout. Currently applies only to OAUTHBEARER.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.login.read.timeout.ms",
+        "order": -1,
+        "required": false,
+        "type": "INT",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.read.timeout.ms",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "10000",
+        "dependents": [],
+        "display_name": "sasl.login.retry.backoff.max.ms",
+        "documentation": "The (optional) value in milliseconds for the maximum wait between login attempts to the external authentication provider. Login uses an exponential backoff algorithm with an initial wait based on the sasl.login.retry.backoff.ms setting and will double in wait length between attempts up to a maximum wait length specified by the sasl.login.retry.backoff.max.ms setting. Currently applies only to OAUTHBEARER.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.login.retry.backoff.max.ms",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.retry.backoff.max.ms",
+        "recommended_values": [],
+        "value": "10000",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "100",
+        "dependents": [],
+        "display_name": "sasl.login.retry.backoff.ms",
+        "documentation": "The (optional) value in milliseconds for the initial wait between login attempts to the external authentication provider. Login uses an exponential backoff algorithm with an initial wait based on the sasl.login.retry.backoff.ms setting and will double in wait length between attempts up to a maximum wait length specified by the sasl.login.retry.backoff.max.ms setting. Currently applies only to OAUTHBEARER.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.login.retry.backoff.ms",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.login.retry.backoff.ms",
+        "recommended_values": [],
+        "value": "100",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "scope",
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.scope.claim.name",
+        "documentation": "The OAuth claim for the scope is often named \"scope\", but this (optional) setting can provide a different name to use for the scope included in the JWT payload's claims if the OAuth/OIDC provider uses a different name for that claim.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.oauthbearer.scope.claim.name",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.scope.claim.name",
+        "recommended_values": [],
+        "value": "scope",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "sub",
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.sub.claim.name",
+        "documentation": "The OAuth claim for the subject is often named \"sub\", but this (optional) setting can provide a different name to use for the subject included in the JWT payload's claims if the OAuth/OIDC provider uses a different name for that claim.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.oauthbearer.sub.claim.name",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.sub.claim.name",
+        "recommended_values": [],
+        "value": "sub",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.token.endpoint.url",
+        "documentation": "The URL for the OAuth/OIDC identity provider. If the URL is HTTP(S)-based, it is the issuer's token endpoint URL to which requests will be made to login based on the configuration in sasl.jaas.config. If the URL is file-based, it specifies a file containing an access token (in JWT serialized form) issued by the OAuth/OIDC identity provider to use for authorization.",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "sasl.oauthbearer.token.endpoint.url",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.token.endpoint.url",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.jwks.endpoint.url",
+        "documentation": "The OAuth/OIDC provider URL from which the provider's \u003ca href=\"https://datatracker.ietf.org/doc/html/rfc7517#section-5\"\u003eJWKS (JSON Web Key Set)\u003c/a\u003e can be retrieved. The URL can be HTTP(S)-based or file-based. If the URL is HTTP(S)-based, the JWKS data will be retrieved from the OAuth/OIDC provider via the configured URL on broker startup. All then-current keys will be cached on the broker for incoming requests. If an authentication request is received for a JWT that includes a \"kid\" header claim value that isn't yet in the cache, the JWKS endpoint will be queried again on demand. However, the broker polls the URL every sasl.oauthbearer.jwks.endpoint.refresh.ms milliseconds to refresh the cache with any forthcoming keys before any JWT requests that include them are received. If the URL is file-based, the broker will load the JWKS file from a configured location on startup. In the event that the JWT includes a \"kid\" header value that isn't in the JWKS file, the broker will reject the JWT and authentication will fail.",
+        "group": null,
+        "importance": "MEDIUM",
+        "name": "sasl.oauthbearer.jwks.endpoint.url",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.jwks.endpoint.url",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "3600000",
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.jwks.endpoint.refresh.ms",
+        "documentation": "The (optional) value in milliseconds for the broker to wait between refreshing its JWKS (JSON Web Key Set) cache that contains the keys to verify the signature of the JWT.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.oauthbearer.jwks.endpoint.refresh.ms",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.jwks.endpoint.refresh.ms",
+        "recommended_values": [],
+        "value": "3600000",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "10000",
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms",
+        "documentation": "The (optional) value in milliseconds for the maximum wait between attempts to retrieve the JWKS (JSON Web Key Set) from the external authentication provider. JWKS retrieval uses an exponential backoff algorithm with an initial wait based on the sasl.oauthbearer.jwks.endpoint.retry.backoff.ms setting and will double in wait length between attempts up to a maximum wait length specified by the sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms setting.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms",
+        "recommended_values": [],
+        "value": "10000",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "100",
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.jwks.endpoint.retry.backoff.ms",
+        "documentation": "The (optional) value in milliseconds for the initial wait between JWKS (JSON Web Key Set) retrieval attempts from the external authentication provider. JWKS retrieval uses an exponential backoff algorithm with an initial wait based on the sasl.oauthbearer.jwks.endpoint.retry.backoff.ms setting and will double in wait length between attempts up to a maximum wait length specified by the sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms setting.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.oauthbearer.jwks.endpoint.retry.backoff.ms",
+        "order": -1,
+        "required": false,
+        "type": "LONG",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.jwks.endpoint.retry.backoff.ms",
+        "recommended_values": [],
+        "value": "100",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "30",
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.clock.skew.seconds",
+        "documentation": "The (optional) value in seconds to allow for differences between the time of the OAuth/OIDC identity provider and the broker.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.oauthbearer.clock.skew.seconds",
+        "order": -1,
+        "required": false,
+        "type": "INT",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.clock.skew.seconds",
+        "recommended_values": [],
+        "value": "30",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.expected.audience",
+        "documentation": "The (optional) comma-delimited setting for the broker to use to verify that the JWT was issued for one of the expected audiences. The JWT will be inspected for the standard OAuth \"aud\" claim and if this value is set, the broker will match the value from JWT's \"aud\" claim  to see if there is an exact match. If there is no match, the broker will reject the JWT and authentication will fail.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.oauthbearer.expected.audience",
+        "order": -1,
+        "required": false,
+        "type": "LIST",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.expected.audience",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": null,
+        "dependents": [],
+        "display_name": "sasl.oauthbearer.expected.issuer",
+        "documentation": "The (optional) setting for the broker to use to verify that the JWT was created by the expected issuer. The JWT will be inspected for the standard OAuth \"iss\" claim and if this value is set, the broker will match it exactly against what is in the JWT's \"iss\" claim. If there is no match, the broker will reject the JWT and authentication will fail.",
+        "group": null,
+        "importance": "LOW",
+        "name": "sasl.oauthbearer.expected.issuer",
+        "order": -1,
+        "required": false,
+        "type": "STRING",
+        "width": "NONE"
+      },
+      "value": {
+        "errors": [],
+        "name": "sasl.oauthbearer.expected.issuer",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    }
+  ]
+}
