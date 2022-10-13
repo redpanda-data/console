@@ -74,6 +74,12 @@ export class ConfigPage extends Component<ConfigPageProps> {
             for (const p of allProps)
                 this.propsByName.set(p.name, p);
 
+            // Set default values
+            for (const p of allProps)
+                if (p.entry.definition.custom_default_value != undefined) {
+                    p.value = p.entry.definition.custom_default_value;
+                }
+
             // Set last error values, so we know when to show the validation error
             for (const p of allProps)
                 if (p.errors.length > 0)

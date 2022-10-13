@@ -1208,6 +1208,9 @@ export interface ConnectorProperty {
         display_name: string;
         dependents: string[];
         order: number;
+
+        // added by backend
+        custom_default_value?: string;
     };
     value: {
         name: string;
