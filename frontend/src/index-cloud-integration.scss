@@ -44,3 +44,35 @@ div[class^="ant-"],
 #mainLayout > div {
   margin: 0 !important;
 }
+
+body.chakra-ui-dark {
+
+  .statisticsBar .ant-row::after {
+    background: linear-gradient(to right, transparent, var(--chakra-colors-gray-800));
+  }
+
+  .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+    background: hsl(220deg 10% 16%);
+  }
+
+  .ant-radio-button-wrapper {
+    background-color: var(--chakra-colors-gray-800);
+    color: unset;
+  }
+
+  .ant-table-thead > tr > th {
+    background: var(--chakra-colors-gray-900);
+  }
+
+  .ant-table {
+    background: var(--chakra-colors-gray-800);
+  }
+
+  .ant-table-filter-trigger {
+    background: var(--chakra-colors-gray-800);
+  }
+
+  .ant-table-column-title {
+    color: var(--chakra-colors-gray-300);
+  }
+}
