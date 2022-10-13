@@ -16,6 +16,7 @@ import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { api } from '../../../../state/backendApi';
 import { ConnectorProperty, DataType, PropertyWidth } from '../../../../state/restInterfaces';
+import { OptionGroup } from '../../../../utils/tsxUtils';
 import { scrollTo } from '../../../../utils/utils';
 import { removeNamespace } from '../helper';
 import { PropertyGroupComponent } from './PropertyGroup';
@@ -35,6 +36,8 @@ export class ConfigPage extends Component<ConfigPageProps> {
     propsByName = new Map<string, Property>();
     @observable jsonText = '';
     @observable error: string | undefined = undefined;
+
+    @observable advancedMode = 'simple' as 'simple' | 'advanced';
 
     @observable initPending = true;
     fallbackGroupName: string = '';
@@ -284,6 +287,14 @@ export class ConfigPage extends Component<ConfigPageProps> {
         const defaultExpanded = this.allGroups[0].groupName;
 
         return <>
+            <OptionGroup label={undefined}
+                options={{
+                    'Show Basic Options': 'simple',
+                    'Show All Options': 'advanced',
+                }}
+                value={this.advancedMode}
+                onChange={s => this.advancedMode = s}
+            />
             <Collapse defaultActiveKey={defaultExpanded} ghost bordered={false}>
                 {this.allGroups.filter(g => !g.groupName.startsWith('Transforms: ')).map(g =>
                     <Collapse.Panel
@@ -294,7 +305,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
                             <span className="issuesTag">{g.propertiesWithErrors.length} issues</span>
                         </div>}
                     >
-                        <PropertyGroupComponent group={g} allGroups={this.allGroups} />
+                        <PropertyGroupComponent group={g} allGroups={this.allGroups} mode={this.advancedMode} />
                     </Collapse.Panel>
                 )}
             </Collapse>
