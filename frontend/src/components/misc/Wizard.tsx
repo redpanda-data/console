@@ -47,7 +47,7 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
                 className={styles.nextButton}>
                 {currentStep.nextButtonLabel ?? state.isLast()
                     ? 'Finish'
-                    : 'Next Step'}
+                    : 'Next'}
                 <ChevronRightIcon />
             </Button>
         </div>
