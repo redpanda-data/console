@@ -33,7 +33,7 @@ import { APP_ROUTES } from './components/routes';
 import AppContent from './components/layout/Content';
 import RequireAuth from './components/RequireAuth';
 import HistorySetter from './components/misc/HistorySetter';
-import { setup } from './config';
+import { isEmbedded, setup } from './config';
 
 const AppSidebar = observer(() => {
     const sidebarItems = createVisibleSidebarItems(APP_ROUTES);
@@ -53,12 +53,15 @@ const App = () => {
             <ChakraProvider theme={redpandaTheme}>
                 <ErrorBoundary>
                     <RequireAuth>
-                        <Grid templateColumns="auto 2fr" minH="100vh">
-                            <AppSidebar />
-                            <Container width="full" maxWidth="1502px" as="main" p="8" zIndex={1}>
-                                <AppContent />
-                            </Container>
-                        </Grid>
+                        {isEmbedded()
+                            ? <AppContent />
+                            : <Grid templateColumns="auto 1fr" minH="100vh">
+                                <AppSidebar />
+                                <Container width="full" maxWidth="1500px" as="main" p="8" zIndex={1}>
+                                    <AppContent />
+                                </Container>
+                            </Grid>
+                        }
                     </RequireAuth>
                 </ErrorBoundary>
             </ChakraProvider>
@@ -67,4 +70,4 @@ const App = () => {
 
 }
 
-export default observer(App); 
+export default observer(App);

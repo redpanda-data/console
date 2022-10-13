@@ -20,6 +20,8 @@ import { MotionDiv } from '../../utils/animationProps';
 import { ZeroSizeWrapper } from '../../utils/tsxUtils';
 import { UserPreferencesButton } from '../misc/UserPreferences';
 import DataRefreshButton from '../misc/buttons/data-refresh/Component';
+import { IsDev } from '../../utils/env';
+import { ColorModeSwitch } from '@redpanda-data/ui';
 
 const AppPageHeader = observer(() => {
 
@@ -32,7 +34,7 @@ const AppPageHeader = observer(() => {
     }
 
     if (isEmbedded())
-    breadcrumbs.splice(0, breadcrumbs.length - 1);
+        breadcrumbs.splice(0, breadcrumbs.length - 1);
 
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
         ? <>
@@ -40,7 +42,7 @@ const AppPageHeader = observer(() => {
             <ZeroSizeWrapper justifyContent="start">
                 <DataRefreshButton />
             </ZeroSizeWrapper>
-            </>
+        </>
         : <NavLink to={r.path}>{r.breadcrumbName}</NavLink>;
 
     return <MotionDiv identityKey={uiState.pageTitle} className="pageTitle" style={{ display: 'flex', paddingRight: '16px', alignItems: 'center', marginBottom: '10px' }}>
@@ -52,13 +54,11 @@ const AppPageHeader = observer(() => {
                 itemRender: breadcrumbRender
             }}
             title={null}
-            />
+        />
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <UserPreferencesButton />
-            { /* TODO: handle this logic better
-            Just simplifing this since the app is not ready to handle dark mode. 
-            * !isEmbedded() && <ColorModeSwitch/> */}
+            {(IsDev && !isEmbedded()) && <ColorModeSwitch />}
         </div>
     </MotionDiv>;
 });

@@ -206,7 +206,7 @@ export class KowlTable<T extends object = any> extends Component<{
                 } else {
                     this.displayData = data;
                 }
-            }, 300);
+            }, 80);
     }
 
     componentWillUnmount() {
