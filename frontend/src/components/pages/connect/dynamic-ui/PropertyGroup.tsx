@@ -12,34 +12,16 @@
 /* eslint-disable no-useless-escape */
 import { Collapse } from 'antd';
 import { observer } from 'mobx-react';
-import { PropertyImportance } from '../../../../state/restInterfaces';
 import { PropertyGroup } from './components';
 import { PropertyComponent } from './PropertyComponent';
 
 export const PropertyGroupComponent = observer((props: { group: PropertyGroup, allGroups: PropertyGroup[], mode: 'simple' | 'advanced' }) => {
     const g = props.group;
 
-    const filteredProperties = g.properties
-        .filter(p => {
-            if (props.mode == 'advanced') {
-                // advanced mode shows all settings
-                return true;
-            } else {
-                // in simple mode, we only show props that are either high importance, or have an error
-                if (p.errors.length) return true;
-                if (p.entry.definition.importance == PropertyImportance.High) return true;
-            }
-
-            return false;
-        });
-
-    if (filteredProperties.length == 0)
-        // dont show empty groups
-        return null;
+    const filteredProperties = g.filteredProperties;
 
     if (g.groupName == 'Transforms') {
         // Transforms + its sub groups
-
         const subGroups = props.allGroups
             .filter(g => g.groupName.startsWith('Transforms: '))
             .sort((a, b) => props.allGroups.indexOf(a) - props.allGroups.indexOf(b));
