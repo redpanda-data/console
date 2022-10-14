@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageComponent, PageInitHelper } from '../Page';
 import {
     ApiOutlined,
@@ -37,42 +37,37 @@ import PageContent from '../../misc/PageContent';
 
 const { Option } = Select;
 
-interface ConnectorTypeProps {
-    connectClusters: Array<ClusterConnectors>;
-    activeCluster: string | null;
-    onActiveClusterChange: (clusterName: string | null) => void;
-    selectedPlugin: ConnectorPlugin | null;
-    onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void;
-}
-
-const ConnectorType = observer(({
-    connectClusters,
-    activeCluster,
-    onActiveClusterChange,
-    selectedPlugin,
-    onPluginSelectionChange,
-}: ConnectorTypeProps) => {
+const ConnectorType = observer((p: {
+    connectClusters: Array<ClusterConnectors>,
+    activeCluster: string | null,
+    onActiveClusterChange: (clusterName: string | null) => void,
+    selectedPlugin: ConnectorPlugin | null,
+    onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void,
+}) => {
     return (<>
-        <h2>Installation Target</h2>
-        <Select<string> style={{ minWidth: '300px' }}
-            placeholder="Choose Connect Cluster…"
-            onChange={(clusterName) => {
-                api.refreshClusterAdditionalInfo(clusterName, true);
-                onActiveClusterChange(clusterName);
-            }}
-            value={activeCluster ?? undefined}
-        >
-            {connectClusters.map(({ clusterName }) => <Option key={clusterName} value={clusterName}>{clusterName}</Option>)}
-        </Select>
 
-        {activeCluster && <>
+        {(p.connectClusters.length > 1) && <>
+            <h2>Installation Target</h2>
+            <Select<string> style={{ minWidth: '300px' }}
+                placeholder="Choose Connect Cluster…"
+                onChange={(clusterName) => {
+                    api.refreshClusterAdditionalInfo(clusterName, true);
+                    p.onActiveClusterChange(clusterName);
+                }}
+                value={p.activeCluster ?? undefined}
+            >
+                {p.connectClusters.map(({ clusterName }) => <Option key={clusterName} value={clusterName}>{clusterName}</Option>)}
+            </Select>
+        </>}
+
+        {p.activeCluster && <>
             <h2>Connector Type</h2>
 
             <HiddenRadioList<ConnectorPlugin>
                 name={'connector-type'}
-                onChange={onPluginSelectionChange}
-                value={selectedPlugin ?? undefined}
-                options={api.connectAdditionalClusterInfo.get(activeCluster)?.plugins.map(plugin => ({
+                onChange={p.onPluginSelectionChange}
+                value={p.selectedPlugin ?? undefined}
+                options={api.connectAdditionalClusterInfo.get(p.activeCluster)?.plugins.map(plugin => ({
                     value: plugin,
                     render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
                 })) || []} />
@@ -127,6 +122,15 @@ function ConnectorWizard({ connectClusters }: ConnectorWizardProps) {
     const [validationFailure, setValidationFailure] = useState<unknown>(null);
     const [creationFailure, setCreationFailure] = useState<unknown>(null);
     const [genericFailure, setGenericFailure] = useState<Error | null>(null);
+
+    useEffect(() => {
+        if (connectClusters.length) {
+            const clusterName = connectClusters[0].clusterName;
+            setActiveCluster(clusterName);
+            api.refreshClusterAdditionalInfo(clusterName, true);
+        }
+    }, []);
+
 
     const clearErrors = () => {
         setCreationFailure(null);
