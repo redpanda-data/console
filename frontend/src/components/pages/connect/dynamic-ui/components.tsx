@@ -311,7 +311,9 @@ export class ConfigPage extends Component<ConfigPageProps> {
             .filter(g => g.filteredProperties.length > 0);
 
         return <>
-            <OptionGroup label={undefined}
+            <OptionGroup
+                style={{ marginBottom: '1rem' }}
+                label={undefined}
                 options={{
                     'Show Basic Options': 'simple',
                     'Show All Options': 'advanced',
