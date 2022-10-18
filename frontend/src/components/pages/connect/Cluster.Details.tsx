@@ -21,6 +21,8 @@ import { KowlTable } from '../../misc/KowlTable';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TasksColumn, TaskState } from './helper';
+import { Button } from 'antd';
+import { Link } from 'react-router-dom';
 
 
 @observer
@@ -66,9 +68,10 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                 <Section>
                     {/* Connectors List */}
                     <div>
-                        <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>
-                            Connectors
-                        </h3>
+                        <div style={{ display: 'flex', marginBottom: '.5em' }}>
+                            <Link to={'/create-connector'}><Button type={'primary'}>Create Connector</Button></Link>
+                        </div>
+
                         <KowlTable
                             key="connectorsList"
                             dataSource={connectors}
@@ -129,7 +132,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                     </div>
 
                     {/* Plugin List */}
-                    <div style={{ marginTop: '2em' }}>
+                    <div style={{ marginTop: '1em' }}>
                         <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Plugins</h3>
 
                         <KowlTable

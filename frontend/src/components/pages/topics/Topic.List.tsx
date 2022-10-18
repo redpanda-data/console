@@ -149,7 +149,7 @@ class TopicList extends PageComponent {
                             Create Topic
                         </Button>
                         <Checkbox
-                            value={!uiSettings.topicList.hideInternalTopics}
+                            checked={!uiSettings.topicList.hideInternalTopics}
                             onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
                             style={{ marginLeft: 'auto' }}
                         >
