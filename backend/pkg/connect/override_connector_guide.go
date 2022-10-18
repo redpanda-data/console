@@ -11,16 +11,45 @@ package connect
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 //go:embed guides/*.json
 var connectorGuides embed.FS
 
+func newConnectorGuide(fileContents []byte) (ConnectorGuide, error) {
+	var c ConnectorGuide
+	err := json.Unmarshal(fileContents, &c)
+	if err != nil {
+		return ConnectorGuide{}, fmt.Errorf("failed to unmarshal json: %w", err)
+	}
+
+	if err := c.Validate(); err != nil {
+		return ConnectorGuide{}, fmt.Errorf("failed to validate connector guide: %w", err)
+	}
+
+	// Inject additional config blocks for MirrorMaker2 connectors
+	if strings.HasPrefix(c.ConnectorClass, "org.apache.kafka.connect.mirror") {
+		sourceConfig := newClientConfig("source.", "Source cluster")
+		targetConfig := newClientConfig("target.", "Target cluster")
+		c.AdditionalConfigDefinitions = append(c.AdditionalConfigDefinitions, sourceConfig...)
+		c.AdditionalConfigDefinitions = append(c.AdditionalConfigDefinitions, targetConfig...)
+	}
+
+	return c, nil
+}
+
 // ConnectorGuide is the schema that is used for each connector that shall be optimized
 // in the UI wizard.
 type ConnectorGuide struct {
 	ConnectorClass string `json:"connectorClass"`
+
+	// AdditionalConfigDefinitions are additional config blocks that shall be returned in the /validate
+	// response. Some MirrorMaker2 connectors do not report these properties even though they are
+	// configurable. We use this approach to inject these additional config blocks here.
+	AdditionalConfigDefinitions []ConfigDefinition `json:"-"`
 
 	// ConfigOverrides are JSON properties that shall override an existing config or
 	// add a config block for a new config that usually is not reported by the validate
@@ -74,3 +103,5 @@ func (c *ConnectorGuide) MatchesConfigRemoval(configName string) bool {
 	}
 	return false
 }
+
+func (c *ConnectorGuide) InjectAdditionalConfigDefinitions() {}

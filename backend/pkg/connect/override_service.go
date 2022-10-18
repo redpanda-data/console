@@ -10,11 +10,11 @@
 package connect
 
 import (
-	"encoding/json"
 	"fmt"
 	"path"
 
 	con "github.com/cloudhut/connect-client"
+	"golang.org/x/exp/slices"
 )
 
 // OverrideService helps with modifying the /validate connector response based on the
@@ -40,23 +40,17 @@ func newOverrideService() (*OverrideService, error) {
 			return nil, fmt.Errorf("failed to read file %q: %w", entry.Name(), err)
 		}
 
-		var c ConnectorGuide
-		err = json.Unmarshal(fileContents, &c)
+		cg, err := newConnectorGuide(fileContents)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal %q: %w", entry.Name(), err)
+			return nil, fmt.Errorf("failed to create connector guide for entry %q: %w", entry.Name(), err)
 		}
-
-		if err := c.Validate(); err != nil {
-			return nil, fmt.Errorf("failed to validate connector guide '%q': %w", entry.Name(), err)
-		}
-
-		guidesByClassName[c.ConnectorClass] = c
+		guidesByClassName[cg.ConnectorClass] = cg
 	}
 
 	return &OverrideService{ConnectorGuides: guidesByClassName}, nil
 }
 
-func (s *OverrideService) OverrideResults(validationResult con.ConnectorValidationResult) con.ConnectorValidationResult {
+func (s *OverrideService) OverrideResults(validationResult con.ConnectorValidationResult, sentValues map[string]interface{}) con.ConnectorValidationResult {
 	guide, exists := s.ConnectorGuides[validationResult.Name]
 	if !exists {
 		return validationResult
@@ -91,6 +85,18 @@ func (s *OverrideService) OverrideResults(validationResult con.ConnectorValidati
 		}
 		configs = append(configs, config)
 	}
+
+	// Inject additional config blocks if they exist (we inject additional config options for MM2)
+	for _, def := range guide.AdditionalConfigDefinitions {
+		currentValue := sentValues[def.Name]
+		config := def.ToKafkaConnectCompatible(currentValue)
+		configs = append(configs, config)
+
+		if !slices.Contains(validationResult.Groups, *def.Group) {
+			validationResult.Groups = append(validationResult.Groups, *def.Group)
+		}
+	}
+
 	validationResult.Configs = configs
 
 	return validationResult

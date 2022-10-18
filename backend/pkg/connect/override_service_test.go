@@ -57,8 +57,8 @@ func (s *OverrideServiceTestSuite) TestOverrideResults() {
 	err = json.Unmarshal(mm2SourceConnectorResult, &expectedValidationResult)
 	require.NoError(err)
 
-	overrideResult := s.overrideSvc.OverrideResults(validationResult)
-	assert.Equal(expectedValidationResult, overrideResult)
+	overrideResult := s.overrideSvc.OverrideResults(validationResult, map[string]interface{}{})
+	assert.EqualValues(expectedValidationResult, overrideResult)
 }
 
 func TestOverrideServiceSuite(t *testing.T) {

@@ -2,12 +2,6 @@
   "connectorClass": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
   "configOverrides": [
     {
-      "nameSelector": "topics",
-      "definition": {
-        "display_name": "Topics"
-      }
-    },
-    {
       "nameSelector": "topics.exclude",
       "definition": {
         "display_name": "Topics exclude",

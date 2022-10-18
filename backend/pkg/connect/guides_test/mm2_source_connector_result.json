@@ -6,7 +6,9 @@
     "Transforms",
     "Predicates",
     "Error Handling",
-    "Topic Creation"
+    "Topic Creation",
+    "Source cluster",
+    "Target cluster"
   ],
   "configs": [
     {
@@ -367,7 +369,7 @@
       "definition": {
         "default_value": ".*",
         "dependents": [],
-        "display_name": "Topics",
+        "display_name": "topics",
         "documentation": "Topics to replicate. Supports comma-separated topic names and regexes.",
         "group": null,
         "importance": "HIGH",
@@ -1005,8 +1007,8 @@
     },
     {
       "definition": {
-        "default_value": "org.apache.kafka.connect.mirror.DefaultReplicationPolicy",
         "custom_default_value": "org.apache.kafka.connect.mirror.IdentityReplicationPolicy",
+        "default_value": "org.apache.kafka.connect.mirror.DefaultReplicationPolicy",
         "dependents": [],
         "display_name": "Replication policy class",
         "documentation": "Class which defines the remote topic naming convention.",
@@ -1835,6 +1837,208 @@
       "value": {
         "errors": [],
         "name": "sasl.oauthbearer.expected.issuer",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "",
+        "dependents": [],
+        "display_name": "Bootstrap servers",
+        "documentation": "A list of host/port pairs to use for establishing the initial connection to the Kafka cluster. The client will make use of all servers irrespective of which servers are specified here for bootstrapping\u0026mdash;this list only impacts the initial hosts used to discover the full set of servers. This list should be in the form host1:port1,host2:port2,.... Since these servers are just used for the initial connection to discover the full cluster membership (which may change dynamically), this list need not contain the full set of servers (you may want more than one, though, in case a server is down).",
+        "group": "Source cluster",
+        "importance": "HIGH",
+        "name": "source.bootstrap.servers",
+        "order_in_group": 0,
+        "required": true,
+        "type": "STRING",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [
+          "Missing required configuration \"source.bootstrap.servers\" which has no default value."
+        ],
+        "name": "source.bootstrap.servers",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "custom_default_value": "SASL_SSL",
+        "default_value": "PLAINTEXT",
+        "dependents": [],
+        "display_name": "Security protocol",
+        "documentation": "Protocol used to communicate with brokers. Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.",
+        "group": "Source cluster",
+        "importance": "HIGH",
+        "name": "source.security.protocol",
+        "order_in_group": 1,
+        "required": true,
+        "type": "STRING",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [],
+        "name": "source.security.protocol",
+        "recommended_values": [
+          "PLAINTEXT",
+          "SSL",
+          "SASL_PLAINTEXT",
+          "SASL_SSL"
+        ],
+        "value": "SASL_SSL",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "custom_default_value": "SCRAM-SHA-256",
+        "default_value": "GSSAPI",
+        "dependents": [],
+        "display_name": "SASL Mechanism",
+        "documentation": "SASL mechanism used for client connections. This may be any mechanism for which a security provider is available. GSSAPI is the default mechanism.",
+        "group": "Source cluster",
+        "importance": "HIGH",
+        "name": "source.sasl.mechanism",
+        "order_in_group": 2,
+        "required": false,
+        "type": "STRING",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [],
+        "name": "source.sasl.mechanism",
+        "recommended_values": [
+          "PLAIN",
+          "SCRAM-SHA-256",
+          "SCRAM-SHA-512"
+        ],
+        "value": "SCRAM-SHA-256",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "",
+        "dependents": [],
+        "display_name": "SASL JAAS config",
+        "documentation": "JAAS login context parameters for SASL connections in the format used by JAAS configuration files. JAAS configuration file format is described at http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/LoginConfigFile.html. The format for the value is: loginModuleClass controlFlag (optionName=optionValue)*;. For brokers, the config must be prefixed with listener prefix and SASL mechanism name in lower-case. For example, listener.name.sasl_ssl.scram-sha-256.sasl.jaas.config=com.example.ScramLoginModule required;",
+        "group": "Source cluster",
+        "importance": "HIGH",
+        "name": "source.sasl.jaas.config",
+        "order_in_group": 3,
+        "required": false,
+        "type": "PASSWORD",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [],
+        "name": "source.sasl.jaas.config",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "",
+        "dependents": [],
+        "display_name": "Bootstrap servers",
+        "documentation": "A list of host/port pairs to use for establishing the initial connection to the Kafka cluster. The client will make use of all servers irrespective of which servers are specified here for bootstrapping\u0026mdash;this list only impacts the initial hosts used to discover the full set of servers. This list should be in the form host1:port1,host2:port2,.... Since these servers are just used for the initial connection to discover the full cluster membership (which may change dynamically), this list need not contain the full set of servers (you may want more than one, though, in case a server is down).",
+        "group": "Target cluster",
+        "importance": "HIGH",
+        "name": "target.bootstrap.servers",
+        "order_in_group": 0,
+        "required": true,
+        "type": "STRING",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [
+          "Missing required configuration \"target.bootstrap.servers\" which has no default value."
+        ],
+        "name": "target.bootstrap.servers",
+        "recommended_values": [],
+        "value": null,
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "custom_default_value": "SASL_SSL",
+        "default_value": "PLAINTEXT",
+        "dependents": [],
+        "display_name": "Security protocol",
+        "documentation": "Protocol used to communicate with brokers. Valid values are: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL.",
+        "group": "Target cluster",
+        "importance": "HIGH",
+        "name": "target.security.protocol",
+        "order_in_group": 1,
+        "required": true,
+        "type": "STRING",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [],
+        "name": "target.security.protocol",
+        "recommended_values": [
+          "PLAINTEXT",
+          "SSL",
+          "SASL_PLAINTEXT",
+          "SASL_SSL"
+        ],
+        "value": "SASL_SSL",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "custom_default_value": "SCRAM-SHA-256",
+        "default_value": "GSSAPI",
+        "dependents": [],
+        "display_name": "SASL Mechanism",
+        "documentation": "SASL mechanism used for client connections. This may be any mechanism for which a security provider is available. GSSAPI is the default mechanism.",
+        "group": "Target cluster",
+        "importance": "HIGH",
+        "name": "target.sasl.mechanism",
+        "order_in_group": 2,
+        "required": false,
+        "type": "STRING",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [],
+        "name": "target.sasl.mechanism",
+        "recommended_values": [
+          "PLAIN",
+          "SCRAM-SHA-256",
+          "SCRAM-SHA-512"
+        ],
+        "value": "SCRAM-SHA-256",
+        "visible": true
+      }
+    },
+    {
+      "definition": {
+        "default_value": "",
+        "dependents": [],
+        "display_name": "SASL JAAS config",
+        "documentation": "JAAS login context parameters for SASL connections in the format used by JAAS configuration files. JAAS configuration file format is described at http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/LoginConfigFile.html. The format for the value is: loginModuleClass controlFlag (optionName=optionValue)*;. For brokers, the config must be prefixed with listener prefix and SASL mechanism name in lower-case. For example, listener.name.sasl_ssl.scram-sha-256.sasl.jaas.config=com.example.ScramLoginModule required;",
+        "group": "Target cluster",
+        "importance": "HIGH",
+        "name": "target.sasl.jaas.config",
+        "order_in_group": 3,
+        "required": false,
+        "type": "PASSWORD",
+        "width": "MEDIUM"
+      },
+      "value": {
+        "errors": [],
+        "name": "target.sasl.jaas.config",
         "recommended_values": [],
         "value": null,
         "visible": true

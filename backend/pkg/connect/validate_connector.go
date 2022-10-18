@@ -37,7 +37,7 @@ func (s *Service) ValidateConnectorConfig(ctx context.Context, clusterName strin
 		}
 	}
 
-	cValidationResult = s.OverrideSvc.OverrideResults(cValidationResult)
+	cValidationResult = s.OverrideSvc.OverrideResults(cValidationResult, options.Config)
 
 	return cValidationResult, nil
 }
