@@ -162,7 +162,7 @@
     {
       "nameSelector": "file.compression.type",
       "definition": {
-        "default_value": "none",
+        "custom_default_value": "none",
         "display_name": "Output file compression",
         "group" : "Configuration",
         "importance": "MEDIUM",

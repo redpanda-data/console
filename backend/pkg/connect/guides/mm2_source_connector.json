@@ -28,6 +28,7 @@
       "nameSelector": "replication.factor",
       "definition": {
         "display_name": "Replication factor",
+        "custom_default_value": "3",
         "documentation": "Replication factor for newly created topics in Redpanda.",
         "group" : "Topics",
         "importance": "MEDIUM",
