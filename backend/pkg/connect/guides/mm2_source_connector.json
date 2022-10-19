@@ -25,6 +25,16 @@
       }
     },
     {
+      "nameSelector": "replication.factor",
+      "definition": {
+        "display_name": "Replication factor",
+        "documentation": "Replication factor for newly created topics in Redpanda.",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 2
+      }
+    },
+    {
       "nameSelector": "refresh.topics.enabled",
       "definition": {
         "display_name": "Check for new topics",
@@ -190,8 +200,7 @@
     "offset.lag.max",
     "metric.reporters",
     "security.protocol",
-    "config.action.reload",
-    "replication.factor"
+    "config.action.reload"
 
   ]
 }
