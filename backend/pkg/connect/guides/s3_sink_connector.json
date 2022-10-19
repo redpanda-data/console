@@ -1,0 +1,364 @@
+{
+  "connectorClass": "com.redpanda.kafka.connect.s3.S3SinkConnector",
+  "configOverrides": [
+    {
+      "nameSelector": "name",
+      "definition": {
+        "group" : "Connector Name"
+      }
+    },
+    {
+      "nameSelector": "topics",
+      "definition": {
+        "display_name": "Topics",
+        "group" : "Topics",
+        "order": 1
+      }
+    },
+    {
+      "nameSelector": "topics.regex",
+      "definition": {
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 2
+      }
+    },
+    
+    {
+      "nameSelector": "aws.s3.bucket.name",
+      "definition": {
+        "display_name": "S3 Bucket name",
+        "group" : "Amazon S3",
+        "importance": "HIGH",
+        "order": 1,
+        "required": true
+      }
+    },
+    {
+      "nameSelector": "aws.access.key.id",
+      "definition": {
+        "display_name": "AWS access key ID",
+        "group" : "Amazon S3",
+        "importance": "HIGH",
+        "order": 2
+      }
+    },
+    {
+      "nameSelector": "aws.secret.access.key",
+      "definition": {
+        "display_name": "AWS secret access key",
+        "group" : "Amazon S3",
+        "importance": "HIGH",
+        "order": 3
+      }
+    },
+    {
+      "nameSelector": "aws.s3.region",
+      "definition": {
+        "display_name": "AWS S3 region",
+        "group" : "Amazon S3",
+        "order": 4
+      }
+    },
+    {
+      "nameSelector": "aws.s3.endpoint",
+      "definition": {
+        "display_name": "AWS S3 endpoint",
+        "group" : "Amazon S3",
+        "order": 5
+      }
+    },
+   
+    {
+      "nameSelector": "aws.sts.role.arn",
+      "definition": {
+        "documentation": "",
+        "display_name": "AWS STS Role ARN",
+        "group" : "Amazon S3",
+        "importance" : "MEDIUM",
+        "order": 6
+      }
+    },
+    {
+      "nameSelector": "aws.sts.role.session.name",
+      "definition": {
+        "display_name": "AWS STS Session name",
+        "group" : "Amazon S3",
+        "importance" : "MEDIUM",
+        "order": 7
+      }
+    },
+    {
+      "nameSelector": "aws.sts.role.external.id",
+      "definition": {
+        "display_name": "AWS STS External Id",
+        "group" : "Amazon S3",
+        "importance" : "MEDIUM",
+        "order": 8
+      }
+    },
+    {
+      "nameSelector": "aws.sts.role.session.duration",
+      "definition": {
+        "display_name": "AWS STS Session duration",
+        "group" : "Amazon S3",
+        "importance" : "MEDIUM",
+        "order": 9
+      }
+    },
+    {
+      "nameSelector": "aws.sts.config.endpoint",
+      "definition": {
+        "display_name": "AWS STS Config endpoint",
+        "group" : "Amazon S3",
+        "importance" : "MEDIUM",
+        "order": 10
+      }
+    },
+    
+    
+   
+    
+
+    {
+      "nameSelector": "key.converter",
+      "definition": {
+        "display_name" : "Kafka record key converter",
+        "group" : "Configuration",
+        "importance": "HIGH",
+        "order" : 1,
+        "width": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "value.converter",
+      "definition": {
+        "display_name" : "Kafka record value converter",
+        "group" : "Configuration",
+        "importance": "HIGH",
+        "order" : 2,
+        "width": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "header.converter",
+      "definition": {
+        "display_name" : "Kafka record header converter",
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 3,
+        "width": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "format.output.type",
+      "definition": {
+        "display_name": "Output file format",
+        "group" : "Configuration",
+        "importance": "HIGH",
+        "order" : 4
+      }
+    },
+    {
+      "nameSelector": "file.compression.type",
+      "definition": {
+        "default_value": "none",
+        "display_name": "Output file compression",
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 5
+      }
+    },
+    {
+      "nameSelector": "file.name.template",
+      "definition": {
+        "display_name": "File name template",
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 6
+      }
+    },
+    {
+      "nameSelector": "file.name.prefix",
+      "definition": {
+        "display_name": "File name prefix",
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 7
+      }
+    },
+    {
+      "nameSelector": "format.output.fields",
+      "definition": {
+        "display_name": "Output fields",
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 8
+      }
+    },
+    {
+      "nameSelector": "format.output.fields.value.encoding",
+      "definition": {
+        "display_name": "Value field encoding",
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 9
+      }
+    },
+    {
+      "nameSelector": "format.output.envelope",
+      "definition": {
+        "display_name": "Envelope for primitives",
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 10
+      }
+    },
+    
+    {
+      "nameSelector": "file.max.records",
+      "definition": {
+        "display_name": "Max records per file",
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 11
+      }
+    },
+    {
+      "nameSelector": "tasks.max",
+      "definition": {
+        "display_name": "Max tasks",
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 20
+      }
+    },
+    {
+      "nameSelector": "config.action.reload",
+      "definition": {
+        "group" : "Configuration",
+        "importance": "MEDIUM",
+        "order" : 21
+      }
+    },
+
+
+    {
+      "nameSelector": "errors.tolerance",
+      "definition": {
+        "group": "Error Handling",
+        "order": 1
+      }
+    },
+    {
+      "nameSelector": "errors.retry.timeout",
+      "definition": {
+        "display_name": "Retry timeout",
+        "group": "Error Handling",
+        "order": 2
+      }
+    },
+    {
+      "nameSelector": "kafka.retry.backoff.ms",
+      "definition": {
+        "documentation": "Retry backoff in milliseconds. Useful for performing recovery in case of transient exceptions. Maximum value is 86400000 (24 hours).",
+        "display_name": "Retry back-off",
+        "group": "Error Handling",
+        "order": 9
+      }
+    },
+    {
+      "nameSelector": "aws.s3.backoff.delay.ms",
+      "definition": {
+        "display_name": "S3 retry back-off",
+        "group": "Error Handling",
+        "order": 10
+      }
+    },
+    {
+      "nameSelector": "aws.s3.backoff.max.delay.ms",
+      "definition": {
+        "display_name": "S3 maximum back-off",
+        "group": "Error Handling",
+        "order": 11
+      }
+    },
+    {
+      "nameSelector": "aws.s3.backoff.max.retries",
+      "definition": {
+        "display_name": "S3 max retries",
+        "group": "Error Handling",
+        "order": 12
+      }
+    },
+    {
+      "nameSelector": "errors.deadletterqueue.topic.name",
+      "definition": {
+        "group": "Error Handling",
+        "order": 20
+      }
+    },
+    {
+      "nameSelector": "errors.deadletterqueue.topic.replication.factor",
+      "definition": {
+        "group": "Error Handling",
+        "order": 21
+      }
+    },
+    {
+      "nameSelector": "errors.deadletterqueue.context.headers.enable",
+      "definition": {
+        "group": "Error Handling",
+        "order": 22
+      }
+    }
+    
+
+
+
+  ],
+  "configRemovals": [
+    "/aws_.*/",
+    "/output_.*/",
+    "aws.s3.prefix",
+    "aws.s3.part.size.bytes",
+    "timestamp.timezone",
+    "timestamp.source",
+    "file.name.timestamp.timezone",
+    "file.name.timestamp.source",
+    "errors.retry.delay.max.ms",
+    "/ssl.*/",
+    "/sasl.*/",
+    "enabled",
+    "topics.blacklist",
+    "source.cluster.alias",
+    "target.cluster.alias",
+    "groups",
+    "groups.exclude",
+    "groups.blacklist",
+    "config.properties.blacklist",
+    "topic.creation.groups",
+    "predicates",
+    "transforms",
+    "errors.log.enable",
+    "errors.log.include.messages",
+    "topic.filter.class",
+    "group.filter.class",
+    "config.property.filter.class",
+    "consumer.poll.timeout.ms",
+    "admin.timeout.ms",
+    "/refresh.groups.*/",
+    "/emit.heartbeats.*/",
+    "/emit.checkpoints.*/",
+    "/sync.group.offsets.*/",
+    "replication.policy.separator",
+    "heartbeats.topic.replication.factor",
+    "checkpoints.topic.replication.factor",
+    "offset-syncs.topic.replication.factor",
+    "offset-syncs.topic.location",
+    "offset.lag.max",
+    "metric.reporters",
+    "security.protocol"
+
+  ]
+}

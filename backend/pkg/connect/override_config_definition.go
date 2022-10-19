@@ -219,12 +219,12 @@ func newClientConfig(prefix string, group string) []ConfigDefinition {
 		2,
 		false,
 		"SASL Mechanism",
-		WithCustomDefaultValue("SCRAM-SHA-256"),
+		WithCustomDefaultValue("PLAIN"),
 		WithRecommendedValues([]string{"PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512"}),
 	)
 	jaasConfig := NewConfigDefinition(
 		prefix+"sasl.jaas.config",
-		ConfigDefinitionTypePassword,
+		ConfigDefinitionTypeString,
 		"",
 		ConfigDefinitionImportanceHigh,
 		"JAAS login context parameters for SASL connections in the format used by JAAS configuration files. "+
@@ -236,6 +236,7 @@ func newClientConfig(prefix string, group string) []ConfigDefinition {
 		3,
 		false,
 		"SASL JAAS config",
+		WithCustomDefaultValue("org.apache.kafka.common.security.plain.PlainLoginModule required username='...' password='...';"),
 	)
 
 	return []ConfigDefinition{
