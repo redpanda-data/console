@@ -9,16 +9,17 @@ module.exports = {
         './config': './src/config.ts',
     },
 
-    shared: [
-        {
-            react: {
-                singleton: true,
-                requiredVersion: deps.react,
-            },
-            'react-dom': {
-                singleton: true,
-                requiredVersion: deps['react-dom'],
-            }
-        }
-    ],
+    shared: {
+        react: {
+            singleton: true,
+            requiredVersion: deps.react,
+        },
+        'react-dom': {
+            singleton: true,
+            requiredVersion: deps['react-dom'],
+        },
+        '@redpanda-data/ui': {
+            import: '@redpanda-data/ui',
+        },
+    },
 };
