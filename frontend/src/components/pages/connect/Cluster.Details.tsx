@@ -38,8 +38,8 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     initPage(p: PageInitHelper): void {
         const clusterName = this.props.clusterName;
         p.title = clusterName;
-        p.addBreadcrumb('Kafka Connect', '/kafka-connect');
-        p.addBreadcrumb(clusterName, `/kafka-connect/${clusterName}`);
+        p.addBreadcrumb('Connectors', '/connect-clusters');
+        p.addBreadcrumb(clusterName, `/connect-clusters/${clusterName}`);
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -81,7 +81,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     width: '35%',
                                     render: (_, r) => (
                                         <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                                            onClick={() => appGlobal.history.push(`/kafka-connect/${clusterName}/${r.name}`)}>
+                                            onClick={() => appGlobal.history.push(`/connect-clusters/${clusterName}/${r.name}`)}>
                                             {r.name}
                                         </span>
                                     ),

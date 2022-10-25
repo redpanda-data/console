@@ -244,7 +244,7 @@ function ConnectorWizard({ connectClusters }: ConnectorWizardProps) {
             }
 
             if (isLast()) {
-                return history.push(`/kafka-connect/${activeCluster}`);
+                return history.push(`/connect-clusters/${activeCluster}`);
             }
 
             return currentStep < steps.length - 1

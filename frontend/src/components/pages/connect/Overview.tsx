@@ -32,7 +32,7 @@ class KafkaConnectOverview extends PageComponent {
 
     initPage(p: PageInitHelper): void {
         p.title = 'Overview';
-        p.addBreadcrumb('Kafka Connect', '/kafka-connect');
+        p.addBreadcrumb('Connectors', '/connect-clusters');
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -44,7 +44,7 @@ class KafkaConnectOverview extends PageComponent {
             const clusters = api.connectConnectors.clusters;
             if (clusters?.length == 1) {
                 const cluster = clusters[0];
-                appGlobal.history.replace(`/kafka-connect/${cluster.clusterName}`);
+                appGlobal.history.replace(`/connect-clusters/${cluster.clusterName}`);
             }
         }
     }
@@ -95,7 +95,7 @@ class TabClusters extends Component {
                         }
 
                         return <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                            onClick={() => appGlobal.history.push(`/kafka-connect/${r.clusterName}`)}>
+                            onClick={() => appGlobal.history.push(`/connect-clusters/${r.clusterName}`)}>
                             {r.clusterName}
                         </span>
                     },
@@ -149,7 +149,7 @@ class TabConnectors extends Component {
                     render: (_, r) => (
                         <Tooltip placement="topLeft" title={r.name} getPopupContainer={findPopupContainer}>
                             <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                                onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.name}`)}>
+                                onClick={() => appGlobal.history.push(`/connect-clusters/${r.cluster.clusterName}/${r.name}`)}>
                                 {r.name}
                             </span>
                         </Tooltip>
@@ -228,7 +228,7 @@ class TabTasks extends Component {
                     width: '35%',
                     sorter: sortField('connectorName'), defaultSortOrder: 'ascend',
                     render: (_, r) => (
-                        <span className="hoverLink" onClick={() => appGlobal.history.push(`/kafka-connect/${r.cluster.clusterName}/${r.connectorName}`)}>
+                        <span className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${r.cluster.clusterName}/${r.connectorName}`)}>
                             {r.connectorName}
                         </span>
                     )
