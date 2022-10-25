@@ -129,7 +129,7 @@ function ConnectorWizard({ connectClusters }: ConnectorWizardProps) {
             setActiveCluster(clusterName);
             api.refreshClusterAdditionalInfo(clusterName, true);
         }
-    }, []);
+    }, [connectClusters]);
 
 
     const clearErrors = () => {
