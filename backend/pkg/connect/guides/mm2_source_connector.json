@@ -1,0 +1,207 @@
+{
+  "connectorClass": "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+  "configOverrides": [
+    {
+      "nameSelector": "name",
+      "definition": {
+        "group" : "Connector name"
+      }
+    },
+    {
+      "nameSelector": "topics",
+      "definition": {
+        "display_name": "Topics",
+        "group" : "Topics",
+        "order": 1
+      }
+    },
+    {
+      "nameSelector": "topics.exclude",
+      "definition": {
+        "display_name": "Excluded topics",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 2
+      }
+    },
+    {
+      "nameSelector": "replication.factor",
+      "definition": {
+        "display_name": "Replication factor",
+        "custom_default_value": "3",
+        "documentation": "Replication factor for newly created topics in Redpanda.",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 2
+      }
+    },
+    {
+      "nameSelector": "refresh.topics.enabled",
+      "definition": {
+        "display_name": "Check for new topics",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 3
+      }
+    },
+    {
+      "nameSelector": "refresh.topics.interval.seconds",
+      "definition": {
+        "display_name": "Frequency of topic refresh",
+        "documentation": "Frequency of topic refresh in seconds.",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 4
+      }
+    },
+    {
+      "nameSelector": "sync.topic.configs.enabled",
+      "definition": {
+        "display_name": "Config sync",
+        "documentation": "Whether to periodically check remote topics for config changes to keep downstream topic config in sync with their corresponding upstream topic configs.",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 5
+      }
+    },
+    {
+      "nameSelector": "sync.topic.configs.interval.seconds",
+      "definition": {
+        "display_name": "Frequency of config sync",
+        "documentation": "Frequency of the topic config sync in seconds.",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 6
+      }
+    },
+    {
+      "nameSelector": "config.properties.exclude",
+      "definition": {
+        "display_name": "Excluded config properties",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 7
+      }
+    },
+    {
+      "nameSelector": "sync.topic.acls.enabled",
+      "definition": {
+        "display_name": "ACL sync",
+        "documentation": "Whether to periodically check remote topic ACLs to keep downstream topic ACLs in sync with their corresponding upstream topic ACLs.",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 8
+      }
+    },
+    {
+      "nameSelector": "sync.topic.acls.interval.seconds",
+      "definition": {
+        "display_name": "Frequency of ACL sync",
+        "documentation": "Frequency of topic ACL sync in seconds.",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 9
+      }
+    },
+
+    
+
+    {
+      "nameSelector": "tasks.max",
+      "definition": {
+        "display_name": "Max tasks",
+        "group" : "Configuration",
+        "importance": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "replication.policy.class",
+      "definition": {
+        "display_name": "Replication policy",
+        "custom_default_value": "org.apache.kafka.connect.mirror.IdentityReplicationPolicy",
+        "group": "Configuration"
+      }
+    },
+    {
+      "nameSelector": "key.converter",
+      "definition": {
+        "display_name" : "Key converter",
+        "group" : "Configuration",
+        "width": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "value.converter",
+      "definition": {
+        "display_name" : "Value converter",
+        "group" : "Configuration",
+        "width": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "header.converter",
+      "definition": {
+        "header_name" : "Header converter",
+        "group" : "Configuration",
+        "width": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "errors.tolerance",
+      "definition": {
+        "order": 1
+      }
+    },
+    {
+      "nameSelector": "errors.retry.timeout",
+      "definition": {
+        "order": 2,
+        "width": "SHORT"
+      }
+    },
+    {
+      "nameSelector": "errors.retry.delay.max.ms",
+      "definition": {
+        "order": 3,
+        "width": "SHORT"
+      }
+    }
+
+  ],
+  "configRemovals": [
+    "/ssl.*/",
+    "/sasl.*/",
+    "enabled",
+    "topics.blacklist",
+    "source.cluster.alias",
+    "target.cluster.alias",
+    "groups",
+    "groups.exclude",
+    "groups.blacklist",
+    "config.properties.blacklist",
+    "topic.creation.groups",
+    "predicates",
+    "transforms",
+    "errors.log.enable",
+    "errors.log.include.messages",
+    "topic.filter.class",
+    "group.filter.class",
+    "config.property.filter.class",
+    "consumer.poll.timeout.ms",
+    "admin.timeout.ms",
+    "/refresh.groups.*/",
+    "/emit.heartbeats.*/",
+    "/emit.checkpoints.*/",
+    "/sync.group.offsets.*/",
+    "replication.policy.separator",
+    "heartbeats.topic.replication.factor",
+    "checkpoints.topic.replication.factor",
+    "offset-syncs.topic.replication.factor",
+    "offset-syncs.topic.location",
+    "offset.lag.max",
+    "metric.reporters",
+    "security.protocol",
+    "config.action.reload"
+
+  ]
+}

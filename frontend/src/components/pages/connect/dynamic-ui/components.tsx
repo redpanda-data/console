@@ -15,7 +15,8 @@ import { action, comparer, IReactionDisposer, makeObservable, observable, reacti
 import { observer } from 'mobx-react';
 import { Component } from 'react';
 import { api } from '../../../../state/backendApi';
-import { ConnectorProperty, DataType, PropertyWidth } from '../../../../state/restInterfaces';
+import { ConnectorProperty, DataType, PropertyImportance, PropertyWidth } from '../../../../state/restInterfaces';
+import { OptionGroup } from '../../../../utils/tsxUtils';
 import { scrollTo } from '../../../../utils/utils';
 import { removeNamespace } from '../helper';
 import { PropertyGroupComponent } from './PropertyGroup';
@@ -35,6 +36,8 @@ export class ConfigPage extends Component<ConfigPageProps> {
     propsByName = new Map<string, Property>();
     @observable jsonText = '';
     @observable error: string | undefined = undefined;
+
+    @observable advancedMode = 'simple' as 'simple' | 'advanced';
 
     @observable initPending = true;
     fallbackGroupName: string = '';
@@ -74,16 +77,23 @@ export class ConfigPage extends Component<ConfigPageProps> {
             for (const p of allProps)
                 this.propsByName.set(p.name, p);
 
+            // Set default values
+            for (const p of allProps)
+                if (p.entry.definition.custom_default_value != undefined) {
+                    p.value = p.entry.definition.custom_default_value;
+                }
+
             // Set last error values, so we know when to show the validation error
             for (const p of allProps)
                 if (p.errors.length > 0)
                     p.lastErrorValue = p.value;
 
+
             // Create groups
             const groupNames = [this.fallbackGroupName, ...validationResult.groups];
             this.allGroups = allProps
                 .groupInto(p => p.entry.definition.group)
-                .map(g => (observable({ groupName: g.key, properties: g.items, propertiesWithErrors: [] }) as PropertyGroup))
+                .map(g => this.createPropertyGroup(g.key ?? '', g.items))
                 .sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
 
             // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
@@ -125,6 +135,25 @@ export class ConfigPage extends Component<ConfigPageProps> {
         }
 
         this.initPending = false;
+    }
+
+    createPropertyGroup(groupName: string, properties: Property[]) {
+        const configPage = this;
+
+        return observable<PropertyGroup>({
+            groupName,
+            properties,
+            propertiesWithErrors: [],
+
+            get filteredProperties(): Property[] {
+                if (configPage.advancedMode == 'advanced')
+                    // advanced mode shows all settings
+                    return this.properties;
+
+                // in simple mode, we only show props that are high importance
+                return this.properties.filter(p => p.entry.definition.importance == PropertyImportance.High);
+            }
+        });
     }
 
     getConfigObject(): object {
@@ -188,18 +217,15 @@ export class ConfigPage extends Component<ConfigPageProps> {
             for (const source of srcProps) {
                 const target = this.propsByName.get(source.name);
 
-                // Add new property
+                // Property does not exist yet, create it!
                 if (!target) {
                     this.propsByName.set(source.name, source);
+
+                    // Find existing group it belongs to, or create a new one for it
                     let group = this.allGroups.first(g => g.groupName == source.entry.definition.group);
                     if (!group) {
                         // Create new group
-                        group = observable({
-                            groupName: source.entry.definition.group,
-                            properties: [],
-                            propertiesWithErrors: [],
-                        } as PropertyGroup);
-
+                        group = this.createPropertyGroup(source.entry.definition.group!, []);
                         this.allGroups.push(group);
 
                         // Sort groups
@@ -207,6 +233,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
                         this.allGroups.sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
                     }
 
+                    // Add the property to the group
                     group.properties.push(source);
                     source.propertyGroup = group;
 
@@ -277,9 +304,25 @@ export class ConfigPage extends Component<ConfigPageProps> {
 
         const defaultExpanded = this.allGroups[0].groupName;
 
+        const rootGroups = this.allGroups
+            // The individual transforms sub-groups are not rendered on the root level, they're nested under the "Transforms" group
+            .filter(g => !g.groupName.startsWith('Transforms: '))
+            // if properties get filtered, and it results in a group being empty, don't render it
+            .filter(g => g.filteredProperties.length > 0);
+
         return <>
+            <OptionGroup
+                style={{ marginBottom: '1rem' }}
+                label={undefined}
+                options={{
+                    'Show Basic Options': 'simple',
+                    'Show All Options': 'advanced',
+                }}
+                value={this.advancedMode}
+                onChange={s => this.advancedMode = s}
+            />
             <Collapse defaultActiveKey={defaultExpanded} ghost bordered={false}>
-                {this.allGroups.filter(g => !g.groupName.startsWith('Transforms: ')).map(g =>
+                {rootGroups.map(g =>
                     <Collapse.Panel
                         className={(g.propertiesWithErrors.length > 0) ? 'hasErrors' : ''}
                         key={g.groupName}
@@ -288,7 +331,7 @@ export class ConfigPage extends Component<ConfigPageProps> {
                             <span className="issuesTag">{g.propertiesWithErrors.length} issues</span>
                         </div>}
                     >
-                        <PropertyGroupComponent group={g} allGroups={this.allGroups} />
+                        <PropertyGroupComponent group={g} allGroups={this.allGroups} mode={this.advancedMode} />
                     </Collapse.Panel>
                 )}
             </Collapse>
@@ -396,6 +439,8 @@ function createCustomProperties(properties: ConnectorProperty[], fallbackGroupNa
 export interface PropertyGroup {
     groupName: string;
     properties: Property[];
+
+    readonly filteredProperties: Property[];
 
     propertiesWithErrors: Property[];
 }
