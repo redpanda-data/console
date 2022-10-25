@@ -1,3 +1,4 @@
+name: kics scanning
 on:
   push:
     branches: master
@@ -10,6 +11,7 @@ jobs:
         uses: checkmarx/kics-github-action@v1.6
         with:
           path: .
+          ignore_on_exit: results
           output_path: res/
       - name: display kics results
         run: |
