@@ -368,9 +368,11 @@ class AclList extends PageComponent {
 
                 <span style={{ marginLeft: 'auto' }} >{' '}</span>
 
-                <Button disabled={!Features.createUser} onClick={this.showCreateServiceAccountModal}>
-                    Create User
-                </Button>
+                <Tooltip trigger={!Features.createUser ? 'hover' : 'none'} overlay="The cluster does not support this feature" >
+                    <Button disabled={!Features.createUser} onClick={this.showCreateServiceAccountModal}>
+                        Create User
+                    </Button>
+                </Tooltip>
 
                 <Button onClick={() => {
                     this.editorType = 'create';
