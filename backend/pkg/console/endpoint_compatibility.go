@@ -42,9 +42,10 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 
 	// Required kafka requests per API endpoint
 	type endpoint struct {
-		URL      string
-		Method   string
-		Requests []kmsg.Request
+		URL            string
+		Method         string
+		Requests       []kmsg.Request
+		HasRedpandaAPI bool
 	}
 	endpointRequirements := []endpoint{
 		{
@@ -87,16 +88,43 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 			Method:   "GET",
 			Requests: []kmsg.Request{&kmsg.DescribeClientQuotasRequest{}},
 		},
+		{
+			URL:            "/api/users",
+			Method:         "GET",
+			Requests:       []kmsg.Request{&kmsg.DescribeUserSCRAMCredentialsRequest{}},
+			HasRedpandaAPI: true,
+		},
+		{
+			URL:            "/api/users",
+			Method:         "POST",
+			Requests:       []kmsg.Request{&kmsg.AlterUserSCRAMCredentialsRequest{}},
+			HasRedpandaAPI: true,
+		},
+		{
+			URL:            "/api/users",
+			Method:         "DELETE",
+			Requests:       []kmsg.Request{&kmsg.AlterUserSCRAMCredentialsRequest{}},
+			HasRedpandaAPI: true,
+		},
 	}
 
 	endpoints := make([]EndpointCompatibilityEndpoint, 0, len(endpointRequirements))
 	for _, endpointReq := range endpointRequirements {
 		endpointSupported := true
+
 		for _, req := range endpointReq.Requests {
 			_, isSupported := versions.LookupMaxKeyVersion(req.Key())
 			if !isSupported {
 				endpointSupported = false
 			}
+		}
+
+		// Some API endpoints may be controllable via the Redpanda Admin API
+		// and the Kafka API. If the Kafka API is not supported, but the same
+		// endpoint is exposed via the Redpanda Admin API, we support
+		// this feature anyways.
+		if endpointReq.HasRedpandaAPI && s.redpandaSvc != nil {
+			endpointSupported = true
 		}
 
 		endpoints = append(endpoints, EndpointCompatibilityEndpoint{
