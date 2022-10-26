@@ -39,9 +39,13 @@ class AclList extends PageComponent {
             width: 'auto', title: 'Principal', dataIndex: 'principal', sorter: sortField('principalName'),
             render: (_value: string, record: AclPrincipalGroup) => {
                 const userExists = api.serviceAccounts?.users.includes(record.principalName);
-                const showWarning = !userExists && !record.principalName.includes('*');
+                const isComplete = api.serviceAccounts?.isComplete === true;
+                const showWarning = isComplete && !userExists && !record.principalName.includes('*');
+                const principalType = record.principalType == 'User' && record.principalName.endsWith('*')
+                    ? 'User Group'
+                    : record.principalType;
                 return <>
-                    <Tag>{record.principalType}</Tag>
+                    <Tag>{principalType}</Tag>
                     <span>{record.principalName}</span>
                     {showWarning && <Tooltip overlay="User / ServiceAccount does not exist">
                         <span style={{ marginLeft: '4px' }}>
