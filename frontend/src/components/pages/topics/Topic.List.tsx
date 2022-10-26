@@ -27,7 +27,6 @@ import { useState } from 'react';
 import { CheckIcon, CircleSlashIcon, EyeClosedIcon } from '@primer/octicons-react';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateTopicModalContent, CreateTopicModalState, RetentionSizeUnit, RetentionTimeUnit } from './CreateTopicModal/CreateTopicModal';
-import { UInt64Max } from '../../../utils/utils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 
@@ -425,7 +424,7 @@ function makeCreateTopicModal(parent: TopicList) {
             return value * 1000 * 60 * 60 * 24 * 365;
 
         if (unit == 'infinite')
-            return UInt64Max;
+            return -1;
     };
     const getRetentionSizeFinalValue = (value: number | undefined, unit: RetentionSizeUnit) => {
         if (unit == 'default')
@@ -446,7 +445,7 @@ function makeCreateTopicModal(parent: TopicList) {
             return value * 1024 * 1024 * 1024 * 1024;
 
         if (unit == 'infinite')
-            return UInt64Max;
+            return -1;
     };
 
     return createAutoModal<void, CreateTopicModalState>({
