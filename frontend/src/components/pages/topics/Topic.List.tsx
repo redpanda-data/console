@@ -149,7 +149,7 @@ class TopicList extends PageComponent {
                             Create Topic
                         </Button>
                         <Checkbox
-                            value={!uiSettings.topicList.hideInternalTopics}
+                            checked={!uiSettings.topicList.hideInternalTopics}
                             onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
                             style={{ marginLeft: 'auto' }}
                         >
@@ -512,7 +512,7 @@ function makeCreateTopicModal(parent: TopicList) {
 
             if (state.retentionTimeUnit != 'default')
                 setVal('retention.ms', getRetentionTimeFinalValue(state.retentionTimeMs, state.retentionTimeUnit));
-            if (state.retentionTimeUnit != 'default')
+            if (state.retentionSizeUnit != 'default')
                 setVal('retention.bytes', getRetentionSizeFinalValue(state.retentionSize, state.retentionSizeUnit));
             if (state.minInSyncReplicas != undefined)
                 setVal('min.insync.replicas', state.minInSyncReplicas);
