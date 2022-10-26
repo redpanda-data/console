@@ -21,6 +21,7 @@ import { KowlTable } from '../../misc/KowlTable';
 import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TasksColumn, TaskState } from './helper';
+import { isEmbedded } from '../../../config';
 import { Button } from 'antd';
 import { Link } from 'react-router-dom';
 
@@ -132,7 +133,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                     </div>
 
                     {/* Plugin List */}
-                    <div style={{ marginTop: '1em' }}>
+                    <div style={{ marginTop: '2em', display: isEmbedded() ? 'none' : 'block' }}>
                         <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Plugins</h3>
 
                         <KowlTable
