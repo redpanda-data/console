@@ -29,6 +29,7 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
+import { Features } from '../../../state/supportedFeatures';
 
 
 @observer
@@ -83,16 +84,16 @@ class AclList extends PageComponent {
 
                 return <Dropdown trigger={['click']} overlay={
                     <Menu>
-                        <Menu.Item key="1" disabled={!userExists} onClick={async () => {
+                        <Menu.Item key="1" disabled={!userExists || !Features.deleteUser} onClick={async () => {
                             onDelete(true, true);
                             message.success(<>Deleted ACLs and user <Code>{record.principalName}</Code></>);
                         }}>
                             Delete (User and ACLs)
                         </Menu.Item>
 
-                        <Menu.Item key="2" disabled={!userExists} onClick={async () => {
+                        <Menu.Item key="2" disabled={!userExists || !Features.deleteUser} onClick={async () => {
                             onDelete(true, false);
-                            message.success(<>Deleted ACLs for <Code>{record.principalName}</Code></>);
+                            message.success(<>Deleted user <Code>{record.principalName}</Code></>);
                         }}>
                             Delete (User only)
                         </Menu.Item>
@@ -367,7 +368,7 @@ class AclList extends PageComponent {
 
                 <span style={{ marginLeft: 'auto' }} >{' '}</span>
 
-                <Button onClick={this.showCreateServiceAccountModal}>
+                <Button disabled={!Features.createUser} onClick={this.showCreateServiceAccountModal}>
                     Create User
                 </Button>
 

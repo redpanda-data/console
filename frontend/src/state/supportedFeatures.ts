@@ -23,7 +23,7 @@ import { api } from './backendApi';
 
 export interface FeatureEntry {
     endpoint: string;
-    method: string;
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
 }
 
 export class Feature {
@@ -35,6 +35,8 @@ export class Feature {
     static readonly DeleteGroup: FeatureEntry = { endpoint: '/api/consumer-groups/{groupId}', method: 'DELETE' };
     static readonly DeleteRecords: FeatureEntry = { endpoint: '/api/topics/{topicName}/records', method: 'DELETE' };
     static readonly GetQuotas: FeatureEntry = { endpoint: '/api/quotas', method: 'GET' };
+    static readonly CreateUser: FeatureEntry = { endpoint: '/api/user', method: 'POST' };
+    static readonly DeleteUser: FeatureEntry = { endpoint: '/api/user', method: 'DELETE' };
 }
 
 // As soon as the supported endpoints are available we should check if
@@ -54,6 +56,8 @@ setTimeout(() => {
         removeMatch(Feature.DeleteGroup);
         removeMatch(Feature.DeleteRecords);
         removeMatch(Feature.GetQuotas)
+        removeMatch(Feature.CreateUser);
+        removeMatch(Feature.DeleteUser);
 
         if (features.length > 0) {
             const names = features.map(f => `"${f.method} ${f.endpoint}"\n`).join('');
@@ -84,6 +88,8 @@ class SupportedFeatures {
     @computed get deleteGroup(): boolean { return isSupported(Feature.DeleteGroup); }
     @computed get deleteRecords(): boolean { return isSupported(Feature.DeleteRecords); }
     @computed get getQuotas(): boolean { return isSupported(Feature.GetQuotas); }
+    @computed get createUser(): boolean { return isSupported(Feature.CreateUser); }
+    @computed get deleteUser(): boolean { return isSupported(Feature.DeleteUser); }
 }
 
 const features = new SupportedFeatures();
