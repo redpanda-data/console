@@ -93,7 +93,7 @@ export const setConfig = ({ fetch, urlOverride, jwt, ...args }: SetConfigArgumen
 
 
 
-const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin'];
+const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin', '/brokers'];
 
 export const embeddedAvailableRoutes =  APP_ROUTES.filter((x) => x.icon != null)
         .filter((x) => !ignoredRoutes.includes(x.path))

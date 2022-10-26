@@ -299,9 +299,9 @@ export const APP_ROUTES: IRouteEntry[] = [
         routeVisibility(true, [Feature.GetQuotas], ['canListQuotas'])
     ),
 
-    MakeRoute<{}>('/kafka-connect', KafkaConnectOverview, 'Kafka Connect', LinkIcon, true),
-    MakeRoute<{ clusterName: string }>('/kafka-connect/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
-    MakeRoute<{ clusterName: string, connector: string }>('/kafka-connect/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
+    MakeRoute<{}>('/connect-clusters', KafkaConnectOverview, 'Connectors', LinkIcon, true),
+    MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
+    MakeRoute<{ clusterName: string, connector: string }>('/connect-clusters/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
     MakeRoute<{}>('/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
 
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,

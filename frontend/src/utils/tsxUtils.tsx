@@ -255,13 +255,14 @@ export class OptionGroup<T> extends Component<{
     value: T, onChange: (value: T) => void,
     children?: never,
     size?: SizeType,
+    style?: CSSProperties
 }> {
 
     render() {
         const p = this.props;
 
         const radioGroup = (
-            <Radio.Group value={p.value} onChange={e => p.onChange(e.target.value)} size={p.size ?? 'middle'}>
+            <Radio.Group value={p.value} onChange={e => p.onChange(e.target.value)} size={p.size ?? 'middle'} style={p.style}>
                 {ObjToKv(p.options).map(kv =>
                     <Radio.Button key={kv.key} value={kv.value}>{kv.key}</Radio.Button>
                 )}

@@ -15,18 +15,19 @@ import { observer } from 'mobx-react';
 import { PropertyGroup } from './components';
 import { PropertyComponent } from './PropertyComponent';
 
-export const PropertyGroupComponent = observer((props: { group: PropertyGroup, allGroups: PropertyGroup[] }) => {
+export const PropertyGroupComponent = observer((props: { group: PropertyGroup, allGroups: PropertyGroup[], mode: 'simple' | 'advanced' }) => {
     const g = props.group;
+
+    const filteredProperties = g.filteredProperties;
 
     if (g.groupName == 'Transforms') {
         // Transforms + its sub groups
-
         const subGroups = props.allGroups
             .filter(g => g.groupName.startsWith('Transforms: '))
             .sort((a, b) => props.allGroups.indexOf(a) - props.allGroups.indexOf(b));
 
         return <div className="dynamicInputs">
-            {g.properties.map(p => <PropertyComponent key={p.name} property={p} />)}
+            {filteredProperties.map(p => <PropertyComponent key={p.name} property={p} />)}
 
             <div style={{ gridColumn: 'span 4', paddingLeft: '8px' }}>
 
@@ -40,7 +41,7 @@ export const PropertyGroupComponent = observer((props: { group: PropertyGroup, a
                                 <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
                             </div>}
                         >
-                            <PropertyGroupComponent group={subGroup} allGroups={props.allGroups} />
+                            <PropertyGroupComponent group={subGroup} allGroups={props.allGroups} mode={props.mode} />
                         </Collapse.Panel>
                     )}
                 </Collapse>
@@ -52,7 +53,7 @@ export const PropertyGroupComponent = observer((props: { group: PropertyGroup, a
     else {
         // Normal group
         return <div className="dynamicInputs">
-            {g.properties.map(p => <PropertyComponent key={p.name} property={p} />)}
+            {filteredProperties.map(p => <PropertyComponent key={p.name} property={p} />)}
         </div>
     }
 

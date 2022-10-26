@@ -12,6 +12,7 @@ package connect
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -24,6 +25,7 @@ type Service struct {
 	Cfg              Config
 	Logger           *zap.Logger
 	ClientsByCluster map[ /*ClusterName*/ string]*ClientWithConfig
+	OverrideSvc      *OverrideService
 }
 
 type ClientWithConfig struct {
@@ -70,10 +72,17 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 			Cfg:    clusterCfg,
 		}
 	}
+
+	overrideSvc, err := newOverrideService()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create override service for better connector wizard guidance: %w", err)
+	}
+
 	svc := &Service{
 		Cfg:              cfg,
 		Logger:           logger,
 		ClientsByCluster: clientsByCluster,
+		OverrideSvc:      overrideSvc,
 	}
 
 	// 2. Test connectivity against each cluster concurrently
@@ -83,11 +92,7 @@ func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
 
 	logger.Info("successfully create Kafka connect service")
 
-	return &Service{
-		Cfg:              cfg,
-		Logger:           logger,
-		ClientsByCluster: clientsByCluster,
-	}, nil
+	return svc, nil
 }
 
 // TestConnectivity will send to each Kafka connect client a request to check if it is reachable. If a cluster is not

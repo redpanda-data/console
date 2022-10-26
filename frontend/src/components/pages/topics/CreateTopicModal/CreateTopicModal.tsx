@@ -90,14 +90,14 @@ export class CreateTopicModalContent extends Component<Props> {
                             onChange={e => state.cleanupPolicy = e}
                             style={{ width: '100%' }} />
                     </Label>
-                    <Label text="Retention Time (ms)" style={{ flexBasis: '220px', flexGrow: 1 }}>
+                    <Label text="Retention Time" style={{ flexBasis: '220px', flexGrow: 1 }}>
                         <RetentionTimeSelect
                             value={state.retentionTimeMs} onChangeValue={x => state.retentionTimeMs = x}
                             unit={state.retentionTimeUnit} onChangeUnit={x => state.retentionTimeUnit = x}
                             defaultConfigValue={state.defaults.retentionTime}
                         />
                     </Label>
-                    <Label text="Retention Size (bytes)" style={{ flexBasis: '220px', flexGrow: 1 }}>
+                    <Label text="Retention Size" style={{ flexBasis: '220px', flexGrow: 1 }}>
                         <RetentionSizeSelect
                             value={state.retentionSize} onChangeValue={x => state.retentionSize = x}
                             unit={state.retentionSizeUnit} onChangeUnit={x => state.retentionSizeUnit = x}

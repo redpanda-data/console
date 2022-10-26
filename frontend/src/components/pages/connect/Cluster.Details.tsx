@@ -22,6 +22,8 @@ import PageContent from '../../misc/PageContent';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TasksColumn, TaskState } from './helper';
 import { isEmbedded } from '../../../config';
+import { Button } from 'antd';
+import { Link } from 'react-router-dom';
 
 
 @observer
@@ -37,8 +39,8 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     initPage(p: PageInitHelper): void {
         const clusterName = this.props.clusterName;
         p.title = clusterName;
-        p.addBreadcrumb('Kafka Connect', '/kafka-connect');
-        p.addBreadcrumb(clusterName, `/kafka-connect/${clusterName}`);
+        p.addBreadcrumb('Connectors', '/connect-clusters');
+        p.addBreadcrumb(clusterName, `/connect-clusters/${clusterName}`);
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -67,9 +69,10 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                 <Section>
                     {/* Connectors List */}
                     <div>
-                        <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>
-                            Connectors
-                        </h3>
+                        <div style={{ display: 'flex', marginBottom: '.5em' }}>
+                            <Link to={'/create-connector'}><Button type={'primary'}>Create Connector</Button></Link>
+                        </div>
+
                         <KowlTable
                             key="connectorsList"
                             dataSource={connectors}
@@ -79,7 +82,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     width: '35%',
                                     render: (_, r) => (
                                         <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                                            onClick={() => appGlobal.history.push(`/kafka-connect/${clusterName}/${r.name}`)}>
+                                            onClick={() => appGlobal.history.push(`/connect-clusters/${clusterName}/${r.name}`)}>
                                             {r.name}
                                         </span>
                                     ),
