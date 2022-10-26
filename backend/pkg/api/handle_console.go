@@ -19,9 +19,15 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
+const (
+	KafkaDistributionApacheKafka = "apache_kafka"
+	KafkaDistributionRedpanda    = "redpanda"
+)
+
 func (api *API) handleGetEndpoints() http.HandlerFunc {
 	type response struct {
 		Licenses              []redpanda.License            `json:"licenses"`
+		Distribution          string                        `json:"distribution"`
 		EndpointCompatibility console.EndpointCompatibility `json:"endpointCompatibility"`
 	}
 
@@ -38,6 +44,11 @@ func (api *API) handleGetEndpoints() http.HandlerFunc {
 			return
 		}
 
+		distribution := KafkaDistributionApacheKafka
+		if api.Cfg.Redpanda.AdminAPI.Enabled {
+			distribution = KafkaDistributionRedpanda
+		}
+
 		// Get license from Redpanda cluster if Redpanda service is configured.
 		// We can warn about expiring license in the Console UI.
 		// Because this endpoint may block the rendering of the Frontend application
@@ -51,6 +62,7 @@ func (api *API) handleGetEndpoints() http.HandlerFunc {
 
 		response := response{
 			Licenses:              licenses,
+			Distribution:          distribution,
 			EndpointCompatibility: endpointCompatibility,
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
