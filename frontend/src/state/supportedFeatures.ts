@@ -35,8 +35,8 @@ export class Feature {
     static readonly DeleteGroup: FeatureEntry = { endpoint: '/api/consumer-groups/{groupId}', method: 'DELETE' };
     static readonly DeleteRecords: FeatureEntry = { endpoint: '/api/topics/{topicName}/records', method: 'DELETE' };
     static readonly GetQuotas: FeatureEntry = { endpoint: '/api/quotas', method: 'GET' };
-    static readonly CreateUser: FeatureEntry = { endpoint: '/api/user', method: 'POST' };
-    static readonly DeleteUser: FeatureEntry = { endpoint: '/api/user', method: 'DELETE' };
+    static readonly CreateUser: FeatureEntry = { endpoint: '/api/users', method: 'POST' };
+    static readonly DeleteUser: FeatureEntry = { endpoint: '/api/users', method: 'DELETE' };
 }
 
 // As soon as the supported endpoints are available we should check if
