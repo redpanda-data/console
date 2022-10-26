@@ -34,6 +34,7 @@ import * as monacoType from 'monaco-editor/esm/vs/editor/editor.api';
 import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, okIcon, TaskState, warnIcon } from './helper';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { isEmbedded } from '../../../config';
 export type Monaco = typeof monacoType;
 
 
@@ -147,7 +148,10 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
 
         return (
             <PageContent>
-                <ConnectorStatisticsCard clusterName={clusterName} connectorName={connectorName} />
+                {isEmbedded()
+                    ? <></>
+                    : <ConnectorStatisticsCard clusterName={clusterName} connectorName={connectorName} />
+                }
 
                 {/* Main Card */}
                 <Section>
