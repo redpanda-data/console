@@ -5,6 +5,11 @@ on:
 jobs:
   kics:
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.VULN_REPORTS_AWS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.VULN_REPORTS_AWS_SECRET_ACCESS_KEY }}
+      VULN_REPORTS_AWS_BUCKET: ${{ secrets.VULN_REPORTS_AWS_BUCKET }}
+      AWS_EC2_METADATA_DISABLED: true
     steps:
       - uses: actions/checkout@v2
       - name: run kics Scan
@@ -19,11 +24,6 @@ jobs:
       - name: upload scan results
         run: |
           set -eu
-          apt-get update
-          apt-get install awscli -y
           KEY="`date +%Y`/`date +%m`/`date +%d`/${GITHUB_REPOSITORY#*/}_${GITHUB_REF#refs/heads/}_kics_`date +%s`.json"
           echo "[i] writing to s3 object '$KEY'"
-          mv res/results.json res/${KEY#*/*/*/*}
-          export AWS_ACCESS_KEY_ID=${{ secrets.VULN_REPORTS_AWS_KEY_ID }}
-          export AWS_SECRET_ACCESS_KEY=${{ secrets.VULN_REPORTS_AWS_SECRET_ACCESS_KEY }}
-          aws s3 cp res/${KEY#*/*/*/*} s3://${{ secrets.VULN_REPORTS_AWS_BUCKET }}/$KEY
+          aws s3 cp res/results.json s3://$VULN_REPORTS_AWS_BUCKET/$KEY
