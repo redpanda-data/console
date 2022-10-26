@@ -32,6 +32,7 @@ export type AclPrincipalGroup = {
 
     topicAcls: TopicACLs[];
     consumerGroupAcls: ConsumerGroupACLs[];
+    transactionalIdAcls: TransactionalIdACLs[];
     clusterAcls: ClusterACLs;
 
     sourceEntries: AclFlat[];
@@ -77,7 +78,17 @@ export type ClusterACLs = {
     };
 };
 
-export type ResourceACLs = TopicACLs | ConsumerGroupACLs | ClusterACLs;
+export type TransactionalIdACLs = {
+    selector: string;
+    all: AclStrPermission;
+
+    permissions: {
+        Describe: AclStrPermission;
+        Write: AclStrPermission;
+    };
+};
+
+export type ResourceACLs = TopicACLs | ConsumerGroupACLs | TransactionalIdACLs | ClusterACLs;
 
 
 export function createEmptyTopicAcl(): TopicACLs {
@@ -123,6 +134,16 @@ export function createEmptyClusterAcl(): ClusterACLs {
     };
 }
 
+export function createEmptyTransactionalIdAcl(): TransactionalIdACLs {
+    return {
+        selector: '',
+        all: 'Any',
+        permissions: {
+            Describe: 'Any',
+            Write: 'Any',
+        }
+    };
+}
 
 
 export function collectTopicAcls(acls: AclFlat[]): TopicACLs[] {
@@ -285,6 +306,58 @@ export function collectClusterAcls(acls: AclFlat[]): ClusterACLs {
     return clusterAcls;
 };
 
+export function collectTransactionalIdAcls(acls: AclFlat[]): TransactionalIdACLs[] {
+    const transactionalIds = acls
+        .filter(x => x.resourceType == 'TransactionalID')
+        .groupInto(x => `${x.resourcePatternType}: ${x.resourceName}`);
+
+    const transactionalIdAcls: TransactionalIdACLs[] = [];
+    for (const { items } of transactionalIds) {
+        const first = items[0];
+        let selector = first.resourceName;
+        if (first.resourcePatternType != 'Literal')
+            if (first.resourcePatternType == 'Prefixed')
+                selector += '*';
+            else
+                selector += ` (unsupported pattern type "${first.resourcePatternType}")`;
+
+        const transactionalIdOperations = [
+            'Delete',
+            'Describe',
+            'Write',
+        ] as const;
+
+        const transactionalIdPermissions: { [key in typeof transactionalIdOperations[number]]: AclStrPermission } = {
+            Delete: 'Any',
+            Describe: 'Any',
+            Write: 'Any',
+        };
+
+        for (const op of transactionalIdOperations) {
+            const entryForOp = items.find(x => x.operation === op);
+            if (entryForOp) {
+                transactionalIdPermissions[op] = entryForOp.permissionType;
+            }
+        }
+
+        let all: AclStrPermission = 'Any';
+        const allEntry = items.find(x => x.operation === 'All');
+        if (allEntry && allEntry.permissionType == 'Allow')
+            all = 'Allow';
+        if (allEntry && allEntry.permissionType == 'Deny')
+            all = 'Deny';
+
+        const groupAcl: TransactionalIdACLs = {
+            selector,
+            permissions: transactionalIdPermissions,
+            all,
+        };
+
+        transactionalIdAcls.push(groupAcl);
+    }
+
+    return transactionalIdAcls;
+};
 
 
 export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
@@ -376,6 +449,49 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
             flat.push(e);
         }
     }
+
+    for (const transactionalId of group.transactionalIdAcls) {
+        if (!transactionalId.selector) continue;
+
+        const [resourcePatternType, resourceName] = selectorToPatternAndName(transactionalId.selector);
+
+        if (transactionalId.all == 'Allow' || transactionalId.all == 'Deny') {
+            const e: AclFlat = {
+                principal,
+                host,
+
+                resourceType: 'Group',
+                resourcePatternType,
+                resourceName,
+
+                operation: 'All',
+                permissionType: transactionalId.all
+            };
+            flat.push(e);
+            continue;
+        }
+
+        for (const [key, permission] of Object.entries(transactionalId.permissions)) {
+            const operation = key as AclStrOperation;
+
+            if (permission != 'Allow' && permission != 'Deny')
+                continue;
+
+            const e: AclFlat = {
+                principal,
+                host,
+
+                resourceType: 'Group',
+                resourceName,
+                resourcePatternType,
+
+                operation: operation,
+                permissionType: permission
+            };
+            flat.push(e);
+        }
+    }
+
 
     if (group.clusterAcls.all == 'Allow' || group.clusterAcls.all == 'Deny') {
         const e: AclFlat = {

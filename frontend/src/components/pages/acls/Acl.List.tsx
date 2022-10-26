@@ -23,7 +23,7 @@ import { clone } from '../../../utils/jsonUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import { LockIcon, QuestionIcon } from '@primer/octicons-react';
 import { TrashIcon } from '@heroicons/react/outline';
-import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl } from './Models';
+import { AclFlat, AclPrincipalGroup, collectClusterAcls, collectConsumerGroupAcls, collectTopicAcls, collectTransactionalIdAcls, createEmptyClusterAcl, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl } from './Models';
 import { AclPrincipalGroupEditor } from './PrincipalGroupEditor';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
@@ -331,6 +331,7 @@ class AclList extends PageComponent {
                 topicAcls: collectTopicAcls(items),
                 consumerGroupAcls: collectConsumerGroupAcls(items),
                 clusterAcls: collectClusterAcls(items),
+                transactionalIdAcls: collectTransactionalIdAcls(items),
 
                 sourceEntries: items,
             };
@@ -349,6 +350,7 @@ class AclList extends PageComponent {
                         principalName: acc,
                         topicAcls: [createEmptyTopicAcl()],
                         consumerGroupAcls: [createEmptyConsumerGroupAcl()],
+                        transactionalIdAcls: [createEmptyTransactionalIdAcl()],
                         clusterAcls: createEmptyClusterAcl(),
                         sourceEntries: [],
                     });
@@ -381,12 +383,9 @@ class AclList extends PageComponent {
                         host: '',
                         principalType: 'User',
                         principalName: '',
-                        topicAcls: [
-                            createEmptyTopicAcl()
-                        ],
-                        consumerGroupAcls: [
-                            createEmptyConsumerGroupAcl()
-                        ],
+                        topicAcls: [createEmptyTopicAcl()],
+                        consumerGroupAcls: [createEmptyConsumerGroupAcl()],
+                        transactionalIdAcls: [createEmptyTransactionalIdAcl()],
                         clusterAcls: createEmptyClusterAcl(),
                         sourceEntries: []
                     };

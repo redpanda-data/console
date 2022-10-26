@@ -18,7 +18,7 @@ import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../..
 import { containsIgnoreCase } from '../../../utils/utils';
 import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
 import { TrashIcon } from '@heroicons/react/solid';
-import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
+import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
 const { Option } = Select;
 
@@ -155,12 +155,19 @@ export const AclPrincipalGroupEditor = observer((p: {
                 <Button onClick={() => {
                     if (group.topicAcls.length == 0)
                         group.topicAcls.push(createEmptyTopicAcl());
-                    if (group.consumerGroupAcls.length == 0)
-                        group.consumerGroupAcls.push(createEmptyConsumerGroupAcl());
                     group.topicAcls[0].selector = '*';
                     group.topicAcls[0].all = 'Allow';
+
+                    if (group.consumerGroupAcls.length == 0)
+                        group.consumerGroupAcls.push(createEmptyConsumerGroupAcl());
                     group.consumerGroupAcls[0].selector = '*';
                     group.consumerGroupAcls[0].all = 'Allow';
+
+                    if (group.transactionalIdAcls.length == 0)
+                        group.transactionalIdAcls.push(createEmptyTransactionalIdAcl());
+                    group.transactionalIdAcls[0].selector = '*';
+                    group.transactionalIdAcls[0].all = 'Allow';
+
                     group.clusterAcls.all = 'Allow';
                 }}>
                     Allow all operations
@@ -204,6 +211,24 @@ export const AclPrincipalGroupEditor = observer((p: {
                             block
                             onClick={() => group.consumerGroupAcls.push(createEmptyConsumerGroupAcl())}
                         >Add Consumer Group ACL
+                        </Button>
+                    </div>
+                </section>
+
+                <section style={{ width: '100%' }}>
+                    <span style={{ marginBottom: '4px', fontWeight: 500, fontSize: '13px' }}>Transactional ID</span>
+                    <div style={{ display: 'flex', gap: '1em', flexDirection: 'column' }}>
+                        {group.transactionalIdAcls.map((t, i) =>
+                            <ResourceACLsEditor
+                                key={i}
+                                resource={t}
+                                onDelete={() => group.transactionalIdAcls.remove(t)}
+                            />
+                        )}
+                        <Button
+                            block
+                            onClick={() => group.transactionalIdAcls.push(createEmptyTransactionalIdAcl())}
+                        >Add Transactional ID ACL
                         </Button>
                     </div>
                 </section>
