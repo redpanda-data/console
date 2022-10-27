@@ -16,6 +16,7 @@ import (
 
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -64,7 +65,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 
 	ch := make(chan *ClusterConnectors, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
-		go func(cfg ConfigCluster, c *con.Client) {
+		go func(cfg config.ConnectCluster, c *con.Client) {
 			connectors, err := c.ListConnectorsExpanded(ctx)
 			errMsg := ""
 			if err != nil {

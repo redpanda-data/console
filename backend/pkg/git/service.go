@@ -26,13 +26,14 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
 	"go.uber.org/zap"
 )
 
 // Service provides functionality to serve files from a git repository. The contents are stored in memory.
 type Service struct {
-	Cfg    Config
+	Cfg    config.Git
 	auth   transport.AuthMethod
 	logger *zap.Logger
 
@@ -48,7 +49,7 @@ type Service struct {
 }
 
 // NewService creates a new Git service with preconfigured Auth
-func NewService(cfg Config, logger *zap.Logger, onFilesUpdatedHook func()) (*Service, error) {
+func NewService(cfg config.Git, logger *zap.Logger, onFilesUpdatedHook func()) (*Service, error) {
 	childLogger := logger.With(zap.String("repository_url", cfg.Repository.URL))
 
 	var auth transport.AuthMethod
@@ -223,14 +224,14 @@ func (c *Service) GetFilesByFilename() map[string]filesystem.File {
 	return c.filesByName
 }
 
-func buildBasicAuth(cfg BasicAuthConfig) transport.AuthMethod {
+func buildBasicAuth(cfg config.GitAuthBasicAuth) transport.AuthMethod {
 	return &http.BasicAuth{
 		Username: cfg.Username,
 		Password: cfg.Password,
 	}
 }
 
-func buildSshAuth(cfg SSHConfig) (transport.AuthMethod, error) {
+func buildSshAuth(cfg config.GitAuthSSH) (transport.AuthMethod, error) {
 	if cfg.PrivateKeyFilePath != "" {
 		_, err := os.Stat(cfg.PrivateKeyFilePath)
 		if err != nil {

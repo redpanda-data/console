@@ -1,20 +1,18 @@
 // Copyright 2022 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
-// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+// included in the file licenses/BSL.md
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package msgpack
+package config
 
-import (
-	"fmt"
-)
+import "fmt"
 
-// Config represents the message pack config.
-type Config struct {
+// Msgpack represents the message pack config.
+type Msgpack struct {
 	Enabled bool `yaml:"enabled"`
 
 	// TopicNames is a list of topic names that shall be considered for messagepack decoding.
@@ -25,14 +23,14 @@ type Config struct {
 }
 
 // Validate if provided TopicNames are valid.
-func (c *Config) Validate() error {
+func (c *Msgpack) Validate() error {
 	if !c.Enabled {
 		return nil
 	}
 
 	// Check whether each provided string is valid regex
 	for _, topic := range c.TopicNames {
-		_, err := compileRegex(topic)
+		_, err := CompileRegex(topic)
 		if err != nil {
 			return fmt.Errorf("allowed topic string '%v' is not valid regex", topic)
 		}
@@ -41,6 +39,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) SetDefaults() {
+func (c *Msgpack) SetDefaults() {
 	c.TopicNames = []string{"/.*/"}
 }

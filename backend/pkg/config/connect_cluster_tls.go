@@ -1,13 +1,13 @@
 // Copyright 2022 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
-// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+// included in the file licenses/BSL.md
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package connect
+package config
 
 import (
 	"crypto/tls"
@@ -17,8 +17,8 @@ import (
 	"io/ioutil"
 )
 
-// ConfigClusterTLS is the config if you want to connect to Kafka connect REST API via (mutual) TLS
-type ConfigClusterTLS struct {
+// ConnectClusterTLS is the config if you want to connect to Kafka connect REST API via (mutual) TLS
+type ConnectClusterTLS struct {
 	Enabled               bool   `yaml:"enabled"`
 	CaFilepath            string `yaml:"caFilepath"`
 	CertFilepath          string `yaml:"certFilepath"`
@@ -26,11 +26,11 @@ type ConfigClusterTLS struct {
 	InsecureSkipTLSVerify bool   `yaml:"insecureSkipTlsVerify"`
 }
 
-func (c *ConfigClusterTLS) SetDefaults() {
+func (c *ConnectClusterTLS) SetDefaults() {
 	c.Enabled = false
 }
 
-func (c *ConfigClusterTLS) Validate() error {
+func (c *ConnectClusterTLS) Validate() error {
 	if !c.Enabled {
 		return nil
 	}
@@ -38,7 +38,7 @@ func (c *ConfigClusterTLS) Validate() error {
 	return nil
 }
 
-func (c *ConfigClusterTLS) TLSConfig() (*tls.Config, error) {
+func (c *ConnectClusterTLS) TLSConfig() (*tls.Config, error) {
 	if !c.Enabled {
 		return &tls.Config{}, nil
 	}

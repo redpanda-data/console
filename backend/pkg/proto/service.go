@@ -21,6 +21,7 @@ import (
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/schema"
@@ -36,10 +37,10 @@ const (
 )
 
 type Service struct {
-	cfg    Config
+	cfg    config.Proto
 	logger *zap.Logger
 
-	mappingsByTopic map[string]ConfigTopicMapping
+	mappingsByTopic map[string]config.ProtoTopicMapping
 	gitSvc          *git.Service
 	fsSvc           *filesystem.Service
 	schemaSvc       *schema.Service
@@ -53,7 +54,7 @@ type Service struct {
 	registry      *msgregistry.MessageRegistry
 }
 
-func NewService(cfg Config, logger *zap.Logger, schemaSvc *schema.Service) (*Service, error) {
+func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service) (*Service, error) {
 	var err error
 
 	var gitSvc *git.Service
@@ -94,7 +95,7 @@ func NewService(cfg Config, logger *zap.Logger, schemaSvc *schema.Service) (*Ser
 		}
 	}
 
-	mappingsByTopic := make(map[string]ConfigTopicMapping)
+	mappingsByTopic := make(map[string]config.ProtoTopicMapping)
 	for _, mapping := range cfg.Mappings {
 		mappingsByTopic[mapping.TopicName] = mapping
 	}
@@ -479,15 +480,15 @@ func (s *Service) getFileDescriptorBySchemaID(schemaID int) (*desc.FileDescripto
 }
 
 // AnyResolver is used to resolve the google.protobuf.Any type.
-// It takes a type URL, present in an Any message, and resolves 
+// It takes a type URL, present in an Any message, and resolves
 // it into an instance of the associated message.
-// 
+//
 // This custom resolver is required because the built-in / default
 // any resolver in the protoreflect library, does not consider any
 // types that are used in referenced types that are not directly
 // part of the schema that is deserialized. This is described in
 // more detail as part of the pull request that addresses the
-// deserialization issue with the any types: 
+// deserialization issue with the any types:
 // https://github.com/redpanda-data/console/pull/425
 type anyResolver struct {
 	mr *msgregistry.MessageRegistry

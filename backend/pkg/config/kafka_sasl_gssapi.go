@@ -7,15 +7,15 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package kafka
+package config
 
 import (
 	"flag"
 	"fmt"
 )
 
-// SASLGSSAPIConfig represents the Kafka Kerberos config
-type SASLGSSAPIConfig struct {
+// KafkaSASLGSSAPI represents the Kafka Kerberos config
+type KafkaSASLGSSAPI struct {
 	AuthType           string `yaml:"authType"`
 	KeyTabPath         string `yaml:"keyTabPath"`
 	KerberosConfigPath string `yaml:"kerberosConfigPath"`
@@ -31,11 +31,11 @@ type SASLGSSAPIConfig struct {
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag
-func (c *SASLGSSAPIConfig) RegisterFlags(f *flag.FlagSet) {
+func (c *KafkaSASLGSSAPI) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Password, "kafka.sasl.gssapi.password", "", "Kerberos password if auth type user auth is used")
 }
 
-func (c *SASLGSSAPIConfig) Validate() error {
+func (c *KafkaSASLGSSAPI) Validate() error {
 	if c.AuthType != "USER_AUTH" && c.AuthType != "KEYTAB_AUTH" {
 		return fmt.Errorf("auth type '%v' is invalid", c.AuthType)
 	}
@@ -43,6 +43,6 @@ func (c *SASLGSSAPIConfig) Validate() error {
 	return nil
 }
 
-func (s *SASLGSSAPIConfig) SetDefaults() {
+func (s *KafkaSASLGSSAPI) SetDefaults() {
 	s.EnableFast = true
 }

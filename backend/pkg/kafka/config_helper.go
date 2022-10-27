@@ -18,6 +18,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/twmb/franz-go/pkg/sasl/aws"
 	"github.com/twmb/franz-go/pkg/sasl/oauth"
 
@@ -35,7 +36,7 @@ import (
 
 // NewKgoConfig creates a new Config for the Kafka Client as exposed by the franz-go library.
 // If TLS certificates can't be read an error will be returned.
-func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, error) {
+func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, error) {
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(cfg.Brokers...),
 		kgo.MaxVersions(kversion.V2_6_0()),
@@ -64,7 +65,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 	// Configure SASL
 	if cfg.SASL.Enabled {
 		// SASL Plain
-		if cfg.SASL.Mechanism == SASLMechanismPlain {
+		if cfg.SASL.Mechanism == config.SASLMechanismPlain {
 			mechanism := plain.Auth{
 				User: cfg.SASL.Username,
 				Pass: cfg.SASL.Password,
@@ -73,17 +74,17 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		}
 
 		// SASL SCRAM
-		if cfg.SASL.Mechanism == SASLMechanismScramSHA256 || cfg.SASL.Mechanism == SASLMechanismScramSHA512 {
+		if cfg.SASL.Mechanism == config.SASLMechanismScramSHA256 || cfg.SASL.Mechanism == config.SASLMechanismScramSHA512 {
 			var mechanism sasl.Mechanism
 			scramAuth := scram.Auth{
 				User: cfg.SASL.Username,
 				Pass: cfg.SASL.Password,
 			}
-			if cfg.SASL.Mechanism == SASLMechanismScramSHA256 {
+			if cfg.SASL.Mechanism == config.SASLMechanismScramSHA256 {
 				logger.Debug("configuring SCRAM-SHA-256 mechanism")
 				mechanism = scramAuth.AsSha256Mechanism()
 			}
-			if cfg.SASL.Mechanism == SASLMechanismScramSHA512 {
+			if cfg.SASL.Mechanism == config.SASLMechanismScramSHA512 {
 				logger.Debug("configuring SCRAM-SHA-512 mechanism")
 				mechanism = scramAuth.AsSha512Mechanism()
 			}
@@ -91,7 +92,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		}
 
 		// OAuth Bearer
-		if cfg.SASL.Mechanism == SASLMechanismOAuthBearer {
+		if cfg.SASL.Mechanism == config.SASLMechanismOAuthBearer {
 			mechanism := oauth.Auth{
 				Token: cfg.SASL.OAUth.Token,
 			}.AsMechanism()
@@ -99,7 +100,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		}
 
 		// Kerberos
-		if cfg.SASL.Mechanism == SASLMechanismGSSAPI {
+		if cfg.SASL.Mechanism == config.SASLMechanismGSSAPI {
 			logger.Debug("configuring GSSAPI mechanism")
 			var krbClient *client.Client
 
@@ -136,7 +137,7 @@ func NewKgoConfig(cfg *Config, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, e
 		}
 
 		// AWS MSK IAM
-		if cfg.SASL.Mechanism == SASLMechanismAWSManagedStreamingIAM {
+		if cfg.SASL.Mechanism == config.SASLMechanismAWSManagedStreamingIAM {
 			mechanism := aws.Auth{
 				AccessKey:    cfg.SASL.AWSMskIam.AccessKey,
 				SecretKey:    cfg.SASL.AWSMskIam.SecretKey,

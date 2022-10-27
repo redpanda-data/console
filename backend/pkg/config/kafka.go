@@ -1,41 +1,37 @@
 // Copyright 2022 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
-// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+// included in the file licenses/BSL.md
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package kafka
+package config
 
 import (
 	"flag"
 	"fmt"
-
-	"github.com/redpanda-data/console/backend/pkg/msgpack"
-	"github.com/redpanda-data/console/backend/pkg/proto"
-	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
-// Config required for opening a connection to Kafka
-type Config struct {
+// Kafka required for opening a connection to Kafka
+type Kafka struct {
 	// General
 	Brokers  []string `yaml:"brokers"`
 	ClientID string   `yaml:"clientId"`
 	RackID   string   `yaml:"rackId"`
 
 	// Schema Registry
-	Schema      schema.Config  `yaml:"schemaRegistry"`
-	Protobuf    proto.Config   `yaml:"protobuf"`
-	MessagePack msgpack.Config `yaml:"messagePack"`
+	Schema      Schema  `yaml:"schemaRegistry"`
+	Protobuf    Proto   `yaml:"protobuf"`
+	MessagePack Msgpack `yaml:"messagePack"`
 
-	TLS  TLSConfig  `yaml:"tls"`
-	SASL SASLConfig `yaml:"sasl"`
+	TLS  KafkaTLS  `yaml:"tls"`
+	SASL KafkaSASL `yaml:"sasl"`
 }
 
 // RegisterFlags registers all nested config flags.
-func (c *Config) RegisterFlags(f *flag.FlagSet) {
+func (c *Kafka) RegisterFlags(f *flag.FlagSet) {
 	c.TLS.RegisterFlags(f)
 	c.SASL.RegisterFlags(f)
 	c.Protobuf.RegisterFlags(f)
@@ -43,7 +39,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 }
 
 // Validate the Kafka config
-func (c *Config) Validate() error {
+func (c *Kafka) Validate() error {
 	if len(c.Brokers) == 0 {
 		return fmt.Errorf("you must specify at least one broker to connect to")
 	}
@@ -72,7 +68,7 @@ func (c *Config) Validate() error {
 }
 
 // SetDefaults for Kafka config
-func (c *Config) SetDefaults() {
+func (c *Kafka) SetDefaults() {
 	c.ClientID = "redpanda-console"
 
 	c.SASL.SetDefaults()
@@ -82,15 +78,22 @@ func (c *Config) SetDefaults() {
 
 // RedactedConfig returns a copy of the config object which redacts sensitive fields. This is useful if you
 // want to log the entire config object but without sensitive fields.
-func (c Config) RedactedConfig() Config {
-	c.TLS.Passphrase = redactString(c.TLS.Passphrase)
-	c.SASL.Password = redactString(c.SASL.Password)
-	c.SASL.GSSAPIConfig.Password = redactString(c.SASL.GSSAPIConfig.Password)
-	c.SASL.OAUth.Token = redactString(c.SASL.OAUth.Token)
-	c.SASL.AWSMskIam.SecretKey = redactString(c.SASL.AWSMskIam.SecretKey)
-	c.SASL.AWSMskIam.SessionToken = redactString(c.SASL.AWSMskIam.SessionToken)
+func (c Kafka) RedactedConfig() Kafka {
+	// In order to not accidentally leak fields from the original config, we copy only
+	// known fields into the new config. If we don't do this, we are at risk that someone
+	// adds a Config property that is sensitive and not yet redacted.
+	copiedCfg := Kafka{}
+	copiedCfg.Brokers = c.Brokers
+	copiedCfg.ClientID = c.ClientID
+	copiedCfg.RackID = c.RackID
+	copiedCfg.TLS.Passphrase = redactString(c.TLS.Passphrase)
+	copiedCfg.SASL.Password = redactString(c.SASL.Password)
+	copiedCfg.SASL.GSSAPIConfig.Password = redactString(c.SASL.GSSAPIConfig.Password)
+	copiedCfg.SASL.OAUth.Token = redactString(c.SASL.OAUth.Token)
+	copiedCfg.SASL.AWSMskIam.SecretKey = redactString(c.SASL.AWSMskIam.SecretKey)
+	copiedCfg.SASL.AWSMskIam.SessionToken = redactString(c.SASL.AWSMskIam.SessionToken)
 
-	return c
+	return copiedCfg
 }
 
 func redactString(in string) string {

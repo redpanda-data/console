@@ -7,7 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package redpanda
+package config
 
 import (
 	"crypto/tls"
@@ -16,8 +16,8 @@ import (
 	"io/ioutil"
 )
 
-// TLSConfig to connect to the Redpanda Admin API.
-type TLSConfig struct {
+// RedpandaAdminAPITLS to connect to the Redpanda Admin API.
+type RedpandaAdminAPITLS struct {
 	Enabled               bool   `yaml:"enabled"`
 	CaFilepath            string `yaml:"caFilepath"`
 	CertFilepath          string `yaml:"certFilepath"`
@@ -25,7 +25,7 @@ type TLSConfig struct {
 	InsecureSkipTLSVerify bool   `yaml:"insecureSkipTlsVerify"`
 }
 
-func (c *TLSConfig) BuildTLSConfig() (*tls.Config, error) {
+func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 	if !c.Enabled {
 		return nil, nil
 	}
@@ -77,7 +77,7 @@ func (c *TLSConfig) BuildTLSConfig() (*tls.Config, error) {
 	}, nil
 }
 
-func (c *TLSConfig) Validate() error {
+func (c *RedpandaAdminAPITLS) Validate() error {
 	if !c.Enabled {
 		return nil
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/linkedin/goavro/v2"
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 )
@@ -22,7 +23,7 @@ import (
 // Service for fetching schemas from a schema registry. It has to provide an interface for other packages which is safe
 // for concurrent access and also takes care of caching schemas.
 type Service struct {
-	cfg          Config
+	cfg          config.Schema
 	logger       *zap.Logger
 	requestGroup singleflight.Group
 
@@ -33,7 +34,7 @@ type Service struct {
 }
 
 // NewService to access schema registry. Returns an error if connection can't be established.
-func NewService(cfg Config, logger *zap.Logger) (*Service, error) {
+func NewService(cfg config.Schema, logger *zap.Logger) (*Service, error) {
 	client, err := newClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create schema registry client: %w", err)

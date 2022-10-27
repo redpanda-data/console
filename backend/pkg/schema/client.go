@@ -19,11 +19,12 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 // Client that talks to the (Confluent) Schema Registry via REST
 type Client struct {
-	cfg    Config
+	cfg    config.Schema
 	client *resty.Client
 }
 
@@ -36,7 +37,7 @@ func (e RestError) Error() string {
 	return fmt.Sprintf("schema registry request failed: %d - %s", e.ErrorCode, e.Message)
 }
 
-func newClient(cfg Config) (*Client, error) {
+func newClient(cfg config.Schema) (*Client, error) {
 	// TODO: Add support to fallback to other registry urls if provided
 	registryUrl := cfg.URLs[0] // Array length is checked in config validate()
 

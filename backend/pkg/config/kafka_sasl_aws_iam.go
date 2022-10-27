@@ -7,14 +7,14 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package kafka
+package config
 
 import (
 	"flag"
 )
 
-// SASLAwsMskIam is the config for AWS IAM SASL mechanism, see: https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html
-type SASLAwsMskIam struct {
+// KafkaSASLAwsMskIam is the config for AWS IAM SASL mechanism, see: https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html
+type KafkaSASLAwsMskIam struct {
 	AccessKey string `yaml:"accessKey"`
 	SecretKey string `yaml:"secretKey"`
 
@@ -32,11 +32,11 @@ type SASLAwsMskIam struct {
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag
-func (c *SASLAwsMskIam) RegisterFlags(f *flag.FlagSet) {
+func (c *KafkaSASLAwsMskIam) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.SecretKey, "kafka.sasl.aws-msk-iam.secret-key", "", "IAM Account secret key")
 	f.StringVar(&c.SessionToken, "kafka.sasl.aws-msk-iam.session-token", "", "Optional session token for authentication purposes. Uses the AWS Security Token Service API")
 }
 
-func (c *SASLAwsMskIam) Validate() error {
+func (c *KafkaSASLAwsMskIam) Validate() error {
 	return nil
 }

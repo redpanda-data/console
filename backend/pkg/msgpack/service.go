@@ -11,18 +11,20 @@ package msgpack
 
 import (
 	"regexp"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 // Service represents messagepack cfg, topic name regexes.
 type Service struct {
-	cfg Config
+	cfg config.Msgpack
 
 	AllowedTopicsExpr []*regexp.Regexp
 }
 
 // NewService returns a new instance of Service with compiled regexes.
-func NewService(cfg Config) (*Service, error) {
-	allowedTopicsExpr, err := compileRegexes(cfg.TopicNames)
+func NewService(cfg config.Msgpack) (*Service, error) {
+	allowedTopicsExpr, err := config.CompileRegexes(cfg.TopicNames)
 	if err != nil {
 		return nil, err
 	}

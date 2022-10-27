@@ -18,7 +18,7 @@ __debug_bin
 
 # Local configs
 config.yaml
-config
+configs
 config-*.yaml
 
 *.pem
