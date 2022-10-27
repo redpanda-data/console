@@ -152,23 +152,81 @@ secret:
     # schemaRegistryTlsCert:
     # schemaRegistryTlsKey:
     # protobufGitBasicAuthPassword
+    # saslPassword_ref:
+    #   secret_name: name-of-secret-where-saslPassword-is-stored
+    #   secret_key: name-of-key-where-saslPassword-is-stored
+    # awsMskIamSecretKey_ref:
+    #   secret_name: name-of-secret-where-awsMskIamSecretKey-is-stored
+    #   secret_key: name-of-key-where-awsMskIamSecretKey-is-stored
+    # tlsCa_ref:
+    #   secret_name: name-of-secret-where-tlsCa-is-stored
+    #   secret_key: name-of-key-where-tlsCa-is-stored
+    # tlsCert_ref:
+    #   secret_name: name-of-secret-where-tlsCert-is-stored
+    #   secret_key: name-of-key-where-tlsCert-is-stored
+    # tlsKey_ref:
+    #   secret_name: name-of-secret-where-tlsKey-is-stored
+    #   secret_key: name-of-key-where-tlsKey-is-stored
+    # tlsPassphrase_ref:
+    #   secret_name: name-of-secret-where-tlsPassphrase-is-stored
+    #   secret_key: name-of-key-where-tlsPassphrase-is-stored
+    # schemaRegistryPassword_ref:
+    #   secret_name: name-of-secret-where-schemaRegistryPassword-is-stored
+    #   secret_key: name-of-key-where-schemaRegistryPassword-is-stored
+    # schemaRegistryTlsCa_ref:
+    #   secret_name: name-of-secret-where-schemaRegistryTlsCa-is-stored
+    #   secret_key: name-of-key-where-schemaRegistryTlsCa-is-stored
+    # schemaRegistryTlsCert_ref:
+    #   secret_name: name-of-secret-where-schemaRegistryTlsCert-is-stored
+    #   secret_key: name-of-key-where-schemaRegistryTlsCert-is-stored
+    # schemaRegistryTlsKey_ref:
+    #   secret_name: name-of-secret-where-schemaRegistryTlsKey-is-stored
+    #   secret_key: name-of-key-where-schemaRegistryTlsKey-is-stored
+    # protobufGitBasicAuthPassword_ref
+    #   secret_name: name-of-secret-where-protobufGitBasicAuthPassword-is-stored
+    #   secret_key: name-of-key-where-protobufGitBasicAuthPassword-is-stored
+
   # Enterprise version secrets
   # SSO secrets (enterprise version)
   login:
     google: {}
       # clientSecret:
       # groupsServiceAccount:
+      # clientSecret_ref:
+      #   secret_name: name-of-secret-where-clientSecret-is-stored
+      #   secret_key: name-of-key-where-clientSecret-is-stored
+      # groupsServiceAccount_ref:
+      #   secret_name: name-of-secret-where-groupsServiceAccount-is-stored
+      #   secret_key: name-of-key-where-groupsServiceAccount-is-stored
     github: {}
       # clientSecret:
       # personalAccessToken:
+      # clientSecret_ref:
+      #   secret_name: name-of-secret-where-clientSecret-is-stored
+      #   secret_key: name-of-key-where-clientSecret-is-stored
+      # personalAccessToken_ref:
+      #   secret_name: name-of-secret-where-personalAccessToken-is-stored
+      #   secret_key: name-of-key-where-personalAccessToken-is-stored
     okta: {}
       # clientSecret:
       # directoryApiToken:
+      # clientSecret_ref:
+      #   secret_name: name-of-secret-where-clientSecret-is-stored
+      #   secret_key: name-of-key-where-clientSecret-is-stored
+      # directoryApiToken_ref:
+      #   secret_name: name-of-secret-where-directoryApiToken-is-stored
+      #   secret_key: name-of-key-where-directoryApiToken-is-stored
     oidc: {}
       # clientSecret:
+      # clientSecret_ref:
+      #   secret_name: name-of-secret-where-clientSecret-is-stored
+      #   secret_key: name-of-key-where-clientSecret-is-stored
 
   enterprise: {}
     # license:
+    # license_ref:
+    #   secret_name: name-of-secret-where-license-is-stored
+    #   secret_key: name-of-key-where-license-is-stored
 
   redpanda:
     adminApi: {}
@@ -176,6 +234,18 @@ secret:
       # tlsCa:
       # tlsCert:
       # tlsKey:
+      # password_ref:
+      #   secret_name: name-of-secret-where-password-is-stored
+      #   secret_key: name-of-key-where-password-is-stored
+      # tlsCa_ref:
+      #   secret_name: name-of-secret-where-tlsCa-is-stored
+      #   secret_key: name-of-key-where-tlsCa-is-stored
+      # tlsCert_ref:
+      #   secret_name: name-of-secret-where-tlsCert-is-stored
+      #   secret_key: name-of-key-where-tlsCert-is-stored
+      # tlsKey_ref:
+      #   secret_name: name-of-secret-where-tlsKey-is-stored
+      #   secret_key: name-of-key-where-tlsKey-is-stored
 
 ## Configure extra options for liveness and readiness probes
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes)

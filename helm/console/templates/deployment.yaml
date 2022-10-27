@@ -36,6 +36,62 @@ spec:
           secret:
             secretName: {{ include "console.fullname" . }}
         {{- end }}
+        {{- if .Values.secret.kafka.tlsCa_ref }}
+        - name: kafka_tls_ca
+          secret:
+            secretName: {{ .Values.secret.kafka.tlsCa_ref.secret_name }}
+          value: "/etc/console/secrets/kafka-tls-ca"
+        {{- end }}
+        {{- if .Values.secret.kafka.tlsCert_ref }}
+        - name: kafka_tls_cert
+          secret:
+            secretName: {{ .Values.secret.kafka.tlsCert_ref.secret_name }}
+          value: "/etc/console/secrets/kafka-tls-cert"
+        {{- end }}
+        {{- if .Values.secret.kafka.tlsKey_ref }}
+        - name: kafka_tls_key
+          secret:
+            secretName: {{ .Values.secret.kafka.tlsKey_ref.secret_name }}
+          value: "/etc/console/secrets/kafka-tls-key"
+        {{- end }}
+        {{- if .Values.secret.kafka.schemaRegistryTlsCa_ref }}
+        - name: kafka_schemaregistry_tls_ca
+          secret:
+            secretName: {{ .Values.secret.kafka.schemaRegistryTlsCa_ref.secret_name }}
+          value: "/etc/console/secrets/kafka-schemaregistry-tls-ca"
+        {{- end }}
+        {{- if .Values.secret.kafka.schemaRegistryTlsCert_ref }}
+        - name: kafka_schemaregistry_tls_cert
+          secret:
+            secretName: {{ .Values.secret.kafka.schemaRegistryTlsCert_ref.secret_name }}
+          value: "/etc/console/secrets/kafka-schemaregistry-tls-cert"
+        {{- end }}
+        {{- if .Values.secret.kafka.schemaRegistryTlsKey_ref }}
+        - name: kafka_schemaregistry_tls_key
+          secret:
+            secretName: {{ .Values.secret.kafka.schemaRegistryTlsKey_ref.secret_name }}
+          value: "/etc/console/secrets/kafka-schemaregistry-tls-key"
+        {{- end }}
+        {{- if .Values.secret.login.google.groupsServiceAccount_ref }}
+        - name: google_serviceaccount
+          secret:
+            secretName: {{ .Values.secret.login.google.groupsServiceAccount_ref.secret_name }}
+        {{- end }}
+        {{- if .Values.secret.redpanda.adminApi.tlsCa_ref }}
+        - name: redpanda_adminapi_tls_ca
+          secret:
+            secretName: {{ .Values.secret.redpanda.adminApi.tlsCa_ref.secret_name }}
+        {{- end }}
+        {{- if .Values.secret.redpanda.adminApi.tlsKey_ref }}
+        - name: redpanda_adminapi_tls_key
+          secret:
+            secretName: {{ .Values.secret.redpanda.adminApi.tlsKey_ref.secret_name }}
+        {{- end }}
+        {{- if .Values.secret.redpanda.adminApi.tlsCert_ref }}
+        - name: redpanda_adminapi_tls_cert
+          secret:
+            secretName: {{ .Values.secret.redpanda.adminApi.tlsCert_ref.secret_name }}
+        {{- end }}
         {{- range .Values.secretMounts }}
         - name: {{ .name }}
           secret:
@@ -66,6 +122,66 @@ spec:
             {{- if .Values.secret.create }}
             - name: secrets
               mountPath: /etc/console/secrets
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.kafka.tlsCa_ref }}
+            - name: kafka_tls_ca
+              mountPath: "/etc/console/secrets/kafka-tls-ca"
+              subPath: {{ .Values.secret.kafka.tlsCa_ref.secret_key }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.kafka.tlsCert_ref }}
+            - name: kafka_tls_cert
+              mountPath: "/etc/console/secrets/kafka-tls-cert"
+              subPath: {{ .Values.secret.kafka.tlsCert_ref.secret_key }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.kafka.tlsKey_ref }}
+            - name: kafka_tls_key
+              mountPath: "/etc/console/secrets/kafka-tls-key"
+              subPath: {{ .Values.secret.kafka.tlsKey_ref.secret_key }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsCa_ref }}
+            - name: kafka_schemaregistry_tls_ca
+              mountPath: "/etc/console/secrets/kafka-schemaregistry-tls-ca"
+              subPath: {{ .Values.secret.kafka.schemaRegistryTlsCa_ref.secret_key }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsCert_ref }}
+            - name: kafka_schemaregistry_tls_cert
+              mountPath: "/etc/console/secrets/kafka-schemaregistry-tls-cert"
+              subPath: {{ .Values.secret.kafka.schemaRegistryTlsCert_ref.secret_key }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsKey_ref }}
+            - name: kafka_schemaregistry_tls_key
+              mountPath: "/etc/console/secrets/kafka-schemaregistry-tls-key"
+              subPath: {{ .Values.secret.kafka.schemaRegistryTlsKey_ref.secret_key }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.login.google.groupsServiceAccount_ref }}
+            - name: google_serviceaccount
+              mountPath: /etc/console/secrets/login-google-groups-service-account.json
+              subPath: {{ .Values.secret.login.google.groupsServiceAccount_ref.secret_key }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsCa_ref }}
+            - name: redpanda_adminapi_tls_ca
+              mountPath: "/etc/console/secrets/redpanda-admin-api-tls-ca"
+              subPath: {{ .Values.secret.redpanda.adminApi.tlsCa_ref.secret_key }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsKey_ref }}
+            - name: redpanda_adminapi_tls_key
+              mountPath: "/etc/console/secrets/redpanda-admin-api-tls-key"
+              subPath: {{ .Values.secret.redpanda.adminApi.tlsKey_ref.secret_key }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsCert_ref }}
+            - name: redpanda_adminapi_tls_cert
+              mountPath: "/etc/console/secrets/redpanda-admin-api-tls-cert"
+              subPath: {{ .Values.secret.redpanda.adminApi.tlsCert_ref.secret_key }}
               readOnly: true
             {{- end }}
             {{- range .Values.secretMounts }}
@@ -102,7 +218,7 @@ spec:
             {{- with .Values.extraEnv }}
             {{- tpl . $ | nindent 12 }}
             {{- end }}
-            {{- if .Values.secret.create }}
+          {{- if .Values.secret.create }}
             {{- if .Values.secret.kafka.saslPassword }}
             - name: KAFKA_SASL_PASSWORD
               valueFrom:
@@ -232,7 +348,131 @@ spec:
             - name: REDPANDA_ADMINAPI_TLS_CERTFILEPATH
               value: "/etc/console/secrets/redpanda-admin-api-tls-cert"
             {{- end }}
+            {{- if .Values.secret.kafka.saslPassword_ref }}
+            - name: KAFKA_SASL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.kafka.saslPassword_ref.secret_name }}
+                  key: {{ .Values.secret.kafka.saslPassword_ref.secret_key }}
             {{- end }}
+            {{- if .Values.secret.kafka.protobufGitBasicAuthPassword_ref }}
+            - name: KAFKA_PROTOBUF_GIT_BASICAUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.kafka.protobufGitBasicAuthPassword_ref.secret_name }}
+                  key: {{ .Values.secret.kafka.protobufGitBasicAuthPassword_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.kafka.awsMskIamSecretKey_ref }}
+            - name: KAFKA_SASL_AWSMSKIAM_SECRETKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.kafka.awsMskIamSecretKey_ref.secret_name }}
+                  key: {{ .Values.secret.kafka.awsMskIamSecretKey_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.kafka.tlsCa_ref }}
+            - name: KAFKA_TLS_CAFILEPATH
+              value: "/etc/console/secrets/kafka-tls-ca"
+            {{- end }}
+            {{- if .Values.secret.kafka.tlsCert_ref }}
+            - name: KAFKA_TLS_CERTFILEPATH
+              value: "/etc/console/secrets/kafka-tls-cert"
+            {{- end }}
+            {{- if .Values.secret.kafka.tlsKey_ref }}
+            - name: KAFKA_TLS_KEYFILEPATH
+              value: "/etc/console/secrets/kafka-tls-key"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsCa_ref }}
+            - name: KAFKA_SCHEMAREGISTRY_TLS_CAFILEPATH
+              value: "/etc/console/secrets/kafka-schemaregistry-tls-ca"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsCert_ref }}
+            - name: KAFKA_SCHEMAREGISTRY_TLS_CERTFILEPATH
+              value: "/etc/console/secrets/kafka-schemaregistry-tls-cert"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryTlsKey_ref }}
+            - name: KAFKA_SCHEMAREGISTRY_TLS_KEYFILEPATH
+              value: "/etc/console/secrets/kafka-schemaregistry-tls-key"
+            {{- end }}
+            {{- if .Values.secret.kafka.schemaRegistryPassword_ref }}
+            - name: KAFKA_SCHEMAREGISTRY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.kafka.schemaRegistryPassword_ref.secret_name }}
+                  key: {{ .Values.secret.kafka.schemaRegistryPassword_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.login.google.clientSecret_ref }}
+            - name: LOGIN_GOOGLE_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.login.google.clientSecret_ref.secret_name }}
+                  key: {{ .Values.secret.login.google.clientSecret_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.login.google.groupsServiceAccount_ref }}
+            - name: LOGIN_GOOGLE_DIRECTORY_SERVICEACCOUNTFILEPATH
+              value: /etc/console/secrets/login-google-groups-service-account.json
+            {{- end }}
+            {{- if .Values.secret.login.github.clientSecret_ref }}
+            - name: LOGIN_GITHUB_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.login.github.clientSecret_ref.secret_name }}
+                  key: {{ .Values.secret.login.github.clientSecret_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.login.github.personalAccessToken_ref }}
+            - name: LOGIN_GITHUB_DIRECTORY_PERSONALACCESSTOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.login.github.personalAccessToken_ref.secret_name }}
+                  key: {{ .Values.secret.login.github.personalAccessToken_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.login.okta.clientSecret_ref }}
+            - name: LOGIN_OKTA_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.login.okta.clientSecret_ref.secret_name }}
+                  key: {{ .Values.secret.login.okta.clientSecret_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.login.okta.directoryApiToken_ref }}
+            - name: LOGIN_OKTA_DIRECTORY_APITOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.login.okta.directoryApiToken_ref.secret_name }}
+                  key: {{ .Values.secret.login.okta.directoryApiToken_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.login.oidc.clientSecret_ref }}
+            - name: LOGIN_OIDC_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.login.oidc.clientSecret_ref.secret_name }}
+                  key: {{ .Values.secret.login.oidc.clientSecret_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.enterprise.license_ref }}
+            - name: LICENSE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.enterprise.license_ref.secret_name }}
+                  key: {{ .Values.secret.enterprise.license_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.password_ref }}
+            - name: REDPANDA_ADMINAPI_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.redpanda.adminApi.password_ref.secret_name }}
+                  key: {{ .Values.secret.redpanda.adminApi.password_ref.secret_key }}
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsCa_ref }}
+            - name: REDPANDA_ADMINAPI_TLS_CAFILEPATH
+              value: "/etc/console/secrets/redpanda-admin-api-tls-ca"
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsKey_ref }}
+            - name: REDPANDA_ADMINAPI_TLS_KEYFILEPATH
+              value: "/etc/console/secrets/redpanda-admin-api-tls-key"
+            {{- end }}
+            {{- if .Values.secret.redpanda.adminApi.tlsCert_ref }}
+            - name: REDPANDA_ADMINAPI_TLS_CERTFILEPATH
+              value: "/etc/console/secrets/redpanda-admin-api-tls-cert"
+            {{- end }}
+          {{- end }}
           envFrom:
             {{- with .Values.extraEnvFrom }}
             {{- tpl . $ | nindent 12 }}
