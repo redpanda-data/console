@@ -93,17 +93,17 @@ console:
   # roleBindings:
 
 # Additional environment variables for the Console Deployment
-extraEnv: ""
+extraEnv: []
   # - name: KAFKA_RACKID
   #   value: "1"
 
 # Additional environment variables for Console mapped from Secret or ConfigMap
-extraEnvFrom: ""
+extraEnvFrom: []
 # - secretRef:
 #     name: kowl-config-secret
 
 # Add additional volumes, e. g. for tls keys
-extraVolumes: ""
+extraVolumes: []
 # - name: kafka-certs
 #   secret:
 #     secretName: kafka-certs
@@ -112,7 +112,7 @@ extraVolumes: ""
 #     name: console-config
 
 # Add additional volumes mounts, e. g. for tls keys
-extraVolumeMounts: ""
+extraVolumeMounts: []
 # - name: kafka-certs # Must match the volume name
 #   mountPath: /etc/kafka/certs
 #   readOnly: true
