@@ -32,6 +32,7 @@ console:
           targetPrincipal: admin@mycompany.com
     enterprise:
       rbac:
+        enabled: true
         roleBindingsFilepath: /etc/console/configs/role-bindings.yaml
   roleBindings:
     - roleName: viewer
