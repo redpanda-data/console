@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, Button, Alert, Tag, message, Dropdown, Menu, Tooltip } from 'antd';
+import { Empty, Input, Button, Alert, Tag, message, Dropdown, Menu, Tooltip, Modal } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -19,7 +19,7 @@ import { AclRequestDefault, CreateUserRequest } from '../../../state/restInterfa
 import { comparer, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { Code, DefaultSkeleton } from '../../../utils/tsxUtils';
-import { clone } from '../../../utils/jsonUtils';
+import { clone, toJson } from '../../../utils/jsonUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import { LockIcon, QuestionIcon } from '@primer/octicons-react';
 import { TrashIcon } from '@heroicons/react/outline';
@@ -67,21 +67,43 @@ class AclList extends PageComponent {
                 const userExists = api.serviceAccounts?.users.includes(record.principalName);
 
                 const onDelete = async (user: boolean, acls: boolean) => {
-                    const promises = [];
-                    if (acls)
-                        promises.push(api.deleteACLs({
-                            resourceType: 'Any',
-                            resourceName: undefined,
-                            resourcePatternType: 'Any',
-                            principal: record.principalType + ':' + record.principalName,
-                            host: record.host,
-                            operation: 'Any',
-                            permissionType: 'Any',
-                        }));
-                    if (user)
-                        promises.push(api.deleteServiceAccount(record.principalName));
 
-                    await Promise.allSettled(promises);
+                    if (acls) {
+                        try {
+                            await api.deleteACLs({
+                                resourceType: 'Any',
+                                resourceName: undefined,
+                                resourcePatternType: 'Any',
+                                principal: record.principalType + ':' + record.principalName,
+                                host: record.host,
+                                operation: 'Any',
+                                permissionType: 'Any',
+                            });
+                            message.success(<>Deleted ACLs for <Code>{record.principalName}</Code></>);
+                        } catch (err: unknown) {
+                            console.error('failed to delete acls', { error: err });
+
+                            Modal.error({
+                                title: 'Delete ACLs failed',
+                                content: <div className="codeBox">{toJson(err)}</div>,
+                            });
+                        }
+                    }
+
+                    if (user) {
+                        try {
+                            await api.deleteServiceAccount(record.principalName);
+                            message.success(<>Deleted user <Code>{record.principalName}</Code></>);
+                        } catch (err: unknown) {
+                            console.error('failed to delete acls', { error: err });
+
+                            Modal.error({
+                                title: 'Delete ACLs failed',
+                                content: <div className="codeBox">{toJson(err)}</div>,
+                            });
+                        }
+                    }
+
                     await this.refreshData(true);
                 }
 
@@ -90,33 +112,30 @@ class AclList extends PageComponent {
                     <Menu>
                         <Menu.Item key="1" disabled={!userExists || !Features.deleteUser} onClick={async () => {
                             onDelete(true, true);
-                            message.success(<>Deleted ACLs and user <Code>{record.principalName}</Code></>);
                         }}>
                             Delete (User and ACLs)
                         </Menu.Item>
 
                         <Menu.Item key="2" disabled={!userExists || !Features.deleteUser} onClick={async () => {
                             onDelete(true, false);
-                            message.success(<>Deleted user <Code>{record.principalName}</Code></>);
                         }}>
                             Delete (User only)
                         </Menu.Item>
 
                         <Menu.Item key="3" onClick={async () => {
                             onDelete(false, true);
-                            message.success(<>Deleted ACLs for <Code>{record.principalName}</Code></>);
                         }}>
                             Delete (ACLs only)
                         </Menu.Item>
                     </Menu>}>
                     <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}
                         onClick={e => { e.stopPropagation(); e.preventDefault(); }}
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); }}
+                        onMouseUp={e => { e.stopPropagation(); e.preventDefault(); }}
                     >
                         <TrashIcon />
                     </Button>
                 </Dropdown>
-
-
             }
         },
     ];

@@ -134,7 +134,11 @@ export const AclPrincipalGroupEditor = observer((p: {
                             options={principalOptions}
                             filterOption={(inputValue, option) => containsIgnoreCase(option!.value, inputValue)}
                             value={group.principalName}
-                            onChange={v => group.principalName = v}
+                            onChange={v => {
+                                if (v.includes(':'))
+                                    return;
+                                group.principalName = v;
+                            }}
                             {...{ spellCheck: false }}
                         />
                     </Input.Group>

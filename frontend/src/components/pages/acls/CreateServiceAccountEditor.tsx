@@ -19,7 +19,12 @@ export const CreateServiceAccountEditor = observer((p: { state: CreateUserReques
             >
                 <Input
                     value={state.username}
-                    onChange={e => state.username = e.target.value}
+                    onChange={v => {
+                        const newName = v.target.value;
+                        if (newName.includes(':'))
+                            return;
+                        state.username = newName;
+                    }}
                     width="100%" autoFocus spellCheck={false}
                     placeholder="Username"
                     autoComplete="off"
