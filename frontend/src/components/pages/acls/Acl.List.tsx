@@ -130,6 +130,8 @@ class AclList extends PageComponent {
                     </Menu>}>
                     <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}
                         onClick={e => { e.stopPropagation(); e.preventDefault(); }}
+                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); }}
+                        onMouseUp={e => { e.stopPropagation(); e.preventDefault(); }}
                     >
                         <TrashIcon />
                     </Button>
