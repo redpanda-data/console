@@ -103,7 +103,8 @@ func (api *API) routes() *chi.Mux {
 				r.Get("/consumer-groups", api.handleGetConsumerGroups())
 				r.Get("/consumer-groups/{groupId}", api.handleGetConsumerGroup())
 				r.Patch("/consumer-groups/{groupId}", api.handlePatchConsumerGroup())
-				r.Delete("/consumer-groups/{groupId}", api.handleDeleteConsumerGroupOffsets())
+				r.Delete("/consumer-groups/{groupId}/offsets", api.handleDeleteConsumerGroupOffsets())
+				r.Delete("/consumer-groups/{groupId}", api.handleDeleteConsumerGroup())
 
 				// Bulk Operations
 				r.Get("/operations/topic-details", api.handleGetAllTopicDetails())
