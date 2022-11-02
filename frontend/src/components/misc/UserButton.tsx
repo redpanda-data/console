@@ -45,7 +45,7 @@ export class UserProfile extends Component {
                 }} />}
                 trigger={['click']}
                 arrow={false}
-                placement="topCenter"
+                placement="top"
                 visible={this.menuOpen}
                 onVisibleChange={e => this.menuOpen = e}
                 {...noExpand}
