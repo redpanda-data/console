@@ -178,7 +178,7 @@ func NewConfigDefinition(name string,
 func newClientConfig(prefix string, group string) []ConfigDefinition {
 	// Bootstrap Servers
 	bootstrapServers := NewConfigDefinition(
-		prefix+"bootstrap.servers",
+		prefix+"cluster.bootstrap.servers",
 		ConfigDefinitionTypeString,
 		"",
 		ConfigDefinitionImportanceHigh,
@@ -195,7 +195,7 @@ func newClientConfig(prefix string, group string) []ConfigDefinition {
 
 	// Security
 	securityProtocol := NewConfigDefinition(
-		prefix+"security.protocol",
+		prefix+"cluster.security.protocol",
 		ConfigDefinitionTypeString,
 		"PLAINTEXT",
 		ConfigDefinitionImportanceHigh,
@@ -210,7 +210,7 @@ func newClientConfig(prefix string, group string) []ConfigDefinition {
 
 	// SASL
 	saslMechanism := NewConfigDefinition(
-		prefix+"sasl.mechanism",
+		prefix+"cluster.sasl.mechanism",
 		ConfigDefinitionTypeString,
 		"GSSAPI",
 		ConfigDefinitionImportanceHigh,
@@ -223,7 +223,7 @@ func newClientConfig(prefix string, group string) []ConfigDefinition {
 		WithRecommendedValues([]string{"PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512"}),
 	)
 	jaasConfig := NewConfigDefinition(
-		prefix+"sasl.jaas.config",
+		prefix+"cluster.sasl.jaas.config",
 		ConfigDefinitionTypeString,
 		"",
 		ConfigDefinitionImportanceHigh,
