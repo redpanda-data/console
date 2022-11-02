@@ -146,7 +146,7 @@ function EmitRouteViews(entries: IRouteEntry[]): JSX.Element[] {
 }
 
 export const RouteView = (() =>
-    <AnimatePresence exitBeforeEnter>
+    <AnimatePresence mode="wait">
         <Switch>
             {/* Index */}
             {/* <Route exact path='/' component={IndexPage} /> */}

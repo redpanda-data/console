@@ -115,7 +115,7 @@ export const MotionAlways: FC = (p: { children?: React.ReactNode, style?: CSSPro
     </motion.div>;
 
 export const MotionDiv: FC<{ identityKey?: any, children?: React.ReactNode, positionTransition?: boolean, layoutTransition?: boolean, animProps?: any, style?: CSSProperties, className?: string }> = (p) =>
-    <motion.div className={p.className} key={p.identityKey} positionTransition={p.positionTransition} layoutTransition={p.layoutTransition} style={p.style} {...(p.animProps ?? animProps)} >
+    <motion.div className={p.className} key={p.identityKey} layout={p.positionTransition} layoutTransition={p.layoutTransition} style={p.style} {...(p.animProps ?? animProps)} >
         {p.children}
     </motion.div>;
 
