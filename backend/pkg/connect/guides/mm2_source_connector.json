@@ -123,6 +123,25 @@
       }
     },
     {
+      "nameSelector": "source.cluster.alias",
+      "definition": {
+        "custom_default_value": "source",
+        "display_name": "Source cluster alias",
+        "documentation": "When using org.apache.kafka.connect.mirror.DefaultReplicationPolicy, topic names will be prefixed with it.",
+        "group": "Configuration",
+        "importance": "MEDIUM"
+      }
+    },
+    {
+      "nameSelector": "target.cluster.alias",
+      "definition": {
+        "custom_default_value": "target",
+        "display_name": "Target cluster alias",
+        "group": "Configuration",
+        "importance": "MEDIUM"
+      }
+    },
+    {
       "nameSelector": "key.converter",
       "definition": {
         "display_name" : "Key converter",
@@ -173,8 +192,6 @@
     "/sasl.*/",
     "enabled",
     "topics.blacklist",
-    "source.cluster.alias",
-    "target.cluster.alias",
     "groups",
     "groups.exclude",
     "groups.blacklist",
