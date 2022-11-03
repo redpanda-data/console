@@ -433,15 +433,15 @@ function makeCreateTopicModal(parent: TopicList) {
         if (value == undefined)
             throw new Error(`unexpected: value for retention size is 'undefined' but unit is set to ${unit}`);
 
-        if (unit == 'bytes')
+        if (unit == 'Bit')
             return value;
-        if (unit == 'kB')
+        if (unit == 'KiB')
             return value * 1024;
-        if (unit == 'MB')
+        if (unit == 'MiB')
             return value * 1024 * 1024;
-        if (unit == 'GB')
+        if (unit == 'GiB')
             return value * 1024 * 1024 * 1024;
-        if (unit == 'TB')
+        if (unit == 'TiB')
             return value * 1024 * 1024 * 1024 * 1024;
 
         if (unit == 'infinite')

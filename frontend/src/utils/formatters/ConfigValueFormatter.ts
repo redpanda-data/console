@@ -57,10 +57,17 @@ export function formatConfigValue(name: string, value: string | null | undefined
     const timeExtensions: [string, number][] = [
         // name ending -> conversion to milliseconds
         ['.ms', 1],
-        ['.seconds', 1000],
-        ['.minutes', 60 * 1000],
-        ['.hours', 60 * 60 * 1000],
-        ['.days', 24 * 60 * 60 * 1000],
+        ['_ms', 1], // Redpanda broker configs use underscores
+
+        // Redpanda broker configs use underscores rather than dots as a separator.
+        // Because we want to match both configs, we omit the separator (dot vs underscore) for the
+        // following time extensions.
+        // These suffixes seem unique enough (compared to "ms") to not be ambigious with other 
+        // config options.
+        ['seconds', 1000],
+        ['minutes', 60 * 1000],
+        ['hours', 60 * 60 * 1000],
+        ['days', 24 * 60 * 60 * 1000],
     ];
     for (const [ext, msFactor] of timeExtensions) {
         if (!name.endsWith(ext)) continue;
@@ -71,10 +78,14 @@ export function formatConfigValue(name: string, value: string | null | undefined
     }
 
     // Bytes
-    if (name.endsWith('.bytes') || name.endsWith('.buffer.size') || name.endsWith('.replication.throttled.rate') || name.endsWith('.reassignment.throttled.rate')) {
+    if (name.endsWith('.bytes') || 
+        name.endsWith('_bytes') || // Redpanda broker configs use underscores
+        name.endsWith('.buffer.size') || 
+        name.endsWith('.replication.throttled.rate') || 
+        name.endsWith('.reassignment.throttled.rate')) {
         const uint64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
         const uint64Exp = 1.844674407370955e19; // barely below the point where the number would be rounded up
-        if (value == uint64Max || num >= uint64Exp)
+        if (value == uint64Max || num >= uint64Exp || num == -1)
             return 'Infinite' + suffix;
 
         return prettyBytesOrNA(num) + suffix;
