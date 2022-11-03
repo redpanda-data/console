@@ -86,7 +86,7 @@
       "nameSelector": "emit.checkpoints.enabled",
       "definition": {
         "display_name": "Translate consumer group offsets",
-        "documentation" : "The connector will periodically fetch consumer offsets of source cluster and translate them into the ones that make sense in the target cluster (offsets can differ among clusters).  Required for Consumer group offset sync. ",
+        "documentation" : "The connector will periodically fetch consumer offsets of source cluster, translate them into the ones that make sense in the target cluster (offsets can differ among clusters). This mapping is stored in an internal topic in the target cluster. Required for Consumer group offset sync. ",
         "group" : "Consumer Groups",
         "importance": "MEDIUM",
         "order": 9
@@ -117,7 +117,7 @@
       "nameSelector": "sync.group.offsets.enabled",
       "definition": {
         "display_name": "Consumer group offset sync",
-        "documentation": "Enables seamless consumer failover to the target cluster. Periodically writes the translated offsets to __consumer_offsets topic in target cluster, as long as no active consumers of a group are connected to the target cluster. Requires enabling Translate consumer group offsets (emit.checkpoints.enabled).",
+        "documentation": "Enables seamless consumer switch to the target cluster. If enabled, it periodically updates consumer group offsets in target cluster as long as no active consumers of the group are connected to the target cluster. Requires enabling Translate consumer group offsets (emit.checkpoints.enabled).",
         "group" : "Consumer Groups",
         "importance": "HIGH",
         "order": 20
@@ -126,7 +126,7 @@
     {
       "nameSelector": "sync.group.offsets.interval.seconds",
       "definition": {
-        "display_name": "Frequency of offset sync in seconds",
+        "display_name": "Frequency of offset sync",
         "group" : "Consumer Groups",
         "importance": "MEDIUM",
         "order": 21
