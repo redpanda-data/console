@@ -535,7 +535,7 @@ export const prettyBytes = function (n: number | string | null | undefined, opti
     }
 
     // n is a finite number
-    return prettyBytesOriginal(n);
+    return prettyBytesOriginal(n, {binary: true});
 }
 
 export const prettyMilliseconds = function (n: number | string, options?: prettyMillisecondsOriginal.Options & PrettyValueOptions) {

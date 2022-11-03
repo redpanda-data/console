@@ -272,11 +272,11 @@ const sizeFactors = {
     'default': -1,
     'infinite': Number.POSITIVE_INFINITY,
 
-    'bytes': 1,
-    'kB': 1024,
-    'MB': 1024 * 1024,
-    'GB': 1024 * 1024 * 1024,
-    'TB': 1024 * 1024 * 1024 * 1024,
+    'Bit': 1,
+    'KiB': 1024,
+    'MiB': 1024 * 1024,
+    'GiB': 1024 * 1024 * 1024,
+    'TiB': 1024 * 1024 * 1024 * 1024,
 } as const;
 
 function RetentionSizeSelect(p: {
