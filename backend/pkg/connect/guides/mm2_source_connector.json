@@ -104,6 +104,25 @@
       }
     },
 
+    {
+      "nameSelector": "offset-syncs.topic.location",
+      "definition": {
+        "display_name": "Offset translation topic location",
+        "documentation" : "Placement of the internal topic that maps source cluster offset to target cluster offsets. Set the same value for both MirrorSourceConnector and MirrorCheckpointConnector. Valid values are source (default), target",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 11
+      }
+    },
+    {
+      "nameSelector": "offset-syncs.topic.replication.factor",
+      "definition": {
+        "display_name": "Offset translation topic replication factor",
+        "group" : "Topics",
+        "importance": "MEDIUM",
+        "order": 12
+      }
+    },
     
 
     {
@@ -210,15 +229,13 @@
     "/emit.heartbeats.*/",
     "/emit.checkpoints.*/",
     "/sync.group.offsets.*/",
-    "replication.policy.separator",
-    "heartbeats.topic.replication.factor",
-    "checkpoints.topic.replication.factor",
-    "offset-syncs.topic.replication.factor",
-    "offset-syncs.topic.location",
+    "replication.policy.separator",    
     "offset.lag.max",
     "metric.reporters",
     "security.protocol",
-    "config.action.reload"
+    "config.action.reload",
+    "heartbeats.topic.replication.factor",
+    "checkpoints.topic.replication.factor"
 
   ]
 }
