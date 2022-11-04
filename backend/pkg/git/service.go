@@ -119,7 +119,7 @@ func (c *Service) CloneRepository(ctx context.Context) error {
 
 	// 2. Put files into cache
 	empty := make(map[string]filesystem.File)
-	files, err := c.readFiles(fs, empty, c.Cfg.Repository.BaseDirectory, 5)
+	files, err := c.readFiles(fs, empty, c.Cfg.Repository.BaseDirectory, 15)
 	if err != nil {
 		return fmt.Errorf("failed to get files: %w", err)
 	}
