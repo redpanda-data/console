@@ -695,17 +695,22 @@ export class DeleteOffsetsModal extends Component<{
         const offsets = this.props.offsets!;
 
         const msg = new Message('Deleting offsets', 'loading', '...');
-        const deleteRequest = createDeleteRequest(offsets);
         try {
-            const deleteResponse = await api.deleteConsumerGroupOffsets(group.groupId, deleteRequest);
-            const errors = deleteResponse.map(t => ({
-                ...t,
-                partitions: t.partitions.filter(x => x.error),
-            })).filter(t => t.partitions.length > 0);
-            if (errors.length > 0) {
-                console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
-                // eslint-disable-next-line no-throw-literal
-                throw { request: deleteRequest, errors: errors };
+            if (this.props.mode === 'group') {
+                await api.deleteConsumerGroup(group.groupId);
+            }
+            else {
+                const deleteRequest = createDeleteRequest(offsets);
+                const deleteResponse = await api.deleteConsumerGroupOffsets(group.groupId, deleteRequest);
+                const errors = deleteResponse.map(t => ({
+                    ...t,
+                    partitions: t.partitions.filter(x => x.error),
+                })).filter(t => t.partitions.length > 0);
+                if (errors.length > 0) {
+                    console.error('backend returned errors for deleteOffsets', { request: deleteRequest, errors: errors });
+                    // eslint-disable-next-line no-throw-literal
+                    throw { request: deleteRequest, errors: errors };
+                }
             }
 
             msg.setSuccess(undefined, ' - done');

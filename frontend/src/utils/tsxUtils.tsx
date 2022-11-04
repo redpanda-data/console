@@ -12,7 +12,7 @@
 import React, { useState, Component, CSSProperties, ReactNode } from 'react';
 import { toJson } from './jsonUtils';
 import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
-import { Radio, message, Progress, Skeleton, Tooltip } from 'antd';
+import { Radio, message, Progress, Skeleton, Tooltip, Button as AntdButton, ButtonProps as AntdButtonProps } from 'antd';
 import { MessageType } from 'antd/lib/message';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
@@ -406,10 +406,10 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
                 <div style={StatusIndicator.statusBarStyle}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <DownloadOutlined style={{color: colors.brandOrange}} /> {this.props.bytesConsumed}
+                        <DownloadOutlined style={{ color: colors.brandOrange }} /> {this.props.bytesConsumed}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-                        <CopyOutlined style={{color: colors.brandOrange}} />{this.props.messagesConsumed} messages
+                        <CopyOutlined style={{ color: colors.brandOrange }} />{this.props.messagesConsumed} messages
                     </div>
                 </div>
             }
@@ -511,5 +511,24 @@ export function LabelTooltip(p: { children?: React.ReactNode, width?: number, no
             transform: 'translateY(1px)',
             marginLeft: '3px'
         }} />
+    </Tooltip>
+}
+
+export type ButtonProps = Omit<AntdButtonProps, 'disabled'> & { disabledReason?: string; };
+export function Button(p: ButtonProps) {
+    if (!p.disabledReason)
+        return <AntdButton {...p} />;
+
+    return <Tooltip
+        placement="top" trigger="hover" mouseLeaveDelay={0}
+        getPopupContainer={findPopupContainer}
+        overlay={p.disabledReason}
+    >
+        <AntdButton
+            {...p}
+            disabled
+            className={(p.className ?? '') + ' disabled'}
+            onClick={undefined}
+        />
     </Tooltip>
 }

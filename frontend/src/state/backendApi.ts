@@ -42,9 +42,8 @@ import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
-    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest
+    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest, DeleteConsumerGroupRequest
 } from './restInterfaces';
-import { Features } from './supportedFeatures';
 import { uiState } from './uiState';
 import { config as appConfig } from '../config';
 
@@ -773,6 +772,24 @@ const apiStore = {
             topics: topics
         };
 
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}/offsets`, {
+            method: 'DELETE',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson(request),
+        });
+
+        const r = await parseOrUnwrap<DeleteConsumerGroupOffsetsResponse>(response, null);
+        return r.topics;
+    },
+
+    async deleteConsumerGroup(groupId: string):
+        Promise<DeleteConsumerGroupOffsetsResponseTopic[]> {
+        const request: DeleteConsumerGroupRequest = {
+            groupId: groupId
+        };
+
         const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
             method: 'DELETE',
             headers: [
@@ -1289,11 +1306,6 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
         }
     }
     g.isInUse = g.state.toLowerCase() != 'empty';
-
-    if (!Features.patchGroup)
-        g.noEditSupport = true;
-    if (!Features.deleteGroup)
-        g.noDeleteSupport = true;
 }
 
 export const brokerMap = computed(() => {
