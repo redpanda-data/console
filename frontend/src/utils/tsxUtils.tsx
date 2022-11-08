@@ -519,10 +519,13 @@ export function Button(p: ButtonProps) {
     if (!p.disabledReason)
         return <AntdButton {...p} />;
 
+    const reason = p.disabledReason;
+    p.disabledReason = undefined;
+
     return <Tooltip
         placement="top" trigger="hover" mouseLeaveDelay={0}
         getPopupContainer={findPopupContainer}
-        overlay={p.disabledReason}
+        overlay={reason}
     >
         <AntdButton
             {...p}
@@ -531,4 +534,28 @@ export function Button(p: ButtonProps) {
             onClick={undefined}
         />
     </Tooltip>
+}
+
+
+export function IconButton(p: {
+    onClick?: React.MouseEventHandler<HTMLElement>,
+    children?: React.ReactNode,
+    disabledReason?: string,
+}) {
+    if (!p.disabledReason) {
+        return <span className="iconButton" onClick={p.onClick}>
+            {p.children}
+        </span>
+    }
+
+    return <Tooltip
+        placement="top" trigger="hover" mouseLeaveDelay={0}
+        getPopupContainer={findPopupContainer}
+        overlay={p.disabledReason}
+    >
+        <span className="iconButton disabled">
+            {p.children}
+        </span>
+    </Tooltip>
+
 }

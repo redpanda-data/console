@@ -21,7 +21,7 @@ import { action, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { TablePaginationConfig } from 'antd/lib/table';
-import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString, Button } from '../../../utils/tsxUtils';
+import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString, Button, IconButton } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
 import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
@@ -305,21 +305,21 @@ class GroupByTopics extends Component<{
                         {/* EditButtons */}
                         <div style={{ width: '2px' }} />
 
-                        <Button type="text" className="iconButton" onClick={e => { p.onEditOffsets(g.partitions); e.stopPropagation(); }} disabledReason={cannotEditGroupReason(this.props.group)}>
+                        <IconButton onClick={e => { p.onEditOffsets(g.partitions); e.stopPropagation(); }} disabledReason={cannotEditGroupReason(this.props.group)}>
                             <PencilIcon />
-                        </Button>
-                        <Button type="text" className="iconButton" onClick={e => { p.onDeleteOffsets(g.partitions, 'topic'); e.stopPropagation(); }} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
+                        </IconButton>
+                        <IconButton onClick={e => { p.onDeleteOffsets(g.partitions, 'topic'); e.stopPropagation(); }} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
                             <TrashIcon />
-                        </Button>
+                        </IconButton>
 
                         {/* InfoTags */}
                         <Tooltip placement="top" title="Summed lag of all partitions of the topic" mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer} >
-                            <Tag style={{ margin: '0', marginLeft: '8px' }} color="blue">lag: {numberToThousandsString(totalLagAll)}</Tag>
+                            <Tag style={{ margin: '0', marginLeft: '8px' }} color="rgb(225, 66, 38)">lag: {numberToThousandsString(totalLagAll)}</Tag>
                         </Tooltip>
                         <Tooltip placement="top" title="Number of assigned partitions" mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer}>
-                            <Tag color="blue">assigned partitions: {partitionsAssigned}</Tag>
+                            <Tag color="rgb(225, 66, 38)">assigned partitions: {partitionsAssigned}</Tag>
                         </Tooltip>
                         <Button
                             size="small"
@@ -368,12 +368,12 @@ class GroupByTopics extends Component<{
                             //     </Tooltip>
                             // },
                             render: (text, record) => <div style={{ paddingRight: '.5em', display: 'flex', gap: '4px' }}>
-                                <Button type="text" className="iconButton" onClick={() => p.onEditOffsets([record])} disabledReason={cannotEditGroupReason(this.props.group)}>
+                                <IconButton onClick={() => p.onEditOffsets([record])} disabledReason={cannotEditGroupReason(this.props.group)}>
                                     <PencilIcon />
-                                </Button>
-                                <Button type="text" className="iconButton" onClick={() => p.onDeleteOffsets([record], 'partition')} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
+                                </IconButton>
+                                <IconButton onClick={() => p.onDeleteOffsets([record], 'partition')} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
                                     <TrashIcon />
-                                </Button>
+                                </IconButton>
                             </div>,
                         },
                     ]}
@@ -454,10 +454,10 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                                 <Tag style={{ marginLeft: '1em' }} color="blue">host: {m.clientHost}</Tag>
                             </Tooltip>
                             <Tooltip placement="top" title="Number of assigned partitions" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag color="blue">partitions: {totalPartitions}</Tag>
+                                <Tag color="rgb(225, 66, 38)">partitions: {totalPartitions}</Tag>
                             </Tooltip>
                             <Tooltip placement="top" title="Summed lag over all assigned partitions of all topics" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag color="blue">lag: {totalLag}</Tag>
+                                <Tag color="rgb(225, 66, 38)">lag: {totalLag}</Tag>
                             </Tooltip>
                         </div>
                     }>

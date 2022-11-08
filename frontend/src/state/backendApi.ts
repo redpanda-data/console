@@ -13,14 +13,15 @@
 
 import { notification } from 'antd';
 import { comparer, computed, observable, transaction } from 'mobx';
-import { AppFeatures} from '../utils/env';
+import { AppFeatures } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
 import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
-import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
+import {
+    GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
     AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError,
     Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors,
     ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType,
@@ -42,7 +43,7 @@ import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
-    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest, DeleteConsumerGroupRequest
+    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig } from '../config';
@@ -262,11 +263,15 @@ const apiStore = {
 
 
     async startMessageSearch(_searchRequest: MessageSearchRequest): Promise<void> {
-        const searchRequest = {..._searchRequest, ...(appConfig.jwt ?  { enterprise: {
-        redpandaCloud: {
-            accessToken: appConfig.jwt
+        const searchRequest = {
+            ..._searchRequest, ...(appConfig.jwt ? {
+                enterprise: {
+                    redpandaCloud: {
+                        accessToken: appConfig.jwt
+                    }
+                }
+            } : {})
         }
-        }}: {})}
         const url = `${appConfig.websocketBasePath}/topics/${searchRequest.topicName}/messages`;
 
         console.debug('connecting to "' + url + '"');
@@ -784,22 +789,15 @@ const apiStore = {
         return r.topics;
     },
 
-    async deleteConsumerGroup(groupId: string):
-        Promise<DeleteConsumerGroupOffsetsResponseTopic[]> {
-        const request: DeleteConsumerGroupRequest = {
-            groupId: groupId
-        };
-
+    async deleteConsumerGroup(groupId: string): Promise<void> {
         const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
             method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
-            ],
-            body: toJson(request),
+            ]
         });
 
-        const r = await parseOrUnwrap<DeleteConsumerGroupOffsetsResponse>(response, null);
-        return r.topics;
+        await parseOrUnwrap<void>(response, null);
     },
 
 
