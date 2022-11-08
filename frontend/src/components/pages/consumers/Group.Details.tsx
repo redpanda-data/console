@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Table, Row, Statistic, Tag, Button, Collapse, Tooltip, Popover, Empty } from 'antd';
+import { Table, Row, Statistic, Tag, Collapse, Tooltip, Popover, Empty } from 'antd';
 import { observer } from 'mobx-react';
 
 import { api } from '../../../state/backendApi';
@@ -21,7 +21,7 @@ import { action, computed, makeObservable, observable } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { WarningTwoTone, HourglassTwoTone, FireTwoTone, CheckCircleTwoTone, QuestionCircleOutlined } from '@ant-design/icons';
 import { TablePaginationConfig } from 'antd/lib/table';
-import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString } from '../../../utils/tsxUtils';
+import { OptionGroup, QuickTable, DefaultSkeleton, findPopupContainer, numberToThousandsString, Button, IconButton } from '../../../utils/tsxUtils';
 import { uiSettings } from '../../../state/ui';
 import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
@@ -32,6 +32,7 @@ import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
 import { Section } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
+import { Features } from '../../../state/supportedFeatures';
 
 
 @observer
@@ -91,12 +92,12 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
                     <span style={{ marginLeft: 'auto' }} />
 
-                    <EditDisabledTooltip group={group}>
-                        <Button onClick={() => this.editGroup()}>Edit Group</Button>
-                        <Button danger onClick={() => this.deleteGroup()}>
-                            Delete Group
-                        </Button>
-                    </EditDisabledTooltip>
+                    <Button onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>
+                        Edit Group
+                    </Button>
+                    <Button danger onClick={() => this.deleteGroup()} disabledReason={cannotDeleteGroupReason(group)}>
+                        Delete Group
+                    </Button>
                 </div>
 
                 {/* Main Content */}
@@ -128,81 +129,81 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds.length);
 
         return (
-          <PageContent className="groupDetails">
-            {/* Statistics Card */}
-            {uiSettings.consumerGroupDetails.showStatisticsBar && (
-              <Section py={4}>
-                <div className="statisticsBar">
-                    <Row>
-                        <HideStatisticsBarButton
-                            onClick={() =>
-                            (uiSettings.consumerGroupDetails.showStatisticsBar =
-                                false)
-                            }
-                        />
-                        <Statistic
-                            title="State"
-                            valueRender={() => <GroupState group={group} />}
-                        />
-                        <ProtocolType group={group} />
-                        <Statistic title="Members" value={group.members.length} />
-                        <Statistic
-                            title="Assigned Topics"
-                            value={requiredTopics.length}
-                        />
-                        <Statistic
-                            title="Assigned Partitions"
-                            value={totalPartitions}
-                        />
-                        <Statistic title="Protocol Type" value={group.protocolType} />
-                        <Statistic title="Protocol" value={group.protocol} />
-                        <Statistic
-                            title="Coordinator ID"
-                            value={group.coordinatorId}
-                        />
-                        <Statistic title="Total Lag" value={group.lagSum} />
-                    </Row>
-                </div>
-              </Section>
-            )}
+            <PageContent className="groupDetails">
+                {/* Statistics Card */}
+                {uiSettings.consumerGroupDetails.showStatisticsBar && (
+                    <Section py={4}>
+                        <div className="statisticsBar">
+                            <Row>
+                                <HideStatisticsBarButton
+                                    onClick={() =>
+                                    (uiSettings.consumerGroupDetails.showStatisticsBar =
+                                        false)
+                                    }
+                                />
+                                <Statistic
+                                    title="State"
+                                    valueRender={() => <GroupState group={group} />}
+                                />
+                                <ProtocolType group={group} />
+                                <Statistic title="Members" value={group.members.length} />
+                                <Statistic
+                                    title="Assigned Topics"
+                                    value={requiredTopics.length}
+                                />
+                                <Statistic
+                                    title="Assigned Partitions"
+                                    value={totalPartitions}
+                                />
+                                <Statistic title="Protocol Type" value={group.protocolType} />
+                                <Statistic title="Protocol" value={group.protocol} />
+                                <Statistic
+                                    title="Coordinator ID"
+                                    value={group.coordinatorId}
+                                />
+                                <Statistic title="Total Lag" value={group.lagSum} />
+                            </Row>
+                        </div>
+                    </Section>
+                )}
 
-            {/* Main Card */}
-            <Section>
-              {/* View Buttons */}
-              <Tabs
-                tabs={[
-                  {
-                    key: 'partitions',
-                    title: 'Partitions',
-                    content: this.renderPartitions(group),
-                  },
-                  {
-                    key: 'acl',
-                    title: 'ACL',
-                    content: (
-                      <AclList acl={api.consumerGroupAcls.get(group.groupId)} />
-                    ),
-                  },
-                ]}
-              />
-            </Section>
+                {/* Main Card */}
+                <Section>
+                    {/* View Buttons */}
+                    <Tabs
+                        tabs={[
+                            {
+                                key: 'partitions',
+                                title: 'Partitions',
+                                content: this.renderPartitions(group),
+                            },
+                            {
+                                key: 'acl',
+                                title: 'ACL',
+                                content: (
+                                    <AclList acl={api.consumerGroupAcls.get(group.groupId)} />
+                                ),
+                            },
+                        ]}
+                    />
+                </Section>
 
-            {/* Modals */}
-            <>
-              <EditOffsetsModal
-                group={group}
-                offsets={this.edittingOffsets}
-                onClose={() => (this.edittingOffsets = null)}
-              />
+                {/* Modals */}
+                <>
+                    <EditOffsetsModal
+                        group={group}
+                        offsets={this.edittingOffsets}
+                        onClose={() => (this.edittingOffsets = null)}
+                    />
 
-              <DeleteOffsetsModal
-                group={group}
-                mode={this.deletingMode}
-                offsets={this.deletingOffsets}
-                onClose={() => (this.deletingOffsets = null)}
-              />
-            </>
-          </PageContent>
+                    <DeleteOffsetsModal
+                        group={group}
+                        mode={this.deletingMode}
+                        offsets={this.deletingOffsets}
+                        onClose={() => (this.deletingOffsets = null)}
+                    />
+                </>
+            </PageContent>
         );
     }
 
@@ -303,19 +304,22 @@ class GroupByTopics extends Component<{
 
                         {/* EditButtons */}
                         <div style={{ width: '2px' }} />
-                        <EditDisabledTooltip group={p.group}>
-                            <div className="iconButton" onClick={e => { p.onEditOffsets(g.partitions); e.stopPropagation(); }} ><PencilIcon /></div>
-                            <div className="iconButton" onClick={e => { p.onDeleteOffsets(g.partitions, 'topic'); e.stopPropagation(); }} ><TrashIcon /></div>
-                        </EditDisabledTooltip>
+
+                        <IconButton onClick={e => { p.onEditOffsets(g.partitions); e.stopPropagation(); }} disabledReason={cannotEditGroupReason(this.props.group)}>
+                            <PencilIcon />
+                        </IconButton>
+                        <IconButton onClick={e => { p.onDeleteOffsets(g.partitions, 'topic'); e.stopPropagation(); }} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
+                            <TrashIcon />
+                        </IconButton>
 
                         {/* InfoTags */}
                         <Tooltip placement="top" title="Summed lag of all partitions of the topic" mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer} >
-                            <Tag style={{ margin: '0', marginLeft: '8px' }} color="blue">lag: {numberToThousandsString(totalLagAll)}</Tag>
+                            <Tag style={{ margin: '0', marginLeft: '8px' }} color="rgb(225, 66, 38)">lag: {numberToThousandsString(totalLagAll)}</Tag>
                         </Tooltip>
                         <Tooltip placement="top" title="Number of assigned partitions" mouseEnterDelay={0}
                             getPopupContainer={findPopupContainer}>
-                            <Tag color="blue">assigned partitions: {partitionsAssigned}</Tag>
+                            <Tag color="rgb(225, 66, 38)">assigned partitions: {partitionsAssigned}</Tag>
                         </Tooltip>
                         <Button
                             size="small"
@@ -364,10 +368,12 @@ class GroupByTopics extends Component<{
                             //     </Tooltip>
                             // },
                             render: (text, record) => <div style={{ paddingRight: '.5em', display: 'flex', gap: '4px' }}>
-                                <EditDisabledTooltip group={p.group}>
-                                    <span className="iconButton" onClick={() => p.onEditOffsets([record])} ><PencilIcon /></span>
-                                    <span className="iconButton" onClick={() => p.onDeleteOffsets([record], 'partition')} ><TrashIcon /></span>
-                                </EditDisabledTooltip>
+                                <IconButton onClick={() => p.onEditOffsets([record])} disabledReason={cannotEditGroupReason(this.props.group)}>
+                                    <PencilIcon />
+                                </IconButton>
+                                <IconButton onClick={() => p.onDeleteOffsets([record], 'partition')} disabledReason={cannotDeleteGroupOffsetsReason(this.props.group)} >
+                                    <TrashIcon />
+                                </IconButton>
                             </div>,
                         },
                     ]}
@@ -448,10 +454,10 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                                 <Tag style={{ marginLeft: '1em' }} color="blue">host: {m.clientHost}</Tag>
                             </Tooltip>
                             <Tooltip placement="top" title="Number of assigned partitions" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag color="blue">partitions: {totalPartitions}</Tag>
+                                <Tag color="rgb(225, 66, 38)">partitions: {totalPartitions}</Tag>
                             </Tooltip>
                             <Tooltip placement="top" title="Summed lag over all assigned partitions of all topics" mouseEnterDelay={0} getPopupContainer={findPopupContainer}>
-                                <Tag color="blue">lag: {totalLag}</Tag>
+                                <Tag color="rgb(225, 66, 38)">lag: {totalLag}</Tag>
                             </Tooltip>
                         </div>
                     }>
@@ -561,47 +567,22 @@ const ProtocolType = (p: { group: GroupDescription }) => {
     return <Statistic title="Protocol" value={protocol} />
 }
 
-const EditDisabledTooltip = (p: { group: GroupDescription, children: [editButton: JSX.Element, deleteButton: JSX.Element] }): JSX.Element => {
-    const { group } = p;
-    const [editButton, deleteButton] = p.children;
+function cannotEditGroupReason(group: GroupDescription): string | undefined {
+    if (group.noEditPerms) return 'You don\'t have \'editConsumerGroup\' permissions for this group';
+    if (group.isInUse) return 'Consumer groups with active members cannot be edited';
+    if (!Features.patchGroup) return 'This cluster does not support editting group offsets';
+}
 
-    const wrap = (button: JSX.Element, message: string) =>
-        <Tooltip
-            placement="top" trigger="hover" mouseLeaveDelay={0}
-            getPopupContainer={findPopupContainer}
-            overlay={message}
-        >
-            {React.cloneElement(button, {
-                disabled: true,
-                className: (button.props.className ?? '') + ' disabled',
-                onClick: undefined,
-            })}
-        </Tooltip>
+function cannotDeleteGroupReason(group: GroupDescription): string | undefined {
+    if (group.noDeletePerms) return 'You don\'t have \'deleteConsumerGroup\' permissions for this group';
+    if (group.isInUse) return 'Consumer groups with active members cannot be deleted';
+    if (!Features.deleteGroup) return 'This cluster does not support deleting groups';
+}
 
-    // Wrap each button if the user doesn't have the corresponding permission
-    let editButtonMessage = null as string | null;
-    let deleteButtonMessage = null as string | null;
-
-    if (group.noEditPerms) editButtonMessage = 'You don\'t have \'editConsumerGroup\' permissions for this group';
-    if (group.noDeletePerms) deleteButtonMessage = 'You don\'t have \'deleteConsumerGroup\' permissions for this group';
-
-    if (group.isInUse) {
-        if (editButtonMessage == null) editButtonMessage = 'Consumer groups with active members cannot be edited';
-        if (deleteButtonMessage == null) deleteButtonMessage = 'Consumer groups with active members cannot be deleted';
-    }
-
-    if (group.noEditSupport)
-        if (editButtonMessage == null)
-            editButtonMessage = 'This cluster does not support editting group offsets';
-
-    if (group.noDeleteSupport)
-        if (deleteButtonMessage == null)
-            deleteButtonMessage = 'This cluster does not support deleting group offsets';
-
-    return <>
-        {editButtonMessage != null ? wrap(editButton, editButtonMessage) : editButton}
-        {deleteButtonMessage != null ? wrap(deleteButton, deleteButtonMessage) : deleteButton}
-    </>
+function cannotDeleteGroupOffsetsReason(group: GroupDescription): string | undefined {
+    if (group.noEditPerms) return 'You don\'t have \'deleteConsumerGroup\' permissions for this group';
+    if (group.isInUse) return 'Consumer groups with active members cannot be deleted';
+    if (!Features.deleteGroupOffsets) return 'This cluster does not support deleting group offsets';
 }
 
 

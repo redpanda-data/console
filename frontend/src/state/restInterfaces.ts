@@ -282,8 +282,6 @@ export interface GroupDescription {
     lagSum: number; // sum of lag for all topic offsets
 
     // reasons for why the group can't be editted
-    noEditSupport: boolean;
-    noDeleteSupport: boolean;
     isInUse: boolean;
     noEditPerms: boolean;
     noDeletePerms: boolean;
@@ -336,7 +334,9 @@ export interface EditConsumerGroupOffsetsResponseTopic {
 
 
 
-
+export interface DeleteConsumerGroupRequest {
+    groupId: string;
+}
 export interface DeleteConsumerGroupOffsetsRequest {
     groupId: string;
     topics: DeleteConsumerGroupOffsetsTopic[];

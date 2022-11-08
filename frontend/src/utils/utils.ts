@@ -219,8 +219,8 @@ const collator = new Intl.Collator(undefined, {
     usage: 'search',
     sensitivity: 'base',
 });
-export function compareIgnoreCase(a: string, b: string) {
-    return collator.compare(a, b);
+export function equalsIgnoreCase(a: string, b: string) {
+    return collator.compare(a, b) == 0;
 }
 
 type FoundProperty = { propertyName: string, path: string[], value: any }

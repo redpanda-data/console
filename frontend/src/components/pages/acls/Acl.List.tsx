@@ -65,6 +65,7 @@ class AclList extends PageComponent {
             width: '60px', title: '',
             render: (_, record) => {
                 const userExists = api.serviceAccounts?.users.includes(record.principalName);
+                const hasAcls = record.sourceEntries.length > 0;
 
                 const onDelete = async (user: boolean, acls: boolean) => {
 
@@ -110,7 +111,7 @@ class AclList extends PageComponent {
 
                 return <Dropdown trigger={['click']} overlay={
                     <Menu>
-                        <Menu.Item key="1" disabled={!userExists || !Features.deleteUser} onClick={async () => {
+                        <Menu.Item key="1" disabled={!userExists || !Features.deleteUser || !hasAcls} onClick={async () => {
                             onDelete(true, true);
                         }}>
                             Delete (User and ACLs)
@@ -122,17 +123,13 @@ class AclList extends PageComponent {
                             Delete (User only)
                         </Menu.Item>
 
-                        <Menu.Item key="3" onClick={async () => {
+                        <Menu.Item key="3" disabled={!hasAcls} onClick={async () => {
                             onDelete(false, true);
                         }}>
                             Delete (ACLs only)
                         </Menu.Item>
                     </Menu>}>
-                    <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}
-                        onClick={e => { e.stopPropagation(); e.preventDefault(); }}
-                        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); }}
-                        onMouseUp={e => { e.stopPropagation(); e.preventDefault(); }}
-                    >
+                    <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}                    >
                         <TrashIcon />
                     </Button>
                 </Dropdown>
@@ -274,10 +271,16 @@ class AclList extends PageComponent {
                         rowKey={x => x.principalType + ' :: ' + x.principalName + ' :: ' + x.host}
 
                         rowClassName="hoverLink"
-                        onRow={(record) => ({
-                            onClick: () => {
+                        onRow={r => ({
+                            onClick: e => {
+                                // Don't open menu when clicking delete button
+                                const clickedElement = (e.target as HTMLElement)?.nodeName;
+                                if (clickedElement != 'TD')
+                                    return;
+
+                                console.log('click event', e);
                                 this.editorType = 'edit';
-                                this.edittingPrincipalGroup = clone(record);
+                                this.edittingPrincipalGroup = clone(r);
                             },
                         })}
 

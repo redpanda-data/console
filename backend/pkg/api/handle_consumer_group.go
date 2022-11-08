@@ -280,3 +280,42 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
 }
+
+func (api *API) handleDeleteConsumerGroup() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		groupID := chi.URLParam(r, "groupId")
+
+		// 1. Check if logged in user is allowed to delete Consumer Group (always true for Console OSS, but not for
+		// Console Business)
+		canDelete, restErr := api.Hooks.Console.CanDeleteConsumerGroup(r.Context(), groupID)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canDelete {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("requester has no permissions to delete consumer group"),
+				Status:       http.StatusForbidden,
+				Message:      "You don't have permissions to delete this consumer group",
+				InternalLogs: []zapcore.Field{zap.String("group_id", groupID)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		// 3. Submit delete offset request
+		err := api.ConsoleSvc.DeleteConsumerGroup(r.Context(), groupID)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("failed to delete consumer group: %w", err),
+				Status:       http.StatusServiceUnavailable,
+				Message:      fmt.Sprintf("Failed to delete consumer group: %v", err.Error()),
+				InternalLogs: []zapcore.Field{zap.String("group_id", groupID)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, nil)
+	}
+}

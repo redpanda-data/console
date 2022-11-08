@@ -12,7 +12,7 @@
 import React, { useState, Component, CSSProperties, ReactNode } from 'react';
 import { toJson } from './jsonUtils';
 import { simpleUniqueId, DebugTimerStore, prettyMilliseconds } from './utils';
-import { Radio, message, Progress, Skeleton, Tooltip } from 'antd';
+import { Radio, message, Progress, Skeleton, Tooltip, Button as AntdButton, ButtonProps as AntdButtonProps } from 'antd';
 import { MessageType } from 'antd/lib/message';
 import { CopyOutlined, DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { TimestampDisplayFormat } from '../state/ui';
@@ -406,10 +406,10 @@ export class StatusIndicator extends Component<StatusIndicatorProps> {
             {(this.props.bytesConsumed && this.props.messagesConsumed) &&
                 <div style={StatusIndicator.statusBarStyle}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <DownloadOutlined style={{color: colors.brandOrange}} /> {this.props.bytesConsumed}
+                        <DownloadOutlined style={{ color: colors.brandOrange }} /> {this.props.bytesConsumed}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-                        <CopyOutlined style={{color: colors.brandOrange}} />{this.props.messagesConsumed} messages
+                        <CopyOutlined style={{ color: colors.brandOrange }} />{this.props.messagesConsumed} messages
                     </div>
                 </div>
             }
@@ -512,4 +512,51 @@ export function LabelTooltip(p: { children?: React.ReactNode, width?: number, no
             marginLeft: '3px'
         }} />
     </Tooltip>
+}
+
+export type ButtonProps = Omit<AntdButtonProps, 'disabled'> & { disabledReason?: string; };
+export function Button(p: ButtonProps) {
+    if (!p.disabledReason)
+        return <AntdButton {...p} />;
+
+    const reason = p.disabledReason;
+    const btnProps = { ...p };
+    delete btnProps.disabledReason;
+
+    return <Tooltip
+        placement="top" trigger="hover" mouseLeaveDelay={0}
+        getPopupContainer={findPopupContainer}
+        overlay={reason}
+    >
+        <AntdButton
+            {...btnProps}
+            disabled
+            className={(p.className ?? '') + ' disabled'}
+            onClick={undefined}
+        />
+    </Tooltip>
+}
+
+
+export function IconButton(p: {
+    onClick?: React.MouseEventHandler<HTMLElement>,
+    children?: React.ReactNode,
+    disabledReason?: string,
+}) {
+    if (!p.disabledReason) {
+        return <span className="iconButton" onClick={p.onClick}>
+            {p.children}
+        </span>
+    }
+
+    return <Tooltip
+        placement="top" trigger="hover" mouseLeaveDelay={0}
+        getPopupContainer={findPopupContainer}
+        overlay={p.disabledReason}
+    >
+        <span className="iconButton disabled">
+            {p.children}
+        </span>
+    </Tooltip>
+
 }

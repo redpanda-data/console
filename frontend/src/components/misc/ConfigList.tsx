@@ -9,13 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import {  EyeInvisibleTwoTone, InfoCircleFilled } from '@ant-design/icons';
+import { EyeInvisibleTwoTone, InfoCircleFilled } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import colors from '../../colors';
 import { ConfigEntry } from '../../state/restInterfaces';
 import { ValueDisplay } from '../../state/ui';
 import { formatConfigValue } from '../../utils/formatters/ConfigValueFormatter';
 import { findPopupContainer } from '../../utils/tsxUtils';
+import { equalsIgnoreCase } from '../../utils/utils';
 import { sortField } from './common';
 
 import styles from './ConfigList.module.scss';
@@ -31,7 +32,7 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
 
                 let name = <div style={{ display: 'flex' }} className={styles.nameText}>{text}</div>;
                 if (renderTooltip) name = renderTooltip(record, name);
-                
+
                 const sensitive = record.isSensitive && (
                     <Tooltip overlay="Value has been redacted because it's sensitive">
                         <EyeInvisibleTwoTone twoToneColor={colors.brandOrange} />
@@ -60,7 +61,7 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
             dataIndex: 'type',
             render: (text: string) => <span className={styles.type}>{text?.toLowerCase()}</span>,
             filterType: { type: 'enum', toDisplay: x => String(x).toLowerCase(), optionClassName: 'capitalize' },
-            sorter: sortField('type')
+            sorter: sortField('type'),
         },
         {
             title: (
@@ -88,6 +89,11 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
 
         },
     ];
+
+    const allTypesUnknown = configEntries.all(x => equalsIgnoreCase(x.type, 'unknown'));
+    if (allTypesUnknown) {
+        columns.removeAll(x => x.dataIndex == 'type');
+    }
 
     return (
         <KowlTable className={styles.configEntryTable}

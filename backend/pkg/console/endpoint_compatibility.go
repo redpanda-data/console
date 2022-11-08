@@ -71,6 +71,11 @@ func (s *Service) GetEndpointCompatibility(ctx context.Context) (EndpointCompati
 		{
 			URL:      "/api/consumer-groups/{groupId}",
 			Method:   "DELETE",
+			Requests: []kmsg.Request{&kmsg.DeleteGroupsRequest{}},
+		},
+		{
+			URL:      "/api/consumer-groups/{groupId}/offsets",
+			Method:   "DELETE",
 			Requests: []kmsg.Request{&kmsg.OffsetDeleteRequest{}},
 		},
 		{

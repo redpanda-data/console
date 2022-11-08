@@ -13,14 +13,15 @@
 
 import { notification } from 'antd';
 import { comparer, computed, observable, transaction } from 'mobx';
-import { AppFeatures} from '../utils/env';
+import { AppFeatures } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
 import { ObjToKv } from '../utils/tsxUtils';
 import { decodeBase64, TimeSince } from '../utils/utils';
 import { appGlobal } from './appGlobal';
-import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
+import {
+    GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
     AlterConfigOperation, AlterPartitionReassignmentsResponse, ApiError,
     Broker, BrokerConfigResponse, ClusterAdditionalInfo, ClusterConnectors,
     ClusterInfo, ClusterInfoResponse, ConfigEntry, ConfigResourceType,
@@ -44,7 +45,6 @@ import { GetAclsRequest, AclRequestDefault, GetAclOverviewResponse, AdminInfo,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
     DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest
 } from './restInterfaces';
-import { Features } from './supportedFeatures';
 import { uiState } from './uiState';
 import { config as appConfig } from '../config';
 
@@ -263,11 +263,15 @@ const apiStore = {
 
 
     async startMessageSearch(_searchRequest: MessageSearchRequest): Promise<void> {
-        const searchRequest = {..._searchRequest, ...(appConfig.jwt ?  { enterprise: {
-        redpandaCloud: {
-            accessToken: appConfig.jwt
+        const searchRequest = {
+            ..._searchRequest, ...(appConfig.jwt ? {
+                enterprise: {
+                    redpandaCloud: {
+                        accessToken: appConfig.jwt
+                    }
+                }
+            } : {})
         }
-        }}: {})}
         const url = `${appConfig.websocketBasePath}/topics/${searchRequest.topicName}/messages`;
 
         console.debug('connecting to "' + url + '"');
@@ -773,7 +777,7 @@ const apiStore = {
             topics: topics
         };
 
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}/offsets`, {
             method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
@@ -783,6 +787,17 @@ const apiStore = {
 
         const r = await parseOrUnwrap<DeleteConsumerGroupOffsetsResponse>(response, null);
         return r.topics;
+    },
+
+    async deleteConsumerGroup(groupId: string): Promise<void> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
+            method: 'DELETE',
+            headers: [
+                ['Content-Type', 'application/json']
+            ]
+        });
+
+        await parseOrUnwrap<void>(response, null);
     },
 
 
@@ -1289,11 +1304,6 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
         }
     }
     g.isInUse = g.state.toLowerCase() != 'empty';
-
-    if (!Features.patchGroup)
-        g.noEditSupport = true;
-    if (!Features.deleteGroup)
-        g.noDeleteSupport = true;
 }
 
 export const brokerMap = computed(() => {
