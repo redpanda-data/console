@@ -520,7 +520,8 @@ export function Button(p: ButtonProps) {
         return <AntdButton {...p} />;
 
     const reason = p.disabledReason;
-    p.disabledReason = undefined;
+    const btnProps = { ...p };
+    delete btnProps.disabledReason;
 
     return <Tooltip
         placement="top" trigger="hover" mouseLeaveDelay={0}
@@ -528,7 +529,7 @@ export function Button(p: ButtonProps) {
         overlay={reason}
     >
         <AntdButton
-            {...p}
+            {...btnProps}
             disabled
             className={(p.className ?? '') + ' disabled'}
             onClick={undefined}
