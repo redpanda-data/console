@@ -1,14 +1,46 @@
 # Changelog
 
-## Master / unreleased
+## To be released
 
+## 2.1.0-rc1 / 2022-11-08
+
+- [FEATURE] ACL management (create/update/delete ACLs)
+- [FEATURE] User management (create/update/delete SASL SCRAM & Redpanda users)
+- [FEATURE] Add checkbox to show/hide internal Kafka topics
+- [ENHANCEMENT] Improve Kafka connect dialog for MM2 connectors
+- [ENHANCEMENT] Show all byte sizes in IEC units such as KiB, MiB etc. (binary prefix)
+- [ENHANCEMENT] Split all Kafka connect options in Basic & Advanced properties
+- [ENHANCEMENT] Add anonymous usage stats (you can opt out by setting `analytics.enabled` to `false`)
+- [ENHANCEMENT] Use separate Kafka API (`DeleteGroups`) to delete consumer groups rather than deleting all its group offsets
+- [BUGFIX] Remove default blanklines from editor when producing Kafka records
+
+**Enterprise changelog:**
+
+- [FEATURE] Add support for hot-reloading RBAC role bindings
+- [ENHANCEMENT] Support for self-signed TLS certificates when connecting to an OIDC endpoint
+- [ENHANCEMENT] Print decoded OIDC token claims if the claim key could not be found for an authenticated user
+
+## 2.0.0 / 2022-08-10
+
+- [CHANGE] We provide a single build for Redpanda Console & Redpanda Console Enterprise, so that you can upgrade versions by just setting a license key.
 - [FEATURE] Rebrand Kowl to Redpanda Console
 - [FEATURE] Create Topics
 - [FEATURE] Publish Kafka records (JSON, Text & Hex/Binary as of today, no schema registry support yet)
 - [FEATURE] Add Quotas pages that lists all kinds of configured Kafka Quotas (requires Kafka v2.6+)
+- [FEATURE] Add single-binary build, linux packages, ARM-builds for Docker images
 - [ENHANCEMENT] Retry connecting if initial bootstrap connection fails with a backoff timer
 - [CHANGE] Rename `owl` config property to `console` (breaking change)
 - [BUGFIX] Configurations with camel cased YAML properties can now be specified via environment variables as well
+
+**Enterprise changelog:**
+
+- [CHANGE] Breaking changes on the configuration (see documentation for new config structure around RBAC & Login)
+- [FEATURE] Introduce support for a generic OpenID Connect provider interface
+
+**Note:** The documentation for Redpanda Console has been moved to Redpanda. You can find the docs here:
+
+- Installation: https://docs.redpanda.com/docs/platform/quickstart/console-installation/
+- Configuration: https://docs.redpanda.com/docs/platform/console/
 
 ## 1.5.0 / 2021-11-10
 
