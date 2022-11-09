@@ -52,7 +52,7 @@ export class UserProfile extends Component {
             >
                 <div className="profile">
                     <div className="avatar">
-                        <Avatar src={user.meta.avatarUrl} alt={user.meta.name} >
+                        <Avatar src={user.meta.avatarUrl || undefined} alt={user.meta.name} >
                             <UserOutlined />
                         </Avatar>
                     </div>
