@@ -32,9 +32,11 @@ func newConnectorGuide(fileContents []byte) (ConnectorGuide, error) {
 
 	// Inject additional config blocks for MirrorMaker2 connectors
 	if strings.HasPrefix(c.ConnectorClass, "org.apache.kafka.connect.mirror") {
-		sourceConfig := newClientConfig("source.", "Source cluster")
+		if c.ConnectorClass != "org.apache.kafka.connect.mirror.MirrorHeartbeatConnector" {
+			sourceConfig := newClientConfig("source.", "Source cluster")
+			c.AdditionalConfigDefinitions = append(c.AdditionalConfigDefinitions, sourceConfig...)
+		}
 		targetConfig := newClientConfig("target.", "Target cluster")
-		c.AdditionalConfigDefinitions = append(c.AdditionalConfigDefinitions, sourceConfig...)
 		c.AdditionalConfigDefinitions = append(c.AdditionalConfigDefinitions, targetConfig...)
 	}
 
