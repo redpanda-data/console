@@ -13,11 +13,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/schema"
-	"github.com/twmb/franz-go/pkg/kmsg"
-
 	"github.com/cloudhut/common/rest"
+	"github.com/gorilla/schema"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 type getAclsOverviewRequest struct {
@@ -106,6 +105,22 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			return
 		}
 
+		filteredAclResources := make([]*console.AclResource, 0, len(aclOverview.AclResources))
+		for _, res := range aclOverview.AclResources {
+			filteredRules := make([]*console.AclRule, 0, len(res.ACLs))
+			for _, rule := range res.ACLs {
+				if api.Hooks.Console.IsProtectedKafkaUser(rule.Principal) {
+					continue
+				}
+				filteredRules = append(filteredRules, rule)
+			}
+			if len(filteredRules) > 0 {
+				res.ACLs = filteredRules
+				filteredAclResources = append(filteredAclResources, res)
+			}
+		}
+		aclOverview.AclResources = filteredAclResources
+
 		res := response{
 			aclOverview,
 		}
@@ -172,6 +187,17 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to delete ACLs",
 				IsSilent: true,
+			})
+			return
+		}
+
+		// Check if targeted user is a protected Kafka user
+		if req.Principal != nil && api.Hooks.Console.IsProtectedKafkaUser(*req.Principal) {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      fmt.Errorf("requester is targets a protected Kafka principal to delete ACLs"),
+				Status:   http.StatusForbidden,
+				Message:  "You are not allowed to delete ACLs for this protected principal",
+				IsSilent: false,
 			})
 			return
 		}
@@ -281,6 +307,17 @@ func (api *API) handleCreateACL() http.HandlerFunc {
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to create ACLs for the given principal name",
 				IsSilent: true,
+			})
+			return
+		}
+
+		// Check if targeted user is a protected Kafka user
+		if api.Hooks.Console.IsProtectedKafkaUser(req.Principal) {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      fmt.Errorf("requester is targets a protected Kafka principal to create ACLs"),
+				Status:   http.StatusForbidden,
+				Message:  "You are not allowed to create ACLs for this protected principal",
+				IsSilent: false,
 			})
 			return
 		}

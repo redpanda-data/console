@@ -57,8 +57,15 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 				})
 				return
 			}
+			filteredUsers := make([]string, 0, len(users))
+			for _, user := range users {
+				if api.Hooks.Console.IsProtectedKafkaUser(user) {
+					continue
+				}
+				filteredUsers = append(filteredUsers, user)
+			}
 			rest.SendResponse(w, r, api.Logger, http.StatusOK, &response{
-				Users:      users,
+				Users:      filteredUsers,
 				IsComplete: true,
 			})
 			return
@@ -119,7 +126,19 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 			return
 		}
 
-		// 3. Create user
+		// 3. Check if targeted user is a protected user
+		if api.Hooks.Console.IsProtectedKafkaUser(req.Username) {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("requester tried to create a protected Kafka user"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to create a Kafka user with this name",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 4. Create user
 		if api.Cfg.Redpanda.AdminAPI.Enabled {
 			err := api.RedpandaSvc.CreateUser(r.Context(), req.Username, req.Password, req.Mechanism)
 			if err != nil {
@@ -134,7 +153,7 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 			return
 		}
 
-		// 4. Return an error if we can't create any users
+		// 5. Return an error if we can't create any users
 		rest.SendRESTError(w, r, api.Logger, &rest.Error{
 			Err:     fmt.Errorf("redpanda Admin API is not enabled"),
 			Status:  http.StatusServiceUnavailable,
@@ -172,7 +191,19 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 			return
 		}
 
-		// 3. Delete user
+		// 3. Check if targeted user is a protected user
+		if api.Hooks.Console.IsProtectedKafkaUser(principalID) {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("requester tried to delete a protected Kafka user"),
+				Status:   http.StatusForbidden,
+				Message:  "You are not allowed to delete this protected Kafka user",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 4. Delete user
 		if api.Cfg.Redpanda.AdminAPI.Enabled {
 			err := api.RedpandaSvc.DeleteUser(r.Context(), principalID)
 			if err != nil {
@@ -187,7 +218,7 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 			return
 		}
 
-		// 3. Return an error if we can't delete any users
+		// 5. Return an error if we can't delete any users
 		rest.SendRESTError(w, r, api.Logger, &rest.Error{
 			Err:     fmt.Errorf("redpanda Admin API is not enabled"),
 			Status:  http.StatusServiceUnavailable,
