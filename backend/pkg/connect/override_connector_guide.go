@@ -13,7 +13,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 //go:embed guides/*.json
@@ -31,11 +30,16 @@ func newConnectorGuide(fileContents []byte) (ConnectorGuide, error) {
 	}
 
 	// Inject additional config blocks for MirrorMaker2 connectors
-	if strings.HasPrefix(c.ConnectorClass, "org.apache.kafka.connect.mirror") {
-		if c.ConnectorClass != "org.apache.kafka.connect.mirror.MirrorHeartbeatConnector" {
-			sourceConfig := newClientConfig("source.", "Source cluster")
-			c.AdditionalConfigDefinitions = append(c.AdditionalConfigDefinitions, sourceConfig...)
-		}
+	switch c.ConnectorClass {
+	case "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+		"org.apache.kafka.connect.mirror.MirrorCheckpointConnector":
+		sourceConfig := newClientConfig("source.", "Source cluster")
+		c.AdditionalConfigDefinitions = append(c.AdditionalConfigDefinitions, sourceConfig...)
+		targetConfig := newClientConfig("target.", "Target cluster")
+		c.AdditionalConfigDefinitions = append(c.AdditionalConfigDefinitions, targetConfig...)
+
+	case "org.apache.kafka.connect.mirror.MirrorHeartbeatConnector":
+		// MirrorHeartbeatConnector does not connect to the source cluster at all
 		targetConfig := newClientConfig("target.", "Target cluster")
 		c.AdditionalConfigDefinitions = append(c.AdditionalConfigDefinitions, targetConfig...)
 	}
