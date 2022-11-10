@@ -1,7 +1,7 @@
 version: '2'
 services:
   redpanda:
-    image: vectorized/redpanda:v22.1.3
+    image: vectorized/redpanda:v22.2.7
     command:
       - redpanda start
       - --smp 1
