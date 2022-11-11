@@ -140,7 +140,7 @@ class JsonViewerTab extends Component {
                     <Input value={settings.lineHeight} onChange={e => settings.lineHeight = e.target.value} style={{ maxWidth: '150px' }} />
                 </Label>
                 <Label text="Maximum string length before collapsing">
-                    <InputNumber value={settings.maxStringLength} onChange={e => settings.maxStringLength = e} min={0} max={10000} style={{ maxWidth: '150px' }} />
+                    <InputNumber value={settings.maxStringLength} onChange={e => settings.maxStringLength = (e ?? 200)} min={0} max={10000} style={{ maxWidth: '150px' }} />
                 </Label>
             </div>
         </div>;
