@@ -162,7 +162,7 @@ function NumInput(p: {
         onWheel={e => changeBy(-Math.sign(e.deltaY))}
 
         suffix={!p.disabled &&
-            <span className="btnWrapper" unselectable="on">
+            <span className="btnWrapper" style={{ userSelect: 'none' }}>
                 <span className="stepBtn dec" onMouseDownCapture={decrement}><DashIcon size={16} /></span>
                 <span className="stepBtn inc" onMouseDownCapture={increment}><PlusIcon size={16} /></span>
             </span>
