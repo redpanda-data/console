@@ -851,7 +851,7 @@ const apiStore = {
     refreshSchemaDetails(subjectName: string, version: number | 'latest', force?: boolean) {
         if (version == null) version = 'latest';
 
-        const rq = cachedApiRequest(`${appConfig.restBasePath}/schemas/subjects/${subjectName}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
+        const rq = cachedApiRequest(`${appConfig.restBasePath}/schemas/subjects/${encodeURIComponent(subjectName)}/versions/${version}`, force) as Promise<SchemaDetailsResponse>;
 
         return rq
             .then(({ schemaDetails }) => {
