@@ -55,6 +55,7 @@ export interface Topic {
     cleanupPolicy: string;
     documentation: 'UNKNOWN' | 'NOT_CONFIGURED' | 'NOT_EXISTENT' | 'AVAILABLE';
     logDirSummary: TopicLogDirSummary;
+    consumerGroupSummary: TopicConsumerGroupSummary;
     allowedActions: TopicAction[] | undefined;
 }
 
@@ -65,6 +66,16 @@ export interface TopicLogDirSummary {
         error: string | null;
     }[] | null;
     hint: string | null;
+}
+
+export interface TopicConsumerGroupSummary {
+    maxLag: number;
+    consumerGroups: ConsumerGroupSummary[];
+}
+  
+export interface ConsumerGroupSummary {
+    groupName: string;
+    lag: number;
 }
 
 export interface GetTopicsResponse {

@@ -16,7 +16,7 @@ import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { Topic, TopicAction, TopicActions, TopicConfigEntry } from '../../../state/restInterfaces';
+import { Topic, TopicAction, TopicActions, TopicConfigEntry, TopicConsumerGroupSummary } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { editQuery } from '../../../utils/queryHelper';
 import { Code, DefaultSkeleton, findPopupContainer, QuickTable } from '../../../utils/tsxUtils';
@@ -198,6 +198,14 @@ class TopicList extends PageComponent {
                                     a.logDirSummary.totalSizeBytes -
                                     b.logDirSummary.totalSizeBytes,
                                 width: '140px',
+                            },
+                            {
+                                title: 'Lag',
+                                render: (t, r) => renderConsumerGroupSummary(r.consumerGroupSummary),
+                                sorter: (a, b) =>
+                                    (a.consumerGroupSummary?.consumerGroups ? a.consumerGroupSummary.maxLag : -1) -
+                                    (b.consumerGroupSummary?.consumerGroups ? b.consumerGroupSummary.maxLag : -1),
+                                width: '70px',
                             },
                             {
                                 width: 1,
@@ -544,4 +552,21 @@ function makeCreateTopicModal(parent: TopicList) {
         content: (state) => <CreateTopicModalContent state={state} />,
     });
 
+}
+
+function renderConsumerGroupSummary(summary: TopicConsumerGroupSummary): JSX.Element {
+    if (!summary?.consumerGroups) return <></>;
+    const msg = QuickTable(
+        summary.consumerGroups.map((consumerGroup) => ({ key: `${consumerGroup.groupName}:`, value: consumerGroup.lag })),
+        {
+            keyAlign: 'right', keyStyle: { fontWeight: 500 },
+            gapWidth: 4,
+            valueAlign: 'right'
+        }
+    );
+    return <>
+        <Popover title="Consumer Groups" content={msg} placement="rightTop" overlayClassName="popoverSmall">
+            {summary.maxLag}
+        </Popover>
+    </>;
 }

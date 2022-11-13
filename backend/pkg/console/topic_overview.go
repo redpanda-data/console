@@ -32,16 +32,27 @@ const (
 
 // TopicSummary is all information we get when listing Kafka topics
 type TopicSummary struct {
-	TopicName         string             `json:"topicName"`
-	IsInternal        bool               `json:"isInternal"`
-	PartitionCount    int                `json:"partitionCount"`
-	ReplicationFactor int                `json:"replicationFactor"`
-	CleanupPolicy     string             `json:"cleanupPolicy"`
-	Documentation     DocumentationState `json:"documentation"`
-	LogDirSummary     TopicLogDirSummary `json:"logDirSummary"`
+	TopicName            string                    `json:"topicName"`
+	IsInternal           bool                      `json:"isInternal"`
+	PartitionCount       int                       `json:"partitionCount"`
+	ReplicationFactor    int                       `json:"replicationFactor"`
+	CleanupPolicy        string                    `json:"cleanupPolicy"`
+	Documentation        DocumentationState        `json:"documentation"`
+	LogDirSummary        TopicLogDirSummary        `json:"logDirSummary"`
+	ConsumerGroupSummary TopicConsumerGroupSummary `json:"consumerGroupSummary"`
 
 	// What actions the logged in user is allowed to run on this topic
 	AllowedActions []string `json:"allowedActions"`
+}
+
+type TopicConsumerGroupSummary struct {
+	MaxLag         int64                  `json:"maxLag"`
+	ConsumerGroups []ConsumerGroupSummary `json:"consumerGroups"`
+}
+
+type ConsumerGroupSummary struct {
+	GroupName string `json:"groupName"`
+	Lag       int64  `json:"lag"`
 }
 
 // GetTopicsOverview returns a TopicSummary for all Kafka Topics
@@ -74,6 +85,48 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 		}
 	}()
 	logDirsByTopic := s.logDirsByTopic(childCtx, metadata)
+
+	lagByTopicByGroup := make(map[string]map[string]int64)
+	consumerGroupsOverview, consumerGroupsOverviewErr := s.GetConsumerGroupsOverview(ctx, nil)
+	if consumerGroupsOverviewErr != nil {
+		s.logger.Warn("failed to fetch consumer groups", zap.Error(consumerGroupsOverviewErr.Err))
+	}
+	for _, consumerGroupOverview := range consumerGroupsOverview {
+		group := consumerGroupOverview.GroupID
+		for _, x := range consumerGroupOverview.TopicOffsets {
+			topic := x.Topic
+			lag := x.SummedLag
+			if lagByTopicByGroup[topic] == nil {
+				lagByTopicByGroup[topic] = make(map[string]int64)
+			}
+			lagByTopicByGroup[topic][group] = lag
+		}
+	}
+	consumerGroupSummaryByTopic := make(map[string]TopicConsumerGroupSummary)
+	for topicName, lagByGroup := range lagByTopicByGroup {
+		keys := make([]string, 0, len(lagByGroup))
+		for k := range lagByGroup {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		maxLag := int64(0)
+		consumerGroups := make([]ConsumerGroupSummary, len(lagByGroup))
+		for idx, groupName := range keys {
+			lag := lagByGroup[groupName]
+			if maxLag < lag {
+				maxLag = lag
+			}
+			consumerGroups[idx] = ConsumerGroupSummary{
+				GroupName: groupName,
+				Lag:       lag,
+			}
+		}
+		consumerGroupSummaryByTopic[topicName] = TopicConsumerGroupSummary{
+			MaxLag:         maxLag,
+			ConsumerGroups: consumerGroups,
+		}
+	}
+
 	wg.Wait()
 
 	// 4. Merge information from all requests and construct the TopicSummary object
@@ -103,13 +156,14 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 		}
 
 		res[i] = &TopicSummary{
-			TopicName:         topicName,
-			IsInternal:        topic.IsInternal,
-			PartitionCount:    len(topic.Partitions),
-			ReplicationFactor: len(topic.Partitions[0].Replicas),
-			CleanupPolicy:     policy,
-			LogDirSummary:     logDirsByTopic[topicName],
-			Documentation:     docState,
+			TopicName:            topicName,
+			IsInternal:           topic.IsInternal,
+			PartitionCount:       len(topic.Partitions),
+			ReplicationFactor:    len(topic.Partitions[0].Replicas),
+			CleanupPolicy:        policy,
+			LogDirSummary:        logDirsByTopic[topicName],
+			ConsumerGroupSummary: consumerGroupSummaryByTopic[topicName],
+			Documentation:        docState,
 		}
 	}
 

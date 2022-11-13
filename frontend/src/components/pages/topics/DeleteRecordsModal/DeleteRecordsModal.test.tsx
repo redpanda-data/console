@@ -26,6 +26,10 @@ const testTopic: Topic = {
         hint: null,
         replicaErrors: [],
     },
+    consumerGroupSummary: {
+        consumerGroups: [],
+        maxLag: 0
+    }
 };
 
 it('renders all expected elements in step 1', () => {
