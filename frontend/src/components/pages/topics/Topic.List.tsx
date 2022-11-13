@@ -200,6 +200,14 @@ class TopicList extends PageComponent {
                                 width: '140px',
                             },
                             {
+                                title: 'Messages',
+                                render: (t, r) => r.messages,
+                                sorter: (a, b) =>
+                                    a.messages -
+                                    b.messages,
+                                width: '140px',
+                            },
+                            {
                                 width: 1,
                                 title: ' ',
                                 key: 'action',

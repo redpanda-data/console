@@ -56,6 +56,7 @@ export interface Topic {
     documentation: 'UNKNOWN' | 'NOT_CONFIGURED' | 'NOT_EXISTENT' | 'AVAILABLE';
     logDirSummary: TopicLogDirSummary;
     allowedActions: TopicAction[] | undefined;
+    messages: number;
 }
 
 export interface TopicLogDirSummary {

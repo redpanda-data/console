@@ -26,6 +26,7 @@ const testTopic: Topic = {
         hint: null,
         replicaErrors: [],
     },
+    messages: 3,
 };
 
 it('renders all expected elements in step 1', () => {
