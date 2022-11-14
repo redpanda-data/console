@@ -54,6 +54,7 @@ func (api *API) routes() *chi.Mux {
 
 		// Private routes - these should only be accessible from within Kubernetes or a protected ingress
 		router.Group(func(r chi.Router) {
+			api.Hooks.Route.ConfigInternalRouter(r)
 			r.Handle("/admin/metrics", promhttp.Handler())
 			r.Handle("/admin/health", api.handleLivenessProbe())
 			r.Handle("/admin/startup", api.handleStartupProbe())

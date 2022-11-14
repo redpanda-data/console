@@ -36,6 +36,9 @@ type RouteHooks interface {
 	// ConfigWsRouter allows you to modify the router responsible for all websocket routes
 	ConfigWsRouter(router chi.Router)
 
+	// ConfigInternalRouter allows you to modify the router responsible for all internal /admin/* routes
+	ConfigInternalRouter(router chi.Router)
+
 	// ConfigRouter allows you to modify the router responsible for all non /api and non /admin routes.
 	// By default we serve the frontend on these routes.
 	ConfigRouter(router chi.Router)
@@ -112,9 +115,10 @@ func newDefaultHooks() *Hooks {
 }
 
 // Router Hooks
-func (*defaultHooks) ConfigAPIRouter(_ chi.Router) {}
-func (*defaultHooks) ConfigWsRouter(_ chi.Router)  {}
-func (*defaultHooks) ConfigRouter(_ chi.Router)    {}
+func (*defaultHooks) ConfigAPIRouter(_ chi.Router)      {}
+func (*defaultHooks) ConfigWsRouter(_ chi.Router)       {}
+func (*defaultHooks) ConfigInternalRouter(_ chi.Router) {}
+func (*defaultHooks) ConfigRouter(_ chi.Router)         {}
 
 // Console Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
