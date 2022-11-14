@@ -12,6 +12,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
@@ -59,6 +60,9 @@ func (api *API) handleGetSchemaDetails() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		subject := chi.URLParam(r, "subject")
+		if subjectUnescaped, err := url.PathUnescape(subject); err == nil {
+			subject = subjectUnescaped
+		}
 		version := chi.URLParam(r, "version")
 		schemaDetails, err := api.ConsoleSvc.GetSchemaDetails(r.Context(), subject, version)
 		if err != nil {

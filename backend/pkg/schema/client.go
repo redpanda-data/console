@@ -225,8 +225,9 @@ type SubjectVersionsResponse struct {
 }
 
 func (c *Client) GetSubjectVersions(subject string) (*SubjectVersionsResponse, error) {
-	url := fmt.Sprintf("/subjects/%s/versions", subject)
-	res, err := c.client.R().SetResult([]int{}).Get(url)
+	res, err := c.client.R().SetResult([]int{}).
+		SetPathParam("subject", subject).
+		Get("/subjects/{subject}/versions")
 	if err != nil {
 		return nil, fmt.Errorf("get subject versions request failed: %w", err)
 	}
