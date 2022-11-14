@@ -92,20 +92,32 @@ function convertJsonField(name: string, field: JsonField): SchemaField {
 
 @observer
 class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
+    subjectNameRaw: string;
+    subjectNameEncoded: string;
+
     initPage(p: PageInitHelper): void {
-        const subjectName = this.props.subjectName;
+        const subjectNameRaw = decodeURIComponent(this.props.subjectName);
+        const subjectNameEncoded = encodeURIComponent(subjectNameRaw);
         const version = this.props.query.version;
 
-        p.title = subjectName;
+        p.title = subjectNameRaw;
         p.addBreadcrumb('Schema Registry', '/schema-registry');
-        p.addBreadcrumb(subjectName, `/schema-registry/${subjectName}?version=${version}`);
+        p.addBreadcrumb(subjectNameRaw, `/schema-registry/${subjectNameEncoded}?version=${version}`);
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
 
+    constructor(p: any) {
+        super(p);
+        this.subjectNameRaw = decodeURIComponent(this.props.subjectName);
+        this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);
+        console.log('constructing details', { props: p, raw: this.subjectNameRaw, enc: this.subjectNameEncoded });
+    }
+
     refreshData(force?: boolean) {
+        const encoded = encodeURIComponent(decodeURIComponent(this.props.subjectName))
         const version: number | 'latest' = this.props.query.version ?? 'latest';
-        api.refreshSchemaDetails(this.props.subjectName, version, force);
+        api.refreshSchemaDetails(encoded, version, force);
     }
 
     componentDidUpdate({ query: { version } }: SchemaDetailsProps) {
@@ -153,7 +165,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                 <Section py={4}>
                     <Row>
                         <Statistic title="Type" value={schemaType}></Statistic>
-                        <Statistic title="Subject" value={this.props.subjectName}></Statistic>
+                        <Statistic title="Subject" value={this.subjectNameRaw}></Statistic>
                         <Statistic title="Schema ID" value={schemaId}></Statistic>
                         <Statistic title="Version" value={version}></Statistic>
                         <Statistic title="Compatibility" value={compatibility.toLowerCase()} style={{ textTransform: 'capitalize' }}></Statistic>
@@ -165,7 +177,7 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                         <Label text="Version">
                             <Select style={{ minWidth: '200px' }}
                                 defaultValue={defaultVersion}
-                                onChange={(version) => appGlobal.history.push(`/schema-registry/${this.props.subjectName}?version=${version}`)}
+                                onChange={(version) => appGlobal.history.push(`/schema-registry/${this.subjectNameEncoded}?version=${version}`)}
                                 disabled={versions.length == 0}
                             >
                                 {versions.map(v => <Select.Option value={v} key={v}>Version {v} {v == versions[versions.length - 1] ? '(latest)' : null}</Select.Option>)}
