@@ -188,7 +188,7 @@
       "definition": {
         "display_name": "Max tasks",
         "group" : "Configuration",
-        "importance": "MEDIUM"
+        "importance": "HIGH"
       }
     },
     {
