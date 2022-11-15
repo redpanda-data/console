@@ -129,7 +129,7 @@ class AclList extends PageComponent {
                             Delete (ACLs only)
                         </Menu.Item>
                     </Menu>}>
-                    <Button type="text" className="iconButton" style={{ marginLeft: 'auto' }}                    >
+                    <Button type="text" className="iconButton deleteButton" style={{ marginLeft: 'auto' }}                    >
                         <TrashIcon />
                     </Button>
                 </Dropdown>
@@ -273,12 +273,22 @@ class AclList extends PageComponent {
                         rowClassName="hoverLink"
                         onRow={r => ({
                             onClick: e => {
-                                // Don't open menu when clicking delete button
-                                const clickedElement = (e.target as HTMLElement)?.nodeName;
-                                if (clickedElement != 'TD')
-                                    return;
+                                // iterate upwards from 'target' (svg or btn) to 'currentTarget' (tr)
+                                // if there is a 'deleteButton' class anywhere, don't handle the event
+                                let cur = e.target as HTMLElement;
+                                while (cur && cur != e.currentTarget && e.currentTarget.contains(cur)) {
+                                    if (cur.classList.contains('deleteButton')) {
+                                        // clicked on delete btn
+                                        return;
+                                    }
+                                    cur = cur.parentElement!;
+                                }
 
-                                console.log('click event', e);
+                                if (e.target != e.currentTarget && !e.currentTarget.contains(e.target as HTMLElement)) {
+                                    // aborting because target is not inside the row
+                                    return;
+                                }
+
                                 this.editorType = 'edit';
                                 this.edittingPrincipalGroup = clone(r);
                             },
