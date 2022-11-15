@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -435,8 +436,23 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 		// Apparently a slash prepends the filepath on some OS (not windows). Hence let's try to remove the prefix if it
 		// exists, so that there's no filename mismatch because of that.
 		trimmedFilepath := strings.TrimPrefix(file.Path, "/")
-		filesStr[trimmedFilepath] = string(file.Payload)
-		filePaths = append(filePaths, trimmedFilepath)
+
+		if len(s.cfg.ImportPaths) > 0 {
+			for _, prefix := range s.cfg.ImportPaths {
+				// Check if file is in one of the import paths. If not, ignore it.
+				// If yes, pick up the file,
+				// and trim the prefix because an import path is effectively a root.
+				if filepath.HasPrefix(trimmedFilepath, prefix) {
+					trimmedFilepath = strings.TrimPrefix(trimmedFilepath, prefix)
+					trimmedFilepath = strings.TrimPrefix(trimmedFilepath, "/")
+					filesStr[trimmedFilepath] = string(file.Payload)
+					filePaths = append(filePaths, trimmedFilepath)
+				}
+			}
+		} else {
+			filesStr[trimmedFilepath] = string(file.Payload)
+			filePaths = append(filePaths, trimmedFilepath)
+		}
 	}
 
 	errorReporter := func(err protoparse.ErrorWithPos) error {

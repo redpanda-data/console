@@ -24,6 +24,11 @@ type Proto struct {
 
 	// Mappings define what proto types shall be used for each Kafka topic. If SchemaRegistry is used, no mappings are required.
 	Mappings []ProtoTopicMapping `json:"mappings"`
+
+	// Proto import paths. By default, the baseDir/root is used. Set import paths
+	// if multiple import paths relative to the baseDir shall be used. The
+	// behavior is similar to the `-I` flag of protoc.
+	ImportPaths []string `json:"importPaths"`
 }
 
 // RegisterFlags registers all nested config flags.
