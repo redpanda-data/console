@@ -194,7 +194,7 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 		// Check if targeted user is a protected Kafka user
 		if req.Principal != nil && api.Hooks.Console.IsProtectedKafkaUser(*req.Principal) {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester is targets a protected Kafka principal to delete ACLs"),
+				Err:      fmt.Errorf("requester targets a protected Kafka principal to delete ACLs"),
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to delete ACLs for this protected principal",
 				IsSilent: false,
@@ -314,7 +314,7 @@ func (api *API) handleCreateACL() http.HandlerFunc {
 		// Check if targeted user is a protected Kafka user
 		if api.Hooks.Console.IsProtectedKafkaUser(req.Principal) {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
-				Err:      fmt.Errorf("requester is targets a protected Kafka principal to create ACLs"),
+				Err:      fmt.Errorf("requester targets a protected Kafka principal to create ACLs"),
 				Status:   http.StatusForbidden,
 				Message:  "You are not allowed to create ACLs for this protected principal",
 				IsSilent: false,
