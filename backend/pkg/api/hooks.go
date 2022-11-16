@@ -89,6 +89,7 @@ type ConsoleHooks interface {
 	CanListKafkaUsers(ctx context.Context) (bool, *rest.Error)
 	CanCreateKafkaUsers(ctx context.Context) (bool, *rest.Error)
 	CanDeleteKafkaUsers(ctx context.Context) (bool, *rest.Error)
+	IsProtectedKafkaUser(userName string) bool
 
 	// Console Hooks
 	// ConsoleLicenseInformation returns the license information for Console.
@@ -208,6 +209,9 @@ func (*defaultHooks) CanCreateKafkaUsers(_ context.Context) (bool, *rest.Error) 
 }
 func (*defaultHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) {
 	return true, nil
+}
+func (*defaultHooks) IsProtectedKafkaUser(user string) bool {
+	return false
 }
 func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
 	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
