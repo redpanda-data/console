@@ -51,6 +51,7 @@ type ConsoleHooks interface {
 	// Topic Hooks
 	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
+	CanEditTopicConfig(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanDeleteTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanPublishTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanDeleteTopicRecords(ctx context.Context, topicName string) (bool, *rest.Error)
@@ -128,6 +129,9 @@ func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error
 }
 
 func (*defaultHooks) CanCreateTopic(_ context.Context, _ string) (bool, *rest.Error) {
+	return true, nil
+}
+func (*defaultHooks) CanEditTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
 
