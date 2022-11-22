@@ -243,7 +243,7 @@ class AutoRefreshTab extends Component {
                                 uiSettings.autoRefreshIntervalSecs = e;
                             }
                         }}
-                        min={1} max={60}
+                        min={5} max={300}
                         style={{ maxWidth: '150px' }}
                     />
                 </Label>

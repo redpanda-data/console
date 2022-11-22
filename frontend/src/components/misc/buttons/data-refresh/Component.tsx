@@ -19,6 +19,7 @@ import { prettyMilliseconds } from '../../../../utils/utils';
 import styles from '../buttons.module.scss';
 
 let autoRefreshActive = false;
+let autoRefreshRefreshing = false;
 let autoRefreshTimer: NodeJS.Timeout;
 
 export const DataRefreshButton = observer(() => {
@@ -43,6 +44,7 @@ export const DataRefreshButton = observer(() => {
             Enable or disable automatic refresh every <span className="codeBox">{uiSettings.autoRefreshIntervalSecs}s</span>.
         </div>;
     };
+    const [autoRefreshCountdown, setAutoRefreshCountdown] = useState(uiSettings.autoRefreshIntervalSecs);
     const autoRefreshFunc = () => {
         if (autoRefreshActive) {
             if (autoRefreshTimer) {
@@ -52,8 +54,24 @@ export const DataRefreshButton = observer(() => {
             appGlobal.onRefresh();
         } else {
             autoRefreshActive = true;
+            autoRefreshRefreshing = false;
             appGlobal.onRefresh();
-            autoRefreshTimer = setInterval(() => { appGlobal.onRefresh() }, uiSettings.autoRefreshIntervalSecs * 1000);
+            let nextRefreshTime = new Date().getTime() + (uiSettings.autoRefreshIntervalSecs * 1000);
+            autoRefreshTimer = setInterval(() => {
+                const currentTime = new Date().getTime();
+                if (nextRefreshTime < currentTime && api.activeRequests.length == 0) {
+                    if (!autoRefreshRefreshing) {
+                        autoRefreshRefreshing = true;
+                        appGlobal.onRefresh();
+                    } else {
+                        nextRefreshTime = currentTime + (uiSettings.autoRefreshIntervalSecs * 1000);
+                        setAutoRefreshCountdown(Math.ceil((nextRefreshTime - currentTime) / 1000));
+                        autoRefreshRefreshing = false;
+                    }
+                } else {
+                    setAutoRefreshCountdown(Math.ceil((nextRefreshTime - currentTime) / 1000));
+                }
+            }, 250);
         }
     };
 
@@ -68,9 +86,18 @@ export const DataRefreshButton = observer(() => {
             <Button icon={< PlayIcon size={16} />} shape="circle" className={`${styles.hoverButton} ${autoRefreshActive ? styles.pulsating : ''}`} onClick={autoRefreshFunc} />
         </Popover>
         {
-        api.activeRequests.length == 0
+        api.activeRequests.length == 0 && !autoRefreshRefreshing
             ?
             <>
+                {
+                autoRefreshActive ?
+                <>
+                    <span style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Refreshing in {autoRefreshCountdown} secs</span>
+                </>
+                :
+                <>
+                </>
+                }
                 <Popover title="Force Refresh" content={refreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
                     <Button icon={< SyncIcon size={16} />} shape="circle" className={`${styles.hoverButton} ${autoRefreshActive ? styles.rotation : ''}`} onClick={() => appGlobal.onRefresh()} />
                 </Popover>

@@ -141,7 +141,7 @@ const defaultUiSettings = {
     topicDetailsActiveTabKey: undefined as TopicTabId | undefined,
 
     topicDetailsShowStatisticsBar: true, // for now: global for all topic details
-    autoRefreshIntervalSecs: 5,
+    autoRefreshIntervalSecs: 10,
     jsonViewer: {
         fontSize: '12px',
         lineHeight: '1em',
