@@ -15,9 +15,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/zencoder/go-smile/smile"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/hamba/avro/v2"
+	"github.com/zencoder/go-smile/smile"
 
 	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/twmb/franz-go/pkg/kbin"
@@ -187,23 +189,25 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		// Check if magic byte is set
 		if payload[0] == byte(0) {
 			schemaID := binary.BigEndian.Uint32(payload[1:5])
-			codec, err := d.SchemaService.GetAvroSchemaByID(schemaID)
+
+			schema, err := d.SchemaService.GetAvroSchemaByID(schemaID)
 			if err == nil {
-				native, _, err := codec.NativeFromBinary(payload[5:])
-				if err == nil {
-					normalized, _ := codec.TextualFromNative(nil, native)
+				var obj interface{}
+				if err := avro.Unmarshal(schema, payload[5:], &obj); err == nil {
+					jsonBytes, _ := json.Marshal(obj)
 					return &deserializedPayload{
 						Payload: normalizedPayload{
-							Payload:            normalized,
+							Payload:            jsonBytes,
 							RecognizedEncoding: messageEncodingAvro,
 						},
-						Object:             native,
+						Object:             obj,
 						RecognizedEncoding: messageEncodingAvro,
 						SchemaID:           schemaID,
 						Size:               len(payload),
 					}
 				}
 			}
+
 		}
 	}
 

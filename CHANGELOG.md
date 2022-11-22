@@ -3,6 +3,7 @@
 ## To be released
 
 - [ENHACEMENT] Auto refresh capability in the frontend (via https://github.com/redpanda-data/console/pull/536 by @victorgawk)
+- [BUGFIX] Some Avro serialized messages failed to deserialize. We replaced LinkedIn's go-avro library with [hamba/avro](https://github.com/hamba/avro) which supports more types
 
 ## 2.1.0-rc1 / 2022-11-08
 
