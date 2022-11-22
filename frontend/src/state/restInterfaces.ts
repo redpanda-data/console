@@ -44,7 +44,7 @@ export class WrappedApiError extends Error {
 }
 
 
-export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig', 'deleteTopic', 'deleteTopicRecords'] as const;
+export const TopicActions = ['seeTopic', 'viewPartitions', 'viewMessages', 'useSearchFilter', 'viewConsumers', 'viewConfig', 'deleteTopic', 'deleteTopicRecords', 'editConfig'] as const;
 export type TopicAction = 'all' | typeof TopicActions[number];
 
 export interface Topic {
