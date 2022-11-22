@@ -23,6 +23,7 @@ const settingsTabs: { name: string, component: () => ReactNode }[] = [
     { name: 'Statistics Bar', component: () => <StatsBarTab /> },
     { name: 'Json Viewer', component: () => <JsonViewerTab /> },
     { name: 'Import/Export', component: () => <ImportExportTab /> },
+    { name: 'Auto Refresh', component: () => <AutoRefreshTab /> },
 
     // pagination position
     // { name: "Message Search", component: () => <MessageSearchTab /> },
@@ -225,5 +226,28 @@ class ImportExportTab extends Component {
                 </>
             </Label>
         </>;
+    }
+}
+
+@observer
+class AutoRefreshTab extends Component {
+    render() {
+        return <div>
+            <p>Settings for the Auto Refresh Button</p>
+            <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
+                <Label text="Interval in seconds">
+                    <InputNumber
+                        value={uiSettings.autoRefreshIntervalSecs}
+                        onChange={e => {
+                            if (e) {
+                                uiSettings.autoRefreshIntervalSecs = e;
+                            }
+                        }}
+                        min={5} max={300}
+                        style={{ maxWidth: '150px' }}
+                    />
+                </Label>
+            </div>
+        </div>;
     }
 }
