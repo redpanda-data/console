@@ -11,11 +11,13 @@ package schema
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/hamba/avro/v2"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/linkedin/goavro/v2"
 	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/twmb/go-cache/cache"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 )
@@ -29,8 +31,7 @@ type Service struct {
 
 	registryClient *Client
 
-	// Schema Cache by schema id
-	cacheByID map[uint32]*goavro.Codec
+	avroSchemaByID *cache.Cache[uint32, avro.Schema]
 }
 
 // NewService to access schema registry. Returns an error if connection can't be established.
@@ -45,7 +46,7 @@ func NewService(cfg config.Schema, logger *zap.Logger) (*Service, error) {
 		logger:         logger,
 		requestGroup:   singleflight.Group{},
 		registryClient: client,
-		cacheByID:      make(map[uint32]*goavro.Codec),
+		avroSchemaByID: cache.New[uint32, avro.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 	}, nil
 }
 
@@ -167,41 +168,22 @@ func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepo
 	return descriptors[0], nil
 }
 
-func (s *Service) GetAvroSchemaByID(schemaID uint32) (*goavro.Codec, error) {
-	// Singleflight makes sure to not run the function body if there are concurrent requests. We use this to avoid
-	// duplicate requests against the schema registry
-	key := fmt.Sprintf("get-avro-schema-%d", schemaID)
-	v, err, _ := s.requestGroup.Do(key, func() (interface{}, error) {
-		if codec, exists := s.cacheByID[schemaID]; exists {
-			return codec, nil
-		}
-
+func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
+	codecCached, err, _ := s.avroSchemaByID.Get(schemaID, func() (avro.Schema, error) {
 		schemaRes, err := s.registryClient.GetSchemaByID(schemaID)
 		if err != nil {
-			// If schema registry returns an error we want to retry it next time, so let's forget the key
-			s.requestGroup.Forget(key)
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}
 
-		codec, err := goavro.NewCodec(schemaRes.Schema)
+		codec, err := avro.Parse(schemaRes.Schema)
 		if err != nil {
-			// If codec compilation returns an error we want to retry it next time (maybe the schema has changed or response
-			// was corrupted), so let's forget the key
-			s.requestGroup.Forget(key)
-			return nil, fmt.Errorf("failed to create codec from schema string: %w", err)
+			return nil, fmt.Errorf("failed to parse schema: %w", err)
 		}
-
-		s.cacheByID[schemaID] = codec
 
 		return codec, nil
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	codec := v.(*goavro.Codec)
-
-	return codec, nil
+	return codecCached, err
 }
 
 func (s *Service) GetSubjects() (*SubjectsResponse, error) {

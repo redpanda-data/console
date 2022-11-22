@@ -16,11 +16,11 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.5.0
+	github.com/hamba/avro/v2 v2.2.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/jcmturner/gokrb5/v8 v8.4.3
 	github.com/jhump/protoreflect v1.14.0
 	github.com/knadh/koanf v1.4.4
-	github.com/linkedin/goavro/v2 v2.12.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
@@ -29,6 +29,7 @@ require (
 	github.com/twmb/franz-go v1.9.2-0.20221101035527-a07b8c8a01ce
 	github.com/twmb/franz-go/pkg/kmsg v1.2.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
+	github.com/twmb/go-cache v0.0.0-20220821215028-292418b9f9ed
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
 	go.uber.org/zap v1.23.0
@@ -54,7 +55,6 @@ require (
 	github.com/gliderlabs/ssh v0.3.2 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
-	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
@@ -65,6 +65,7 @@ require (
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
@@ -73,6 +74,8 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
