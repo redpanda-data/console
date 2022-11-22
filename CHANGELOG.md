@@ -2,6 +2,8 @@
 
 ## To be released
 
+- [ENHACEMENT] Auto refresh capability in the frontend (via https://github.com/redpanda-data/console/pull/536 by @victorgawk)
+
 ## 2.1.0-rc1 / 2022-11-08
 
 - [FEATURE] ACL management (create/update/delete ACLs)
