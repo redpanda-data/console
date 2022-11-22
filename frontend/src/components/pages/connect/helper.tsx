@@ -46,6 +46,7 @@ import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCi
 import { QuestionMarkCircleIcon } from '@heroicons/react/solid';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { isEmbedded } from '../../../config';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -306,6 +307,10 @@ export const OverviewStatisticsCard = observer(() => {
 });
 
 export const ClusterStatisticsCard = observer((p: { clusterName: string }) => {
+
+    if (isEmbedded())
+        return null;
+
     const cluster = api.connectConnectors?.clusters?.first(x => x.clusterName == p.clusterName);
 
     const runningConnectors = cluster?.runningConnectors ?? '...';
