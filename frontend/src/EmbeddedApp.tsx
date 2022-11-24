@@ -14,6 +14,10 @@ import { BrowserRouter } from 'react-router-dom';
 import 'antd/dist/antd.variable.min.css';
 import './index.scss';
 import './index-cloud-integration.scss';
+import './assets/fonts/open-sans.css';
+import './assets/fonts/poppins.css';
+import './assets/fonts/quicksand.css';
+import './assets/fonts/kumbh-sans.css';
 
 /* end global stylesheet */
 
