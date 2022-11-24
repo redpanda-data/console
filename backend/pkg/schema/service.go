@@ -172,11 +172,13 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
 	codecCached, err, _ := s.avroSchemaByID.Get(schemaID, func() (avro.Schema, error) {
 		schemaRes, err := s.registryClient.GetSchemaByID(schemaID)
 		if err != nil {
+			s.logger.Warn("failed to fetch avro schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}
 
 		codec, err := avro.Parse(schemaRes.Schema)
 		if err != nil {
+			s.logger.Warn("failed to parse avro schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
 			return nil, fmt.Errorf("failed to parse schema: %w", err)
 		}
 
