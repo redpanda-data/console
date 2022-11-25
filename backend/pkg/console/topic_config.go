@@ -39,6 +39,8 @@ type TopicConfigEntry struct {
 	IsReadOnly      bool                 `json:"isReadOnly"`
 	Documentation   *string              `json:"documentation"` // Will be nil for Kafka <v2.6.0
 	Synonyms        []TopicConfigSynonym `json:"synonyms"`
+
+	ConfigEntryExtension
 }
 
 // TopicConfigSynonym is a synonym for a topic configuration.
@@ -125,17 +127,27 @@ func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, con
 			} else {
 				isExplicitlySet = cfg.Source == kmsg.ConfigSourceDynamicTopicConfig
 			}
+
+			// Merge config extension into entry
+			extension := s.configExtensionsByName[cfg.Name]
+			if cfg.Documentation == nil {
+				cfg.Documentation = extension.Documentation
+			}
+			if cfg.ConfigType == kmsg.ConfigTypeUnknown {
+				cfg.ConfigType = extension.Type
+			}
 			entries[i] = &TopicConfigEntry{
-				Name:            cfg.Name,
-				Value:           cfg.Value,
-				Source:          cfg.Source.String(),
-				Type:            cfg.ConfigType.String(),
-				IsExplicitlySet: isExplicitlySet,
-				IsDefaultValue:  isDefaultValue,
-				IsSensitive:     cfg.IsSensitive,
-				IsReadOnly:      cfg.ReadOnly,
-				Documentation:   cfg.Documentation,
-				Synonyms:        innerEntries,
+				Name:                 cfg.Name,
+				Value:                cfg.Value,
+				Source:               cfg.Source.String(),
+				Type:                 cfg.ConfigType.String(),
+				IsExplicitlySet:      isExplicitlySet,
+				IsDefaultValue:       isDefaultValue,
+				IsSensitive:          cfg.IsSensitive,
+				IsReadOnly:           cfg.ReadOnly,
+				Documentation:        cfg.Documentation,
+				Synonyms:             innerEntries,
+				ConfigEntryExtension: extension,
 			}
 		}
 

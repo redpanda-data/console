@@ -27,6 +27,11 @@ type Service struct {
 	redpandaSvc *redpanda.Service
 	gitSvc      *git.Service // Git service can be nil if not configured
 	logger      *zap.Logger
+
+	// configExtensionsByName contains additional metadata about Topic or Broker configs.
+	// The additional information is used by the frontend to provide a good UX when
+	// editing configs or creating new topics.
+	configExtensionsByName map[string]ConfigEntryExtension
 }
 
 // NewService for the Console package
@@ -40,11 +45,19 @@ func NewService(cfg config.Console, logger *zap.Logger, kafkaSvc *kafka.Service,
 		}
 		gitSvc = svc
 	}
+
+	configExtensionsByName, err := loadConfigExtensions()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config extensions: %w", err)
+	}
+
 	return &Service{
 		kafkaSvc:    kafkaSvc,
 		redpandaSvc: redpandaSvc,
 		gitSvc:      gitSvc,
 		logger:      logger,
+
+		configExtensionsByName: configExtensionsByName,
 	}, nil
 }
 

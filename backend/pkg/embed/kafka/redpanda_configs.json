@@ -1,0 +1,44 @@
+[
+  {
+    "name": "redpanda.remote.read",
+    "aliases": ["cloud_storage_enable_remote_read"],
+    "type": "BOOLEAN",
+    "documentation": "Fetches data from cloud storage to Redpanda.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "redpanda.remote.write",
+    "aliases": ["cloud_storage_enable_remote_write"],
+    "type": "BOOLEAN",
+    "documentation": "Uploads data from Redpanda to cloud storage.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "redpanda.remote.delete",
+    "type": "BOOLEAN",
+    "documentation": "To delete a topic without removing its data in the cloud bucket, set redpanda.remote.delete to false before deleting the topic.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "redpanda.remote.recovery",
+    "type": "BOOLEAN",
+    "documentation": "Recovers or reproduces a topic from cloud storage. Use this flag during topic creation. It does not apply to existing topics.",
+    "category": "Tiered Storage"
+  },
+  {
+    "name": "retention.local.target.bytes",
+    "aliases": ["retention_local_target_bytes_default"],
+    "type": "INT",
+    "documentation": "When a topic is enabled for remote write, retention.ms and retention.bytes specify the retention policy for data in the cloud. Retention.local.target.{ms|bytes} specify the local retention policy in this scenario. If the topic is not enabled for remote write, these options are ignored.",
+    "category": "Tiered Storage",
+    "valueType": "BYTE_SIZE"
+  },
+  {
+    "name": "retention.local.target.ms",
+    "aliases": ["retention_local_target_ms_default"],
+    "type": "INT",
+    "documentation": "When a topic is enabled for remote write, retention.ms and retention.bytes specify the retention policy for data in the cloud. Retention.local.target.{ms|bytes} specify the local retention policy in this scenario. If the topic is not enabled for remote write, these options are ignored.",
+    "category": "Tiered Storage",
+    "valueType": "DURATION"
+  }
+]
