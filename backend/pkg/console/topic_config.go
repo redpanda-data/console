@@ -43,6 +43,61 @@ type TopicConfigEntry struct {
 	ConfigEntryExtension
 }
 
+// NewTopicConfigEntry creates a new instance for a TopicConfigEntry. The function
+// is in charge of computing additional properties based on existing other
+// properties, as well as enriching the giving describe configs response with
+// properties from our own config extensions.
+func NewTopicConfigEntry(
+	cfg kmsg.DescribeConfigsResponseResourceConfig,
+	extension ConfigEntryExtension,
+) *TopicConfigEntry {
+	isDefaultValue := false
+	innerEntries := make([]TopicConfigSynonym, len(cfg.ConfigSynonyms))
+	for j, innerCfg := range cfg.ConfigSynonyms {
+		innerEntries[j] = TopicConfigSynonym{
+			Name:   innerCfg.Name,
+			Value:  innerCfg.Value,
+			Source: innerCfg.Source.String(),
+		}
+		if innerCfg.Source == kmsg.ConfigSourceDefaultConfig {
+			isDefaultValue = derefString(cfg.Value) == derefString(innerCfg.Value)
+		}
+	}
+
+	isExplicitlySet := false
+	if cfg.Source == kmsg.ConfigSourceUnknown {
+		// Kafka <v1.1 uses the IsDefault property. Since then, it's been replaced by ConfigSource and defaults
+		// to false. Thus, we only consider it if cfg.Source is not set / unknown.
+		isExplicitlySet = !cfg.IsDefault
+	} else {
+		isExplicitlySet = cfg.Source == kmsg.ConfigSourceDynamicTopicConfig
+	}
+
+	documentation := cfg.Documentation
+	if documentation == nil {
+		documentation = extension.Documentation
+	}
+	configType := cfg.ConfigType
+	if configType == kmsg.ConfigTypeUnknown {
+		configType = extension.Type
+	}
+	extension.FrontendFormat = FrontendFormatFromValueType(configType, extension.FrontendFormat)
+
+	return &TopicConfigEntry{
+		Name:                 cfg.Name,
+		Value:                cfg.Value,
+		Source:               cfg.Source.String(),
+		Type:                 configType.String(),
+		IsExplicitlySet:      isExplicitlySet,
+		IsDefaultValue:       isDefaultValue,
+		IsSensitive:          cfg.IsSensitive,
+		IsReadOnly:           cfg.ReadOnly,
+		Documentation:        documentation,
+		Synonyms:             innerEntries,
+		ConfigEntryExtension: extension,
+	}
+}
+
 // TopicConfigSynonym is a synonym for a topic configuration.
 type TopicConfigSynonym struct {
 	Name   string  `json:"name"`
@@ -106,49 +161,9 @@ func (s *Service) GetTopicsConfigs(ctx context.Context, topicNames []string, con
 
 		entries := make([]*TopicConfigEntry, len(res.Configs))
 		for i, cfg := range res.Configs {
-			isDefaultValue := false
-			innerEntries := make([]TopicConfigSynonym, len(cfg.ConfigSynonyms))
-			for j, innerCfg := range cfg.ConfigSynonyms {
-				innerEntries[j] = TopicConfigSynonym{
-					Name:   innerCfg.Name,
-					Value:  innerCfg.Value,
-					Source: innerCfg.Source.String(),
-				}
-				if innerCfg.Source == kmsg.ConfigSourceDefaultConfig {
-					isDefaultValue = derefString(cfg.Value) == derefString(innerCfg.Value)
-				}
-			}
-
-			isExplicitlySet := false
-			if cfg.Source == kmsg.ConfigSourceUnknown {
-				// Kafka <v1.1 uses the IsDefault property. Since then it's been replaced by ConfigSource and defaults
-				// to false. Thus we only consider it if cfg.Source is not set / unknown.
-				isExplicitlySet = !cfg.IsDefault
-			} else {
-				isExplicitlySet = cfg.Source == kmsg.ConfigSourceDynamicTopicConfig
-			}
-
 			// Merge config extension into entry
 			extension := s.configExtensionsByName[cfg.Name]
-			if cfg.Documentation == nil {
-				cfg.Documentation = extension.Documentation
-			}
-			if cfg.ConfigType == kmsg.ConfigTypeUnknown {
-				cfg.ConfigType = extension.Type
-			}
-			entries[i] = &TopicConfigEntry{
-				Name:                 cfg.Name,
-				Value:                cfg.Value,
-				Source:               cfg.Source.String(),
-				Type:                 cfg.ConfigType.String(),
-				IsExplicitlySet:      isExplicitlySet,
-				IsDefaultValue:       isDefaultValue,
-				IsSensitive:          cfg.IsSensitive,
-				IsReadOnly:           cfg.ReadOnly,
-				Documentation:        cfg.Documentation,
-				Synonyms:             innerEntries,
-				ConfigEntryExtension: extension,
-			}
+			entries[i] = NewTopicConfigEntry(cfg, extension)
 		}
 
 		converted[res.ResourceName] = &TopicConfig{

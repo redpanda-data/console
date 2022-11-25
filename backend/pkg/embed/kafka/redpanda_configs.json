@@ -31,7 +31,7 @@
     "type": "INT",
     "documentation": "When a topic is enabled for remote write, retention.ms and retention.bytes specify the retention policy for data in the cloud. Retention.local.target.{ms|bytes} specify the local retention policy in this scenario. If the topic is not enabled for remote write, these options are ignored.",
     "category": "Tiered Storage",
-    "valueType": "BYTE_SIZE"
+    "frontendFormat": "BYTE_SIZE"
   },
   {
     "name": "retention.local.target.ms",
@@ -39,6 +39,6 @@
     "type": "INT",
     "documentation": "When a topic is enabled for remote write, retention.ms and retention.bytes specify the retention policy for data in the cloud. Retention.local.target.{ms|bytes} specify the local retention policy in this scenario. If the topic is not enabled for remote write, these options are ignored.",
     "category": "Tiered Storage",
-    "valueType": "DURATION"
+    "frontendFormat": "DURATION"
   }
 ]

@@ -40,17 +40,17 @@ type ConfigEntryExtension struct {
 	// One such category may be "Cleanup".
 	ConfigCategory string `json:"category,omitempty"`
 
-	// ValueType specifies the semantic type of the value.
+	// FrontendFormat specifies the semantic type of the value.
 	// The type field does not tell us whether an int presents a time duration.
 	// The expected value is an interval, ratio, byte size etc.
-	// Valid value types are: "BYTE_SIZE", "RATIO", "DURATION"
-	ValueType string `json:"valueType,omitempty"`
+	// Valid value types are: "UNKNOWN" (error), "BOOLEAN", "PASSWORD", "STRING", "SELECT", "MULTI_SELECT", "BYTE_SIZE", "RATIO", "DURATION", "DECIMAL", "INTEGER"
+	FrontendFormat FrontendFormat `json:"frontendFormat,omitempty"`
 
 	// EnumValues is a list of values that shall be rendered as a select menu from
 	// which a user can choose. This is for instance handy if you want to present
 	// the user the available compression methods for `compression.type`.
 	// The presented values may be dependent on the target Kafka cluster version.
-	EnumValues []interface{} `json:"enumValues,omitempty"`
+	EnumValues []string `json:"enumValues,omitempty"`
 }
 
 func loadConfigExtensions() (map[string]ConfigEntryExtension, error) {
@@ -83,4 +83,120 @@ func loadConfigExtensions() (map[string]ConfigEntryExtension, error) {
 	}
 
 	return configsByName, nil
+}
+
+type FrontendFormat int8
+
+// Define our accepted frontend formats. Avoid using iota, to reduce risk of
+// mixing entries at some point when we remove or reorder entries.
+const (
+	FrontendFormatUnknown FrontendFormat = iota
+	FrontendFormatBoolean
+	FrontendFormatPassword
+	FrontendFormatString
+	FrontendFormatSelect
+	FrontendFormatMultiSelect
+	FrontendFormatByteSize
+	FrontendFormatRatio
+	FrontendFormatDuration
+	FrontendFormatDecimal
+	FrontendFormatInteger
+)
+
+func (f FrontendFormat) String() string {
+	switch f {
+	default:
+		return "UNKNOWN"
+	case FrontendFormatBoolean:
+		return "BOOLEAN"
+	case FrontendFormatPassword:
+		return "PASSWORD"
+	case FrontendFormatString:
+		return "STRING"
+	case FrontendFormatSelect:
+		return "SELECT"
+	case FrontendFormatMultiSelect:
+		return "MULTI_SELECT"
+	case FrontendFormatByteSize:
+		return "BYTE_SIZE"
+	case FrontendFormatRatio:
+		return "RATIO"
+	case FrontendFormatDuration:
+		return "DURATION"
+	case FrontendFormatDecimal:
+		return "DECIMAL"
+	case FrontendFormatInteger:
+		return "INTEGER"
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (f FrontendFormat) MarshalText() (text []byte, err error) {
+	return []byte(f.String()), nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (f *FrontendFormat) UnmarshalText(text []byte) error {
+	v, err := ParseFrontendFormat(string(text))
+	*f = v
+	return err
+}
+
+// ParseFrontendFormat normalizes the input s and returns
+// the value represented by the string.
+func ParseFrontendFormat(s string) (FrontendFormat, error) {
+	switch s {
+	case "BOOLEAN":
+		return FrontendFormatBoolean, nil
+	case "PASSWORD":
+		return FrontendFormatPassword, nil
+	case "STRING":
+		return FrontendFormatString, nil
+	case "SELECT":
+		return FrontendFormatSelect, nil
+	case "MULTI_SELECT":
+		return FrontendFormatMultiSelect, nil
+	case "BYTE_SIZE":
+		return FrontendFormatByteSize, nil
+	case "RATIO":
+		return FrontendFormatRatio, nil
+	case "DURATION":
+		return FrontendFormatDuration, nil
+	case "DECIMAL":
+		return FrontendFormatDecimal, nil
+	case "INTEGER":
+		return FrontendFormatInteger, nil
+	default:
+		return FrontendFormatUnknown, fmt.Errorf("FrontendFormat: unable to parse %q", s)
+	}
+}
+
+func FrontendFormatFromValueType(configType kmsg.ConfigType, format FrontendFormat) FrontendFormat {
+	if format != FrontendFormatUnknown {
+		return format
+	}
+
+	// Define all fallback types if we haven't explicitly defined the frontend format
+	// that we want to use for a given config.
+	switch configType {
+	case kmsg.ConfigTypeBoolean:
+		return FrontendFormatBoolean
+	case kmsg.ConfigTypePassword:
+		return FrontendFormatPassword
+	case kmsg.ConfigTypeString:
+		return FrontendFormatString
+	case kmsg.ConfigTypeList, kmsg.ConfigTypeClass:
+		// Usually we would return a multi select, but this is only useful if we have declared
+		// enum values as part of the config extension definition. If we get to this point
+		// we haven't found a defined format and thus likely not have enum values either.
+		return FrontendFormatString
+	case kmsg.ConfigTypeDouble:
+		// We may actually want to present this is a ratio (0-100%), but if we get to this place
+		// we likely haven't defined this in our definition JSON, and hence we return a decimal type.
+		return FrontendFormatDecimal
+	case kmsg.ConfigTypeInt, kmsg.ConfigTypeShort, kmsg.ConfigTypeLong:
+		return FrontendFormatInteger
+	default:
+		return FrontendFormatString
+	}
 }
