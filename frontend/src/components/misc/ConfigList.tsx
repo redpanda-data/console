@@ -119,7 +119,7 @@ export function ConfigList({ configEntries, valueDisplay, renderTooltip }: { con
                 }
             }}
 
-            rowKey="name"
+            rowKey={record => record.name + '--' + record.source}
             rowClassName={(record) => (record.isExplicitlySet ? styles.overidden : styles.default)}
         />
     );
