@@ -142,6 +142,7 @@ class TopicList extends PageComponent {
                 <Section>
                     <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
                         <Button
+                            type={'primary'}
                             onClick={() => this.showCreateTopicModal()}
                             style={{ minWidth: '160px', marginBottom: '12px' }}
                         >
