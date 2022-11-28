@@ -1,0 +1,47 @@
+.configGroup {
+    margin: 1em 0;
+
+
+    .configGroupTitle {
+        font-size: 1.5em;
+        font-weight: 600;
+    }
+
+    .configGroupTable {
+        margin: 1em;
+        width: max(350px, 50%);
+
+        display: grid;
+        grid-template-columns: auto auto auto 1fr;
+        align-items: center;
+        gap: 8px;
+
+
+    }
+
+    &.isEditting .configGroupTable {
+        grid-template-columns: auto auto 1fr auto;
+    }
+
+
+    .configIcon {
+        display: inline-flex;
+        font-size: 16px;
+        color: hsl(0deg 0% 60%);
+
+        &.documentation {}
+
+        &.editted svg {
+            color: white;
+            background: hsl(0deg, 0%, 60%);
+            border-radius: 3px;
+
+            font-size: 16px;
+            padding: 1px;
+        }
+    }
+
+    .configName {}
+
+    .configValue {}
+}

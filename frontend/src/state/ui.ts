@@ -192,6 +192,8 @@ const defaultUiSettings = {
         // Topic Configuration
         valueDisplay: 'friendly' as ValueDisplay,
         propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
+
+        configViewType: 'structured' as 'structured' | 'table',
     },
 
     consumerGroupList: {

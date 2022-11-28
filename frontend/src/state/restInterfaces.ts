@@ -198,18 +198,29 @@ export interface KafkaError {
     description: string;
 }
 
+export type ConfigType = 'BOOLEAN' | 'STRING' | 'INT' | 'SHORT' | 'LONG' | 'DOUBLE' | 'LIST' | 'CLASS' | 'PASSWORD';
+
 export interface ConfigEntry {
     name: string,
     value: string | null,
     source: string,
-    type: string,
+    type: ConfigType,
     isExplicitlySet: boolean,
     isDefaultValue: boolean,
     isReadOnly: boolean,
     isSensitive: boolean,
-    // documentation: string, // remvoed for now, we have documentation locally in the frontend
     synonyms: ConfigEntrySynonym[] | undefined;
+    documentation?: string,
 }
+
+export type ConfigEntryExtended = ConfigEntry & {
+    category?: string;
+    frontendFormat?: 'BOOLEAN' | 'PASSWORD' | 'STRING' | 'SELECT' | 'MULTI_SELECT' | 'BYTE_SIZE' | 'RATIO' | 'DURATION' | 'DECIMAL' | 'INTEGER';
+    enumValues?: string[];
+
+    // added by frontend
+    currentValue: string | number | null | undefined;
+};
 
 interface ConfigEntrySynonym {
     name: string,
@@ -1015,6 +1026,16 @@ export interface PatchConfigsResponse {
         resourceName: string;
         resourceType: ConfigResourceType;
     }[];
+}
+
+
+export interface PatchTopicConfigsEntry {
+    key: string; // segment.bytes, ...
+    op: 'SET' | 'DELETE' | 'APPEND' | 'SUBTRACT'
+    value?: string;
+}
+export interface PatchTopicConfigsRequest {
+    configs: PatchTopicConfigsEntry[];
 }
 
 
