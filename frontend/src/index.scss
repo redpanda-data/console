@@ -2719,7 +2719,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     left: 0px;
     right: 0px;
     bottom: 60px;
-    
+
     display: flex;
     align-items: center;
     height: 62px;
@@ -3722,4 +3722,8 @@ input::placeholder {
         @include beforeAfter();
         inset: -5px;
     }
+}
+
+.flipX {
+    transform: rotateX(180deg);
 }

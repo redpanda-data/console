@@ -10,25 +10,77 @@
  */
 import { PlayIcon, SyncIcon } from '@primer/octicons-react';
 import { Button, Popover } from 'antd';
+import { autorun, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
 import { appGlobal } from '../../../../state/appGlobal';
 import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backendApi';
 import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
 import styles from '../buttons.module.scss';
 
-let autoRefreshActive = false;
-let autoRefreshRefreshing = false;
-let autoRefreshTimer: NodeJS.Timeout;
+
+const autoRefresh = observable({
+    active: false,
+    timerId: undefined as any,
+    maxRequestCount: 0,
+    nextRefresh: Number.POSITIVE_INFINITY,
+    remainingSeconds: 0,
+
+    get currentTime() {
+        return new Date().getTime();
+    },
+
+    toggleAutorefresh() {
+        this.active = !this.active;
+        if (this.active) {
+            // Start
+            this.scheduleNextRefresh();
+            this.timerId = setInterval(this.updateAutorefresh, 150);
+        } else {
+            // Stop
+            clearInterval(this.timerId);
+            appGlobal.onRefresh();
+        }
+    },
+
+    updateAutorefresh() {
+        const timeUntilRefresh = this.nextRefresh - this.currentTime;
+
+        if (timeUntilRefresh > 0) {
+            // Still some time left, update visual timer
+            this.remainingSeconds = Math.ceil(timeUntilRefresh / 1000);
+            return;
+        }
+
+        if (api.activeRequests.length > 0) {
+            // Wait for current requests to finish, delay next refresh...
+            this.scheduleNextRefresh();
+            return;
+        }
+
+        if (timeUntilRefresh <= 0) {
+            // Refresh now
+            appGlobal.onRefresh();
+        }
+    },
+
+    scheduleNextRefresh() {
+        this.nextRefresh = this.currentTime + (uiSettings.autoRefreshIntervalSecs * 1000);
+    }
+}, undefined, { autoBind: true });
+
+autorun(() => {
+    const currentRequests = api.activeRequests.length;
+    if (currentRequests == 0) {
+        autoRefresh.maxRequestCount = 0;
+    }
+    if (currentRequests > autoRefresh.maxRequestCount) {
+        autoRefresh.maxRequestCount = currentRequests;
+    }
+});
 
 export const DataRefreshButton = observer(() => {
-    const [lastRequestCount, setLastRequestCount] = useState(0);
-
-    useEffect(() => {
-         if (api.activeRequests.length == 0) setLastRequestCount(0);
-        else setLastRequestCount(Math.max(lastRequestCount, api.activeRequests.length));
-    }, [lastRequestCount])
 
     const spinnerSize = '16px';
     const refreshTextFunc = (): ReactNode => {
@@ -44,71 +96,34 @@ export const DataRefreshButton = observer(() => {
             Enable or disable automatic refresh every <span className="codeBox">{uiSettings.autoRefreshIntervalSecs}s</span>.
         </div>;
     };
-    const [autoRefreshCountdown, setAutoRefreshCountdown] = useState(uiSettings.autoRefreshIntervalSecs);
-    const autoRefreshFunc = () => {
-        if (autoRefreshActive) {
-            if (autoRefreshTimer) {
-                clearInterval(autoRefreshTimer);
-            }
-            autoRefreshActive = false;
-            appGlobal.onRefresh();
-        } else {
-            autoRefreshActive = true;
-            autoRefreshRefreshing = false;
-            appGlobal.onRefresh();
-            let nextRefreshTime = new Date().getTime() + (uiSettings.autoRefreshIntervalSecs * 1000);
-            autoRefreshTimer = setInterval(() => {
-                const currentTime = new Date().getTime();
-                if (nextRefreshTime < currentTime && api.activeRequests.length == 0) {
-                    if (!autoRefreshRefreshing) {
-                        autoRefreshRefreshing = true;
-                        appGlobal.onRefresh();
-                    } else {
-                        nextRefreshTime = currentTime + (uiSettings.autoRefreshIntervalSecs * 1000);
-                        setAutoRefreshCountdown(Math.ceil((nextRefreshTime - currentTime) / 1000));
-                        autoRefreshRefreshing = false;
-                    }
-                } else {
-                    setAutoRefreshCountdown(Math.ceil((nextRefreshTime - currentTime) / 1000));
-                }
-            }, 250);
-        }
-    };
 
     // Track how many requests we've sent in total
-       const countStr = lastRequestCount > 1
-        ? `${lastRequestCount - api.activeRequests.length} / ${lastRequestCount}`
+    const countStr = autoRefresh.maxRequestCount > 1
+        ? `${autoRefresh.maxRequestCount - api.activeRequests.length} / ${autoRefresh.maxRequestCount}`
         : '';
 
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div className={styles.dataRefreshButton}>
         <Popover title="Auto Refresh" content={autoRefreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
-            <Button icon={< PlayIcon size={16} />} shape="circle" className={`${styles.hoverButton} ${autoRefreshActive ? styles.pulsating : ''}`} onClick={autoRefreshFunc} />
+            <Button icon={< PlayIcon size={16} />} shape="circle" className={`${styles.hoverButton} ${autoRefresh.active ? styles.pulsating : ''}`} onClick={autoRefresh.toggleAutorefresh} />
         </Popover>
         {
-        api.activeRequests.length == 0 && !autoRefreshRefreshing
-            ?
-            <>
-                {
-                autoRefreshActive ?
-                <>
-                    <span style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Refreshing in {autoRefreshCountdown} secs</span>
+            (api.activeRequests.length == 0)
+                ? <>
+                    <Popover title="Force Refresh" content={refreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
+                        <Button icon={<SyncIcon size={16} className="flipX" />} shape="circle" className={`${styles.hoverButton} ${autoRefresh.active ? styles.rotation : ''}`} onClick={() => appGlobal.onRefresh()} />
+                    </Popover>
+                    {autoRefresh.active && <>
+                        <span style={{ paddingRight: '10px', fontSize: '80%', userSelect: 'none' }}>Refreshing in {autoRefresh.remainingSeconds} secs</span>
+                    </>
+                    }
+                    {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
                 </>
-                :
-                <>
+                : <>
+                    <span className={styles.spinner} style={{ marginLeft: '8px', width: spinnerSize, height: spinnerSize }} />
+                    <span className={styles.pulsating} style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data... {countStr}</span>
                 </>
-                }
-                <Popover title="Force Refresh" content={refreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
-                    <Button icon={< SyncIcon size={16} />} shape="circle" className={`${styles.hoverButton} ${autoRefreshActive ? styles.rotation : ''}`} onClick={() => appGlobal.onRefresh()} />
-                </Popover>
-                {/* <span style={{ paddingLeft: '.2em', fontSize: '80%' }}>fetched <b>1 min</b> ago</span> */}
-            </>
-            :
-            <>
-                <span className={styles.spinner} style={{ marginLeft: '8px', width: spinnerSize, height: spinnerSize }} />
-                <span className={styles.pulsating} style={{ padding: '0 10px', fontSize: '80%', userSelect: 'none' }}>Fetching data... {countStr}</span>
-            </>
-    }
+        }
     </div>;
 });
 
