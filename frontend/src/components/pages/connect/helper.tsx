@@ -43,7 +43,6 @@ import TwitterLogo from '../../../assets/connectors/twitter.svg';
 import Neo4jLogo from '../../../assets/connectors/neo4j.svg';
 import { action, makeObservable, observable, runInAction } from 'mobx';
 import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCircleOutlined, WarningTwoTone } from '@ant-design/icons';
-import { QuestionMarkCircleIcon } from '@heroicons/react/solid';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
@@ -57,7 +56,7 @@ interface ConnectorMetadata {
     readonly author?: string;
 }
 
-const fallbackConnector: ConnectorMetadata = { logo: <QuestionMarkCircleIcon className="connectorLogo" style={{ transform: 'translateY(2px) scale(1.15)' }} color="#a9a9a9" /> };
+const fallbackConnector: ConnectorMetadata = { logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" /> };
 
 // Order of entries matters:
 // - first step is checking if there is any exact match for 'className'
@@ -185,6 +184,11 @@ const connectorMetadata: ConnectorMetadata[] = [
         classNamePrefix: 'streams.kafka.connect.sink.Neo4jSinkConnector',
         logo: <img src={Neo4jLogo} alt="Neo4j logo" className="connectorLogo" />,
         author: 'Neo4j Streams'
+    } as const,
+    {
+        classNamePrefix: 'com.github.castorm.kafka.connect.http.HttpSourceConnector',
+        logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
+        author: 'Cástor Rodríguez'
     } as const,
 
     // Fallbacks with a very generous classname prefix (usually just the maintainers' logo)
