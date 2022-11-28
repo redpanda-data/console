@@ -134,7 +134,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
                     {/* Plugin List */}
                     <div style={{ marginTop: '2em', display: isEmbedded() ? 'none' : 'block' }}>
-                        <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Plugins</h3>
+                        <h3 style={{ marginLeft: '0.25em', marginBottom: '0.6em' }}>Connector Types</h3>
 
                         <KowlTable
                             dataSource={additionalInfo?.plugins}
