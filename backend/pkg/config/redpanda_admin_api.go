@@ -40,6 +40,10 @@ func (c *RedpandaAdminAPI) Validate() error {
 		return nil
 	}
 
+	if len(c.URLs) == 0 {
+		return fmt.Errorf("you must specify at least one URL")
+	}
+
 	for _, u := range c.URLs {
 		urlParsed, err := url.Parse(u)
 		if err != nil {
