@@ -47,22 +47,22 @@ const autoRefresh = observable({
     updateAutorefresh() {
         const timeUntilRefresh = this.nextRefresh - this.currentTime;
 
-        if (timeUntilRefresh > 0) {
-            // Still some time left, update visual timer
-            this.remainingSeconds = Math.ceil(timeUntilRefresh / 1000);
-            return;
-        }
-
         if (api.activeRequests.length > 0) {
-            // Wait for current requests to finish, delay next refresh...
+            // There are active requests, delay the next refresh / reset the timer
             this.scheduleNextRefresh();
             return;
         }
 
-        if (timeUntilRefresh <= 0) {
-            // Refresh now
-            appGlobal.onRefresh();
+        if (timeUntilRefresh > 0) {
+            // Still some time left, only update visual timer
+            this.remainingSeconds = Math.ceil(timeUntilRefresh / 1000);
+            return;
         }
+
+        // The timer has expired
+        // Refresh now and schedule the next refresh...
+        this.scheduleNextRefresh();
+        appGlobal.onRefresh();
     },
 
     scheduleNextRefresh() {
