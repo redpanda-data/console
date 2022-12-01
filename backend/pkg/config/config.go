@@ -40,6 +40,8 @@ type Config struct {
 	REST     rest.Config    `yaml:"server"`
 	Kafka    Kafka          `yaml:"kafka"`
 	Logger   logging.Config `yaml:"logger"`
+
+	AllowReadMessages bool `yaml:"allowReadMessages"`
 }
 
 // RegisterFlags for all (sub)configs
@@ -92,6 +94,7 @@ func (c *Config) SetDefaults() {
 	c.Kafka.SetDefaults()
 	c.Console.SetDefaults()
 	c.Connect.SetDefaults()
+	c.AllowReadMessages = true
 }
 
 // LoadConfig read YAML-formatted config from filename into cfg.

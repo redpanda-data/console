@@ -84,6 +84,14 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 
+		if !api.Cfg.AllowReadMessages {
+			rest.SendRESTError(w, r, logger, &rest.Error{
+				Status:  401,
+				Message: "Unauthorized",
+			})
+			return
+		}
+
 		wsClient := websocketClient{
 			Ctx:        ctx,
 			Cancel:     cancel,
