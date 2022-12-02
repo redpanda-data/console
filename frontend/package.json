@@ -30,7 +30,7 @@
         "@textea/json-viewer": "^1.24.4",
         "antd": "^4.21",
         "array-move": "^4",
-        "framer-motion": "^7",
+        "framer-motion": "^7.6.6",
         "mobx": "^6.6",
         "mobx-react": "^7.5",
         "moment": "^2.29.4",
