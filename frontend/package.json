@@ -28,7 +28,7 @@
         "@primer/octicons-react": "^17",
         "@redpanda-data/ui": "^1.4.0",
         "@textea/json-viewer": "^1.24.4",
-        "antd": "^4.21",
+        "antd": "^4.24.2",
         "array-move": "^4",
         "framer-motion": "^7",
         "mobx": "^6.6",
