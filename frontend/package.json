@@ -31,7 +31,7 @@
         "antd": "^4.21",
         "array-move": "^4",
         "framer-motion": "^7",
-        "mobx": "^6.6",
+        "mobx": "^6.7.0",
         "mobx-react": "^7.5",
         "moment": "^2.29.4",
         "monaco-editor": "0.34.0",
