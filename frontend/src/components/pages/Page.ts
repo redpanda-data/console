@@ -10,14 +10,13 @@
  */
 
 import React from 'react';
-import { ParsedQuery } from 'query-string';
 import { uiState } from '../../state/uiState';
 
 
 //
 // Page Types
 //
-export type PageProps<TRouteParams = Record<string, unknown>> = TRouteParams & { matchedPath: string; query: ParsedQuery; }
+export type PageProps<TRouteParams = Record<string, unknown>> = TRouteParams & { matchedPath: string }
 
 export class PageInitHelper {
     set title(title: string) { uiState.pageTitle = title; }

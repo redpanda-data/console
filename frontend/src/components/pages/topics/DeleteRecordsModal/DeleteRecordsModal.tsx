@@ -449,7 +449,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
     return (
         <Modal
             title="Delete records in topic"
-            visible={visible}
+            open={visible}
             okType={hasErrors ? 'default' : 'danger'}
             okText={hasErrors ? 'Ok' : step === 1 ? 'Choose End Offset' : 'Delete Records'}
             onOk={onOk}

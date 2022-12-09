@@ -98,7 +98,7 @@ export class EditOffsetsModal extends Component<{
 
         return <Modal
             title="Edit consumer group"
-            visible={visible}
+            open={visible}
             closeIcon={<></>} maskClosable={false}
             okText="Review"
             width="700px"
@@ -624,7 +624,7 @@ export class DeleteOffsetsModal extends Component<{
                 ? 'Delete consumer group'
                 : 'Delete consumer group offsets'
             }
-            visible={visible}
+            open={visible}
             closeIcon={<></>} maskClosable={false}
             width="600px"
 

@@ -23,12 +23,13 @@ import './assets/fonts/kumbh-sans.css';
 
 import { appGlobal } from './state/appGlobal';
 
-import { SetConfigArguments, setup, embeddedAvailableRoutes } from './config';
+import { SetConfigArguments, setup } from './config';
 import HistorySetter from './components/misc/HistorySetter';
 import RequireAuth from './components/RequireAuth';
 import AppContent from './components/layout/Content';
 import { observer } from 'mobx-react';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
+import { embeddedAvailableRoutes } from './components/routes';
 
 export interface EmbeddedProps extends SetConfigArguments {
     // This is the base url that is used:

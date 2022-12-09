@@ -14,7 +14,6 @@ import { Menu, Tooltip } from 'antd';
 import { Switch, useHistory } from 'react-router-dom';
 import { Section } from './misc/common';
 import { Route, Redirect } from 'react-router';
-import { queryToObj } from '../utils/queryHelper';
 import { PageComponentType, PageProps } from './pages/Page';
 import TopicList from './pages/topics/Topic.List';
 import TopicDetails from './pages/topics/Topic.Details';
@@ -208,7 +207,6 @@ function MakeRoute<TRouteParams>(
     // todo: verify that path and route params match
     route.routeJsx = <Route path={route.path} key={route.title} exact={exact ? true : undefined} render={rp => {
         const matchedPath = rp.match.url;
-        const query = queryToObj(rp.location.search);
         const { ...params } = rp.match.params;
 
         if (uiState.currentRoute && uiState.currentRoute.path != route.path) {
@@ -217,7 +215,6 @@ function MakeRoute<TRouteParams>(
 
         const pageProps: PageProps<TRouteParams> = {
             matchedPath,
-            query,
             ...params,
         } as PageProps<TRouteParams>;
 
@@ -318,3 +315,10 @@ export const APP_ROUTES: IRouteEntry[] = [
 
 
 ].filterNull();
+
+
+const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin', '/brokers'];
+export const embeddedAvailableRoutes = APP_ROUTES.filter((x) => x.icon != null)
+    .filter((x) => !ignoredRoutes.includes(x.path))
+
+

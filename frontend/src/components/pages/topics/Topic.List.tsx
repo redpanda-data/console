@@ -340,7 +340,7 @@ function ConfirmDeletionModal({ topicToDelete, onFinish, onCancel }: { topicToDe
     return (
         <Modal
             className="topicDeleteModal"
-            visible={topicToDelete != null}
+            open={topicToDelete != null}
             centered
             closable={false}
             maskClosable={!deletionPending}

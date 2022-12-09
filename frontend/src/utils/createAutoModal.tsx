@@ -168,7 +168,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
             buttonProps = { okButtonProps: { disabled: !isOkEnabled } };
         }
 
-        return <Modal {...state.modalProps} {...buttonProps} visible={state.visible} confirmLoading={state.loading}>
+        return <Modal {...state.modalProps} {...buttonProps} open={state.visible} confirmLoading={state.loading}>
             {content}
         </Modal>;
     });
