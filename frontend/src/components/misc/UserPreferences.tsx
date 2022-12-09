@@ -62,7 +62,7 @@ export class UserPreferencesDialog extends Component<{ visible: boolean, onClose
         const tab = settingsTabs.first(t => t.name == this.selectedTab);
 
         return 1 &&
-            <Modal centered visible={visible}
+            <Modal centered open={visible}
                 closable={false}
                 title={null}
                 onOk={onClose}

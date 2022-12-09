@@ -32,7 +32,7 @@ class ErrorModal extends Component<ErrorModalProps> {
         const p = this.props;
 
         return <Modal
-            visible={p.isVisible}
+            open={p.isVisible}
 
             onOk={p.onClose}
             afterClose={p.afterClose}

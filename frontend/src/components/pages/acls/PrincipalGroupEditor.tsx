@@ -39,7 +39,7 @@ export const AclPrincipalGroupEditor = observer((p: {
         title={p.type == 'create' ? 'Create ACL' : 'Edit ACL'}
         style={{ top: '50px' }}
         width="1100px"
-        visible={true} closable={false} maskClosable={false}
+        open={true} closable={false} maskClosable={false}
         confirmLoading={isLoading}
         onOk={async () => {
             setError(undefined);

@@ -12,7 +12,7 @@ import { loader } from '@monaco-editor/react';
 import { ConfigProvider } from 'antd';
 import { autorun, configure, observable, when } from 'mobx';
 import colors from './colors';
-import { APP_ROUTES } from './components/routes';
+import { embeddedAvailableRoutes } from './components/routes';
 import { api } from './state/backendApi';
 import { uiState } from './state/uiState';
 import { AppFeatures, getBasePath, IsDev } from './utils/env';
@@ -91,42 +91,40 @@ export const setConfig = ({ fetch, urlOverride, jwt, ...args }: SetConfigArgumen
     return config;
 };
 
+setTimeout(() => {
+
+    autorun(() => {
+        const setBreadcrumbs = config.setBreadcrumbs;
+        if (!setBreadcrumbs) return;
+
+        const breadcrumbs = uiState.pageBreadcrumbs.map((v) => ({
+            title: v.title,
+            to: v.linkTo,
+        }));
+
+        setBreadcrumbs(breadcrumbs);
+    });
+
+    autorun(() => {
+        const setSidebarItems = config.setSidebarItems;
+        if (!setSidebarItems) return;
 
 
-const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin', '/brokers'];
-
-export const embeddedAvailableRoutes =  APP_ROUTES.filter((x) => x.icon != null)
-        .filter((x) => !ignoredRoutes.includes(x.path))
-
-autorun(() => {
-    const setBreadcrumbs = config.setBreadcrumbs;
-    if (!setBreadcrumbs) return;
-
-    const breadcrumbs = uiState.pageBreadcrumbs.map((v) => ({
-        title: v.title,
-        to: v.linkTo,
-    }));
-
-    setBreadcrumbs(breadcrumbs);
-});
-
-autorun(() => {
-    const setSidebarItems = config.setSidebarItems;
-    if (!setSidebarItems) return;
-
-
-    const sidebarItems = embeddedAvailableRoutes.map(
+        const sidebarItems = embeddedAvailableRoutes.map(
             (r, i) =>
-                ({
-                    title: r.title,
-                    to: r.path,
-                    icon: r.icon,
-                    order: i,
-                } as SidebarItem)
+            ({
+                title: r.title,
+                to: r.path,
+                icon: r.icon,
+                order: i,
+            } as SidebarItem)
         );
 
-    setSidebarItems(sidebarItems);
-});
+        setSidebarItems(sidebarItems);
+    });
+
+}, 50);
+
 
 export function isEmbedded() {
     return config.jwt != null;

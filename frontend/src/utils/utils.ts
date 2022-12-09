@@ -9,15 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { autorun, IReactionDisposer, makeObservable, observable } from 'mobx';
+import { makeObservable, observable } from 'mobx';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal from 'pretty-ms';
-import queryString from 'query-string';
-import { editQuery } from './queryHelper';
 import { message } from 'antd';
 import { MessageType } from 'antd/lib/message';
 import { TopicMessage } from '../state/restInterfaces';
-
 
 
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
@@ -621,73 +618,6 @@ export function uniqueId4(): string {
 export function titleCase(str: string): string {
     if (!str) return str;
     return str[0].toUpperCase() + str.slice(1);
-}
-
-
-// Bind an observable object to the url query
-// - reads the current query parameters and sets them on the observable
-// - whenever a prop in the observable changes, it updates the url
-// You might want to use different names for the query parameters:
-// observable = { propA: 5 }
-// queryNames = { 'propA': 'x' }
-// query => ?x=5
-
-// export function bindObjectToUrl<
-//     T extends { [key: string]: (number | string | number[] | string[]) },
-// >(observable: T, queryNames: { [K in keyof T]?: string }): IReactionDisposer {
-export function bindObjectToUrl<
-    TObservable extends { [K in keyof TQueryNames]: (number | string | number[] | string[] | null | undefined) },
-    TQueryNames extends { [K in keyof TObservable]: string },
-    >(
-        observable: { [K in keyof TQueryNames]: any },
-        queryNames: TQueryNames,
-        shouldInclude?: (propName: keyof TObservable, obj: TObservable) => boolean
-    ): IReactionDisposer {
-
-    const query = queryString.parse(window.location.search);
-
-    // query -> observable
-    for (const propName of Object.keys(queryNames) as [keyof TObservable]) {
-        const queryName = queryNames[propName];
-
-        const value = query[queryName as string];
-        if (value == null) continue;
-
-        if (Array.isArray(value)) {
-            const allNum = value.all(v => Number.isFinite(Number(v)));
-            const ar = allNum ? value.map(v => Number(v)) : value;
-            observable[propName] = ar as any;
-        } else {
-            const v = Number.isFinite(Number(value)) ? Number(value) : value;
-            observable[propName] = v as any;
-        }
-    }
-
-    const disposer = autorun(() => {
-        editQuery(query => {
-            for (const propName of Object.keys(queryNames) as [keyof TObservable]) {
-
-                const queryName = queryNames[propName];
-                const newValue = observable[propName];
-
-                if (shouldInclude && !shouldInclude(propName, observable)) {
-                    query[queryName] = null;
-                    continue;
-                }
-
-                if (newValue == null)
-                    query[queryName] = null;
-                else if (typeof newValue === 'boolean')
-                    query[queryName] = String(Number(newValue));
-                else
-                    query[queryName] = String(newValue);
-
-                // console.log('updated', { propName: propName, queryName: queryName, newValue: newValue });
-            }
-        })
-    });
-
-    return disposer;
 }
 
 

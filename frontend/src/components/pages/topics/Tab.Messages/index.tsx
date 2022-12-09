@@ -18,7 +18,6 @@ import Paragraph from 'antd/lib/typography/Paragraph';
 import { action, autorun, computed, IReactionDisposer, makeObservable, observable, transaction, untracked } from 'mobx';
 import { observer } from 'mobx-react';
 import * as moment from 'moment';
-import queryString from 'query-string';
 import React, { Component, ReactNode } from 'react';
 import FilterEditor from './Editor';
 
@@ -106,15 +105,15 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     componentDidMount() {
         // unpack query parameters (if any)
         const searchParams = uiState.topicSettings.searchParams;
-        const query = queryString.parse(window.location.search);
+        const query = new URLSearchParams(window.location.search);
         // console.debug("parsing query: " + toJson(query));
-        if (query.p != null) searchParams.partitionID = Number(query.p);
-        if (query.s != null) searchParams.maxResults = Number(query.s);
-        if (query.o != null) {
-            searchParams.startOffset = Number(query.o);
+        if (query.has('p')) searchParams.partitionID = Number(query.get('p'));
+        if (query.has('s')) searchParams.maxResults = Number(query.get('s'));
+        if (query.has('o')) {
+            searchParams.startOffset = Number(query.get('o'));
             searchParams.offsetOrigin = (searchParams.startOffset >= 0) ? PartitionOffsetOrigin.Custom : searchParams.startOffset;
         }
-        if (query.q != null) uiState.topicSettings.quickSearch = String(query.q);
+        if (query.has('q')) uiState.topicSettings.quickSearch = String(query.get('q'));
 
         // Auto search when parameters change
         this.autoSearchReaction = autorun(() => this.searchFunc('auto'), { delay: 100, name: 'auto search when parameters change' });
@@ -122,8 +121,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         // Quick search -> url
         this.quickSearchReaction = autorun(() => {
             editQuery(query => {
-                const q = String(uiState.topicSettings.quickSearch);
-                query['q'] = q ? q : null;
+                if (uiState.topicSettings.quickSearch)
+                    query['q'] = uiState.topicSettings.quickSearch;
+                else
+                    query['q'] = undefined;
             });
         }, { name: 'update query string' });
 
@@ -574,19 +575,6 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         </Menu>
     );
 
-    copyLinkToMessage(record: TopicMessage) {
-        const searchParams = { o: record.offset, p: record.partitionID, s: 1 };
-        const query = queryString.stringify(searchParams);
-        const url = new URL(window.location.href);
-        url.search = query;
-
-        const newUrl = url.href;
-        console.log('copied url: ' + newUrl);
-
-        //navigator.clipboard.writeText(record.valueJson);
-        //message.success('Message content (JSON) copied to clipboard', 5);
-    }
-
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
         const canUseFilters = api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
@@ -737,7 +725,7 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
 
         return <Modal
             title={title} centered closable={false}
-            visible={count > 0}
+            open={count > 0}
             onOk={() => this.saveMessages()}
             onCancel={onClose}
             afterClose={onClose}
@@ -1136,7 +1124,7 @@ class ColumnSettings extends Component<{ getShowDialog: () => boolean, setShowDi
 
         return <Modal
             title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Column Settings</span>}
-            visible={this.props.getShowDialog()}
+            open={this.props.getShowDialog()}
             onOk={() => this.props.setShowDialog(false)}
             onCancel={() => this.props.setShowDialog(false)}
             width={750}
@@ -1319,7 +1307,7 @@ class MessageSearchFilterBar extends Component {
 
 
             {/* Editor */}
-            <Modal centered visible={this.currentFilter != null}
+            <Modal centered open={this.currentFilter != null}
                 //title='Edit Filter'
                 closable={false}
                 title={null}

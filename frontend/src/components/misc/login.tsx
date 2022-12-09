@@ -88,7 +88,7 @@ class Login extends Component {
 
             <Modal
                 title="Access Denied"
-                visible={uiState.loginError != null}
+                open={uiState.loginError != null}
                 cancelButtonProps={{ style: { display: 'none' } }}
                 closable={false}
                 maskClosable={false}

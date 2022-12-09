@@ -173,7 +173,7 @@ export class ThrottleDialog extends Component<{ visible: boolean, lastKnownMinTh
 
         return <Modal
             title="Throttle Settings"
-            visible={this.props.visible} maskClosable={true} closeIcon={<></>}
+            open={this.props.visible} maskClosable={true} closeIcon={<></>}
             width="700px"
 
             onCancel={this.props.onClose}
@@ -326,7 +326,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
         return <Modal
             title={'Reassignment: ' + state.topicName}
-            visible={visible}
+            open={visible}
 
             okText="Apply &amp; Close"
             onOk={() => {

@@ -431,7 +431,7 @@ export class ConfirmModal<T> extends Component<{
 
         return <Modal
             className="confirmModal"
-            visible={target != null}
+            open={target != null}
             centered closable={false} maskClosable={!this.isPending} keyboard={!this.isPending}
             okText={this.error ? 'Retry' : 'Yes'}
             confirmLoading={this.isPending}
@@ -582,7 +582,7 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
         </ZeroSizeWrapper>
 
         const close = () => showErr(undefined);
-        modal = <Modal visible={err != null} onOk={close} onCancel={close} cancelButtonProps={{ style: { display: 'none' } }}
+        modal = <Modal open={err != null} onOk={close} onCancel={close} cancelButtonProps={{ style: { display: 'none' } }}
             bodyStyle={{ paddingBottom: '8px', paddingTop: '14px' }}
             centered
             closable={false} maskClosable={true}

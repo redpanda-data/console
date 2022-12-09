@@ -219,7 +219,7 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
 
         return <Modal
             title={<span><FilterOutlined style={{ fontSize: '22px', verticalAlign: 'bottom', marginRight: '16px', color: 'hsla(209, 20%, 35%, 1)' }} />Preview Fields</span>}
-            visible={this.props.getShowDialog()}
+            open={this.props.getShowDialog()}
 
             style={{ minWidth: '750px', maxWidth: '1000px', top: '26px' }}
             width={'auto'}
