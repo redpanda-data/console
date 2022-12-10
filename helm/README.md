@@ -1,5 +1,10 @@
 # Redpanda Console Helm Chart
 
+:warning: __*WARNING*__: This chart repo has been deprecated.
+See [redpanda-data/helm-charts](https://github.com/redpanda-data/helm-charts) for continued development.
+
+---
+
 This Helm chart allows you to deploy Redpanda Console to your Redpanda cluster.
 You can install the chart by running the following commands:
 
