@@ -12,10 +12,11 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/twmb/franz-go/pkg/kgo"
-	"go.uber.org/zap"
 	"sync"
 	"time"
+
+	"github.com/twmb/franz-go/pkg/kgo"
+	"go.uber.org/zap"
 )
 
 func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage) {

@@ -15,8 +15,9 @@ import (
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/redpanda-data/console/backend/pkg/version"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
 // All the routes for the application are defined in one place.

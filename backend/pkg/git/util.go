@@ -15,8 +15,9 @@ import (
 	"strings"
 
 	"github.com/go-git/go-billy/v5"
-	"github.com/redpanda-data/console/backend/pkg/filesystem"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/filesystem"
 )
 
 func readFile(fileName string, fs billy.Filesystem, maxSize int64) ([]byte, error) {

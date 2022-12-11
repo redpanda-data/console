@@ -16,6 +16,7 @@ import (
 
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
+
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
@@ -125,33 +126,43 @@ func (*defaultHooks) ConfigRouter(_ chi.Router)         {}
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanCreateTopic(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanDeleteTopic(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanPublishTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanDeleteTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanViewTopicMessages(_ context.Context, _ *ListMessagesRequest) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanUseMessageSearchFilters(_ context.Context, _ *ListMessagesRequest) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) AllowedTopicActions(_ context.Context, _ string) ([]string, *rest.Error) {
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
@@ -160,62 +171,81 @@ func (*defaultHooks) PrintListMessagesAuditLog(_ *http.Request, _ *console.ListM
 func (*defaultHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanCreateACL(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanDeleteACL(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanListQuotas(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanEditConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanDeleteConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) AllowedConsumerGroupActions(_ context.Context, _ string) ([]string, *rest.Error) {
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
 }
+
 func (*defaultHooks) CanPatchPartitionReassignments(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanPatchConfigs(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanViewConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanEditConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanDeleteConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) AllowedConnectClusterActions(_ context.Context, _ string) ([]string, *rest.Error) {
 	// "all" will be considered as wild card - all actions are allowed
 	return []string{"all"}, nil
 }
+
 func (*defaultHooks) CanListKafkaUsers(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanCreateKafkaUsers(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) IsProtectedKafkaUser(user string) bool {
 	return false
 }
+
 func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
 	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
 }
+
 func (*defaultHooks) EnabledFeatures() []string {
 	return []string{}
 }

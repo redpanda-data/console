@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/cloudhut/common/rest"
+
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )

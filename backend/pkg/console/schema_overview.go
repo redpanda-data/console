@@ -14,8 +14,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redpanda-data/console/backend/pkg/schema"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // SchemaOverview contains high level information about the registered subjects in the schema registry.

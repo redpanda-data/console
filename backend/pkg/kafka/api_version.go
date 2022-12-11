@@ -12,8 +12,9 @@ package kafka
 import (
 	"context"
 
-	"github.com/redpanda-data/console/backend/pkg/version"
 	"github.com/twmb/franz-go/pkg/kmsg"
+
+	"github.com/redpanda-data/console/backend/pkg/version"
 )
 
 // GetAPIVersions returns the supported Kafka API versions

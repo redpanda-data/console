@@ -12,10 +12,11 @@ package connect
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"net/http"
 )
 
 // PauseConnector pauses the connector and its tasks, which stops message processing until the connector is resumed.

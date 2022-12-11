@@ -16,10 +16,11 @@ import (
 	"github.com/hamba/avro/v2"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/twmb/go-cache/cache"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 // Service for fetching schemas from a schema registry. It has to provide an interface for other packages which is safe
@@ -113,7 +114,6 @@ func (s *Service) GetProtoDescriptors() (map[int]*desc.FileDescriptor, error) {
 }
 
 func (s *Service) addReferences(schema SchemaVersionedResponse, schemaRepository map[string]map[int]SchemaVersionedResponse, schemasByPath map[string]string) error {
-
 	for _, ref := range schema.References {
 		refSubject, exists := schemaRepository[ref.Subject]
 		if !exists {

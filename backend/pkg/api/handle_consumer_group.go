@@ -13,12 +13,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/cloudhut/common/rest"
 	"github.com/redpanda-data/console/backend/pkg/console"
 )
 

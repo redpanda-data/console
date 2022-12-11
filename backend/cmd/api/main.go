@@ -10,10 +10,10 @@
 package main
 
 import (
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/api"
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 func main() {

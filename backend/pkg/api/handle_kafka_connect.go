@@ -15,13 +15,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
 	"github.com/go-chi/chi"
-	"github.com/redpanda-data/console/backend/pkg/connect"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/cloudhut/common/rest"
+	"github.com/redpanda-data/console/backend/pkg/connect"
 )
 
 func (api *API) handleGetConnectors() http.HandlerFunc {

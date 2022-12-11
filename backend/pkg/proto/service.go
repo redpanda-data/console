@@ -22,12 +22,13 @@ import (
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/runtime/protoiface"
+
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/schema"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/runtime/protoiface"
 )
 
 type RecordPropertyType int
@@ -286,11 +287,15 @@ type confluentEnvelope struct {
 // Binary format:
 // Byte 0: A magic byte that identifies this as a message with Confluent Platform framing.
 // Bytes 1-4: Unique global id of the Protobuf schema that was used for encoding (as registered in Confluent Schema Registry),
-// 		big endian.
+//
+//	big endian.
+//
 // Bytes 5-n: A size-prefixed array of indices that identify the specific message type in the schema (a given schema
-//		can contain many message types and they can be nested). Size and indices are unsigned varints. The common case
-//		where the message type is the first message in the schema (i.e. index data would be [1,0]) is encoded as
-//		a single 0 byte as an optimization.
+//
+//	can contain many message types and they can be nested). Size and indices are unsigned varints. The common case
+//	where the message type is the first message in the schema (i.e. index data would be [1,0]) is encoded as
+//	a single 0 byte as an optimization.
+//
 // Bytes n+1-end: Protobuf serialized payload.
 func (s *Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope, error) {
 	buf := bytes.NewReader(payload)

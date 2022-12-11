@@ -12,10 +12,11 @@ package connect
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"net/http"
 )
 
 // RestartConnector restarts the connector. Return 409 (Conflict) if rebalance is in process.

@@ -14,10 +14,10 @@ import (
 	"math"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/redpanda-data/console/backend/pkg/kafka"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {
@@ -165,7 +165,6 @@ func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
 		expected map[int32]*kafka.PartitionConsumeRequest
 	}{
 		{
-
 			&ListMessageRequest{
 				TopicName:             "test",
 				PartitionID:           partitionsAll, // All partitions

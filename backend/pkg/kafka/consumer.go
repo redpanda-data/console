@@ -16,9 +16,10 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
-	"github.com/redpanda-data/console/backend/pkg/interpreter"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/interpreter"
 )
 
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.

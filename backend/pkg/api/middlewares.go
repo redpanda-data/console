@@ -19,10 +19,8 @@ import (
 	"github.com/go-chi/chi"
 )
 
-var (
-	// BasePathCtxKey is a helper to avoid allocations, idea taken from chi
-	BasePathCtxKey = &struct{ name string }{"ConsoleURLPrefix"}
-)
+// BasePathCtxKey is a helper to avoid allocations, idea taken from chi
+var BasePathCtxKey = &struct{ name string }{"ConsoleURLPrefix"}
 
 // Uses checks if X-Forwarded-Prefix or settings.basePath are set,
 // and then strips the set prefix from any requests.
@@ -92,7 +90,6 @@ func requirePrefix(prefix string) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-
 			if !strings.HasPrefix(r.RequestURI, prefix) {
 				w.WriteHeader(http.StatusNotFound)
 				return

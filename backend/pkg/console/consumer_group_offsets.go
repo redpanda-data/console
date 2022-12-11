@@ -13,11 +13,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 type partitionOffsets map[int32]int64
@@ -80,7 +80,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 		}
 	}
 	topicNames := make([]string, 0, len(topicsByName))
-	for topicName, _ := range topicsByName {
+	for topicName := range topicsByName {
 		topicNames = append(topicNames, topicName)
 	}
 
@@ -187,7 +187,8 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 					PartitionID:   pID,
 					GroupOffset:   groupOffset,
 					HighWaterMark: watermark.HighWaterMark,
-					Lag:           lag})
+					Lag:           lag,
+				})
 			}
 			topicLags = append(topicLags, t)
 		}

@@ -16,11 +16,11 @@ import (
 	"sort"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
 // ConsumerGroupOverview for a Kafka Consumer Group
