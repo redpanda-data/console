@@ -1,0 +1,11 @@
+version: 3
+
+vars:
+  BUILD_ROOT: "{{ .ROOT_DIR }}/build"
+  BACKEND_ROOT: "{{ .ROOT_DIR }}/backend"
+  FRONTEND_ROOT: "{{ .ROOT_DIR }}/frontend"
+  BRANCH_SLUG:
+    sh: git rev-parse --abbrev-ref HEAD | sed -e 's/[^[:alnum:]]/-/g' | tr -s '-' | tr A-Z a-z
+
+includes:
+  backend: taskfiles/backend.yaml

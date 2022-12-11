@@ -1,6 +1,3 @@
-# Docker Compose
-docker-compose/zk-single-kafka-single
-
 # Misc
 .DS_Store
 notes.md
@@ -16,8 +13,8 @@ run-docker.sh
 run-backend.sh
 requests.txt
 
+# Local build tools installed via Taskfiles
+build
+
 # Local Formatting
 .prettierrc
-
-docker-compose.yml
-*.docker-compose.yml

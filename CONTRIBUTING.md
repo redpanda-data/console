@@ -28,8 +28,8 @@ The basics:
 
 Prerequisites that should be installed before proceeding:
 
-- Latest Node.js v17 & npm v8
-- Latest Go version (currently v1.18)
+- Latest Node.js v18 & npm v8
+- Latest Go version
 - Docker (required to start a local redpanda cluster)
 
 Redpanda Console consists of two components:
@@ -80,7 +80,7 @@ project, and we've designed our review process and standards to reflect that.
 However, we're always trying to improve, and welcome any suggestions and
 feedback.
 
-### Formatting
+### Formatting & linting
 
 All mainstream editors and IDEs should  provide support (either natively 
 or through a plugin) for integrating with code formatting tools that can
@@ -92,6 +92,16 @@ each commit. This is important because occasionally a small change may cause a l
 reformatting, which makes reviewing changes difficult. In this case it would be
 appropriate to split the code change and formatting into separate commits. This is
 usually unnecessary.
+
+Before submitting your commits, please validate them against the existing linter
+rules. This repository uses a task runner in order to install the required 
+dependencies (build tools, linters, formatters) as well as linting and formatting
+code. In order to use them:
+
+1. Install [task](https://taskfile.dev/installation/) on your machine
+2. In the repository root run: `task backend:fmt`
+3. If you run `task backend:lint` in the repository root the output will highlight 
+linting issues.
 
 ### Commit history
 

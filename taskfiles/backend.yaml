@@ -1,0 +1,50 @@
+version: 3
+tasks:
+  install-golangci-lint:
+    desc: install golangci linter
+    vars:
+      GO_LINT_VERSION: 1.50.1
+    cmds:
+      - mkdir -p {{ .BUILD_ROOT}}/bin
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "{{ .BUILD_ROOT }}"/bin/go v{{ .GO_LINT_VERSION }}
+    status:
+      - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/golangci-lint >/dev/null 2>&1'
+      - '[[ $({{ .BUILD_ROOT }}/bin/go/golangci-lint --version) == *"version {{ .GO_LINT_VERSION }} built"* ]]'
+
+  install-gofumpt:
+    vars:
+      GOFUMPT_VERSION: 0.3.1
+    desc: install gofumpt go formater
+    cmds:
+      - |
+        GOBIN={{ .BUILD_ROOT }}/bin/go go install mvdan.cc/gofumpt@v{{ .GOFUMPT_VERSION }}
+    status:
+      - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/gofumpt >/dev/null 2>&1'
+      - '[[ $({{ .BUILD_ROOT }}/bin/go/gofumpt --version) == v{{.GOFUMPT_VERSION}} ]]'
+
+  install-gci:
+    vars:
+      GCI_VERSION: 0.9.0
+    desc: install gci
+    cmds:
+      - GOBIN={{ .BUILD_ROOT }}/bin/go go install github.com/daixiang0/gci@v{{.GCI_VERSION}}
+    status:
+      - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/gci >/dev/null 2>&1'
+
+  fmt:
+    desc: Format Go code
+    deps:
+      - install-gci
+      - install-gofumpt
+    dir: "{{.BACKEND_ROOT}}"
+    cmds:
+      - '{{ .BUILD_ROOT }}/bin/go/gofumpt -l -w .'
+      - '{{ .BUILD_ROOT }}/bin/go/gci write --NoPrefixComments -s standard -s default -s ''Prefix(github.com/redpanda-data/console/backend)'' .'
+
+  lint:
+    desc: Run Go linters for backend code
+    deps:
+      - install-golangci-lint
+    dir: "{{.BACKEND_ROOT}}"
+    cmds:
+      - '{{ .BUILD_ROOT }}/bin/go/golangci-lint run --timeout 10m ./...'
