@@ -2,10 +2,21 @@
 
 ## To be released
 
+**Enterprise changelog**
+
+- [BUGFIX] Fix issues with generic OIDC provider when using self-signed or mutual TLS certificates
+
+## v2.1.1 / 2022-12-01
+
 - [ENHACEMENT] Auto refresh capability in the frontend (via https://github.com/redpanda-data/console/pull/536 by @victorgawk)
 - [BUGFIX] Some Avro serialized messages failed to deserialize. We replaced LinkedIn's go-avro library with [hamba/avro](https://github.com/hamba/avro) which supports more types
 
-## 2.1.0-rc1 / 2022-11-08
+**Enterprise changelog:**
+
+- [ENHACEMENT] Add possibility to chunk session cookie into multiple cookies in order to store more data inside of Cookies. Must be enabled via `login.useCookieChunking`
+- [BUGFIX] Only refresh session tokens if they are actually about to expire 
+
+## 2.1.0 / 2022-11-15
 
 - [FEATURE] ACL management (create/update/delete ACLs)
 - [FEATURE] User management (create/update/delete SASL SCRAM & Redpanda users)
