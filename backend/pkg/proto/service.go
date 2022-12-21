@@ -22,12 +22,13 @@ import (
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/dynamic/msgregistry"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/runtime/protoiface"
+
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/schema"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/runtime/protoiface"
 )
 
 type RecordPropertyType int
@@ -285,12 +286,15 @@ type confluentEnvelope struct {
 //
 // Binary format:
 // Byte 0: A magic byte that identifies this as a message with Confluent Platform framing.
-// Bytes 1-4: Unique global id of the Protobuf schema that was used for encoding (as registered in Confluent Schema Registry),
-// 		big endian.
+//
+// Bytes 1-4: Unique global id of the Protobuf schema that was used for encoding
+// (as registered in Confluent Schema Registry), big endian.
+//
 // Bytes 5-n: A size-prefixed array of indices that identify the specific message type in the schema (a given schema
-//		can contain many message types and they can be nested). Size and indices are unsigned varints. The common case
-//		where the message type is the first message in the schema (i.e. index data would be [1,0]) is encoded as
-//		a single 0 byte as an optimization.
+// can contain many message types and they can be nested). Size and indices are unsigned varints. The common case
+// where the message type is the first message in the schema (i.e. index data would be [1,0]) is encoded as
+// a single 0 byte as an optimization.
+//
 // Bytes n+1-end: Protobuf serialized payload.
 func (s *Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope, error) {
 	buf := bytes.NewReader(payload)
@@ -308,6 +312,15 @@ func (s *Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelo
 	arrLength, err := binary.ReadVarint(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read arrLength: %w", err)
+	}
+
+	// Because we can not be sure this is a legit message the read arr length
+	// may be too large to make an array. If that's the case we would get a
+	// panic with: makeslice: len out of range. Therefore, we check this length
+	// before allocating the slice. We assume to not have more than 128 types in
+	// a single message
+	if arrLength > 128 || arrLength < 0 {
+		return nil, fmt.Errorf("arrLength is out of expected bounds, unlikely a legit envelope")
 	}
 
 	msgTypeIDs := make([]int64, arrLength)
