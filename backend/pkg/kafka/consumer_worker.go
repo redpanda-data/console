@@ -12,14 +12,20 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/twmb/franz-go/pkg/kgo"
-	"go.uber.org/zap"
 	"sync"
 	"time"
+
+	"github.com/twmb/franz-go/pkg/kgo"
+	"go.uber.org/zap"
 )
 
 func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, isMessageOK isMessageOkFunc, jobs <-chan *kgo.Record, resultsCh chan<- *TopicMessage) {
 	defer wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			s.Logger.Error("recovered from panic in message worker", zap.Any("error", r))
+		}
+	}()
 
 	for record := range jobs {
 		// We consume control records because the last message in a partition we expect might be a control record.
