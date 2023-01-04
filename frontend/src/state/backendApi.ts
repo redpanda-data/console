@@ -1353,8 +1353,16 @@ function normalizeAcls(acls: AclResource[]) {
         return result;
     }
 
+    const specialCaseMap = {
+        'TRANSACTIONAL_ID': 'TransactionalID'
+    } as { [key: string]: string; };
+
     function normalizeStringEnum<T extends string>(str: T): T {
-        if (!str) return str;
+        if (!str)
+            return str;
+        if (specialCaseMap[str])
+            return specialCaseMap[str] as T;
+
         const parts = str.split('_');
         for (let i = 0; i < parts.length; i++) {
             parts[i] = upperFirst(parts[i].toLowerCase());
