@@ -322,13 +322,11 @@ export function collectTransactionalIdAcls(acls: AclFlat[]): TransactionalIdACLs
                 selector += ` (unsupported pattern type "${first.resourcePatternType}")`;
 
         const transactionalIdOperations = [
-            'Delete',
             'Describe',
             'Write',
         ] as const;
 
         const transactionalIdPermissions: { [key in typeof transactionalIdOperations[number]]: AclStrPermission } = {
-            Delete: 'Any',
             Describe: 'Any',
             Write: 'Any',
         };
@@ -460,7 +458,7 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
                 principal,
                 host,
 
-                resourceType: 'Group',
+                resourceType: 'TransactionalID',
                 resourcePatternType,
                 resourceName,
 
@@ -481,7 +479,7 @@ export function unpackPrincipalGroup(group: AclPrincipalGroup): AclFlat[] {
                 principal,
                 host,
 
-                resourceType: 'Group',
+                resourceType: 'TransactionalID',
                 resourceName,
                 resourcePatternType,
 

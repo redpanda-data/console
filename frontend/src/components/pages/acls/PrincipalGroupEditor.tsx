@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { observer } from 'mobx-react';
 import { Select, Input, Button, Modal, AutoComplete, message } from 'antd';
 import { api } from '../../../state/backendApi';
-import { AclOperation, AclStrOperation } from '../../../state/restInterfaces';
+import { AclOperation, AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
 import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { containsIgnoreCase } from '../../../utils/utils';
 import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
@@ -189,6 +189,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                         {group.topicAcls.map((t, i) =>
                             <ResourceACLsEditor
                                 key={i}
+                                resourceType="Topic"
                                 resource={t}
                                 onDelete={() => group.topicAcls.remove(t)}
                             />
@@ -207,6 +208,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                         {group.consumerGroupAcls.map((t, i) =>
                             <ResourceACLsEditor
                                 key={i}
+                                resourceType="Group"
                                 resource={t}
                                 onDelete={() => group.consumerGroupAcls.remove(t)}
                             />
@@ -225,6 +227,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                         {group.transactionalIdAcls.map((t, i) =>
                             <ResourceACLsEditor
                                 key={i}
+                                resourceType="TransactionalID"
                                 resource={t}
                                 onDelete={() => group.transactionalIdAcls.remove(t)}
                             />
@@ -240,7 +243,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                 <section style={{ width: '100%' }}>
                     <span style={{ marginBottom: '4px', fontWeight: 500, fontSize: '13px' }}>Cluster</span>
                     <div style={{ display: 'flex', gap: '1em', flexDirection: 'column' }}>
-                        <ResourceACLsEditor resource={group.clusterAcls} />
+                        <ResourceACLsEditor resourceType="Cluster" resource={group.clusterAcls} />
                     </div>
                 </section>
             </div>
@@ -253,17 +256,17 @@ export const AclPrincipalGroupEditor = observer((p: {
 
 const ResourceACLsEditor = observer((p: {
     resource: ResourceACLs,
+    resourceType: AclStrResourceType,
     onDelete?: () => void
 }) => {
     const res = p.resource;
     const isCluster = !('selector' in res);
-    const isTopic = ('Write' in res.permissions);
-    const isConsumerGroup = !isCluster && !isTopic;
     const isAllSet = res.all == 'Allow' || res.all == 'Deny';
 
     let resourceName = 'Cluster';
-    if (isTopic) resourceName = 'Topic';
-    if (isConsumerGroup) resourceName = 'Consumer Group';
+    if (p.resourceType == 'Topic') resourceName = 'Topic';
+    if (p.resourceType == 'Group') resourceName = 'Consumer Group';
+    if (p.resourceType == 'TransactionalID') resourceName = 'Transactional ID';
 
     return <div style={{
         position: 'relative',
