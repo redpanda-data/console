@@ -268,8 +268,6 @@ const ResourceACLsEditor = observer((p: {
     if (p.resourceType == 'Group') resourceName = 'Consumer Group';
     if (p.resourceType == 'TransactionalID') resourceName = 'Transactional ID';
 
-    console.log('acl editor', { resourceType: p.resourceType, resource: p.resource, permissions: Object.entries(res.permissions) })
-
     return <div style={{
         position: 'relative',
         display: 'flex', flexDirection: 'row',
