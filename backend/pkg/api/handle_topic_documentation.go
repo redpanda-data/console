@@ -13,9 +13,10 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi"
-	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 // handleGetTopicDocumentation returns the respective topic documentation from the git repository
