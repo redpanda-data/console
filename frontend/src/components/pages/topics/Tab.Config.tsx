@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { KafkaError, ConfigEntry, Topic } from '../../../state/restInterfaces';
+import { KafkaError, ConfigEntry, Topic, ConfigEntryExtended } from '../../../state/restInterfaces';
 import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
@@ -27,6 +27,8 @@ import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { ConfigList } from '../../misc/ConfigList';
 import colors from '../../../colors';
+import TopicConfigurationEditor from './TopicConfiguration';
+
 
 const { Text } = Typography;
 
@@ -47,15 +49,61 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         const renderedError = this.handleError();
         if (renderedError) return renderedError;
 
+        const entries = api.topicConfig.get(this.props.topic.topicName)?.configEntries ?? [];
+
         return (
             <>
-                <ConfigDisplaySettings />
-                <TopicConfigList configEntries={this.configEntries} />
+                <ConfigDisplayModeSettings />
+                {(uiSettings.topicList.configViewType == 'table')
+                    ? <>
+                        <ConfigDisplaySettings />
+                        <TopicConfigList configEntries={this.configEntries} />
+                    </>
+                    : <>
+                        <TopicConfigurationEditor targetTopic={null} entries={entries} onForceRefresh={() => { }} />
+                        {/* <TopicConfigurationEditor targetTopic={null} entries={[
+                            {
+                                name: 'example',
+                                value: 'some value',
+                                frontendFormat: 'STRING',
+                                documentation: 'some documentation',
+
+                                currentValue: '',
+                                isDefaultValue: false,
+                                isExplicitlySet: false,
+                                isReadOnly: false,
+                                isSensitive: false,
+                                source: 'source',
+                                synonyms: undefined,
+                                type: 'STRING',
+                                category: 'Example Category',
+                                enumValues: undefined
+                            },
+                            {
+                                name: 'example',
+                                value: 'some value',
+                                frontendFormat: 'STRING',
+                                documentation: 'some documentation',
+
+                                currentValue: '',
+                                isDefaultValue: false,
+                                isExplicitlySet: false,
+                                isReadOnly: false,
+                                isSensitive: false,
+                                source: 'source',
+                                synonyms: [{ name: '', source: '', type: '', value: 'some default value here' }],
+                                type: 'STRING',
+                                category: 'Example Category',
+                                enumValues: undefined
+                            }
+                        ]} /> */}
+                    </>
+                }
             </>
         );
     }
 
-    @computed get configEntries(): ConfigEntry[] {
+    @computed get configEntries(): ConfigEntryExtended[] {
         const config = api.topicConfig.get(this.props.topic.topicName);
         if (config == null) return [];
 
@@ -133,6 +181,30 @@ const TopicConfigList = observer(({ configEntries }: { configEntries: ConfigEntr
         renderTooltip={(e, content) => <FavoritePopover configEntry={e} children={content} />}
     />
 });
+
+const ConfigDisplayModeSettings = observer(() => (
+    <div
+        style={{
+            marginLeft: '1px',
+            marginBottom: '1.5em',
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+            gap: '2em',
+            rowGap: '1em',
+            float: 'right',
+        }}
+    >
+        <OptionGroup
+            options={{
+                'Structured View': 'structured',
+                'Table View': 'table',
+            }}
+            value={uiSettings.topicList.configViewType}
+            onChange={e => (uiSettings.topicList.configViewType = e)}
+        />
+    </div>
+));
 
 const ConfigDisplaySettings = observer(() => (
     <div

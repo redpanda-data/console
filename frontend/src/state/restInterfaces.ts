@@ -233,7 +233,7 @@ interface ConfigEntrySynonym {
 
 export interface TopicDescription {
     topicName: string;
-    configEntries: ConfigEntry[];
+    configEntries: ConfigEntryExtended[];
     error: KafkaError | null;
 }
 export interface TopicConfigResponse {

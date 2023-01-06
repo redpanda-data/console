@@ -1,5 +1,6 @@
 import { DashIcon, PlusIcon, XIcon } from '@primer/octicons-react';
 import { Button, Input, Select } from 'antd';
+import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, MouseEvent, useEffect, useState } from 'react';
 import { TopicConfigEntry } from '../../../../state/restInterfaces';
@@ -117,7 +118,7 @@ export class CreateTopicModalContent extends Component<Props> {
 }
 
 
-function NumInput(p: {
+export function NumInput(p: {
     value: number | undefined, onChange: (n: number | undefined) => void,
     placeholder?: string,
     min?: number, max?: number,
@@ -379,3 +380,181 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[], entry: TopicCon
 
 export type { Props as CreateTopicModalProps };
 export type { CreateTopicModalState };
+
+
+
+
+export type DataSizeUnit = keyof typeof dataSizeFactors;
+const dataSizeFactors = {
+    'infinite': Number.POSITIVE_INFINITY,
+
+    'Byte': 1,
+    'KiB': 1024,
+    'MiB': 1024 * 1024,
+    'GiB': 1024 * 1024 * 1024,
+    'TiB': 1024 * 1024 * 1024 * 1024,
+} as const;
+
+
+@observer
+export class DataSizeSelect extends Component<{
+    valueBytes: number,
+    onChange: (bytes: number) => void
+}> {
+
+    @observable unit: DataSizeUnit;
+
+    constructor(p: any) {
+        super(p);
+
+        const value = this.props.valueBytes;
+        this.unit = 'Byte';
+        // find best initial unit
+        for (const [k, v] of Object.entries(dataSizeFactors)) {
+            if (!Number.isFinite(v)) continue;
+            const scaledValue = value / v;
+            if (scaledValue >= 0 && scaledValue < 1024) {
+                this.unit = k as DataSizeUnit;
+                break;
+            }
+        }
+
+        makeObservable(this);
+    }
+
+    render() {
+        const unit = this.unit;
+        const unitValue = this.props.valueBytes / dataSizeFactors[unit];
+
+        const numDisabled = unit == 'infinite' /* || unit == 'default' */;
+
+        let placeholder: string | undefined;
+        if (unit == 'infinite')
+            placeholder = 'Infinite';
+
+        return <NumInput
+            value={numDisabled ? undefined : unitValue}
+            onChange={x => {
+                if (x === undefined) {
+                    this.props.onChange(0);
+                    return;
+                }
+
+                const factor = dataSizeFactors[this.unit];
+                const bytes = x * factor;
+                this.props.onChange(bytes);
+            }}
+            min={0}
+            placeholder={placeholder}
+            disabled={numDisabled}
+
+            addonAfter={<Select
+                style={{ minWidth: '90px' }}
+                value={unit}
+                onChange={u => {
+                    this.unit = u;
+                }}
+                options={
+                    Object.entries(dataSizeFactors).map(([name]) => {
+                        const isSpecial = name == 'default' || name == 'infinite';
+                        return {
+                            value: name,
+                            label: isSpecial ? titleCase(name) : name,
+                            style: isSpecial ? { fontStyle: 'italic' } : undefined,
+                        };
+                    })
+                }
+            />}
+        />
+    }
+}
+
+
+export type DurationUnit = keyof typeof durationFactors;
+const durationFactors = {
+    'default': -1,
+    'infinite': Number.POSITIVE_INFINITY,
+
+    'ms': 1,
+    'seconds': 1000,
+    'minutes': 1000 * 60,
+    'hours': 1000 * 60 * 60,
+    'days': 1000 * 60 * 60 * 24,
+    'months': 1000 * 60 * 60 * 24 * (365 / 12),
+    'years': 1000 * 60 * 60 * 24 * 365,
+} as const;
+
+@observer
+export class DurationSelect extends Component<{
+    valueMilliseconds: number,
+    onChange: (bytes: number) => void
+}> {
+
+    @observable unit: DurationUnit;
+
+    constructor(p: any) {
+        super(p);
+
+        const value = this.props.valueMilliseconds;
+        this.unit = 'ms';
+        // find best initial unit
+        for (const [k, v] of Object.entries(durationFactors).sort((a, b) => b[1] - a[1]).reverse()) {
+            if (!Number.isFinite(v)) continue;
+            if (v < 0) continue;
+
+            const scaledValue = value / v;
+            if (scaledValue < 1000) continue;
+
+            this.unit = k as DurationUnit;
+            break;
+        }
+
+        makeObservable(this);
+    }
+
+    render() {
+        const unit = this.unit;
+        const unitValue = this.props.valueMilliseconds / durationFactors[unit];
+
+        const numDisabled = unit == 'infinite' /* || unit == 'default' */;
+
+        let placeholder: string | undefined;
+        if (unit == 'infinite')
+            placeholder = 'Infinite';
+
+        return <NumInput
+            value={numDisabled ? undefined : unitValue}
+            onChange={x => {
+                if (x === undefined) {
+                    this.props.onChange(0);
+                    return;
+                }
+
+                const factor = durationFactors[this.unit];
+                const bytes = x * factor;
+                this.props.onChange(bytes);
+            }}
+            min={0}
+            placeholder={placeholder}
+            disabled={numDisabled}
+
+            addonAfter={<Select
+                style={{ minWidth: '90px' }}
+                value={unit}
+                onChange={u => {
+                    this.unit = u;
+                }}
+                options={
+                    Object.entries(durationFactors).map(([name]) => {
+                        const isSpecial = name == 'default' || name == 'infinite';
+                        return {
+                            value: name,
+                            label: isSpecial ? titleCase(name) : name,
+                            style: isSpecial ? { fontStyle: 'italic' } : undefined,
+                        };
+                    })
+                }
+            />}
+        />
+    }
+}
