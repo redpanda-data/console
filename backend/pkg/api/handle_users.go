@@ -14,7 +14,7 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/api/admin"
 )
 
