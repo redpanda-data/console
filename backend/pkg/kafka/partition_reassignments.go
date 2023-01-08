@@ -11,6 +11,7 @@ package kafka
 
 import (
 	"context"
+
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 

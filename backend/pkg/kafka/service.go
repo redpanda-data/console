@@ -14,17 +14,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
+	"go.uber.org/zap"
 
+	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/msgpack"
 	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
-	"github.com/twmb/franz-go/pkg/kgo"
-	"github.com/twmb/franz-go/pkg/kmsg"
-
-	"go.uber.org/zap"
 )
 
 // Service acts as interface to interact with the Kafka Cluster

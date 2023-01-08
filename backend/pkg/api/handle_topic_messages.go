@@ -18,10 +18,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
 
-	"github.com/cloudhut/common/rest"
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 // GetTopicMessagesResponse is a wrapper for an array of TopicMessage

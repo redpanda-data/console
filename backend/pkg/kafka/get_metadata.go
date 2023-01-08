@@ -12,10 +12,11 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"net/http"
 )
 
 // GetMetadata returns some generic information about the brokers in the given cluster

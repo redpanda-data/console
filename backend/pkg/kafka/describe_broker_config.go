@@ -11,8 +11,9 @@ package kafka
 
 import (
 	"context"
-	"github.com/twmb/franz-go/pkg/kmsg"
 	"strconv"
+
+	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
 // DescribeBrokerConfig fetches config entries which apply at the Broker Scope (e.g. offset.retention.minutes).

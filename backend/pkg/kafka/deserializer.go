@@ -18,17 +18,16 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	xj "github.com/basgys/goxml2json"
 	"github.com/hamba/avro/v2"
-	"github.com/zencoder/go-smile/smile"
-
-	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/twmb/franz-go/pkg/kbin"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/vmihailenco/msgpack/v5"
+	"github.com/zencoder/go-smile/smile"
 
-	xj "github.com/basgys/goxml2json"
 	kmsgpack "github.com/redpanda-data/console/backend/pkg/msgpack"
+	"github.com/redpanda-data/console/backend/pkg/proto"
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
@@ -95,9 +94,10 @@ type deserializedRecord struct {
 
 // DeserializeRecord tries to deserialize a whole record.
 // The payload's byte array may represent
-//  - an encoded message such as JSON, Avro, Protobuf, MsgPack or XML
-//  - UTF-8 Text
-//  - Binary content
+//   - an encoded message such as JSON, Avro, Protobuf, MsgPack or XML
+//   - UTF-8 Text
+//   - Binary content
+//
 // Idea: Add encoding hint where user can suggest the backend to test this encoding first.
 func (d *deserializer) DeserializeRecord(record *kgo.Record) *deserializedRecord {
 	// 1. Test if it's a known binary Format

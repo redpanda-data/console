@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
+
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
@@ -160,8 +161,9 @@ type SchemaVersionedResponse struct {
 // GetSchemaBySubject returns the schema for the specified version of this subject. The unescaped schema only is returned.
 // subject (string) – Name of the subject
 // version (versionId) – Version of the schema to be returned. Valid values for versionId are between [1,2^31-1] or
-// 		the string “latest”, which returns the last registered schema under the specified subject.
-//		Note that there may be a new latest schema that gets registered right after this request is served.
+//
+//	the string “latest”, which returns the last registered schema under the specified subject.
+//	Note that there may be a new latest schema that gets registered right after this request is served.
 func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
 	res, err := c.client.R().SetResult(&SchemaVersionedResponse{}).SetPathParams(map[string]string{
 		"subjects": subject,

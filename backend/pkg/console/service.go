@@ -12,11 +12,12 @@ package console
 import (
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
-	"go.uber.org/zap"
 )
 
 // Service offers all methods to serve the responses for the REST API. This usually only involves fetching

@@ -10,8 +10,9 @@
 package api
 
 import (
-	"github.com/cloudhut/common/rest"
 	"net/http"
+
+	"github.com/cloudhut/common/rest"
 )
 
 func (api *API) handleLivenessProbe() http.HandlerFunc {

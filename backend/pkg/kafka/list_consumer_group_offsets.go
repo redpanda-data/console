@@ -12,10 +12,10 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/twmb/franz-go/pkg/kerr"
-	"github.com/twmb/franz-go/pkg/kmsg"
 	"sync"
 
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"golang.org/x/sync/errgroup"
 )
 

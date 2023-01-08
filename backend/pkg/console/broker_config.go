@@ -14,11 +14,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.uber.org/zap"
-
 	"github.com/cloudhut/common/rest"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.uber.org/zap"
 )
 
 type BrokerConfig struct {

@@ -42,7 +42,8 @@ func newClientHooks(logger *zap.Logger, metricsNamespace string) *clientHooks {
 	requestSentCount := promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: metricsNamespace,
 		Subsystem: "kafka",
-		Name:      "requests_sent_total"})
+		Name:      "requests_sent_total",
+	})
 	bytesSent := promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: metricsNamespace,
 		Subsystem: "kafka",
@@ -52,7 +53,8 @@ func newClientHooks(logger *zap.Logger, metricsNamespace string) *clientHooks {
 	requestsReceivedCount := promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: metricsNamespace,
 		Subsystem: "kafka",
-		Name:      "requests_received_total"})
+		Name:      "requests_received_total",
+	})
 	bytesReceived := promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: metricsNamespace,
 		Subsystem: "kafka",

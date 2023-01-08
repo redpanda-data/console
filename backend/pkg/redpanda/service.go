@@ -15,10 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/api/admin"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/net"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 type Service struct {

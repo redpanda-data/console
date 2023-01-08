@@ -10,8 +10,9 @@
 package git
 
 import (
-	"github.com/bmizerany/assert"
 	"testing"
+
+	"github.com/bmizerany/assert"
 )
 
 func TestIsValidFileExtension(t *testing.T) {

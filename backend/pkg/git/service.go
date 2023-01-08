@@ -26,9 +26,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"go.uber.org/zap"
+
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/filesystem"
-	"go.uber.org/zap"
 )
 
 // Service provides functionality to serve files from a git repository. The contents are stored in memory.

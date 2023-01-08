@@ -11,10 +11,11 @@ package connect
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"net/http"
 )
 
 // getMapValueOrString returns the map entry for the given key. If this entry does not exist it will return the

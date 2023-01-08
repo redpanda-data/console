@@ -144,7 +144,6 @@ func getHashes(fsys fs.FS) (map[string]string, error) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("Could not construct eTagCache, error while scanning files in directory: %w", err)
 	}

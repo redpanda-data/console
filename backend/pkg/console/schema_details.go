@@ -13,9 +13,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/redpanda-data/console/backend/pkg/schema"
-
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 type SchemaDetails struct {
