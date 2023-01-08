@@ -13,7 +13,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"os"
 )
 
 // RedpandaAdminAPITLS to connect to the Redpanda Admin API.
@@ -42,7 +42,7 @@ func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 	}
 
 	// Load the CA cert from the filepath.
-	caCert, err := ioutil.ReadFile(c.CaFilepath)
+	caCert, err := os.ReadFile(c.CaFilepath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA cert from filepath %s: %w", c.CaFilepath, err)
 	}
@@ -53,12 +53,12 @@ func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 	// If configured load TLS cert & key - Mutual TLS
 	var certificates []tls.Certificate
 	if c.CertFilepath != "" && c.KeyFilepath != "" {
-		cert, err := ioutil.ReadFile(c.CertFilepath)
+		cert, err := os.ReadFile(c.CertFilepath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read cert file for schema registry client: %w", err)
 		}
 
-		privateKey, err := ioutil.ReadFile(c.KeyFilepath)
+		privateKey, err := os.ReadFile(c.KeyFilepath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read key file for schema registry client: %w", err)
 		}

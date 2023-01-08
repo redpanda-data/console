@@ -14,8 +14,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -61,7 +61,7 @@ func newClient(cfg config.Schema) (*Client, error) {
 	if cfg.TLS.Enabled {
 		caCertPool := x509.NewCertPool()
 		if cfg.TLS.CaFilepath != "" {
-			ca, err := ioutil.ReadFile(cfg.TLS.CaFilepath)
+			ca, err := os.ReadFile(cfg.TLS.CaFilepath)
 			if err != nil {
 				return nil, err
 			}
@@ -74,12 +74,12 @@ func newClient(cfg config.Schema) (*Client, error) {
 		// If configured load TLS cert & key - Mutual TLS
 		var certificates []tls.Certificate
 		if cfg.TLS.CertFilepath != "" && cfg.TLS.KeyFilepath != "" {
-			cert, err := ioutil.ReadFile(cfg.TLS.CertFilepath)
+			cert, err := os.ReadFile(cfg.TLS.CertFilepath)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read cert file for schema registry client: %w", err)
 			}
 
-			privateKey, err := ioutil.ReadFile(cfg.TLS.KeyFilepath)
+			privateKey, err := os.ReadFile(cfg.TLS.KeyFilepath)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read key file for schema registry client: %w", err)
 			}

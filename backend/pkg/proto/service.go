@@ -13,7 +13,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -455,7 +454,7 @@ func (s *Service) protoFileToDescriptor(files map[string]filesystem.File) ([]*de
 				// Check if file is in one of the import paths. If not, ignore it.
 				// If yes, pick up the file,
 				// and trim the prefix because an import path is effectively a root.
-				if filepath.HasPrefix(trimmedFilepath, prefix) {
+				if strings.HasPrefix(trimmedFilepath, prefix) {
 					trimmedFilepath = strings.TrimPrefix(trimmedFilepath, prefix)
 					trimmedFilepath = strings.TrimPrefix(trimmedFilepath, "/")
 					filesStr[trimmedFilepath] = string(file.Payload)
