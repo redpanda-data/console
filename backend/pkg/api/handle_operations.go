@@ -15,8 +15,9 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/twmb/franz-go/pkg/kmsg"
+
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
@@ -57,7 +58,6 @@ func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
-
 }
 
 func (api *API) handleGetPartitionReassignments() http.HandlerFunc {

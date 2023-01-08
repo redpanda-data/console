@@ -16,10 +16,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
+	con "github.com/cloudhut/connect-client"
 	"go.uber.org/zap"
 
-	con "github.com/cloudhut/connect-client"
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 type Service struct {

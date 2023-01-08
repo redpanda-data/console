@@ -150,8 +150,8 @@ func NewConfigDefinition(name string,
 	orderInGroup int,
 	required bool,
 	displayName string,
-	options ...func(definition *ConfigDefinition)) ConfigDefinition {
-
+	options ...func(definition *ConfigDefinition),
+) ConfigDefinition {
 	configDef := ConfigDefinition{
 		Name:              name,
 		Type:              confType,

@@ -21,8 +21,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 // Service provides functionality to serve files from a git repository. The contents are stored in memory.

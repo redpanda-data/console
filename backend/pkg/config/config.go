@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/flagext"
+	"github.com/cloudhut/common/logging"
+	"github.com/cloudhut/common/rest"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -23,9 +25,6 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/mitchellh/mapstructure"
 	"go.uber.org/zap"
-
-	"github.com/cloudhut/common/logging"
-	"github.com/cloudhut/common/rest"
 )
 
 // Config holds all (subdependency)Configs needed to run the API

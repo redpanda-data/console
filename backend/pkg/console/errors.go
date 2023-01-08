@@ -11,6 +11,4 @@ package console
 
 import "errors"
 
-var (
-	ErrSchemaRegistryNotConfigured = errors.New("no schema registry configured")
-)
+var ErrSchemaRegistryNotConfigured = errors.New("no schema registry configured")

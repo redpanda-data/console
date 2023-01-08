@@ -14,9 +14,10 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
-	"go.uber.org/zap"
 )
 
 // progressReport is in charge of sending status updates and messages regularly to the frontend.

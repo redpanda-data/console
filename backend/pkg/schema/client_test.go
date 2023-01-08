@@ -14,8 +14,9 @@ import (
 	"testing"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 func TestClient_GetSchemaByID(t *testing.T) {

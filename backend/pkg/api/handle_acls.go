@@ -15,8 +15,9 @@ import (
 
 	"github.com/cloudhut/common/rest"
 	"github.com/gorilla/schema"
-	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/twmb/franz-go/pkg/kmsg"
+
+	"github.com/redpanda-data/console/backend/pkg/console"
 )
 
 type getAclsOverviewRequest struct {

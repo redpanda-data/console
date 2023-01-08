@@ -16,9 +16,10 @@ import (
 
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 type ClusterConnectors struct {

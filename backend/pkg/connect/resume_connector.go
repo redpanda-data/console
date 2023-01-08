@@ -12,10 +12,11 @@ package connect
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"net/http"
 )
 
 // ResumeConnector resumes a paused connector or do nothing if the connector is not paused.

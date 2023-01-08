@@ -26,7 +26,6 @@ type DeleteConsumerGroupOffsetsResponseTopicPartition struct {
 	Error string `json:"error,omitempty"`
 }
 
-//
 func (s *Service) DeleteConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetDeleteRequestTopic) ([]DeleteConsumerGroupOffsetsResponseTopic, error) {
 	commitResponse, err := s.kafkaSvc.DeleteConsumerGroupOffsets(ctx, groupID, topics)
 	if err != nil {

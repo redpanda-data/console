@@ -26,7 +26,8 @@ type IncrementalAlterConfigsResourceResponse struct {
 }
 
 func (s *Service) IncrementalAlterConfigs(ctx context.Context,
-	alterConfigs []kmsg.IncrementalAlterConfigsRequestResource) ([]IncrementalAlterConfigsResourceResponse, *rest.Error) {
+	alterConfigs []kmsg.IncrementalAlterConfigsRequestResource,
+) ([]IncrementalAlterConfigsResourceResponse, *rest.Error) {
 	configRes, err := s.kafkaSvc.IncrementalAlterConfigs(ctx, alterConfigs)
 	if err != nil {
 		return nil, &rest.Error{

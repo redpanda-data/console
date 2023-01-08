@@ -17,13 +17,11 @@ import (
 	"strings"
 	_ "time"
 
-	"github.com/twmb/franz-go/pkg/kmsg"
-	"go.uber.org/zap/zapcore"
-
-	"go.uber.org/zap"
-
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 )
