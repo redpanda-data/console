@@ -1,0 +1,34 @@
+name: "Backend lint"
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - master
+    paths:
+      - 'backend/**.go'
+  pull_request:
+    paths:
+      - 'backend/**.go'
+
+permissions:
+  contents: read
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: 'backend/go.mod'
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.50.1
+          args: --timeout=5m
+          working-directory: backend
