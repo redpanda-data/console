@@ -14,8 +14,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
 	"github.com/jcmturner/gokrb5/v8/client"
@@ -153,7 +153,7 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 	if cfg.TLS.Enabled {
 		// Root CA
 		if cfg.TLS.CaFilepath != "" {
-			ca, err := ioutil.ReadFile(cfg.TLS.CaFilepath)
+			ca, err := os.ReadFile(cfg.TLS.CaFilepath)
 			if err != nil {
 				return nil, err
 			}
@@ -168,12 +168,12 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 		var certificates []tls.Certificate
 		if cfg.TLS.CertFilepath != "" && cfg.TLS.KeyFilepath != "" {
 			// 1. Read certificates
-			cert, err := ioutil.ReadFile(cfg.TLS.CertFilepath)
+			cert, err := os.ReadFile(cfg.TLS.CertFilepath)
 			if err != nil {
 				return nil, fmt.Errorf("failed to TLS certificate: %w", err)
 			}
 
-			privateKey, err := ioutil.ReadFile(cfg.TLS.KeyFilepath)
+			privateKey, err := os.ReadFile(cfg.TLS.KeyFilepath)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read TLS key: %w", err)
 			}

@@ -14,7 +14,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"os"
 )
 
 // ConnectClusterTLS is the config if you want to connect to Kafka connect REST API via (mutual) TLS
@@ -46,7 +46,7 @@ func (c *ConnectClusterTLS) TLSConfig() (*tls.Config, error) {
 	// 1. Create CA cert pool
 	caCertPool := x509.NewCertPool()
 	if c.CaFilepath != "" {
-		ca, err := ioutil.ReadFile(c.CaFilepath)
+		ca, err := os.ReadFile(c.CaFilepath)
 		if err != nil {
 			return nil, err
 		}
@@ -59,12 +59,12 @@ func (c *ConnectClusterTLS) TLSConfig() (*tls.Config, error) {
 	// 2. If configured load TLS cert & key - Mutual TLS
 	var certificates []tls.Certificate
 	if c.CertFilepath != "" && c.KeyFilepath != "" {
-		cert, err := ioutil.ReadFile(c.CertFilepath)
+		cert, err := os.ReadFile(c.CertFilepath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read cert file for schema registry client: %w", err)
 		}
 
-		privateKey, err := ioutil.ReadFile(c.KeyFilepath)
+		privateKey, err := os.ReadFile(c.KeyFilepath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read key file for schema registry client: %w", err)
 		}

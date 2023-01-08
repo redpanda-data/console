@@ -11,7 +11,6 @@ package filesystem
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
@@ -138,7 +137,7 @@ func (c *Service) readFiles() (map[string]File, error) {
 			}
 			loadedFiles++
 
-			payload, err := ioutil.ReadFile(currentPath)
+			payload, err := os.ReadFile(currentPath)
 			if err != nil {
 				return fmt.Errorf("failed to load file '%v' from filesystem: %w", currentPath, err)
 			}
