@@ -7,6 +7,8 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package msgpack provides the deserialization logic for MessagePack encoded
+// payloads.
 package msgpack
 
 import (
