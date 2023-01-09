@@ -7,6 +7,10 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package api is the first layer that processes an incoming HTTP request. It is in charge
+// of validating the user input, verifying whether the user is authorized (by calling hooks),
+// as well as setting up all the routes and dependencies for subsequently called
+// route handlers & services.
 package api
 
 import (

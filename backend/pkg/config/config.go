@@ -7,6 +7,8 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package config defines all Configuration options for Console. It also contains
+// the parsing and validation logic.
 package config
 
 import (
