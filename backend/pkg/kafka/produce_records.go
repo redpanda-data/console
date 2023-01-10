@@ -99,7 +99,7 @@ func (s *Service) ProduceRecords(
 	if useTransactions {
 		err := client.EndTransaction(ctx, true)
 		if err != nil {
-			fmt.Errorf("unable to end transaction: %w", err)
+			return nil, fmt.Errorf("unable to end transaction: %w", err)
 		}
 	}
 

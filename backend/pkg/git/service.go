@@ -11,6 +11,7 @@ package git
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -58,7 +59,7 @@ func NewService(cfg config.Git, logger *zap.Logger, onFilesUpdatedHook func()) (
 	switch {
 	case cfg.SSH.Enabled:
 		childLogger.Debug("using SSH for Git authentication")
-		auth, err = buildSshAuth(cfg.SSH)
+		auth, err = buildSSHAuth(cfg.SSH)
 	case cfg.BasicAuth.Enabled:
 		childLogger.Debug("using BasicAuth for Git authentication")
 		auth = buildBasicAuth(cfg.BasicAuth)
@@ -168,7 +169,7 @@ func (c *Service) SyncRepo() {
 			}
 			err := tree.Pull(&git.PullOptions{Auth: c.auth, ReferenceName: referenceName})
 			if err != nil {
-				if err == git.NoErrAlreadyUpToDate {
+				if errors.Is(err, git.NoErrAlreadyUpToDate) {
 					continue
 				}
 				c.logger.Error("pulling the repo has failed", zap.Error(err))
@@ -232,11 +233,11 @@ func buildBasicAuth(cfg config.GitAuthBasicAuth) transport.AuthMethod {
 	}
 }
 
-func buildSshAuth(cfg config.GitAuthSSH) (transport.AuthMethod, error) {
+func buildSSHAuth(cfg config.GitAuthSSH) (transport.AuthMethod, error) {
 	if cfg.PrivateKeyFilePath != "" {
 		_, err := os.Stat(cfg.PrivateKeyFilePath)
 		if err != nil {
-			return nil, fmt.Errorf("read file %s failed %s\n", cfg.PrivateKeyFilePath, err.Error())
+			return nil, fmt.Errorf("read file %s failed %s", cfg.PrivateKeyFilePath, err.Error())
 		}
 
 		auth, err := ssh.NewPublicKeysFromFile("git", cfg.PrivateKeyFilePath, cfg.Passphrase)

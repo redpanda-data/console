@@ -21,13 +21,15 @@ type KgoZapLogger struct {
 
 // Level Implements kgo.Logger interface. It returns the log level to log at.
 // We pin this to debug as the zap logger decides what to actually send to the output stream.
-func (k KgoZapLogger) Level() kgo.LogLevel {
+func (KgoZapLogger) Level() kgo.LogLevel {
 	return kgo.LogLevelDebug
 }
 
 // Log implements kgo.Logger interface
 func (k KgoZapLogger) Log(level kgo.LogLevel, msg string, keyvals ...interface{}) {
 	switch level {
+	case kgo.LogLevelNone:
+		// Don't log anything.
 	case kgo.LogLevelDebug:
 		k.logger.Debugw(msg, keyvals...)
 	case kgo.LogLevelInfo:

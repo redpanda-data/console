@@ -10,6 +10,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -29,7 +30,7 @@ func (api *API) handleGetSchemaOverview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		overview, err := api.ConsoleSvc.GetSchemaOverview(r.Context())
 		if err != nil {
-			if err == console.ErrSchemaRegistryNotConfigured {
+			if errors.Is(err, console.ErrSchemaRegistryNotConfigured) {
 				rest.SendResponse(w, r, api.Logger, http.StatusOK, &response{
 					SchemaOverview: nil,
 					IsConfigured:   false,
@@ -67,7 +68,7 @@ func (api *API) handleGetSchemaDetails() http.HandlerFunc {
 		version := chi.URLParam(r, "version")
 		schemaDetails, err := api.ConsoleSvc.GetSchemaDetails(r.Context(), subject, version)
 		if err != nil {
-			if err == console.ErrSchemaRegistryNotConfigured {
+			if errors.Is(err, console.ErrSchemaRegistryNotConfigured) {
 				rest.SendResponse(w, r, api.Logger, http.StatusOK, &response{
 					SchemaDetails: nil,
 					IsConfigured:  false,

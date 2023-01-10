@@ -37,7 +37,8 @@ func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 	// the system cert pool.
 	if c.CaFilepath == "" {
 		return &tls.Config{
-			RootCAs:            caCertPool,
+			RootCAs: caCertPool,
+			//nolint:gosec // InsecureSkipVerify may be true upon user's responsibility.
 			InsecureSkipVerify: c.InsecureSkipTLSVerify,
 		}, nil
 	}
@@ -72,8 +73,9 @@ func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 	}
 
 	return &tls.Config{
-		RootCAs:            caCertPool,
-		Certificates:       certificates,
+		RootCAs:      caCertPool,
+		Certificates: certificates,
+		//nolint:gosec // InsecureSkipVerify may be true upon user's responsibility.
 		InsecureSkipVerify: c.InsecureSkipTLSVerify,
 	}, nil
 }

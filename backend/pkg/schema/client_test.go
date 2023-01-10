@@ -19,8 +19,12 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
+const (
+	testSchemaRegistryBaseURL = "https://schema-registry.company.com"
+)
+
 func TestClient_GetSchemaByID(t *testing.T) {
-	baseURL := "https://schema-registry.company.com"
+	baseURL := testSchemaRegistryBaseURL
 	c, _ := newClient(config.Schema{
 		Enabled: true,
 		URLs:    []string{baseURL},
@@ -45,7 +49,7 @@ func TestClient_GetSchemaByID(t *testing.T) {
 }
 
 func TestClient_GetSubjects(t *testing.T) {
-	baseURL := "https://schema-registry.company.com"
+	baseURL := testSchemaRegistryBaseURL
 	c, _ := newClient(config.Schema{
 		Enabled: true,
 		URLs:    []string{baseURL},
@@ -68,7 +72,7 @@ func TestClient_GetSubjects(t *testing.T) {
 }
 
 func TestClient_GetSubjectVersions(t *testing.T) {
-	baseURL := "https://schema-registry.company.com"
+	baseURL := testSchemaRegistryBaseURL
 	c, _ := newClient(config.Schema{
 		Enabled: true,
 		URLs:    []string{baseURL},

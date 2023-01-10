@@ -95,7 +95,6 @@ func (s *Service) AlterPartitionAssignments(ctx context.Context, topics []kmsg.A
 	for i, topic := range kRes.Topics {
 		partitions := make([]AlterPartitionReassignmentsPartitionResponse, len(topic.Partitions))
 		for j, partition := range topic.Partitions {
-
 			kErr := kerr.ErrorForCode(partition.ErrorCode)
 			var errorStr string
 			if kErr != nil {

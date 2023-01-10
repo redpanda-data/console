@@ -24,8 +24,6 @@ func isStringInSlice(item string, arr []string) bool {
 // isValidFileExtension returns:
 // 1. a bool which indicates whether the given filename has one of the allowed file extensions
 // 2. a string that is the filename with the trimmed extension suffix (e.g. "readme" instead of "readme.md")
-//
-//nolint:gocritic // I don't want to use named returns here
 func (c *Service) isValidFileExtension(filename string) (bool, string) {
 	i := strings.LastIndex(filename, ".")
 	if i == -1 {

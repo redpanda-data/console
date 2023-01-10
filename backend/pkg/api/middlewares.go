@@ -25,6 +25,8 @@ var BasePathCtxKey = &struct{ name string }{"ConsoleURLPrefix"}
 // Uses checks if X-Forwarded-Prefix or settings.basePath are set,
 // and then strips the set prefix from any requests.
 // When a prefix is set, this function adds it under the key 'BasePathCtxKey' to the context
+//
+//nolint:gocognit // TODO: Simplify this function, seems currently broken too, see: https://github.com/redpanda-data/console/issues/564
 func createHandleBasePathMiddleware(basePath string, useXForwardedPrefix bool, stripPrefix bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -84,26 +86,9 @@ func createHandleBasePathMiddleware(basePath string, useXForwardedPrefix bool, s
 	}
 }
 
-func requirePrefix(prefix string) func(http.Handler) http.Handler {
-	prefix = ensurePrefixFormat(prefix)
-	prefix = strings.TrimSuffix(prefix, "/") // don't require trailing slash
-
-	return func(next http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			if !strings.HasPrefix(r.RequestURI, prefix) {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(fn)
-	}
-}
-
 // prefix must start and end with a slash
 func ensurePrefixFormat(path string) string {
-	if len(path) == 0 || (len(path) == 1 && path[0] == '/') {
+	if path == "" || (len(path) == 1 && path[0] == '/') {
 		return "" // nil / empty / slash
 	}
 
@@ -114,7 +99,7 @@ func ensurePrefixFormat(path string) string {
 
 	// add trailing slash
 	if !strings.HasSuffix(path, "/") {
-		path = path + "/"
+		path += "/"
 	}
 
 	return path

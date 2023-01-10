@@ -9,6 +9,10 @@
 
 package schema
 
+import (
+	"errors"
+)
+
 const (
 	codeSubjectNotFound       = 40401
 	codeSchemaNotFound        = 40403
@@ -22,7 +26,8 @@ func IsSchemaNotFound(err error) bool {
 		return false
 	}
 
-	if restErr, ok := err.(RestError); ok {
+	var restErr RestError
+	if errors.As(err, &restErr) {
 		return restErr.ErrorCode == codeSchemaNotFound
 	}
 

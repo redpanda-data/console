@@ -44,6 +44,8 @@ type EditConsumerGroupOffsetsResponseTopicPartition struct {
 }
 
 // EditConsumerGroupOffsets edits the group offsets of one or more partitions.
+//
+//nolint:cyclop // Eventually this should be refactored to use the franz-go admin client
 func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetCommitRequestTopic) (*EditConsumerGroupOffsetsResponse, *rest.Error) {
 	// 0. Check if consumer group is empty, otherwise we can't edit the group offsets and want to provide a proper
 	// error message for the frontend.

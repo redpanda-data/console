@@ -130,20 +130,12 @@ func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeCon
 				continue
 			}
 
-			members, err := s.convertGroupMembers(d.Members)
-			if err != nil {
-				s.logger.Warn("failed to convert group members from described groups to kowl result type",
-					zap.Error(err),
-					zap.String("group_id", d.Group),
-				)
-				continue
-			}
 			result = append(result, ConsumerGroupOverview{
 				GroupID:       d.Group,
 				State:         d.State,
 				ProtocolType:  d.ProtocolType,
 				Protocol:      d.Protocol,
-				Members:       members,
+				Members:       s.convertGroupMembers(d.Members),
 				CoordinatorID: coordinatorID,
 				TopicOffsets:  offsets[d.Group],
 			})
@@ -153,7 +145,7 @@ func (s *Service) convertKgoGroupDescriptions(describedGroups *kafka.DescribeCon
 	return result
 }
 
-func (s *Service) convertGroupMembers(members []kmsg.DescribeGroupsResponseGroupMember) ([]GroupMemberDescription, error) {
+func (s *Service) convertGroupMembers(members []kmsg.DescribeGroupsResponseGroupMember) []GroupMemberDescription {
 	response := make([]GroupMemberDescription, 0)
 
 	for _, m := range members {
@@ -199,5 +191,5 @@ func (s *Service) convertGroupMembers(members []kmsg.DescribeGroupsResponseGroup
 		})
 	}
 
-	return response, nil
+	return response
 }

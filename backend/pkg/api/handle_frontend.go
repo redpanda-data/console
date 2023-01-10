@@ -50,7 +50,7 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 			// prefix must end with slash! otherwise the last segment gets
 			// cut off: 'a/b/c' -> "can't find host/a/b/resource"
 			if !strings.HasSuffix(basePath, "/") {
-				basePath = basePath + "/"
+				basePath += "/"
 			}
 			// If we're running under a prefix, we need to let the frontend know
 			// https://github.com/cloudhut/kowl/issues/107

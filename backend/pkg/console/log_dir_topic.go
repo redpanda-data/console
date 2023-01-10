@@ -13,7 +13,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
@@ -37,6 +36,8 @@ type TopicLogDirSummaryReplicaError struct {
 }
 
 // LogDirSizeByTopic returns a map where the Topicname is the key. It returns the log dir size for each topic.
+//
+//nolint:gocognit,cyclop // Eventually this should be refactored to use the franz-go admin client
 func (s *Service) logDirsByTopic(ctx context.Context, metadata *kmsg.MetadataResponse) map[string]TopicLogDirSummary {
 	// 1. Construct log dir requests and collect all replica ids by partition so that we can later check whether we
 	// successfully described all partition replicas.
@@ -85,7 +86,7 @@ func (s *Service) logDirsByTopic(ctx context.Context, metadata *kmsg.MetadataRes
 		for _, logDir := range res.LogDirs.Dirs {
 			err := kerr.ErrorForCode(logDir.ErrorCode)
 			if err != nil {
-				errorByBrokerID[brokerID] = errors.Wrap(err, "failed to inspect log dir")
+				errorByBrokerID[brokerID] = fmt.Errorf("failed to inspect log dir: %w", err)
 				continue
 			}
 

@@ -103,10 +103,12 @@ func (s *Service) GetTopicsOverview(ctx context.Context) ([]*TopicSummary, error
 		var docState DocumentationState
 		if !docs.IsEnabled {
 			docState = DocumentationStateNotConfigured
-		} else if docs.Markdown == nil {
-			docState = DocumentationStateNotExistent
 		} else {
-			docState = DocumentationStateAvailable
+			if docs.Markdown == nil {
+				docState = DocumentationStateNotExistent
+			} else {
+				docState = DocumentationStateAvailable
+			}
 		}
 
 		res[i] = &TopicSummary{

@@ -133,14 +133,6 @@ const (
 // Kafka connect output. It accepts the given value as sent by the frontend in order to
 // validate it and return potential validation errors.
 func (c *ConfigDefinition) ToKafkaConnectCompatible(value interface{}) con.ConnectorValidationResultConfig {
-	type Value struct {
-		Name              string      `json:"name"`
-		Value             interface{} `json:"value"`
-		RecommendedValues []string    `json:"recommended_values"`
-		Errors            []string    `json:"errors"`
-		Visible           bool        `json:"visible"`
-	}
-
 	var configDefMap map[string]interface{}
 	d, _ := json.Marshal(c)
 	json.Unmarshal(d, &configDefMap)
