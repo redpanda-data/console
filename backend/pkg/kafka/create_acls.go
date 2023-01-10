@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// CreateACLs creates one or more ACL entries.
 func (s *Service) CreateACLs(ctx context.Context, createACLReqs []kmsg.CreateACLsRequestCreation) (*kmsg.CreateACLsResponse, error) {
 	req := kmsg.NewCreateACLsRequest()
 	req.Creations = createACLReqs

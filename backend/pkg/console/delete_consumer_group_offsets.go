@@ -16,16 +16,21 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// DeleteConsumerGroupOffsetsResponseTopic is the topic-scoped response to deleting
+// a consumer group's offsets.
 type DeleteConsumerGroupOffsetsResponseTopic struct {
 	TopicName  string                                             `json:"topicName"`
 	Partitions []DeleteConsumerGroupOffsetsResponseTopicPartition `json:"partitions"`
 }
 
+// DeleteConsumerGroupOffsetsResponseTopicPartition is the partition-scoped response to deleting
+// a consumer group's offsets.
 type DeleteConsumerGroupOffsetsResponseTopicPartition struct {
 	ID    int32  `json:"partitionID"`
 	Error string `json:"error,omitempty"`
 }
 
+// DeleteConsumerGroupOffsets requests to delete some or all consumer group's topic/partition offsets.
 func (s *Service) DeleteConsumerGroupOffsets(ctx context.Context, groupID string, topics []kmsg.OffsetDeleteRequestTopic) ([]DeleteConsumerGroupOffsetsResponseTopic, error) {
 	commitResponse, err := s.kafkaSvc.DeleteConsumerGroupOffsets(ctx, groupID, topics)
 	if err != nil {

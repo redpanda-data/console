@@ -27,13 +27,13 @@ const (
 )
 
 const (
-	// Recent = High water mark - number of results
+	// StartOffsetRecent = High water mark - number of results
 	StartOffsetRecent int64 = -1
-	// Oldest = Low water mark / oldest offset
+	// StartOffsetOldest = Low water mark / oldest offset
 	StartOffsetOldest int64 = -2
-	// Newest = High water mark / Live tail
+	// StartOffsetNewest = High water mark / Live tail
 	StartOffsetNewest int64 = -3
-	// Timestamp = Start offset is specified as unix timestamp in ms
+	// StartOffsetTimestamp = Start offset is specified as unix timestamp in ms
 	StartOffsetTimestamp int64 = -4
 )
 

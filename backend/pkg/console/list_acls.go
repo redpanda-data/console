@@ -17,6 +17,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// AclOverview contains all acl resources along with the information whether an
+// authorizer is enabled in the target cluster at all.
 type AclOverview struct {
 	AclResources        []*AclResource `json:"aclResources"`
 	IsAuthorizerEnabled bool           `json:"isAuthorizerEnabled"`
@@ -30,6 +32,7 @@ type AclResource struct {
 	ACLs                []*AclRule `json:"acls"`
 }
 
+// AclRule describes a Kafka ACL rule with all it's properties.
 type AclRule struct {
 	Principal      string `json:"principal"`
 	Host           string `json:"host"`

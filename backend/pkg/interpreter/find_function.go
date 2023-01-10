@@ -10,6 +10,8 @@
 package interpreter
 
 const (
+	// FindFunction is a JavaScript function that is made available to the JavaScript interpreter
+	// that is executing the search filters provided by a user.
 	FindFunction = `
 function find(arg1, arg2) {
     var self = (this != null)

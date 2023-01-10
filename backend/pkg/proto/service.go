@@ -30,13 +30,20 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
+// RecordPropertyType determines whether the to be recorded payload is either a
+// key or value payload from a Kafka record.
 type RecordPropertyType int
 
 const (
+	// RecordKey indicates a payload that is set in a Record's key.
 	RecordKey RecordPropertyType = iota
+	// RecordValue indicates a payload that is set in a Record's value.
 	RecordValue
 )
 
+// Service is in charge of deserializing protobuf encoded payloads. It supports payloads that were
+// encoded with involvement of the schema registry as well as plain protobuf-encoded messages.
+// This service is also in charge of reading the proto source files from the configured provider.
 type Service struct {
 	cfg    config.Proto
 	logger *zap.Logger
@@ -55,6 +62,7 @@ type Service struct {
 	registry      *msgregistry.MessageRegistry
 }
 
+// NewService creates a new proto.Service.
 func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service) (*Service, error) {
 	var err error
 
@@ -115,6 +123,8 @@ func NewService(cfg config.Proto, logger *zap.Logger, schemaSvc *schema.Service)
 	}, nil
 }
 
+// Start polling the prototypes from the configured provider (e.g. filesystem or Git) and sync these
+// into our in-memory prototype registry.
 func (s *Service) Start() error {
 	if s.gitSvc != nil {
 		err := s.gitSvc.Start()

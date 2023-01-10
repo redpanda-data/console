@@ -14,6 +14,7 @@ import (
 	"fmt"
 )
 
+// Proto has all configuration options for decoding proto-serialized Kafka records.
 type Proto struct {
 	Enabled bool `json:"enabled"`
 
@@ -36,6 +37,7 @@ func (c *Proto) RegisterFlags(f *flag.FlagSet) {
 	c.Git.RegisterFlagsWithPrefix(f, "kafka.protobuf.")
 }
 
+// Validate the Proto configuration options.
 func (c *Proto) Validate() error {
 	if !c.Enabled {
 		return nil
@@ -52,6 +54,7 @@ func (c *Proto) Validate() error {
 	return nil
 }
 
+// SetDefaults for all proto configuration options.
 func (c *Proto) SetDefaults() {
 	c.Git.SetDefaults()
 	c.FileSystem.SetDefaults()

@@ -17,6 +17,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// DeleteConsumerGroup deletes a given consumer group via the Kafka API.
 func (s *Service) DeleteConsumerGroup(ctx context.Context, groupID string) (*kmsg.DeleteGroupsResponseGroup, error) {
 	req := kmsg.NewDeleteGroupsRequest()
 	req.Groups = []string{groupID}

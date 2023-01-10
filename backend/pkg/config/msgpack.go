@@ -39,6 +39,7 @@ func (c *Msgpack) Validate() error {
 	return nil
 }
 
+// SetDefaults for the message pack configuration.
 func (c *Msgpack) SetDefaults() {
 	c.TopicNames = []string{"/.*/"}
 }

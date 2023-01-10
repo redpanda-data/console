@@ -29,6 +29,8 @@ type Client struct {
 	client *resty.Client
 }
 
+// RestError represents the schema of the generic REST error that is returned
+// for a failed HTTP request from the schema registry.
 type RestError struct {
 	ErrorCode int    `json:"error_code"`
 	Message   string `json:"message"`
@@ -40,10 +42,10 @@ func (e RestError) Error() string {
 
 func newClient(cfg config.Schema) (*Client, error) {
 	// TODO: Add support to fallback to other registry urls if provided
-	registryUrl := cfg.URLs[0] // Array length is checked in config validate()
+	registryURL := cfg.URLs[0] // Array length is checked in config validate()
 
 	client := resty.New().
-		SetBaseURL(registryUrl).
+		SetBaseURL(registryURL).
 		SetHeader("User-Agent", "Redpanda Console").
 		SetHeader("Accept", "application/vnd.schemaregistry.v1+json").
 		SetError(&RestError{}).
@@ -111,12 +113,14 @@ func newClient(cfg config.Schema) (*Client, error) {
 	}, nil
 }
 
+// SchemaResponse is the schema of the GET /schemas/ids/${id} endpoint.
 type SchemaResponse struct {
 	Schema     string      `json:"schema"`
 	SchemaType string      `json:"schemaType,omitempty"`
 	References []Reference `json:"references,omitempty"`
 }
 
+// Reference describes a reference to a different schema stored in the schema registry.
 type Reference struct {
 	Name    string `json:"name"`
 	Subject string `json:"subject"`
@@ -192,6 +196,7 @@ func (c *Client) GetSchemaBySubject(subject string, version string) (*SchemaVers
 	return parsed, nil
 }
 
+// SubjectsResponse is the schema for the GET /subjects endpoint.
 type SubjectsResponse struct {
 	Subjects []string // Subject names
 }
@@ -222,10 +227,13 @@ func (c *Client) GetSubjects() (*SubjectsResponse, error) {
 	}, nil
 }
 
+// SubjectVersionsResponse is the response schema of the GET `/subjects/{subject}/versions`
+// endpoint.
 type SubjectVersionsResponse struct {
 	Versions []int
 }
 
+// GetSubjectVersions returns a schema subject's registered versions.
 func (c *Client) GetSubjectVersions(subject string) (*SubjectVersionsResponse, error) {
 	res, err := c.client.R().SetResult([]int{}).
 		SetPathParam("subject", subject).
@@ -252,6 +260,7 @@ func (c *Client) GetSubjectVersions(subject string) (*SubjectVersionsResponse, e
 	}, nil
 }
 
+// ModeResponse is the schema of the GET /mode endpoint.
 type ModeResponse struct {
 	// Possible values are: IMPORT, READONLY, READWRITE
 	Mode string `json:"mode"`
@@ -280,6 +289,7 @@ func (c *Client) GetMode() (*ModeResponse, error) {
 	return parsed, nil
 }
 
+// ConfigResponse is the response schema for the schema registry's /config endpoint.
 type ConfigResponse struct {
 	// Global compatibility level. Will be one of:
 	// BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, FULL_TRANSITIVE, NONE, DEFAULT (only for subject configs)
@@ -362,6 +372,7 @@ func (c *Client) GetSchemaTypes() ([]string, error) {
 	return supportedTypes, nil
 }
 
+// GetSchemas retrieves all stored schemas from a schema registry.
 func (c *Client) GetSchemas() ([]SchemaVersionedResponse, error) {
 	var schemas []SchemaVersionedResponse
 	res, err := c.client.R().SetResult(&schemas).Get("/schemas")

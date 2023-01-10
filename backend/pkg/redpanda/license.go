@@ -11,6 +11,8 @@ package redpanda
 
 import "math"
 
+// License describes the information we receive (and send to the frontend) about a Redpanda
+// Enterprise license that is used for Console.
 type License struct {
 	// Source is where the license is used (e.g. Redpanda Cluster, Console)
 	Source LicenseSource `json:"source"`

@@ -26,10 +26,12 @@ type ConnectClusterTLS struct {
 	InsecureSkipTLSVerify bool   `yaml:"insecureSkipTlsVerify"`
 }
 
+// SetDefaults for the Kafka connect TLS config.
 func (c *ConnectClusterTLS) SetDefaults() {
 	c.Enabled = false
 }
 
+// Validate the Kafka connect TLS config.
 func (c *ConnectClusterTLS) Validate() error {
 	if !c.Enabled {
 		return nil
@@ -38,6 +40,7 @@ func (c *ConnectClusterTLS) Validate() error {
 	return nil
 }
 
+// TLSConfig constructs a tls.Config based on the given configurations.
 func (c *ConnectClusterTLS) TLSConfig() (*tls.Config, error) {
 	if !c.Enabled {
 		return &tls.Config{}, nil

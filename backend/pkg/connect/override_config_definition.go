@@ -43,26 +43,33 @@ type ConfigDefinition struct {
 	ValidatorFunc      func(cd *ConfigDefinition, value interface{}) []string `json:"-"`
 }
 
+// ConfigDefinitionOption implements the functional options pattern for ConfigDefinition.
 type ConfigDefinitionOption = func(c *ConfigDefinition)
 
+// WithValidatorFunc adds a function that is able to validate the value for the given
+// config.
 func WithValidatorFunc(fn func(cd *ConfigDefinition, value interface{}) []string) ConfigDefinitionOption {
 	return func(c *ConfigDefinition) {
 		c.ValidatorFunc = fn
 	}
 }
 
+// WithWidth allows to set the field width of the config option.
 func WithWidth(width ConfigDefinitionWidth) ConfigDefinitionOption {
 	return func(c *ConfigDefinition) {
 		c.Width = width
 	}
 }
 
+// WithCustomDefaultValue sets the default value to a different value.
 func WithCustomDefaultValue(customDefaultValue string) ConfigDefinitionOption {
 	return func(c *ConfigDefinition) {
 		c.CustomDefaultValue = customDefaultValue
 	}
 }
 
+// WithRecommendedValues allows to provide a list of accepted values for a configuration.
+// These values will be presented as a dropdown / enum.
 func WithRecommendedValues(recommendedValues []string) ConfigDefinitionOption {
 	return func(c *ConfigDefinition) {
 		c.RecommendedValues = recommendedValues
@@ -73,32 +80,52 @@ func WithRecommendedValues(recommendedValues []string) ConfigDefinitionOption {
 type ConfigDefinitionImportance = string
 
 const (
-	ConfigDefinitionImportanceHigh   ConfigDefinitionImportance = "HIGH"
+	// ConfigDefinitionImportanceHigh mark configurations that will always be shown in the form.
+	ConfigDefinitionImportanceHigh ConfigDefinitionImportance = "HIGH"
+
+	// ConfigDefinitionImportanceMedium mark configurations that will always be shown in the form.
 	ConfigDefinitionImportanceMedium ConfigDefinitionImportance = "MEDIUM"
-	ConfigDefinitionImportanceLow    ConfigDefinitionImportance = "LOW"
+
+	// ConfigDefinitionImportanceLow mark configurations that will only be shown in the advanced section.
+	ConfigDefinitionImportanceLow ConfigDefinitionImportance = "LOW"
 )
 
-// ConfigDefinitionWidth describes the width of a configuration value
+// ConfigDefinitionWidth describes the width of a configuration value. It's used to determine
+// the width of input fields in the setup form.
 type ConfigDefinitionWidth = string
 
 const (
-	ConfigDefinitionWidthNone   ConfigDefinitionWidth = "NONE"
-	ConfigDefinitionWidthShort  ConfigDefinitionWidth = "SHORT"
+	// ConfigDefinitionWidthNone declares an unknown width for the config field.
+	ConfigDefinitionWidthNone ConfigDefinitionWidth = "NONE"
+	// ConfigDefinitionWidthShort declares a sgirt width for the config field.
+	ConfigDefinitionWidthShort ConfigDefinitionWidth = "SHORT"
+	// ConfigDefinitionWidthMedium declares a medium width for the config field.
 	ConfigDefinitionWidthMedium ConfigDefinitionWidth = "MEDIUM"
-	ConfigDefinitionWidthLong   ConfigDefinitionWidth = "LONG"
+	// ConfigDefinitionWidthLong declares a long width for the config field.
+	ConfigDefinitionWidthLong ConfigDefinitionWidth = "LONG"
 )
 
+// ConfigDefinitionType declares the configuration type.
 type ConfigDefinitionType = string
 
 const (
-	ConfigDefinitionTypeBoolean  ConfigDefinitionType = "BOOLEAN"
-	ConfigDefinitionTypeString   ConfigDefinitionType = "STRING"
-	ConfigDefinitionTypeInt      ConfigDefinitionType = "INT"
-	ConfigDefinitionTypeShort    ConfigDefinitionType = "SHORT"
-	ConfigDefinitionTypeLong     ConfigDefinitionType = "LONG"
-	ConfigDefinitionTypeDouble   ConfigDefinitionType = "DOUBLE"
-	ConfigDefinitionTypeList     ConfigDefinitionType = "LIST"
-	ConfigDefinitionTypeClass    ConfigDefinitionType = "CLASS"
+	// ConfigDefinitionTypeBoolean declares a boolean.
+	ConfigDefinitionTypeBoolean ConfigDefinitionType = "BOOLEAN"
+	// ConfigDefinitionTypeString declares a string.
+	ConfigDefinitionTypeString ConfigDefinitionType = "STRING"
+	// ConfigDefinitionTypeInt declares an integer.
+	ConfigDefinitionTypeInt ConfigDefinitionType = "INT"
+	// ConfigDefinitionTypeShort declares a short.
+	ConfigDefinitionTypeShort ConfigDefinitionType = "SHORT"
+	// ConfigDefinitionTypeLong declares a long.
+	ConfigDefinitionTypeLong ConfigDefinitionType = "LONG"
+	// ConfigDefinitionTypeDouble declares a double.
+	ConfigDefinitionTypeDouble ConfigDefinitionType = "DOUBLE"
+	// ConfigDefinitionTypeList declares a list.
+	ConfigDefinitionTypeList ConfigDefinitionType = "LIST"
+	// ConfigDefinitionTypeClass declares a class.
+	ConfigDefinitionTypeClass ConfigDefinitionType = "CLASS"
+	// ConfigDefinitionTypePassword declares a password.
 	ConfigDefinitionTypePassword ConfigDefinitionType = "PASSWORD"
 )
 

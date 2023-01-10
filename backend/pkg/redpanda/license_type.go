@@ -9,10 +9,16 @@
 
 package redpanda
 
+// LicenseType is a string enum that determines the type of the used license.
 type LicenseType string
 
 const (
-	LicenseTypeFreeTrial  LicenseType = "free_trial"
+	// LicenseTypeFreeTrial represents a free trial license.
+	LicenseTypeFreeTrial LicenseType = "free_trial"
+
+	// LicenseTypeEnterprise represents the Redpanda Enterprise license.
 	LicenseTypeEnterprise LicenseType = "enterprise"
+
+	// LicenseTypeOpenSource represents the default - the open source license.
 	LicenseTypeOpenSource LicenseType = "open_source"
 )

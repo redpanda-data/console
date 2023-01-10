@@ -11,6 +11,7 @@ package config
 
 import "flag"
 
+// GitAuthBasicAuth provides the configuration options for authenticating against Git with HTTP basic auth.
 type GitAuthBasicAuth struct {
 	Enabled  bool   `yaml:"enabled"`
 	Username string `yaml:"username"`

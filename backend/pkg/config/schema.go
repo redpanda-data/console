@@ -35,6 +35,7 @@ func (c *Schema) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.BearerToken, "schema.registry.token", "", "Bearer token for authenticating against the schema registry (optional)")
 }
 
+// Validate the schema registry configurations.
 func (c *Schema) Validate() error {
 	if c.Enabled == false {
 		return nil

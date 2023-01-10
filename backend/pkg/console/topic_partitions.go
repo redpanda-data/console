@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// TopicDetails contains all a topic's partition metadata (low/high watermark, metadata, log dirs etc).
 type TopicDetails struct {
 	TopicName string `json:"topicName"`
 
@@ -49,6 +50,7 @@ type TopicPartitionDetails struct {
 	PartitionLogDirs []TopicPartitionLogDirs `json:"partitionLogDirs"`
 }
 
+// TopicPartitionMetadata represents the available metadata for a partition.
 type TopicPartitionMetadata struct {
 	ID int32 `json:"id"`
 
@@ -69,6 +71,7 @@ type TopicPartitionMetadata struct {
 	Leader int32 `json:"leader"`
 }
 
+// TopicPartitionMarks contains information about the offsets for a partition.
 type TopicPartitionMarks struct {
 	PartitionID int32 `json:"-"`
 
@@ -82,6 +85,8 @@ type TopicPartitionMarks struct {
 	High int64 `json:"waterMarkHigh"`
 }
 
+// TopicPartitionLogDirs contains the reported log dir size for a single partition as reported by one
+// of the replica brokers.
 type TopicPartitionLogDirs struct {
 	BrokerID    int32  `json:"brokerId"`
 	Error       string `json:"error,omitempty"`
@@ -89,6 +94,8 @@ type TopicPartitionLogDirs struct {
 	Size        int64  `json:"size"`
 }
 
+// TopicPartitionLogDirRequestError is an error reported by a broker whose log dir information request
+// has failed.
 type TopicPartitionLogDirRequestError struct {
 	Error    string `json:"error,omitempty"`
 	BrokerID int32  `json:"brokerId"`

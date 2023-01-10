@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// KgoZapLogger is a franz-go logger adapter for zap.
 type KgoZapLogger struct {
 	logger *zap.SugaredLogger
 }

@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// CreateConnector applies a new connector configuration on the target Kafka connect cluster.
 func (s *Service) CreateConnector(ctx context.Context, clusterName string, req con.CreateConnectorRequest) (con.ConnectorInfo, *rest.Error) {
 	c, restErr := s.getConnectClusterByName(clusterName)
 	if restErr != nil {

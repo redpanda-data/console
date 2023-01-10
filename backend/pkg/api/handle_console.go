@@ -21,8 +21,14 @@ import (
 )
 
 const (
+	// KafkaDistributionApacheKafka is a string enum that denotes that we are talking
+	// to an Apache Kafka cluster. Frontend features that are exclusive to other distributions
+	// can be hidden based on that information.
 	KafkaDistributionApacheKafka = "apache_kafka"
-	KafkaDistributionRedpanda    = "redpanda"
+	// KafkaDistributionRedpanda is a string enum that denotes that we are talking
+	// to a Redpanda cluster. Frontend features that are exclusive to other distributions
+	// can be hidden based on that information.
+	KafkaDistributionRedpanda = "redpanda"
 )
 
 func (api *API) handleGetEndpoints() http.HandlerFunc {

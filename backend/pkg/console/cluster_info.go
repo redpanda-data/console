@@ -133,6 +133,8 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	}, nil
 }
 
+// GetKafkaVersion extracts the guessed Apache Kafka version based on the reported
+// API versions for each API key.
 func (s *Service) GetKafkaVersion(ctx context.Context) (string, error) {
 	apiVersions, err := s.kafkaSvc.GetAPIVersions(ctx)
 	if err != nil {

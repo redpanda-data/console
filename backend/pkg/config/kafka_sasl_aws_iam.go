@@ -13,7 +13,8 @@ import (
 	"flag"
 )
 
-// KafkaSASLAwsMskIam is the config for AWS IAM SASL mechanism, see: https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html
+// KafkaSASLAwsMskIam is the config for AWS IAM SASL mechanism,
+// see: https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html
 type KafkaSASLAwsMskIam struct {
 	AccessKey string `yaml:"accessKey"`
 	SecretKey string `yaml:"secretKey"`
@@ -37,6 +38,7 @@ func (c *KafkaSASLAwsMskIam) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.SessionToken, "kafka.sasl.aws-msk-iam.session-token", "", "Optional session token for authentication purposes. Uses the AWS Security Token Service API")
 }
 
+// Validate the given SASL AWS MSK IAM configuration options.
 func (c *KafkaSASLAwsMskIam) Validate() error {
 	return nil
 }

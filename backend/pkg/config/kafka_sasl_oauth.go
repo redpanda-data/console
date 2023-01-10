@@ -24,6 +24,7 @@ func (c *KafkaSASLOAuthBearer) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&c.Token, "kafka.sasl.oauth.token", "", "OAuth Bearer Token")
 }
 
+// Validate Kafka SASL OAuth configurations.
 func (c *KafkaSASLOAuthBearer) Validate() error {
 	if c.Token == "" {
 		return fmt.Errorf("OAuth Bearer token must be set")

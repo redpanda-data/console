@@ -9,6 +9,7 @@
 
 package filesystem
 
+// File is a file with its metadata and payload.
 type File struct {
 	Path     string
 	Filename string

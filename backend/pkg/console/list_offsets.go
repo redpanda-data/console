@@ -16,11 +16,13 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 )
 
+// TopicOffset contains all topics' partitions offsets.
 type TopicOffset struct {
 	TopicName  string            `json:"topicName"`
 	Partitions []PartitionOffset `json:"partitions"`
 }
 
+// PartitionOffset describes a partition's offset (can be the earliest or latest, depending on the request).
 type PartitionOffset struct {
 	Error       string `json:"error,omitempty"`
 	PartitionID int32  `json:"partitionId"`
@@ -28,6 +30,8 @@ type PartitionOffset struct {
 	Timestamp   int64  `json:"timestamp"`
 }
 
+// ListOffsets lists partition offsets (either earliest or latest, depending on the timestamp parameter)
+// of one or topic names.
 func (s *Service) ListOffsets(ctx context.Context, topicNames []string, timestamp int64) ([]TopicOffset, error) {
 	metadata, err := s.kafkaSvc.GetMetadata(ctx, topicNames)
 	if err != nil {

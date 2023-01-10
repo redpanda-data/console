@@ -15,6 +15,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 )
 
+// KafkaError is an error reported via the Kafka API.
 type KafkaError struct {
 	Code        int16  `json:"code"`
 	Message     string `json:"message"`

@@ -11,6 +11,7 @@ package console
 
 import "context"
 
+// DeleteConsumerGroup deletes a Kafka consumer group.
 func (s *Service) DeleteConsumerGroup(ctx context.Context, groupID string) error {
 	_, err := s.kafkaSvc.DeleteConsumerGroup(ctx, groupID)
 	return err

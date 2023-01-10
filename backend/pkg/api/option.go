@@ -11,10 +11,12 @@ package api
 
 import "io/fs"
 
+// Option for creating an instance of API.
 type Option func(*API)
 
 // WithFrontendResources is an option to set an in-memory filesystem that provides the frontend resources.
-// The index.html is expected to be at the root of the filesystem.
+// The index.html is expected to be at the root of the filesystem. This method is called by Console
+// Enterprise, so that it can inject additional assets to the frontend.
 func WithFrontendResources(fsys fs.FS) Option {
 	return func(api *API) {
 		api.FrontendResources = fsys

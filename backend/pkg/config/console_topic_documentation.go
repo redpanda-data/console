@@ -14,15 +14,21 @@ import (
 	"fmt"
 )
 
+// ConsoleTopicDocumentation declares the configuration properties that allow you to pull
+// topic documentation from a source so that we can render the markdown as HTML inside
+// the Console frontend.
 type ConsoleTopicDocumentation struct {
 	Enabled bool `yaml:"enabled"`
 	Git     Git  `yaml:"git"`
 }
 
+// RegisterFlags with sensitive configuration options for the Console topic documentation
+// feature.
 func (c *ConsoleTopicDocumentation) RegisterFlags(f *flag.FlagSet) {
 	c.Git.RegisterFlagsWithPrefix(f, "owl.topic-documentation.")
 }
 
+// Validate configuration options for the Console topic documentation feature.
 func (c *ConsoleTopicDocumentation) Validate() error {
 	if !c.Enabled {
 		return nil
@@ -34,6 +40,7 @@ func (c *ConsoleTopicDocumentation) Validate() error {
 	return c.Git.Validate()
 }
 
+// SetDefaults for ConsoleTopicDocumentation.
 func (c *ConsoleTopicDocumentation) SetDefaults() {
 	c.Git.SetDefaults()
 	c.Git.AllowedFileExtensions = []string{".md"}

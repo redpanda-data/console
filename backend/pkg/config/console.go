@@ -14,18 +14,23 @@ import (
 	"fmt"
 )
 
+// Console contains all configuration options for features that are generic,
+// such as documentation plumbing.
 type Console struct {
 	TopicDocumentation ConsoleTopicDocumentation `yaml:"topicDocumentation"`
 }
 
+// SetDefaults for Console configs.
 func (c *Console) SetDefaults() {
 	c.TopicDocumentation.SetDefaults()
 }
 
+// RegisterFlags for sensitive Console configurations.
 func (c *Console) RegisterFlags(f *flag.FlagSet) {
 	c.TopicDocumentation.RegisterFlags(f)
 }
 
+// Validate Console configurations.
 func (c *Console) Validate() error {
 	err := c.TopicDocumentation.Validate()
 	if err != nil {

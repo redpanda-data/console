@@ -19,6 +19,7 @@ type ProtoSchemaRegistry struct {
 	RefreshInterval time.Duration `json:"refreshInterval"`
 }
 
+// SetDefaults for the Proto schema registry configuration.
 func (s *ProtoSchemaRegistry) SetDefaults() {
 	s.RefreshInterval = 5 * time.Minute
 }

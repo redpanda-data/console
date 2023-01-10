@@ -50,6 +50,8 @@ func newOverrideService() (*OverrideService, error) {
 	return &OverrideService{ConnectorGuides: guidesByClassName}, nil
 }
 
+// OverrideResults applies the configured overrides on top of the validation results
+// of a configured connector.
 func (s *OverrideService) OverrideResults(validationResult con.ConnectorValidationResult, sentValues map[string]interface{}) con.ConnectorValidationResult {
 	guide, exists := s.ConnectorGuides[validationResult.Name]
 	if !exists {

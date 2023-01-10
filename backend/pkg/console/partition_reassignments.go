@@ -17,13 +17,13 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
-// PartitionReassignments
+// PartitionReassignments is a list of ongoing partition reassignments for a given topic.
 type PartitionReassignments struct {
 	TopicName  string                            `json:"topicName"`
 	Partitions []PartitionReassignmentsPartition `json:"partitions"`
 }
 
-// PartitionReassignments
+// PartitionReassignmentsPartition is a list of ongoing partition reassignments within a topic.
 type PartitionReassignmentsPartition struct {
 	PartitionID      int32   `json:"partitionId"`
 	AddingReplicas   []int32 `json:"addingReplicas"`
@@ -64,20 +64,22 @@ func (s *Service) ListPartitionReassignments(ctx context.Context) ([]PartitionRe
 	return topicReassignments, nil
 }
 
-// PartitionReassignments
+// AlterPartitionReassignmentsResponse is the response after submitting a request
+// to alter partition assignments.
 type AlterPartitionReassignmentsResponse struct {
 	TopicName  string                                         `json:"topicName"`
 	Partitions []AlterPartitionReassignmentsPartitionResponse `json:"partitions"`
 }
 
-// PartitionReassignments
+// AlterPartitionReassignmentsPartitionResponse is the partition-level response after
+// submitting a request to alter a topic's partition assignments.
 type AlterPartitionReassignmentsPartitionResponse struct {
 	PartitionID  int32   `json:"partitionId"`
 	ErrorCode    string  `json:"errorCode"`
 	ErrorMessage *string `json:"errorMessage"`
 }
 
-// ListPartitionReassignments returns all partition reassignments that are currently in progress.
+// AlterPartitionAssignments requests to change what brokers one or more partitions are assigned to.
 func (s *Service) AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) ([]AlterPartitionReassignmentsResponse, error) {
 	kRes, err := s.kafkaSvc.AlterPartitionAssignments(ctx, topics)
 	if err != nil {

@@ -15,6 +15,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// ListPartitionReassignments lists all ongoing partition reassignments.
 func (s *Service) ListPartitionReassignments(ctx context.Context) (*kmsg.ListPartitionReassignmentsResponse, error) {
 	req := kmsg.NewListPartitionReassignmentsRequest()
 	req.Topics = nil // List for all topics
@@ -22,6 +23,7 @@ func (s *Service) ListPartitionReassignments(ctx context.Context) (*kmsg.ListPar
 	return req.RequestWith(ctx, s.KafkaClient)
 }
 
+// AlterPartitionAssignments allows to change what brokers topic partitions are assigned to.
 func (s *Service) AlterPartitionAssignments(ctx context.Context, topics []kmsg.AlterPartitionAssignmentsRequestTopic) (*kmsg.AlterPartitionAssignmentsResponse, error) {
 	req := kmsg.NewAlterPartitionAssignmentsRequest()
 	req.Topics = topics

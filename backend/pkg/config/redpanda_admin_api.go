@@ -15,6 +15,8 @@ import (
 	"net/url"
 )
 
+// RedpandaAdminAPI has the required configurations to make a connection to the
+// Redpanda Admin API which is an HTTP server.
 type RedpandaAdminAPI struct {
 	Enabled bool     `yaml:"enabled"`
 	URLs    []string `yaml:"urls"`
@@ -27,14 +29,17 @@ type RedpandaAdminAPI struct {
 	TLS RedpandaAdminAPITLS `yaml:"tls"`
 }
 
+// RegisterFlags for sensitive Admin API configurations.
 func (c *RedpandaAdminAPI) RegisterFlags(flags *flag.FlagSet) {
 	flags.BoolVar(&c.Enabled, "redpanda.admin-api.password", c.Enabled, "Basic Auth password to authenticate against the Redpanda Admin API")
 }
 
+// SetDefaults for Admin API configuration.
 func (c *RedpandaAdminAPI) SetDefaults() {
 	c.Enabled = false
 }
 
+// Validate Admin API configuration.
 func (c *RedpandaAdminAPI) Validate() error {
 	if !c.Enabled {
 		return nil

@@ -25,6 +25,7 @@ type RedpandaAdminAPITLS struct {
 	InsecureSkipTLSVerify bool   `yaml:"insecureSkipTlsVerify"`
 }
 
+// BuildTLSConfig builds the tls config based on the configured input.
 func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 	if !c.Enabled {
 		return nil, nil
@@ -77,6 +78,7 @@ func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 	}, nil
 }
 
+// Validate configuration options for the Admin API TLS configuration.
 func (c *RedpandaAdminAPITLS) Validate() error {
 	if !c.Enabled {
 		return nil

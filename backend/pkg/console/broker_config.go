@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// BrokerConfig contains all broker configurations for a broker.
 type BrokerConfig struct {
 	brokerID int32 `json:"-"`
 
@@ -27,6 +28,7 @@ type BrokerConfig struct {
 	Error   string              `json:"error,omitempty"`
 }
 
+// BrokerConfigEntry is all information for a configuration option.
 type BrokerConfigEntry struct {
 	Name   string  `json:"name"`
 	Value  *string `json:"value"` // If value is sensitive this will be nil
@@ -41,12 +43,14 @@ type BrokerConfigEntry struct {
 	Synonyms        []BrokerConfigSynonym `json:"synonyms"`
 }
 
+// BrokerConfigSynonym is a synonyms of a given configuration.
 type BrokerConfigSynonym struct {
 	Name   string  `json:"name"`
 	Value  *string `json:"value"`
 	Source string  `json:"source"`
 }
 
+// GetAllBrokerConfigs retrieves broker configs.
 func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConfig, error) {
 	metadata, err := s.kafkaSvc.GetMetadata(ctx, nil)
 	if err != nil {
@@ -81,6 +85,7 @@ func (s *Service) GetAllBrokerConfigs(ctx context.Context) (map[int32]BrokerConf
 	return configsByBrokerID, nil
 }
 
+// GetBrokerConfig retrieves a specifc broker's configurations.
 func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]BrokerConfigEntry, *rest.Error) {
 	res, err := s.kafkaSvc.DescribeBrokerConfig(ctx, brokerID, nil)
 	if err != nil {

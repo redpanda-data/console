@@ -18,6 +18,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// TopicLogDirSummary provides log dir / size information for a single topic. Because each broker
+// provides the response for the data it owns for each topic, we may receive partial results.
 type TopicLogDirSummary struct {
 	TotalSizeBytes int64 `json:"totalSizeBytes"`
 
@@ -28,6 +30,7 @@ type TopicLogDirSummary struct {
 	Hint string `json:"hint,omitempty"`
 }
 
+// TopicLogDirSummaryReplicaError is an errored response for describing a broker's log dirs.
 type TopicLogDirSummaryReplicaError struct {
 	BrokerID int32  `json:"brokerId"`
 	Error    string `json:"error,omitempty"`

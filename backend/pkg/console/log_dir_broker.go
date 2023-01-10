@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
+// LogDirsByBroker is broker aggregated view for Kafka log dir information.
 type LogDirsByBroker struct {
 	BrokerMeta kgo.BrokerMetadata `json:"brokerMetadata"`
 	Error      error              `json:"error"`
@@ -28,6 +29,8 @@ type LogDirsByBroker struct {
 	PartitionCount int   `json:"partitionCount"`
 }
 
+// LogDir describes a directory (usually a disk drive on a broker) that stores
+// partition log files (Kafka data).
 type LogDir struct {
 	Error          error         `json:"error"`
 	AbsolutePath   string        `json:"absolutePath"`
@@ -36,12 +39,14 @@ type LogDir struct {
 	PartitionCount int           `json:"partitionCount"`
 }
 
+// LogDirTopic is the aggregated view for a Kafka topic.
 type LogDirTopic struct {
 	TopicName      string            `json:"topicName"`
 	TotalSizeBytes int64             `json:"totalSizeBytes"`
 	Partitions     []LogDirPartition `json:"partitions"`
 }
 
+// LogDirPartition is the log dir information for a single partition.
 type LogDirPartition struct {
 	PartitionID int32 `json:"partitionId"`
 	OffsetLag   int64 `json:"offsetLag"`

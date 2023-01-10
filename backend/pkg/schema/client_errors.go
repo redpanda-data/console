@@ -15,6 +15,8 @@ const (
 	codeBackendDatastoreError = 50001
 )
 
+// IsSchemaNotFound can be used to determine if the returned error indicates
+// that the requested schema does not exist.
 func IsSchemaNotFound(err error) bool {
 	if err == nil {
 		return false

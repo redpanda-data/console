@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// LogDirResponseSharded is a helper type that carries the sum of all log dir response shards.
 type LogDirResponseSharded struct {
 	LogDirResponses []LogDirResponse
 	RequestsSent    int
@@ -29,7 +30,7 @@ type LogDirResponse struct {
 	Error          error
 }
 
-// DescribeLogeDirs requests directory information for topic partitions. This request was added in KIP-113 and is
+// DescribeLogDirs requests directory information for topic partitions. This request was added in KIP-113 and is
 // included in Kafka 1.1.0+ releases.
 //
 // Use nil for topicPartitions to describe all topics and partitions.

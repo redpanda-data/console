@@ -11,6 +11,8 @@ package config
 
 import "fmt"
 
+// GitRepository is the configuration options that determine what Git repository, branch and
+// directory shall be used.
 type GitRepository struct {
 	URL           string `yaml:"url"`
 	Branch        string `yaml:"branch"`
@@ -26,6 +28,7 @@ func (c *GitRepository) Validate() error {
 	return nil
 }
 
+// SetDefaults for Git repository configurations.
 func (c *GitRepository) SetDefaults() {
 	c.BaseDirectory = "."
 }

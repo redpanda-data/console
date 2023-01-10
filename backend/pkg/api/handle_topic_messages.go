@@ -44,6 +44,7 @@ type ListMessagesRequest struct {
 	Enterprise json.RawMessage `json:"enterprise,omitempty"`
 }
 
+// OK validates the user input for the list messages request.
 func (l *ListMessagesRequest) OK() error {
 	if l.TopicName == "" {
 		return fmt.Errorf("topic name is required")
@@ -68,6 +69,7 @@ func (l *ListMessagesRequest) OK() error {
 	return nil
 }
 
+// DecodeInterpreterCode base64-decodes the provided interpreter code and returns it as a string.
 func (l *ListMessagesRequest) DecodeInterpreterCode() (string, error) {
 	code, err := base64.StdEncoding.DecodeString(l.FilterInterpreterCode)
 	if err != nil {

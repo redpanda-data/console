@@ -14,6 +14,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// PartitionsToPartitionIDs extracts the partitionIDs from the metadata response struct we receive
+// from kafka after requesting the metadata.
 func (s *Service) PartitionsToPartitionIDs(partitions []kmsg.MetadataResponseTopicPartition) ([]int32, error) {
 	var firstErr error
 

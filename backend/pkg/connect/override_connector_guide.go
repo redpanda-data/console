@@ -67,6 +67,7 @@ type ConnectorGuide struct {
 	ConfigRemovals []Regexp `json:"configRemovals"`
 }
 
+// Validate the loaded connector guide inputs after they have been parsed.
 func (c *ConnectorGuide) Validate() error {
 	if c.ConnectorClass == "" {
 		return fmt.Errorf("connector class must be set")
@@ -109,5 +110,3 @@ func (c *ConnectorGuide) MatchesConfigRemoval(configName string) bool {
 	}
 	return false
 }
-
-func (c *ConnectorGuide) InjectAdditionalConfigDefinitions() {}

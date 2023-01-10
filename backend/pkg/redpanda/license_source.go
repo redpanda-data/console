@@ -9,9 +9,15 @@
 
 package redpanda
 
+// LicenseSource describes whether this license information belongs to Redpanda Console
+// or the Redpanda cluster we are connected to. Each of these components load their own
+// license so that they are independent in terms of availability.
 type LicenseSource string
 
 const (
-	LicenseSourceConsole  LicenseSource = "console"
+	// LicenseSourceConsole represents a license set in Redpanda Console.
+	LicenseSourceConsole LicenseSource = "console"
+
+	// LicenseSourceRedpanda represents a license set in a Redpanda cluster.
 	LicenseSourceRedpanda LicenseSource = "cluster"
 )
