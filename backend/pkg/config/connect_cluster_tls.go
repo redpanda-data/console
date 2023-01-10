@@ -43,7 +43,9 @@ func (c *ConnectClusterTLS) Validate() error {
 // TLSConfig constructs a tls.Config based on the given configurations.
 func (c *ConnectClusterTLS) TLSConfig() (*tls.Config, error) {
 	if !c.Enabled {
-		return &tls.Config{}, nil
+		return &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}, nil
 	}
 
 	// 1. Create CA cert pool
@@ -85,6 +87,7 @@ func (c *ConnectClusterTLS) TLSConfig() (*tls.Config, error) {
 	}
 
 	return &tls.Config{
+		//nolint:gosec // InsecureSkipVerify may be true upon user's responsibility.
 		InsecureSkipVerify: c.InsecureSkipTLSVerify,
 		Certificates:       certificates,
 		RootCAs:            caCertPool,

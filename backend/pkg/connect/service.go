@@ -57,7 +57,7 @@ func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 		tlsCfg, err := clusterCfg.TLS.TLSConfig()
 		if err != nil {
 			childLogger.Error("failed to create TLS config for Kafka connect HTTP client, fallback to default TLS config", zap.Error(err))
-			tlsCfg = &tls.Config{}
+			tlsCfg = &tls.Config{MinVersion: tls.VersionTLS12}
 		}
 		opts = append(opts, con.WithTLSConfig(tlsCfg))
 
