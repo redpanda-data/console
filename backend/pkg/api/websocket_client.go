@@ -11,6 +11,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -44,7 +45,7 @@ func (wc *websocketClient) upgrade(w http.ResponseWriter, r *http.Request) *rest
 		if len(parts) != 2 {
 			continue
 		}
-		if parts[0] == "accessToken" {
+		if parts[0] == "access_token" {
 			wc.accessToken = parts[1]
 			break
 		}
@@ -130,7 +131,7 @@ func (wc *websocketClient) sendClose() {
 
 	// Close connection gracefully!
 	err := wc.writeMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	if err != nil && err != websocket.ErrCloseSent {
+	if errors.Is(err, websocket.ErrCloseSent) {
 		wc.Logger.Debug("failed to send 'CloseNormalClosure' to ws connection", zap.Error(err))
 	} else {
 		// Wait for client close event for up to 2s

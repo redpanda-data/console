@@ -99,6 +99,7 @@ func newClient(cfg config.Schema) (*Client, error) {
 		}
 
 		transport := &http.Transport{TLSClientConfig: &tls.Config{
+			//nolint:gosec // InsecureSkipVerify may be true upon user's responsibility.
 			InsecureSkipVerify: cfg.TLS.InsecureSkipTLSVerify,
 			Certificates:       certificates,
 			RootCAs:            caCertPool,
@@ -114,6 +115,9 @@ func newClient(cfg config.Schema) (*Client, error) {
 }
 
 // SchemaResponse is the schema of the GET /schemas/ids/${id} endpoint.
+// `schema.Response` seems a little too vague for me.
+//
+//nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaResponse struct {
 	Schema     string      `json:"schema"`
 	SchemaType string      `json:"schemaType,omitempty"`
@@ -153,6 +157,9 @@ func (c *Client) GetSchemaByID(id uint32) (*SchemaResponse, error) {
 }
 
 // SchemaVersionedResponse represents the schema resource returned by the Schema Registry
+// `schema.VersionedResponse` seems a little too vague for me.
+//
+//nolint:revive // This is stuttering when calling this with the pkg name, but without that the
 type SchemaVersionedResponse struct {
 	Subject    string      `json:"subject"`
 	SchemaID   int         `json:"id"`

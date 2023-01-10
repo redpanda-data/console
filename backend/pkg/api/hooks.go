@@ -238,7 +238,7 @@ func (*defaultHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) 
 	return true, nil
 }
 
-func (*defaultHooks) IsProtectedKafkaUser(user string) bool {
+func (*defaultHooks) IsProtectedKafkaUser(_ string) bool {
 	return false
 }
 

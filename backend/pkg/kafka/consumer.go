@@ -219,7 +219,7 @@ type isMessageOkFunc = func(args interpreterArguments) (bool, error)
 // SetupInterpreter initializes the JavaScript interpreter along with the given JS code. It returns a wrapper function
 // which accepts all Kafka message properties (offset, key, value, ...) and returns true (message shall be returned) or false
 // (message shall be filtered).
-func (s *Service) setupInterpreter(interpreterCode string) (isMessageOkFunc, error) {
+func (*Service) setupInterpreter(interpreterCode string) (isMessageOkFunc, error) {
 	// In case there's no code for the interpreter let's return a dummy function which always allows all messages
 	if interpreterCode == "" {
 		return func(args interpreterArguments) (bool, error) { return true, nil }, nil

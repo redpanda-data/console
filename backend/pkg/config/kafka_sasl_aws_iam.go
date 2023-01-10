@@ -39,6 +39,6 @@ func (c *KafkaSASLAwsMskIam) RegisterFlags(f *flag.FlagSet) {
 }
 
 // Validate the given SASL AWS MSK IAM configuration options.
-func (c *KafkaSASLAwsMskIam) Validate() error {
+func (*KafkaSASLAwsMskIam) Validate() error {
 	return nil
 }

@@ -57,6 +57,8 @@ func convertOffsets(offsets *kmsg.OffsetFetchResponse) map[string]partitionOffse
 }
 
 // getConsumerGroupOffsets returns a nested map where the group id is the key
+//
+//nolint:gocognit,cyclop // Eventually this should be refactored to use the franz-go admin client
 func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) (map[string][]GroupTopicOffsets, error) {
 	// 1. Fetch all Consumer Group Offsets for each Topic
 	offsets, err := s.kafkaSvc.ListConsumerGroupOffsetsBulk(ctx, groups)

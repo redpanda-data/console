@@ -106,6 +106,8 @@ func (s *Service) GetPartitionMarks(ctx context.Context, topic string, partition
 	return partitionMarksByTopic[topic], nil
 }
 
+// ListOffsetsResponseTopicPartition is the partition scoped response for listing either
+// the earliest or oldest offset of that partition.
 type ListOffsetsResponseTopicPartition struct {
 	PartitionID int32
 	Offset      int64

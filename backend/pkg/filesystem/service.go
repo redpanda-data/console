@@ -137,6 +137,8 @@ func (c *Service) readFiles() (map[string]File, error) {
 			}
 			loadedFiles++
 
+			//nolint:gosec // We trust the user here and load the currentPath variable
+			// which can only be provided via the configuration anyways.
 			payload, err := os.ReadFile(currentPath)
 			if err != nil {
 				return fmt.Errorf("failed to load file '%v' from filesystem: %w", currentPath, err)

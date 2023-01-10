@@ -55,7 +55,7 @@ type LogDirPartition struct {
 
 // LogDirSizeByBroker returns a map where the BrokerID is the key and the summed bytes of all log dirs of
 // the respective broker is the value.
-func (s *Service) logDirsByBroker(ctx context.Context) (map[int32]LogDirsByBroker, error) {
+func (s *Service) logDirsByBroker(ctx context.Context) map[int32]LogDirsByBroker {
 	// 1. Describe log dirs for all topics, so that we can sum the size per broker
 	responses := s.kafkaSvc.DescribeLogDirs(ctx, nil)
 
@@ -116,5 +116,5 @@ func (s *Service) logDirsByBroker(ctx context.Context) (map[int32]LogDirsByBroke
 		result[response.BrokerMetadata.NodeID] = brokerLogDirs
 	}
 
-	return result, nil
+	return result
 }

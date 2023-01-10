@@ -21,4 +21,4 @@ type KafkaTLS struct {
 }
 
 // RegisterFlags for all sensitive Kafka TLS configs
-func (c *KafkaTLS) RegisterFlags(f *flag.FlagSet) {}
+func (*KafkaTLS) RegisterFlags(*flag.FlagSet) {}

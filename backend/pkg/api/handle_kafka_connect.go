@@ -11,6 +11,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -36,7 +37,7 @@ func (api *API) handleGetConnectors() http.HandlerFunc {
 
 		connectors, err := api.ConnectSvc.GetAllClusterConnectors(ctx)
 		if err != nil {
-			if err == connect.ErrKafkaConnectNotConfigured {
+			if errors.Is(err, connect.ErrKafkaConnectNotConfigured) {
 				rest.SendResponse(w, r, api.Logger, http.StatusOK, response{IsConfigured: false})
 				return
 			}

@@ -36,6 +36,8 @@ import (
 
 // NewKgoConfig creates a new Config for the Kafka Client as exposed by the franz-go library.
 // If TLS certificates can't be read an error will be returned.
+//
+//nolint:gocognit,cyclop // This function is lengthy, but it's only plumbing configurations. Seems okay to me.
 func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.Opt, error) {
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(cfg.Brokers...),
@@ -52,10 +54,7 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 	kgoLogger := KgoZapLogger{
 		logger: logger.With(zap.String("source", "kafka_client")).Sugar(),
 	}
-	opts = append(opts, kgo.WithLogger(kgoLogger))
-
-	// Attach hooks
-	opts = append(opts, kgo.WithHooks(hooks))
+	opts = append(opts, kgo.WithLogger(kgoLogger), kgo.WithHooks(hooks))
 
 	// Add Rack Awareness if configured
 	if cfg.RackID != "" {
@@ -194,6 +193,7 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 		tlsDialer := &tls.Dialer{
 			NetDialer: &net.Dialer{Timeout: 10 * time.Second},
 			Config: &tls.Config{
+				//nolint:gosec // InsecureSkipVerify may be true upon user's responsibility.
 				InsecureSkipVerify: cfg.TLS.InsecureSkipTLSVerify,
 				Certificates:       certificates,
 				RootCAs:            caCertPool,

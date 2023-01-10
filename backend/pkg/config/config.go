@@ -145,8 +145,7 @@ func LoadConfig(logger *zap.Logger) (Config, error) {
 	}
 
 	err = k.Load(env.ProviderWithValue("", ".", func(s string, v string) (string, interface{}) {
-		// key := strings.Replace(strings.ToLower(s), "_", ".", -1)
-		key := strings.Replace(strings.ToLower(s), "_", ".", -1)
+		key := strings.ReplaceAll(strings.ToLower(s), "_", ".")
 		// Check to exist if we have a configuration option already and see if it's a slice
 		// If there is a comma in the value, split the value into a slice by the comma.
 		if strings.Contains(v, ",") {

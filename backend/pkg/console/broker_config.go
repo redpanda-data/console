@@ -22,7 +22,7 @@ import (
 
 // BrokerConfig contains all broker configurations for a broker.
 type BrokerConfig struct {
-	brokerID int32 `json:"-"`
+	brokerID int32 // Don't export brokerID
 
 	Configs []BrokerConfigEntry `json:"configs,omitempty"`
 	Error   string              `json:"error,omitempty"`
@@ -146,7 +146,7 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]Broker
 			}
 		}
 
-		//nolint: staticcheck // The loop is indeed uncondtionally terminated, which is not good,
+		//nolint:staticcheck // The loop is indeed uncondtionally terminated, which is not good,
 		// however we only expect a single iteration because we only requested configs from one broker.
 		return configEntries, nil
 	}

@@ -53,11 +53,7 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 	defer cancel()
 
 	eg.Go(func() error {
-		var err error
-		logDirsByBroker, err = s.logDirsByBroker(childCtx)
-		if err != nil {
-			s.logger.Warn("failed to request brokers log dirs", zap.Error(err))
-		}
+		logDirsByBroker = s.logDirsByBroker(childCtx)
 		return nil
 	})
 

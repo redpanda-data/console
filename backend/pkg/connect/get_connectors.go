@@ -22,6 +22,15 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
+type connectorState = string
+
+const (
+	connectorStateUnassigned connectorState = "UNASSIGNED"
+	connectorStateRunning    connectorState = "RUNNING"
+	connectorStatePaused     connectorState = "PAUSED"
+	connectorStateFAILED     connectorState = "FAILED"
+)
+
 // ClusterConnectors contains all available information about the deployed connectors
 // in a single Kafka connect cluster.
 type ClusterConnectors struct {
@@ -99,7 +108,7 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 			runningConnectors := 0
 			for _, connector := range connectors {
 				totalConnectors++
-				if connector.Status.Connector.State == "RUNNING" {
+				if connector.Status.Connector.State == connectorStateRunning {
 					runningConnectors++
 				}
 			}
@@ -187,7 +196,7 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 			WorkerID: task.WorkerID,
 			Trace:    task.Trace,
 		}
-		if task.State == "RUNNING" {
+		if task.State == connectorStateRunning {
 			runningTasks++
 		}
 	}
@@ -221,7 +230,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 				WorkerID: task.WorkerID,
 				Trace:    task.Trace,
 			}
-			if task.State == "RUNNING" {
+			if task.State == connectorStateRunning {
 				runningTasks++
 			}
 		}

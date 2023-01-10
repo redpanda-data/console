@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/pkg/errors"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
@@ -262,6 +261,7 @@ func (s *Service) getTopicPartitionMetadata(ctx context.Context, topicNames []st
 	return overviewByTopic, nil
 }
 
+//nolint:gocognit,cyclop // Eventually this should be refactored to use the franz-go admin client
 func (s *Service) describePartitionLogDirs(ctx context.Context, topicMetadata map[string]TopicDetails) map[string]map[int32][]TopicPartitionLogDirs {
 	// 1. Construct log dir requests and collect all replica ids by partition so that we can later check whether we
 	// successfully described all partition replicas.
@@ -304,8 +304,7 @@ func (s *Service) describePartitionLogDirs(ctx context.Context, topicMetadata ma
 		for _, dir := range resShard.LogDirs.Dirs {
 			err := kerr.ErrorForCode(dir.ErrorCode)
 			if err != nil {
-				wrappedErr := errors.Wrap(err, "failed to describe dir, inner kafka error")
-				errorByBrokerID[brokerID] = wrappedErr
+				errorByBrokerID[brokerID] = fmt.Errorf("failed to describe dir, inner kafka error: %w", err)
 				continue
 			}
 			for _, topic := range dir.Topics {

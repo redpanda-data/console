@@ -154,6 +154,9 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 // account. Gaps between low and high watermarks (caused by compactions) will be neglected for now.
 // This function will return a map of PartitionConsumeRequests, keyed by the respective PartitionID. An error will
 // be returned if it fails to request the partition offsets for the given timestamp.
+// makes it harder to understand how the consume request is calculated in total though.
+//
+//nolint:cyclop,gocognit // This is indeed a complex function. Breaking this into multiple smaller functions possibly
 func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMessageRequest, marks map[int32]*kafka.PartitionMarks) (map[int32]*kafka.PartitionConsumeRequest, error) {
 	requests := make(map[int32]*kafka.PartitionConsumeRequest, len(marks))
 
@@ -189,15 +192,16 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 			MaxMessageCount: 0,
 		}
 
-		if listReq.StartOffset == StartOffsetRecent {
+		switch listReq.StartOffset {
+		case StartOffsetRecent:
 			p.StartOffset = mark.High // StartOffset will be recalculated later
-		} else if listReq.StartOffset == StartOffsetOldest {
+		case StartOffsetOldest:
 			p.StartOffset = mark.Low
-		} else if listReq.StartOffset == StartOffsetNewest {
+		case StartOffsetNewest:
 			// In Live tail mode we consume onwards until max results are reached. Start Offset is always high watermark
 			// and end offset is always MaxInt64.
 			p.StartOffset = -1
-		} else if listReq.StartOffset == StartOffsetTimestamp {
+		case StartOffsetTimestamp:
 			// Request start offset by timestamp first and then consider it like a normal forward consuming / custom offset
 			offset, exists := startOffsetByPartitionID[mark.PartitionID]
 			if !exists {
@@ -211,7 +215,7 @@ func (s *Service) calculateConsumeRequests(ctx context.Context, listReq *ListMes
 				offset = marks[mark.PartitionID].High - 1
 			}
 			p.StartOffset = offset
-		} else {
+		default:
 			// Either custom offset or resolved offset by timestamp is given
 			p.StartOffset = listReq.StartOffset
 

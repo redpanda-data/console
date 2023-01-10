@@ -22,7 +22,6 @@ require (
 	github.com/jhump/protoreflect v1.14.0
 	github.com/knadh/koanf v1.4.5
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20230104182309-7698d02c437e
 	github.com/stretchr/testify v1.8.0

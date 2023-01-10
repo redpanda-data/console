@@ -37,7 +37,7 @@ func (c *Schema) RegisterFlags(f *flag.FlagSet) {
 
 // Validate the schema registry configurations.
 func (c *Schema) Validate() error {
-	if c.Enabled == false {
+	if !c.Enabled {
 		return nil
 	}
 

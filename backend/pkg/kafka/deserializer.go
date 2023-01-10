@@ -126,7 +126,7 @@ func (d *deserializer) DeserializeRecord(record *kgo.Record) *deserializedRecord
 // the respective type. If none matches, we return the binary content as is and it
 // will be displayed as hex string in the frontend.
 //
-//nolint:gocognit // This function should be refactored and broken into multiple functions
+//nolint:gocognit,cyclop,gocyclo // This function should be refactored and broken into multiple functions
 func (d *deserializer) deserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
 	// 0. Check if payload is empty / whitespace only
 	if len(payload) == 0 {
@@ -174,7 +174,6 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 				}, Object: obj, RecognizedEncoding: messageEncodingJSON, SchemaID: schemaID, Size: len(payload)}
 			}
 		}
-
 	}
 
 	// 3. Test for valid XML
@@ -215,7 +214,6 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 					}
 				}
 			}
-
 		}
 	}
 
@@ -287,7 +285,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 }
 
 // deserializeConsumerOffset deserializes the binary messages in the __consumer_offsets topic
-func (d *deserializer) deserializeConsumerOffset(record *kgo.Record) (*deserializedRecord, error) {
+func (*deserializer) deserializeConsumerOffset(record *kgo.Record) (*deserializedRecord, error) {
 	if len(record.Key) < 2 {
 		return nil, fmt.Errorf("offset commit key is supposed to be at least 2 bytes long")
 	}

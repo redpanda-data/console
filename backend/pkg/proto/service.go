@@ -196,12 +196,14 @@ func (s *Service) deserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 	return jsonBytes, nil
 }
 
+// UnmarshalPayload tries to deserialize a protobuf encoded payload to a JSON message,
+// so that it's human-readable in the Console frontend.
 func (s *Service) UnmarshalPayload(payload []byte, topicName string, property RecordPropertyType) ([]byte, int, error) {
 	// 1. First let's try if we can deserialize this message with schema registry (if configured)
 	if s.cfg.SchemaRegistry.Enabled {
 		jsonBytes, schemaID, err := s.unmarshalConfluentMessage(payload, topicName)
 		if err == nil {
-			return jsonBytes, schemaID, err
+			return jsonBytes, schemaID, nil
 		}
 	}
 
@@ -306,7 +308,7 @@ type confluentEnvelope struct {
 // a single 0 byte as an optimization.
 //
 // Bytes n+1-end: Protobuf serialized payload.
-func (s *Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope, error) {
+func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope, error) {
 	buf := bytes.NewReader(payload)
 	magicByte, err := buf.ReadByte()
 	if err != nil {
