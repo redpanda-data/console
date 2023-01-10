@@ -14,7 +14,6 @@ import { KafkaError, ConfigEntry, Topic, ConfigEntryExtended } from '../../../st
 import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
-import topicConfigInfo from '../../../assets/topicConfigInfo.json';
 import Paragraph from 'antd/lib/typography/Paragraph';
 import '../../../utils/arrayExtensions';
 import { HighlightTwoTone } from '@ant-design/icons';
@@ -249,13 +248,13 @@ export const FavoritePopover = observer((p: { configEntry: ConfigEntry, children
     const isFav = favs.includes(name);
     const toggleFav = isFav ? () => favs.splice(favs.indexOf(name), 1) : () => favs.push(name);
 
-    const infoEntry = topicConfigInfo.find((e) => e.Name == name);
+    const docu = p.configEntry.documentation;
 
     const popupContent = (
         <div>
             <Paragraph style={{ maxWidth: '400px' }}>
-                {infoEntry
-                    ? <div className="configPropDescription">{infoEntry.Description}</div>
+                {docu
+                    ? <div className="configPropDescription">{docu}</div>
                     : <div className="configPropDescription unknownConfigProp">No description available, unknown property</div>
                 }
             </Paragraph>
