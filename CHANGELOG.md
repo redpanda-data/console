@@ -2,6 +2,8 @@
 
 ## To be released
 
+- [CHANGE] We removed the support for using encrypted PEM certificates as specified in RFC 1423 because it's insecure by design and should not be used by anyone
+
 **Enterprise changelog**
 
 - [BUGFIX] Fix issues with generic OIDC provider when using self-signed or mutual TLS certificates

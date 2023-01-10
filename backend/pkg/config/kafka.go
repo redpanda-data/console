@@ -86,7 +86,6 @@ func (c Kafka) RedactedConfig() Kafka {
 	copiedCfg.Brokers = c.Brokers
 	copiedCfg.ClientID = c.ClientID
 	copiedCfg.RackID = c.RackID
-	copiedCfg.TLS.Passphrase = redactString(c.TLS.Passphrase)
 	copiedCfg.SASL.Password = redactString(c.SASL.Password)
 	copiedCfg.SASL.GSSAPIConfig.Password = redactString(c.SASL.GSSAPIConfig.Password)
 	copiedCfg.SASL.OAUth.Token = redactString(c.SASL.OAUth.Token)

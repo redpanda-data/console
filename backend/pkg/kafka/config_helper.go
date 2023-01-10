@@ -184,14 +184,6 @@ func NewKgoConfig(cfg *config.Kafka, logger *zap.Logger, hooks kgo.Hook) ([]kgo.
 				return nil, fmt.Errorf("no valid private key found")
 			}
 
-			if x509.IsEncryptedPEMBlock(pemBlock) {
-				decryptedKey, err := x509.DecryptPEMBlock(pemBlock, []byte(cfg.TLS.Passphrase))
-				if err != nil {
-					return nil, fmt.Errorf("private key is encrypted, but could not decrypt it: %s", err)
-				}
-				// If private key was encrypted we can overwrite the original contents now with the decrypted version
-				privateKey = pem.EncodeToMemory(&pem.Block{Type: pemBlock.Type, Bytes: decryptedKey})
-			}
 			tlsCert, err := tls.X509KeyPair(cert, privateKey)
 			if err != nil {
 				return nil, fmt.Errorf("cannot parse pem: %s", err)
