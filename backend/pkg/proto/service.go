@@ -309,6 +309,9 @@ type confluentEnvelope struct {
 func (s *Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope, error) {
 	buf := bytes.NewReader(payload)
 	magicByte, err := buf.ReadByte()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read magic byte: %w", err)
+	}
 	if magicByte != byte(0) {
 		return nil, fmt.Errorf("magic byte is not 0")
 	}
