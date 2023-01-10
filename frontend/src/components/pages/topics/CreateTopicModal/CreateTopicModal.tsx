@@ -124,6 +124,7 @@ export function NumInput(p: {
     min?: number, max?: number,
     disabled?: boolean,
     addonBefore?: React.ReactNode; addonAfter?: React.ReactNode;
+    className?: string,
 }) {
     // We need to keep track of intermediate values.
     // Otherwise, typing '2e' for example, would be rejected.
@@ -144,7 +145,7 @@ export function NumInput(p: {
     const decrement = (e: MouseEvent) => { changeBy(-1); e.preventDefault(); }
 
     return <Input
-        className="numericInput"
+        className={'numericInput ' + (p.className ?? '')}
         style={{ minWidth: '150px', width: '100%' }}
         spellCheck={false}
         placeholder={p.placeholder}
@@ -399,7 +400,8 @@ const dataSizeFactors = {
 @observer
 export class DataSizeSelect extends Component<{
     valueBytes: number,
-    onChange: (bytes: number) => void
+        onChange: (bytes: number) => void,
+        className?: string,
 }> {
 
     @observable unit: DataSizeUnit;
@@ -433,6 +435,7 @@ export class DataSizeSelect extends Component<{
             placeholder = 'Infinite';
 
         return <NumInput
+            className={this.props.className}
             value={numDisabled ? undefined : unitValue}
             onChange={x => {
                 if (x === undefined) {
@@ -487,7 +490,8 @@ const durationFactors = {
 @observer
 export class DurationSelect extends Component<{
     valueMilliseconds: number,
-    onChange: (bytes: number) => void
+        onChange: (bytes: number) => void,
+        className?: string,
 }> {
 
     @observable unit: DurationUnit;
@@ -523,6 +527,7 @@ export class DurationSelect extends Component<{
             placeholder = 'Infinite';
 
         return <NumInput
+            className={this.props.className}
             value={numDisabled ? undefined : unitValue}
             onChange={x => {
                 if (x === undefined) {

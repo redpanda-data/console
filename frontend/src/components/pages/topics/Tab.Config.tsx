@@ -36,7 +36,9 @@ const { Text } = Typography;
 
 // Full topic configuration
 @observer
-export class TopicConfiguration extends Component<{ topic: Topic }> {
+export class TopicConfiguration extends Component<{
+    topic: Topic
+}> {
 
     constructor(p: any) {
         super(p);
@@ -59,43 +61,13 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
                         <TopicConfigList configEntries={this.configEntries} />
                     </>
                     : <>
-                        <TopicConfigurationEditor targetTopic={null} entries={entries} onForceRefresh={() => { }} />
-                        {/* <TopicConfigurationEditor targetTopic={null} entries={[
-                            {
-                                name: 'example',
-                                value: 'some value',
-                                frontendFormat: 'STRING',
-                                documentation: 'some documentation',
-
-                                currentValue: '',
-                                isDefaultValue: false,
-                                isExplicitlySet: false,
-                                isReadOnly: false,
-                                isSensitive: false,
-                                source: 'source',
-                                synonyms: undefined,
-                                type: 'STRING',
-                                category: 'Example Category',
-                                enumValues: undefined
-                            },
-                            {
-                                name: 'example',
-                                value: 'some value',
-                                frontendFormat: 'STRING',
-                                documentation: 'some documentation',
-
-                                currentValue: '',
-                                isDefaultValue: false,
-                                isExplicitlySet: false,
-                                isReadOnly: false,
-                                isSensitive: false,
-                                source: 'source',
-                                synonyms: [{ name: '', source: '', type: '', value: 'some default value here' }],
-                                type: 'STRING',
-                                category: 'Example Category',
-                                enumValues: undefined
-                            }
-                        ]} /> */}
+                        <TopicConfigurationEditor
+                            targetTopic={this.props.topic.topicName}
+                            entries={entries}
+                            onForceRefresh={() => {
+                                api.refreshTopicConfig(this.props.topic.topicName, true);
+                            }}
+                        />
                     </>
                 }
             </>

@@ -2,88 +2,109 @@
     width: max(500px, 50%);
 
     display: grid;
-        /* columns:            name, value, isEditted, <space>, buttons  */
-        grid-template-columns:
-            minmax(200px, auto) minmax(250px, auto) auto 1fr auto;
-        align-items: center;
-        gap: 11px 8px;
+    /* columns:            name, value, isEditted, <space>, buttons  */
+    grid-template-columns:
+        minmax(200px, auto) minmax(250px, auto) auto 1fr auto;
+    align-items: center;
+    gap: 11px 8px;
 
     .searchBar {
-            grid-column-start: span 5;
-            margin-bottom: 1em;
-        }
+        grid-column-start: span 5;
+        margin-bottom: 1em;
+    }
 
-        .configGroupSpacer {
-            grid-column-start: span 5;
-            margin: 1em 0em;
-            height: 1px;
-            background: hsl(0deg, 0%, 80%);
+    .configGroupSpacer {
+        grid-column-start: span 5;
+        margin: 1em 0em;
+        height: 1px;
+        background: hsl(0deg, 0%, 80%);
 
-            &:first-of-type {
-                display: none;
-            }
+        &:first-of-type {
+            display: none;
         }
+    }
+
     .configGroupTitle {
         grid-column-start: span 5;
         font-size: 1.5em;
         font-weight: 600;
     }
 
-                .configName {
-                    display: flex;
+    .configName {
+        display: flex;
         align-items: center;
         align-self: flex-start;
-            padding-right: 1em;
+        padding-right: 1em;
 
-            font-weight: 500;
-            }
-
-                .configValue {
-                    padding-left: 12px;
-                    margin-right: auto;
-
-                    .ant-select {
-                        min-width: 12em;
-                    }
+        font-weight: 500;
     }
 
-                .isEditted {
-                    opacity: .5;
-                    margin-right: 3em;
+    .configValue {
+        padding-left: 12px;
+        margin-right: auto;
+
+        .ant-select {
+            min-width: 12em;
+        }
     }
 
-                .configButtons {
-                    display: inline-flex;
-            align-items: center;
-                gap: 12px;
-                font-size: 18px;
-                color: var(--ant-primary-color);
+    .isEditted {
+        opacity: .5;
+        margin-right: 3em;
+    }
+
+    .configButtons {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        color: var(--ant-primary-color);
 
         .btnEdit {
-                display: inline-flex;
-                font-size: 21px;
-                padding: 1px;
+            display: inline-flex;
+            font-size: 21px;
+            padding: 1px;
             border-radius: 3px;
             cursor: pointer;
 
-                &:hover {
-                    background: rgb(239 239 239);
+            &:hover {
+                background: rgb(239 239 239);
 
                 // color: var(--ant-primary-color);
-                    // border-bottom-color: var(--ant-primary-5);
-                }
-                }
-                }
-                }
+                // border-bottom-color: var(--ant-primary-5);
+            }
+        }
+    }
+}
 
 .configDocumentationTooltip {
 
-    .ant-popover-inner, .ant-popover-arrow-content {
+    .ant-popover-inner,
+    .ant-popover-arrow-content {
         background-color: hsl(0deg 0% 93%);
 
         font-weight: 500;
         color: hsl(0deg 0% 20%);
 
+    }
+
+    .configDocuTitle {
+        font-weight: 700;
+        color: hsl(0deg 0% 40%);
+        margin-bottom: 1em;
+    }
+
+    .configDocuSource {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 2em;
+        row-gap: 0.5em;
+        margin: 1em 0;
+
+        .title {
+            font-weight: 700;
+            color: hsl(0deg 0% 40%);
+        }
     }
 }
 
@@ -92,10 +113,15 @@
     .ant-modal-body {
         padding: 2em;
 
-        .ant-modal-confirm-body {
-            span[role=img].anticon {
-                display:none;
+        .ant-modal-confirm-title{
+            display:flex;
+            align-items: center;
+            gap:4px;
+            svg {
+                font-size: 1.5em;
             }
+        }
+        .ant-modal-confirm-body {
 
             .ant-modal-confirm-title {
                 font-weight: 700;
@@ -104,8 +130,25 @@
             .ant-modal-confirm-content {
                 margin-left: 0;
             }
+        }
 
+        .valueRadioGroup {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
 
+            .subText {
+                color: hsl(0deg 0% 60%);
+            }
+
+            .configEntryEditor {
+                min-width: 300px;
+            }
+
+            .configEntryEditor.disabled {
+                pointer-events: none;
+                opacity: .5;
+            }
         }
     }
 

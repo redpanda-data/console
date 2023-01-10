@@ -1026,12 +1026,6 @@ const apiStore = {
             }, addError);
     },
 
-    // bisheriger GET topicConfig endpoint bleibt (und hat neue props)
-    // documentation, type, valueType,
-
-    // - wie default topic config bekommen?
-    // -> was ist der pfad zu "describe default topic configs"
-
     // PATCH /topics/{topicName}/configuration   //
     // PATCH /topics/configuration               // default config
     async changeTopicConfig(topicName: string | null, configs: PatchTopicConfigsRequest['configs']): Promise<void> {
