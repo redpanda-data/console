@@ -256,22 +256,22 @@ func (s *Service) getMessageDescriptor(topicName string, property RecordProperty
 		return nil, fmt.Errorf("no prototype found for the given topic. Check your configured protobuf mappings")
 	}
 
-	protoTypeUrl := ""
+	protoTypeURL := ""
 	if property == RecordKey {
 		if mapping.KeyProtoType == "" {
 			return nil, fmt.Errorf("no prototype mapping found for the record key of topic '%v'", topicName)
 		}
-		protoTypeUrl = mapping.KeyProtoType
+		protoTypeURL = mapping.KeyProtoType
 	} else {
 		if mapping.ValueProtoType == "" {
 			return nil, fmt.Errorf("no prototype mapping found for the record value of topic '%v'", topicName)
 		}
-		protoTypeUrl = mapping.ValueProtoType
+		protoTypeURL = mapping.ValueProtoType
 	}
 
 	s.registryMutex.RLock()
 	defer s.registryMutex.RUnlock()
-	messageDescriptor, err := s.registry.FindMessageTypeByUrl(protoTypeUrl)
+	messageDescriptor, err := s.registry.FindMessageTypeByUrl(protoTypeURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find the proto type in the proto registry: %w", err)
 	}
