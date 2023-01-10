@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 
+	//nolint:staticcheck // Switching to the google golang protojson comes with a few breaking changes.
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"

@@ -87,7 +87,7 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 		onlinePartitionIDs = append(onlinePartitionIDs, partition.Partition)
 	}
 
-	partitionIDs := make([]int32, len(onlinePartitionIDs))
+	var partitionIDs []int32
 	if listReq.PartitionID == partitionsAll {
 		if len(offlinePartitionIDs) > 0 {
 			progress.OnError(
@@ -118,6 +118,9 @@ func (s *Service) ListMessages(ctx context.Context, listReq ListMessageRequest, 
 
 	// Get partition consume request by calculating start and end offsets for each partition
 	consumeRequests, err := s.calculateConsumeRequests(ctx, &listReq, marks)
+	if err != nil {
+		return fmt.Errorf("failed to calculate consume request: %w", err)
+	}
 	if len(consumeRequests) == 0 {
 		// No partitions/messages to consume, we can quit early.
 		progress.OnComplete(time.Since(start).Milliseconds(), false)

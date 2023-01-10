@@ -97,12 +97,9 @@ func (wc *websocketClient) producePings() {
 	ticker := time.NewTicker(time.Second * 3)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			if err := wc.writeMessage(websocket.PingMessage, []byte{}); err != nil {
-				return
-			}
+	for range ticker.C {
+		if err := wc.writeMessage(websocket.PingMessage, []byte{}); err != nil {
+			return
 		}
 	}
 }
