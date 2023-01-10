@@ -22,6 +22,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
+// ClusterConnectors contains all available information about the deployed connectors
+// in a single Kafka connect cluster.
 type ClusterConnectors struct {
 	ClusterName    string           `json:"clusterName"`
 	ClusterAddress string           `json:"clusterAddress"`
@@ -36,6 +38,8 @@ type ClusterConnectors struct {
 	AllowedActions []string `json:"allowedActions"`
 }
 
+// ClusterConnectorInfo contains all information we can retrieve about a single
+// connector in a Kafka connect cluster.
 type ClusterConnectorInfo struct {
 	Name         string                     `json:"name"`
 	Class        string                     `json:"class"`
@@ -49,6 +53,7 @@ type ClusterConnectorInfo struct {
 	Tasks        []ClusterConnectorTaskInfo `json:"tasks"`
 }
 
+// ClusterConnectorTaskInfo provides information about a connector's task.
 type ClusterConnectorTaskInfo struct {
 	TaskID   int    `json:"taskId"`
 	State    string `json:"state"`

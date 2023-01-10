@@ -15,6 +15,7 @@ import (
 	"strings"
 )
 
+// CompileRegex compiles a regex string to a regexp.Regexp.
 func CompileRegex(expr string) (*regexp.Regexp, error) {
 	if strings.HasPrefix(expr, "/") && strings.HasSuffix(expr, "/") {
 		substr := expr[1 : len(expr)-1]
@@ -34,6 +35,7 @@ func CompileRegex(expr string) (*regexp.Regexp, error) {
 	return regex, nil
 }
 
+// CompileRegexes compiles multiple regex strings to multiple regexp.Regexp.
 func CompileRegexes(expr []string) ([]*regexp.Regexp, error) {
 	compiledExpressions := make([]*regexp.Regexp, len(expr))
 	for i, exprStr := range expr {

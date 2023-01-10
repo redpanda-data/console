@@ -26,6 +26,7 @@ type recordsRequest struct {
 	PartitionID int32 `json:"partitionId"`
 }
 
+// KgoRecordHeaders return the headers request as part of the to be produced Kafka record.
 func (r *recordsRequest) KgoRecordHeaders() []kgo.RecordHeader {
 	if len(r.Headers) == 0 {
 		return nil
@@ -37,6 +38,8 @@ func (r *recordsRequest) KgoRecordHeaders() []kgo.RecordHeader {
 	return kgoRecordHeaders
 }
 
+// KgoRecord returns a kafka-client compatible Kafka record based on the user's request,
+// so that we can produce it.
 func (r *recordsRequest) KgoRecord() kgo.Record {
 	return kgo.Record{
 		Key:       r.Key,
@@ -51,6 +54,8 @@ type recordsRequestHeader struct {
 	Value []byte `json:"value"`
 }
 
+// KgoRecordHeader returns a kafka-client compatible Record Header type based on the requested
+// record headers that shall be produced as part of the Kafka record.
 func (r *recordsRequestHeader) KgoRecordHeader() kgo.RecordHeader {
 	return kgo.RecordHeader{
 		Key:   r.Key,
@@ -86,6 +91,7 @@ func (p *publishRecordsRequest) OK() error {
 	return nil
 }
 
+// KgoRecords returns all kgo.Record that shall be produced.
 func (p *publishRecordsRequest) KgoRecords() []*kgo.Record {
 	kgoRecords := make([]*kgo.Record, 0, len(p.Records)*len(p.TopicNames))
 	for _, topicName := range p.TopicNames {

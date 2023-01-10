@@ -11,4 +11,6 @@ package console
 
 import "errors"
 
+// ErrSchemaRegistryNotConfigured is an error that declares the schema registry has not
+// been configured in Redpanda Console and thus the request could not be processed.
 var ErrSchemaRegistryNotConfigured = errors.New("no schema registry configured")

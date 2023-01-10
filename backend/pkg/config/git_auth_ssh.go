@@ -11,6 +11,7 @@ package config
 
 import "flag"
 
+// GitAuthSSH is the configuration to authenticate against Git via SSH.
 type GitAuthSSH struct {
 	Enabled            bool   `yaml:"enabled"`
 	Username           string `yaml:"username"`

@@ -9,6 +9,10 @@
 
 package config
 
+// ProtoTopicMapping is the configuration that defines what prototypes shall be used
+// for what topics (either key or value), so that we can decode these. This is only relevant
+// if the topics have been serialized without the schema registry being involved in the
+// serialization.
 type ProtoTopicMapping struct {
 	TopicName string `yaml:"topicName"`
 

@@ -16,6 +16,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// DeleteRecords requests deletion of all Kafka records in a given topic that have been
+// produced after a certain partition offset. This can be used for truncating a topic.
 func (s *Service) DeleteRecords(ctx context.Context, deleteReq kmsg.DeleteRecordsRequestTopic) (*kmsg.DeleteRecordsResponse, error) {
 	req := kmsg.NewDeleteRecordsRequest()
 	req.Topics = []kmsg.DeleteRecordsRequestTopic{deleteReq}

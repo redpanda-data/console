@@ -22,16 +22,22 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 )
 
+// EditConsumerGroupOffsetsResponse is the sum of all brokers' response shards for
+// requesting a consumer group offset edit.
 type EditConsumerGroupOffsetsResponse struct {
 	Error  string                                  `json:"error,omitempty"`
 	Topics []EditConsumerGroupOffsetsResponseTopic `json:"topics"`
 }
 
+// EditConsumerGroupOffsetsResponseTopic is the topic-scoped response to editing
+// a consumer group's offset.
 type EditConsumerGroupOffsetsResponseTopic struct {
 	TopicName  string                                           `json:"topicName"`
 	Partitions []EditConsumerGroupOffsetsResponseTopicPartition `json:"partitions"`
 }
 
+// EditConsumerGroupOffsetsResponseTopicPartition is the partition-scoped response to editing
+// a consumer group's offset.
 type EditConsumerGroupOffsetsResponseTopicPartition struct {
 	ID    int32  `json:"partitionID"`
 	Error string `json:"error,omitempty"`

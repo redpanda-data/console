@@ -14,7 +14,7 @@ import (
 	"fmt"
 )
 
-// KafkaSASLGSSAPI represents the Kafka Kerberos config
+// KafkaSASLGSSAPI represents the Kafka Kerberos config.
 type KafkaSASLGSSAPI struct {
 	AuthType           string `yaml:"authType"`
 	KeyTabPath         string `yaml:"keyTabPath"`
@@ -31,18 +31,20 @@ type KafkaSASLGSSAPI struct {
 }
 
 // RegisterFlags registers all sensitive Kerberos settings as flag
-func (c *KafkaSASLGSSAPI) RegisterFlags(f *flag.FlagSet) {
-	f.StringVar(&c.Password, "kafka.sasl.gssapi.password", "", "Kerberos password if auth type user auth is used")
+func (k *KafkaSASLGSSAPI) RegisterFlags(f *flag.FlagSet) {
+	f.StringVar(&k.Password, "kafka.sasl.gssapi.password", "", "Kerberos password if auth type user auth is used")
 }
 
-func (c *KafkaSASLGSSAPI) Validate() error {
-	if c.AuthType != "USER_AUTH" && c.AuthType != "KEYTAB_AUTH" {
-		return fmt.Errorf("auth type '%v' is invalid", c.AuthType)
+// Validate user input for Kerberos configuration.
+func (k *KafkaSASLGSSAPI) Validate() error {
+	if k.AuthType != "USER_AUTH" && k.AuthType != "KEYTAB_AUTH" {
+		return fmt.Errorf("auth type '%v' is invalid", k.AuthType)
 	}
 
 	return nil
 }
 
-func (s *KafkaSASLGSSAPI) SetDefaults() {
-	s.EnableFast = true
+// SetDefaults for the Kafka Kerberos configurations.
+func (k *KafkaSASLGSSAPI) SetDefaults() {
+	k.EnableFast = true
 }

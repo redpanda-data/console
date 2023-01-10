@@ -17,12 +17,16 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// ListConsumerGroupsResponseSharded is a helper type with additional helper functions and it carries
+// the sum of all response shards.
 type ListConsumerGroupsResponseSharded struct {
 	Groups         []ListConsumerGroupsResponse
 	RequestsSent   int
 	RequestsFailed int
 }
 
+// GetGroupIDs returns all consumer group ids that can be found in any of the list consumer
+// group response shards.
 func (l *ListConsumerGroupsResponseSharded) GetGroupIDs() []string {
 	groupIDs := make([]string, 0)
 	for _, groupResp := range l.Groups {
@@ -36,7 +40,7 @@ func (l *ListConsumerGroupsResponseSharded) GetGroupIDs() []string {
 	return groupIDs
 }
 
-// LogDirResponse can have an error (if the broker failed to return data) or the actual LogDir response
+// ListConsumerGroupsResponse is a single broker's response for listing consumer groups.
 type ListConsumerGroupsResponse struct {
 	BrokerMetadata kgo.BrokerMetadata
 	Groups         *kmsg.ListGroupsResponse

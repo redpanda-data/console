@@ -47,8 +47,8 @@ func (api *API) handleFrontendIndex() http.HandlerFunc {
 		// If there's an active URL rewrite we need to replace the marker in the index.html with the
 		// used base path so that the frontend knows what base URL to use for all subsequent requests.
 		if basePath, ok := r.Context().Value(BasePathCtxKey).(string); ok && len(basePath) > 0 {
-
-			// prefix must end with slash! otherwise the last segment gets cut off: 'a/b/c' -> "can't find host/a/b/resouce"
+			// prefix must end with slash! otherwise the last segment gets
+			// cut off: 'a/b/c' -> "can't find host/a/b/resource"
 			if !strings.HasSuffix(basePath, "/") {
 				basePath = basePath + "/"
 			}

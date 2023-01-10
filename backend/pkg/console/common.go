@@ -11,6 +11,8 @@ package console
 
 import "github.com/twmb/franz-go/pkg/kgo"
 
+// BrokerRequestError is a helper struct that is used to wrap an error with the respective
+// broker metadata that returned this error.
 type BrokerRequestError struct {
 	BrokerMeta kgo.BrokerMetadata `json:"brokerMetadata"`
 	Error      error              `json:"error"`

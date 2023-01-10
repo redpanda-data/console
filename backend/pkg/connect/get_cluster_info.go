@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// ClusterInfo provides information about the Kafka connect cluster we are talking to.
 type ClusterInfo struct {
 	Name    string                        `json:"clusterName"`
 	Host    string                        `json:"host"`
@@ -27,6 +28,7 @@ type ClusterInfo struct {
 	Plugins []connect.ConnectorPluginInfo `json:"plugins"`
 }
 
+// GetClusterInfo retrieves metadata information about the Kafka connect cluster we talk to.
 func (s *Service) GetClusterInfo(ctx context.Context, clusterName string) (ClusterInfo, *rest.Error) {
 	c, restErr := s.getConnectClusterByName(clusterName)
 	if restErr != nil {

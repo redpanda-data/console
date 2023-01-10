@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// CreateTopic creates a Kafka topic.
 func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTopicsRequestTopic) (*kmsg.CreateTopicsResponseTopic, error) {
 	req := kmsg.NewCreateTopicsRequest()
 	req.Topics = []kmsg.CreateTopicsRequestTopic{createTopicReq}

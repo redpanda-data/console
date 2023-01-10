@@ -14,18 +14,22 @@ import (
 	"fmt"
 )
 
+// Redpanda is the config object for all Redpanda specific options.
 type Redpanda struct {
 	AdminAPI RedpandaAdminAPI `yaml:"adminApi"`
 }
 
+// RegisterFlags for all sensitive, Redpanda specific configurations.
 func (c *Redpanda) RegisterFlags(flags *flag.FlagSet) {
 	c.AdminAPI.RegisterFlags(flags)
 }
 
+// SetDefaults for all Redpanda specific configurations.
 func (c *Redpanda) SetDefaults() {
 	c.AdminAPI.SetDefaults()
 }
 
+// Validate all Redpanda specific configurations.
 func (c *Redpanda) Validate() error {
 	err := c.AdminAPI.Validate()
 	if err != nil {

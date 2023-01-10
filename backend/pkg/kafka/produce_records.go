@@ -25,6 +25,7 @@ const (
 	compressionTypeZstd   // 4
 )
 
+// ProduceRecordResponse is the response after sending the produce request to Kafka.
 type ProduceRecordResponse struct {
 	TopicName   string
 	PartitionID int32

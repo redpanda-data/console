@@ -35,6 +35,7 @@ type SchemaOverviewRequestError struct {
 	ErrorMessage       string `json:"errorMessage"`
 }
 
+// SchemaSubject is the metadata information for a schema registered in the Schema registry.
 type SchemaSubject struct {
 	Name          string `json:"name"`
 	Compatibility string `json:"compatibilityLevel"`

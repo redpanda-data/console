@@ -119,6 +119,14 @@ func (d *deserializer) DeserializeRecord(record *kgo.Record) *deserializedRecord
 	}
 }
 
+// deserializePayload tries to deserialize a binary payload into a human-readable format,
+// so that we can send this to the frontend for rendering it to the user. Because we don't
+// know what format has been used to produce the payload we try to guess the right
+// type (JSON, Text, XML, Protobuf, Avro etc) by trying to decode each message into
+// the respective type. If none matches, we return the binary content as is and it
+// will be displayed as hex string in the frontend.
+//
+//nolint:gocognit // This function should be refactored and broken into multiple functions
 func (d *deserializer) deserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
 	// 0. Check if payload is empty / whitespace only
 	if len(payload) == 0 {

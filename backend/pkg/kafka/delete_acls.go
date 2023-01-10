@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// DeleteACLs deletes all Kafka ACLs in the target cluster that match the provided filter.
 func (s *Service) DeleteACLs(ctx context.Context, filters []kmsg.DeleteACLsRequestFilter) (*kmsg.DeleteACLsResponse, error) {
 	req := kmsg.NewDeleteACLsRequest()
 	req.Filters = filters

@@ -17,11 +17,15 @@ import (
 	"github.com/twmb/franz-go/pkg/kversion"
 )
 
+// EndpointCompatibility describes what Console endpoints can be offered to the frontend,
+// based on the supported requests of our upstream systems (Kafka, Redpanda, etc).
 type EndpointCompatibility struct {
 	KafkaClusterVersion string                          `json:"kafkaVersion"`
 	Endpoints           []EndpointCompatibilityEndpoint `json:"endpoints"`
 }
 
+// EndpointCompatibilityEndpoint describes whether a certain endpoint (e.g. GET /topics)
+// is supported or not.
 type EndpointCompatibilityEndpoint struct {
 	Endpoint    string `json:"endpoint"`
 	Method      string `json:"method"`

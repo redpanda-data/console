@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// DeleteACLsResponse is the response to deleting ACL resources.
 type DeleteACLsResponse struct {
 	ErrorMessages []string `json:"errorMessage"`
 	MatchedACLs   int      `json:"matchedACLs"`

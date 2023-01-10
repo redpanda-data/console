@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// DeleteTopics requests deletion for one or more kafka topics via the Kafka API.
 func (s *Service) DeleteTopics(ctx context.Context, topicNames []string) (*kmsg.DeleteTopicsResponse, error) {
 	req := kmsg.NewDeleteTopicsRequest()
 	req.TopicNames = topicNames

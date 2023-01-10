@@ -15,11 +15,17 @@ import (
 )
 
 const (
-	SASLMechanismPlain                  = "PLAIN"
-	SASLMechanismScramSHA256            = "SCRAM-SHA-256"
-	SASLMechanismScramSHA512            = "SCRAM-SHA-512"
-	SASLMechanismGSSAPI                 = "GSSAPI"
-	SASLMechanismOAuthBearer            = "OAUTHBEARER"
+	// SASLMechanismPlain represents the configuration value for SASL Plain authentication.
+	SASLMechanismPlain = "PLAIN"
+	// SASLMechanismScramSHA256 represents the configuration value for SASL scram-sha-256 authentication.
+	SASLMechanismScramSHA256 = "SCRAM-SHA-256"
+	// SASLMechanismScramSHA512 represents the configuration value for SASL scram-sha-512 authentication.
+	SASLMechanismScramSHA512 = "SCRAM-SHA-512"
+	// SASLMechanismGSSAPI represents the configuration value for SASL Kerberos authentication.
+	SASLMechanismGSSAPI = "GSSAPI"
+	// SASLMechanismOAuthBearer represents the configuration value for SASL OAuth authentication.
+	SASLMechanismOAuthBearer = "OAUTHBEARER"
+	// SASLMechanismAWSManagedStreamingIAM represents the configuration value for authenticating via AWS MSK IAM.
 	SASLMechanismAWSManagedStreamingIAM = "AWS_MSK_IAM"
 )
 

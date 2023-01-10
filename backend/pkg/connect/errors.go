@@ -11,4 +11,5 @@ package connect
 
 import "github.com/pkg/errors"
 
+// ErrKafkaConnectNotConfigured indicates that Kafka connect was not configured in Console.
 var ErrKafkaConnectNotConfigured = errors.New("kafka connect not configured")

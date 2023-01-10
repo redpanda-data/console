@@ -213,6 +213,7 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 	}
 }
 
+// CreateACLRequest defines the HTTP request payload for creating Kafka ACLs.
 type CreateACLRequest struct {
 	// ResourceType is the type of resource this acl entry will be on.
 	// It is invalid to use UNKNOWN or ANY.
@@ -245,6 +246,7 @@ type CreateACLRequest struct {
 	PermissionType kmsg.ACLPermissionType `schema:"permissionType"`
 }
 
+// OK validates the user input for the create acl request.
 func (c *CreateACLRequest) OK() error {
 	if c.ResourceType == kmsg.ACLResourceTypeAny {
 		return fmt.Errorf("acl resource type must not be any (1), but found: %q", c.ResourceType)

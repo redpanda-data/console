@@ -14,6 +14,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+// DescribeQuotas requests a list of configured Quota rules via the Kafka API.
 func (s *Service) DescribeQuotas(ctx context.Context) (*kmsg.DescribeClientQuotasResponse, error) {
 	r := kmsg.NewDescribeClientQuotasRequest()
 	return r.RequestWith(ctx, s.KafkaClient)

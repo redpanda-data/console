@@ -22,6 +22,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
+// Service provides the API for interacting with all configured Kafka connect clusters.
 type Service struct {
 	Cfg              config.Connect
 	Logger           *zap.Logger
@@ -29,11 +30,15 @@ type Service struct {
 	OverrideSvc      *OverrideService
 }
 
+// ClientWithConfig carries the Kafka Connect client, along with the configuration
+// for a single configured Kafka connect cluster.
 type ClientWithConfig struct {
 	Client *con.Client
 	Cfg    config.ConnectCluster
 }
 
+// NewService creates a new connect.Service. It tests the connectivity for each configured
+// Kafka connect cluster proactively.
 func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 	logger.Info("creating Kafka connect HTTP clients and testing connectivity to all clusters")
 

@@ -18,6 +18,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/schema"
 )
 
+// SchemaDetails is the sum of multiple information around a single schema. This
+// will be sent to the frontend.
 type SchemaDetails struct {
 	Subject            string `json:"string"`
 	SchemaID           int    `json:"schemaId"`
@@ -28,6 +30,8 @@ type SchemaDetails struct {
 	Type               string `json:"type"`
 }
 
+// GetSchemaDetails requests multiple endpoints to get all available information
+// for a single schema registered in the schema registry.
 func (s *Service) GetSchemaDetails(_ context.Context, subject string, version string) (*SchemaDetails, error) {
 	if s.kafkaSvc.SchemaService == nil {
 		return nil, ErrSchemaRegistryNotConfigured

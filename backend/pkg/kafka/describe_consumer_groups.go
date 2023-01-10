@@ -18,12 +18,15 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// DescribeConsumerGroupsResponseSharded represents all the described consumer group responses
+// we got from each broker in the cluster.
 type DescribeConsumerGroupsResponseSharded struct {
 	Groups         []DescribeConsumerGroupsResponse
 	RequestsSent   int
 	RequestsFailed int
 }
 
+// GetGroupIDs returns the consumer group IDs that are part of this response shared.
 func (d *DescribeConsumerGroupsResponseSharded) GetGroupIDs() []string {
 	groupIDs := make([]string, 0)
 	for _, groupResp := range d.Groups {
@@ -41,6 +44,8 @@ func (d *DescribeConsumerGroupsResponseSharded) GetGroupIDs() []string {
 	return groupIDs
 }
 
+// GetDescribedGroups extracts the DescribeGroupsResponseGroup responses from the struct that carries
+// all shard responses.
 func (d *DescribeConsumerGroupsResponseSharded) GetDescribedGroups() []kmsg.DescribeGroupsResponseGroup {
 	describedGroups := make([]kmsg.DescribeGroupsResponseGroup, 0)
 	for _, resp := range d.Groups {
@@ -53,6 +58,8 @@ func (d *DescribeConsumerGroupsResponseSharded) GetDescribedGroups() []kmsg.Desc
 	return describedGroups
 }
 
+// DescribeConsumerGroupsResponse is the response including broker metadata and error message
+// that we receive from each broker we send a request to.
 type DescribeConsumerGroupsResponse struct {
 	BrokerMetadata kgo.BrokerMetadata
 	Groups         *kmsg.DescribeGroupsResponse

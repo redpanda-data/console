@@ -19,6 +19,7 @@ type ConfigOverride struct {
 	Value        map[string]interface{} `json:"value,omitempty"`
 }
 
+// Validate the configured override.
 func (c *ConfigOverride) Validate() error {
 	if c.NameSelector.Regexp == nil {
 		return fmt.Errorf("name selector must be set")

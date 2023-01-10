@@ -36,6 +36,7 @@ type CreateTopicResponseConfig struct {
 	Value *string `json:"value"`
 }
 
+// CreateTopic creates a Kafka topic.
 func (s *Service) CreateTopic(ctx context.Context, createTopicReq kmsg.CreateTopicsRequestTopic) (CreateTopicResponse, *rest.Error) {
 	internalLogs := []zapcore.Field{
 		zap.String("topic_name", createTopicReq.Topic),

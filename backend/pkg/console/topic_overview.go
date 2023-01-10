@@ -20,13 +20,21 @@ import (
 	"go.uber.org/zap"
 )
 
+// DocumentationState denotes whether topic documentation is available for a certain
+// topic. If it is not available it also provides additional information why it's not available.
 type DocumentationState string
 
 const (
-	DocumentationStateUnknown       DocumentationState = "UNKNOWN"
-	DocumentationStateNotConfigured                    = "NOT_CONFIGURED"
-	DocumentationStateNotExistent                      = "NOT_EXISTENT"
-	DocumentationStateAvailable                        = "AVAILABLE"
+	// DocumentationStateUnknown is the default documentation state.
+	DocumentationStateUnknown DocumentationState = "UNKNOWN"
+	// DocumentationStateNotConfigured is the state if Redpanda Console was not configured to
+	// run with topic documentations (i.e. it has no source to pull documentations from).
+	DocumentationStateNotConfigured = "NOT_CONFIGURED"
+	// DocumentationStateNotExistent denotes that topic documentation is configured, but
+	// for this specific topic there's no documentation available.
+	DocumentationStateNotExistent = "NOT_EXISTENT"
+	// DocumentationStateAvailable denotes that documentation for this topic is available.
+	DocumentationStateAvailable = "AVAILABLE"
 )
 
 // TopicSummary is all information we get when listing Kafka topics

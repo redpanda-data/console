@@ -137,6 +137,7 @@ func (s *Service) Start() error {
 	return s.ProtoService.Start()
 }
 
+// NewKgoClient creates a new Kafka client based on the stored Kafka configuration.
 func (s *Service) NewKgoClient(additionalOpts ...kgo.Opt) (*kgo.Client, error) {
 	kgoOpts, err := NewKgoConfig(&s.Config.Kafka, s.Logger, s.KafkaClientHooks)
 	if err != nil {

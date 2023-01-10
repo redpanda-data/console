@@ -41,6 +41,7 @@ type TopicConfigEntry struct {
 	Synonyms        []TopicConfigSynonym `json:"synonyms"`
 }
 
+// TopicConfigSynonym is a synonym for a topic configuration.
 type TopicConfigSynonym struct {
 	Name   string  `json:"name"`
 	Value  *string `json:"value"`

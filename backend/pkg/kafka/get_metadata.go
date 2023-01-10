@@ -40,6 +40,7 @@ func (s *Service) GetMetadata(ctx context.Context, topics []string) (*kmsg.Metad
 	return req.RequestWith(ctx, s.KafkaClient)
 }
 
+// GetSingleMetadata returns metadata for a single topic.
 func (s *Service) GetSingleMetadata(ctx context.Context, topic string) (kmsg.MetadataResponseTopic, *rest.Error) {
 	metadata, err := s.GetMetadata(ctx, []string{topic})
 	if err != nil {

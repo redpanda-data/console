@@ -16,22 +16,27 @@ import (
 	"golang.org/x/net/context"
 )
 
+// QuotaResponse is a helper type that carries the sum of all quota responses
+// sent by each broker in the cluster.
 type QuotaResponse struct {
 	Error string              `json:"error,omitempty"`
 	Items []QuotaResponseItem `json:"items"`
 }
 
+// QuotaResponseItem is a broker's response to a quota entity in Kafka.
 type QuotaResponseItem struct {
 	EntityType string                 `json:"entityType"`
 	EntityName string                 `json:"entityName"`
 	Settings   []QuotaResponseSetting `json:"settings"`
 }
 
+// QuotaResponseSetting is a quota configuration.
 type QuotaResponseSetting struct {
 	Key   string  `json:"key"`
 	Value float64 `json:"value"`
 }
 
+// DescribeQuotas fetches the configured quota settings in the target cluster.
 func (s *Service) DescribeQuotas(ctx context.Context) QuotaResponse {
 	items := make([]QuotaResponseItem, 0)
 

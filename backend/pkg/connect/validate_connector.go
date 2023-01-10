@@ -20,6 +20,13 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// ValidateConnectorConfig validates a given connector's configuration that is sent by the frontend.
+// The response contains all available fields along with potential configuration errors such as a
+// missing value for a required configuration. This is used by the frontend to dynamically render
+// the configuration form in the frontend.
+//
+// This function overrides some validation results, so that we can modify what is rendered in the
+// frontend (e.g. removing too advanced configurations from the results).
 func (s *Service) ValidateConnectorConfig(ctx context.Context, clusterName string, pluginClassName string, options con.ValidateConnectorConfigOptions) (con.ConnectorValidationResult, *rest.Error) {
 	c, restErr := s.getConnectClusterByName(clusterName)
 	if restErr != nil {

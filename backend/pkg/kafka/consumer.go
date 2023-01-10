@@ -71,6 +71,8 @@ type PartitionConsumeRequest struct {
 	MaxMessageCount int64 // If either EndOffset or MaxMessageCount is reached the Consumer will stop.
 }
 
+// TopicConsumeRequest defines all request parameters that are sent by the Console frontend,
+// for consuming messages from a Kafka topic.
 type TopicConsumeRequest struct {
 	TopicName             string
 	MaxMessageCount       int
@@ -87,6 +89,9 @@ type interpreterArguments struct {
 	HeadersByKey map[string]interface{}
 }
 
+// FetchMessages is in charge of fulfilling the topic consume request. This is tricky
+// in many cases, often due to the fact that we can't consume backwards, but we offer
+// users to consume the most recent messages.
 func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgress, consumeReq TopicConsumeRequest) error {
 	// 1. Assign partitions with right start offsets and create client
 	partitionOffsets := make(map[string]map[int32]kgo.Offset)

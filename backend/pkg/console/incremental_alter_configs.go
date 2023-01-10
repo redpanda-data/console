@@ -19,12 +19,16 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// IncrementalAlterConfigsResourceResponse is the response to changing Kafka configurations
+// via the Kafka API.
 type IncrementalAlterConfigsResourceResponse struct {
 	Error        string `json:"error,omitempty"`
 	ResourceName string `json:"resourceName"`
 	ResourceType int8   `json:"resourceType"`
 }
 
+// IncrementalAlterConfigs alters the configuration of a Kafka resource (broker/topic/...)
+// via the Kafka API.
 func (s *Service) IncrementalAlterConfigs(ctx context.Context,
 	alterConfigs []kmsg.IncrementalAlterConfigsRequestResource,
 ) ([]IncrementalAlterConfigsResourceResponse, *rest.Error) {

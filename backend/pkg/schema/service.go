@@ -168,6 +168,8 @@ func (s *Service) compileProtoSchemas(schema SchemaVersionedResponse, schemaRepo
 	return descriptors[0], nil
 }
 
+// GetAvroSchemaByID loads the schema by the given schemaID and tries to parse the schema
+// contents to an avro.Schema, so that it can be used for decoding Avro encoded messages.
 func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
 	codecCached, err, _ := s.avroSchemaByID.Get(schemaID, func() (avro.Schema, error) {
 		schemaRes, err := s.registryClient.GetSchemaByID(schemaID)
@@ -188,30 +190,37 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
 	return codecCached, err
 }
 
+// GetSubjects returns a list of all deployed schemas.
 func (s *Service) GetSubjects() (*SubjectsResponse, error) {
 	return s.registryClient.GetSubjects()
 }
 
+// GetSchemaTypes returns supported types (AVRO, PROTOBUF, JSON)
 func (s *Service) GetSchemaTypes() ([]string, error) {
 	return s.registryClient.GetSchemaTypes()
 }
 
+// GetSubjectVersions returns a schema subject's registered versions.
 func (s *Service) GetSubjectVersions(subject string) (*SubjectVersionsResponse, error) {
 	return s.registryClient.GetSubjectVersions(subject)
 }
 
+// GetSchemaBySubject returns the schema for the specified version of this subject.
 func (s *Service) GetSchemaBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
 	return s.registryClient.GetSchemaBySubject(subject, version)
 }
 
+// GetMode returns the current mode for Schema Registry at a global level.
 func (s *Service) GetMode() (*ModeResponse, error) {
 	return s.registryClient.GetMode()
 }
 
+// GetConfig gets global compatibility level.
 func (s *Service) GetConfig() (*ConfigResponse, error) {
 	return s.registryClient.GetConfig()
 }
 
+// GetSubjectConfig gets compatibility level for a given subject.
 func (s *Service) GetSubjectConfig(subject string) (*ConfigResponse, error) {
 	return s.registryClient.GetSubjectConfig(subject)
 }

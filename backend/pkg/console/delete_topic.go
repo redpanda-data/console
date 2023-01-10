@@ -59,11 +59,14 @@ func (s *Service) DeleteTopic(ctx context.Context, topicName string) *rest.Error
 	return nil
 }
 
+// DeleteTopicRecordsResponse is the response to deleting a Kafka topic.
 type DeleteTopicRecordsResponse struct {
 	TopicName  string                                `json:"topicName"`
 	Partitions []DeleteTopicRecordsResponsePartition `json:"partitions"`
 }
 
+// DeleteTopicRecordsResponsePartition os the partition-scoped response to deleting
+// a Kafka topic.
 type DeleteTopicRecordsResponsePartition struct {
 	PartitionID  int32  `json:"partitionId"`
 	LowWaterMark int64  `json:"lowWaterMark"`

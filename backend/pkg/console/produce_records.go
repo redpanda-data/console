@@ -16,6 +16,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
+// ProduceRecordsResponse is the responses to producing multiple Kafka RecordBatches.
 type ProduceRecordsResponse struct {
 	Records []ProduceRecordResponse `json:"records"`
 
@@ -25,6 +26,7 @@ type ProduceRecordsResponse struct {
 	Error string `json:"error,omitempty"`
 }
 
+// ProduceRecordResponse is the response to producing a Kafka RecordBatch.
 type ProduceRecordResponse struct {
 	TopicName   string `json:"topicName"`
 	PartitionID int32  `json:"partitionId"`

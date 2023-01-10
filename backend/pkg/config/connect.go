@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+// Connect defines all configuration options for connecting to one or more
+// Kafka Connect clusters.
 type Connect struct {
 	Enabled        bool             `yaml:"enabled"`
 	Clusters       []ConnectCluster `yaml:"clusters"`
@@ -23,6 +25,7 @@ type Connect struct {
 	RequestTimeout time.Duration    `yaml:"requestTimeout"` // timeout for REST requests to Kafka Connect
 }
 
+// SetDefaults for Kafka connect configuration.
 func (c *Connect) SetDefaults() {
 	for _, cluster := range c.Clusters {
 		cluster.SetDefaults()
@@ -40,6 +43,7 @@ func (c *Connect) RegisterFlags(f *flag.FlagSet) {
 	}
 }
 
+// Validate provided configurations for Kafka connect clusters.
 func (c *Connect) Validate() error {
 	for i, cluster := range c.Clusters {
 		err := cluster.Validate()

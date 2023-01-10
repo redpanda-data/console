@@ -17,6 +17,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// APIVersion represents the supported broker versions of a specific Kafka API request (e.g. CreateTopic).
 type APIVersion struct {
 	KeyID      int16  `json:"keyId"`
 	KeyName    string `json:"keyName"`

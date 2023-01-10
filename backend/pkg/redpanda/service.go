@@ -22,11 +22,14 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
+// Service is the abstraction for communicating with a Redpanda cluster via the admin api.
 type Service struct {
 	adminClient *admin.AdminAPI
 	logger      *zap.Logger
 }
 
+// NewService creates a new redpanda.Service. It creates a Redpanda admin client based
+// on the authentication information provided in the configuration.
 func NewService(cfg config.Redpanda, logger *zap.Logger) (*Service, error) {
 	if !cfg.AdminAPI.Enabled {
 		return nil, nil
@@ -104,6 +107,7 @@ func (s *Service) ListUsers(ctx context.Context) ([]string, error) {
 	return users, nil
 }
 
+// GetClusterVersion retrieves the target cluster's release version.
 func (s *Service) GetClusterVersion(ctx context.Context) (string, error) {
 	brokers, err := s.adminClient.Brokers(ctx)
 	if err != nil {
@@ -112,6 +116,7 @@ func (s *Service) GetClusterVersion(ctx context.Context) (string, error) {
 	return ClusterVersionFromBrokerList(brokers), nil
 }
 
+// GetLicense retrieves the target cluster's license information.
 func (s *Service) GetLicense(ctx context.Context) License {
 	l, err := s.adminClient.GetLicenseInfo(ctx)
 	if err != nil {

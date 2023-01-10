@@ -14,6 +14,7 @@ import (
 	"fmt"
 )
 
+// ConnectCluster is the configuration of a single Kafka connect cluster.
 type ConnectCluster struct {
 	// Name will be shown in the Frontend to identify a connect cluster
 	Name string `yaml:"name"`
@@ -34,10 +35,12 @@ func (c *ConnectCluster) RegisterFlagsWithPrefix(f *flag.FlagSet, prefix string)
 	f.StringVar(&c.Token, prefix+"token", "", "Bearer token for connect cluster authentication")
 }
 
+// SetDefaults for a target Kafka connect cluster.
 func (c *ConnectCluster) SetDefaults() {
 	c.TLS.SetDefaults()
 }
 
+// Validate Kafka connect cluster configurations provided by the user.
 func (c *ConnectCluster) Validate() error {
 	if c.Name == "" {
 		return fmt.Errorf("a cluster name must be set to identify the connect cluster")
