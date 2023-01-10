@@ -146,6 +146,8 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]Broker
 			}
 		}
 
+		//nolint: staticcheck // The loop is indeed uncondtionally terminated, which is not good,
+		// however we only expect a single iteration because we only requested configs from one broker.
 		return configEntries, nil
 	}
 

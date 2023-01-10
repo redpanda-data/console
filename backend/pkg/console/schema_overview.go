@@ -69,11 +69,7 @@ func (s *Service) GetSchemaOverview(ctx context.Context) (*SchemaOverview, error
 		if err != nil {
 			// Some schema registry implementations do not support this endpoint. In order to not render an
 			// error notification we will report a mode without an error message.
-			ch <- chResponse{
-				Mode:  &schema.ModeResponse{Mode: "unknown"},
-				Error: nil,
-			}
-			return nil
+			mode = &schema.ModeResponse{Mode: "unknown"}
 		}
 		ch <- chResponse{Mode: mode}
 		return nil

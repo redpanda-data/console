@@ -98,7 +98,7 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 				return nil, &rest.Error{
 					Err:          fmt.Errorf("watermarks for topic '%v' are missing", topic.Topic),
 					Status:       http.StatusServiceUnavailable,
-					Message:      fmt.Sprintf("Can't substitute earliest/oldest offsets due to missing topic watermarks"),
+					Message:      "Can't substitute earliest/oldest offsets due to missing topic watermarks",
 					InternalLogs: nil,
 				}
 			}
@@ -108,7 +108,7 @@ func (s *Service) EditConsumerGroupOffsets(ctx context.Context, groupID string, 
 				return nil, &rest.Error{
 					Err:          fmt.Errorf("watermarks for topic '%v', partition '%v' are missing", topic.Topic, partition.Partition),
 					Status:       http.StatusServiceUnavailable,
-					Message:      fmt.Sprintf("Can't substitute earliest/oldest offsets due to missing partition watermarks"),
+					Message:      "Can't substitute earliest/oldest offsets due to missing partition watermarks",
 					InternalLogs: nil,
 				}
 			}
