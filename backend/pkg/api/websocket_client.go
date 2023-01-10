@@ -29,7 +29,7 @@ type websocketClient struct {
 	Connection *websocket.Conn
 	Mutex      *sync.RWMutex
 
-	access_token string
+	accessToken string
 }
 
 func (wc *websocketClient) upgrade(w http.ResponseWriter, r *http.Request) *rest.Error {
@@ -44,8 +44,8 @@ func (wc *websocketClient) upgrade(w http.ResponseWriter, r *http.Request) *rest
 		if len(parts) != 2 {
 			continue
 		}
-		if parts[0] == "access_token" {
-			wc.access_token = parts[1]
+		if parts[0] == "accessToken" {
+			wc.accessToken = parts[1]
 			break
 		}
 	}

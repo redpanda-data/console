@@ -59,7 +59,7 @@ func (g *getAclsOverviewRequest) ToKafkaRequest() kmsg.DescribeACLsRequest {
 func (api *API) handleGetACLsOverview() http.HandlerFunc {
 	// response represents the data which is returned for listing ACLs
 	type response struct {
-		*console.AclOverview
+		*console.ACLOverview
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -106,9 +106,9 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			return
 		}
 
-		filteredAclResources := make([]*console.AclResource, 0, len(aclOverview.AclResources))
-		for _, res := range aclOverview.AclResources {
-			filteredRules := make([]*console.AclRule, 0, len(res.ACLs))
+		filteredACLResources := make([]*console.ACLResource, 0, len(aclOverview.ACLResources))
+		for _, res := range aclOverview.ACLResources {
+			filteredRules := make([]*console.ACLRule, 0, len(res.ACLs))
 			for _, rule := range res.ACLs {
 				if api.Hooks.Console.IsProtectedKafkaUser(rule.Principal) {
 					continue
@@ -117,10 +117,10 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 			}
 			if len(filteredRules) > 0 {
 				res.ACLs = filteredRules
-				filteredAclResources = append(filteredAclResources, res)
+				filteredACLResources = append(filteredACLResources, res)
 			}
 		}
-		aclOverview.AclResources = filteredAclResources
+		aclOverview.ACLResources = filteredACLResources
 
 		res := response{
 			aclOverview,

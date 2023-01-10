@@ -21,11 +21,11 @@ func Test_decodeConfluentBinaryWrapper(t *testing.T) {
 	buf := new(bytes.Buffer)
 
 	schemaID := uint32(1000)
-	var schemaIdBuf []byte
-	schemaIdBuf = binary.BigEndian.AppendUint32(schemaIdBuf, schemaID)
+	var schemaIDBuf []byte
+	schemaIDBuf = binary.BigEndian.AppendUint32(schemaIDBuf, schemaID)
 
 	binary.Write(buf, binary.BigEndian, byte(0))
-	binary.Write(buf, binary.BigEndian, schemaIdBuf)
+	binary.Write(buf, binary.BigEndian, schemaIDBuf)
 
 	var arrLengthBuf []byte
 	arrLengthBuf = binary.AppendVarint(arrLengthBuf, 1<<60)
