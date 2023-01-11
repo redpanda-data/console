@@ -11,10 +11,12 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/cloudhut/common/rest"
+	"golang.org/x/exp/maps"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
@@ -51,6 +53,13 @@ func (api *API) handleGetEndpoints() http.HandlerFunc {
 			return
 		}
 
+		// The enterprise version may provide additional endpoints. We want to report what
+		// endpoints are available, so that we can consider these features as well in the frontend.
+		// We want to merge what we got reported from the hooks into the original response.
+		hookedEndpointCompatibility := api.Hooks.Console.EndpointCompatibility()
+		originalEndpoints := endpointCompatibility.Endpoints
+		endpointCompatibility.Endpoints = mergeCompatibilityEndpoints(originalEndpoints, hookedEndpointCompatibility)
+
 		distribution := KafkaDistributionApacheKafka
 		if api.Cfg.Redpanda.AdminAPI.Enabled {
 			distribution = KafkaDistributionRedpanda
@@ -74,4 +83,25 @@ func (api *API) handleGetEndpoints() http.HandlerFunc {
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, response)
 	}
+}
+
+// mergeCompatibilityEndpoints merges the reported compatible/enabled endpoints from b into a. We will overwrite
+// existing endpoints if a 2-tuple of <endpoint, method> already exists in the given slice.
+func mergeCompatibilityEndpoints(a, b []console.EndpointCompatibilityEndpoint) []console.EndpointCompatibilityEndpoint {
+	keyFromEndpoint := func(e console.EndpointCompatibilityEndpoint) string {
+		return fmt.Sprintf("%v-%v", e.Method, e.Endpoint)
+	}
+
+	distinctEndpoints := make(map[string]console.EndpointCompatibilityEndpoint)
+	for _, entry := range a {
+		key := keyFromEndpoint(entry)
+		distinctEndpoints[key] = entry
+	}
+
+	for _, entry := range b {
+		key := keyFromEndpoint(entry)
+		distinctEndpoints[key] = entry
+	}
+
+	return maps.Values(distinctEndpoints)
 }
