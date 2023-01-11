@@ -42,7 +42,7 @@ func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
 		visibleTopics := make([]console.TopicDetails, 0, len(topicDetails))
 		for _, topic := range topicDetails {
 			// Check if logged in user is allowed to see this topic, if not - don't add it to the list of returned topics
-			canSee, restErr := api.Hooks.Console.CanSeeTopic(r.Context(), topic.TopicName)
+			canSee, restErr := api.Hooks.Authorization.CanSeeTopic(r.Context(), topic.TopicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -67,7 +67,7 @@ func (api *API) handleGetPartitionReassignments() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Check if logged in user (Console Business) is allowed to list reassignments
-		isAllowed, restErr := api.Hooks.Console.CanPatchPartitionReassignments(r.Context())
+		isAllowed, restErr := api.Hooks.Authorization.CanPatchPartitionReassignments(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -147,7 +147,7 @@ func (api *API) handlePatchPartitionAssignments() http.HandlerFunc {
 
 		// 2. Check if logged in user is allowed to reassign partitions (always true for Console OSS, but not
 		// for RP Console Business)
-		isAllowed, restErr := api.Hooks.Console.CanPatchPartitionReassignments(r.Context())
+		isAllowed, restErr := api.Hooks.Authorization.CanPatchPartitionReassignments(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -295,7 +295,7 @@ func (api *API) handlePatchConfigs() http.HandlerFunc {
 		}
 
 		// 2. Check if logged in user is allowed to alter configs (always true for Kowl, but not for Kowl Business)
-		isAllowed, restErr := api.Hooks.Console.CanPatchConfigs(r.Context())
+		isAllowed, restErr := api.Hooks.Authorization.CanPatchConfigs(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

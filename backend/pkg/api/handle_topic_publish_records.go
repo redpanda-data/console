@@ -116,7 +116,7 @@ func (api *API) handlePublishTopicsRecords() http.HandlerFunc {
 
 		// 2. Check if logged-in user is allowed to publish records to all the specified topics
 		for _, topicName := range req.TopicNames {
-			canPublish, restErr := api.Hooks.Console.CanPublishTopicRecords(r.Context(), topicName)
+			canPublish, restErr := api.Hooks.Authorization.CanPublishTopicRecords(r.Context(), topicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return

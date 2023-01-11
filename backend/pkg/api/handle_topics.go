@@ -45,7 +45,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 		visibleTopics := make([]*console.TopicSummary, 0, len(topics))
 		for _, topic := range topics {
 			// Check if logged in user is allowed to see this topic. If not remove the topic from the list.
-			canSee, restErr := api.Hooks.Console.CanSeeTopic(r.Context(), topic.TopicName)
+			canSee, restErr := api.Hooks.Authorization.CanSeeTopic(r.Context(), topic.TopicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -56,7 +56,7 @@ func (api *API) handleGetTopics() http.HandlerFunc {
 			}
 
 			// Attach allowed actions for each topic
-			topic.AllowedActions, restErr = api.Hooks.Console.AllowedTopicActions(r.Context(), topic.TopicName)
+			topic.AllowedActions, restErr = api.Hooks.Authorization.AllowedTopicActions(r.Context(), topic.TopicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -82,7 +82,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Console.CanViewTopicPartitions(r.Context(), topicName)
+		canView, restErr := api.Hooks.Authorization.CanViewTopicPartitions(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -134,7 +134,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Console.CanViewTopicConfig(r.Context(), topicName)
+		canView, restErr := api.Hooks.Authorization.CanViewTopicConfig(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -172,7 +172,7 @@ func (api *API) handleDeleteTopic() http.HandlerFunc {
 		topicName := chi.URLParam(r, "topicName")
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canDelete, restErr := api.Hooks.Console.CanDeleteTopic(r.Context(), topicName)
+		canDelete, restErr := api.Hooks.Authorization.CanDeleteTopic(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -241,7 +241,7 @@ func (api *API) handleDeleteTopicRecords() http.HandlerFunc {
 		}
 
 		// 2. Check if logged in user is allowed to view partitions for the given topic
-		canDelete, restErr := api.Hooks.Console.CanDeleteTopicRecords(r.Context(), topicName)
+		canDelete, restErr := api.Hooks.Authorization.CanDeleteTopicRecords(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -339,7 +339,7 @@ func (api *API) handleEditTopicConfig() http.HandlerFunc {
 		}
 
 		// 2. Check if logged-in user is allowed to edit topic configs.
-		canEdit, restErr := api.Hooks.Console.CanEditTopicConfig(r.Context(), topicName)
+		canEdit, restErr := api.Hooks.Authorization.CanEditTopicConfig(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -421,7 +421,7 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 
 		// 3. Check if user is allowed to view the config for these topics
 		for _, topicName := range topicNames {
-			canView, restErr := api.Hooks.Console.CanViewTopicConfig(r.Context(), topicName)
+			canView, restErr := api.Hooks.Authorization.CanViewTopicConfig(r.Context(), topicName)
 			if restErr != nil {
 				rest.SendRESTError(w, r, logger, restErr)
 				return
@@ -474,7 +474,7 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
-		canView, restErr := api.Hooks.Console.CanViewTopicConsumers(r.Context(), topicName)
+		canView, restErr := api.Hooks.Authorization.CanViewTopicConsumers(r.Context(), topicName)
 		if restErr != nil {
 			rest.SendRESTError(w, r, logger, restErr)
 			return
@@ -555,7 +555,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 
 		// 2. Check if logged in user is allowed list partitions (always true for Kowl, but not for Kowl Business)
 		for _, topic := range topicNames {
-			canView, restErr := api.Hooks.Console.CanViewTopicPartitions(r.Context(), topic)
+			canView, restErr := api.Hooks.Authorization.CanViewTopicPartitions(r.Context(), topic)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return

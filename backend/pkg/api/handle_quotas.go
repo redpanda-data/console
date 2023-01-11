@@ -21,7 +21,7 @@ func (api *API) handleGetQuotas() http.HandlerFunc {
 		quotas := api.ConsoleSvc.DescribeQuotas(r.Context())
 
 		// Check if logged in user is allowed to list Quotas
-		isAllowed, restErr := api.Hooks.Console.CanListQuotas(r.Context())
+		isAllowed, restErr := api.Hooks.Authorization.CanListQuotas(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

@@ -79,7 +79,7 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 		}
 
 		// Check if logged in user is allowed to list ACLs
-		isAllowed, restErr := api.Hooks.Console.CanListACLs(r.Context())
+		isAllowed, restErr := api.Hooks.Authorization.CanListACLs(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -110,7 +110,7 @@ func (api *API) handleGetACLsOverview() http.HandlerFunc {
 		for _, res := range aclOverview.ACLResources {
 			filteredRules := make([]*console.ACLRule, 0, len(res.ACLs))
 			for _, rule := range res.ACLs {
-				if api.Hooks.Console.IsProtectedKafkaUser(rule.Principal) {
+				if api.Hooks.Authorization.IsProtectedKafkaUser(rule.Principal) {
 					continue
 				}
 				filteredRules = append(filteredRules, rule)
@@ -177,7 +177,7 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 		}
 
 		// Check if logged-in user is allowed to delete ACLs
-		isAllowed, restErr := api.Hooks.Console.CanDeleteACL(r.Context())
+		isAllowed, restErr := api.Hooks.Authorization.CanDeleteACL(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -193,7 +193,7 @@ func (api *API) handleDeleteACLs() http.HandlerFunc {
 		}
 
 		// Check if targeted user is a protected Kafka user
-		if req.Principal != nil && api.Hooks.Console.IsProtectedKafkaUser(*req.Principal) {
+		if req.Principal != nil && api.Hooks.Authorization.IsProtectedKafkaUser(*req.Principal) {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      fmt.Errorf("requester targets a protected Kafka principal to delete ACLs"),
 				Status:   http.StatusForbidden,
@@ -299,7 +299,7 @@ func (api *API) handleCreateACL() http.HandlerFunc {
 		}
 
 		// Check if logged-in user is allowed to create ACLs
-		isAllowed, restErr := api.Hooks.Console.CanCreateACL(r.Context())
+		isAllowed, restErr := api.Hooks.Authorization.CanCreateACL(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -315,7 +315,7 @@ func (api *API) handleCreateACL() http.HandlerFunc {
 		}
 
 		// Check if targeted user is a protected Kafka user
-		if api.Hooks.Console.IsProtectedKafkaUser(req.Principal) {
+		if api.Hooks.Authorization.IsProtectedKafkaUser(req.Principal) {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      fmt.Errorf("requester targets a protected Kafka principal to create ACLs"),
 				Status:   http.StatusForbidden,

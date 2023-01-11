@@ -31,7 +31,7 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Check if logged-in user is allowed to list Kafka users
-		canList, restErr := api.Hooks.Console.CanListKafkaUsers(r.Context())
+		canList, restErr := api.Hooks.Authorization.CanListKafkaUsers(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -59,7 +59,7 @@ func (api *API) handleGetUsers() http.HandlerFunc {
 			}
 			filteredUsers := make([]string, 0, len(users))
 			for _, user := range users {
-				if api.Hooks.Console.IsProtectedKafkaUser(user) {
+				if api.Hooks.Authorization.IsProtectedKafkaUser(user) {
 					continue
 				}
 				filteredUsers = append(filteredUsers, user)
@@ -110,7 +110,7 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 		}
 
 		// 2. Check if logged-in user is allowed to create Kafka users
-		canCreate, restErr := api.Hooks.Console.CanCreateKafkaUsers(r.Context())
+		canCreate, restErr := api.Hooks.Authorization.CanCreateKafkaUsers(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -127,7 +127,7 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 		}
 
 		// 3. Check if targeted user is a protected user
-		if api.Hooks.Console.IsProtectedKafkaUser(req.Username) {
+		if api.Hooks.Authorization.IsProtectedKafkaUser(req.Username) {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("requester tried to create a protected Kafka user"),
 				Status:   http.StatusForbidden,
@@ -175,7 +175,7 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 		}
 
 		// 2. Check if logged-in user is allowed to delete Kafka users
-		canDelete, restErr := api.Hooks.Console.CanDeleteKafkaUsers(r.Context())
+		canDelete, restErr := api.Hooks.Authorization.CanDeleteKafkaUsers(r.Context())
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -192,7 +192,7 @@ func (api *API) handleDeleteUser() http.HandlerFunc {
 		}
 
 		// 3. Check if targeted user is a protected user
-		if api.Hooks.Console.IsProtectedKafkaUser(principalID) {
+		if api.Hooks.Authorization.IsProtectedKafkaUser(principalID) {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("requester tried to delete a protected Kafka user"),
 				Status:   http.StatusForbidden,
