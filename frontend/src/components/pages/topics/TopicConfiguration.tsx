@@ -208,7 +208,7 @@ const ConfigEntry = observer((p: {
         </span>
 
         <span className="isEditted" >
-            {entry.isExplicitlySet && 'Edited'}
+            {entry.isExplicitlySet && 'Custom'}
         </span>
 
         <span className="spacer">
