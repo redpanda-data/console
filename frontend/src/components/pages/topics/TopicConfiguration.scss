@@ -58,7 +58,7 @@
         align-items: center;
         gap: 12px;
         font-size: 18px;
-        color: var(--ant-primary-color);
+        color: hsl(0deg 0% 35%);
 
         .btnEdit {
             display: inline-flex;
@@ -68,6 +68,7 @@
             cursor: pointer;
 
             &:hover {
+                color: var(--ant-primary-color);
                 background: rgb(239 239 239);
 
                 // color: var(--ant-primary-color);
@@ -113,14 +114,16 @@
     .ant-modal-body {
         padding: 2em;
 
-        .ant-modal-confirm-title{
-            display:flex;
+        .ant-modal-confirm-title {
+            display: flex;
             align-items: center;
-            gap:4px;
+            gap: 4px;
+
             svg {
                 font-size: 1.5em;
             }
         }
+
         .ant-modal-confirm-body {
 
             .ant-modal-confirm-title {
