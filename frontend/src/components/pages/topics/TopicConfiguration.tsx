@@ -59,7 +59,6 @@ export default class ConfigurationEditor extends Component<{
             keyboard: false,
             maskClosable: false,
             icon: null,
-            centered: true,
 
             content: <Observer>{() => {
                 const isCustom = this.modalValueType == 'custom';
