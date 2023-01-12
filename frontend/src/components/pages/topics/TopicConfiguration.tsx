@@ -143,6 +143,19 @@ export default class ConfigurationEditor extends Component<{
         if (filter)
             entries = entries.filter(x => x.name.includes(filter) || (x.value ?? '').includes(filter));
 
+        const entryOrder = {
+            'retention': -3,
+            'cleanup': -2,
+        };
+
+        entries = entries.slice().sort((a, b) => {
+            for (const [e, order] of Object.entries(entryOrder)) {
+                if (a.name.includes(e) && !b.name.includes(e)) return order;
+                if (b.name.includes(e) && !a.name.includes(e)) return -order;
+            }
+            return 0;
+        });
+
         const categories = entries.groupInto(x => x.category);
         for (const e of categories)
             if (!e.key)
