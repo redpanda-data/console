@@ -156,8 +156,7 @@ const TopicConfigList = observer(({ configEntries }: { configEntries: ConfigEntr
 const ConfigDisplayModeSettings = observer(() => (
     <div
         style={{
-            marginLeft: '1px',
-            marginBottom: '1.5em',
+            marginTop: '16px',
             display: 'flex',
             flexWrap: 'wrap',
             justifyContent: 'flex-end',

@@ -59,6 +59,7 @@ export default class ConfigurationEditor extends Component<{
             keyboard: false,
             maskClosable: false,
             icon: null,
+            centered: true,
 
             content: <Observer>{() => {
                 const isCustom = this.modalValueType == 'custom';
@@ -140,11 +141,7 @@ export default class ConfigurationEditor extends Component<{
         let entries = this.props.entries;
         const filter = this.filter;
         if (filter)
-            entries = entries.filter(x =>
-                x.name.includes(filter) ||
-                (x.value ?? '').includes(filter) ||
-                (x.documentation ?? '').includes(filter)
-            );
+            entries = entries.filter(x => x.name.includes(filter) || (x.value ?? '').includes(filter));
 
         const categories = entries.groupInto(x => x.category);
         for (const e of categories)
@@ -163,32 +160,6 @@ export default class ConfigurationEditor extends Component<{
         </div>
     }
 
-    @action.bound toggleEdit() {
-        const entries = this.props.entries;
-
-        if (!this.isEditting) {
-            // start editting
-            for (const e of entries)
-                e.currentValue = e.value;
-        } else {
-            // save new config
-            // const newEntries = entries.map(x => ({
-            //     key: x.name,
-            //     op: 'SET',
-            //     value: x.currentValue
-            // } as PatchTopicConfigsEntry));
-
-            Modal.error({
-                title: 'Error Title',
-                content: 'Error Content'
-
-            });
-            return;
-
-        }
-        this.isEditting = !this.isEditting;
-
-    }
 }
 
 const ConfigGroup = observer((p: {
