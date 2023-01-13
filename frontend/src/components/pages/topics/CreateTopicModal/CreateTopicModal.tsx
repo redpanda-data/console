@@ -499,9 +499,20 @@ const durationFactors = {
                 style={{ minWidth: '90px' }}
                 value={unit}
                 onChange={u => {
+                    const changedFromInfinite = this.unit == 'infinite' && u != 'infinite';
+
                     this.unit = u;
                     if (this.unit == 'infinite')
                         this.props.onChange(unitFactors[this.unit]);
+
+                    if (changedFromInfinite) {
+                        // Example: if new unit is "seconds", then we'd want 1000 ms
+                        // The "1*" is redundant of course, but left in to better clarify what
+                        // value we're trying to create and why
+                        const newValue = 1 * unitFactors[u];
+                        this.props.onChange(newValue);
+                    }
+
                 }}
                 options={selectOptions}
             />}
