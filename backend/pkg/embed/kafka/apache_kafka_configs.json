@@ -17,13 +17,13 @@
   {
     "name": "message.downconversion.enable",
     "type": "BOOLEAN",
-    "documentation": "This configuration controls whether down-conversion of message formats is enabled to satisfy consume requests. When set to \u003ccode\u003efalse\u003c/code\u003e, broker will not perform down-conversion for consumers expecting an older message format. The broker responds with \u003ccode\u003eUNSUPPORTED_VERSION\u003c/code\u003e error for consume requests from such older clients. This configuration does not apply to any message format conversion that might be required for replication to followers.",
+    "documentation": "This configuration controls whether down-conversion of message formats is enabled to satisfy consume requests. When set to \"false\", broker will not perform down-conversion for consumers expecting an older message format. The broker responds with \"UNSUPPORTED_VERSION\" error for consume requests from such older clients. This configuration does not apply to any message format conversion that might be required for replication to followers.",
     "category": "Storage Performance"
   },
   {
     "name": "min.insync.replicas",
     "type": "INT",
-    "documentation": "When a producer sets acks to \"all\" (or \"-1\"), this configuration specifies the minimum number of replicas that must acknowledge a write for the write to be considered successful. If this minimum cannot be met, then the producer will raise an exception (either NotEnoughReplicas or NotEnoughReplicasAfterAppend).\u003cbr\u003eWhen used together, \u003ccode\u003emin.insync.replicas\u003c/code\u003e and \u003ccode\u003eacks\u003c/code\u003e allow you to enforce greater durability guarantees. A typical scenario would be to create a topic with a replication factor of 3, set \u003ccode\u003emin.insync.replicas\u003c/code\u003e to 2, and produce with \u003ccode\u003eacks\u003c/code\u003e of \"all\". This will ensure that the producer raises an exception if a majority of replicas do not receive a write.",
+    "documentation": "When a producer sets acks to \"all\" (or \"-1\"), this configuration specifies the minimum number of replicas that must acknowledge a write for the write to be considered successful. If this minimum cannot be met, then the producer will raise an exception (either NotEnoughReplicas or NotEnoughReplicasAfterAppend). When used together, \"min.insync.replicas\" and \"acks\" allow you to enforce greater durability guarantees. A typical scenario would be to create a topic with a replication factor of 3, set \"min.insync.replicas\" to 2, and produce with \"acks\" of \"all\". This will ensure that the producer raises an exception if a majority of replicas do not receive a write.",
     "category": "Replication"
   },
   {
@@ -37,7 +37,7 @@
     "name": "cleanup.policy",
     "aliases": ["log_cleanup_policy"],
     "type": "LIST",
-    "documentation": "This config designates the retention policy to use on log segments. The \"delete\" policy (which is the default) will discard old segments when their retention time or size limit has been reached. The \"compact\" policy will enable \u003ca href=\"#compaction\"\u003elog compaction\u003c/a\u003e, which retains the latest value for each key. It is also possible to specify both policies in a comma-separated list (e.g. \"delete,compact\"). In this case, old segments will be discarded per the retention time and size configuration, while retained segments will be compacted.",
+    "documentation": "This config designates the retention policy to use on log segments. The \"delete\" policy (which is the default) will discard old segments when their retention time or size limit has been reached. The \"compact\" policy will enable \"log compaction\", which retains the latest value for each key. It is also possible to specify both policies in a comma-separated list (e.g. \"delete,compact\"). In this case, old segments will be discarded per the retention time and size configuration, while retained segments will be compacted.",
     "category": "Storage",
     "frontendFormat": "SELECT",
     "enumValues": ["delete", "compact", "compact,delete"]
@@ -73,7 +73,7 @@
   {
     "name": "flush.messages",
     "type": "LONG",
-    "documentation": "This setting allows specifying an interval at which we will force an fsync of data written to the log. For example if this was set to 1 we would fsync after every message; if it were 5 we would fsync after every five messages. In general we recommend you not set this and use replication for durability and allow the operating system's background flush capabilities as it is more efficient. This setting can be overridden on a per-topic basis (see \u003ca href=\"#topicconfigs\"\u003ethe per-topic configuration section\u003c/a\u003e).",
+    "documentation": "This setting allows specifying an interval at which we will force an fsync of data written to the log. For example if this was set to 1 we would fsync after every message; if it were 5 we would fsync after every five messages. In general we recommend you not set this and use replication for durability and allow the operating system's background flush capabilities as it is more efficient. This setting can be overridden on a per-topic basis (see \"the per-topic configuration section\").",
     "category": "Storage Performance"
   },
   {
@@ -129,7 +129,7 @@
   {
     "name": "min.cleanable.dirty.ratio",
     "type": "DOUBLE",
-    "documentation": "This configuration controls how frequently the log compactor will attempt to clean the log (assuming \u003ca href=\"#compaction\"\u003elog compaction\u003c/a\u003e is enabled). By default we will avoid cleaning a log where more than 50% of the log has been compacted. This ratio bounds the maximum space wasted in the log by duplicates (at 50% at most 50% of the log could be duplicates). A higher ratio will mean fewer, more efficient cleanings but will mean more wasted space in the log. If the max.compaction.lag.ms or the min.compaction.lag.ms configurations are also specified, then the log compactor considers the log to be eligible for compaction as soon as either: (i) the dirty ratio threshold has been met and the log has had dirty (uncompacted) records for at least the min.compaction.lag.ms duration, or (ii) if the log has had dirty (uncompacted) records for at most the max.compaction.lag.ms period.",
+    "documentation": "This configuration controls how frequently the log compactor will attempt to clean the log (assuming \"log compaction\" is enabled). By default we will avoid cleaning a log where more than 50% of the log has been compacted. This ratio bounds the maximum space wasted in the log by duplicates (at 50% at most 50% of the log could be duplicates). A higher ratio will mean fewer, more efficient cleanings but will mean more wasted space in the log. If the max.compaction.lag.ms or the min.compaction.lag.ms configurations are also specified, then the log compactor considers the log to be eligible for compaction as soon as either: (i) the dirty ratio threshold has been met and the log has had dirty (uncompacted) records for at least the min.compaction.lag.ms duration, or (ii) if the log has had dirty (uncompacted) records for at most the max.compaction.lag.ms period.",
     "category": "Storage Performance",
     "frontendFormat": "RATIO"
   },
@@ -157,7 +157,7 @@
   {
     "name": "delete.retention.ms",
     "type": "LONG",
-    "documentation": "The amount of time to retain delete tombstone markers for \u003ca href=\"#compaction\"\u003elog compacted\u003c/a\u003e topics. This setting also gives a bound on the time in which a consumer must complete a read if they begin from offset 0 to ensure that they get a valid snapshot of the final stage (otherwise delete tombstones may be collected before they complete their scan).",
+    "documentation": "The amount of time to retain delete tombstone markers for\"log compacted\" topics. This setting also gives a bound on the time in which a consumer must complete a read if they begin from offset 0 to ensure that they get a valid snapshot of the final stage (otherwise delete tombstones may be collected before they complete their scan).",
     "category": "Storage",
     "frontendFormat": "DURATION"
   },
