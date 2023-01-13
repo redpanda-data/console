@@ -2,7 +2,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline'
 import { Icon } from '@redpanda-data/ui';
-import { Input, message, Modal, Popover, Radio, Select } from 'antd';
+import { Alert, Input, message, Modal, Popover, Radio, Select } from 'antd';
 import { action, makeObservable, observable } from 'mobx';
 import { Observer, observer } from 'mobx-react';
 import { Component } from 'react';
@@ -26,6 +26,7 @@ export default class ConfigurationEditor extends Component<{
 
     modal: ReturnType<ModalFunc> | null = null;
     @observable modalValueType = 'default' as 'default' | 'custom';
+    @observable modalError = null as string | null;
 
     constructor(p: any) {
         super(p);
@@ -45,6 +46,7 @@ export default class ConfigurationEditor extends Component<{
         const friendlyDefault = formatConfigValue(configEntry.name, defaultValue, 'friendly');
         const initialValueType = configEntry.isExplicitlySet ? 'custom' : 'default';
         this.modalValueType = initialValueType;
+        this.modalError = null;
 
         this.modal = Modal.confirm({
             title: <><Icon as={AdjustmentsIcon} /> {'Edit ' + configEntry.name}</>,
@@ -95,10 +97,14 @@ export default class ConfigurationEditor extends Component<{
                             </div>
                         </Radio>
                     </Radio.Group>
+
+                    {this.modalError && <Alert type="error" message={this.modalError} showIcon style={{ margin: '1em 0' }} />}
+
                 </div>
             }}</Observer>,
 
             onOk: async () => {
+
                 // When do we need to apply?
                 // -> When the "type" changed (from default to custom or vice-versa)
                 // -> When type is "custom" and "currentValue" changed
@@ -129,6 +135,11 @@ export default class ConfigurationEditor extends Component<{
                     message.success(<>Successfully updated config <code>{configEntry.name}</code></>)
                 } catch (err) {
                     console.error('error while applying config change', { err, configEntry });
+                    this.modalError = (err instanceof Error)
+                        ? err.message
+                        : String(err);
+                    // we must to throw an error to keep the modal open
+                    throw err;
                 }
 
                 this.props.onForceRefresh();
