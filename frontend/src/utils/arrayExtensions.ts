@@ -73,6 +73,8 @@ declare global {
 
 
         isEqual(this: string[], other: string[]): boolean;
+
+        orderBy<T>(this: T[], getElementOrder: (item: T) => number): T[];
     }
 }
 
@@ -356,6 +358,26 @@ Array.prototype.joinStr = function joinStr(this: (string | null | undefined)[], 
     }
 
     return r;
+};
+
+Array.prototype.orderBy = function orderBy<T>(this: T[], getElementOrder: (item: T) => number): T[] {
+    const result = this.slice();
+
+    const elementOrder = new Map<T, number>();
+    for (const e of this)
+        elementOrder.set(e, getElementOrder(e));
+
+    result.sort((a, b) => {
+        const orderA = elementOrder.get(a);
+        if (typeof orderA == 'undefined') return 0;
+
+        const orderB = elementOrder.get(b);
+        if (typeof orderB == 'undefined') return 0;
+
+        return orderA - orderB;
+    });
+
+    return result;
 };
 
 

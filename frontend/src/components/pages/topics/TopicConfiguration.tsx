@@ -205,8 +205,6 @@ const ConfigEntry = observer((p: {
 }) => {
 
     const entry = p.entry;
-    // const defaultValue = entry.synonyms && entry.synonyms.last()?.value;
-
     const friendlyValue = formatConfigValue(entry.name, entry.value, 'friendly');
 
     return <>
@@ -277,9 +275,19 @@ export const ConfigEntryEditor = observer((p: {
             </Select>
 
         case 'BYTE_SIZE':
-            return <DataSizeSelect valueBytes={Number(entry.currentValue ?? 0)} onChange={e => entry.currentValue = e} className={p.className} />
+            return <DataSizeSelect
+                allowInfinite={true}
+                valueBytes={Number(entry.currentValue ?? 0)}
+                onChange={e => entry.currentValue = e}
+                className={p.className}
+            />
         case 'DURATION':
-            return <DurationSelect valueMilliseconds={Number(entry.currentValue ?? 0)} onChange={e => entry.currentValue = e} className={p.className} />
+            return <DurationSelect
+                allowInfinite={true}
+                valueMilliseconds={Number(entry.currentValue ?? 0)}
+                onChange={e => entry.currentValue = e}
+                className={p.className}
+            />
 
         case 'PASSWORD':
         case 'RATIO':

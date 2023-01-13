@@ -140,7 +140,11 @@ export function NumInput(p: {
         p.onChange?.(x);
     };
 
-    const changeBy = (dx: number) => commit((p.value ?? 0) + dx);
+    const changeBy = (dx: number) => {
+        let newValue = (p.value ?? 0) + dx;
+        newValue = Math.round(newValue);
+        commit(newValue);
+    };
     const increment = (e: MouseEvent) => { changeBy(+1); e.preventDefault(); }
     const decrement = (e: MouseEvent) => { changeBy(-1); e.preventDefault(); }
 
@@ -387,96 +391,18 @@ export type { CreateTopicModalState };
 
 export type DataSizeUnit = keyof typeof dataSizeFactors;
 const dataSizeFactors = {
-    'infinite': Number.POSITIVE_INFINITY,
+    'infinite': -1,
 
-    'Byte': 1,
+    'Bytes': 1,
     'KiB': 1024,
     'MiB': 1024 * 1024,
     'GiB': 1024 * 1024 * 1024,
     'TiB': 1024 * 1024 * 1024 * 1024,
 } as const;
 
-
-@observer
-export class DataSizeSelect extends Component<{
-    valueBytes: number,
-        onChange: (bytes: number) => void,
-        className?: string,
-}> {
-
-    @observable unit: DataSizeUnit;
-
-    constructor(p: any) {
-        super(p);
-
-        const value = this.props.valueBytes;
-        this.unit = 'Byte';
-        // find best initial unit
-        for (const [k, v] of Object.entries(dataSizeFactors)) {
-            if (!Number.isFinite(v)) continue;
-            const scaledValue = value / v;
-            if (scaledValue >= 0 && scaledValue < 1024) {
-                this.unit = k as DataSizeUnit;
-                break;
-            }
-        }
-
-        makeObservable(this);
-    }
-
-    render() {
-        const unit = this.unit;
-        const unitValue = this.props.valueBytes / dataSizeFactors[unit];
-
-        const numDisabled = unit == 'infinite' /* || unit == 'default' */;
-
-        let placeholder: string | undefined;
-        if (unit == 'infinite')
-            placeholder = 'Infinite';
-
-        return <NumInput
-            className={this.props.className}
-            value={numDisabled ? undefined : unitValue}
-            onChange={x => {
-                if (x === undefined) {
-                    this.props.onChange(0);
-                    return;
-                }
-
-                const factor = dataSizeFactors[this.unit];
-                const bytes = x * factor;
-                this.props.onChange(bytes);
-            }}
-            min={0}
-            placeholder={placeholder}
-            disabled={numDisabled}
-
-            addonAfter={<Select
-                style={{ minWidth: '90px' }}
-                value={unit}
-                onChange={u => {
-                    this.unit = u;
-                }}
-                options={
-                    Object.entries(dataSizeFactors).map(([name]) => {
-                        const isSpecial = name == 'default' || name == 'infinite';
-                        return {
-                            value: name,
-                            label: isSpecial ? titleCase(name) : name,
-                            style: isSpecial ? { fontStyle: 'italic' } : undefined,
-                        };
-                    })
-                }
-            />}
-        />
-    }
-}
-
-
 export type DurationUnit = keyof typeof durationFactors;
 const durationFactors = {
-    'default': -1,
-    'infinite': Number.POSITIVE_INFINITY,
+    'infinite': -1,
 
     'ms': 1,
     'seconds': 1000,
@@ -487,44 +413,70 @@ const durationFactors = {
     'years': 1000 * 60 * 60 * 24 * 365,
 } as const;
 
-@observer
-export class DurationSelect extends Component<{
-    valueMilliseconds: number,
-        onChange: (bytes: number) => void,
-        className?: string,
+@observer class UnitSelect<UnitType extends string> extends Component<{
+    baseValue: number;
+    unitFactors: { [index in UnitType]: number };
+    onChange: (baseValue: number) => void;
+    allowInfinite: boolean;
+    className?: string;
 }> {
 
-    @observable unit: DurationUnit;
+    @observable unit: UnitType;
 
     constructor(p: any) {
         super(p);
 
-        const value = this.props.valueMilliseconds;
-        this.unit = 'ms';
-        // find best initial unit
-        for (const [k, v] of Object.entries(durationFactors).sort((a, b) => b[1] - a[1]).reverse()) {
-            if (!Number.isFinite(v)) continue;
-            if (v < 0) continue;
+        const value = this.props.baseValue;
 
-            const scaledValue = value / v;
-            if (scaledValue < 1000) continue;
+        // Find best initial unit, simply by chosing the shortest text representation
+        const textPairs = Object.entries(durationFactors)
+            .map(([unit, factor]) => ({
+                unit: unit as UnitType,
+                factor
+            }))
+            .filter(x => {
+                if (x.unit == 'default') return false;
+                if (x.unit == 'infinite') return false;
+                return true;
+            })
+            .map(x => ({
+                ...x,
+                text: String(value / x.factor)
+            }))
+            .orderBy(x => x.text.length);
 
-            this.unit = k as DurationUnit;
-            break;
+        const shortestPair = textPairs[0];
+        this.unit = shortestPair.unit;
+
+        if (this.props.allowInfinite && value < 0) {
+            this.unit = 'infinite' as UnitType;
         }
 
         makeObservable(this);
     }
 
     render() {
+        const unitFactors = this.props.unitFactors;
         const unit = this.unit;
-        const unitValue = this.props.valueMilliseconds / durationFactors[unit];
+        const unitValue = this.props.baseValue / unitFactors[unit];
 
-        const numDisabled = unit == 'infinite' /* || unit == 'default' */;
+        const numDisabled = unit == 'infinite';
 
         let placeholder: string | undefined;
         if (unit == 'infinite')
             placeholder = 'Infinite';
+
+        const selectOptions = Object.entries(unitFactors).map(([name]) => {
+            const isSpecial = name == 'infinite';
+            return {
+                value: name,
+                label: isSpecial ? titleCase(name) : name,
+                style: isSpecial ? { fontStyle: 'italic' } : undefined,
+            };
+        });
+
+        if (!this.props.allowInfinite)
+            selectOptions.removeAll(x => x.value == 'infinite');
 
         return <NumInput
             className={this.props.className}
@@ -535,7 +487,7 @@ export class DurationSelect extends Component<{
                     return;
                 }
 
-                const factor = durationFactors[this.unit];
+                const factor = unitFactors[this.unit];
                 const bytes = x * factor;
                 this.props.onChange(bytes);
             }}
@@ -548,18 +500,44 @@ export class DurationSelect extends Component<{
                 value={unit}
                 onChange={u => {
                     this.unit = u;
+                    if (this.unit == 'infinite')
+                        this.props.onChange(unitFactors[this.unit]);
                 }}
-                options={
-                    Object.entries(durationFactors).map(([name]) => {
-                        const isSpecial = name == 'default' || name == 'infinite';
-                        return {
-                            value: name,
-                            label: isSpecial ? titleCase(name) : name,
-                            style: isSpecial ? { fontStyle: 'italic' } : undefined,
-                        };
-                    })
-                }
+                options={selectOptions}
             />}
         />
     }
+}
+
+
+export function DataSizeSelect(p: {
+    valueBytes: number;
+    onChange: (ms: number) => void;
+    allowInfinite: boolean;
+    className?: string;
+}) {
+
+    return <UnitSelect
+        baseValue={p.valueBytes}
+        onChange={p.onChange}
+        allowInfinite={p.allowInfinite}
+        unitFactors={dataSizeFactors}
+        className={p.className}
+    />
+}
+
+export function DurationSelect(p: {
+    valueMilliseconds: number;
+    onChange: (ms: number) => void;
+    allowInfinite: boolean;
+    className?: string;
+}) {
+
+    return <UnitSelect
+        baseValue={p.valueMilliseconds}
+        onChange={p.onChange}
+        allowInfinite={p.allowInfinite}
+        unitFactors={durationFactors}
+        className={p.className}
+    />
 }
