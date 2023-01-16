@@ -8,11 +8,12 @@ import { Observer, observer } from 'mobx-react';
 import { Component } from 'react';
 import { ConfigEntryExtended } from '../../../state/restInterfaces';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
-import { DataSizeSelect, DurationSelect, NumInput } from './CreateTopicModal/CreateTopicModal';
+import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import './TopicConfiguration.scss';
 import Search from 'antd/lib/input/Search';
 import { ModalFunc } from 'antd/lib/modal/confirm';
 import { api } from '../../../state/backendApi';
+import Password from 'antd/lib/input/Password';
 
 
 @observer
@@ -281,20 +282,22 @@ export const ConfigEntryEditor = observer((p: {
             return <DataSizeSelect
                 allowInfinite={true}
                 valueBytes={Number(entry.currentValue ?? 0)}
-                onChange={e => entry.currentValue = e}
+                onChange={e => entry.currentValue = Math.round(e)}
                 className={p.className}
             />
         case 'DURATION':
             return <DurationSelect
                 allowInfinite={true}
                 valueMilliseconds={Number(entry.currentValue ?? 0)}
-                onChange={e => entry.currentValue = e}
+                onChange={e => entry.currentValue = Math.round(e)}
                 className={p.className}
             />
 
         case 'PASSWORD':
+            return <Password value={entry.currentValue ?? ''} onChange={x => entry.currentValue = x.target.value} />
+
         case 'RATIO':
-            return <div>unknown config type</div>
+            return <RatioInput value={Number(entry.currentValue)} onChange={x => entry.currentValue = x} />
 
         case 'INTEGER':
             return <NumInput value={Number(entry.currentValue)} onChange={e => entry.currentValue = Math.round(e ?? 0)} className={p.className} />

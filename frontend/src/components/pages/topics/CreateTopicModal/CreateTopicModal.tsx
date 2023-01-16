@@ -1,5 +1,5 @@
 import { DashIcon, PlusIcon, XIcon } from '@primer/octicons-react';
-import { Button, Input, Select } from 'antd';
+import { Button, Input, InputNumber, Select, Slider } from 'antd';
 import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, MouseEvent, useEffect, useState } from 'react';
@@ -148,9 +148,11 @@ export function NumInput(p: {
     const increment = (e: MouseEvent) => { changeBy(+1); e.preventDefault(); }
     const decrement = (e: MouseEvent) => { changeBy(-1); e.preventDefault(); }
 
+
+
     return <Input
         className={'numericInput ' + (p.className ?? '')}
-        style={{ minWidth: '150px', width: '100%' }}
+        style={{ minWidth: '120px', width: '100%' }}
         spellCheck={false}
         placeholder={p.placeholder}
         disabled={p.disabled}
@@ -429,10 +431,10 @@ const durationFactors = {
         const value = this.props.baseValue;
 
         // Find best initial unit, simply by chosing the shortest text representation
-        const textPairs = Object.entries(durationFactors)
+        const textPairs = Object.entries(this.props.unitFactors)
             .map(([unit, factor]) => ({
                 unit: unit as UnitType,
-                factor
+                factor: factor as number
             }))
             .filter(x => {
                 if (x.unit == 'default') return false;
@@ -477,6 +479,9 @@ const durationFactors = {
 
         if (!this.props.allowInfinite)
             selectOptions.removeAll(x => x.value == 'infinite');
+
+
+        console.log('unit select: ', { unitValue, unit, baseValue: this.props.baseValue, unitFactors })
 
         return <NumInput
             className={this.props.className}
@@ -551,4 +556,31 @@ export function DurationSelect(p: {
         unitFactors={durationFactors}
         className={p.className}
     />
+}
+
+
+export function RatioInput(p: {
+    value: number;
+    onChange: (ratio: number) => void;
+}) {
+
+    return <div className="ratioInput">
+        <Slider
+            min={0} max={100} step={1}
+            value={Math.round(p.value * 100)}
+            onChange={x => p.onChange(x / 100)}
+            tooltip={{ formatter: null }}
+        />
+        <InputNumber
+            min={0} max={100}
+            value={Math.round(p.value * 100)}
+            onChange={x => {
+                if (x === null) return;
+                p.onChange(x / 100);
+            }}
+            addonAfter="%"
+            controls={false}
+            size="small"
+        />
+    </div>
 }
