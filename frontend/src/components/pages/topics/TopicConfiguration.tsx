@@ -236,7 +236,10 @@ const ConfigEntry = observer((p: {
                             <span className="title">Value</span>
                             <span>{friendlyValue}</span>
                             <span className="title">Source</span>
-                            <span>{entry.source}</span>
+                            <div>
+                                <div><code>{entry.source}</code></div>
+                                <div className="configSourceExplanation">{getConfigSourceExplanation(entry.source)}</div>
+                            </div>
                         </div>
                     </div>
                 }>
@@ -305,7 +308,23 @@ export const ConfigEntryEditor = observer((p: {
     }
 });
 
+function getConfigSourceExplanation(source: string) {
+    switch (source) {
+        case 'DEFAULT_CONFIG':
+            return 'Built-in default when the setting is not overriden anywhere';
 
+        case 'DYNAMIC_BROKER_CONFIG':
+        case 'DYNAMIC_BROKER_LOGGER_CONFIG':
+        case 'DYNAMIC_DEFAULT_BROKER_CONFIG':
+            return 'Set at broker level';
 
-// topic default config
-// topic specific config
+        case 'DYNAMIC_TOPIC_CONFIG':
+            return 'Set for this specific topic';
+
+        case 'STATIC_BROKER_CONFIG':
+            return 'Set on the broker by either a config file or environment variable';
+
+        default:
+            return '';
+    }
+}
