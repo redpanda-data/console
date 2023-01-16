@@ -115,7 +115,7 @@ func (api *API) Start() {
 	}
 
 	// Server
-	server := rest.NewServer(&api.Cfg.REST, api.Logger, api.routes())
+	server := rest.NewServer(&api.Cfg.REST.Config, api.Logger, api.routes())
 	err = server.Start()
 	if err != nil {
 		api.Logger.Fatal("REST Server returned an error", zap.Error(err))

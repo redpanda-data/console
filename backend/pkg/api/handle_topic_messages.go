@@ -18,7 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudhut/common/rest"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
@@ -87,15 +86,15 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		defer cancel()
 
 		wsClient := websocketClient{
-			Ctx:        ctx,
-			Cancel:     cancel,
-			Logger:     logger,
-			Connection: nil,
-			Mutex:      &sync.RWMutex{},
+			Ctx:             ctx,
+			Cancel:          cancel,
+			Logger:          logger,
+			Connection:      nil,
+			Mutex:           &sync.RWMutex{},
+			CheckOriginFunc: originsCheckFunc(api.Cfg.REST.AllowedOrigins),
 		}
-		restErr := wsClient.upgrade(w, r)
-		if restErr != nil {
-			rest.SendRESTError(w, r, logger, restErr)
+		if err := wsClient.upgrade(w, r); err != nil {
+			api.Logger.Error("failed to upgrade HTTP connection to websocket connection", zap.Error(err))
 			return
 		}
 		defer wsClient.sendClose()

@@ -3,6 +3,7 @@
 ## To be released
 
 - [CHANGE] We removed the support for using encrypted PEM certificates as specified in RFC 1423 because it's insecure by design and should not be used by anyone
+- [BUGFIX] Enforce CORS-checks on websocket connection. Defaults to a same-site policy. Allowed origins are configurable via `server.allowedOrigins`
 
 **Enterprise changelog**
 

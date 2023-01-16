@@ -24,19 +24,23 @@ import (
 )
 
 type websocketClient struct {
-	Ctx        context.Context
-	Cancel     context.CancelFunc
-	Logger     *zap.Logger
-	Connection *websocket.Conn
-	Mutex      *sync.RWMutex
+	Ctx             context.Context
+	Cancel          context.CancelFunc
+	Logger          *zap.Logger
+	Connection      *websocket.Conn
+	Mutex           *sync.RWMutex
+	CheckOriginFunc func(r *http.Request) bool
 
 	accessToken string
 }
 
-func (wc *websocketClient) upgrade(w http.ResponseWriter, r *http.Request) *rest.Error {
+// Upgrade upgrades the HTTP server connection to the WebSocket protocol.
+// If the upgrade fails, then this function already replies to the client by
+// writing an HTTP error response.
+func (wc *websocketClient) upgrade(w http.ResponseWriter, r *http.Request) error {
 	upgrader := websocket.Upgrader{
 		EnableCompression: true,
-		CheckOrigin:       func(r *http.Request) bool { return true },
+		CheckOrigin:       wc.CheckOriginFunc,
 	}
 
 	subprotocols := websocket.Subprotocols(r)
@@ -55,13 +59,7 @@ func (wc *websocketClient) upgrade(w http.ResponseWriter, r *http.Request) *rest
 	wc.Logger.Debug("starting websocket connection upgrade")
 	wsConnection, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		restErr := &rest.Error{
-			Err:      fmt.Errorf("failed to upgrade websocket in messages endpoint %w", err),
-			Status:   http.StatusBadRequest,
-			Message:  "Failed upgrade websocket",
-			IsSilent: false,
-		}
-		return restErr
+		return fmt.Errorf("failed to upgrade websocket in messages endpoint %w", err)
 	}
 	wc.Logger.Debug("websocket upgrade complete")
 

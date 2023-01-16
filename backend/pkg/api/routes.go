@@ -10,10 +10,13 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/cloudhut/common/middleware"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
@@ -28,12 +31,23 @@ func (api *API) routes() *chi.Mux {
 
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
 	recoverer := middleware.Recoverer{Logger: api.Logger}
-	handleBasePath := createHandleBasePathMiddleware(api.Cfg.REST.BasePath, api.Cfg.REST.SetBasePathFromXForwardedPrefix, api.Cfg.REST.StripPrefix)
-	baseRouter.Use(recoverer.Wrap,
-		chimiddleware.RealIP,
-		// requirePrefix(api.Cfg.REST.BasePath), // only for debugging
-		handleBasePath,
-	)
+	checkOriginFn := originsCheckFunc(api.Cfg.REST.AllowedOrigins)
+	handleBasePath := createHandleBasePathMiddleware(api.Cfg.REST.BasePath,
+		api.Cfg.REST.SetBasePathFromXForwardedPrefix,
+		api.Cfg.REST.StripPrefix)
+
+	baseRouter.Use(recoverer.Wrap)
+	baseRouter.Use(chimiddleware.RealIP)
+	baseRouter.Use(handleBasePath)
+	baseRouter.Use(cors.Handler(cors.Options{
+		AllowOriginFunc: func(r *http.Request, _ string) bool {
+			return checkOriginFn(r)
+		},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 
 	baseRouter.Group(func(router chi.Router) {
 		// Init middlewares - Do set up of any shared/third-party middleware and handlers
