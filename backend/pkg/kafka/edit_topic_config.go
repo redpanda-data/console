@@ -17,6 +17,9 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// EditTopicConfig takes a set of configurations that shall be applied to the given topic.
+// Only configurations that are part of configs will be changed, other existing configurations
+// remain untouched.
 func (s *Service) EditTopicConfig(ctx context.Context, topicName string, configs []kmsg.IncrementalAlterConfigsRequestResourceConfig) error {
 	alterResource := kmsg.NewIncrementalAlterConfigsRequestResource()
 	alterResource.ResourceName = topicName

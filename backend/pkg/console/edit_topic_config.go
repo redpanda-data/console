@@ -15,6 +15,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 )
 
+// EditTopicConfig applies the given configs to the given topic.
 func (s *Service) EditTopicConfig(ctx context.Context, topicName string, configs []kmsg.IncrementalAlterConfigsRequestResourceConfig) error {
 	return s.kafkaSvc.EditTopicConfig(ctx, topicName, configs)
 }

@@ -131,6 +131,7 @@ func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error
 func (*defaultHooks) CanCreateTopic(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
+
 func (*defaultHooks) CanEditTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }

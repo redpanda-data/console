@@ -13,8 +13,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/redpanda-data/console/backend/pkg/embed"
 	"github.com/twmb/franz-go/pkg/kmsg"
+
+	"github.com/redpanda-data/console/backend/pkg/embed"
 )
 
 // ConfigEntryExtension are additional documenting properties that
@@ -73,6 +74,7 @@ func loadConfigExtensions() (map[string]ConfigEntryExtension, error) {
 	}
 
 	// Index all config entries by config name
+	//nolint: gocritic // Opting for better code readability at the cost of few additional kb in memory usage
 	allConfigs := append(rpConfigs, apacheKafkaConfigs...)
 	configsByName := make(map[string]ConfigEntryExtension)
 	for _, config := range allConfigs {
@@ -85,10 +87,12 @@ func loadConfigExtensions() (map[string]ConfigEntryExtension, error) {
 	return configsByName, nil
 }
 
+// FrontendFormat is an enum that indicates the frontend what frontend component it should
+// render to allow users editing a specific configuration. For instance a FrontendFormatDuration
+// component shall be used for `segment.ms`.
 type FrontendFormat int8
 
-// Define our accepted frontend formats. Avoid using iota, to reduce risk of
-// mixing entries at some point when we remove or reorder entries.
+// Define our accepted frontend formats.
 const (
 	FrontendFormatUnknown FrontendFormat = iota
 	FrontendFormatBoolean
@@ -103,6 +107,8 @@ const (
 	FrontendFormatInteger
 )
 
+// String converts the iota number into a string when marshalling
+// the struct that uses the FrontendFormat which is int8 otherwise.
 func (f FrontendFormat) String() string {
 	switch f {
 	default:
@@ -171,6 +177,8 @@ func ParseFrontendFormat(s string) (FrontendFormat, error) {
 	}
 }
 
+// FrontendFormatFromValueType derives the desired FrontendFormat based on the reported
+// Kafka ConfigType.
 func FrontendFormatFromValueType(configType kmsg.ConfigType, format FrontendFormat) FrontendFormat {
 	if format != FrontendFormatUnknown {
 		return format

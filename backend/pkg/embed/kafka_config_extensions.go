@@ -11,8 +11,22 @@ package embed
 
 import _ "embed"
 
+// ApacheKafkaConfigs embeds a JSON file with Apache Kafka specific configurations
+// that provide additional details (such as grouping configs), so that we can use
+// that data for a better presentation of the options in the UI.
+//
+// Information that is returned via the kafka API (e.g. a config property's documentation)
+// will be overridden by this file, so that we can apply our own patches.
+//
 //go:embed kafka/apache_kafka_configs.json
 var ApacheKafkaConfigs []byte
 
+// RedpandaConfigs embeds a JSON file with Redpanda specific configurations
+// that provide additional details (such as grouping configs), so that we can use
+// that data for a better presentation of the options in the UI.
+//
+// Information that is returned via the kafka API (e.g. a config property's documentation)
+// will be overridden by this file, so that we can apply our own patches.
+//
 //go:embed kafka/redpanda_configs.json
 var RedpandaConfigs []byte
