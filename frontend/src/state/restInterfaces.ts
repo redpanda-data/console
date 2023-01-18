@@ -590,6 +590,7 @@ export interface TopicPermissions {
     canUseSearchFilters: boolean;
     canViewTopicMessages: boolean;
     canViewTopicConsumers: boolean;
+    canEditTopicConfig: boolean;
 }
 
 

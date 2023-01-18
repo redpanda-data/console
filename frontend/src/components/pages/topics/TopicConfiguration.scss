@@ -67,12 +67,19 @@
             border-radius: 3px;
             cursor: pointer;
 
-            &:hover {
+            &:not(.disabled):hover {
                 color: var(--ant-primary-color);
                 background: rgb(239 239 239);
 
                 // color: var(--ant-primary-color);
                 // border-bottom-color: var(--ant-primary-5);
+            }
+
+            &.disabled {
+                cursor: default;
+                svg {
+                    opacity: 0.5;
+                }
             }
         }
     }
