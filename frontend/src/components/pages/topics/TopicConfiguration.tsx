@@ -2,7 +2,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline'
 import { Icon } from '@redpanda-data/ui';
-import { Alert, Input, message, Modal, Popover, Radio, Select } from 'antd';
+import { Alert, Input, message, Modal, Popover, Radio, Select, Tooltip } from 'antd';
 import { action, makeObservable, observable } from 'mobx';
 import { Observer, observer } from 'mobx-react';
 import { Component } from 'react';
@@ -149,6 +149,11 @@ export default class ConfigurationEditor extends Component<{
     }
 
     render() {
+        const topic = this.props.targetTopic;
+        const canEdit = topic
+            ? api.topicPermissions.get(topic)?.canEditTopicConfig ?? true
+            : true;
+
         let entries = this.props.entries;
         const filter = this.filter;
         if (filter)
@@ -179,7 +184,7 @@ export default class ConfigurationEditor extends Component<{
                     placeholder="Filter"
                     onChange={e => this.filter = e.target.value} allowClear
                 />
-                {categories.map(x => <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} />)}
+                {categories.map(x => <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} canEdit={canEdit} />)}
             </div>
         </div>
     }
@@ -189,20 +194,21 @@ export default class ConfigurationEditor extends Component<{
 const ConfigGroup = observer((p: {
     groupName?: string;
     onEditEntry: (configEntry: ConfigEntryExtended) => void;
-    entries: ConfigEntryExtended[]
+    entries: ConfigEntryExtended[],
+    canEdit: boolean,
 }) => {
 
     return <>
         <div className="configGroupSpacer" />
         {p.groupName && <div className="configGroupTitle">{p.groupName}</div>}
-        {p.entries.map(e => <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} />)}
+        {p.entries.map(e => <ConfigEntry key={e.name} entry={e} onEditEntry={p.onEditEntry} canEdit={p.canEdit} />)}
     </>
 });
 
 const ConfigEntry = observer((p: {
-    isEditting?: boolean;
     onEditEntry: (configEntry: ConfigEntryExtended) => void;
     entry: ConfigEntryExtended;
+    canEdit: boolean;
 }) => {
 
     const entry = p.entry;
@@ -225,9 +231,21 @@ const ConfigEntry = observer((p: {
         </span>
 
         <span className="configButtons">
-            <span className="btnEdit" onClick={() => p.onEditEntry(p.entry)}>
-                <Icon as={PencilIcon} />
-            </span>
+            <Tooltip
+                trigger={p.canEdit ? [] : ['hover']}
+                overlay="You don't have permissions to change topic configuration entries"
+                placement="left"
+            >
+                <span
+                    className={'btnEdit' + (p.canEdit ? '' : ' disabled')}
+                    onClick={() => {
+                        if (p.canEdit)
+                            p.onEditEntry(p.entry);
+                    }}
+                >
+                    <Icon as={PencilIcon} />
+                </span>
+            </Tooltip>
             {entry.documentation &&
                 <Popover overlayClassName="configDocumentationTooltip" content={
                     <div style={{ maxWidth: '400px' }}>
