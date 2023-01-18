@@ -1,5 +1,6 @@
 import { DashIcon, PlusIcon, XIcon } from '@primer/octicons-react';
-import { Button, Input, Select } from 'antd';
+import { Button, Input, InputNumber, Select, Slider } from 'antd';
+import { makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { Component, MouseEvent, useEffect, useState } from 'react';
 import { TopicConfigEntry } from '../../../../state/restInterfaces';
@@ -117,12 +118,13 @@ export class CreateTopicModalContent extends Component<Props> {
 }
 
 
-function NumInput(p: {
+export function NumInput(p: {
     value: number | undefined, onChange: (n: number | undefined) => void,
     placeholder?: string,
     min?: number, max?: number,
     disabled?: boolean,
     addonBefore?: React.ReactNode; addonAfter?: React.ReactNode;
+    className?: string,
 }) {
     // We need to keep track of intermediate values.
     // Otherwise, typing '2e' for example, would be rejected.
@@ -138,13 +140,19 @@ function NumInput(p: {
         p.onChange?.(x);
     };
 
-    const changeBy = (dx: number) => commit((p.value ?? 0) + dx);
+    const changeBy = (dx: number) => {
+        let newValue = (p.value ?? 0) + dx;
+        newValue = Math.round(newValue);
+        commit(newValue);
+    };
     const increment = (e: MouseEvent) => { changeBy(+1); e.preventDefault(); }
     const decrement = (e: MouseEvent) => { changeBy(-1); e.preventDefault(); }
 
+
+
     return <Input
-        className="numericInput"
-        style={{ minWidth: '150px', width: '100%' }}
+        className={'numericInput ' + (p.className ?? '')}
+        style={{ minWidth: '120px', width: '100%' }}
         spellCheck={false}
         placeholder={p.placeholder}
         disabled={p.disabled}
@@ -379,3 +387,200 @@ const KeyValuePair = observer((p: { entries: TopicConfigEntry[], entry: TopicCon
 
 export type { Props as CreateTopicModalProps };
 export type { CreateTopicModalState };
+
+
+
+
+export type DataSizeUnit = keyof typeof dataSizeFactors;
+const dataSizeFactors = {
+    'infinite': -1,
+
+    'Bytes': 1,
+    'KiB': 1024,
+    'MiB': 1024 * 1024,
+    'GiB': 1024 * 1024 * 1024,
+    'TiB': 1024 * 1024 * 1024 * 1024,
+} as const;
+
+export type DurationUnit = keyof typeof durationFactors;
+const durationFactors = {
+    'infinite': -1,
+
+    'ms': 1,
+    'seconds': 1000,
+    'minutes': 1000 * 60,
+    'hours': 1000 * 60 * 60,
+    'days': 1000 * 60 * 60 * 24,
+    'months': 1000 * 60 * 60 * 24 * (365 / 12),
+    'years': 1000 * 60 * 60 * 24 * 365,
+} as const;
+
+@observer class UnitSelect<UnitType extends string> extends Component<{
+    baseValue: number;
+    unitFactors: { [index in UnitType]: number };
+    onChange: (baseValue: number) => void;
+    allowInfinite: boolean;
+    className?: string;
+}> {
+
+    @observable unit: UnitType;
+
+    constructor(p: any) {
+        super(p);
+
+        const value = this.props.baseValue;
+
+        // Find best initial unit, simply by chosing the shortest text representation
+        const textPairs = Object.entries(this.props.unitFactors)
+            .map(([unit, factor]) => ({
+                unit: unit as UnitType,
+                factor: factor as number
+            }))
+            .filter(x => {
+                if (x.unit == 'default') return false;
+                if (x.unit == 'infinite') return false;
+                return true;
+            })
+            .map(x => ({
+                ...x,
+                text: String(value / x.factor)
+            }))
+            .orderBy(x => x.text.length);
+
+        const shortestPair = textPairs[0];
+        this.unit = shortestPair.unit;
+
+        if (this.props.allowInfinite && value < 0) {
+            this.unit = 'infinite' as UnitType;
+        }
+
+        makeObservable(this);
+    }
+
+    render() {
+        const unitFactors = this.props.unitFactors;
+        const unit = this.unit;
+        const unitValue = this.props.baseValue / unitFactors[unit];
+
+        const numDisabled = unit == 'infinite';
+
+        let placeholder: string | undefined;
+        if (unit == 'infinite')
+            placeholder = 'Infinite';
+
+        const selectOptions = Object.entries(unitFactors).map(([name]) => {
+            const isSpecial = name == 'infinite';
+            return {
+                value: name,
+                label: isSpecial ? titleCase(name) : name,
+                style: isSpecial ? { fontStyle: 'italic' } : undefined,
+            };
+        });
+
+        if (!this.props.allowInfinite)
+            selectOptions.removeAll(x => x.value == 'infinite');
+
+
+        console.log('unit select: ', { unitValue, unit, baseValue: this.props.baseValue, unitFactors })
+
+        return <NumInput
+            className={this.props.className}
+            value={numDisabled ? undefined : unitValue}
+            onChange={x => {
+                if (x === undefined) {
+                    this.props.onChange(0);
+                    return;
+                }
+
+                const factor = unitFactors[this.unit];
+                const bytes = x * factor;
+                this.props.onChange(bytes);
+            }}
+            min={0}
+            placeholder={placeholder}
+            disabled={numDisabled}
+
+            addonAfter={<Select
+                style={{ minWidth: '90px' }}
+                value={unit}
+                onChange={u => {
+                    const changedFromInfinite = this.unit == 'infinite' && u != 'infinite';
+
+                    this.unit = u;
+                    if (this.unit == 'infinite')
+                        this.props.onChange(unitFactors[this.unit]);
+
+                    if (changedFromInfinite) {
+                        // Example: if new unit is "seconds", then we'd want 1000 ms
+                        // The "1*" is redundant of course, but left in to better clarify what
+                        // value we're trying to create and why
+                        const newValue = 1 * unitFactors[u];
+                        this.props.onChange(newValue);
+                    }
+
+                }}
+                options={selectOptions}
+            />}
+        />
+    }
+}
+
+
+export function DataSizeSelect(p: {
+    valueBytes: number;
+    onChange: (ms: number) => void;
+    allowInfinite: boolean;
+    className?: string;
+}) {
+
+    return <UnitSelect
+        baseValue={p.valueBytes}
+        onChange={p.onChange}
+        allowInfinite={p.allowInfinite}
+        unitFactors={dataSizeFactors}
+        className={p.className}
+    />
+}
+
+export function DurationSelect(p: {
+    valueMilliseconds: number;
+    onChange: (ms: number) => void;
+    allowInfinite: boolean;
+    className?: string;
+}) {
+
+    return <UnitSelect
+        baseValue={p.valueMilliseconds}
+        onChange={p.onChange}
+        allowInfinite={p.allowInfinite}
+        unitFactors={durationFactors}
+        className={p.className}
+    />
+}
+
+
+export function RatioInput(p: {
+    value: number;
+    onChange: (ratio: number) => void;
+}) {
+
+    return <div className="ratioInput">
+        <Slider
+            min={0} max={100} step={1}
+            value={Math.round(p.value * 100)}
+            onChange={x => p.onChange(x / 100)}
+            tooltip={{ formatter: null }}
+        />
+        <InputNumber
+            min={0} max={100}
+            value={Math.round(p.value * 100)}
+            onChange={x => {
+                if (x === null) return;
+                p.onChange(x / 100);
+            }}
+            addonAfter="%"
+            controls={false}
+            size="small"
+        />
+    </div>
+}

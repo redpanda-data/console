@@ -9,12 +9,16 @@
 
 package connect
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
+)
 
 // ConfigOverride defines a config key selector (regex) along with a block of config options
 // that shall override the config  if a config key matches the regex.
 type ConfigOverride struct {
-	NameSelector Regexp                 `json:"nameSelector"`
+	NameSelector config.Regexp          `json:"nameSelector"`
 	Definition   map[string]interface{} `json:"definition,omitempty"`
 	Value        map[string]interface{} `json:"value,omitempty"`
 }

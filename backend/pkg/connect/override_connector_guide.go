@@ -13,6 +13,8 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
 )
 
 //go:embed guides/*.json
@@ -64,7 +66,7 @@ type ConnectorGuide struct {
 
 	// ConfigRemovals is a list of config key selectors that shall be removed from the response,
 	// so that they won't be rendered in the wizard form.
-	ConfigRemovals []Regexp `json:"configRemovals"`
+	ConfigRemovals []config.Regexp `json:"configRemovals"`
 }
 
 // Validate the loaded connector guide inputs after they have been parsed.

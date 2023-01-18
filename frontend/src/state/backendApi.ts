@@ -43,7 +43,7 @@ import {
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
-    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest
+    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest, PatchTopicConfigsRequest
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig } from '../config';
@@ -1024,6 +1024,23 @@ const apiStore = {
 
                 this.connectConnectors = v;
             }, addError);
+    },
+
+    // PATCH /topics/{topicName}/configuration   //
+    // PATCH /topics/configuration               // default config
+    async changeTopicConfig(topicName: string | null, configs: PatchTopicConfigsRequest['configs']): Promise<void> {
+        const url = topicName
+            ? `${appConfig.restBasePath}/topics/${topicName}/configuration`
+            : `${appConfig.restBasePath}/topics/configuration`;
+
+        const response = await appConfig.fetch(url, {
+            method: 'PATCH',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: toJson({ configs }),
+        });
+        await parseOrUnwrap<void>(response, null);
     },
 
     // AdditionalInfo = list of plugins

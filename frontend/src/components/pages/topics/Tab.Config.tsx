@@ -10,11 +10,10 @@
  */
 
 import React, { Component } from 'react';
-import { KafkaError, ConfigEntry, Topic } from '../../../state/restInterfaces';
+import { KafkaError, ConfigEntry, Topic, ConfigEntryExtended } from '../../../state/restInterfaces';
 import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
-import topicConfigInfo from '../../../assets/topicConfigInfo.json';
 import Paragraph from 'antd/lib/typography/Paragraph';
 import '../../../utils/arrayExtensions';
 import { HighlightTwoTone } from '@ant-design/icons';
@@ -27,6 +26,8 @@ import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { ConfigList } from '../../misc/ConfigList';
 import colors from '../../../colors';
+import TopicConfigurationEditor from './TopicConfiguration';
+
 
 const { Text } = Typography;
 
@@ -35,7 +36,9 @@ const { Text } = Typography;
 
 // Full topic configuration
 @observer
-export class TopicConfiguration extends Component<{ topic: Topic }> {
+export class TopicConfiguration extends Component<{
+    topic: Topic
+}> {
 
     constructor(p: any) {
         super(p);
@@ -47,15 +50,31 @@ export class TopicConfiguration extends Component<{ topic: Topic }> {
         const renderedError = this.handleError();
         if (renderedError) return renderedError;
 
+        const entries = api.topicConfig.get(this.props.topic.topicName)?.configEntries ?? [];
+
         return (
             <>
-                <ConfigDisplaySettings />
-                <TopicConfigList configEntries={this.configEntries} />
+                <ConfigDisplayModeSettings />
+                {(uiSettings.topicList.configViewType == 'table')
+                    ? <>
+                        <ConfigDisplaySettings />
+                        <TopicConfigList configEntries={this.configEntries} />
+                    </>
+                    : <>
+                        <TopicConfigurationEditor
+                            targetTopic={this.props.topic.topicName}
+                            entries={entries}
+                            onForceRefresh={() => {
+                                api.refreshTopicConfig(this.props.topic.topicName, true);
+                            }}
+                        />
+                    </>
+                }
             </>
         );
     }
 
-    @computed get configEntries(): ConfigEntry[] {
+    @computed get configEntries(): ConfigEntryExtended[] {
         const config = api.topicConfig.get(this.props.topic.topicName);
         if (config == null) return [];
 
@@ -134,6 +153,29 @@ const TopicConfigList = observer(({ configEntries }: { configEntries: ConfigEntr
     />
 });
 
+const ConfigDisplayModeSettings = observer(() => (
+    <div
+        style={{
+            marginTop: '16px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+            gap: '2em',
+            rowGap: '1em',
+            float: 'right',
+        }}
+    >
+        <OptionGroup
+            options={{
+                'Structured View': 'structured',
+                'Table View': 'table',
+            }}
+            value={uiSettings.topicList.configViewType}
+            onChange={e => (uiSettings.topicList.configViewType = e)}
+        />
+    </div>
+));
+
 const ConfigDisplaySettings = observer(() => (
     <div
         style={{
@@ -177,13 +219,13 @@ export const FavoritePopover = observer((p: { configEntry: ConfigEntry, children
     const isFav = favs.includes(name);
     const toggleFav = isFav ? () => favs.splice(favs.indexOf(name), 1) : () => favs.push(name);
 
-    const infoEntry = topicConfigInfo.find((e) => e.Name == name);
+    const docu = p.configEntry.documentation;
 
     const popupContent = (
         <div>
             <Paragraph style={{ maxWidth: '400px' }}>
-                {infoEntry
-                    ? <div className="configPropDescription">{infoEntry.Description}</div>
+                {docu
+                    ? <div className="configPropDescription">{docu}</div>
                     : <div className="configPropDescription unknownConfigProp">No description available, unknown property</div>
                 }
             </Paragraph>

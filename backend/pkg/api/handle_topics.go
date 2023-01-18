@@ -278,6 +278,109 @@ func (api *API) handleDeleteTopicRecords() http.HandlerFunc {
 	}
 }
 
+type editTopicConfigRequest struct {
+	// Configs is the config entries that shall be modified on the given topic.
+	Configs []struct {
+		// Key is a key to modify (e.g. segment.bytes).
+		Key string `json:"key"`
+
+		// Op is the type of operation to perform for this config name.
+		// Valid values are: "set", "delete", "append", "subtract".
+		// If this field is omitted, it will default to SET.
+		//
+		// SET (0) is to set a configuration value; the value must not be null.
+		//
+		// DELETE (1) is to delete a configuration key.
+		//
+		// APPEND (2) is to add a value to the list of values for a key (if the
+		// key is for a list of values).
+		//
+		// SUBTRACT (3) is to remove a value from a list of values (if the key
+		// is for a list of values).
+		Op kmsg.IncrementalAlterConfigOp `json:"op"`
+
+		// Value is a value to set for the key (e.g. 10).
+		Value *string `json:"value"`
+	} `json:"configs"`
+}
+
+func (e *editTopicConfigRequest) OK() error {
+	if len(e.Configs) == 0 {
+		return fmt.Errorf("you must set at least one config entry that shall be modified")
+	}
+	for _, cfg := range e.Configs {
+		if cfg.Key == "" {
+			return fmt.Errorf("at least one config key was not set. config keys must always be set")
+		}
+	}
+
+	return nil
+}
+
+func (api *API) handleEditTopicConfig() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// 1. Parse and validate request
+		topicName := chi.URLParam(r, "topicName")
+		if topicName == "" {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      fmt.Errorf("topic name must be set"),
+				Status:   http.StatusBadRequest,
+				Message:  "Topic name must be set",
+				IsSilent: false,
+			})
+			return
+		}
+
+		var req editTopicConfigRequest
+		restErr := rest.Decode(w, r, &req)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 2. Check if logged-in user is allowed to edit topic configs.
+		canEdit, restErr := api.Hooks.Console.CanEditTopicConfig(r.Context(), topicName)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		if !canEdit {
+			restErr := &rest.Error{
+				Err:      fmt.Errorf("requester has no permissions to edit this topic's config"),
+				Status:   http.StatusForbidden,
+				Message:  "You don't have permissions to edit this topic's configuration",
+				IsSilent: false,
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
+		// 3. Submit edit topic config request
+		configRequests := make([]kmsg.IncrementalAlterConfigsRequestResourceConfig, 0, len(req.Configs))
+		for _, cfg := range req.Configs {
+			resourceCfg := kmsg.NewIncrementalAlterConfigsRequestResourceConfig()
+			resourceCfg.Name = cfg.Key
+			resourceCfg.Op = cfg.Op
+			resourceCfg.Value = cfg.Value
+			configRequests = append(configRequests, resourceCfg)
+		}
+
+		err := api.ConsoleSvc.EditTopicConfig(r.Context(), topicName, configRequests)
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:          fmt.Errorf("failed to edit topic config: %w", err),
+				Status:       http.StatusServiceUnavailable,
+				Message:      fmt.Sprintf("Failed to edit topic config: %v", err.Error()),
+				InternalLogs: []zapcore.Field{zap.String("topic_name", topicName)},
+				IsSilent:     false,
+			})
+			return
+		}
+
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, nil)
+	}
+}
+
 // handleGetTopicsConfigs returns all set configuration options for one or more topics
 func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 	type response struct {

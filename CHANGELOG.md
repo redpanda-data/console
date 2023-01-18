@@ -2,6 +2,7 @@
 
 ## To be released
 
+- [FEATURE] Editing topic configurations
 - [CHANGE] We removed the support for using encrypted PEM certificates as specified in RFC 1423 because it's insecure by design and should not be used by anyone
 
 **Enterprise changelog**
