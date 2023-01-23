@@ -1143,6 +1143,7 @@ export interface ClusterAdditionalInfo {
         type?: string;
         version?: string;
     }[];
+    enabledFeatures: string[];
 }
 
 /*

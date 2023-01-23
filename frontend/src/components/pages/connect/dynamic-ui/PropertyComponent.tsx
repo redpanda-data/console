@@ -15,9 +15,8 @@ import { Input, InputNumber, Switch, Select, Tooltip, AutoComplete } from 'antd'
 import { observer } from 'mobx-react';
 import { PropertyWidth } from '../../../../state/restInterfaces';
 import { findPopupContainer, InfoText } from '../../../../utils/tsxUtils';
-import { Property } from './components';
+import { Property } from '../../../../state/connect/state';
 import { CommaSeparatedStringList } from './List';
-
 
 export const PropertyComponent = observer((props: { property: Property }) => {
     const p = props.property;
@@ -74,7 +73,12 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             break;
 
         case 'PASSWORD':
-            inputComp = <Input.Password value={String(p.value ?? '')} onChange={e => p.value = e.target.value} iconRender={visible => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)} />
+            inputComp = <Input.Password
+                value={String(p.value ?? '')}
+                onChange={e => {
+                    p.value = e.target.value;
+                }}
+                iconRender={visible => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)} />
             break;
 
         case 'INT':
@@ -156,7 +160,7 @@ const inputSizeToClass = {
 } as const;
 
 
-const ErrorWrapper = observer(function (props: { property: Property, input: JSX.Element }) {
+const ErrorWrapper = observer(function(props: { property: Property, input: JSX.Element }) {
     const { property, input } = props;
     const showErrors = property.errors.length > 0;
 

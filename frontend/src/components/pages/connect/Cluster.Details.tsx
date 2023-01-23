@@ -70,7 +70,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                     {/* Connectors List */}
                     <div>
                         <div style={{ display: 'flex', marginBottom: '.5em' }}>
-                            <Link to={'/create-connector'}><Button type={'primary'}>Create Connector</Button></Link>
+                            <Link to={`/connect-clusters/${clusterName}/create-connector`}><Button type={'primary'}>Create Connector</Button></Link>
                         </div>
 
                         <KowlTable

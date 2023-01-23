@@ -1,3 +1,4 @@
+
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -1345,6 +1346,23 @@ const apiStore = {
         });
 
         return parseOrUnwrap<void>(response, null);
+    },
+
+    async createSecret(clusterName: string, connectorName: string, secretValue: string): Promise<any> {
+        return rest(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/secrets`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify({
+                connectorName,
+                clusterName,
+                secretData: secretValue,
+                labels: {
+                    component: 'connectors'
+                }
+            }),
+        });
     },
 };
 

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { makeAutoObservable } from 'mobx';
 import React from 'react';
 import { uiState } from '../../state/uiState';
 
@@ -19,6 +20,9 @@ import { uiState } from '../../state/uiState';
 export type PageProps<TRouteParams = Record<string, unknown>> = TRouteParams & { matchedPath: string }
 
 export class PageInitHelper {
+    constructor() {
+        makeAutoObservable(this);
+    }
     set title(title: string) { uiState.pageTitle = title; }
     addBreadcrumb(title: string, to: string) { uiState.pageBreadcrumbs.push({ title: title, linkTo: to }) }
 }
