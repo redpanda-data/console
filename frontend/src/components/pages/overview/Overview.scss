@@ -1,0 +1,99 @@
+.overviewGrid {
+    display: grid;
+
+    grid-template-areas:
+        "health  health"
+        "details broker"
+        "details resources"
+    ;
+
+    gap: 1.5rem;
+
+    h3 {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+}
+
+.ant-statistic {
+    display: flex;
+    flex-direction: column-reverse;
+
+    &.status-bar {
+        position: relative;
+        padding-left: 5px;
+
+        :before {
+            content: ' ';
+            display: block;
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            width: 3px;
+            left: -2px;
+            // border-radius: 2px;
+            background: red;
+        }
+    }
+
+    &.status-bar.status-red{
+        :before {
+            background: red;
+        }
+    }
+
+    &.status-bar.status-yellow{
+        :before {
+            background: orange;
+        }
+    }
+
+    &.status-bar.status-green{
+        :before {
+            background: #3ba26b;
+        }
+    }
+
+}
+
+.clusterDetails {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2em;
+    column-gap:4em;
+    margin: 1em 0;
+    min-width: 300px;
+}
+
+.resource-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .resource-link {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .dot {
+        // transform: translateY(1px);
+        font-size: 20px;
+        line-height: 20px;
+    }
+
+    .badge-new {
+        display: inline;
+        padding: 2px 6px;
+        border-radius: 100px;
+
+        background: #e14226;
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+
+        transform: translateY(1px);
+    }
+}

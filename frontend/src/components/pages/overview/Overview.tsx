@@ -27,11 +27,12 @@ import { ConfigList } from '../../misc/ConfigList';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-
+import './Overview.scss';
+import rawNewsArray from '../../../assets/news.json';
 
 
 @observer
-class BrokerList extends PageComponent {
+class Overview extends PageComponent {
 
     pageConfig = makePaginationConfig(100, true);
 
@@ -44,8 +45,8 @@ class BrokerList extends PageComponent {
     }
 
     initPage(p: PageInitHelper): void {
-        p.title = 'Brokers';
-        p.addBreadcrumb('Brokers', '/brokers');
+        p.title = 'Overview';
+        p.addBreadcrumb('Overview', '/overview');
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -84,37 +85,83 @@ class BrokerList extends PageComponent {
         if (this.hasRack)
             columns.push({ width: '100px', title: 'Rack', dataIndex: 'rack', sorter: sortField('rack') });
 
-        return (
-          <>
+        return <>
             <PageContent>
-                <Section py={4}>
-                  <Row>
-                    <Statistic title="ControllerID" value={info.controllerId} />
-                    <Statistic title="Broker Count" value={brokers.length} />
-                    <Statistic
-                      title="Cluster Version"
-                      value={info.kafkaVersion}
-                    />
-                  </Row>
-                </Section>
+                <div className="overviewGrid">
+                    <Section py={4} gridArea="health">
+                        {/* <h3>Health</h3> */}
+                        <Row>
+                            <Statistic title="Cluster Status" value={'Running'} className="status-bar status-green" />
+                            <Statistic title="Cluster Storage Size" value={'123 MiB'} />
+                            <Statistic title="Cluster Version" value={info.kafkaVersion} />
+                            <Statistic title="Brokers Online" value={brokers.length} />
+                            <Statistic title="Topics" value={'123'} />
+                        </Row>
+                    </Section>
 
-                <Section>
-                  <KowlTable
-                    dataSource={brokers}
-                    columns={columns}
-                    observableSettings={uiSettings.brokerList}
-                    rowKey={(x) => x.brokerId.toString()}
-                    rowClassName={() => 'pureDisplayRow'}
-                    expandable={{
-                      expandedRowRender: (record) => (
-                        <BrokerDetails brokerId={record.brokerId} />
-                      ),
-                    }}
-                  />
-                </Section>
+                    <Section py={4} gridArea="details">
+                        <h3>Cluster Details</h3>
+
+                        <div className="clusterDetails">
+                            <div>Services</div>
+                            <div>
+                                <div>Kafka Cluster</div>
+                                <div>Schema Registry</div>
+                                <div>Kafka Connect</div>
+                                <div>Secrets Store</div>
+                            </div>
+
+                            <div>Storage</div>
+                            <div>
+                                <div>Primary bytes</div>
+                                <div>Replicated bytes</div>
+                            </div>
+
+                            <div>Users</div>
+                            <div>
+                            </div>
+
+                            <div>ACLs</div>
+                            <div>
+                            </div>
+
+                            <div>Licensing</div>
+                            <div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    <Section py={4} gridArea="broker">
+                        <h3>Broker Details</h3>
+                        <KowlTable
+                            dataSource={brokers}
+                            columns={columns}
+                            observableSettings={uiSettings.brokerList}
+                            rowKey={(x) => x.brokerId.toString()}
+                            rowClassName={() => 'pureDisplayRow'}
+                            expandable={{
+                                expandedRowRender: (record) => (
+                                    <BrokerDetails brokerId={record.brokerId} />
+                                ),
+                            }}
+                        />
+                    </Section>
+
+                    <Section py={4} gridArea="resources">
+                        <h3>Resources</h3>
+                        <ul className="resource-list">
+                            {rawNewsArray.map((x, i) => <li key={i}>
+                                <a href={x.url} rel="" className="resource-link" >
+                                    <span className="dot">&bull;</span>
+                                    {x.title}
+                                    <ResourcesBadge type={x.badge} />
+                                </a>
+                            </li>)}
+                        </ul>
+                    </Section>
+                </div>
             </PageContent>
-          </>
-        );
+        </>
     }
 
     isMatch(filter: string, item: Broker) {
@@ -131,7 +178,7 @@ class BrokerList extends PageComponent {
     }
 }
 
-export default BrokerList;
+export default Overview;
 
 const BrokerDetails = observer(({ brokerId }: { brokerId: number }): JSX.Element => {
     const id = brokerId;
@@ -212,3 +259,13 @@ const DetailsDisplaySettings = observer(() =>
             </Space>
         </Row>
     </div>);
+
+const ResourcesBadge = (p: { type?: string | undefined }) => {
+    switch (p.type) {
+        case 'new':
+            return <div className="badge-new">NEW</div>
+
+        default:
+            return null;
+    }
+};

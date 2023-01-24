@@ -1,0 +1,23 @@
+[
+    {
+        "title": "This is the first example entry",
+        "url": "https://google.com",
+        "intendedAudience": "all",
+        "badge": "new"
+    },
+    {
+        "title": "These entries are currently just loaded from 'news.json' in the assets folder.",
+        "url": "https://google.com",
+        "intendedAudience": "all"
+    },
+    {
+        "title": "This entry is very long on purpose to test how linbreaks will affect the layout. This entry is very long on purpose to test how linbreaks will affect the layout. This entry is very long on purpose to test how linbreaks will affect the layout. ",
+        "url": "https://google.com",
+        "intendedAudience": "all"
+    },
+    {
+        "title": "Entry #4",
+        "url": "https://google.com",
+        "intendedAudience": "all"
+    }
+]
