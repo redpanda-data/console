@@ -9,7 +9,11 @@
 
 package api
 
-import "io/fs"
+import (
+	"io/fs"
+
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
+)
 
 // Option for creating an instance of API.
 type Option func(*API)
@@ -20,5 +24,14 @@ type Option func(*API)
 func WithFrontendResources(fsys fs.FS) Option {
 	return func(api *API) {
 		api.FrontendResources = fsys
+	}
+}
+
+// WithLicense provides the license information which was used to start Redpanda Console.
+// It is used only for visibility & logging purposes and not for any license enforcing
+// actions.
+func WithLicense(license redpanda.License) Option {
+	return func(api *API) {
+		api.License = license
 	}
 }

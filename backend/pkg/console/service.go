@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/git"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
@@ -26,16 +27,23 @@ type Service struct {
 	kafkaSvc    *kafka.Service
 	redpandaSvc *redpanda.Service
 	gitSvc      *git.Service // Git service can be nil if not configured
+	connectSvc  *connect.Service
 	logger      *zap.Logger
 
-	// configExtensionsByName contains additional metadata about Topic or Broker configs.
+	// configExtensionsByName contains additional metadata about Topic or BrokerWithConfigAndStorage configs.
 	// The additional information is used by the frontend to provide a good UX when
 	// editing configs or creating new topics.
 	configExtensionsByName map[string]ConfigEntryExtension
 }
 
 // NewService for the Console package
-func NewService(cfg config.Console, logger *zap.Logger, kafkaSvc *kafka.Service, redpandaSvc *redpanda.Service) (*Service, error) {
+func NewService(
+	cfg config.Console,
+	logger *zap.Logger,
+	kafkaSvc *kafka.Service,
+	redpandaSvc *redpanda.Service,
+	connectSvc *connect.Service,
+) (*Service, error) {
 	var gitSvc *git.Service
 	cfg.TopicDocumentation.Git.AllowedFileExtensions = []string{"md"}
 	if cfg.TopicDocumentation.Enabled && cfg.TopicDocumentation.Git.Enabled {
@@ -55,6 +63,7 @@ func NewService(cfg config.Console, logger *zap.Logger, kafkaSvc *kafka.Service,
 		kafkaSvc:    kafkaSvc,
 		redpandaSvc: redpandaSvc,
 		gitSvc:      gitSvc,
+		connectSvc:  connectSvc,
 		logger:      logger,
 
 		configExtensionsByName: configExtensionsByName,

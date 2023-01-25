@@ -15,6 +15,7 @@ package api
 
 import (
 	"io/fs"
+	"math"
 
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
@@ -46,6 +47,11 @@ type API struct {
 	// if the config property serveFrontend is set to true.
 	FrontendResources fs.FS
 
+	// License is the license information for Console that will be used for logging
+	// and visibility purposes inside the open source version. License protected features
+	// are not checked with this license.
+	License redpanda.License
+
 	// Hooks to add additional functionality from the outside at different places
 	Hooks *Hooks
 }
@@ -68,14 +74,14 @@ func New(cfg *config.Config, opts ...Option) *API {
 		logger.Fatal("failed to create Redpanda service", zap.Error(err))
 	}
 
-	consoleSvc, err := console.NewService(cfg.Console, logger, kafkaSvc, redpandaSvc)
-	if err != nil {
-		logger.Fatal("failed to create owl service", zap.Error(err))
-	}
-
 	connectSvc, err := connect.NewService(cfg.Connect, logger)
 	if err != nil {
 		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
+	}
+
+	consoleSvc, err := console.NewService(cfg.Console, logger, kafkaSvc, redpandaSvc, connectSvc)
+	if err != nil {
+		logger.Fatal("failed to create owl service", zap.Error(err))
 	}
 
 	// Use default frontend resources from embeds. They may be overridden via functional options.
@@ -94,6 +100,11 @@ func New(cfg *config.Config, opts ...Option) *API {
 		RedpandaSvc:       redpandaSvc,
 		Hooks:             newDefaultHooks(),
 		FrontendResources: fsys,
+		License: redpanda.License{
+			Source:    redpanda.LicenseSourceConsole,
+			Type:      redpanda.LicenseTypeOpenSource,
+			ExpiresAt: math.MaxInt32,
+		},
 	}
 	for _, opt := range opts {
 		opt(a)
