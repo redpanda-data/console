@@ -22,10 +22,11 @@ import (
 
 // ClusterInfo provides information about the Kafka connect cluster we are talking to.
 type ClusterInfo struct {
-	Name    string                        `json:"clusterName"`
-	Host    string                        `json:"host"`
-	Version string                        `json:"clusterVersion"`
-	Plugins []connect.ConnectorPluginInfo `json:"plugins"`
+	Name            string                        `json:"clusterName"`
+	Host            string                        `json:"host"`
+	Version         string                        `json:"clusterVersion"`
+	Plugins         []connect.ConnectorPluginInfo `json:"plugins"`
+	EnabledFeatures []ClusterFeature              `json:"enabledFeatures,omitempty"`
 }
 
 // GetClusterInfo retrieves metadata information about the Kafka connect cluster we talk to.
@@ -62,6 +63,9 @@ func (s *Service) GetClusterInfo(ctx context.Context, clusterName string) (Clust
 		Host:    c.Cfg.URL,
 		Version: rootInfo.Version,
 		Plugins: plugins,
+		// EnabledFeatures may be extended inside the HTTP handler, which has access
+		// to the hooks.
+		EnabledFeatures: nil,
 	}, nil
 }
 

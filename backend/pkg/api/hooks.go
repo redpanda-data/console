@@ -16,6 +16,7 @@ import (
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 
+	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
@@ -108,6 +109,10 @@ type ConsoleHooks interface {
 	// The information will be baked into the index.html so that the Frontend knows about it
 	// at startup, which might be important to not block rendering (e.g. SSO enabled -> render login).
 	EnabledFeatures() []string
+
+	// EnabledConnectClusterFeatures returns a list of features that are supported on this
+	// particular Kafka connect cluster.
+	EnabledConnectClusterFeatures(ctx context.Context, clusterName string) []connect.ClusterFeature
 
 	// EndpointCompatibility returns information what endpoints are available to the frontend.
 	// This considers the active configuration (e.g. is secret store enabled), target cluster
@@ -269,5 +274,9 @@ func (*defaultHooks) EnabledFeatures() []string {
 }
 
 func (*defaultHooks) EndpointCompatibility() []console.EndpointCompatibilityEndpoint {
+	return nil
+}
+
+func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []connect.ClusterFeature {
 	return nil
 }
