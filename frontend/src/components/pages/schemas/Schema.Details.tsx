@@ -24,13 +24,9 @@ import { NoClipboardPopover } from '../../misc/NoClipboardPopover';
 import { isClipboardAvailable } from '../../../utils/featureDetection';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { makeObservable, observable } from 'mobx';
+import { editQuery } from '../../../utils/queryHelper';
 
-export interface SchemaDetailsProps {
-    subjectName: string;
-    query: {
-        version: number;
-    };
-}
 
 function renderSchemaType(value: any, _record: SchemaField, _index: number) {
     return toSafeString(value);
@@ -91,14 +87,20 @@ function convertJsonField(name: string, field: JsonField): SchemaField {
 }
 
 @observer
-class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
+class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
     subjectNameRaw: string;
     subjectNameEncoded: string;
+
+    @observable version = 'latest' as 'latest' | number;
 
     initPage(p: PageInitHelper): void {
         const subjectNameRaw = decodeURIComponent(this.props.subjectName);
         const subjectNameEncoded = encodeURIComponent(subjectNameRaw);
-        const version = this.props.query.version;
+
+        const version = getVersionFromQuery();
+        editQuery(x => {
+            x.version = String(this.version);
+        });
 
         p.title = subjectNameRaw;
         p.addBreadcrumb('Schema Registry', '/schema-registry');
@@ -111,19 +113,12 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
         super(p);
         this.subjectNameRaw = decodeURIComponent(this.props.subjectName);
         this.subjectNameEncoded = encodeURIComponent(this.subjectNameRaw);
-        console.log('constructing details', { props: p, raw: this.subjectNameRaw, enc: this.subjectNameEncoded });
+        makeObservable(this);
     }
 
     refreshData(force?: boolean) {
-        const encoded = encodeURIComponent(decodeURIComponent(this.props.subjectName))
-        const version: number | 'latest' = this.props.query.version ?? 'latest';
-        api.refreshSchemaDetails(encoded, version, force);
-    }
-
-    componentDidUpdate({ query: { version } }: SchemaDetailsProps) {
-        if (this.props.query.version !== version) {
-            this.refreshData(true);
-        }
+        const encoded = encodeURIComponent(decodeURIComponent(this.props.subjectName));
+        api.refreshSchemaDetails(encoded, this.version, force);
     }
 
     render() {
@@ -157,8 +152,17 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
         const jsonViewObject = Object.assign({}, schemaDetails);
         delete (jsonViewObject as any)['rawSchema'];
 
+        let queryVersion = null as null | number;
+        const query = new URLSearchParams(window.location.search);
+        if (query.has('version')) {
+            const versionStr = query.get('version');
+            if (versionStr != '') {
+                queryVersion = Number(versionStr);
+            }
+        }
+
         const versions = schemaDetails.registeredVersions ?? [];
-        const defaultVersion = this.props.query.version ?? (versions.length > 0 ? versions[versions.length - 1] : 'latest');
+        const defaultVersion = queryVersion ?? (versions.length > 0 ? versions[versions.length - 1] : 'latest');
 
         return (
             <PageContent key="b">
@@ -177,7 +181,13 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
                         <Label text="Version">
                             <Select style={{ minWidth: '200px' }}
                                 defaultValue={defaultVersion}
-                                onChange={(version) => appGlobal.history.push(`/schema-registry/${this.subjectNameEncoded}?version=${version}`)}
+                                onChange={(version) => {
+                                    this.version = version as 'latest' | number;
+                                    this.refreshData(true);
+                                    editQuery(x => {
+                                        x.version = String(this.version);
+                                    });
+                                }}
                                 disabled={versions.length == 0}
                             >
                                 {versions.map(v => <Select.Option value={v} key={v}>Version {v} {v == versions[versions.length - 1] ? '(latest)' : null}</Select.Option>)}
@@ -269,6 +279,18 @@ class SchemaDetailsView extends PageComponent<SchemaDetailsProps> {
             </PageContent>
         );
     }
+}
+
+function getVersionFromQuery(): 'latest' | number {
+    const query = new URLSearchParams(window.location.search);
+    if (query.has('version')) {
+        const versionStr = query.get('version');
+        if (versionStr != '') {
+            return Number(versionStr);
+        }
+    }
+
+    return 'latest';
 }
 
 export default SchemaDetailsView;

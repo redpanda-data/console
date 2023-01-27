@@ -25,7 +25,7 @@ import { uiState } from '../state/uiState';
 import AdminPage from './pages/admin/AdminPage';
 import { api } from '../state/backendApi';
 import SchemaList from './pages/schemas/Schema.List';
-import SchemaDetailsView, { SchemaDetailsProps } from './pages/schemas/Schema.Details';
+import SchemaDetailsView from './pages/schemas/Schema.Details';
 import AclList from './pages/acls/Acl.List';
 import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/outline';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
@@ -281,7 +281,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
 
     MakeRoute<{}>('/schema-registry', SchemaList, 'Schema Registry', CubeTransparentIcon),
-    MakeRoute<SchemaDetailsProps>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
+    MakeRoute<{ subjectName: string }>('/schema-registry/:subjectName', SchemaDetailsView, 'Schema Registry'),
 
     MakeRoute<{}>('/groups', GroupList, 'Consumer Groups', FilterIcon, undefined,
         routeVisibility(true, [Feature.ConsumerGroups])
