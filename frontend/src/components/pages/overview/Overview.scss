@@ -2,10 +2,12 @@
     display: grid;
 
     grid-template-areas:
-        "health  health"
-        "details broker"
-        "details resources"
+        "health    health"
+        "broker    details"
+        "resources details"
+        ".         details"
     ;
+    grid-template-columns: fit-content(60%) 1fr;
 
     gap: 1.5rem;
 
@@ -23,33 +25,34 @@
     &.status-bar {
         position: relative;
         padding-left: 5px;
+        margin-left: 8px;
 
         :before {
             content: ' ';
             display: block;
             position: absolute;
-            top: 4px;
-            bottom: 4px;
+            top: 9px;
+            bottom: 8px;
             width: 3px;
-            left: -2px;
+            left: -6px;
             // border-radius: 2px;
             background: red;
         }
     }
 
-    &.status-bar.status-red{
+    &.status-bar.status-red {
         :before {
             background: red;
         }
     }
 
-    &.status-bar.status-yellow{
+    &.status-bar.status-yellow {
         :before {
             background: orange;
         }
     }
 
-    &.status-bar.status-green{
+    &.status-bar.status-green {
         :before {
             background: #3ba26b;
         }
@@ -59,11 +62,40 @@
 
 .clusterDetails {
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 2em;
-    column-gap:4em;
+    grid-template-columns: auto auto auto;
+    row-gap: .5em;
+    column-gap: 2em;
     margin: 1em 0;
     min-width: 300px;
+
+    white-space: nowrap;
+
+    h3 {
+        grid-column: 1 / span 3;
+        margin: 0;
+    }
+
+    h4 {
+        font-size: 18px;
+        font-weight: 600;
+        color: rgb(0 0 0 / 75%);
+        grid-column: 1 / span 3;
+    }
+
+    h5 {
+        font-weight: 500;
+    }
+
+    .separationLine {
+        grid-column: 1 / span 3;
+        margin: 1rem 0;
+        background: #ddd;
+        height: 1px;
+    }
+
+    a {
+        text-decoration: 1px solid underline;
+    }
 }
 
 .resource-list {
@@ -86,14 +118,14 @@
 
     .badge-new {
         display: inline;
-        padding: 2px 6px;
+        padding: 2px 8px;
         border-radius: 100px;
 
-        background: #e14226;
+        background: hsl(215deg 77% 55%);
         color: white;
         font-size: 10px;
         font-weight: 700;
 
-        transform: translateY(1px);
+        transform: translateY(2px);
     }
 }

@@ -9,34 +9,32 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
 import { observer } from 'mobx-react';
-import { Empty, Statistic, Row, Tooltip, Space } from 'antd';
+import { Empty, Statistic, Row, Tooltip, Button } from 'antd';
 import Table from 'antd/lib/table';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
-import { makePaginationConfig, sortField } from '../../misc/common';
-import { Broker, ConfigEntry } from '../../../state/restInterfaces';
-import { observable, computed, makeObservable } from 'mobx';
+import { sortField } from '../../misc/common';
+import { Broker } from '../../../state/restInterfaces';
+import { computed, makeObservable } from 'mobx';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
 import { CrownOutlined } from '@ant-design/icons';
-import { DefaultSkeleton, findPopupContainer, OptionGroup } from '../../../utils/tsxUtils';
-import { ConfigList } from '../../misc/ConfigList';
+import { DefaultSkeleton, findPopupContainer } from '../../../utils/tsxUtils';
 import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
 import rawNewsArray from '../../../assets/news.json';
+import { Icon } from '@redpanda-data/ui';
+import { IoWarning } from 'react-icons/io5';
+import { CheckIcon } from '@primer/octicons-react';
 
 
 @observer
 class Overview extends PageComponent {
 
-    pageConfig = makePaginationConfig(100, true);
-
-    @observable filteredBrokers: Broker[];
     @computed get hasRack() { return api.clusterInfo?.brokers?.sum(b => b.rack ? 1 : 0) }
 
     constructor(p: any) {
@@ -50,9 +48,6 @@ class Overview extends PageComponent {
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
-
-        this.isMatch = this.isMatch.bind(this);
-        this.setResult = this.setResult.bind(this);
     }
 
     refreshData(force: boolean) {
@@ -78,8 +73,23 @@ class Overview extends PageComponent {
         const columns: KowlColumnType<Broker>[] = [
             { width: '80px', title: 'ID', dataIndex: 'brokerId', render: renderIdColumn, sorter: sortField('brokerId'), defaultSortOrder: 'ascend' },
             Table.EXPAND_COLUMN,
-            { width: 'auto', title: 'Address', dataIndex: 'address', sorter: sortField('address'), },
-            { width: '120px', title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), sorter: sortField('logDirSize') }
+            {
+                width: 'auto', title: 'Status', render: (_, _r) => {
+                    return <>
+                        <Icon as={CheckIcon} fontSize="18px" marginRight="5px" color="green.500" />
+                        Running
+                    </>
+                }
+            },
+            { width: '120px', title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), sorter: sortField('logDirSize') },
+            {
+                width: '100px', title: '', render: (_, r) => {
+                    return <Button onClick={() => appGlobal.history.push('/overview/' + r.brokerId)}>
+                        View
+                    </Button>
+                }
+            }
+
         ]
 
         if (this.hasRack)
@@ -89,46 +99,13 @@ class Overview extends PageComponent {
             <PageContent>
                 <div className="overviewGrid">
                     <Section py={4} gridArea="health">
-                        {/* <h3>Health</h3> */}
                         <Row>
                             <Statistic title="Cluster Status" value={'Running'} className="status-bar status-green" />
-                            <Statistic title="Cluster Storage Size" value={'123 MiB'} />
+                            <Statistic title="Cluster Storage Size" value={'3.28 KiB'} />
                             <Statistic title="Cluster Version" value={info.kafkaVersion} />
                             <Statistic title="Brokers Online" value={brokers.length} />
-                            <Statistic title="Topics" value={'123'} />
+                            <Statistic title="Topics" value={'3'} />
                         </Row>
-                    </Section>
-
-                    <Section py={4} gridArea="details">
-                        <h3>Cluster Details</h3>
-
-                        <div className="clusterDetails">
-                            <div>Services</div>
-                            <div>
-                                <div>Kafka Cluster</div>
-                                <div>Schema Registry</div>
-                                <div>Kafka Connect</div>
-                                <div>Secrets Store</div>
-                            </div>
-
-                            <div>Storage</div>
-                            <div>
-                                <div>Primary bytes</div>
-                                <div>Replicated bytes</div>
-                            </div>
-
-                            <div>Users</div>
-                            <div>
-                            </div>
-
-                            <div>ACLs</div>
-                            <div>
-                            </div>
-
-                            <div>Licensing</div>
-                            <div>
-                            </div>
-                        </div>
                     </Section>
 
                     <Section py={4} gridArea="broker">
@@ -139,16 +116,14 @@ class Overview extends PageComponent {
                             observableSettings={uiSettings.brokerList}
                             rowKey={(x) => x.brokerId.toString()}
                             rowClassName={() => 'pureDisplayRow'}
-                            expandable={{
-                                expandedRowRender: (record) => (
-                                    <BrokerDetails brokerId={record.brokerId} />
-                                ),
+                            pagination={{
+                                visible: false
                             }}
                         />
                     </Section>
 
                     <Section py={4} gridArea="resources">
-                        <h3>Resources</h3>
+                        <h3>Resources and updates</h3>
                         <ul className="resource-list">
                             {rawNewsArray.map((x, i) => <li key={i}>
                                 <a href={x.url} rel="" className="resource-link" >
@@ -159,113 +134,90 @@ class Overview extends PageComponent {
                             </li>)}
                         </ul>
                     </Section>
+
+                    <Section py={4} gridArea="details">
+                        <h3>Cluster Details</h3>
+
+                        <ClusterDetails />
+                    </Section>
                 </div>
             </PageContent>
         </>
-    }
-
-    isMatch(filter: string, item: Broker) {
-        if (item.address.includes(filter)) return true;
-
-        if (item.rack)
-            if (item.rack.toLowerCase().includes(filter.toLowerCase())) return true;
-
-        return false;
-    }
-
-    setResult(filteredData: Broker[]) {
-        this.filteredBrokers = filteredData;
     }
 }
 
 export default Overview;
 
-const BrokerDetails = observer(({ brokerId }: { brokerId: number }): JSX.Element => {
-    const id = brokerId;
-
-    const brokerConfigs = api.brokerConfigs.get(id);
-    if (brokerConfigs === undefined || brokerConfigs.length == 0) {
-        api.refreshBrokerConfig(id);
-        return DefaultSkeleton;
-    }
-
-    // Handle error while getting config
-    if (typeof brokerConfigs == 'string') return (
-        <div className="error">
-            <h3>Error</h3>
-            <div>
-                <p>{brokerConfigs}</p>
-            </div>
-        </div>
-    );
-
-    // Normal Display
-    return <BrokerConfigView entries={brokerConfigs} />;
-});
-
-@observer
-class BrokerConfigView extends Component<{ entries: ConfigEntry[] }> {
-    render() {
-        const entries = this.props.entries
-            .slice()
-            .sort((a, b) => {
-                switch (uiSettings.brokerList.propsOrder) {
-                    case 'default':
-                        return 0;
-                    case 'alphabetical':
-                        return a.name.localeCompare(b.name);
-                    case 'changedFirst':
-                        if (uiSettings.brokerList.propsOrder != 'changedFirst') return 0;
-                        const v1 = a.isExplicitlySet ? 1 : 0;
-                        const v2 = b.isExplicitlySet ? 1 : 0;
-                        return v2 - v1;
-                    default: return 0;
-                }
-            });
-
-        return (
-            <div className="brokerConfigView">
-                <DetailsDisplaySettings />
-                <ConfigList configEntries={entries} valueDisplay={uiSettings.brokerList.valueDisplay} />
-            </div>
-        );
-    }
-}
-
-
-const DetailsDisplaySettings = observer(() =>
-    <div style={{ marginLeft: '1px', marginBottom: '1em' }} className="brokerConfigViewSettings">
-        <Row>
-            <Space size="middle">
-
-                <OptionGroup label="Formatting"
-                    options={{
-                        'Friendly': 'friendly',
-                        'Raw': 'raw'
-                    }}
-                    value={uiSettings.brokerList.valueDisplay}
-                    onChange={s => uiSettings.brokerList.valueDisplay = s}
-                />
-
-                <OptionGroup label="Sort"
-                    options={{
-                        'Changed First': 'changedFirst',
-                        'Alphabetical': 'alphabetical',
-                        'None': 'default',
-                    }}
-                    value={uiSettings.brokerList.propsOrder}
-                    onChange={s => uiSettings.brokerList.propsOrder = s}
-                />
-            </Space>
-        </Row>
-    </div>);
-
 const ResourcesBadge = (p: { type?: string | undefined }) => {
     switch (p.type) {
         case 'new':
-            return <div className="badge-new">NEW</div>
+            return <div className="badge-new">New</div>
 
         default:
             return null;
     }
 };
+
+
+function ClusterDetails(_p: {}) {
+
+    const DetailsGroup = (p: { title: string, children?: React.ReactNode }) => {
+        return <>
+            <h4>{p.title}</h4>
+            {p.children}
+            <Line />
+        </>
+    }
+
+    const Line = () => {
+        return <div className="separationLine"></div>
+    }
+
+    return <div className="clusterDetails">
+        <DetailsGroup title="Services">
+            <h5>Schema Registry</h5>
+            <div>Running</div>
+            <div></div>
+
+            <h5>Kafka Connect</h5>
+            <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+            }}>Not configured <Icon as={IoWarning} fontSize="21px" color="#eb8314" /> </div>
+            <div></div>
+        </DetailsGroup>
+
+
+        <DetailsGroup title="Storage">
+            <h5>Primary bytes</h5>
+            <div>277 Bytes</div>
+            <div></div>
+
+            <h5>Replicated bytes</h5>
+            <div>{277 * 2} Bytes</div>
+            <div></div>
+        </DetailsGroup>
+
+
+
+        <DetailsGroup title="Security" >
+            <h5>Users</h5>
+            <div>
+                <a href="#" onClick={() => appGlobal.history.push('/acls/')}>4</a>
+            </div>
+            <div></div>
+
+            <h5>ACLs</h5>
+            <div>
+                <a href="#" onClick={() => appGlobal.history.push('/acls/')}>10</a>
+            </div>
+            <div></div>
+        </DetailsGroup>
+
+
+        <h5>Licensing</h5>
+        <div>Debug (Enterprise)</div>
+        <div>expires 1/1/2099</div>
+    </div>
+}

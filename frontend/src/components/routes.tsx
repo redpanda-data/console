@@ -40,6 +40,7 @@ import { ItemType } from 'antd/lib/menu/hooks/useItems';
 import { AnimatePresence } from '../utils/animationProps';
 import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import Overview from './pages/overview/Overview';
+import { BrokerDetails } from './pages/overview/Broker.Details';
 
 //
 //	Route Types
@@ -276,6 +277,7 @@ function routeVisibility(
 export const APP_ROUTES: IRouteEntry[] = [
 
     MakeRoute<{}>('/overview', Overview, 'Overview', ChipIcon),
+    MakeRoute<{ brokerId: string }>('/overview/:brokerId', BrokerDetails, 'Broker Details'),
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
