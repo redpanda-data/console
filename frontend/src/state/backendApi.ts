@@ -1226,7 +1226,7 @@ const apiStore = {
 
     async updateConnector(clusterName: string, connector: string, config: object): Promise<void> {
         // PUT "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1238,7 +1238,7 @@ const apiStore = {
 
     async restartTask(clusterName: string, connector: string, taskID: number): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart"
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}/tasks/${String(taskID)}/restart`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/tasks/${String(taskID)}/restart`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1262,7 +1262,7 @@ const apiStore = {
 
     async createConnector(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors"
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1349,7 +1349,7 @@ const apiStore = {
     },
 
     async createSecret(clusterName: string, connectorName: string, secretValue: string): Promise<any> {
-        return rest(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/secrets`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1363,7 +1363,29 @@ const apiStore = {
                 }
             }),
         });
+        return parseOrUnwrap<any>(response, null);
     },
+
+     async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<any> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`, {
+            method: 'PUT',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify({
+                secretData: secretValue            }),
+        });
+        return parseOrUnwrap<any>(response, null);
+    },
+
+
+    async deleteSecret(clusterName: string, secretId: string): Promise<any> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`, {
+            method: 'DELETE',
+        });
+        return parseOrUnwrap<void>(response, null);
+    },
+
 };
 
 function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {

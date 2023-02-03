@@ -188,7 +188,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                     {activeCluster && selectedPlugin ? (
                         <ConfigPage
                             connectorStore={connectClustersState.getNewConnectorState({
-                                cluster: activeCluster!,
+                                clusterName: activeCluster!,
                                 pluginClass: selectedPlugin!.class,
                             })}
                         />
@@ -198,29 +198,6 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                 </>
             ),
             postConditionMet: () => true,
-            async transitionConditionMet(): Promise<{ conditionMet: boolean }> {
-                clearErrors();
-                try {
-                    const connectorStore = connectClustersState.getNewConnectorState({
-                        cluster: activeCluster!,
-                        pluginClass: selectedPlugin!.class,
-                    });
-                    const propertiesObject: any = connectorStore.getConfigObject();
-
-                    try {
-                        const secretsResponse = await api.createSecret(activeCluster, propertiesObject.name, connectorStore.secret);
-                        connectorStore.commitSecrets(secretsResponse.secretId);
-                    } catch (e) {
-                        console.error(e);
-                        return { conditionMet: false };
-                    }
-                } catch (e: any) {
-                    setGenericFailure(e);
-                    return { conditionMet: false };
-                }
-
-                return { conditionMet: true };
-            },
         },
         // {
         //   title: 'Additional Properties',
@@ -231,18 +208,17 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         // },
         {
             title: 'Review',
-            description: 'Review and optionally patch the created connector config.',
+            description: 'Review created connector config.',
             icon: <SearchOutlined />,
             content: selectedPlugin && (
                 <Review
                     connectorPlugin={selectedPlugin}
                     properties={
                         connectClustersState.getNewConnectorState({
-                            cluster: activeCluster!,
+                            clusterName: activeCluster!,
                             pluginClass: selectedPlugin!.class,
                         })?.jsonText
                     }
-                    onChange={() => { }}
                     invalidValidationResult={invalidValidationResult}
                     validationFailure={validationFailure}
                     creationFailure={creationFailure}
@@ -253,33 +229,25 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             async transitionConditionMet(): Promise<{ conditionMet: boolean }> {
                 clearErrors();
                 try {
-                    const propertiesObject: any = connectClustersState
-                        .getNewConnectorState({
-                            cluster: activeCluster!,
-                            pluginClass: selectedPlugin!.class,
-                        })
-                        .getConfigObject();
-
-                    try {
-                        const validationResult = await api.validateConnectorConfig(activeCluster!, selectedPlugin!.class, propertiesObject);
-
-                        if (validationResult.error_count > 0) {
-                            setInvalidValidationResult(validationResult);
-                            return { conditionMet: false };
-                        }
-                    } catch (e) {
-                        setValidationFailure(e);
-                        return { conditionMet: false };
-                    }
-
-                    try {
-                        await api.createConnector(activeCluster!, propertiesObject.name, selectedPlugin!.class, propertiesObject);
-                    } catch (e) {
-                        setCreationFailure(e);
+                    const validationResult = await connectClustersState.createConnector({
+                        clusterName: activeCluster,
+                        pluginClass: selectedPlugin!.class,
+                    });
+                    if (validationResult) {
+                        setInvalidValidationResult(validationResult);
                         return { conditionMet: false };
                     }
                 } catch (e: any) {
-                    setGenericFailure(e);
+                    switch (e?.name) {
+                        case 'ConnectorValidationError':
+                            setValidationFailure(e?.message);
+                            break;
+                        case 'ConnectorCreationError':
+                            setCreationFailure(e?.message);
+                            break;
+                        default:
+                            setGenericFailure(e?.message);
+                    }
                     return { conditionMet: false };
                 }
 
@@ -320,22 +288,13 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 interface ReviewProps {
     connectorPlugin: ConnectorPlugin | null;
     properties?: string;
-    onChange: (editorContent: string | undefined) => void;
     invalidValidationResult: ConnectorValidationResult | null;
     validationFailure: unknown;
     creationFailure: unknown;
     genericFailure: Error | null;
 }
 
-function Review({
-    connectorPlugin,
-    properties,
-    onChange,
-    invalidValidationResult,
-    validationFailure,
-    creationFailure,
-    genericFailure,
-}: ReviewProps) {
+function Review({ connectorPlugin, properties, invalidValidationResult, validationFailure, creationFailure, genericFailure }: ReviewProps) {
     return (
         <>
             {connectorPlugin != null ? (
@@ -388,7 +347,7 @@ function Review({
 
             <h2>Connector Properties</h2>
             <div style={{ margin: '0 auto 1.5rem' }}>
-                <KowlEditor language="json" value={properties} onChange={onChange} height="600px" />
+                <KowlEditor language="json" value={properties} height="600px" options={{ readOnly: true }} />
             </div>
         </>
     );
