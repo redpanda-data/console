@@ -19,8 +19,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// BrokerWithConfigAndStorage described by some basic broker properties
-type BrokerWithConfigAndStorage struct {
+// BrokersWithLogDirs described by some basic broker properties
+type BrokersWithLogDirs struct {
 	BrokerID int32 `json:"brokerId"`
 	// TotalLogDirSizeBytes is the total sum of bytes that is returned via the
 	// DescribeLogDirs API. Thus, this also includes replicas stored on that
@@ -31,10 +31,10 @@ type BrokerWithConfigAndStorage struct {
 	Rack                 *string `json:"rack,omitempty"`
 }
 
-// GetBrokersWithConfigAndStorage returns a slice of all brokers in a cluster along with
+// GetBrokersWithLogDirs returns a slice of all brokers in a cluster along with
 // their metadata, storage and configs. If we fail to get metadata from the cluster
 // this function will return an error.
-func (s *Service) GetBrokersWithConfigAndStorage(ctx context.Context) ([]BrokerWithConfigAndStorage, error) {
+func (s *Service) GetBrokersWithLogDirs(ctx context.Context) ([]BrokersWithLogDirs, error) {
 	// We use a child context with a shorter timeout because otherwise we'll potentially have very long response
 	// times in case of a single broker being down.
 	childCtx, cancel := context.WithTimeout(ctx, 6*time.Second)
@@ -62,14 +62,14 @@ func (s *Service) GetBrokersWithConfigAndStorage(ctx context.Context) ([]BrokerW
 		return nil, err
 	}
 
-	brokers := make([]BrokerWithConfigAndStorage, len(metadata.Brokers))
+	brokers := make([]BrokersWithLogDirs, len(metadata.Brokers))
 	for i, broker := range metadata.Brokers {
 		var size *int64
 		if value, ok := logDirsByBroker[broker.NodeID]; ok {
 			size = &value.TotalSizeBytes
 		}
 
-		brokers[i] = BrokerWithConfigAndStorage{
+		brokers[i] = BrokersWithLogDirs{
 			BrokerID:             broker.NodeID,
 			TotalLogDirSizeBytes: size,
 			Address:              broker.Host,

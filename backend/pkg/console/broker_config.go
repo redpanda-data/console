@@ -154,7 +154,7 @@ func (s *Service) GetBrokerConfig(ctx context.Context, brokerID int32) ([]Broker
 	return nil, &rest.Error{
 		Err:      fmt.Errorf("broker describe config response was empty"),
 		Status:   http.StatusInternalServerError,
-		Message:  "BrokerWithConfigAndStorage config response was empty",
+		Message:  "BrokersWithLogDirs config response was empty",
 		IsSilent: false,
 	}
 }
