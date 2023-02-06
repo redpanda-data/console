@@ -131,7 +131,6 @@ func (api *API) handleGetClusterInfo() http.HandlerFunc {
 		}
 
 		clusterFeatures := api.Hooks.Console.EnabledConnectClusterFeatures(r.Context(), clusterName)
-		clusterFeatures = []connect.ClusterFeature{connect.ClusterFeatureSecretStore}
 		clusterInfo.EnabledFeatures = append(clusterInfo.EnabledFeatures, clusterFeatures...)
 
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, clusterInfo)
