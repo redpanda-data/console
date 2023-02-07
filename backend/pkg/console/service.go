@@ -30,7 +30,7 @@ type Service struct {
 	connectSvc  *connect.Service
 	logger      *zap.Logger
 
-	// configExtensionsByName contains additional metadata about Topic or BrokersWithLogDirs configs.
+	// configExtensionsByName contains additional metadata about Topic or BrokerWithLogDirs configs.
 	// The additional information is used by the frontend to provide a good UX when
 	// editing configs or creating new topics.
 	configExtensionsByName map[string]ConfigEntryExtension

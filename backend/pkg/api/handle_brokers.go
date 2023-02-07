@@ -50,7 +50,7 @@ func (api *API) handleBrokerConfig() http.HandlerFunc {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("broker id in URL not set"),
 				Status:   http.StatusBadRequest,
-				Message:  "BrokersWithLogDirs ID must be set and no longer than 10 characters",
+				Message:  "BrokerWithLogDirs ID must be set and no longer than 10 characters",
 				IsSilent: true,
 			}
 			rest.SendRESTError(w, r, api.Logger, restErr)
@@ -61,7 +61,7 @@ func (api *API) handleBrokerConfig() http.HandlerFunc {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("broker id in URL not set"),
 				Status:   http.StatusBadRequest,
-				Message:  "BrokersWithLogDirs ID must be a valid int32",
+				Message:  "BrokerWithLogDirs ID must be a valid int32",
 				IsSilent: true,
 			}
 			rest.SendRESTError(w, r, api.Logger, restErr)
