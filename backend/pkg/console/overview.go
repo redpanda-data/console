@@ -13,11 +13,11 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
-
-// TODO: Add brokers overview
 
 // Overview contains information to give a high-level overview
 // about the cluster we are connected to along with all it's ecosystem components,
@@ -37,6 +37,7 @@ type OverviewRedpanda struct {
 	IsAdminAPIConfigured bool              `json:"isAdminApiConfigured"`
 	License              *redpanda.License `json:"license,omitempty"`
 	Version              string            `json:"version,omitempty"`
+	UserCount            *int              `json:"userCount,omitempty"`
 }
 
 // OverviewConsole contains information about Redpanda Console itself.
@@ -104,10 +105,20 @@ func (s *Service) getRedpandaOverview(ctx context.Context) OverviewRedpanda {
 	licenseInfo := s.redpandaSvc.GetLicense(ctx)
 	version, _ := s.redpandaSvc.GetClusterVersion(ctx)
 
+	var userCount *int
+	users, err := s.redpandaSvc.ListUsers(ctx)
+	if err != nil {
+		s.logger.Warn("failed to list users via redpanda admin api", zap.Error(err))
+	} else {
+		userCount = new(int)
+		*userCount = len(users)
+	}
+
 	return OverviewRedpanda{
 		IsAdminAPIConfigured: true,
 		License:              &licenseInfo,
 		Version:              version,
+		UserCount:            userCount,
 	}
 }
 
