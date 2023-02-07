@@ -98,7 +98,7 @@ export const KowlJsonView = observer((props: ReactJsonViewProps) => {
                     groupArraysAfterLength={100}
                     indentWidth={5}
                     iconStyle="triangle"
-                    collapsed={2}
+                    collapsed={settings.collapsed}
                     onSelect={e => {
                         if (ctrlDown) {
                             if (navigator?.clipboard) {

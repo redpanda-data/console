@@ -143,6 +143,9 @@ class JsonViewerTab extends Component {
                 <Label text="Maximum string length before collapsing">
                     <InputNumber value={settings.maxStringLength} onChange={e => settings.maxStringLength = (e ?? 200)} min={0} max={10000} style={{ maxWidth: '150px' }} />
                 </Label>
+                <Label text="Maximum depth before collapsing nested objects">
+                    <InputNumber value={settings.collapsed} onChange={e => settings.collapsed = (e ?? 2)} min={1} max={50} style={{ maxWidth: '150px' }} />
+                </Label>
             </div>
         </div>;
     }

@@ -146,6 +146,7 @@ const defaultUiSettings = {
         fontSize: '12px',
         lineHeight: '1em',
         maxStringLength: 200,
+        collapsed: 2,
     },
 
     // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
