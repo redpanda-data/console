@@ -135,6 +135,12 @@ func (s *Service) GetLicense(ctx context.Context) License {
 	return decoded
 }
 
+// GetPartitionBalancerStatus retrieves the partition balancer status from Redpanda
+// via the Admin API.
+func (s *Service) GetPartitionBalancerStatus(ctx context.Context) (admin.PartitionBalancerStatus, error) {
+	return s.adminClient.GetPartitionStatus(ctx)
+}
+
 func licenseToRedpandaLicense(license admin.License) (License, error) {
 	if !license.Loaded {
 		return newOpenSourceLicense(), nil
