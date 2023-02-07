@@ -34,6 +34,8 @@ type OverviewKafka struct {
 	BrokersOnline   int                   `json:"brokersOnline,omitempty"`
 	BrokersExpected int                   `json:"brokersExpected,omitempty"`
 	TopicsCount     int                   `json:"topicsCount,omitempty"`
+	PartitionsCount int                   `json:"partitionsCount,omitempty"`
+	ReplicasCount   int                   `json:"replicasCount,omitempty"`
 	ControllerID    int32                 `json:"controllerId"`
 	Brokers         []OverviewKafkaBroker `json:"brokers"`
 
@@ -102,6 +104,21 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 		}
 	}
 
+	partitionCount := 0
+	replicaCount := 0
+	for _, t := range metadata.Topics {
+		if t.ErrorCode != 0 {
+			continue
+		}
+		for _, p := range t.Partitions {
+			if p.ErrorCode != 0 {
+				continue
+			}
+			partitionCount += 1
+			replicaCount += len(p.Replicas)
+		}
+	}
+
 	distribution := distributionFromMetadata(metadata)
 	overviewBrokers := make([]OverviewKafkaBroker, len(metadata.Brokers))
 	for i, broker := range metadata.Brokers {
@@ -120,6 +137,8 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 		BrokersExpected: len(expectedBrokersFromMetadata(metadata)),
 		Brokers:         overviewBrokers,
 		TopicsCount:     len(metadata.Topics),
+		PartitionsCount: partitionCount,
+		ReplicasCount:   replicaCount,
 		Authorizer:      &authorizer,
 	}
 }
