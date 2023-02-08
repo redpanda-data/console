@@ -29,14 +29,14 @@ import (
 type OverviewKafka struct {
 	OverviewStatus
 	// Version is the version that we guess via the Kafka API.
-	Version string `json:"version,omitempty"`
+	Version string `json:"version"`
 	// Distribution is the software flavour (Apache Kafka, Redpanda, ...)
 	Distribution    *KafkaDistribution    `json:"distribution,omitempty"`
-	BrokersOnline   int                   `json:"brokersOnline,omitempty"`
-	BrokersExpected int                   `json:"brokersExpected,omitempty"`
-	TopicsCount     int                   `json:"topicsCount,omitempty"`
-	PartitionsCount int                   `json:"partitionsCount,omitempty"`
-	ReplicasCount   int                   `json:"replicasCount,omitempty"`
+	BrokersOnline   int                   `json:"brokersOnline"`
+	BrokersExpected int                   `json:"brokersExpected"`
+	TopicsCount     int                   `json:"topicsCount"`
+	PartitionsCount int                   `json:"partitionsCount"`
+	ReplicasCount   int                   `json:"replicasCount"`
 	ControllerID    int32                 `json:"controllerId"`
 	Brokers         []OverviewKafkaBroker `json:"brokers"`
 
@@ -54,8 +54,8 @@ type OverviewKafkaBroker struct {
 // If we failed to retrieve the information we return a request error.
 type OverviewKafkaAuthorizer struct {
 	RequestError        string `json:"requestError,omitempty"`
-	IsAuthorizerEnabled bool   `json:"isAuthorizerEnabled,omitempty"`
-	ACLCount            int    `json:"aclCount,omitempty"`
+	IsAuthorizerEnabled bool   `json:"isAuthorizerEnabled"`
+	ACLCount            int    `json:"aclCount"`
 }
 
 // getKafkaOverview coordinates multiple Kafka requests to return OverviewKafka.
