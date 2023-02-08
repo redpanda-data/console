@@ -86,6 +86,7 @@ func (api *API) routes() *chi.Mux {
 			r.Route("/api", func(r chi.Router) {
 				// Overview
 				r.Get("/cluster/overview", api.handleOverview())
+				r.Get("/cluster", api.handleDescribeCluster())
 				r.Get("/brokers", api.handleGetBrokers())
 				r.Get("/brokers/{brokerID}/config", api.handleBrokerConfig())
 				r.Get("/api-versions", api.handleGetAPIVersions())
