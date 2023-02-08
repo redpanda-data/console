@@ -22,9 +22,9 @@ type License struct {
 	ExpiresAt int64 `json:"expiresAt"`
 }
 
-func newOpenSourceLicense() License {
+func newOpenSourceCoreLicense() License {
 	return License{
-		Source:    LicenseSourceConsole,
+		Source:    LicenseSourceRedpanda,
 		Type:      LicenseTypeOpenSource,
 		ExpiresAt: math.MaxInt32,
 	}
