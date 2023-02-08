@@ -19,7 +19,6 @@ import (
 
 	"github.com/cloudhut/common/flagext"
 	"github.com/cloudhut/common/logging"
-	"github.com/cloudhut/common/rest"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -38,7 +37,7 @@ type Config struct {
 	Console  Console        `yaml:"console"`
 	Redpanda Redpanda       `yaml:"redpanda"`
 	Connect  Connect        `yaml:"connect"`
-	REST     rest.Config    `yaml:"server"`
+	REST     Server         `yaml:"server"`
 	Kafka    Kafka          `yaml:"kafka"`
 	Logger   logging.Config `yaml:"logger"`
 }
