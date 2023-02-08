@@ -10,13 +10,13 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { Input, InputNumber, Switch, Select, Tooltip, AutoComplete } from 'antd';
 import { observer } from 'mobx-react';
 import { PropertyWidth } from '../../../../state/restInterfaces';
 import { findPopupContainer, InfoText } from '../../../../utils/tsxUtils';
 import { Property } from '../../../../state/connect/state';
 import { CommaSeparatedStringList } from './List';
+import { SecretInput } from './forms/SecretInput';
 
 export const PropertyComponent = observer((props: { property: Property }) => {
     const p = props.property;
@@ -73,12 +73,12 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             break;
 
         case 'PASSWORD':
-            inputComp = <Input.Password
+            inputComp = <SecretInput
                 value={String(p.value ?? '')}
+                updating={p.crud === 'update'}
                 onChange={e => {
-                    p.value = e.target.value;
-                }}
-                iconRender={visible => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)} />
+                    p.value = e;
+                }} />
             break;
 
         case 'INT':

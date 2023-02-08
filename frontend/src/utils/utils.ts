@@ -755,7 +755,6 @@ export function setHeader(init: RequestInit, name: string, value: string) {
 }
 
 // very simple retrier utility for allowing some retries, if we ended up using it more often we should consider making it more elaborate
-
 export const retrier = (
     operation: any, { attempts = Infinity, delayTime = 100 }) => new Promise((resolve, reject) => {
         return operation()

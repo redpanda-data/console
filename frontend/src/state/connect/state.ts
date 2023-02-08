@@ -10,9 +10,16 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { action, comparer, IReactionDisposer, observable, reaction, autorun, ObservableMap, makeAutoObservable, flow } from 'mobx';
+import { action, comparer, IReactionDisposer, observable, reaction, intercept, makeAutoObservable, flow, autorun } from 'mobx';
 import { api } from '../backendApi';
-import { ConnectorProperty, DataType, KafkaConnectors, PropertyImportance, PropertyWidth, ClusterConnectorInfo } from '../restInterfaces';
+import {
+    ConnectorProperty,
+    DataType,
+    PropertyImportance,
+    PropertyWidth,
+    ClusterConnectors,
+    ConnectorPossibleStatesLiteral,
+} from '../restInterfaces';
 import { removeNamespace } from '../../components/pages/connect/helper';
 import { encodeBase64, retrier } from '../../utils/utils';
 
@@ -25,21 +32,6 @@ export interface ConfigPageProps {
 export type ConnectorSecret = Map<string, string>;
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
-interface ConnectorStore {
-    connectorDefinition: ConnectorPropertiesStore;
-    connectorInfo: ClusterConnectorInfo;
-    canEdit: boolean;
-    pausingConnector: ClusterConnectorInfo | null;
-    restartingConnector: ClusterConnectorInfo | null;
-    updatingConnector: UpdatingConnectorData | null;
-    restartingTask: RestartingTaskData | null;
-    deletingConnector: string | null;
-}
-
-interface ConnectorArguments {
-    clusterName: string;
-    connectorName: string;
-}
 
 class CustomError extends Error {
     constructor(message: any) {
@@ -51,145 +43,265 @@ export class ConnectorValidationError extends CustomError { }
 
 export class ConnectorCreationError extends CustomError { }
 
-export class ConnectClustersState {
-    clusters: KafkaConnectors | undefined;
-    private plugins: ObservableMap<string, ConnectorPropertiesStore>;
-    private connectors: ObservableMap<string, ConnectorStore>;
-    constructor() {
-        makeAutoObservable<ConnectClustersState, 'plugins' | 'connectors'>(this, {
-            init: action.bound,
-            refreshConnectClustersData: action.bound,
+export class SecretCreationError extends CustomError { }
+
+export class ConnectorsStore { }
+
+export class ConnectClusterStore {
+    private clusterName: string;
+    isInitialized: boolean = false;
+    private connectors: Map<string, ConnectorPropertiesStore>;
+    features: ConnectorClusterFeatures = { secretStore: false };
+
+    static connectClusters: Map<string, ConnectClusterStore> = new Map();
+    constructor(clusterName: string) {
+        this.clusterName = clusterName;
+        makeAutoObservable<ConnectClusterStore, 'plugins' | 'connectors'>(this, {
+            setup: action.bound,
             createConnector: flow.bound,
             deleteConnector: flow.bound,
             updateConnnector: flow.bound,
             plugins: observable,
             connectors: observable,
         });
-        this.init();
     }
-    async init() {
-        // if (!this.clusters?.isConfigured && typeof window !== 'undefined') {
-        //     await this.refreshConnectClustersData(true);
-        // }
-        // // this.clusters = api.connectConnectors;
-        this.plugins = observable.map();
-        this.connectors = observable.map();
+
+    static getInstance(clusterName: string): ConnectClusterStore {
+        let instance = ConnectClusterStore.connectClusters.get(clusterName);
+        if (!instance) {
+            instance = new ConnectClusterStore(clusterName);
+            this.connectClusters.set(clusterName, instance);
+        }
+        return instance;
+    }
+
+    async setup() {
+        if (!this.isInitialized) {
+            this.connectors = new Map();
+            await this.refreshData(false);
+
+            const additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName);
+            this.features.secretStore = !!additionalClusterInfo?.enabledFeatures?.some((x) => x === 'SECRET_STORE');
+            this.isInitialized = true;
+        }
+    }
+
+    async refreshData(force: boolean) {
+        await api.refreshConnectClusters(force);
+        await api.refreshClusterAdditionalInfo(this.clusterName, force);
     }
 
     // CRUD operations
-    createConnector = flow(function*(
-        this: ConnectClustersState,
-        { clusterName, pluginClass }: { clusterName: string; pluginClass: string }
-    ) {
-        const pluginState = this.getNewConnectorState({ clusterName, pluginClass });
-        const propertiesObject: Record<string, any> = pluginState.getConfigObject();
-        try {
-            const validationResult = yield api.validateConnectorConfig(clusterName, pluginClass, propertiesObject);
-
-            if (validationResult.error_count > 0) {
-                return validationResult;
+    createConnector = flow(function*(this: ConnectClusterStore, pluginClass: string) {
+        const connector = this.getConnector(pluginClass);
+        const secrets = connector.secrets;
+        if (secrets) {
+            try {
+                for (const [key, secret] of secrets.secrets) {
+                    const connectorName = connector.propsByName.get('name');
+                    if (!connectorName) throw new Error('For some reason your connector doesn\'t have a name');
+                    const createSecretResponse = yield api.createSecret(this.clusterName, connectorName.value as string, secret.serialized);
+                    const property = connector.propsByName.get(key);
+                    if (property) property.value = secret.getSecretString(key, createSecretResponse?.secretId);
+                }
+            } catch (error) {
+                throw new SecretCreationError(error);
             }
-        } catch (e) {
-            throw new ConnectorValidationError(e);
         }
-
-        const secretsResponse = yield api.createSecret(clusterName, propertiesObject.name, pluginState.secret);
-        const secretId = secretsResponse.secretId;
-        pluginState.commitSecrets(secretId);
         try {
-            const finalProperties: Record<string, any> = pluginState.getConfigObject();
-            yield api.createConnector(clusterName, finalProperties.name, pluginClass, finalProperties);
-            this.removePluginState({ clusterName, pluginClass });
+            const finalProperties: Record<string, any> = connector.getConfigObject();
+            yield api.createConnector(this.clusterName, finalProperties.name, pluginClass, finalProperties);
+            this.removePluginState(pluginClass);
         } catch (error) {
             // In case we want to delete secrets on failure
-            if (secretId) yield retrier(() => api.deleteSecret(clusterName, secretId), { delayTime: 200, attempts: 5 });
+            // if (secrets) {
+            //     yield Promise.all(
+            //         secrets.ids.map((secretId) =>
+            //             retrier(() => api.deleteSecret(this.clusterName, secretId), { attempts: 3, delayTime: 200 })
+            //         )
+            //     );
+            // }
             throw new ConnectorCreationError(error);
         }
     });
 
-    deleteConnector = flow(function*(this: ConnectClustersState, { clusterName, connectorName }: ConnectorArguments) {
-        const connectorState = this.getConnectorState({ clusterName, connectorName });
-        yield api.deleteConnector(clusterName, connectorName);
-        const secretId = connectorState?.connectorDefinition.secretId;
+    deleteConnector = flow(function*(this: ConnectClusterStore, connectorName: string) {
+        const connectorState = this.getConnectorStore(connectorName);
+        const secrets = connectorState.secrets;
 
-        if (secretId) yield api.deleteSecret(clusterName, secretId);
+        yield api.deleteConnector(this.clusterName, connectorName);
+
+        if (secrets) {
+            yield Promise.all(
+                secrets.ids.map((secretId) => retrier(() => api.deleteSecret(this.clusterName, secretId), { attempts: 3, delayTime: 200 }))
+            );
+        }
     });
 
-    updateConnnector = flow(function*(this: ConnectClustersState, { clusterName, connectorName }: ConnectorArguments) {
-        const connectorState = this.getConnectorState({ clusterName, connectorName });
+    updateConnnector = flow(function*(this: ConnectClusterStore, connectorName: string) {
+        const remoteConnector = this.getRemoteConnector(connectorName);
 
-        const connectorDefinition = connectorState?.connectorDefinition;
-
-        const newConfigObj = connectorDefinition?.getConfigObject();
+        const connectorState = this.getConnectorStore(connectorName);
+        const newConfigObj = connectorState?.getConfigObject();
         if (newConfigObj) {
-            const secretId = connectorDefinition?.secretId;
-            if (connectorDefinition?.secretMap.size != 0 && secretId) {
-                yield api.updateSecret(clusterName, secretId, connectorDefinition?.secret);
-                connectorDefinition.commitSecrets(secretId);
+            const secrets = connectorState?.secrets;
+            if (secrets) {
+                for (const [key, secret] of secrets.secrets) {
+                    if (secret.isDirty && secret.id) {
+                        const createSecretResponse = yield api.updateSecret(this.clusterName, secret.id, secret.serialized);
+                        const property = connectorState.propsByName.get(key);
+                        if (property) property.value = secret.getSecretString(key, createSecretResponse?.secretId);
+                    }
+                }
             }
-            yield api.updateConnector(clusterName, connectorName, connectorDefinition!.getConfigObject());
+            if (remoteConnector) yield api.updateConnector(this.clusterName, connectorName, connectorState.getConfigObject());
         }
     });
 
-    refreshConnectClustersData(force: boolean) {
-        return api.refreshConnectClusters(force);
+    removePluginState(identifier: string) {
+        this.connectors.delete(identifier);
     }
 
-    refreshCluster(clusterName: string, force = false) {
-        return api.refreshClusterAdditionalInfo(clusterName, force);
-    }
+    getConnector(pluginClassName: string, connectorName: string | null = null, initialConfig: Record<string, any> | undefined = undefined) {
+        const identifier = connectorName ? `${pluginClassName}/${connectorName}` : pluginClassName;
+        let connectorStore = this.connectors.get(identifier);
+        if (!connectorStore) {
+            connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, initialConfig, {
+                secretStore: this.features.secretStore,
+                editing: initialConfig != null,
+            });
 
-    removePluginState({ clusterName, pluginClass }: { clusterName: string; pluginClass: string }) {
-        const key = `${clusterName}_${pluginClass}`;
-        this.plugins.delete(key);
-    }
-
-    getNewConnectorState({ clusterName, pluginClass }: { clusterName: string; pluginClass: string }) {
-        const key = `${clusterName}_${pluginClass}`;
-        if (!this.plugins.has(key)) {
-            const additionalClusterInfo = api.connectAdditionalClusterInfo.get(clusterName);
-            const isSecretStoreEnabled = additionalClusterInfo?.enabledFeatures.some((x) => x === 'SECRET_STORE');
-            this.plugins.set(key, new ConnectorPropertiesStore(clusterName, pluginClass, undefined, { isSecretStoreEnabled }));
+            this.connectors.set(identifier, connectorStore);
         }
-        return this.plugins.get(key) as ConnectorPropertiesStore;
+        return connectorStore;
     }
 
-    getConnectorState({ clusterName, connectorName }: ConnectorArguments): ConnectorStore | undefined {
-        const key = `${clusterName}_${connectorName}`;
-        if (!this.connectors.has(key)) {
-            const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName == clusterName);
+    getConnectorStore(connectorName: string) {
+        const connector = this.getRemoteConnector(connectorName);
+        const connectorProperties = this.getConnector(connector!.class, connectorName, connector?.config);
+        return connectorProperties;
+    }
+
+    get cluster(): ClusterConnectors | null {
+        if (this.isInitialized) {
+            const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName == this.clusterName);
             if (!cluster) throw new Error('cluster not found');
-            const connector = cluster?.connectors.first((c) => c.name == connectorName);
-            if (!connector) throw new Error('connector not found');
-
-            const additionalClusterInfo = api.connectAdditionalClusterInfo.get(clusterName);
-            const isSecretStoreEnabled = additionalClusterInfo?.enabledFeatures.some((x) => x === 'SECRET_STORE');
-
-            const connectorDefinition = new ConnectorPropertiesStore(clusterName, connector.class, connector.config, {
-                isSecretStoreEnabled,
-            });
-
-            const connectorStore = observable<ConnectorStore>({
-                connectorDefinition,
-                connectorInfo: connector,
-                canEdit: cluster.canEditCluster,
-                pausingConnector: null,
-                restartingConnector: null,
-                updatingConnector: null,
-                restartingTask: null,
-                deletingConnector: null,
-            });
-
-            this.connectors.set(key, connectorStore);
+            return cluster;
         }
-        return this.connectors.get(key);
+        return null;
+    }
+
+    get canEdit() {
+        if (this.isInitialized) {
+            return this.cluster?.canEditCluster;
+        }
+        return null;
+    }
+
+    validateConnectorState(connectorName: string, state: ConnectorPossibleStatesLiteral[]) {
+        if (this.isInitialized) {
+            const cluster = this.cluster;
+            const connector = cluster?.connectors.first((c) => c.name == connectorName);
+            return state.some((s) => s === connector?.state);
+        }
+    }
+
+    getConnectorState(connectorName: string) {
+        if (this.isInitialized) {
+            const connector = this.getRemoteConnector(connectorName);
+            return connector?.state;
+        }
+        return null;
+    }
+
+    getConnectorTasks(connectorName: string) {
+        if (this.isInitialized) {
+            const connector = this.getRemoteConnector(connectorName);
+            return connector?.tasks;
+        }
+    }
+
+    getRemoteConnector(connectorName: string) {
+        if (this.isInitialized) {
+            const cluster = this.cluster;
+            const connector = cluster?.connectors.first((c) => c.name == connectorName);
+            return connector;
+        }
     }
 }
 
-export const connectClustersState = new ConnectClustersState();
-
 export interface ConnectorClusterFeatures {
-    isSecretStoreEnabled?: boolean;
+    secretStore?: boolean;
+    editing?: boolean;
+}
+
+export class SecretsStore {
+    secrets = new Map<string, Secret>();
+
+    constructor() {
+        makeAutoObservable(this);
+    }
+
+    getSecret(key: string) {
+        let secret = this.secrets.get(key);
+
+        if (!secret) {
+            secret = new Secret(key);
+            this.secrets.set(key, secret);
+        }
+        return secret;
+    }
+
+    get ids(): string[] {
+        return Array.from(this.secrets, ([_key, secret]) => secret.id).filter((secret): secret is string => Boolean(secret));
+    }
+}
+
+export class Secret {
+    key: string;
+    value: string;
+    id: string | null = null;
+    secretString: string | null = null;
+    isDirty: boolean = false;
+
+    constructor(key: string) {
+        this.key = key;
+        makeAutoObservable(this);
+        autorun(() => {
+            if (this.secretString && this.value) {
+                this.isDirty = this.value !== this.secretString;
+            }
+        });
+    }
+
+    get serialized() {
+        return encodeBase64(JSON.stringify({ [this.key]: this.value }));
+    }
+
+    get toJS() {
+        return {
+            [this.key]: this.value,
+        };
+    }
+
+    getSecretString(key: string, id?: string): string | null {
+        const _id = id ?? this.id;
+        if (_id) return `\${secretsManager:${_id}:${key}}`;
+        return null;
+    }
+
+    extractSecretId(secretString: string): boolean {
+        if (!this.validateSecretString(secretString)) return false;
+        this.id = String(secretString).split(':')[1];
+        return !!this.id;
+    }
+
+    validateSecretString(secretString: string): boolean {
+        const regex = /^\$\{secretsManager:[A-Za-z\-0-9]+:.+\}$/;
+        const validationResult = regex.test(secretString);
+        if (validationResult) this.secretString = secretString;
+        return validationResult;
+    }
 }
 
 export class ConnectorPropertiesStore {
@@ -197,9 +309,8 @@ export class ConnectorPropertiesStore {
     propsByName = observable.map<string, Property>();
     jsonText = '';
     error: string | undefined = undefined;
-    secretMap: ConnectorSecret = new Map<string, string>();
-    secret: string;
-    secretId: string | null = null;
+    crud: 'create' | 'update';
+    secrets: SecretsStore | null = null;
     advancedMode = 'simple' as 'simple' | 'advanced';
     initPending = true;
     fallbackGroupName: string = '';
@@ -209,29 +320,18 @@ export class ConnectorPropertiesStore {
         private clusterName: string,
         private pluginClassName: string,
         private appliedConfig: Record<string, any> | undefined,
-        private features?: ConnectorClusterFeatures
+        features?: ConnectorClusterFeatures
     ) {
         makeAutoObservable(this, {
             fallbackGroupName: false,
             reactionDisposers: false,
             initConfig: action.bound,
-            commitSecrets: action.bound,
         });
+        if (features?.secretStore) this.secrets = new SecretsStore();
+        if (features?.editing) this.crud = 'update';
+
         this.fallbackGroupName = removeNamespace(this.pluginClassName);
         this.initConfig();
-    }
-
-    commitSecrets(secretId: string) {
-        for (const key of this.secretMap.keys()) {
-            const p = this.propsByName.get(key);
-            const secretString = `\${secretsManager:${secretId}:${key}}`;
-            if (p) p.value = secretString;
-        }
-        this.secretId = secretId;
-    }
-
-    extractSecretId(secretString: string) {
-        this.secretId = String(secretString).split(':')[1];
     }
 
     createPropertyGroup(groupName: string, properties: Property[]) {
@@ -246,7 +346,6 @@ export class ConnectorPropertiesStore {
                 if (self.advancedMode == 'advanced')
                     // advanced mode shows all settings
                     return this.properties;
-
                 // in simple mode, we only show props that are high importance
                 return this.properties.filter((p) => p.entry.definition.importance == PropertyImportance.High);
             },
@@ -275,7 +374,7 @@ export class ConnectorPropertiesStore {
         return config;
     }
 
-    async updateProperties(properties: Record<string, any>) {
+    updateProperties(properties: Record<string, any>) {
         for (const [key, value] of Object.entries(properties)) {
             const property = this.propsByName.get(key);
             if (property) property.value = value;
@@ -344,12 +443,6 @@ export class ConnectorPropertiesStore {
                     },
                     { delay: 300, fireImmediately: true, equals: comparer.structural }
                 )
-            );
-
-            this.reactionDisposers.push(
-                autorun(() => {
-                    this.secret = encodeBase64(JSON.stringify(Object.fromEntries(this.secretMap)));
-                })
             );
         } catch (err: any) {
             this.error = typeof err == 'object' ? err.message ?? JSON.stringify(err, undefined, 4) : JSON.stringify(err, undefined, 4);
@@ -447,8 +540,7 @@ export class ConnectorPropertiesStore {
 
     // Creates our Property objects, while fixing some issues with the source data
     // like: missing value, propertyWidth, group, ...
-    createCustomProperties(properties: ConnectorProperty[], values: Record<string, any> = {}): Property[] {
-        const self = this;
+    createCustomProperties(properties: ConnectorProperty[], values: Record<string, any> | null = null): Property[] {
         // Fix missing properties
         for (const p of properties) {
             const def = p.definition;
@@ -485,7 +577,7 @@ export class ConnectorPropertiesStore {
                     if (Number.isFinite(n)) defaultValue = p.definition.default_value = n as any;
                 }
 
-                let value: any = values[name] ?? initialValue ?? defaultValue;
+                let value: any = initialValue ?? defaultValue;
                 if (p.definition.type == DataType.Boolean && value == null) value = false; // use 'false' as default for boolean
 
                 const property = observable({
@@ -495,28 +587,25 @@ export class ConnectorPropertiesStore {
                     isHidden: hiddenProperties.includes(name),
                     suggestedValues: suggestedValues[name],
                     errors: p.value.errors ?? [],
-                    isSensitive: p.definition.type === DataType.Password && self.features?.isSecretStoreEnabled,
                     lastErrors: [],
                     showErrors: p.value.errors.length > 0,
                     currentErrorIndex: 0,
                     lastErrorValue: undefined as any,
                     propertyGroup: undefined as any,
+                    crud: this.crud,
                 });
-                if (property.isSensitive && !!values[name]) {
-                    self.extractSecretId(values[name]);
+
+                if (p.definition.type === DataType.Password && !!this.secrets) {
+                    const secret = this.secrets.getSecret(property.name);
+                    intercept(property, 'value', (change) => {
+                        secret.extractSecretId(change.newValue);
+                        secret.value = change.newValue;
+                        return change;
+                    });
                 }
 
-                if (property.isSensitive && self.features?.isSecretStoreEnabled) {
-                    self.reactionDisposers.push(
-                        reaction(
-                            () => property.value,
-                            (value) => {
-                                this.secretMap.set(property.name, value);
-                            },
-                            { delay: 300 }
-                        )
-                    );
-                }
+                if (values != null && values[name]) property.value = values[name];
+
                 return property;
             })
             .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
@@ -561,13 +650,13 @@ export interface Property {
     isHidden: boolean; // currently only used for "connector.class"
     suggestedValues: undefined | string[]; // values that are not listed in entry.value.recommended_values
     errors: string[]; // current errors
-    isSensitive: boolean | undefined;
     showErrors: boolean; // true = property has errors currently
     lastErrors: string[]; // previous errors, used so we can fade/animate them out when they get fixed
     currentErrorIndex: number; // since we can only display one error at a time, we use this to cycle through
     lastErrorValue: any; // the 'value' the property had at the last validation check (used so we can immediately hide the reported error once the user changes the value)
 
     propertyGroup: PropertyGroup;
+    crud: 'create' | 'update';
 }
 
 const StringLikeTypes = [DataType.String, DataType.Class, DataType.List, DataType.Password];

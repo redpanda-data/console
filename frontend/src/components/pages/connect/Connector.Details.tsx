@@ -10,10 +10,10 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Button,  Tooltip } from 'antd';
-import { observer } from 'mobx-react';
+import { Button, Skeleton, Tooltip } from 'antd';
+import { useEffect, useState } from 'react';
+import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
-import { Component } from 'react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
 import { ClusterConnectorInfo } from '../../../state/restInterfaces';
@@ -22,8 +22,8 @@ import { Code, findPopupContainer } from '../../../utils/tsxUtils';
 import { sortField } from '../../misc/common';
 import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
-import { connectClustersState, RestartingTaskData, UpdatingConnectorData,  } from '../../../state/connect/state';
-import { /* ConfigPage */ ConfigPage } from './dynamic-ui/components';
+import { ConnectClusterStore } from '../../../state/connect/state';
+import { ConfigPage } from './dynamic-ui/components';
 
 import './helper';
 
@@ -34,86 +34,102 @@ import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, okIcon, TaskState
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
+import { delay } from '../../../utils/utils';
 
+export type UpdatingConnectorData = { clusterName: string; connectorName: string };
+export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
+interface LocalConnectorState {
+    pausingConnector: ClusterConnectorInfo | null;
+    restartingConnector: ClusterConnectorInfo | null;
+    updatingConnector: UpdatingConnectorData | null;
+    restartingTask: RestartingTaskData | null;
+    deletingConnector: string | null;
+}
+const KafkaConnectorMain = observer(
+    ({
+        clusterName,
+        connectorName,
+        refreshData,
+    }: {
+        clusterName: string;
+        connectorName: string;
+        refreshData: (force: boolean) => Promise<void>;
+    }) => {
+        const [connectClusterStore] = useState(ConnectClusterStore.getInstance(clusterName));
 
+        useEffect(() => {
+            const init = async () => {
+                await connectClusterStore.setup();
+            };
+            init();
+        }, [connectClusterStore]);
 
-@observer
-class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connector: string }> {
+        const $state = useLocalObservable<LocalConnectorState>(() => ({
+            pausingConnector: null,
+            restartingConnector: null,
+            updatingConnector: null,
+            restartingTask: null,
+            deletingConnector: null,
+        }));
+        if (!connectClusterStore.isInitialized)
+            return (
+                <div>
+                    <Skeleton loading={true} active={true} paragraph={{ rows: 20, width: '100%' }} />
+                </div>
+            );
 
-    initPage(p: PageInitHelper): void {
-        const clusterName = this.props.clusterName;
-        const connector = this.props.connector;
-        p.title = connector;
-        p.addBreadcrumb('Connectors', '/connect-clusters');
-        p.addBreadcrumb(clusterName, `/connect-clusters/${clusterName}`);
-        p.addBreadcrumb(connector, `/connect-clusters/${clusterName}/${connector}`);
-        this.refreshData(false);
-        appGlobal.onRefresh = () => this.refreshData(true);
-    }
+        const connectorStore = connectClusterStore.getConnectorStore(connectorName);
 
-    async refreshData(force: boolean): Promise<void> {
-        await api.refreshConnectClusters(force);
-        api.refreshClusterAdditionalInfo(this.props.clusterName, force);
-    }
+        const connector = connectClusterStore.getRemoteConnector(connectorName);
 
-    render() {
-        const clusterName = this.props.clusterName;
-        const connectorName = this.props.connector;
-
-        if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
-
-        const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName == clusterName);
-        if (!cluster) return 'cluster not found';
-        const connectorStore = connectClustersState.getConnectorState({ clusterName, connectorName });
-
-        const connector = connectorStore?.connectorInfo;
-        if (!connector) return 'connector not found';
-
-        const state = connector.state.toLowerCase();
-        const isRunning = state == 'running';
-
-        const tasks = connector.tasks;
-
-        const canEdit = connectorStore.canEdit;
+        const canEdit = connectClusterStore.canEdit;
+        if (!connector) return null;
         return (
-            <PageContent>
-                {isEmbedded() ? <></> : <ConnectorStatisticsCard clusterName={clusterName} connectorName={connectorName} />}
-
-                {/* Main Card */}
+            <>
                 <Section>
                     {/* Title + Pause/Restart + Delete */}
                     <div style={{ display: 'flex', alignItems: 'center', margin: '.5em 0', paddingLeft: '2px' }}>
                         <span style={{ display: 'inline-flex', gap: '.5em', alignItems: 'center' }}>
-                            <span style={{ fontSize: '17px', display: 'inline-block' }}>{isRunning ? okIcon : warnIcon}</span>
+                            <span style={{ fontSize: '17px', display: 'inline-block' }}>
+                                {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? okIcon : warnIcon}
+                            </span>
                             <span style={{ fontSize: 'medium', fontWeight: 600, lineHeight: '0px', marginBottom: '1px' }}>
                                 {connectorName}
                             </span>
-                            <span style={{ fontSize: 'small', opacity: 0.5 }}>({state ?? '<empty>'})</span>
+                            <span style={{ fontSize: 'small', opacity: 0.5 }}>
+                                ({connectClusterStore.getConnectorState(connectorName)?.toLowerCase() ?? '<empty>'})
+                            </span>
                         </span>
 
-                        <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: '.5em', fontSize: '12px' }}>
-                            <Tooltip
-                                placement="top"
-                                trigger={!canEdit ? 'hover' : 'none'}
-                                mouseLeaveDelay={0}
-                                getPopupContainer={findPopupContainer}
-                                overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                            >
-                                <Button disabled={!canEdit} onClick={() => (connectorStore.pausingConnector = connector)}>
-                                    {isRunning ? 'Pause' : 'Resume'}
-                                </Button>
-                            </Tooltip>
-                            <Tooltip
-                                placement="top"
-                                trigger={!canEdit ? 'hover' : 'none'}
-                                mouseLeaveDelay={0}
-                                getPopupContainer={findPopupContainer}
-                                overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                            >
-                                <Button disabled={!canEdit} onClick={() => (connectorStore.restartingConnector = connector)}>
-                                    Restart
-                                </Button>
-                            </Tooltip>
+                        <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '.5em', fontSize: '12px' }}>
+                            {connectClusterStore.validateConnectorState(connectorName, ['FAILED', 'UNASSIGNED']) ? (
+                                <TaskState observable={connector} />
+                            ) : (
+                                <>
+                                    <Tooltip
+                                        placement="top"
+                                        trigger={!canEdit ? 'hover' : 'none'}
+                                        mouseLeaveDelay={0}
+                                        getPopupContainer={findPopupContainer}
+                                        overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
+                                    >
+                                        <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)}>
+                                            {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
+                                        </Button>
+                                    </Tooltip>
+                                    <Tooltip
+                                        placement="top"
+                                        trigger={!canEdit ? 'hover' : 'none'}
+                                        mouseLeaveDelay={0}
+                                        getPopupContainer={findPopupContainer}
+                                        overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
+                                    >
+                                        <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)}>
+                                            Restart
+                                        </Button>
+                                    </Tooltip>
+                                </>
+                            )}
                             <Tooltip
                                 placement="top"
                                 trigger={!canEdit ? 'hover' : 'none'}
@@ -124,7 +140,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
                                 <Button
                                     danger
                                     disabled={!canEdit}
-                                    onClick={() => (connectorStore.deletingConnector = connectorName)}
+                                    onClick={() => ($state.deletingConnector = connectorName)}
                                     style={{ marginLeft: '1em', minWidth: '8em' }}
                                 >
                                     Delete
@@ -134,7 +150,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
                     </div>
 
                     {/* Config Page with preloaded values */}
-                    {connector ? <ConfigPage connectorStore={connectorStore.connectorDefinition} /> : <div>no cluster or plugin selected</div>}
+                    {connector ? <ConfigPage connectorStore={connectorStore} /> : <div>no cluster or plugin selected</div>}
 
                     <div style={{ marginTop: '1em' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
@@ -151,10 +167,11 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
                                     style={{ width: '200px' }}
                                     disabled={(() => {
                                         if (!canEdit) return true;
-                                        if (comparer.shallow(connector.config, connectorStore.connectorDefinition.getConfigObject())) return true;
+                                        if (!connector) return true;
+                                        if (comparer.shallow(connector.config, connectorStore.getConfigObject())) return true;
                                     })()}
                                     onClick={() => {
-                                        connectorStore.updatingConnector = { clusterName, connectorName };
+                                        $state.updatingConnector = { clusterName, connectorName };
                                     }}
                                 >
                                     Update Config
@@ -167,7 +184,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
                     <div style={{ marginTop: '1em' }}>
                         <KowlTable
                             key="taskList"
-                            dataSource={tasks}
+                            dataSource={connectClusterStore.getConnectorTasks(connectorName)}
                             columns={[
                                 {
                                     title: 'Task',
@@ -199,8 +216,8 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
                                             clusterName={clusterName}
                                             connectorName={connectorName}
                                             taskId={r.taskId}
-                                            getRestartingTask={() => connectorStore.restartingTask}
-                                            setRestartingTask={(t) => (connectorStore.restartingTask = t)}
+                                            getRestartingTask={() => $state.restartingTask}
+                                            setRestartingTask={(t) => ($state.restartingTask = t)}
                                         />
                                     ),
                                 },
@@ -221,29 +238,33 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
 
                 {/* Pause/Resume */}
                 <ConfirmModal<ClusterConnectorInfo>
-                    target={() => connectorStore.pausingConnector}
-                    clearTarget={() => (connectorStore.pausingConnector = null)}
+                    target={() => $state.pausingConnector}
+                    clearTarget={() => ($state.pausingConnector = null)}
                     content={(c) => (
                         <>
-                            {isRunning ? 'Pause' : 'Resume'} connector <strong>{c.name}</strong>?
+                            {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'} connector{' '}
+                            <strong>{c.name}</strong>?
                         </>
                     )}
                     successMessage={(c) => (
                         <>
-                            {isRunning ? 'Resumed' : 'Paused'} connector <strong>{c.name}</strong>
+                            {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Resumed' : 'Paused'} connector{' '}
+                            <strong>{c.name}</strong>
                         </>
                     )}
                     onOk={async (c) => {
-                        if (isRunning) await api.pauseConnector(clusterName, c.name);
+                        if (connectClusterStore.validateConnectorState(connectorName, ['RUNNING']))
+                            await api.pauseConnector(clusterName, c.name);
                         else await api.resumeConnector(clusterName, c.name);
-                        await this.refreshData(true);
+                        await delay(500);
+                        await refreshData(true);
                     }}
                 />
 
                 {/* Restart */}
                 <ConfirmModal<ClusterConnectorInfo>
-                    target={() => connectorStore.restartingConnector}
-                    clearTarget={() => (connectorStore.restartingConnector = null)}
+                    target={() => $state.restartingConnector}
+                    clearTarget={() => ($state.restartingConnector = null)}
                     content={(c) => (
                         <>
                             Restart connector <strong>{c.name}</strong>?
@@ -256,14 +277,14 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
                     )}
                     onOk={async (c) => {
                         await api.restartConnector(clusterName, c.name);
-                        await this.refreshData(true);
+                        await refreshData(true);
                     }}
                 />
 
                 {/* Update Config */}
                 <ConfirmModal<UpdatingConnectorData>
-                    target={() => connectorStore.updatingConnector}
-                    clearTarget={() => (connectorStore.updatingConnector = null)}
+                    target={() => $state.updatingConnector}
+                    clearTarget={() => ($state.updatingConnector = null)}
                     content={(c) => (
                         <>
                             Update configuration of connector <strong>{c.connectorName}</strong>?
@@ -275,16 +296,17 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
                         </>
                     )}
                     onOk={async (c) => {
-                        connectClustersState.getConnectorState(c);
-                        connectClustersState.updateConnnector(c)
-                        await this.refreshData(true);
+                        connectClusterStore.getConnectorStore(c.connectorName);
+                        await connectClusterStore.updateConnnector(c.connectorName);
+                        appGlobal.history.push(`/connect-clusters/${clusterName}`);
+                        await refreshData(true);
                     }}
                 />
 
                 {/* Restart Task */}
                 <ConfirmModal<RestartingTaskData>
-                    target={() => connectorStore.restartingTask}
-                    clearTarget={() => (connectorStore.restartingTask = null)}
+                    target={() => $state.restartingTask}
+                    clearTarget={() => ($state.restartingTask = null)}
                     content={(c) => (
                         <>
                             Restart task <strong>{c.taskId}</strong> of <strong>{c.connectorName}</strong>?
@@ -297,14 +319,14 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
                     )}
                     onOk={async (c) => {
                         await api.restartTask(c.clusterName, c.connectorName, c.taskId);
-                        await this.refreshData(true);
+                        await refreshData(true);
                     }}
                 />
 
                 {/* Delete Connector */}
                 <ConfirmModal<string>
-                    target={() => connectorStore.deletingConnector}
-                    clearTarget={() => (connectorStore.deletingConnector = null)}
+                    target={() => $state.deletingConnector}
+                    clearTarget={() => ($state.deletingConnector = null)}
                     content={(c) => (
                         <>
                             Delete connector <strong>{c}</strong>?
@@ -315,13 +337,46 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
                             Deleted connector <strong>{c}</strong>
                         </>
                     )}
-                    onOk={async (connectorName) => {
-                        // await api.deleteConnector(clusterName, c);
-                        await connectClustersState.deleteConnector({ clusterName, connectorName });
+                    onOk={async (_connectorName) => {
+                        await connectClusterStore.deleteConnector(connectorName);
                         appGlobal.history.push(`/connect-clusters/${clusterName}`);
-                        await this.refreshData(true);
+                        await refreshData(true);
                     }}
                 />
+            </>
+        );
+    }
+);
+
+@observer
+class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connector: string }> {
+    initPage(p: PageInitHelper): void {
+        const clusterName = this.props.clusterName;
+        const connector = this.props.connector;
+        p.title = connector;
+        p.addBreadcrumb('Connectors', '/connect-clusters');
+        p.addBreadcrumb(clusterName, `/connect-clusters/${clusterName}`);
+        p.addBreadcrumb(connector, `/connect-clusters/${clusterName}/${connector}`);
+        this.refreshData(false);
+        appGlobal.onRefresh = () => this.refreshData(true);
+    }
+
+    async refreshData(force: boolean): Promise<void> {
+        await api.refreshConnectClusters(force);
+    }
+
+    render() {
+        const clusterName = this.props.clusterName;
+        const connectorName = this.props.connector;
+
+        if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
+
+        return (
+            <PageContent>
+                {isEmbedded() ? <></> : <ConnectorStatisticsCard clusterName={clusterName} connectorName={connectorName} />}
+
+                {/* Main Card */}
+                <KafkaConnectorMain clusterName={clusterName} connectorName={connectorName} refreshData={this.refreshData} />
             </PageContent>
         );
     }
@@ -329,19 +384,17 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
 
 export default KafkaConnectorDetails;
 
-@observer
-class TaskActionsColumn extends Component<{
+interface TaskActionsColumnProps {
     clusterName: string;
     connectorName: string;
     taskId: number;
-
     getRestartingTask: () => RestartingTaskData | null;
     setRestartingTask: (x: RestartingTaskData) => void;
-}> {
-    render() {
-        const { clusterName, connectorName, taskId } = this.props;
-        const restartingTask = this.props.getRestartingTask();
+}
 
+const TaskActionsColumn = observer(
+    ({ clusterName, connectorName, taskId, getRestartingTask, setRestartingTask }: TaskActionsColumnProps) => {
+        const restartingTask = getRestartingTask();
         const isRestarting =
             restartingTask &&
             restartingTask.clusterName == clusterName &&
@@ -354,7 +407,7 @@ class TaskActionsColumn extends Component<{
                     className={'linkBtn' + (isRestarting ? ' disabled' : '')}
                     onClick={() => {
                         if (isRestarting) return;
-                        this.props.setRestartingTask({
+                        setRestartingTask({
                             clusterName,
                             connectorName,
                             taskId: taskId,
@@ -366,4 +419,4 @@ class TaskActionsColumn extends Component<{
             </span>
         );
     }
-}
+);

@@ -1104,7 +1104,10 @@ export enum ConnectorState {
     Paused = 'PAUSED',
     Failed = 'FAILED',
 }
+
 export type TaskState = ConnectorState;
+
+export type ConnectorPossibleStatesLiteral = `${ConnectorState}`;
 
 export interface ClusterConnectorInfo {
     name: string;
@@ -1143,7 +1146,7 @@ export interface ClusterAdditionalInfo {
         type?: string;
         version?: string;
     }[];
-    enabledFeatures: string[];
+    enabledFeatures?: string[];
 }
 
 /*

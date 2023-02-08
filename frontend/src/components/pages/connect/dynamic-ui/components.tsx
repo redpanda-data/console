@@ -11,10 +11,10 @@
 
 /* eslint-disable no-useless-escape */
 import { Collapse, Skeleton } from 'antd';
-import { IsDev } from '../../../../utils/env';
+// import { IsDev } from '../../../../utils/env';
 import { OptionGroup } from '../../../../utils/tsxUtils';
 import { PropertyGroupComponent } from './PropertyGroup';
-import { DebugEditor } from './DebugEditor';
+// import { DebugEditor } from './DebugEditor';
 import { ConnectorPropertiesStore } from '../../../../state/connect/state';
 import { observer } from 'mobx-react';
 
@@ -77,7 +77,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
                 ))}
             </Collapse>
 
-            {IsDev && <DebugEditor observable={connectorStore} />}
+            {/* {IsDev && <DebugEditor observable={connectorStore} />} */}
         </>
     );
 });
