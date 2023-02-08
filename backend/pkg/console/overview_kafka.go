@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
@@ -67,10 +68,10 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 	grp, grpCtx := errgroup.WithContext(childCtx)
 
 	// Fetch cluster metadata
-	var metadata *kmsg.MetadataResponse
+	var metadata kadm.Metadata
 	grp.Go(func() error {
 		var err error
-		metadata, err = s.kafkaSvc.GetMetadata(ctx, nil)
+		metadata, err = s.kafkaSvc.KafkaAdmClient.Metadata(ctx)
 		return err
 	})
 
@@ -106,18 +107,13 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 
 	partitionCount := 0
 	replicaCount := 0
-	for _, t := range metadata.Topics {
-		if t.ErrorCode != 0 {
-			continue
+	metadata.Topics.EachPartition(func(p kadm.PartitionDetail) {
+		if p.Err != nil {
+			return
 		}
-		for _, p := range t.Partitions {
-			if p.ErrorCode != 0 {
-				continue
-			}
-			partitionCount += 1
-			replicaCount += len(p.Replicas)
-		}
-	}
+		partitionCount += 1
+		replicaCount += len(p.Replicas)
+	})
 
 	distribution := distributionFromMetadata(metadata)
 	overviewBrokers := make([]OverviewKafkaBroker, len(metadata.Brokers))
@@ -162,16 +158,12 @@ func (s *Service) getOverviewKafkaAuthorizer(ctx context.Context) OverviewKafkaA
 }
 
 // distributionFromMetadata tries to derive the Kafka
-func distributionFromMetadata(metadata *kmsg.MetadataResponse) KafkaDistribution {
-	if metadata == nil {
-		return KafkaDistributionUnknown
-	}
-
-	if metadata.ClusterID == nil {
+func distributionFromMetadata(metadata kadm.Metadata) KafkaDistribution {
+	if metadata.Cluster == "" {
 		return KafkaDistributionApacheKafka
 	}
 
-	if strings.HasPrefix(*metadata.ClusterID, "redpanda.") {
+	if strings.HasPrefix(metadata.Cluster, "redpanda.") {
 		return KafkaDistributionRedpanda
 	}
 
@@ -180,28 +172,19 @@ func distributionFromMetadata(metadata *kmsg.MetadataResponse) KafkaDistribution
 
 // expectedBrokersFromMetadata returns a map of brokerIDs that host at least one
 // replica and thus are expected to be part of this cluster.
-func expectedBrokersFromMetadata(metadata *kmsg.MetadataResponse) map[int32]struct{} {
-	if metadata == nil {
-		return nil
-	}
-
+func expectedBrokersFromMetadata(metadata kadm.Metadata) map[int32]struct{} {
 	expectedBrokers := make(map[int32]struct{})
 	for _, b := range metadata.Brokers {
 		expectedBrokers[b.NodeID] = struct{}{}
 	}
-	for _, t := range metadata.Topics {
-		if t.ErrorCode != 0 {
-			continue
+	metadata.Topics.EachPartition(func(p kadm.PartitionDetail) {
+		if p.Err != nil {
+			return
 		}
-		for _, p := range t.Partitions {
-			if p.ErrorCode != 0 {
-				continue
-			}
-			for _, replicaID := range p.Replicas {
-				expectedBrokers[replicaID] = struct{}{}
-			}
+		for _, replicaID := range p.Replicas {
+			expectedBrokers[replicaID] = struct{}{}
 		}
-	}
+	})
 
 	return expectedBrokers
 }
@@ -215,22 +198,15 @@ func expectedBrokersFromMetadata(metadata *kmsg.MetadataResponse) map[int32]stru
 // (e.g. too few ISR or too many offline replicas)
 //
 //nolint:gocognit,cyclop // If it grows further, we should probably break it up into multiple functions
-func (s *Service) statusFromMetadata(metadata *kmsg.MetadataResponse) OverviewStatus {
-	if metadata == nil {
-		return OverviewStatus{
-			Status:       StatusTypeUnhealthy,
-			StatusReason: "Failed to fetch metadata from cluster",
-		}
-	}
-
+func (s *Service) statusFromMetadata(metadata kadm.Metadata) OverviewStatus {
 	// Start with a healthy status which we can downgrade to something less healthy
-	// using OverviewStatus.SetStatus().
+	// using OverviewStatus.SetStatus(). Metadata can always be assumed to be set.
 	status := OverviewStatus{
 		Status:       StatusTypeHealthy,
 		StatusReason: "",
 	}
 
-	onlineBrokers := make(map[int32]kmsg.MetadataResponseBroker)
+	onlineBrokers := make(map[int32]kadm.BrokerDetail)
 	for _, b := range metadata.Brokers {
 		onlineBrokers[b.NodeID] = b
 	}
@@ -252,40 +228,40 @@ func (s *Service) statusFromMetadata(metadata *kmsg.MetadataResponse) OverviewSt
 	var partitionLeadersNotAvailable int
 	var underReplicatedPartitions int
 	var unwritablePartitions int // Only partitions with RF >= 2
-	for _, t := range metadata.Topics {
-		if err := kerr.ErrorForCode(t.ErrorCode); err != nil {
-			lastErr = err
-			errorCount++
-			continue
-		}
-		for _, p := range t.Partitions {
-			if err := kerr.ErrorForCode(p.ErrorCode); err != nil {
-				if errors.Is(err, kerr.LeaderNotAvailable) {
-					partitionLeadersNotAvailable++
-				} else {
-					lastErr = err
-					errorCount++
-					continue
-				}
-			}
-			// Only with more than one replica users can assume some sort of high availability
-			if len(p.Replicas) == 1 {
-				continue
-			}
 
-			if len(p.ISR) < len(p.Replicas) {
-				underReplicatedPartitions++
-			}
+	metadata.Topics.EachError(func(t kadm.TopicDetail) {
+		lastErr = t.Err
+		errorCount++
+	})
 
-			// This math has the assumption that the topic's min.isr setting is always set to
-			// replication factor - 1. If you have RF=3 but min.isr=1 the topic is still
-			// writable if two brokers are offline. We neglect that fact here though.
-			maxOfflineReplicas := len(p.Replicas) / 2
-			if len(p.OfflineReplicas) > maxOfflineReplicas || len(p.ISR) < maxOfflineReplicas {
-				unwritablePartitions++
+	metadata.Topics.EachPartition(func(p kadm.PartitionDetail) {
+		if p.Err != nil {
+			if errors.Is(p.Err, kerr.LeaderNotAvailable) {
+				partitionLeadersNotAvailable++
+			} else {
+				lastErr = p.Err
+				errorCount++
+				return
 			}
 		}
-	}
+
+		// Only with more than one replica users can assume some sort of high availability
+		if len(p.Replicas) == 1 {
+			return
+		}
+
+		if len(p.ISR) < len(p.Replicas) {
+			underReplicatedPartitions++
+		}
+
+		// This math has the assumption that the topic's min.isr setting is always set to
+		// replication factor - 1. If you have RF=3 but min.isr=1 the topic is still
+		// writable if two brokers are offline. We neglect that fact here though.
+		maxOfflineReplicas := len(p.Replicas) / 2
+		if len(p.OfflineReplicas) > maxOfflineReplicas || len(p.ISR) < maxOfflineReplicas {
+			unwritablePartitions++
+		}
+	})
 
 	if partitionLeadersNotAvailable > 0 {
 		status.SetStatus(StatusTypeDegraded,
