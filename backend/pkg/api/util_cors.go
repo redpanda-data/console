@@ -19,6 +19,8 @@ import (
 // that returns true if the requester's origin is allowed to access our endpoints.
 // If you pass an empty allowedOrigins slice, the client will default to a same-site origin policy.
 // We check origins to protect against CSRF attacks.
+//
+// This origin check is used by the chi HTTP router, as well as by the websocket upgrader.
 func originsCheckFunc(allowedOrigins []string) func(r *http.Request) bool {
 	return func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
@@ -40,7 +42,7 @@ func originsCheckFunc(allowedOrigins []string) func(r *http.Request) bool {
 
 		// Check if it matches any other of the allowed origins
 		for _, allowedOrigin := range allowedOrigins {
-			isEqual := equalASCIIFold(allowedOrigin, u.Host)
+			isEqual := equalASCIIFold(allowedOrigin, origin)
 			if isEqual {
 				return true
 			}
