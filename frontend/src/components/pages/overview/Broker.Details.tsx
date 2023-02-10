@@ -22,7 +22,7 @@ import { DefaultSkeleton, OptionGroup } from '../../../utils/tsxUtils';
 import { ConfigList } from '../../misc/ConfigList';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
-import { prettyBytes } from '../../../utils/utils';
+import { prettyBytesOrNA } from '../../../utils/utils';
 
 
 @observer
@@ -48,7 +48,8 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
     }
 
     refreshData(force: boolean) {
-        api.refreshCluster(force);
+        api.refreshClusterOverview(force);
+        api.refreshBrokers(force);
         api.refreshBrokerConfig(this.id);
     }
 
@@ -58,10 +59,10 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
             return DefaultSkeleton;
         }
 
-        const broker = api.clusterInfo?.brokers.first(x => x.brokerId == this.id);
+        const broker = api.brokers?.first(x => x.brokerId == this.id);
         if (!broker)
             return DefaultSkeleton;
-        const isController = api.clusterInfo?.controllerId == this.id;
+        const isController = api.clusterOverview?.kafka.controllerId == this.id;
 
         // Handle error while getting config
         if (typeof brokerConfigs == 'string') return (
@@ -79,7 +80,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
                     <Row>
                         <Statistic title="Broker ID" value={this.id} />
                         <Statistic title="Role" value={isController ? 'Controller' : 'Follower'} />
-                        <Statistic title="Storage" value={prettyBytes(broker.logDirSize)} />
+                        <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
                         {broker.rack && <Statistic title="Rack" value={broker.rack} />}
                     </Row>
                 </Section>

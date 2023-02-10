@@ -10,15 +10,14 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Statistic, Row, Tooltip, Button } from 'antd';
-import Table from 'antd/lib/table';
+import { Statistic, Row, Tooltip, Button, Skeleton } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
 import { sortField } from '../../misc/common';
-import { Broker } from '../../../state/restInterfaces';
+import { BrokerWithConfigAndStorage, OverviewStatus, RedpandaLicense } from '../../../state/restInterfaces';
 import { computed, makeObservable } from 'mobx';
-import { prettyBytesOrNA } from '../../../utils/utils';
+import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
 import { appGlobal } from '../../../state/appGlobal';
 import { CrownOutlined } from '@ant-design/icons';
 import { DefaultSkeleton, findPopupContainer } from '../../../utils/tsxUtils';
@@ -26,10 +25,10 @@ import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import rawNewsArray from '../../../assets/news.json';
-import { Icon } from '@redpanda-data/ui';
-import { IoWarning } from 'react-icons/io5';
+import { Heading, Icon, Link } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
+import { Link as ReactRouterLink } from 'react-router-dom';
+import React from 'react';
 
 
 @observer
@@ -52,17 +51,29 @@ class Overview extends PageComponent {
 
     refreshData(force: boolean) {
         api.refreshCluster(force);
+        api.refreshClusterOverview(force);
+        api.refreshBrokers(force);
+        api.refreshNews(force);
     }
 
     render() {
-        if (!api.clusterInfo) return DefaultSkeleton;
-        if (api.clusterInfo.brokers.length == 0) return <Empty />
+        if (!api.clusterOverview) return DefaultSkeleton;
 
-        const info = api.clusterInfo;
-        const brokers = info.brokers;
+        const overview = api.clusterOverview;
+        const brokers = api.brokers ?? [];
 
-        const renderIdColumn = (text: string, record: Broker) => {
-            if (record.brokerId != info.controllerId) return text;
+        const clusterStatus = overview.kafka.status == 'HEALTHY'
+            ? { displayText: 'Running', className: 'status-green' }
+            : overview.kafka.status == 'DEGRADED'
+                ? { displayText: 'Degraded', className: 'status-yellow' }
+                : { displayText: 'Unhealthy', className: 'status-red' };
+
+        const brokerSize = brokers.length > 0
+            ? prettyBytes(brokers.sum(x => x.totalLogDirSizeBytes ?? 0))
+            : '...';
+
+        const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
+            if (record.brokerId != overview.kafka.controllerId) return text;
             return <>{text}
                 <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'} getPopupContainer={findPopupContainer} placement="right">
                     <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />
@@ -70,9 +81,11 @@ class Overview extends PageComponent {
             </>
         };
 
-        const columns: KowlColumnType<Broker>[] = [
-            { width: '80px', title: 'ID', dataIndex: 'brokerId', render: renderIdColumn, sorter: sortField('brokerId'), defaultSortOrder: 'ascend' },
-            Table.EXPAND_COLUMN,
+        const columns: KowlColumnType<BrokerWithConfigAndStorage>[] = [
+            {
+                width: '80px', title: 'ID', dataIndex: 'brokerId',
+                render: renderIdColumn, sorter: sortField('brokerId'), defaultSortOrder: 'ascend'
+            },
             {
                 width: 'auto', title: 'Status', render: (_, _r) => {
                     return <>
@@ -81,7 +94,10 @@ class Overview extends PageComponent {
                     </>
                 }
             },
-            { width: '120px', title: 'Size', dataIndex: 'logDirSize', render: (t: number) => prettyBytesOrNA(t), sorter: sortField('logDirSize') },
+            {
+                width: '120px', title: 'Size', dataIndex: 'totalLogDirSizeBytes',
+                render: (t: number) => prettyBytesOrNA(t), sorter: sortField('totalLogDirSizeBytes')
+            },
             {
                 width: '100px', title: '', render: (_, r) => {
                     return <Button onClick={() => appGlobal.history.push('/overview/' + r.brokerId)}>
@@ -89,27 +105,74 @@ class Overview extends PageComponent {
                     </Button>
                 }
             }
-
         ]
 
         if (this.hasRack)
             columns.push({ width: '100px', title: 'Rack', dataIndex: 'rack', sorter: sortField('rack') });
 
+        const version = overview.redpanda.version ?? overview.kafka.version;
+        const news = api.news?.filter(e => {
+            const distribution = overview.kafka.distribution;
+            if (e.intendedAudience == 'all' || !distribution) return true;
+            if (e.intendedAudience == 'apache' && distribution == 'APACHE_KAFKA') return true;
+            if (e.intendedAudience == 'redpanda' && distribution == 'REDPANDA') return true;
+            return false;
+        });
+
         return <>
             <PageContent>
                 <div className="overviewGrid">
-                    <Section py={4} gridArea="health">
+                    {/*
+                    <Section py={5} gridArea="health">
+                        <Grid flexDirection="row">
+                            <Grid templateColumns="max-content 1fr" gap={3}>
+                                <Box
+                                    backgroundColor={`green.500`}
+                                    w="4px"
+                                    h="full"
+                                    borderRadius="10px"
+                                />
+                                <Stat>
+                                    <StatNumber>{clusterStatus.displayText}</StatNumber>
+                                    <StatLabel>Cluster Status</StatLabel>
+                                </Stat>
+                            </Grid>
+
+                            <Stat>
+                                <StatNumber>{brokerSize}</StatNumber>
+                                <StatLabel>Cluster Storage Size</StatLabel>
+                            </Stat>
+
+                            <Stat>
+                                <StatNumber>{version}</StatNumber>
+                                <StatLabel>Cluster Version</StatLabel>
+                            </Stat>
+
+                            <Stat>
+                                <StatNumber>{`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`}</StatNumber>
+                                <StatLabel>Brokers Online</StatLabel>
+                            </Stat>
+
+                            <Stat>
+                                <StatNumber>{overview.kafka.topicsCount}</StatNumber>
+                                <StatLabel>Topics</StatLabel>
+                            </Stat>
+                        </Grid>
+                    </Section>
+                     */}
+                    <Section py={5} gridArea="health">
                         <Row>
-                            <Statistic title="Cluster Status" value={'Running'} className="status-bar status-green" />
-                            <Statistic title="Cluster Storage Size" value={'3.28 KiB'} />
-                            <Statistic title="Cluster Version" value={info.kafkaVersion} />
-                            <Statistic title="Brokers Online" value={brokers.length} />
-                            <Statistic title="Topics" value={'3'} />
+                            <Statistic title="Cluster Status" value={clusterStatus.displayText} className={'status-bar ' + clusterStatus.className} />
+                            <Statistic title="Cluster Storage Size" value={brokerSize} />
+                            <Statistic title="Cluster Version" value={version} />
+                            <Statistic title="Brokers Online" value={`${overview.kafka.brokersOnline} of ${overview.kafka.brokersExpected}`} />
+                            <Statistic title="Topics" value={overview.kafka.topicsCount} />
+                            <Statistic title="Replicas" value={overview.kafka.replicasCount} />
                         </Row>
                     </Section>
 
                     <Section py={4} gridArea="broker">
-                        <h3>Broker Details</h3>
+                        <Heading as="h3" >Broker Details</Heading>
                         <KowlTable
                             dataSource={brokers}
                             columns={columns}
@@ -124,15 +187,37 @@ class Overview extends PageComponent {
 
                     <Section py={4} gridArea="resources">
                         <h3>Resources and updates</h3>
-                        <ul className="resource-list">
-                            {rawNewsArray.map((x, i) => <li key={i}>
-                                <a href={x.url} rel="" className="resource-link" >
+
+                        <div style={{ display: 'flex', flexDirection: 'row', maxWidth: '600px', gap: '5rem' }}>
+                            <ul className="resource-list">
+                                <li><a href="https://docs.redpanda.com/docs/home/" rel="" className="resource-link" >
                                     <span className="dot">&bull;</span>
-                                    {x.title}
-                                    <ResourcesBadge type={x.badge} />
-                                </a>
-                            </li>)}
-                        </ul>
+                                    Documentation
+                                </a></li>
+                                <li><a href="https://docs.redpanda.com/docs/get-started/rpk-install/" rel="" className="resource-link" >
+                                    <span className="dot">&bull;</span>
+                                    CLI Tools
+                                </a></li>
+                            </ul>
+
+                            <ul className="resource-list">
+                                {news
+                                    ? news.map((x, i) => <li key={i}>
+                                        <a href={x.url} rel="noopener noreferrer" target="_blank" className="resource-link">
+                                            <span className="dot">&bull;</span>
+                                            <span>
+                                                {x.title}
+                                                <ResourcesBadge type={x.badge} />
+                                            </span>
+                                        </a>
+                                    </li>)
+                                    : <>
+                                        <Skeleton loading={true} active={true} paragraph={{ rows: 3 }} />
+                                    </>
+                                }
+                            </ul>
+                        </div>
+
                     </Section>
 
                     <Section py={4} gridArea="details">
@@ -159,65 +244,153 @@ const ResourcesBadge = (p: { type?: string | undefined }) => {
 };
 
 
-function ClusterDetails(_p: {}) {
+function ClusterDetails() {
+    const overview = api.clusterOverview;
+    const brokers = api.brokers;
+    if (!overview || !brokers)
+        return <Skeleton paragraph={{ rows: 16 }} />
 
-    const DetailsGroup = (p: { title: string, children?: React.ReactNode }) => {
+    const totalStorageBytes = brokers.sum(x => x.totalLogDirSizeBytes ?? 0);
+    const totalPrimaryStorageBytes = brokers.sum(x => x.totalPrimaryLogDirSizeBytes ?? 0);
+    const totalReplicatedStorageBytes = totalStorageBytes - totalPrimaryStorageBytes;
+
+
+    const serviceAccounts = overview.redpanda.userCount
+        ?? 'Admin API not configured';
+
+    const aclCount = overview.kafka.authorizer?.aclCount
+        ?? 'Authorizer not configured';
+
+    const consoleLicense = prettyLicense(overview.console.license);
+    const redpandaLicense = prettyLicense(overview.console.license);
+
+
+    const DetailsBlock = (p: { title: string, children?: React.ReactNode }) => {
         return <>
             <h4>{p.title}</h4>
             {p.children}
-            <Line />
+            <div className="separationLine"></div>
         </>
     }
 
-    const Line = () => {
-        return <div className="separationLine"></div>
+    const Details = (p: { title: string, content: ([left?: React.ReactNode, right?: React.ReactNode] | undefined)[] }) => {
+        const { title, content } = p;
+
+        const lines = [];
+        for (let i = 0; i < content.length; i++) {
+            const pair = content[i];
+            if (!pair) continue;
+            let [left, right] = pair;
+            if (!left) continue;
+
+            if (typeof left == 'string')
+                left = <div>{left}</div>
+            if (typeof right == 'string')
+                right = <div>{right}</div>
+
+            const isFirst = i == 0;
+
+            lines.push(<React.Fragment key={i}>
+                {isFirst ? <h5>{title}</h5> : <div />}
+                {left}
+                {right ? right : <div />}
+            </React.Fragment>);
+        }
+
+        return <>{lines}</>;
+    };
+
+    const formatStatus = (overviewStatus: OverviewStatus): React.ReactNode => {
+        let status = <div>{titleCase(overviewStatus.status)}</div>;
+        if (overviewStatus.statusReason)
+            status = <Tooltip overlay={overviewStatus.statusReason}>{status}</Tooltip>
+        return status;
     }
 
+    const clusters = overview.kafkaConnect?.clusters ?? [];
+    const hasConnect = overview.kafkaConnect?.isConfigured == true && clusters.length > 0;
+    const clusterLines = clusters.map(c => {
+        return {
+            name: c.name,
+            status: formatStatus(c)
+        }
+    })
+
+    // overview.schemaRegistry.;
+
     return <div className="clusterDetails">
-        <DetailsGroup title="Services">
-            <h5>Schema Registry</h5>
-            <div>Running</div>
-            <div></div>
+        <DetailsBlock title="Services">
+            <Details title="Kafka Connect" content={hasConnect
+                ? clusterLines.map(c => [c.name, c.status])
+                : [
+                    ['Not configured']
+                ]
+            } />
+            <Details title="Schema Registry" content={[
+                [
+                    formatStatus(overview.schemaRegistry),
+                    (overview.schemaRegistry.status == 'HEALTHY' && overview.schemaRegistry.isConfigured)
+                        ? `${overview.schemaRegistry.registeredSubjects} schemas`
+                        : undefined
+                ]
+            ]} />
 
-            <h5>Kafka Connect</h5>
-            <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px'
-            }}>Not configured <Icon as={IoWarning} fontSize="21px" color="#eb8314" /> </div>
-            <div></div>
-        </DetailsGroup>
-
-
-        <DetailsGroup title="Storage">
-            <h5>Primary bytes</h5>
-            <div>277 Bytes</div>
-            <div></div>
-
-            <h5>Replicated bytes</h5>
-            <div>{277 * 2} Bytes</div>
-            <div></div>
-        </DetailsGroup>
+        </DetailsBlock>
 
 
+        <DetailsBlock title="Storage">
+            <Details title="Total Bytes" content={[
+                [prettyBytesOrNA(totalStorageBytes)]
+            ]} />
 
-        <DetailsGroup title="Security" >
-            <h5>Users</h5>
-            <div>
-                <a href="#" onClick={() => appGlobal.history.push('/acls/')}>4</a>
-            </div>
-            <div></div>
+            <Details title="Primary" content={[
+                [prettyBytesOrNA(totalPrimaryStorageBytes)]
+            ]} />
 
-            <h5>ACLs</h5>
-            <div>
-                <a href="#" onClick={() => appGlobal.history.push('/acls/')}>10</a>
-            </div>
-            <div></div>
-        </DetailsGroup>
+            <Details title="Replicated" content={[
+                [prettyBytesOrNA(totalReplicatedStorageBytes)]
+            ]} />
+        </DetailsBlock>
 
 
-        <h5>Licensing</h5>
-        <div>Debug (Enterprise)</div>
-        <div>expires 1/1/2099</div>
+        <DetailsBlock title="Security" >
+            <Details title="Service Accounts" content={[
+                [<Link key={0} as={ReactRouterLink} to="/acls/">{serviceAccounts}</Link>]
+            ]} />
+
+            <Details title="ACLs" content={[
+                [<Link key={0} as={ReactRouterLink} to="/acls/">{aclCount}</Link>]
+            ]} />
+        </DetailsBlock>
+
+
+        <Details title="Licensing" content={[
+            consoleLicense && ['Console ' + consoleLicense.name, consoleLicense.expires],
+            redpandaLicense && ['Redpanda ' + redpandaLicense.name, redpandaLicense.expires],
+        ]} />
+
     </div>
+}
+
+function prettyLicenseType(type: string) {
+    if (type == 'free_trial')
+        return 'Free Trial';
+    if (type == 'open_source')
+        return 'Open Source';
+    if (type == 'enterprise')
+        return 'Enterprise';
+    return type;
+}
+
+function prettyLicense(license?: RedpandaLicense): { name: string, expires: string } | undefined {
+    if (!license)
+        return undefined;
+
+    const name = prettyLicenseType(license.type);
+
+    const expires = license.type != 'open_source'
+        ? new Date(license.expiresAt * 1000).toLocaleDateString()
+        : '';
+
+    return { name, expires };
 }

@@ -8,6 +8,8 @@
         ".         details"
     ;
     grid-template-columns: fit-content(60%) 1fr;
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
 
     gap: 1.5rem;
 
@@ -67,7 +69,7 @@
 
 .clusterDetails {
     display: grid;
-    grid-template-columns: auto auto auto;
+    grid-template-columns: auto auto 1fr;
     row-gap: .5em;
     column-gap: 2em;
     margin: 1em 0;

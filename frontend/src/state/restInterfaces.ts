@@ -1411,7 +1411,7 @@ export interface ClusterOverview {
     schemaRegistry: OverviewSchemaRegistry;
 }
 
-interface OverviewStatus {
+export interface OverviewStatus {
     status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY';
     statusReason?: string;
 }

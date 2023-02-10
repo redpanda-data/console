@@ -617,7 +617,7 @@ export function uniqueId4(): string {
 
 export function titleCase(str: string): string {
     if (!str) return str;
-    return str[0].toUpperCase() + str.slice(1);
+    return str[0].toUpperCase() + str.slice(1).toLowerCase();
 }
 
 

@@ -278,7 +278,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         </Menu.Item>
                         {DeleteRecordsMenuItem('2', isCompacted, topic.allowedActions ?? [], () => this.deleteRecordsModalAlive = this.deleteRecordsModalVisible = true)}
                     </Menu>}>
-                        <Button style={{ minWidth: '120px' }}>Actions<DownOutlined /></Button>
+                        <Button style={{ minWidth: '120px' }} className="topicActionsButton">Actions<DownOutlined /></Button>
                     </Dropdown>
 
                 </div>
