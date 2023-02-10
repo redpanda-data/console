@@ -9,6 +9,7 @@ require (
 	github.com/cloudhut/connect-client v0.0.0-20220929214026-6c714f7b6651
 	github.com/dop251/goja v0.0.0-20221229151140-b95230a9dbad
 	github.com/go-chi/chi/v5 v5.0.8
+	github.com/go-chi/cors v1.2.1
 	github.com/go-git/go-billy/v5 v5.4.0
 	github.com/go-git/go-git/v5 v5.5.1
 	github.com/go-resty/resty/v2 v2.7.0
@@ -25,8 +26,8 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20230104182309-7698d02c437e
 	github.com/stretchr/testify v1.8.0
-	github.com/twmb/franz-go v1.11.0
-	github.com/twmb/franz-go/pkg/kmsg v1.2.0
+	github.com/twmb/franz-go v1.12.0
+	github.com/twmb/franz-go/pkg/kmsg v1.4.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/twmb/go-cache v0.0.0-20220821215028-292418b9f9ed
 	github.com/vmihailenco/msgpack/v5 v5.3.5
@@ -50,7 +51,6 @@ require (
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/go-chi/cors v1.2.1 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
