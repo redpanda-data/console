@@ -159,7 +159,7 @@ func (s *Service) convertGroupMembers(members []kmsg.DescribeGroupsResponseGroup
 
 		// Try to decode Group member assignments
 		convertedAssignments := make([]GroupMemberAssignment, 0)
-		memberAssignments := kmsg.GroupMemberAssignment{}
+		memberAssignments := kmsg.ConsumerMemberAssignment{}
 		err := memberAssignments.ReadFrom(m.MemberAssignment)
 		if err != nil {
 			s.logger.Debug("failed to decode member assignments", zap.String("client_id", m.ClientID), zap.Error(err))
