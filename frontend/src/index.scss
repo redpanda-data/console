@@ -1743,7 +1743,7 @@ div.ant-collapse.ant-collapse-borderless > div > div > span {
     }
 
     .ant-row {
-        row-gap: 1em;
+        gap: 2em;
         flex-wrap: nowrap;
         white-space: nowrap;
 
@@ -3726,4 +3726,61 @@ input::placeholder {
 
 .flipX {
     transform: rotateX(180deg);
+}
+
+
+
+
+
+
+.ant-btn {
+    border-radius: 15px !important;
+}
+
+.ant-btn.topicActionsButton {
+    border-radius: 8px !important;
+}
+
+.ant-btn-primary {
+    // border-color: #868C96 !important;
+    border-radius: 15px !important;
+    font-weight: 600 !important;
+    background-color: #E65433;
+}
+body {
+    font-family: 'Inter' !important;
+}
+.ant-statistic-content {
+    font-family: 'Inter' !important;
+    .ant-statistic-content-value{
+        font-weight: 500;
+    }
+}
+
+
+// This is only supposed to apply to cancel buttons in modals
+.ant-btn-default {
+    // border: none;
+}
+.ant-input, .ant-input-affix-wrapper, .ant-select-selector, .ant-picker {
+    border-radius: 8px !important;
+}
+
+// Make table headers more rounded?
+thead>tr>th {
+    &:nth-child(1) {
+        border-top-left-radius: 8px !important;
+        border-bottom-left-radius: 8px !important;
+    }
+
+    &:nth-last-child(1) {
+        border-top-right-radius: 8px !important;
+        border-bottom-right-radius: 8px !important;
+    }
+}
+
+
+// Fix that "line" that appears in input groups
+.ant-input-group.ant-input-group-compact>:last-child {
+    border-right-width: 0px !important;
 }

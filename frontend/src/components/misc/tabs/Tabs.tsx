@@ -20,7 +20,7 @@ export interface Tab {
 }
 
 interface TabsProps {
-    tabs: Array<Tab>;
+    tabs: Tab[];
     selectedTabKey?: string;
     defaultSelectedTabKey?: string;
     onChange?: (selectedTabKey: string) => void;
