@@ -123,21 +123,27 @@ func (s *Service) GetLicense(ctx context.Context) License {
 		// This might be because the target Redpanda cluster has not yet implemented the endpoint
 		// to request license information from, hence log at debug level only.
 		s.logger.Debug("failed to get license info", zap.Error(err))
-		return newOpenSourceLicense()
+		return newOpenSourceCoreLicense()
 	}
 
 	decoded, err := licenseToRedpandaLicense(l)
 	if err != nil {
 		s.logger.Warn("failed to decode redpanda cluster license", zap.Error(err))
-		return newOpenSourceLicense()
+		return newOpenSourceCoreLicense()
 	}
 
 	return decoded
 }
 
+// GetPartitionBalancerStatus retrieves the partition balancer status from Redpanda
+// via the Admin API.
+func (s *Service) GetPartitionBalancerStatus(ctx context.Context) (admin.PartitionBalancerStatus, error) {
+	return s.adminClient.GetPartitionStatus(ctx)
+}
+
 func licenseToRedpandaLicense(license admin.License) (License, error) {
 	if !license.Loaded {
-		return newOpenSourceLicense(), nil
+		return newOpenSourceCoreLicense(), nil
 	}
 
 	switch license.Properties.Type {

@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
@@ -33,6 +34,7 @@ type Service struct {
 
 	KafkaClientHooks kgo.Hook
 	KafkaClient      *kgo.Client
+	KafkaAdmClient   *kadm.Client
 	SchemaService    *schema.Service
 	ProtoService     *proto.Service
 	Deserializer     deserializer
@@ -117,6 +119,7 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 		Logger:           logger,
 		KafkaClientHooks: clientHooks,
 		KafkaClient:      kafkaClient,
+		KafkaAdmClient:   kadm.NewClient(kafkaClient),
 		SchemaService:    schemaSvc,
 		ProtoService:     protoSvc,
 		Deserializer: deserializer{

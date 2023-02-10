@@ -1,0 +1,147 @@
+.overviewGrid {
+    display: grid;
+
+    grid-template-areas:
+        "health    health"
+        "broker    details"
+        "resources details"
+        ".         details"
+    ;
+    grid-template-columns: fit-content(60%) 1fr;
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+
+    gap: 1.5rem;
+
+    h3 {
+        margin-bottom: 22px;
+        margin-top: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+        color: hsl(0deg 0% 20%);
+    }
+
+}
+
+.ant-statistic {
+    display: flex;
+    flex-direction: column-reverse;
+
+    &.status-bar {
+        position: relative;
+        padding-left: 5px;
+        margin-left: 8px;
+
+        :before {
+            content: ' ';
+            display: block;
+            position: absolute;
+            top: 6px;
+            bottom: 5px;
+            width: 4px;
+            left: -6px;
+            border-radius: 2px;
+            background: red;
+            margin: 1px;
+        }
+    }
+
+    &.status-bar.status-red {
+        :before {
+            background: red;
+        }
+    }
+
+    &.status-bar.status-yellow {
+        :before {
+            background: orange;
+        }
+    }
+
+    &.status-bar.status-green {
+        :before {
+            background: #3ba26b;
+        }
+    }
+
+}
+
+.clusterDetails {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    row-gap: .5em;
+    column-gap: 2em;
+    margin: 1em 0;
+    min-width: 300px;
+
+    white-space: nowrap;
+
+    h3 {
+        grid-column: 1 / span 3;
+        margin: 0;
+    }
+
+    h4 {
+        font-size: 18px;
+        font-weight: 600;
+        color: rgb(0 0 0 / 75%);
+        grid-column: 1 / span 3;
+
+        font-size: 10px;
+        color: hsl(0deg 0% 35%);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    h5 {
+        font-weight: 600;
+    }
+
+    .separationLine {
+        grid-column: 1 / span 3;
+        margin: 1rem 0;
+        background: #ddd;
+        height: 1px;
+    }
+
+    a {
+        text-decoration: 1px solid underline;
+        color: unset;
+    }
+}
+
+.resource-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .resource-link {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .dot {
+        // transform: translateY(1px);
+        font-size: 20px;
+        line-height: 20px;
+    }
+
+    .badge-new {
+        display: inline-flex;
+        padding: 2px 8px;
+        border-radius: 100px;
+
+        background: hsl(215deg 77% 55%);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+
+        margin: 0 8px;
+        transform: translateY(-1px);
+    }
+}

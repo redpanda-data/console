@@ -20,14 +20,13 @@ import TopicDetails from './pages/topics/Topic.Details';
 import { observer } from 'mobx-react';
 import GroupList from './pages/consumers/Group.List';
 import GroupDetails from './pages/consumers/Group.Details';
-import BrokerList from './pages/brokers/Broker.List';
 import { uiState } from '../state/uiState';
 import AdminPage from './pages/admin/AdminPage';
 import { api } from '../state/backendApi';
 import SchemaList from './pages/schemas/Schema.List';
 import SchemaDetailsView from './pages/schemas/Schema.Details';
 import AclList from './pages/acls/Acl.List';
-import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/outline';
+import { HomeIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/outline';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
 import { Feature, FeatureEntry, isSupported } from '../state/supportedFeatures';
 import { UserPermissions } from '../state/restInterfaces';
@@ -40,6 +39,8 @@ import { AppFeature, AppFeatures } from '../utils/env';
 import { ItemType } from 'antd/lib/menu/hooks/useItems';
 import { AnimatePresence } from '../utils/animationProps';
 import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
+import Overview from './pages/overview/Overview';
+import { BrokerDetails } from './pages/overview/Broker.Details';
 
 //
 //	Route Types
@@ -275,7 +276,8 @@ function routeVisibility(
 //
 export const APP_ROUTES: IRouteEntry[] = [
 
-    MakeRoute<{}>('/brokers', BrokerList, 'Brokers', ChipIcon),
+    MakeRoute<{}>('/overview', Overview, 'Overview', HomeIcon),
+    MakeRoute<{ brokerId: string }>('/overview/:brokerId', BrokerDetails, 'Broker Details'),
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
     MakeRoute<{ topicName: string }>('/topics/:topicName', TopicDetails, 'Topics'),
@@ -317,7 +319,7 @@ export const APP_ROUTES: IRouteEntry[] = [
 ].filterNull();
 
 
-const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin', '/brokers'];
+const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin', '/overview'];
 export const embeddedAvailableRoutes = APP_ROUTES.filter((x) => x.icon != null)
     .filter((x) => !ignoredRoutes.includes(x.path))
 

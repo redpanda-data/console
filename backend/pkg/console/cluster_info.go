@@ -1,7 +1,7 @@
-// Copyright 2022 Redpanda Data, Inc.
+// Copyright 2023 Redpanda Data, Inc.
 //
 // Use of this software is governed by the Business Source License
-// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+// included in the file licenses/BSL.md
 //
 // As of the Change Date specified in that file, in accordance with
 // the Business Source License, use of this software will be governed
@@ -11,13 +11,10 @@ package console
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"time"
 
-	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"github.com/twmb/franz-go/pkg/kversion"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -127,22 +124,4 @@ func (s *Service) GetClusterInfo(ctx context.Context) (*ClusterInfo, error) {
 		Brokers:      brokers,
 		KafkaVersion: kafkaVersion,
 	}, nil
-}
-
-// GetKafkaVersion extracts the guessed Apache Kafka version based on the reported
-// API versions for each API key.
-func (s *Service) GetKafkaVersion(ctx context.Context) (string, error) {
-	apiVersions, err := s.kafkaSvc.GetAPIVersions(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to request api versions: %w", err)
-	}
-
-	err = kerr.ErrorForCode(apiVersions.ErrorCode)
-	if err != nil {
-		return "", fmt.Errorf("failed to request api versions. Inner Kafka error: %w", err)
-	}
-
-	versions := kversion.FromApiVersionsResponse(apiVersions)
-
-	return versions.VersionGuess(), nil
 }

@@ -1,0 +1,19 @@
+[
+    {
+        "title": "Simplify development of Kafka applications with Redpanda and Testcontainers",
+        "url": "https://google.com",
+        "intendedAudience": "all",
+        "badge": "new"
+    },
+    {
+        "title": "Some new feature announcement here",
+        "url": "https://google.com",
+        "intendedAudience": "all",
+        "badge": "new"
+    },
+    {
+        "title": "Another entry here, but this one doesn't have the \"NEW\" badge",
+        "url": "https://google.com",
+        "intendedAudience": "all"
+    }
+]

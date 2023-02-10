@@ -1401,3 +1401,112 @@ export interface CreateUserRequest {
     password: string;
     mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512';
 }
+
+// GET api/cluster/overview
+export interface ClusterOverview {
+    kafka: OverviewKafka;
+    redpanda: OverviewRedpanda;
+    console: OverviewConsole;
+    kafkaConnect?: OverviewKafkaConnect;
+    schemaRegistry: OverviewSchemaRegistry;
+}
+
+export interface OverviewStatus {
+    status: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY';
+    statusReason?: string;
+}
+
+export type OverviewKafka = OverviewStatus & {
+    version?: string;
+
+    distribution?: 'REDPANDA' | 'APACHE_KAFKA';
+
+    brokersOnline: number;
+    brokersExpected: number;
+    topicsCount: number;
+    partitionsCount: number;
+    replicasCount: number;
+
+    controllerId: number;
+
+    brokers: OverviewKafkaBroker[];
+
+    authorizer?: OverviewKafkaAuthorizer;
+}
+export interface OverviewKafkaBroker {
+    brokerId: number;
+    address: string;
+    rack?: string;
+}
+export interface OverviewKafkaAuthorizer {
+    requestError?: string;
+    isAuthorizerEnabled?: boolean;
+    aclCount?: number;
+}
+
+export interface OverviewRedpanda {
+    isAdminApiConfigured: boolean;
+    license?: RedpandaLicense;
+    version?: string;
+    userCount?: number;
+    partitionBalancerStatus?: OverviewRedpandaPartitionBalancer;
+}
+export interface OverviewRedpandaPartitionBalancer {
+    // When ready, should show some green checkmark
+    // When in_progress, some loading spinner
+    // When stalled some error
+    status: 'off' | 'ready' | 'starting' | 'in_progress' | 'stalled';
+    violations: {
+        unavailable_nodes: number[];
+        over_disk_limit_nodes: number[];
+    };
+    seconds_since_last_tick: number;
+    current_reassignments_count: number;
+}
+export interface OverviewConsole {
+    license: RedpandaLicense;
+    version: string;
+    builtAt: string;
+}
+export interface OverviewKafkaConnect {
+    isConfigured: boolean;
+    clusters: OverviewKafkaConnectCluster[];
+}
+export type OverviewKafkaConnectCluster = OverviewStatus & {
+    // Name is the Kafka connect cluster name that is used in Console's configuration.
+    name: string;
+    host: string;
+    version: string;
+    installedPlugins: number;
+}
+export type OverviewSchemaRegistry = OverviewStatus & {
+    isConfigured: boolean;
+    registeredSubjects: number;
+}
+
+// GET /api/brokers
+// from pkg/console/brokers.go
+export interface BrokerWithConfigAndStorage {
+    brokerId: number;
+    isController: boolean;
+    address: string;
+    rack?: string;
+    // TotalLogDirSizeBytes is the total sum of bytes that is returned via the
+    // DescribeLogDirs API. Thus, this also includes replicas stored on that
+    // broker. If we fail to retrieve the storage for this broker this
+    // will be nil.
+    totalLogDirSizeBytes?: number;
+    // TotalPrimaryLogDirSizeBytes is the log dir size of the unique/leading partitions only.
+    // It represents the data size without replication.
+    totalPrimaryLogDirSizeBytes?: number;
+}
+
+
+// GET https://redpanda.com/rp-console.json
+// GET https://resources.redpanda.com/rp-console.json
+export type OverviewNewsEntry = {
+    title: string;
+    url?: string;
+    intendedAudience: 'all' | 'apache' | 'redpanda';
+    badge?: 'new';
+};

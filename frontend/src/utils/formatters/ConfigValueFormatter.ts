@@ -62,7 +62,7 @@ export function formatConfigValue(name: string, value: string | null | undefined
         // Redpanda broker configs use underscores rather than dots as a separator.
         // Because we want to match both configs, we omit the separator (dot vs underscore) for the
         // following time extensions.
-        // These suffixes seem unique enough (compared to "ms") to not be ambigious with other 
+        // These suffixes seem unique enough (compared to "ms") to not be ambigious with other
         // config options.
         ['seconds', 1000],
         ['minutes', 60 * 1000],
@@ -74,14 +74,14 @@ export function formatConfigValue(name: string, value: string | null | undefined
         if (num > Number.MAX_SAFE_INTEGER || num == -1) return 'Infinite' + suffix;
 
         const ms = num * msFactor;
-        return prettyMilliseconds(ms, { verbose: true }) + suffix;
+        return prettyMilliseconds(ms, { verbose: true, unitCount: 2 }) + suffix;
     }
 
     // Bytes
-    if (name.endsWith('.bytes') || 
+    if (name.endsWith('.bytes') ||
         name.endsWith('_bytes') || // Redpanda broker configs use underscores
-        name.endsWith('.buffer.size') || 
-        name.endsWith('.replication.throttled.rate') || 
+        name.endsWith('.buffer.size') ||
+        name.endsWith('.replication.throttled.rate') ||
         name.endsWith('.reassignment.throttled.rate')) {
         const uint64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
         const uint64Exp = 1.844674407370955e19; // barely below the point where the number would be rounded up

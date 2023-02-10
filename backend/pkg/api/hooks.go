@@ -11,14 +11,12 @@ package api
 
 import (
 	"context"
-	"math"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
@@ -93,11 +91,8 @@ type ConsoleHooks interface {
 	CanDeleteKafkaUsers(ctx context.Context) (bool, *rest.Error)
 	IsProtectedKafkaUser(userName string) bool
 
-	// Console Hooks
-	// ConsoleLicenseInformation returns the license information for Console.
-	// Based on the returned license the frontend will display the
-	// appropriate UI and also warnings if the license is (about to be) expired.
-	ConsoleLicenseInformation(ctx context.Context) redpanda.License
+	// Console hooks
+	//
 
 	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
 	// Only toggleable features that require conditional rendering in the Frontend will be returned.
@@ -245,10 +240,6 @@ func (*defaultHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) 
 
 func (*defaultHooks) IsProtectedKafkaUser(_ string) bool {
 	return false
-}
-
-func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
-	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
 }
 
 func (*defaultHooks) EnabledFeatures() []string {

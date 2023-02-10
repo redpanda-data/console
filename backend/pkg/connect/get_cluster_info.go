@@ -64,3 +64,36 @@ func (s *Service) GetClusterInfo(ctx context.Context, clusterName string) (Clust
 		Plugins: plugins,
 	}, nil
 }
+
+// ClusterInfoWithError is a struct that has ClusterInfo with an additional error
+// property that is set if the request to that cluster has failed.
+// This struct is handy when requesting
+type ClusterInfoWithError struct {
+	ClusterInfo
+	RequestError error
+}
+
+// GetAllClusterInfo requests cluster info from all configured connect clusters concurrently.
+func (s *Service) GetAllClusterInfo(ctx context.Context) []ClusterInfoWithError {
+	ch := make(chan ClusterInfoWithError, len(s.ClientsByCluster))
+	for clusterName := range s.ClientsByCluster {
+		go func(name string) {
+			var requestError error
+			cInfo, restErr := s.GetClusterInfo(ctx, name)
+			if restErr != nil {
+				requestError = restErr.Err
+				cInfo = ClusterInfo{Name: name}
+			}
+			ch <- ClusterInfoWithError{
+				ClusterInfo:  cInfo,
+				RequestError: requestError,
+			}
+		}(clusterName)
+	}
+
+	shards := make([]ClusterInfoWithError, cap(ch))
+	for i := 0; i < cap(ch); i++ {
+		shards[i] = <-ch
+	}
+	return shards
+}

@@ -43,7 +43,7 @@ import {
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
-    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest, PatchTopicConfigsRequest
+    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest, PatchTopicConfigsRequest, ClusterOverview, BrokerWithConfigAndStorage, OverviewNewsEntry
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig } from '../config';
@@ -205,6 +205,10 @@ const apiStore = {
     // Data
     endpointCompatibility: null as (EndpointCompatibility | null),
     licenses: null as (RedpandaLicense[] | null),
+    news: null as OverviewNewsEntry[] | null,
+
+    clusterOverview: null as ClusterOverview | null,
+    brokers: null as BrokerWithConfigAndStorage[] | null,
 
     clusters: ['A', 'B', 'C'],
     clusterInfo: null as (ClusterInfo | null),
@@ -682,6 +686,35 @@ const apiStore = {
         this.licenses = r.licenses;
         return r;
     },
+
+    refreshClusterOverview(force?: boolean) {
+        cachedApiRequest<ClusterOverview>(`${appConfig.restBasePath}/cluster/overview`, force)
+            .then(v => {
+                this.clusterOverview = v;
+            }, addError);
+    },
+
+    refreshBrokers(force?: boolean) {
+        cachedApiRequest<BrokerWithConfigAndStorage[]>(`${appConfig.restBasePath}/brokers`, force)
+            .then(v => {
+                this.brokers = v;
+            }, addError);
+    },
+
+    refreshNews(force?: boolean) {
+        cachedApiRequest<OverviewNewsEntry[]>('https://resources.redpanda.com/rp-console.json', force)
+            .then(v => this.news = v, err => {
+                this.news = [
+                    {
+                        title: 'Unable to fetch news, please try again later',
+                        intendedAudience: 'all',
+                    }
+                ];
+
+                console.error('Unable to fetch news entries, please try again later', { error: err })
+            });
+    },
+
 
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force)

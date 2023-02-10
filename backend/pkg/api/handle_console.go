@@ -62,9 +62,9 @@ func (api *API) handleGetEndpoints() http.HandlerFunc {
 		// on startup, we limit the timeout for this call to 3s
 		childCtx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 		defer cancel()
-		licenses := []redpanda.License{api.Hooks.Console.ConsoleLicenseInformation(childCtx)}
+		licenses := []redpanda.License{api.License}
 		if api.RedpandaSvc != nil {
-			licenses = append(licenses, api.RedpandaSvc.GetLicense(r.Context()))
+			licenses = append(licenses, api.RedpandaSvc.GetLicense(childCtx))
 		}
 
 		response := response{
