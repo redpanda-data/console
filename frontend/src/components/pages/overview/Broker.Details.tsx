@@ -33,14 +33,15 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
     constructor(p: any) {
         super(p);
         makeObservable(this);
+
+        this.id = Number(this.props.brokerId);
     }
 
     initPage(p: PageInitHelper): void {
         p.title = 'Broker Details';
         p.addBreadcrumb('Overview', '/overview');
 
-        const id = this.props.brokerId;
-        this.id = Number(id);
+        const id = Number(this.props.brokerId);
         p.addBreadcrumb(`Broker #${id}`, `/overview/${id}`);
 
         this.refreshData(false);
@@ -50,7 +51,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
     refreshData(force: boolean) {
         api.refreshClusterOverview(force);
         api.refreshBrokers(force);
-        api.refreshBrokerConfig(this.id);
+        api.refreshBrokerConfig(Number(this.props.brokerId));
     }
 
     render() {
@@ -60,8 +61,9 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
         }
 
         const broker = api.brokers?.first(x => x.brokerId == this.id);
-        if (!broker)
+        if (!broker) {
             return DefaultSkeleton;
+        }
         const isController = api.clusterOverview?.kafka.controllerId == this.id;
 
         // Handle error while getting config
