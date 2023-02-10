@@ -111,7 +111,7 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 		if p.Err != nil {
 			return
 		}
-		partitionCount += 1
+		partitionCount++
 		replicaCount += len(p.Replicas)
 	})
 
@@ -196,8 +196,6 @@ func expectedBrokersFromMetadata(metadata kadm.Metadata) map[int32]struct{} {
 // - Degraded: if at least one partition is under-replicated or has no leader
 // - Unhealthy: if metadata does not exist or if at least one partition is not writable
 // (e.g. too few ISR or too many offline replicas)
-//
-//nolint:gocognit,cyclop // If it grows further, we should probably break it up into multiple functions
 func (s *Service) statusFromMetadata(metadata kadm.Metadata) OverviewStatus {
 	// Start with a healthy status which we can downgrade to something less healthy
 	// using OverviewStatus.SetStatus(). Metadata can always be assumed to be set.
@@ -236,13 +234,12 @@ func (s *Service) statusFromMetadata(metadata kadm.Metadata) OverviewStatus {
 
 	metadata.Topics.EachPartition(func(p kadm.PartitionDetail) {
 		if p.Err != nil {
-			if errors.Is(p.Err, kerr.LeaderNotAvailable) {
-				partitionLeadersNotAvailable++
-			} else {
+			if !errors.Is(p.Err, kerr.LeaderNotAvailable) {
 				lastErr = p.Err
 				errorCount++
 				return
 			}
+			partitionLeadersNotAvailable++
 		}
 
 		// Only with more than one replica users can assume some sort of high availability
