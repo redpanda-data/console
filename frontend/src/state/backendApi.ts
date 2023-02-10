@@ -689,12 +689,16 @@ const apiStore = {
 
     refreshClusterOverview(force?: boolean) {
         cachedApiRequest<ClusterOverview>(`${appConfig.restBasePath}/cluster/overview`, force)
-            .then(v => this.clusterOverview = v, addError);
+            .then(v => {
+                this.clusterOverview = v;
+            }, addError);
     },
 
     refreshBrokers(force?: boolean) {
         cachedApiRequest<BrokerWithConfigAndStorage[]>(`${appConfig.restBasePath}/brokers`, force)
-            .then(v => this.brokers = v, addError);
+            .then(v => {
+                this.brokers = v;
+            }, addError);
     },
 
     refreshNews(force?: boolean) {

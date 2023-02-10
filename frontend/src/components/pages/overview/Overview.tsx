@@ -34,7 +34,7 @@ import React from 'react';
 @observer
 class Overview extends PageComponent {
 
-    @computed get hasRack() { return api.clusterInfo?.brokers?.sum(b => b.rack ? 1 : 0) }
+    @computed get hasRack() { return api.brokers?.sum(b => b.rack ? 1 : 0) }
 
     constructor(p: any) {
         super(p);
@@ -108,7 +108,7 @@ class Overview extends PageComponent {
         ]
 
         if (this.hasRack)
-            columns.push({ width: '100px', title: 'Rack', dataIndex: 'rack', sorter: sortField('rack') });
+            columns.splice(3, 0, { width: '100px', title: 'Rack', render: (_, r) => r.rack });
 
         const version = overview.redpanda.version ?? overview.kafka.version;
         const news = api.news?.filter(e => {
@@ -262,7 +262,7 @@ function ClusterDetails() {
         ?? 'Authorizer not configured';
 
     const consoleLicense = prettyLicense(overview.console.license);
-    const redpandaLicense = prettyLicense(overview.console.license);
+    const redpandaLicense = prettyLicense(overview.redpanda.license);
 
 
     const DetailsBlock = (p: { title: string, children?: React.ReactNode }) => {
@@ -314,9 +314,7 @@ function ClusterDetails() {
             name: c.name,
             status: formatStatus(c)
         }
-    })
-
-    // overview.schemaRegistry.;
+    });
 
     return <div className="clusterDetails">
         <DetailsBlock title="Services">
@@ -326,14 +324,19 @@ function ClusterDetails() {
                     ['Not configured']
                 ]
             } />
-            <Details title="Schema Registry" content={[
-                [
-                    formatStatus(overview.schemaRegistry),
-                    (overview.schemaRegistry.status == 'HEALTHY' && overview.schemaRegistry.isConfigured)
-                        ? `${overview.schemaRegistry.registeredSubjects} schemas`
-                        : undefined
+            <Details title="Schema Registry" content={overview.schemaRegistry.isConfigured
+                ? [
+                    [
+                        formatStatus(overview.schemaRegistry),
+                        (overview.schemaRegistry.status == 'HEALTHY' && overview.schemaRegistry.isConfigured)
+                            ? `${overview.schemaRegistry.registeredSubjects} schemas`
+                            : undefined
+                    ]
                 ]
-            ]} />
+                : [
+                    ['Not configured']
+                ]
+            } />
 
         </DetailsBlock>
 
