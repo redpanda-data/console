@@ -461,8 +461,8 @@ const PermissionDenied = <>
                     </p>
                 </div>
 
-                <a target="_blank" rel="noopener noreferrer" href="https://github.com/redpanda-data/console/blob/master/docs/authorization/roles.md">
-                    <Button type="primary">Redpanda Console documentation for roles and permissions</Button>
+                <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
+                    <Button type="primary">Redpanda Console documentation</Button>
                 </a>
             </Empty>
         </Section>
