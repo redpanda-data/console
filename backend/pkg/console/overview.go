@@ -166,7 +166,11 @@ func (s *Service) getSchemaRegistryOverview() OverviewSchemaRegistry {
 }
 
 func (s *Service) getConnectOverview(ctx context.Context) OverviewKafkaConnect {
-	if s.connectSvc == nil {
+	// Currently the connectSvc is always configured, even if it's not enabled.
+	// The connectSvc itself will then return errors if you request resources in
+	// case it hasn't been enabled in the configuration. Hence, we have to check
+	// whether the Kafka connect config is enabled.
+	if s.connectSvc == nil || !s.connectSvc.Cfg.Enabled {
 		return OverviewKafkaConnect{
 			IsConfigured: false,
 		}
