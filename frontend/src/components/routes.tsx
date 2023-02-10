@@ -26,7 +26,7 @@ import { api } from '../state/backendApi';
 import SchemaList from './pages/schemas/Schema.List';
 import SchemaDetailsView from './pages/schemas/Schema.Details';
 import AclList from './pages/acls/Acl.List';
-import { ChipIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/outline';
+import { HomeIcon, CogIcon, CollectionIcon, CubeTransparentIcon, FilterIcon, ShieldCheckIcon, LinkIcon, ScaleIcon, BeakerIcon } from '@heroicons/react/outline';
 import ReassignPartitions from './pages/reassign-partitions/ReassignPartitions';
 import { Feature, FeatureEntry, isSupported } from '../state/supportedFeatures';
 import { UserPermissions } from '../state/restInterfaces';
@@ -276,7 +276,7 @@ function routeVisibility(
 //
 export const APP_ROUTES: IRouteEntry[] = [
 
-    MakeRoute<{}>('/overview', Overview, 'Overview', ChipIcon),
+    MakeRoute<{}>('/overview', Overview, 'Overview', HomeIcon),
     MakeRoute<{ brokerId: string }>('/overview/:brokerId', BrokerDetails, 'Broker Details'),
 
     MakeRoute<{}>('/topics', TopicList, 'Topics', CollectionIcon),
