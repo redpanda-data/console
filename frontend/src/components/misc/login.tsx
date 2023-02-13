@@ -9,15 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
-import { Spin, Modal } from 'antd';
+import { Component } from 'react';
+import { Spin, Modal, Input } from 'antd';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
-
 import SvgLogo from '../../assets/redpanda_console_horizontal.svg';
 import { uiState } from '../../state/uiState';
 import { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
 import OktaLogo from '../../utils/svg/OktaLogo';
+import { Button } from '@redpanda-data/ui';
+import { toJson } from '../../utils/jsonUtils';
+import Password from 'antd/lib/input/Password';
+import { appGlobal } from '../../state/appGlobal';
 
 
 const iconMap = new Map([
@@ -31,6 +34,7 @@ interface ProvidersResponse {
     loginTitle: string;
 }
 interface Provider {
+    authenticationMethod: 'OAUTH' | 'PLAIN_CREDENTIALS';
     displayName: string,
     url: string;
 }
@@ -82,7 +86,9 @@ class Login extends Component {
     render() {
         let ar = this.providersResponse ? this.providersResponse.providers : null;
         if (ar)
-            ar = ar.slice().sort((a, b) => a.displayName.localeCompare(b.displayName));
+            ar = ar.slice()
+                .sort((a, b) => a.displayName.localeCompare(b.displayName))
+                .filter(x => x.authenticationMethod != 'PLAIN_CREDENTIALS');
 
         return <div className="login">
 
@@ -122,8 +128,11 @@ class Login extends Component {
                                 {ar?.map(p => <LoginProviderButton key={p.displayName} provider={p} />)
                                     || (this.providersError && <ProvidersError error={this.providersError} />)
                                     || <div style={{ fontSize: '14px', marginTop: '32px', color: '#ddd' }}><Spin size="large" /><br />Retreiving login method from backend...</div>}
+
                             </div>
                         </div>
+
+                        <PlainLoginBox />
 
                         <div style={{ marginTop: 'auto', fontWeight: 'normal' }}>Copyright © {new Date().getFullYear()} Redpanda Data, Inc. All rights reserved.</div>
                     </div>
@@ -160,3 +169,79 @@ function ProvidersError(p: { error: string }) {
         <div style={{ fontSize: '0.9em' }}>{p.error}</div>
     </div>
 }
+
+const plainLogin = observable({
+    isLoading: false,
+    username: '',
+    password: '',
+});
+
+const PlainLoginBox = observer(() => {
+    const state = plainLogin;
+
+    return <>
+        <div style={{
+            display: 'grid',
+            width: '300px',
+            margin: '1rem auto',
+            textAlign: 'start',
+            fontFamily: 'Inter'
+        }}>
+            <div>User</div>
+            <Input value={state.username} onChange={e => state.username = e.target.value} />
+
+            <div>Password</div>
+            <Password value={state.password} onChange={e => state.password = e.target.value} />
+
+            <Button
+                style={{ marginTop: '1rem' }}
+                onClick={async () => {
+                    state.isLoading = true;
+                    try {
+                        const resp = await fetch('./auth/login/plain', {
+                            method: 'POST',
+                            headers: [
+                                ['Content-Type', 'application/json']
+                            ],
+                            body: toJson({
+                                'username': state.username,
+                                'password': state.password,
+                            })
+                        });
+
+                        if (resp.ok) {
+                            appGlobal.history.push('/overview');
+                        } else {
+                            let err = await resp.text();
+                            try {
+                                const j = JSON.parse(err);
+                                if (j.message)
+                                    err = j.message;
+                            } catch { }
+                            throw new Error(err);
+                        }
+                    }
+                    catch (err) {
+                        if (!(err instanceof Error)) {
+                            console.error(err);
+                            return;
+                        }
+
+                        Modal.error({
+                            title: 'Error',
+                            content: <>
+                                <blockquote>
+                                    {err.message}
+                                </blockquote>
+                            </>
+                        });
+                    }
+                    finally {
+                        state.isLoading = false;
+                    }
+
+
+                }} >Login</Button>
+        </div>
+    </>
+});
