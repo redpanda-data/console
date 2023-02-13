@@ -32,13 +32,14 @@ func (api *API) routes() *chi.Mux {
 	instrument := middleware.NewInstrument(api.Cfg.MetricsNamespace)
 	recoverer := middleware.Recoverer{Logger: api.Logger}
 	checkOriginFn := originsCheckFunc(api.Cfg.REST.AllowedOrigins)
-	handleBasePath := createHandleBasePathMiddleware(api.Cfg.REST.BasePath,
+	basePath := newBasePathMiddleware(
+		api.Cfg.REST.BasePath,
 		api.Cfg.REST.SetBasePathFromXForwardedPrefix,
 		api.Cfg.REST.StripPrefix)
 
 	baseRouter.Use(recoverer.Wrap)
 	baseRouter.Use(chimiddleware.RealIP)
-	baseRouter.Use(handleBasePath)
+	baseRouter.Use(basePath.Wrap)
 	baseRouter.Use(cors.Handler(cors.Options{
 		AllowOriginFunc: func(r *http.Request, _ string) bool {
 			return checkOriginFn(r)
