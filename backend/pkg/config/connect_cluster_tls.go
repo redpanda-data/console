@@ -49,12 +49,13 @@ func (c *ConnectClusterTLS) TLSConfig() (*tls.Config, error) {
 	}
 
 	// 1. Create CA cert pool
-	caCertPool := x509.NewCertPool()
+	var caCertPool *x509.CertPool
 	if c.CaFilepath != "" {
 		ca, err := os.ReadFile(c.CaFilepath)
 		if err != nil {
 			return nil, err
 		}
+		caCertPool = x509.NewCertPool()
 		isSuccessful := caCertPool.AppendCertsFromPEM(ca)
 		if !isSuccessful {
 			return nil, fmt.Errorf("failed to append ca file to cert pool, is this a valid PEM format?")

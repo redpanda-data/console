@@ -31,13 +31,10 @@ func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 		return nil, nil
 	}
 
-	caCertPool := x509.NewCertPool()
-
 	// No ca certificate specified, so let's return a TLS config that uses
 	// the system cert pool.
 	if c.CaFilepath == "" {
 		return &tls.Config{
-			RootCAs: caCertPool,
 			//nolint:gosec // InsecureSkipVerify may be true upon user's responsibility.
 			InsecureSkipVerify: c.InsecureSkipTLSVerify,
 		}, nil
@@ -48,6 +45,7 @@ func (c *RedpandaAdminAPITLS) BuildTLSConfig() (*tls.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA cert from filepath %s: %w", c.CaFilepath, err)
 	}
+	caCertPool := x509.NewCertPool()
 	if isSuccessful := caCertPool.AppendCertsFromPEM(caCert); !isSuccessful {
 		return nil, fmt.Errorf("failed to append ca file to cert pool, check if this is a valid PEM formatted file")
 	}

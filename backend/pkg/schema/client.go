@@ -60,13 +60,14 @@ func newClient(cfg config.Schema) (*Client, error) {
 	}
 
 	// Configure Client Certificate transport
+	var caCertPool *x509.CertPool
 	if cfg.TLS.Enabled {
-		caCertPool := x509.NewCertPool()
 		if cfg.TLS.CaFilepath != "" {
 			ca, err := os.ReadFile(cfg.TLS.CaFilepath)
 			if err != nil {
 				return nil, err
 			}
+			caCertPool = x509.NewCertPool()
 			isSuccessful := caCertPool.AppendCertsFromPEM(ca)
 			if !isSuccessful {
 				return nil, fmt.Errorf("failed to append ca file to cert pool, is this a valid PEM format?")
