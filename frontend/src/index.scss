@@ -3193,7 +3193,6 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     }
 
     &.hasError {
-        background: red;
 
         &::after {
             transform: scale(1);
