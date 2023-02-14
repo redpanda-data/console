@@ -1406,6 +1406,19 @@ export interface CreateUserRequest {
     mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512';
 }
 
+export interface CreateSecretRequest {
+    connectorName: string;
+    clusterName: string;
+    secretData: string;
+    labels: Record<string, string>
+}
+
+export interface CreateSecretResponse {
+    secretId: string,
+    labels: Record<string, string>
+
+}
+
 // GET api/cluster/overview
 export interface ClusterOverview {
     kafka: OverviewKafka;

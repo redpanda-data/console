@@ -44,7 +44,7 @@ import {
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
-    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest, PatchTopicConfigsRequest, ClusterOverview, BrokerWithConfigAndStorage, OverviewNewsEntry
+    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest, PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage, OverviewNewsEntry
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig } from '../config';
@@ -1349,7 +1349,7 @@ const apiStore = {
         return parseOrUnwrap<void>(response, null);
     },
 
-    async createSecret(clusterName: string, connectorName: string, secretValue: string): Promise<any> {
+    async createSecret(clusterName: string, connectorName: string, secretValue: string): Promise<CreateSecretResponse> {
         const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets`, {
             method: 'POST',
             headers: [
@@ -1367,7 +1367,7 @@ const apiStore = {
         return parseOrUnwrap<any>(response, null);
     },
 
-     async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<any> {
+     async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<void> {
         const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`, {
             method: 'PUT',
             headers: [
