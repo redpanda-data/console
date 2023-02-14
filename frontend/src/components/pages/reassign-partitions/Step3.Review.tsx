@@ -141,7 +141,7 @@ export class StepReview extends Component<{
             <ul style={{ marginTop: '0.5em' }}>
                 <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
                 <li>Once the reassignment completes you'll have to remove the throttling configuration. <br />
-                    Kowl will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
+                    Console will show a warning below the "Current Reassignments" table when there are throttled topics that are no longer being reassigned.
                 </li>
             </ul>
         </div>
