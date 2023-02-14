@@ -187,7 +187,8 @@ func (s *Service) deserializeProtobufMessageToJSON(payload []byte, md *desc.Mess
 	}
 
 	jsonBytes, err := msg.MarshalJSONPB(&jsonpb.Marshaler{
-		AnyResolver: &anyResolver{s.registry},
+		AnyResolver:  &anyResolver{s.registry},
+		EmitDefaults: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal protobuf message to JSON: %w", err)
