@@ -336,7 +336,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string, connect
                     clearTarget={() => this.pausingConnector = null}
 
                     content={(c) => <>{isRunning ? 'Pause' : 'Resume'} connector <strong>{c.name}</strong>?</>}
-                    successMessage={(c) => <> {isRunning ? 'Resumed' : 'Paused'} connector <strong>{c.name}</strong></>}
+                    successMessage={(c) => <> {isRunning ? 'Paused' : 'Resumed'} connector <strong>{c.name}</strong></>}
 
                     onOk={async (c) => {
                         if (isRunning)
