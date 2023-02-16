@@ -3779,3 +3779,68 @@ thead>tr>th {
 .ant-input-group.ant-input-group-compact>:last-child {
     border-right-width: 0px !important;
 }
+
+// Console adjustments to be removed later - Dan added the below
+nav.chakra-stack {
+    a:hover {
+        color: white;
+    }
+}
+nav.chakra-breadcrumb {
+    a:hover {
+        color: rgba(0,0,0,0.85);
+    }
+
+    svg {
+        display: block;
+    }
+}
+
+.inputWrapper.hasError {
+    border-radius: 8px;
+    &:after {
+        border-radius: 8px;
+    }
+}
+
+p,
+dl,
+dd,
+ol,
+ul,
+h1, h2, h3, h4, h5 {
+    margin-bottom: 0;
+}
+
+.BreadcrumbHeading, .BreadcrumbText {
+    line-height: 18.375px;
+    font-feature-settings: kern;
+}
+
+$borderRadius: 8px;
+.ant-input-wrapper.ant-input-group, .inputGroup {
+    > * {
+        border-radius: 0 !important;
+    }
+    &:first-child, input:first-child, .ant-input-group-addon:first-child {
+        border-top-left-radius: $borderRadius !important;
+        border-bottom-left-radius: $borderRadius !important;
+    }
+    &:last-child, button:last-child, .ant-input-group-addon:last-child {
+        border-top-right-radius: $borderRadius !important;
+        border-bottom-right-radius: $borderRadius !important;
+    }
+}
+
+input {
+    &::placeholder {
+        font-style: none !important;
+    }
+}
+
+// Tries to reset styles injected by console
+.chakra-container {
+    a, .chakra-linkbox {
+        color: rgba(0,0,0,0.85);
+    }
+}
