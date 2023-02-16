@@ -251,6 +251,28 @@ const apiStore = {
         await appConfig.fetch('./logout');
         this.userData = null;
     },
+    async refreshUserData() {
+        await appConfig.fetch('./api/users/me').then(async r => {
+            if (r.ok) {
+                api.userData = await r.json() as UserData;
+            } else if (r.status == 401) { // unauthorized / not logged in
+                api.userData = null;
+            } else if (r.status == 404) {
+                // not found: frontend is configured as business-version, but backend is non-business-version
+                // -> create a local fake user for debugging
+                uiState.isUsingDebugUserLogin = true;
+                api.userData = {
+                    canViewConsoleUsers: false,
+                    canListAcls: true,
+                    canListQuotas: true,
+                    canPatchConfigs: true,
+                    canReassignPartitions: true,
+                    seat: null as any,
+                    user: { providerID: -1, providerName: 'debug provider', id: 'debug', internalIdentifier: 'debug', meta: { avatarUrl: '', email: '', name: 'local fake user for debugging' } }
+                };
+            }
+        });
+    },
 
     // Make currently running requests observable
     activeRequests: [] as CacheEntry[],
