@@ -10,17 +10,16 @@
  */
 
 import { Component } from 'react';
-import { Spin, Modal, Input } from 'antd';
+import { Spin, Modal } from 'antd';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 import SvgLogo from '../../assets/redpanda_console_horizontal.svg';
 import { uiState } from '../../state/uiState';
 import { GoogleOutlined, GithubOutlined } from '@ant-design/icons';
 import OktaLogo from '../../utils/svg/OktaLogo';
-import { Button } from '@redpanda-data/ui';
-import { toJson } from '../../utils/jsonUtils';
-import Password from 'antd/lib/input/Password';
+import { Box, Button, Input, Spinner } from '@redpanda-data/ui';
 import { appGlobal } from '../../state/appGlobal';
+import { toJson } from '../../utils/jsonUtils';
 
 
 const iconMap = new Map([
@@ -84,11 +83,13 @@ class Login extends Component {
     }
 
     render() {
-        let ar = this.providersResponse ? this.providersResponse.providers : null;
-        if (ar)
-            ar = ar.slice()
-                .sort((a, b) => a.displayName.localeCompare(b.displayName))
-                .filter(x => x.authenticationMethod != 'PLAIN_CREDENTIALS');
+        const allProviders = this.providersResponse?.providers
+            .slice()
+            .sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+        const providerButtons = allProviders?.filter(x => x.authenticationMethod != 'PLAIN_CREDENTIALS');
+        const plainLoginProvider = allProviders?.first(x => x.authenticationMethod == 'PLAIN_CREDENTIALS');
+
 
         return <div className="login">
 
@@ -125,14 +126,14 @@ class Login extends Component {
                                 <span style={{ fontSize: '0.66em' }}>to access Redpanda Console</span>
                             </div>
                             <div className="loginButtonList">
-                                {ar?.map(p => <LoginProviderButton key={p.displayName} provider={p} />)
+                                {providerButtons?.map(p => <LoginProviderButton key={p.displayName} provider={p} />)
                                     || (this.providersError && <ProvidersError error={this.providersError} />)
                                     || <div style={{ fontSize: '14px', marginTop: '32px', color: '#ddd' }}><Spin size="large" /><br />Retreiving login method from backend...</div>}
 
                             </div>
                         </div>
 
-                        <PlainLoginBox />
+                        <PlainLoginBox provider={plainLoginProvider} />
 
                         <div style={{ marginTop: 'auto', fontWeight: 'normal' }}>Copyright © {new Date().getFullYear()} Redpanda Data, Inc. All rights reserved.</div>
                     </div>
@@ -170,35 +171,50 @@ function ProvidersError(p: { error: string }) {
     </div>
 }
 
-const plainLogin = observable({
+const plainLoginState = observable({
     isLoading: false,
     username: '',
     password: '',
 });
 
-const PlainLoginBox = observer(() => {
-    const state = plainLogin;
+const PlainLoginBox = observer((p: { provider?: Provider }) => {
+    const provider = p.provider;
+    if (!provider) return null;
+
+    // Add missing '.' in front of url if needed
+    let loginUrl = provider.url;
+    if (!loginUrl.startsWith('.') && loginUrl.startsWith('/'))
+        loginUrl = '.' + loginUrl;
+
+    const state = plainLoginState;
 
     return <>
-        <div style={{
-            display: 'grid',
-            width: '300px',
-            margin: '1rem auto',
-            textAlign: 'start',
-            fontFamily: 'Inter'
-        }}>
+        <Box display="grid" width="300px" margin="1rem auto" textAlign="start" fontFamily='"Inter"'>
             <div>User</div>
-            <Input value={state.username} onChange={e => state.username = e.target.value} />
+            <Input
+                background="blackAlpha.300"
+                borderColor="whiteAlpha.500"
+                disabled={state.isLoading}
+                value={state.username}
+                onChange={e => state.username = e.target.value}
+            />
 
             <div>Password</div>
-            <Password value={state.password} onChange={e => state.password = e.target.value} />
+            <Input
+                background="blackAlpha.300"
+                borderColor="whiteAlpha.500"
+                type="password"
+                disabled={state.isLoading}
+                value={state.password}
+                onChange={e => state.password = e.target.value}
+            />
 
-            <Button
-                style={{ marginTop: '1rem' }}
+            <Button marginTop="1rem"
+                disabled={state.isLoading}
                 onClick={async () => {
                     state.isLoading = true;
                     try {
-                        const resp = await fetch('./auth/login/plain', {
+                        const resp = await fetch(loginUrl, {
                             method: 'POST',
                             headers: [
                                 ['Content-Type', 'application/json']
@@ -239,9 +255,11 @@ const PlainLoginBox = observer(() => {
                     finally {
                         state.isLoading = false;
                     }
-
-
-                }} >Login</Button>
-        </div>
+                }}
+            >
+                {state.isLoading && <Spinner size="sm" mr="1" />}
+                Login
+            </Button>
+        </Box>
     </>
 });

@@ -19,7 +19,6 @@ function Section(props: { children: ReactNode; id?: string; } & ChakraProps) {
 
         boxShadow="4px 4px 0px 0px rgb(0 0 0 / 10%)"
         border="1px solid #C5CBD2"
-        margin="4px"
         borderRadius="8px"
 
         {...props}

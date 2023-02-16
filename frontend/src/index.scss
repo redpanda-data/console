@@ -987,11 +987,6 @@ tr.tombstone {
     }
 }
 
-.overflowYOverlay {
-    overflow-y: auto; // set auto by default
-    overflow-y: overlay; // if possible, use 'overlay' (even though its deprecated)
-}
-
 /* tr td:nth-child(1) {
 padding-left: 30px !important;
 }
