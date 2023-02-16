@@ -26,11 +26,16 @@ export class UserProfile extends Component {
     constructor(p: any) {
         super(p);
         makeObservable(this);
+        api.refreshUserData();
     }
 
     render() {
-        if (!AppFeatures.SINGLE_SIGN_ON) return null;
-        if (!api.userData || !api.userData.user || !api.userData.user.meta.name) return null;
+        if (!AppFeatures.SINGLE_SIGN_ON) {
+            return null;
+        }
+        if (!api.userData || !api.userData.user || !api.userData.user.meta.name) {
+            return null;
+        }
         const user = api.userData.user;
 
         // rc-dropdown supports this property, but the antd wrapper doesn't specify it.
@@ -46,8 +51,8 @@ export class UserProfile extends Component {
                 trigger={['click']}
                 arrow={false}
                 placement="top"
-                visible={this.menuOpen}
-                onVisibleChange={e => this.menuOpen = e}
+                open={this.menuOpen}
+                onOpenChange={e => this.menuOpen = e}
                 {...noExpand}
             >
                 <div className="profile">

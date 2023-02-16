@@ -86,7 +86,7 @@ class LicenseNotification extends Component {
 
 
 export const AppContent = observer(() =>
-    <div className="overflowYOverlay" id="mainLayout">
+    <div id="mainLayout">
 
         {/* Page */}
         <LicenseNotification />
