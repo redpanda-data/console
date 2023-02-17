@@ -141,14 +141,14 @@ export class PreviewSettings extends Component<{ getShowDialog: () => boolean, s
 
         const content = <>
             <div>
-                <span style={{ display: 'inline-flex' }}>
+                <span >
                     When viewing large messages we're often only interested in a few specific fields.
                     Add <Popover trigger={['click']} placement="bottom" content={globHelp}>
                         <span style={{
-                            display: 'inline-flex', gap: '2px', margin: '0 0.6ch',
+                            margin: '0 2px',
                             color: 'hsl(205deg, 100%, 50%)',
                             textDecoration: 'underline dotted', cursor: 'pointer'
-                        }}><InfoIcon size={15} />glob patterns</span>
+                        }}><InfoIcon size={15}/>&nbsp;glob patterns</span>
                     </Popover> to this list to show found values as previews.
                 </span>
             </div>

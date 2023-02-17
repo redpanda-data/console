@@ -59,7 +59,7 @@ const App = () => {
                             ? <AppContent />
                             : <Grid templateColumns="auto 1fr" minH="100vh">
                                 <AppSidebar />
-                                <Container width="full" maxWidth="1500px" as="main" p="8" zIndex={1}>
+                                <Container width="full" maxWidth="1500px" as="main" pt="8" px="12" zIndex={1}>
                                     <AppContent />
                                 </Container>
                             </Grid>

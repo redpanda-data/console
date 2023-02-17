@@ -581,13 +581,13 @@ td.ant-table-column-sort {
     place-items: center;
     height: 100vh;
     background: rgb(233, 233, 233);
-    font-family: 'Quicksand', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 
 .loginContainer {
     width: 970px;
     height: 600px;
-    background: #fafafa;
+    background: white;
     overflow: overlay;
     box-shadow: 8px 8px 16px 1px rgba(0, 0, 0, 0.15);
     border-radius: 4px;
@@ -597,7 +597,7 @@ td.ant-table-column-sort {
     /* or 107% */
     display: flex;
     align-items: center;
-    color: gray;
+    color: rgba(0,0,0,0.85);
 }
 
 .loginContainerRight {
@@ -613,7 +613,6 @@ td.ant-table-column-sort {
 
 .loginLeft {
     height: 100%;
-    display: flex;
     flex-direction: column;
     justify-content: center;
     padding: 2rem 4rem;
@@ -623,12 +622,8 @@ td.ant-table-column-sort {
 .loginRight {
     position: relative;
     height: 100%;
-    background: linear-gradient(338.72deg, #65686a 0%, #262e34 94.27%) no-repeat;
-    // opacity: 0.8;
+    background: #131F2F;
     flex-grow: 1;
-    /* background      : url('assets/pattern.png') repeat-x;
-    background-position: bottom; */
-    /* background      : linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url('assets/pattern.png') repeat; */
     overflow-y: hidden;
 }
 
@@ -2720,14 +2715,14 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     height: 62px;
     flex-shrink: 0;
 
-    padding: 0 18px;
+    padding: 0 18px 0 12px;
     gap: 11px;
 
     border-top: 1px solid;
     border-bottom: 1px solid;
-    border-color: hsl(216deg, 21%, 93%);
-    background: hsl(0deg 0% 97% / 50%);
-    font-family: 'Poppins', sans-serif;
+    border-color: hsl(220, 2%, 29%);
+    // background: hsl(0deg 0% 97% / 50%);
+    font-family: 'Inter', sans-serif;
     cursor: pointer;
     user-select: none;
 
@@ -2743,6 +2738,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         min-width: $avatarSize;
         width: $avatarSize;
         max-width: $avatarSize;
+        height: auto;
 
         image-rendering: crisp-edges;
         image-rendering: -webkit-optimize-contrast;
@@ -2772,22 +2768,23 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         .userName {
             max-width: 100%;
             font-size: 12.5px;
-            color: hsl(0deg 0% 50%);
+            color: white;
             padding-bottom: 1px;
 
             overflow: hidden;
             text-overflow: ellipsis;
+            font-weight: 500;
         }
 
         .prefText {
             max-width: 100%;
             font-size: 11.5px;
-            color: hsl(218, 11%, 60%);
+            color: hsl(218, 11%, 70%);
         }
     }
 
     &:hover {
-        background: hsl(0deg 0% 95%);
+        background: rgba(0,0,0,0.2);
     }
 
     @at-root .ant-layout-sider-collapsed & {
@@ -3778,4 +3775,68 @@ thead>tr>th {
 // Fix that "line" that appears in input groups
 .ant-input-group.ant-input-group-compact>:last-child {
     border-right-width: 0px !important;
+}
+
+// Console adjustments to be removed later - Dan added the below
+nav.chakra-stack {
+    a:hover {
+        color: white;
+    }
+}
+nav.chakra-breadcrumb {
+    a:hover {
+        color: rgba(0,0,0,0.85);
+    }
+
+    svg {
+        display: block;
+    }
+}
+
+.inputWrapper.hasError {
+    border-radius: 8px;
+    &:after {
+        border-radius: 8px;
+    }
+}
+
+p,
+dl,
+dd,
+ol,
+ul,
+h1, h2, h3, h4, h5 {
+    margin-bottom: 0;
+}
+
+.BreadcrumbHeading, .BreadcrumbText {
+    line-height: 18.375px;
+    font-feature-settings: kern;
+}
+
+$borderRadius: 8px;
+.ant-input-wrapper.ant-input-group, .inputGroup {
+    > * {
+        border-radius: 0 !important;
+    }
+    &:first-child, input:first-child, .ant-input-group-addon:first-child {
+        border-top-left-radius: $borderRadius !important;
+        border-bottom-left-radius: $borderRadius !important;
+    }
+    &:last-child, button:last-child, .ant-input-group-addon:last-child {
+        border-top-right-radius: $borderRadius !important;
+        border-bottom-right-radius: $borderRadius !important;
+    }
+}
+
+// Tries to reset styles injected by console for links
+.chakra-container {
+    a, .chakra-linkbox {
+        color: rgba(0,0,0,0.85);
+    }
+
+    input:placeholder-shown,
+    .ant-input:placeholder-shown {
+        font-style: normal !important;
+    }
 }
