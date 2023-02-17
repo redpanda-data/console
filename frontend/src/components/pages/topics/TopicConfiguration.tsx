@@ -1,7 +1,7 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline'
-import { Icon } from '@redpanda-data/ui';
+import { Icon, SearchField } from '@redpanda-data/ui';
 import { Alert, Input, message, Modal, Popover, Radio, Select, Tooltip } from 'antd';
 import { action, makeObservable, observable } from 'mobx';
 import { Observer, observer } from 'mobx-react';
@@ -10,7 +10,6 @@ import { ConfigEntryExtended } from '../../../state/restInterfaces';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 import { DataSizeSelect, DurationSelect, NumInput, RatioInput } from './CreateTopicModal/CreateTopicModal';
 import './TopicConfiguration.scss';
-import Search from 'antd/lib/input/Search';
 import { ModalFunc } from 'antd/lib/modal/confirm';
 import { api } from '../../../state/backendApi';
 import Password from 'antd/lib/input/Password';
@@ -179,10 +178,12 @@ export default class ConfigurationEditor extends Component<{
 
         return <div style={{ paddingTop: '1em' }}>
             <div className="configGroupTable">
-                <Search className="searchBar"
-                    value={this.filter}
-                    placeholder="Filter"
-                    onChange={e => this.filter = e.target.value} allowClear
+                <SearchField 
+                    className="searchBar"
+                    searchText={this.filter || ''}
+                    placeholderText="Filter"
+                    setSearchText={value => this.filter = value} 
+                    icon="filter"
                 />
                 {categories.map(x => <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} canEdit={canEdit} />)}
             </div>
