@@ -2715,14 +2715,14 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     height: 62px;
     flex-shrink: 0;
 
-    padding: 0 18px;
+    padding: 0 18px 0 12px;
     gap: 11px;
 
     border-top: 1px solid;
     border-bottom: 1px solid;
-    border-color: hsl(216deg, 21%, 93%);
-    background: hsl(0deg 0% 97% / 50%);
-    font-family: 'Poppins', sans-serif;
+    border-color: hsl(220, 2%, 29%);
+    // background: hsl(0deg 0% 97% / 50%);
+    font-family: 'Inter', sans-serif;
     cursor: pointer;
     user-select: none;
 
@@ -2738,6 +2738,7 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         min-width: $avatarSize;
         width: $avatarSize;
         max-width: $avatarSize;
+        height: auto;
 
         image-rendering: crisp-edges;
         image-rendering: -webkit-optimize-contrast;
@@ -2767,22 +2768,23 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
         .userName {
             max-width: 100%;
             font-size: 12.5px;
-            color: hsl(0deg 0% 50%);
+            color: white;
             padding-bottom: 1px;
 
             overflow: hidden;
             text-overflow: ellipsis;
+            font-weight: 500;
         }
 
         .prefText {
             max-width: 100%;
             font-size: 11.5px;
-            color: hsl(218, 11%, 60%);
+            color: hsl(218, 11%, 70%);
         }
     }
 
     &:hover {
-        background: hsl(0deg 0% 95%);
+        background: rgba(0,0,0,0.2);
     }
 
     @at-root .ant-layout-sider-collapsed & {
