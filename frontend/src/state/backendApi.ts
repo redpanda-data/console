@@ -44,7 +44,9 @@ import {
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
-    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest, PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage, OverviewNewsEntry
+    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
+    PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage, 
+    OverviewNewsEntry
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig } from '../config';
