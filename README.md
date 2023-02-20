@@ -6,7 +6,7 @@
 
 Redpanda Console (previously known as Kowl) is a web application that helps you manage and debug your Kafka/Redpanda workloads effortlessly.
 
-![preview](docs/assets/preview.gif)
+https://user-images.githubusercontent.com/23424570/220130537-7b0b8596-0a06-4132-90a5-1be3c169e4f4.mp4
 
 ## Features
 
