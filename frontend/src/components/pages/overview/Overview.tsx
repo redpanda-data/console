@@ -236,7 +236,9 @@ export default Overview;
 const ResourcesBadge = (p: { type?: string | undefined }) => {
     switch (p.type) {
         case 'new':
-            return <div className="badge-new">New</div>
+            return <span className="badge-wrapper">
+                <div className="badge-new">New</div>
+            </span>
 
         default:
             return null;

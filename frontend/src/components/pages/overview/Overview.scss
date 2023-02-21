@@ -131,6 +131,14 @@
         line-height: 20px;
     }
 
+    .badge-wrapper::before,
+    .badge-wrapper::after {
+        /* insert an invisible non-breaking space */
+        content: "\00a0";
+        /* prevent line breaks between the invisible content and the badge */
+        white-space: nowrap;
+    }
+    
     .badge-new {
         display: inline-flex;
         padding: 2px 8px;
