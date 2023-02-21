@@ -76,6 +76,7 @@
     min-width: 300px;
 
     white-space: nowrap;
+    overflow: hidden;
 
     h3 {
         grid-column: 1 / span 3;
@@ -138,7 +139,7 @@
         /* prevent line breaks between the invisible content and the badge */
         white-space: nowrap;
     }
-    
+
     .badge-new {
         display: inline-flex;
         padding: 2px 8px;
