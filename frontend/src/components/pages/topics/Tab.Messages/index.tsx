@@ -36,7 +36,7 @@ import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
 import { toJson } from '../../../../utils/jsonUtils';
 import { editQuery } from '../../../../utils/queryHelper';
-import { Ellipsis, findPopupContainer, Label, ZeroSizeWrapper, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
+import { Ellipsis, findPopupContainer, Label, numberToThousandsString, OptionGroup, StatusIndicator, TimestampDisplay, toSafeString } from '../../../../utils/tsxUtils';
 import { cullText, encodeBase64, prettyBytes, prettyMilliseconds, titleCase } from '../../../../utils/utils';
 import { makePaginationConfig, range, sortField } from '../../../misc/common';
 import { KowlJsonView } from '../../../misc/KowlJsonView';
@@ -259,9 +259,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                                 <MotionSpan identityKey="btnCancelSearch" overrideAnimProps={animProps_span_messagesStatus}>
                                     <Tooltip title="Stop searching" getPopupContainer={findPopupContainer}>
                                         <Button type="primary" danger onClick={() => api.stopMessageSearch()} style={{ padding: 0, width: '48px' }}>
-                                            <ZeroSizeWrapper >
-                                                <XCircleIcon size={20} />
-                                            </ZeroSizeWrapper>
+                                            <XCircleIcon size={20} />
                                         </Button>
                                     </Tooltip>
                                 </MotionSpan>
