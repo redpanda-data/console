@@ -10,6 +10,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { comparer } from 'mobx';
 import { message } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ApiOutlined, DatabaseOutlined, SearchOutlined } from '@ant-design/icons';
@@ -130,7 +131,10 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
     const [validationFailure, setValidationFailure] = useState<unknown>(null);
     const [creationFailure, setCreationFailure] = useState<unknown>(null);
     const [genericFailure, setGenericFailure] = useState<Error | null>(null);
-    const [stringifiedConfig, setStringifiedConfig] = useState<null | any>({});
+    const [stringifiedConfig, setStringifiedConfig] = useState<string>('');
+    const [parsedUpdatedConfig, setParsedUpdatedConfig] = useState<any | null>(null);
+    const [postCondition, setPostCondition] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(false);
     const [connectClusterStore, setConnectClusterStore] = useState(ConnectClusterStore.getInstance(activeCluster));
 
     useEffect(() => {
@@ -143,6 +147,16 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
     useEffect(() => {
         setConnectClusterStore(ConnectClusterStore.getInstance(activeCluster));
     }, [activeCluster]);
+
+    useEffect(() => {
+        try {
+            setParsedUpdatedConfig(JSON.parse(stringifiedConfig));
+        } catch (e) {
+            setParsedUpdatedConfig(null);
+            setPostCondition(false);
+        }
+        setPostCondition(true);
+    }, [stringifiedConfig]);
 
     const clearErrors = () => {
         setCreationFailure(null);
@@ -210,28 +224,31 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         },
         {
             title: 'Review',
-            description: 'Review created connector config.',
+            description: 'Review and optionally patch the created connector config.',
             icon: <SearchOutlined />,
             content: selectedPlugin && (
                 <Review
                     connectorPlugin={selectedPlugin}
                     properties={stringifiedConfig}
                     onChange={(editorContent) => {
-                        setStringifiedConfig(editorContent);
+                        setStringifiedConfig(editorContent ?? '');
                     }}
                     invalidValidationResult={invalidValidationResult}
                     validationFailure={validationFailure}
                     creationFailure={creationFailure}
                     genericFailure={genericFailure}
+                    isCreating={loading}
                 />
             ),
-            postConditionMet: () => true,
+            postConditionMet: () => postCondition && !loading,
             async transitionConditionMet(): Promise<{ conditionMet: boolean }> {
                 clearErrors();
-
+                setLoading(true);
                 const connectorRef = connectClusterStore.getConnector(selectedPlugin!.class);
 
-                connectorRef.updateProperties(JSON.parse(stringifiedConfig));
+                if (parsedUpdatedConfig != null && !comparer.shallow(parsedUpdatedConfig, connectorRef.getConfigObject())) {
+                    connectorRef.updateProperties(parsedUpdatedConfig);
+                }
 
                 const propertiesObject: Record<string, any> = connectorRef.getConfigObject();
                 try {
@@ -239,6 +256,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
 
                     if (validationResult.error_count > 0) {
                         setInvalidValidationResult(validationResult);
+                        setLoading(false);
                         return { conditionMet: false };
                     }
                 } catch (e) {
@@ -259,9 +277,10 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                         default:
                             setGenericFailure(e?.message);
                     }
+                    setLoading(false);
                     return { conditionMet: false };
                 }
-
+                setLoading(false);
                 return { conditionMet: true };
             },
         },
@@ -311,6 +330,7 @@ interface ReviewProps {
     validationFailure: unknown;
     creationFailure: unknown;
     genericFailure: Error | null;
+    isCreating: boolean;
 }
 
 function Review({
@@ -321,6 +341,7 @@ function Review({
     creationFailure,
     genericFailure,
     onChange,
+    isCreating,
 }: ReviewProps) {
     return (
         <>
@@ -331,51 +352,65 @@ function Review({
                 </>
             ) : null}
 
-            {invalidValidationResult != null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}
+            {isCreating ? (
+                <>
+                    <Skeleton loading={true} active={true} paragraph={{ rows: 5, width: '100%' }} style={{ marginTop: 20 }} />
+                </>
+            ) : (
+                <>
+                    {invalidValidationResult != null ? <ValidationDisplay validationResult={invalidValidationResult} /> : null}
 
-            {validationFailure ? (
-                <Alert
-                    style={{ marginTop: '2rem' }}
-                    type="error"
-                    message={
-                        <>
-                            <strong>Validation attempt failed</strong>
-                            <p>{String(validationFailure)}</p>
-                        </>
-                    }
-                />
-            ) : null}
+                    {validationFailure ? (
+                        <Alert
+                            style={{ marginTop: '2rem' }}
+                            type="error"
+                            message={
+                                <>
+                                    <strong>Validation attempt failed</strong>
+                                    <p>{String(validationFailure)}</p>
+                                </>
+                            }
+                        />
+                    ) : null}
 
-            {creationFailure ? (
-                <Alert
-                    style={{ marginTop: '2rem' }}
-                    type="error"
-                    message={
-                        <>
-                            <strong>Creation attempt failed</strong>
-                            <p>{String(creationFailure)}</p>
-                        </>
-                    }
-                />
-            ) : null}
+                    {creationFailure ? (
+                        <Alert
+                            style={{ marginTop: '2rem' }}
+                            type="error"
+                            message={
+                                <>
+                                    <strong>Creation attempt failed</strong>
+                                    <p>{String(creationFailure)}</p>
+                                </>
+                            }
+                        />
+                    ) : null}
 
-            {genericFailure ? (
-                <Alert
-                    style={{ marginTop: '2rem' }}
-                    type="error"
-                    message={
-                        <>
-                            <strong>An error occurred</strong>
-                            <p>{String(genericFailure)}</p>
-                        </>
-                    }
-                />
-            ) : null}
+                    {genericFailure ? (
+                        <Alert
+                            style={{ marginTop: '2rem' }}
+                            type="error"
+                            message={
+                                <>
+                                    <strong>An error occurred</strong>
+                                    <p>{String(genericFailure)}</p>
+                                </>
+                            }
+                        />
+                    ) : null}
 
-            <h2>Connector Properties</h2>
-            <div style={{ margin: '0 auto 1.5rem' }}>
-                <KowlEditor language="json" value={properties} height="600px" onChange={onChange} />
-            </div>
+                    <h2>Connector Properties</h2>
+                    <div style={{ margin: '0 auto 1.5rem' }}>
+                        <KowlEditor
+                            language="json"
+                            value={properties}
+                            height="600px"
+                            onChange={onChange}
+                            options={{ readOnly: isCreating }}
+                        />
+                    </div>
+                </>
+            )}
         </>
     );
 }
