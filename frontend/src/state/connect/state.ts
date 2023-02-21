@@ -170,7 +170,6 @@ export class ConnectClusterStore {
                 secretStore: this.features.secretStore,
                 editing: initialConfig != null,
             });
-
             this.connectors.set(identifier, connectorStore);
         }
         return connectorStore;
@@ -236,24 +235,35 @@ export interface ConnectorClusterFeatures {
 }
 
 export class SecretsStore {
-    secrets = new Map<string, Secret>();
+    _data = new Map<string, Secret>();
+    _secrets = new Map<string, Secret>();
 
     constructor() {
         makeAutoObservable(this);
     }
 
     getSecret(key: string) {
-        let secret = this.secrets.get(key);
+        let secret = this._data.get(key);
 
         if (!secret) {
             secret = new Secret(key);
-            this.secrets.set(key, secret);
+            this._data.set(key, secret);
         }
         return secret;
     }
 
     get ids(): string[] {
         return Array.from(this.secrets, ([_key, secret]) => secret.id).filter((secret): secret is string => Boolean(secret));
+    }
+
+    get secrets() {
+        for (const [key, value] of this._data) {
+            if (value.value != '' && value.value != null) {
+                this._secrets.set(key, value);
+            }
+        }
+
+        return this._secrets;
     }
 }
 
@@ -309,7 +319,7 @@ export class ConnectorPropertiesStore {
     propsByName = observable.map<string, Property>();
     jsonText = '';
     error: string | undefined = undefined;
-    crud: 'create' | 'update';
+    crud: 'create' | 'update' = 'create';
     secrets: SecretsStore | null = null;
     advancedMode = 'simple' as 'simple' | 'advanced';
     initPending = true;
@@ -386,25 +396,30 @@ export class ConnectorPropertiesStore {
 
         try {
             // Validate with empty object to get all properties initially
-            const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, {
+
+            const basicConfig = {
                 'connector.class': pluginClassName,
                 name: '',
                 topic: 'topic',
                 topics: 'topics',
-            });
-            const allProps = this.createCustomProperties(validationResult.configs, this.appliedConfig);
+            };
+
+            const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, this.appliedConfig ?? basicConfig);
+            const allProps = this.createCustomProperties(validationResult.configs);
 
             // Save props to map, so we can quickly find them to set their validation errors
             for (const p of allProps) this.propsByName.set(p.name, p);
 
-            // Set default values
-            for (const p of allProps)
-                if (p.entry.definition.custom_default_value != undefined) {
-                    p.value = p.entry.definition.custom_default_value;
-                }
+            if (this.appliedConfig == null) {
+                // Set default values
+                for (const p of allProps)
+                    if (p.entry.definition.custom_default_value != undefined) {
+                        p.value = p.entry.definition.custom_default_value;
+                    }
 
-            // Set last error values, so we know when to show the validation error
-            for (const p of allProps) if (p.errors.length > 0) p.lastErrorValue = p.value;
+                // Set last error values, so we know when to show the validation error
+                for (const p of allProps) if (p.errors.length > 0) p.lastErrorValue = p.value;
+            }
 
             // Create groups
             const groupNames = [this.fallbackGroupName, ...validationResult.groups];
@@ -540,7 +555,7 @@ export class ConnectorPropertiesStore {
 
     // Creates our Property objects, while fixing some issues with the source data
     // like: missing value, propertyWidth, group, ...
-    createCustomProperties(properties: ConnectorProperty[], values: Record<string, any> | null = null): Property[] {
+    createCustomProperties(properties: ConnectorProperty[]): Property[] {
         // Fix missing properties
         for (const p of properties) {
             const def = p.definition;
@@ -604,7 +619,7 @@ export class ConnectorPropertiesStore {
                     });
                 }
 
-                if (values != null && values[name]) property.value = values[name];
+                if (this.appliedConfig != null && this.appliedConfig[name]) property.value = this.appliedConfig[name];
 
                 return property;
             })

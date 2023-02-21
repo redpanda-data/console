@@ -45,7 +45,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
                 // Enum (recommended_values)
                 const options = recValues.map((x: string) => ({ label: x, value: x }));
                 inputComp = <Select
-                    value={p.value as any}
+                    value={v}
                     onChange={e => p.value = e}
                     options={options}
                     getPopupContainer={findPopupContainer}
@@ -74,7 +74,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
 
         case 'PASSWORD':
             inputComp = <SecretInput
-                value={String(p.value ?? '')}
+                value={String(v ?? '')}
                 updating={p.crud === 'update'}
                 onChange={e => {
                     p.value = e;
@@ -88,7 +88,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         case 'FLOAT':
             inputComp = <InputNumber
                 style={{ display: 'block' }}
-                value={Number(p.value)}
+                value={Number(v)}
                 onChange={e => p.value = e}
             />
             break;
@@ -107,21 +107,6 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             break;
     }
 
-    // if (def.type != DataType.Boolean) {
-    //     const errAr = p.errors;
-
-    //     const err = errAr.length > 0 && (p.value === p.lastErrorValue)
-    //         ? errAr.first(x => !x.includes('which has no default value')) ?? errAr[0]
-    //         : null;
-
-    //     inputComp = <div className={'inputWrapper ' + (err ? 'hasError' : '')}>
-    //         {inputComp}
-    //         <div className='validationFeedback'>
-    //             {errAr.length > 1 && <span className='errorCount'>{errAr.length} Errors</span>}
-    //             {err}
-    //         </div>
-    //     </div>;
-    // }
     inputComp = <ErrorWrapper property={p} input={inputComp} />;
 
 
