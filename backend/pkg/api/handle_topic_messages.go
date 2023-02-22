@@ -129,7 +129,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		// Check if logged in user is allowed to list messages for the given request
-		canViewMessages, restErr := api.Hooks.Console.CanViewTopicMessages(r.Context(), &req)
+		canViewMessages, restErr := api.Hooks.Authorization.CanViewTopicMessages(r.Context(), &req)
 		if restErr != nil {
 			wsClient.writeJSON(restErr)
 			return
@@ -140,7 +140,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 		}
 
 		if len(req.FilterInterpreterCode) > 0 {
-			canUseMessageSearchFilters, restErr := api.Hooks.Console.CanUseMessageSearchFilters(r.Context(), &req)
+			canUseMessageSearchFilters, restErr := api.Hooks.Authorization.CanUseMessageSearchFilters(r.Context(), &req)
 			if restErr != nil {
 				sendError(restErr.Message)
 				return
@@ -162,7 +162,7 @@ func (api *API) handleGetMessages() http.HandlerFunc {
 			MessageCount:          req.MaxResults,
 			FilterInterpreterCode: interpreterCode,
 		}
-		api.Hooks.Console.PrintListMessagesAuditLog(r, &listReq)
+		api.Hooks.Authorization.PrintListMessagesAuditLog(r, &listReq)
 
 		// Use 30min duration if we want to search a whole topic or forward messages as they arrive
 		duration := 45 * time.Second

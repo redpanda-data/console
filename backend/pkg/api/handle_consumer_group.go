@@ -37,7 +37,7 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 
 		visibleGroups := make([]console.ConsumerGroupOverview, 0, len(describedGroups))
 		for _, group := range describedGroups {
-			canSee, restErr := api.Hooks.Console.CanSeeConsumerGroup(r.Context(), group.GroupID)
+			canSee, restErr := api.Hooks.Authorization.CanSeeConsumerGroup(r.Context(), group.GroupID)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -47,7 +47,7 @@ func (api *API) handleGetConsumerGroups() http.HandlerFunc {
 			}
 
 			// Attach allowed actions for each topic
-			group.AllowedActions, restErr = api.Hooks.Console.AllowedConsumerGroupActions(r.Context(), group.GroupID)
+			group.AllowedActions, restErr = api.Hooks.Authorization.AllowedConsumerGroupActions(r.Context(), group.GroupID)
 			if restErr != nil {
 				rest.SendRESTError(w, r, api.Logger, restErr)
 				return
@@ -69,7 +69,7 @@ func (api *API) handleGetConsumerGroup() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		groupID := chi.URLParam(r, "groupId")
 
-		canSee, restErr := api.Hooks.Console.CanSeeConsumerGroup(r.Context(), groupID)
+		canSee, restErr := api.Hooks.Authorization.CanSeeConsumerGroup(r.Context(), groupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -148,7 +148,7 @@ func (api *API) handlePatchConsumerGroup() http.HandlerFunc {
 
 		// 2. Check if logged-in user is allowed to edit
 		// Consumer Group (always true for Console OSS, but not for Console Business)
-		canEdit, restErr := api.Hooks.Console.CanEditConsumerGroup(r.Context(), req.GroupID)
+		canEdit, restErr := api.Hooks.Authorization.CanEditConsumerGroup(r.Context(), req.GroupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -232,7 +232,7 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 
 		// 2. Check if logged in user is allowed to delete Consumer Group (always true for Console OSS, but not for
 		// Console Business)
-		canDelete, restErr := api.Hooks.Console.CanDeleteConsumerGroup(r.Context(), req.GroupID)
+		canDelete, restErr := api.Hooks.Authorization.CanDeleteConsumerGroup(r.Context(), req.GroupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
@@ -287,7 +287,7 @@ func (api *API) handleDeleteConsumerGroup() http.HandlerFunc {
 
 		// 1. Check if logged in user is allowed to delete Consumer Group (always true for Console OSS, but not for
 		// Console Business)
-		canDelete, restErr := api.Hooks.Console.CanDeleteConsumerGroup(r.Context(), groupID)
+		canDelete, restErr := api.Hooks.Authorization.CanDeleteConsumerGroup(r.Context(), groupID)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

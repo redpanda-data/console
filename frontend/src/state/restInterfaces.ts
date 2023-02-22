@@ -1104,7 +1104,10 @@ export enum ConnectorState {
     Paused = 'PAUSED',
     Failed = 'FAILED',
 }
+
 export type TaskState = ConnectorState;
+
+export type ConnectorPossibleStatesLiteral = `${ConnectorState}`;
 
 export interface ClusterConnectorInfo {
     name: string;
@@ -1143,6 +1146,7 @@ export interface ClusterAdditionalInfo {
         type?: string;
         version?: string;
     }[];
+    enabledFeatures?: string[];
 }
 
 /*
@@ -1400,6 +1404,19 @@ export interface CreateUserRequest {
     username: string;
     password: string;
     mechanism: 'SCRAM-SHA-256' | 'SCRAM-SHA-512';
+}
+
+export interface CreateSecretRequest {
+    connectorName: string;
+    clusterName: string;
+    secretData: string;
+    labels: Record<string, string>
+}
+
+export interface CreateSecretResponse {
+    secretId: string,
+    labels: Record<string, string>
+
 }
 
 // GET api/cluster/overview

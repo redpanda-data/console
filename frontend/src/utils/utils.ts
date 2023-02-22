@@ -485,7 +485,7 @@ export function groupConsecutive(ar: number[]): number[][] {
     return groups;
 }
 
-export const prettyBytesOrNA = function (n: number) {
+export const prettyBytesOrNA = function(n: number) {
     if (!isFinite(n) || n < 0) return 'N/A';
     return prettyBytes(n);
 }
@@ -505,7 +505,7 @@ function isUInt64Maximum(str: string) {
     return false;
 }
 
-export const prettyBytes = function (n: number | string | null | undefined, options?: PrettyValueOptions) {
+export const prettyBytes = function(n: number | string | null | undefined, options?: PrettyValueOptions) {
     if (typeof n === 'undefined' || n === null)
         return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
 
@@ -532,10 +532,10 @@ export const prettyBytes = function (n: number | string | null | undefined, opti
     }
 
     // n is a finite number
-    return prettyBytesOriginal(n, {binary: true});
+    return prettyBytesOriginal(n, { binary: true });
 }
 
-export const prettyMilliseconds = function (n: number | string, options?: prettyMillisecondsOriginal.Options & PrettyValueOptions) {
+export const prettyMilliseconds = function(n: number | string, options?: prettyMillisecondsOriginal.Options & PrettyValueOptions) {
     if (typeof n === 'undefined' || n === null)
         return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
 
@@ -725,7 +725,7 @@ export function encodeBase64(rawData: string) {
     // first we use encodeURIComponent to get percent-encoded UTF-8,
     // then we convert the percent encodings into raw bytes which
     // can be fed into btoa.
-    return btoa(encodeURIComponent(rawData).replace(/%([0-9A-F]{2})/g, function (match, p1) {
+    return btoa(encodeURIComponent(rawData).replace(/%([0-9A-F]{2})/g, function(match, p1) {
         return String.fromCharCode(parseInt(p1, 16))
     }))
 }
@@ -752,4 +752,21 @@ export function setHeader(init: RequestInit, name: string, value: string) {
         // Record<string, string>
         (init.headers as Record<string, string>)[name] = value;
     }
+}
+
+// very simple retrier utility for allowing some retries, if we ended up using it more often we should consider making it more elaborate
+export function retrier<T>(operation: () => Promise<T>, { attempts = Infinity, delayTime = 100 }): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        return operation()
+            .then(resolve)
+            .catch((reason: unknown) => {
+                if (attempts > 0) {
+                    return delay(delayTime)
+                        .then(retrier.bind(null, operation, { attempts: attempts - 1, delayTime }))
+                        .then(resolve as any)
+                        .catch(reject);
+                }
+                reject(reason);
+            });
+    });
 }

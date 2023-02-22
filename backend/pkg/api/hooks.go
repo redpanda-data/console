@@ -11,20 +11,24 @@ package api
 
 import (
 	"context"
+	"math"
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 
+	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // Hooks are a way to extend the Console functionality from the outside. By default, all hooks have no
 // additional functionality. In order to run your own Hooks you must construct a Hooks instance and
 // run attach them to your own instance of Api.
 type Hooks struct {
-	Route   RouteHooks
-	Console ConsoleHooks
+	Route         RouteHooks
+	Authorization AuthorizationHooks
+	Console       ConsoleHooks
 }
 
 // RouteHooks allow you to modify the Router
@@ -43,9 +47,9 @@ type RouteHooks interface {
 	ConfigRouter(router chi.Router)
 }
 
-// ConsoleHooks include all functions which allow you to intercept the requests at various
+// AuthorizationHooks include all functions which allow you to intercept the requests at various
 // endpoints where RBAC rules may be applied.
-type ConsoleHooks interface {
+type AuthorizationHooks interface {
 	// Topic Hooks
 	CanSeeTopic(ctx context.Context, topicName string) (bool, *rest.Error)
 	CanCreateTopic(ctx context.Context, topicName string) (bool, *rest.Error)
@@ -90,15 +94,33 @@ type ConsoleHooks interface {
 	CanCreateKafkaUsers(ctx context.Context) (bool, *rest.Error)
 	CanDeleteKafkaUsers(ctx context.Context) (bool, *rest.Error)
 	IsProtectedKafkaUser(userName string) bool
+}
 
-	// Console hooks
-	//
+// ConsoleHooks are hooks for providing additional context to the Frontend where needed.
+// This could be information about what license is used, what enterprise features are
+// enabled etc.
+type ConsoleHooks interface {
+	// ConsoleLicenseInformation returns the license information for Console.
+	// Based on the returned license the frontend will display the
+	// appropriate UI and also warnings if the license is (about to be) expired.
+	ConsoleLicenseInformation(ctx context.Context) redpanda.License
 
 	// EnabledFeatures returns a list of string enums that indicate what features are enabled.
 	// Only toggleable features that require conditional rendering in the Frontend will be returned.
 	// The information will be baked into the index.html so that the Frontend knows about it
 	// at startup, which might be important to not block rendering (e.g. SSO enabled -> render login).
 	EnabledFeatures() []string
+
+	// EnabledConnectClusterFeatures returns a list of features that are supported on this
+	// particular Kafka connect cluster.
+	EnabledConnectClusterFeatures(ctx context.Context, clusterName string) []connect.ClusterFeature
+
+	// EndpointCompatibility returns information what endpoints are available to the frontend.
+	// This considers the active configuration (e.g. is secret store enabled), target cluster
+	// version and what features are supported by our upstream systems.
+	// The response of this hook will be merged into the response that was originally
+	// composed by Console.
+	EndpointCompatibility() []console.EndpointCompatibilityEndpoint
 }
 
 // defaultHooks is the default hook which is used if you don't attach your own hooks
@@ -107,8 +129,9 @@ type defaultHooks struct{}
 func newDefaultHooks() *Hooks {
 	d := &defaultHooks{}
 	return &Hooks{
-		Route:   d,
-		Console: d,
+		Authorization: d,
+		Route:         d,
+		Console:       d,
 	}
 }
 
@@ -118,7 +141,7 @@ func (*defaultHooks) ConfigWsRouter(_ chi.Router)       {}
 func (*defaultHooks) ConfigInternalRouter(_ chi.Router) {}
 func (*defaultHooks) ConfigRouter(_ chi.Router)         {}
 
-// Console Hooks
+// Authorization Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
 	return true, nil
 }
@@ -242,6 +265,19 @@ func (*defaultHooks) IsProtectedKafkaUser(_ string) bool {
 	return false
 }
 
+// Console hooks
+func (*defaultHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
+	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
+}
+
 func (*defaultHooks) EnabledFeatures() []string {
 	return []string{}
+}
+
+func (*defaultHooks) EndpointCompatibility() []console.EndpointCompatibilityEndpoint {
+	return nil
+}
+
+func (*defaultHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []connect.ClusterFeature {
+	return nil
 }

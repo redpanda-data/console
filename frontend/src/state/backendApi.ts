@@ -1,3 +1,4 @@
+
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -43,7 +44,9 @@ import {
     Topic, TopicConfigResponse, TopicConsumer, TopicDescription,
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
-    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest, PatchTopicConfigsRequest, ClusterOverview, BrokerWithConfigAndStorage, OverviewNewsEntry
+    DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
+    PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage, 
+    OverviewNewsEntry
 } from './restInterfaces';
 import { uiState } from './uiState';
 import { config as appConfig } from '../config';
@@ -1099,8 +1102,8 @@ const apiStore = {
     },
 
     // AdditionalInfo = list of plugins
-    refreshClusterAdditionalInfo(clusterName: string, force?: boolean): void {
-        cachedApiRequest<ClusterAdditionalInfo | null>(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}`, force)
+    refreshClusterAdditionalInfo(clusterName: string, force?: boolean): Promise<void> {
+        return cachedApiRequest<ClusterAdditionalInfo | null>(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}`, force)
             .then(v => {
                 if (!v) {
                     this.connectAdditionalClusterInfo.delete(clusterName);
@@ -1225,7 +1228,7 @@ const apiStore = {
 
     async updateConnector(clusterName: string, connector: string, config: object): Promise<void> {
         // PUT "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1237,7 +1240,7 @@ const apiStore = {
 
     async restartTask(clusterName: string, connector: string, taskID: number): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart"
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}/tasks/${String(taskID)}/restart`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/tasks/${String(taskID)}/restart`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1261,7 +1264,7 @@ const apiStore = {
 
     async createConnector(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors"
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1346,6 +1349,45 @@ const apiStore = {
 
         return parseOrUnwrap<void>(response, null);
     },
+
+    async createSecret(clusterName: string, connectorName: string, secretValue: string): Promise<CreateSecretResponse> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets`, {
+            method: 'POST',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify({
+                connectorName,
+                clusterName,
+                secretData: secretValue,
+                labels: {
+                    component: 'connectors'
+                }
+            }),
+        });
+        return parseOrUnwrap<any>(response, null);
+    },
+
+     async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<void> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`, {
+            method: 'PUT',
+            headers: [
+                ['Content-Type', 'application/json']
+            ],
+            body: JSON.stringify({
+                secretData: secretValue            }),
+        });
+        return parseOrUnwrap<any>(response, null);
+    },
+
+
+    async deleteSecret(clusterName: string, secretId: string): Promise<void> {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`, {
+            method: 'DELETE',
+        });
+        return parseOrUnwrap<void>(response, null);
+    },
+
 };
 
 function addFrontendFieldsForConnectCluster(cluster: ClusterConnectors) {

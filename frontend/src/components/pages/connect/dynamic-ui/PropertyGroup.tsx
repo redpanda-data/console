@@ -12,7 +12,7 @@
 /* eslint-disable no-useless-escape */
 import { Collapse } from 'antd';
 import { observer } from 'mobx-react';
-import { PropertyGroup } from './components';
+import { PropertyGroup } from '../../../../state/connect/state';
 import { PropertyComponent } from './PropertyComponent';
 
 export const PropertyGroupComponent = observer((props: { group: PropertyGroup, allGroups: PropertyGroup[], mode: 'simple' | 'advanced' }) => {
