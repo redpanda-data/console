@@ -1102,8 +1102,8 @@ const apiStore = {
     },
 
     // AdditionalInfo = list of plugins
-    refreshClusterAdditionalInfo(clusterName: string, force?: boolean): Promise<ClusterAdditionalInfo | void> {
-        return cachedApiRequest<ClusterAdditionalInfo | null>(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}`, force)
+    refreshClusterAdditionalInfo(clusterName: string, force?: boolean): Promise<void> {
+        return cachedApiRequest<ClusterAdditionalInfo | null>(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}`, force)
             .then(v => {
                 if (!v) {
                     this.connectAdditionalClusterInfo.delete(clusterName);
@@ -1111,7 +1111,6 @@ const apiStore = {
                 else {
                     this.connectAdditionalClusterInfo.set(clusterName, v);
                 }
-                return this.connectAdditionalClusterInfo.get(clusterName);
             }, addError);
     },
 
@@ -1382,7 +1381,7 @@ const apiStore = {
     },
 
 
-    async deleteSecret(clusterName: string, secretId: string): Promise<any> {
+    async deleteSecret(clusterName: string, secretId: string): Promise<void> {
         const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`, {
             method: 'DELETE',
         });
