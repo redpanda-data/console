@@ -45,7 +45,7 @@ import {
     TopicDocumentation, TopicDocumentationResponse, TopicMessage, TopicOffset,
     TopicPermissions, UserData, WrappedApiError, CreateACLRequest,
     DeleteACLsRequest, RedpandaLicense, AclResource, GetUsersResponse, CreateUserRequest,
-    PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage, 
+    PatchTopicConfigsRequest, CreateSecretResponse, ClusterOverview, BrokerWithConfigAndStorage,
     OverviewNewsEntry
 } from './restInterfaces';
 import { uiState } from './uiState';
@@ -777,7 +777,7 @@ const apiStore = {
     },
 
     refreshConsumerGroup(groupId: string, force?: boolean) {
-        cachedApiRequest<GetConsumerGroupResponse>(`${appConfig.restBasePath}/consumer-groups/${groupId}`, force)
+        cachedApiRequest<GetConsumerGroupResponse>(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, force)
             .then(v => {
                 addFrontendFieldsForConsumerGroup(v.consumerGroup);
                 this.consumerGroups.set(v.consumerGroup.groupId, v.consumerGroup);
@@ -1497,9 +1497,12 @@ function normalizeAcls(acls: AclResource[]) {
 }
 
 export function aclRequestToQuery(request: GetAclsRequest): string {
-    const filters = ObjToKv(request).filter(kv => !!kv.value);
-    const query = filters.map(x => `${x.key}=${x.value}`).join('&');
-    return query;
+    const filters = ObjToKv(request)
+        .filter(kv => !!kv.value)
+        .map(x => [x.key, x.value]);
+
+    const searchParams = new URLSearchParams(filters);
+    return searchParams.toString();
 }
 
 export async function partialTopicConfigs(configKeys: string[], topics?: string[]): Promise<PartialTopicConfigsResponse> {

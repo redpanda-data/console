@@ -51,7 +51,7 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     }
 
     initPage(p: PageInitHelper): void {
-        const group = this.props.groupId;
+        const group = decodeURIComponent(this.props.groupId);
 
         p.title = this.props.groupId;
         p.addBreadcrumb('Consumer Groups', '/groups');
@@ -62,8 +62,9 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     }
 
     refreshData(force: boolean) {
-        api.refreshConsumerGroup(this.props.groupId, force);
-        api.refreshConsumerGroupAcls(this.props.groupId, force);
+        const group = decodeURIComponent(this.props.groupId);
+        api.refreshConsumerGroup(group, force);
+        api.refreshConsumerGroupAcls(group, force);
     }
 
     renderPartitions(group: GroupDescription) {
@@ -208,7 +209,8 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
     }
 
     @computed get group() {
-        return api.consumerGroups.get(this.props.groupId);
+        const groupId = decodeURIComponent(this.props.groupId);
+        return api.consumerGroups.get(groupId);
     }
 
     @action editGroup() {
