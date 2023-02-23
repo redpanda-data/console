@@ -298,7 +298,7 @@ const KafkaConnectorMain = observer(
                     onOk={async (c) => {
                         connectClusterStore.getConnectorStore(c.connectorName);
                         await connectClusterStore.updateConnnector(c.connectorName);
-                        appGlobal.history.push(`/connect-clusters/${clusterName}`);
+                        appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}`);
                         await refreshData(true);
                     }}
                 />
@@ -339,7 +339,7 @@ const KafkaConnectorMain = observer(
                     )}
                     onOk={async (_connectorName) => {
                         await connectClusterStore.deleteConnector(connectorName);
-                        appGlobal.history.push(`/connect-clusters/${clusterName}`);
+                        appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}`);
                         await refreshData(true);
                     }}
                 />

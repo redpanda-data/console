@@ -326,7 +326,7 @@ class GroupByTopics extends Component<{
                         <Button
                             size="small"
                             style={{ marginLeft: 'auto' }}
-                            onClick={() => appGlobal.history.push('/topics/' + g.topicName)}
+                            onClick={() => appGlobal.history.push(`/topics/${encodeURIComponent(g.topicName)}`)}
                         >View Topic</Button>
                     </div>
                 }>
@@ -474,7 +474,7 @@ class GroupByMembers extends Component<{ group: GroupDescription, onlyShowPartit
                                 width: 130, title: 'Topic', dataIndex: 'topicName', sorter: sortField('topicName'),
                                 render: (_, record) => <div
                                     className="hoverLink"
-                                    onClick={() => appGlobal.history.push('/topics/' + record.topicName)}>
+                                    onClick={() => appGlobal.history.push(`/topics/${encodeURIComponent(record.topicName)}`)}>
                                     {record.topicName}
                                 </div>
                             },

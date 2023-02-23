@@ -177,10 +177,10 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                     onActiveClusterChange={(clusterName) => {
                         uiState.pageBreadcrumbs = [
                             { title: 'Connectors', linkTo: '/connect-clusters' },
-                            { title: clusterName!, linkTo: `/connect-clusters/${clusterName}` },
-                            { title: 'Create Connector', linkTo: `/connect-clusters/${clusterName}/create-connector` },
+                            { title: clusterName!, linkTo: `/connect-clusters/${encodeURIComponent(clusterName!)}` },
+                            { title: 'Create Connector', linkTo: `/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector` },
                         ];
-                        history.push(`/connect-clusters/${clusterName}/create-connector`);
+                        history.push(`/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector`);
                     }}
                     selectedPlugin={selectedPlugin}
                     onPluginSelectionChange={setSelectedPlugin}
@@ -307,7 +307,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                     }
 
                     if (isLast()) {
-                        return history.push(`/connect-clusters/${activeCluster}`);
+                        return history.push(`/connect-clusters/${encodeURIComponent(activeCluster)}`);
                     }
 
                     return currentStep < steps.length - 1 ? setCurrentStep((n) => n + 1) : undefined;

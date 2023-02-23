@@ -95,7 +95,7 @@ class TabClusters extends Component {
                         }
 
                         return <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                            onClick={() => appGlobal.history.push(`/connect-clusters/${r.clusterName}`)}>
+                            onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.clusterName)}`)}>
                             {r.clusterName}
                         </span>
                     },
@@ -149,7 +149,7 @@ class TabConnectors extends Component {
                     render: (_, r) => (
                         <Tooltip placement="topLeft" title={r.name} getPopupContainer={findPopupContainer}>
                             <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                                onClick={() => appGlobal.history.push(`/connect-clusters/${r.cluster.clusterName}/${r.name}`)}>
+                                onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.cluster.clusterName)}/${encodeURIComponent(r.name)}`)}>
                                 {r.name}
                             </span>
                         </Tooltip>
@@ -228,7 +228,7 @@ class TabTasks extends Component {
                     width: '35%',
                     sorter: sortField('connectorName'), defaultSortOrder: 'ascend',
                     render: (_, r) => (
-                        <span className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${r.cluster.clusterName}/${r.connectorName}`)}>
+                        <span className="hoverLink" onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(r.cluster.clusterName)}/${encodeURIComponent(r.connectorName)}`)}>
                             {r.connectorName}
                         </span>
                     )

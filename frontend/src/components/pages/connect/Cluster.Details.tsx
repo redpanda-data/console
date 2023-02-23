@@ -82,7 +82,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     width: '35%',
                                     render: (_, r) => (
                                         <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                                            onClick={() => appGlobal.history.push(`/connect-clusters/${clusterName}/${r.name}`)}>
+                                            onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(r.name)}`)}>
                                             {r.name}
                                         </span>
                                     ),
