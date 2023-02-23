@@ -301,7 +301,7 @@ const apiStore = {
                 }
             } : {})
         }
-        const url = `${appConfig.websocketBasePath}/topics/${searchRequest.topicName}/messages`;
+        const url = `${appConfig.websocketBasePath}/topics/${encodeURIComponent(searchRequest.topicName)}/messages`;
 
         console.debug('connecting to "' + url + '"');
 
@@ -439,7 +439,7 @@ const apiStore = {
     },
 
     async refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
-        const promise = cachedApiRequest<TopicConfigResponse | null>(`${appConfig.restBasePath}/topics/${topicName}/configuration`, force)
+        const promise = cachedApiRequest<TopicConfigResponse | null>(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`, force)
             .then(v => {
                 if (!v) {
                     this.topicConfig.delete(topicName);
@@ -476,7 +476,7 @@ const apiStore = {
     },
 
     refreshTopicDocumentation(topicName: string, force?: boolean) {
-        cachedApiRequest<TopicDocumentationResponse>(`${appConfig.restBasePath}/topics/${topicName}/documentation`, force)
+        cachedApiRequest<TopicDocumentationResponse>(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/documentation`, force)
             .then(v => {
                 const text = v.documentation.markdown == null ? null : decodeBase64(v.documentation.markdown);
                 v.documentation.text = text;
@@ -487,7 +487,7 @@ const apiStore = {
     refreshTopicPermissions(topicName: string, force?: boolean) {
         if (!AppFeatures.SINGLE_SIGN_ON) return; // without SSO there can't be a permissions endpoint
         if (this.userData?.user?.providerID == -1) return; // debug user
-        cachedApiRequest<TopicPermissions | null>(`${appConfig.restBasePath}/permissions/topics/${topicName}`, force)
+        cachedApiRequest<TopicPermissions | null>(`${appConfig.restBasePath}/permissions/topics/${encodeURIComponent(topicName)}`, force)
             .then(x => this.topicPermissions.set(topicName, x), addError);
     },
 
@@ -521,7 +521,7 @@ const apiStore = {
     },
 
     async deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName: string, pairs: Array<{ partitionId: number, offset: number; }>) {
-        return rest<DeleteRecordsResponseData>(`${appConfig.restBasePath}/topics/${topicName}/records`, {
+        return rest<DeleteRecordsResponseData>(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/records`, {
             method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
@@ -603,7 +603,7 @@ const apiStore = {
     },
 
     refreshPartitionsForTopic(topicName: string, force?: boolean) {
-        cachedApiRequest<GetPartitionsResponse | null>(`${appConfig.restBasePath}/topics/${topicName}/partitions`, force)
+        cachedApiRequest<GetPartitionsResponse | null>(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/partitions`, force)
             .then(response => {
                 if (response?.partitions) {
                     const partitionErrors: Array<{ id: number, partitionError: string; }> = [], waterMarksErrors: Array<{ id: number, waterMarksError: string; }> = [];
@@ -680,7 +680,7 @@ const apiStore = {
     },
 
     refreshTopicConsumers(topicName: string, force?: boolean) {
-        cachedApiRequest<GetTopicConsumersResponse>(`${appConfig.restBasePath}/topics/${topicName}/consumers`, force)
+        cachedApiRequest<GetTopicConsumersResponse>(`${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/consumers`, force)
             .then(v => this.topicConsumers.set(topicName, v.topicConsumers), addError);
     },
 
@@ -1088,7 +1088,7 @@ const apiStore = {
     // PATCH /topics/configuration               // default config
     async changeTopicConfig(topicName: string | null, configs: PatchTopicConfigsRequest['configs']): Promise<void> {
         const url = topicName
-            ? `${appConfig.restBasePath}/topics/${topicName}/configuration`
+            ? `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`
             : `${appConfig.restBasePath}/topics/configuration`;
 
         const response = await appConfig.fetch(url, {
@@ -1184,7 +1184,7 @@ const apiStore = {
 
     async deleteConnector(clusterName: string, connector: string): Promise<void> {
         // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}`, {
             method: 'DELETE',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1195,7 +1195,7 @@ const apiStore = {
 
     async pauseConnector(clusterName: string, connector: string): Promise<void> {
         // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}/pause`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/pause`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1206,7 +1206,7 @@ const apiStore = {
 
     async resumeConnector(clusterName: string, connector: string): Promise<void> {
         // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}/resume`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/resume`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1217,7 +1217,7 @@ const apiStore = {
 
     async restartConnector(clusterName: string, connector: string): Promise<void> {
         // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${clusterName}/connectors/${connector}/restart`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/restart`, {
             method: 'POST',
             headers: [
                 ['Content-Type', 'application/json']
@@ -1343,7 +1343,7 @@ const apiStore = {
     },
 
     async deleteServiceAccount(principalId: string): Promise<void> {
-        const response = await appConfig.fetch(`${appConfig.restBasePath}/users/${principalId}`, {
+        const response = await appConfig.fetch(`${appConfig.restBasePath}/users/${encodeURIComponent(principalId)}`, {
             method: 'DELETE',
         });
 
