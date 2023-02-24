@@ -234,7 +234,7 @@ class TopicList extends PageComponent {
                         observableSettings={uiSettings.topicList}
                         onRow={(record) => ({
                             onClick: () =>
-                                appGlobal.history.push('/topics/' + record.topicName),
+                                appGlobal.history.push(`/topics/${encodeURIComponent(record.topicName)}`),
                         })}
                         rowClassName="hoverLink"
                     />

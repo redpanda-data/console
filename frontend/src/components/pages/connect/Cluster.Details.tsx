@@ -37,7 +37,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     }
 
     initPage(p: PageInitHelper): void {
-        const clusterName = this.props.clusterName;
+        const clusterName = decodeURIComponent(this.props.clusterName);
         p.title = clusterName;
         p.addBreadcrumb('Connectors', '/connect-clusters');
         p.addBreadcrumb(clusterName, `/connect-clusters/${clusterName}`);
@@ -48,11 +48,13 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
 
     refreshData(force: boolean) {
         api.refreshConnectClusters(force);
-        api.refreshClusterAdditionalInfo(this.props.clusterName, force);
+
+        const clusterName = decodeURIComponent(this.props.clusterName);
+        api.refreshClusterAdditionalInfo(clusterName, force);
     }
 
     render() {
-        const clusterName = this.props.clusterName;
+        const clusterName = decodeURIComponent(this.props.clusterName);
 
         if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
 
@@ -82,7 +84,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
                                     width: '35%',
                                     render: (_, r) => (
                                         <span className="hoverLink" style={{ display: 'inline-block', width: '100%' }}
-                                            onClick={() => appGlobal.history.push(`/connect-clusters/${clusterName}/${r.name}`)}>
+                                            onClick={() => appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(r.name)}`)}>
                                             {r.name}
                                         </span>
                                     ),

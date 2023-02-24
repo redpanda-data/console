@@ -42,7 +42,7 @@ export class TopicConsumers extends Component<{ topic: Topic }> {
                     showSorterTooltip={false}
                     onRow={(record) =>
                     ({
-                        onClick: () => appGlobal.history.push('/groups/' + record.groupId),
+                        onClick: () => appGlobal.history.push(`/groups/${encodeURIComponent(record.groupId)}`),
                     })}
                     pagination={this.pageConfig}
                     onChange={(pagination) => {

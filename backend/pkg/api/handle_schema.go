@@ -16,7 +16,6 @@ import (
 	"net/url"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi/v5"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 )
@@ -61,11 +60,11 @@ func (api *API) handleGetSchemaDetails() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		subject := chi.URLParam(r, "subject")
+		subject := rest.GetURLParam(r, "subject")
 		if subjectUnescaped, err := url.PathUnescape(subject); err == nil {
 			subject = subjectUnescaped
 		}
-		version := chi.URLParam(r, "version")
+		version := rest.GetURLParam(r, "version")
 		schemaDetails, err := api.ConsoleSvc.GetSchemaDetails(r.Context(), subject, version)
 		if err != nil {
 			if errors.Is(err, console.ErrSchemaRegistryNotConfigured) {

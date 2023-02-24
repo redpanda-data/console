@@ -175,7 +175,7 @@ class GroupList extends PageComponent {
                     rowClassName="hoverLink"
                     onRow={(record) => ({
                       onClick: () =>
-                        appGlobal.history.push('/groups/' + record.groupId),
+                        appGlobal.history.push(`/groups/${encodeURIComponent(record.groupId)}`),
                     })}
                   />
                 </Section>

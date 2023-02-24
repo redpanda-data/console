@@ -88,11 +88,11 @@ const ConnectorType = observer(
 @observer
 class CreateConnector extends PageComponent<{ clusterName: string }> {
     initPage(p: PageInitHelper) {
-        const clusterName = this.props.clusterName;
+        const clusterName = decodeURIComponent(this.props.clusterName);
         p.title = 'Create Connector';
         p.addBreadcrumb('Connectors', '/connect-clusters');
-        p.addBreadcrumb(clusterName, `/connect-clusters/${clusterName}`);
-        p.addBreadcrumb('Create Connector', `/connect-clusters/${clusterName}/create-connector`);
+        p.addBreadcrumb(clusterName, `/connect-clusters/${encodeURIComponent(clusterName)}`);
+        p.addBreadcrumb('Create Connector', `/connect-clusters/${encodeURIComponent(clusterName)}/create-connector`);
 
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
@@ -105,12 +105,13 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
     render() {
         const clusters = api.connectConnectors?.clusters;
         if (clusters == null) return null;
+        const clusterName = decodeURIComponent(this.props.clusterName);
 
         return (
             <PageContent>
                 <Section>
                     <div className={styles.wizardView}>
-                        <ConnectorWizard connectClusters={clusters} activeCluster={this.props.clusterName} />
+                        <ConnectorWizard connectClusters={clusters} activeCluster={clusterName} />
                     </div>
                 </Section>
             </PageContent>
@@ -177,10 +178,10 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                     onActiveClusterChange={(clusterName) => {
                         uiState.pageBreadcrumbs = [
                             { title: 'Connectors', linkTo: '/connect-clusters' },
-                            { title: clusterName!, linkTo: `/connect-clusters/${clusterName}` },
-                            { title: 'Create Connector', linkTo: `/connect-clusters/${clusterName}/create-connector` },
+                            { title: clusterName!, linkTo: `/connect-clusters/${encodeURIComponent(clusterName!)}` },
+                            { title: 'Create Connector', linkTo: `/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector` },
                         ];
-                        history.push(`/connect-clusters/${clusterName}/create-connector`);
+                        history.push(`/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector`);
                     }}
                     selectedPlugin={selectedPlugin}
                     onPluginSelectionChange={setSelectedPlugin}
@@ -307,7 +308,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                     }
 
                     if (isLast()) {
-                        return history.push(`/connect-clusters/${activeCluster}`);
+                        return history.push(`/connect-clusters/${encodeURIComponent(activeCluster)}`);
                     }
 
                     return currentStep < steps.length - 1 ? setCurrentStep((n) => n + 1) : undefined;

@@ -1,5 +1,9 @@
 # Changelog
 
+## Master
+
+- [BUGFIX] Escape all URL & query parameters. Consumer groups or Kafka connectors with special characters will no longer fail in Console
+
 ## v2.2.0 / 2023-02-17
 
 - [FEATURE] Editing topic configurations

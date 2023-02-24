@@ -298,7 +298,7 @@ const KafkaConnectorMain = observer(
                     onOk={async (c) => {
                         connectClusterStore.getConnectorStore(c.connectorName);
                         await connectClusterStore.updateConnnector(c.connectorName);
-                        appGlobal.history.push(`/connect-clusters/${clusterName}`);
+                        appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}`);
                         await refreshData(true);
                     }}
                 />
@@ -339,7 +339,7 @@ const KafkaConnectorMain = observer(
                     )}
                     onOk={async (_connectorName) => {
                         await connectClusterStore.deleteConnector(connectorName);
-                        appGlobal.history.push(`/connect-clusters/${clusterName}`);
+                        appGlobal.history.push(`/connect-clusters/${encodeURIComponent(clusterName)}`);
                         await refreshData(true);
                     }}
                 />
@@ -351,12 +351,12 @@ const KafkaConnectorMain = observer(
 @observer
 class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connector: string }> {
     initPage(p: PageInitHelper): void {
-        const clusterName = this.props.clusterName;
-        const connector = this.props.connector;
+        const clusterName = decodeURIComponent(this.props.clusterName);
+        const connector = decodeURIComponent(this.props.connector);
         p.title = connector;
         p.addBreadcrumb('Connectors', '/connect-clusters');
-        p.addBreadcrumb(clusterName, `/connect-clusters/${clusterName}`);
-        p.addBreadcrumb(connector, `/connect-clusters/${clusterName}/${connector}`);
+        p.addBreadcrumb(clusterName, `/connect-clusters/${encodeURIComponent(clusterName)}`);
+        p.addBreadcrumb(connector, `/connect-clusters/${encodeURIComponent(clusterName)}/${encodeURIComponent(connector)}`);
         this.refreshData(false);
         appGlobal.onRefresh = () => this.refreshData(true);
     }
@@ -366,8 +366,8 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     }
 
     render() {
-        const clusterName = this.props.clusterName;
-        const connectorName = this.props.connector;
+        const clusterName = decodeURIComponent(this.props.clusterName);
+        const connectorName = decodeURIComponent(this.props.connector);
 
         if (api.connectConnectors?.isConfigured === false) return <NotConfigured />;
 
