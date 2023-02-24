@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi/v5"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -78,7 +77,7 @@ func (api *API) handleGetPartitions() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		topicName := chi.URLParam(r, "topicName")
+		topicName := rest.GetURLParam(r, "topicName")
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
@@ -130,7 +129,7 @@ func (api *API) handleGetTopicConfig() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		topicName := chi.URLParam(r, "topicName")
+		topicName := rest.GetURLParam(r, "topicName")
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
@@ -169,7 +168,7 @@ func (api *API) handleDeleteTopic() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		topicName := chi.URLParam(r, "topicName")
+		topicName := rest.GetURLParam(r, "topicName")
 
 		// Check if logged in user is allowed to view partitions for the given topic
 		canDelete, restErr := api.Hooks.Authorization.CanDeleteTopic(r.Context(), topicName)
@@ -230,7 +229,7 @@ func (d *deleteTopicRecordsRequest) OK() error {
 
 func (api *API) handleDeleteTopicRecords() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		topicName := chi.URLParam(r, "topicName")
+		topicName := rest.GetURLParam(r, "topicName")
 
 		// 1. Parse and validate request
 		var req deleteTopicRecordsRequest
@@ -320,7 +319,7 @@ func (e *editTopicConfigRequest) OK() error {
 func (api *API) handleEditTopicConfig() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse and validate request
-		topicName := chi.URLParam(r, "topicName")
+		topicName := rest.GetURLParam(r, "topicName")
 		if topicName == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:      fmt.Errorf("topic name must be set"),
@@ -390,13 +389,13 @@ func (api *API) handleGetTopicsConfigs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse optional filters. If no filter is set they will be treated as wildcards
 		var topicNames []string
-		requestedTopicNames := r.URL.Query().Get("topicNames")
+		requestedTopicNames := rest.GetQueryParam(r, "topicNames")
 		if requestedTopicNames != "" {
 			topicNames = strings.Split(requestedTopicNames, ",")
 		}
 
 		var configKeys []string
-		requestedConfigKeys := r.URL.Query().Get("configKeys")
+		requestedConfigKeys := rest.GetQueryParam(r, "configKeys")
 		if requestedConfigKeys != "" {
 			configKeys = strings.Split(requestedConfigKeys, ",")
 		}
@@ -470,7 +469,7 @@ func (api *API) handleGetTopicConsumers() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		topicName := chi.URLParam(r, "topicName")
+		topicName := rest.GetURLParam(r, "topicName")
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		// Check if logged in user is allowed to view partitions for the given topic
@@ -517,7 +516,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse topic names and timestamp from URL. It's a list of topic names that is comma separated
-		requestedTopicNames := r.URL.Query().Get("topicNames")
+		requestedTopicNames := rest.GetQueryParam(r, "topicNames")
 		if requestedTopicNames == "" {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("required parameter topicNames is missing"),
@@ -530,7 +529,7 @@ func (api *API) handleGetTopicsOffsets() http.HandlerFunc {
 		}
 		topicNames := strings.Split(requestedTopicNames, ",")
 
-		timestampStr := r.URL.Query().Get("timestamp")
+		timestampStr := rest.GetQueryParam(r, "timestamp")
 		if timestampStr == "" {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("required parameter timestamp is missing"),

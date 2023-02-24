@@ -13,7 +13,6 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
@@ -27,7 +26,7 @@ func (api *API) handleGetTopicDocumentation() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		topicName := chi.URLParam(r, "topicName")
+		topicName := rest.GetURLParam(r, "topicName")
 		logger := api.Logger.With(zap.String("topic_name", topicName))
 
 		doc := api.ConsoleSvc.GetTopicDocumentation(topicName)

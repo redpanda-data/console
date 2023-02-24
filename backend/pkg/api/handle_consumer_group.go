@@ -14,7 +14,6 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi/v5"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -67,7 +66,7 @@ func (api *API) handleGetConsumerGroup() http.HandlerFunc {
 		ConsumerGroup console.ConsumerGroupOverview `json:"consumerGroup"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		groupID := chi.URLParam(r, "groupId")
+		groupID := rest.GetURLParam(r, "groupId")
 
 		canSee, restErr := api.Hooks.Authorization.CanSeeConsumerGroup(r.Context(), groupID)
 		if restErr != nil {
@@ -283,7 +282,7 @@ func (api *API) handleDeleteConsumerGroupOffsets() http.HandlerFunc {
 
 func (api *API) handleDeleteConsumerGroup() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		groupID := chi.URLParam(r, "groupId")
+		groupID := rest.GetURLParam(r, "groupId")
 
 		// 1. Check if logged in user is allowed to delete Consumer Group (always true for Console OSS, but not for
 		// Console Business)

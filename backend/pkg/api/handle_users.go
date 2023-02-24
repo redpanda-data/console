@@ -14,7 +14,6 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi/v5"
 	"github.com/redpanda-data/redpanda/src/go/rpk/pkg/api/admin"
 )
 
@@ -164,7 +163,7 @@ func (api *API) handleCreateUser() http.HandlerFunc {
 
 func (api *API) handleDeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		principalID := chi.URLParam(r, "principalID")
+		principalID := rest.GetURLParam(r, "principalID")
 		if principalID == "" {
 			rest.SendRESTError(w, r, api.Logger, &rest.Error{
 				Err:     fmt.Errorf("user must be set"),

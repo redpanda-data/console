@@ -27,7 +27,7 @@ func (api *API) handleGetAllTopicDetails() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		var topicNames []string
-		requestedTopicNames := r.URL.Query().Get("topicNames")
+		requestedTopicNames := rest.GetQueryParam(r, "topicNames")
 		if requestedTopicNames != "" {
 			topicNames = strings.Split(requestedTopicNames, ",")
 		}

@@ -15,7 +15,6 @@ import (
 	"strconv"
 
 	"github.com/cloudhut/common/rest"
-	"github.com/go-chi/chi/v5"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 )
@@ -45,7 +44,7 @@ func (api *API) handleBrokerConfig() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Parse broker ID parameter and validate input
-		brokerIDStr := chi.URLParam(r, "brokerID")
+		brokerIDStr := rest.GetURLParam(r, "brokerID")
 		if brokerIDStr == "" || len(brokerIDStr) > 10 {
 			restErr := &rest.Error{
 				Err:      fmt.Errorf("broker id in URL not set"),
