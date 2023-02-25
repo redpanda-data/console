@@ -7,7 +7,7 @@
         "resources details"
         ".         details"
     ;
-    grid-template-columns: fit-content(60%) 1fr;
+    grid-template-columns: auto;
     grid-template-rows: auto auto 1fr;
     align-items: start;
 
@@ -21,8 +21,20 @@
         text-transform: uppercase;
         color: hsl(0deg 0% 20%);
     }
-
 }
+
+@media (max-width: 1200px) {
+    .overviewGrid {
+        grid-template-areas:
+            "health"
+            "broker"
+            "details"
+            "resources"
+        ;
+        grid-template-columns: auto;
+    }
+}
+
 
 .ant-statistic {
     display: flex;

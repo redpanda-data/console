@@ -110,7 +110,7 @@ class Overview extends PageComponent {
         if (this.hasRack)
             columns.splice(3, 0, { width: '100px', title: 'Rack', render: (_, r) => r.rack });
 
-        const version = overview.redpanda.version ?? overview.kafka.version;
+        const version = overview.redpanda.version || overview.kafka.version;
         const news = api.news?.filter(e => {
             const distribution = overview.kafka.distribution;
             if (e.intendedAudience == 'all' || !distribution) return true;
