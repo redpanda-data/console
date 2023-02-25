@@ -41,7 +41,7 @@
         "react-beautiful-dnd": "^13.1.0",
         "react-dom": "^18.2.0",
         "react-draggable": "^4.4.3",
-        "react-highlight-words": "^0.18.0",
+        "react-highlight-words": "^0.20.0",
         "react-markdown": "^8.0.3",
         "react-router-dom": "^5.2.0",
         "react-scripts": "^5.0.1",
