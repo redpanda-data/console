@@ -37,7 +37,7 @@ type Overview struct {
 type OverviewRedpanda struct {
 	IsAdminAPIConfigured    bool                           `json:"isAdminApiConfigured"`
 	License                 *redpanda.License              `json:"license,omitempty"`
-	Version                 string                         `json:"version"`
+	Version                 string                         `json:"version,omitempty"`
 	UserCount               *int                           `json:"userCount,omitempty"`
 	PartitionBalancerStatus *admin.PartitionBalancerStatus `json:"partitionBalancerStatus,omitempty"`
 }
