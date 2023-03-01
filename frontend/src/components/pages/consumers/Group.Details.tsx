@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component } from 'react';
+import React, { Component } from 'react';
 import { Table, Row, Statistic, Tag, Collapse, Tooltip, Popover, Empty } from 'antd';
 import { observer } from 'mobx-react';
 
@@ -126,7 +126,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         if (!group) return DefaultSkeleton;
 
         // Get info about each topic
-        // const requiredTopics = group.members.flatMap((m) => m.assignments.map((a) => a.topicName)).distinct();
         const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds.length);
 
         return (
@@ -146,11 +145,12 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                                     title="State"
                                     valueRender={() => <GroupState group={group} />}
                                 />
-                                <ProtocolType group={group} />
                                 <Statistic
                                     title="Assigned Partitions"
                                     value={totalPartitions}
                                 />
+                                <ProtocolType group={group} />
+                                <Statistic title="Protocol Type" value={group.protocolType} />
                                 <Statistic
                                     title="Coordinator ID"
                                     value={group.coordinatorId}
