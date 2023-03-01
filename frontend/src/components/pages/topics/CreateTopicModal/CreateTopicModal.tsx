@@ -480,9 +480,6 @@ const durationFactors = {
         if (!this.props.allowInfinite)
             selectOptions.removeAll(x => x.value == 'infinite');
 
-
-        console.log('unit select: ', { unitValue, unit, baseValue: this.props.baseValue, unitFactors })
-
         return <NumInput
             className={this.props.className}
             value={numDisabled ? undefined : unitValue}
