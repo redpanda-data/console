@@ -14,8 +14,6 @@ import { Row, Statistic } from 'antd';
 import { observer } from 'mobx-react';
 import { api } from '../../../state/backendApi';
 import '../../../utils/arrayExtensions';
-import { uiState } from '../../../state/uiState';
-import { FavoritePopover } from './Tab.Config';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
 
@@ -42,19 +40,30 @@ export const TopicQuickInfoStatistic = observer((p: { topic: Topic }) => {
     statsAr.push(<Statistic key="msgs" title="Messages" value={messageSum} />);
 
     // Config Entries / Seperator
-    const configEntries = filterTopicConfig(api.topicConfig.get(topic.topicName)?.configEntries);
-    if (configEntries) {
-        const configStats = uiState.topicSettings.favConfigEntries
-            .map(favName => configEntries!.find(e => e.name === favName))
+    const configEntries = api.topicConfig.get(topic.topicName)?.configEntries;
+    const filteredConfigEntries = filterTopicConfig(configEntries);
+    const cleanupPolicy = configEntries?.find(x => x.name == 'cleanup.policy')?.value;
+    if (configEntries && filteredConfigEntries && cleanupPolicy) {
+        const dynamicEntries = ['cleanup.policy'];
+
+        if (cleanupPolicy.includes('delete')) {
+            dynamicEntries.push('retention.ms');
+            dynamicEntries.push('retention.bytes');
+        }
+        if (cleanupPolicy.includes('compact')) {
+            dynamicEntries.push('segment.ms');
+            dynamicEntries.push('segment.bytes');
+        }
+
+        const configStats = dynamicEntries
+            .map(favName => filteredConfigEntries!.find(e => e.name === favName))
             .filter(e => e != null)
-            .map((configEntry, i) =>
-                <FavoritePopover configEntry={configEntry!} key={configEntry?.name ?? i}>
-                    <Statistic
-                        key={(configEntry!.name)}
-                        title={(configEntry!.name)}
-                        value={formatConfigValue(configEntry!.name, configEntry?.value, 'friendly')}
-                    />
-                </FavoritePopover>
+            .map((configEntry) =>
+                <Statistic
+                    key={(configEntry!.name)}
+                    title={(configEntry!.name)}
+                    value={formatConfigValue(configEntry!.name, configEntry?.value, 'friendly')}
+                />
             );
 
         if (configStats.length > 0)

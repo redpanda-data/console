@@ -126,7 +126,6 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
         if (!group) return DefaultSkeleton;
 
         // Get info about each topic
-        const requiredTopics = group.members.flatMap((m) => m.assignments.map((a) => a.topicName)).distinct();
         const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds.length);
 
         return (
@@ -146,18 +145,12 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                                     title="State"
                                     valueRender={() => <GroupState group={group} />}
                                 />
-                                <ProtocolType group={group} />
-                                <Statistic title="Members" value={group.members.length} />
-                                <Statistic
-                                    title="Assigned Topics"
-                                    value={requiredTopics.length}
-                                />
                                 <Statistic
                                     title="Assigned Partitions"
                                     value={totalPartitions}
                                 />
+                                <ProtocolType group={group} />
                                 <Statistic title="Protocol Type" value={group.protocolType} />
-                                <Statistic title="Protocol" value={group.protocol} />
                                 <Statistic
                                     title="Coordinator ID"
                                     value={group.coordinatorId}

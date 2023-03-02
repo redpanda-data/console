@@ -9,22 +9,19 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { Component } from 'react';
-import { KafkaError, ConfigEntry, Topic, ConfigEntryExtended } from '../../../state/restInterfaces';
-import { Tooltip, Popover, Checkbox, Empty, Typography, Button, Result } from 'antd';
+import { Component } from 'react';
+import { KafkaError, Topic, ConfigEntryExtended } from '../../../state/restInterfaces';
+import { Tooltip, Empty, Typography, Button, Result } from 'antd';
 import { observer } from 'mobx-react';
 import { uiSettings } from '../../../state/ui';
-import Paragraph from 'antd/lib/typography/Paragraph';
 import '../../../utils/arrayExtensions';
 import { HighlightTwoTone } from '@ant-design/icons';
-import { uiState } from '../../../state/uiState';
-import { DefaultSkeleton, findPopupContainer, OptionGroup } from '../../../utils/tsxUtils';
+import { DefaultSkeleton, findPopupContainer } from '../../../utils/tsxUtils';
 import { api } from '../../../state/backendApi';
 import { toJson } from '../../../utils/jsonUtils';
 import { appGlobal } from '../../../state/appGlobal';
 import { computed, makeObservable } from 'mobx';
 import { formatConfigValue } from '../../../utils/formatters/ConfigValueFormatter';
-import { ConfigList } from '../../misc/ConfigList';
 import colors from '../../../colors';
 import TopicConfigurationEditor from './TopicConfiguration';
 
@@ -54,22 +51,13 @@ export class TopicConfiguration extends Component<{
 
         return (
             <>
-                <ConfigDisplayModeSettings />
-                {(uiSettings.topicList.configViewType == 'table')
-                    ? <>
-                        <ConfigDisplaySettings />
-                        <TopicConfigList configEntries={this.configEntries} />
-                    </>
-                    : <>
-                        <TopicConfigurationEditor
-                            targetTopic={this.props.topic.topicName}
-                            entries={entries}
-                            onForceRefresh={() => {
-                                api.refreshTopicConfig(this.props.topic.topicName, true);
-                            }}
-                        />
-                    </>
-                }
+                <TopicConfigurationEditor
+                    targetTopic={this.props.topic.topicName}
+                    entries={entries}
+                    onForceRefresh={() => {
+                        api.refreshTopicConfig(this.props.topic.topicName, true);
+                    }}
+                />
             </>
         );
     }
@@ -144,111 +132,7 @@ export class TopicConfiguration extends Component<{
 }
 
 
-
-const TopicConfigList = observer(({ configEntries }: { configEntries: ConfigEntry[] }) => {
-    return <ConfigList
-        configEntries={configEntries}
-        valueDisplay={uiSettings.topicList.valueDisplay}
-        renderTooltip={(e, content) => <FavoritePopover configEntry={e} children={content} />}
-    />
-});
-
-const ConfigDisplayModeSettings = observer(() => (
-    <div
-        style={{
-            marginTop: '16px',
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'flex-end',
-            gap: '2em',
-            rowGap: '1em',
-            float: 'right',
-        }}
-    >
-        <OptionGroup
-            options={{
-                'Structured View': 'structured',
-                'Table View': 'table',
-            }}
-            value={uiSettings.topicList.configViewType}
-            onChange={e => (uiSettings.topicList.configViewType = e)}
-        />
-    </div>
-));
-
-const ConfigDisplaySettings = observer(() => (
-    <div
-        style={{
-            marginLeft: '1px',
-            marginBottom: '1.5em',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '2em',
-            rowGap: '1em',
-        }}
-    >
-        <OptionGroup
-            label="Formatting"
-            options={{
-                Friendly: 'friendly',
-                Raw: 'raw',
-            }}
-            value={uiSettings.topicList.valueDisplay}
-            onChange={(s) => (uiSettings.topicList.valueDisplay = s)}
-        />
-
-        <OptionGroup
-            label="Sort"
-            options={{
-                None: 'default',
-                Alphabetical: 'alphabetical',
-                'Changed First': 'changedFirst',
-            }}
-            value={uiSettings.topicList.propsOrder}
-            onChange={(s) => (uiSettings.topicList.propsOrder = s)}
-        />
-    </div>
-));
-
 const markerIcon = <HighlightTwoTone twoToneColor={colors.brandOrange} style={{ fontSize: '1.5em', marginRight: '.25em' }} />;
-
-export const FavoritePopover = observer((p: { configEntry: ConfigEntry, children: React.ReactNode }) => {
-    const { configEntry, children } = p;
-    const name = configEntry.name;
-    const favs = uiState.topicSettings.favConfigEntries;
-    const isFav = favs.includes(name);
-    const toggleFav = isFav ? () => favs.splice(favs.indexOf(name), 1) : () => favs.push(name);
-
-    const docu = p.configEntry.documentation;
-
-    const popupContent = (
-        <div>
-            <Paragraph style={{ maxWidth: '400px' }}>
-                {docu
-                    ? <div className="configPropDescription">{docu}</div>
-                    : <div className="configPropDescription unknownConfigProp">No description available, unknown property</div>
-                }
-            </Paragraph>
-
-            <Checkbox children="Show this setting in 'Quick Info'" checked={isFav} onChange={() => toggleFav()} />
-        </div>
-    );
-
-    return (
-        <Popover
-            key={configEntry.name}
-            placement="right"
-            trigger="click"
-            title={<code>{name}</code>}
-            content={popupContent}
-        >
-            <div className="hoverLink" style={{ display: 'flex', verticalAlign: 'middle', cursor: 'pointer' }}>
-                {children}
-                {/* <div style={{ flexGrow: 1 }} /> */}
-            </div>
-        </Popover>
-    );
-});
 
 export function DataValue(name: string, value: string, isDefault: boolean, formatType: 'friendly' | 'raw' | 'both') {
     value = formatConfigValue(name, value, formatType);
