@@ -2,6 +2,7 @@
 
 ## v2.2.1 / 2023-03-03
 
+- [ENHACEMENT] Build with Go v1.20
 - [BUGFIX] Show guessed Kafka version on new overview page
 - [BUGFIX] Reduce number of properties shown in stats bar topics & consumer groups page to minimize required browser width
 - [BUGFIX] Escape all URL & query parameters. Consumer groups or Kafka connectors with special characters will no longer fail in Console
