@@ -1143,7 +1143,7 @@ export interface ClusterAdditionalInfo {
     clusterVersion: string;
     plugins: {
         class: string;
-        type?: string;
+        type: 'sink' | 'source';
         version?: string;
     }[];
     enabledFeatures?: string[];

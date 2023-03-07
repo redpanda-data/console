@@ -53,6 +53,8 @@ interface ConnectorMetadata {
 
     readonly logo?: JSX.Element,         // img element for the connector
     readonly friendlyName?: string;      // override display name (instead of just 'className without namespace')
+    readonly description?: string;
+    readonly learnMoreLink?: string;
     readonly author?: string;
 }
 
@@ -150,7 +152,10 @@ const connectorMetadata: ConnectorMetadata[] = [
     {
         classNamePrefix: 'com.redpanda.kafka.connect.gcs.',
         logo: <img src={GoogleCloudStorageLogo} alt="Google Cloud Storage logo" className="connectorLogo" />,
-        author: 'Redpanda'
+        author: 'Redpanda',
+        friendlyName: 'Google Cloud Storage',
+        description: 'Example description that could be as long as three lines, but then it keeps going until more text bla bla',
+        learnMoreLink: 'https://www.google.com',
     } as const,
 
     // Stream Reactor / Lenses
