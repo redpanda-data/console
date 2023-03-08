@@ -19,24 +19,28 @@ import (
 // configuration options into steps & sections. All configurations that are not explicitly
 // listed in the wizard steps will be excluded.
 type WizardGuide struct {
-	// ClassName is the connector class/plugin name. This must match what we retrieve from
+	// className is the connector class/plugin name. This must match what we retrieve from
 	// the Kafka connect cluster, so that this guide is applied.
-	ClassName string
+	className string
 
-	// Options can be used to apply modifications for an existing guide when instantiating the guide.
-	Options Options
+	// options can be used to apply modifications for an existing guide when instantiating the guide.
+	options Options
 
-	// WizardSteps define the setup wizard steps and what config keys should go into each step.
+	// wizardSteps define the setup wizard steps and what config keys should go into each step.
 	// Connector config keys that are not listed in any of the steps are ignored and will not
 	// be sent to the frontend at all. If there's only one wizard step, no wizard will be rendered.
 	// Steps are presented in their order.
-	WizardSteps []model.ValidationResponseStep
+	wizardSteps []model.ValidationResponseStep
+}
+
+func (g *WizardGuide) ClassName() string {
+	return g.className
 }
 
 // ConsoleToKafkaConnect implements Guide.ConsoleToKafkaConnect. It injects additional
 // configuration key/val pairs as configured via the Options.
 func (g *WizardGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]any {
-	for _, injectedVal := range g.Options.injectedValues {
+	for _, injectedVal := range g.options.injectedValues {
 		if injectedVal.IsAuthoritative {
 			// We are allowed to override existing user configs
 			configs[injectedVal.Key] = injectedVal.Value
@@ -54,8 +58,8 @@ func (g *WizardGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]a
 
 // KafkaConnectToConsole implements Guide.KafkaConnectToConsole. It will compute the
 // metadata that specifies group hierarchy, ordering, additional documentation etc. based
-// on the WizardSteps and return it. All config keys that are not explicitly listed in
-// WizardSteps will be removed from the response.
+// on the wizardSteps and return it. All config keys that are not explicitly listed in
+// wizardSteps will be removed from the response.
 func (g *WizardGuide) KafkaConnectToConsole(response connect.ConnectorValidationResult) model.ValidationResponse {
 	// 1. Extract all configs from the response and index them by their config key
 	configsByKey := make(map[string]model.ConfigDefinition)
@@ -66,7 +70,7 @@ func (g *WizardGuide) KafkaConnectToConsole(response connect.ConnectorValidation
 
 	// 2. Iterate wizard steps & groups to find & extract config definitions we want to show
 	configs := make([]model.ConfigDefinition, 0, len(configsByKey))
-	for _, step := range g.WizardSteps {
+	for _, step := range g.wizardSteps {
 		for _, group := range step.Groups {
 			for _, key := range group.ConfigKeys {
 				configDef, exists := configsByKey[key]
@@ -82,6 +86,6 @@ func (g *WizardGuide) KafkaConnectToConsole(response connect.ConnectorValidation
 	return model.ValidationResponse{
 		Name:    response.Name,
 		Configs: configs,
-		Steps:   g.WizardSteps,
+		Steps:   g.wizardSteps,
 	}
 }

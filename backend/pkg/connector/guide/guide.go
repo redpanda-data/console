@@ -21,6 +21,9 @@ import (
 // between the Console frontend and the kafka connect cluster. A guide is a tool to
 // create a better setup experience in the Console frontend for specific connectors.
 type Guide interface {
+	// ClassName is the connector plugin class name that this guide is written for.
+	ClassName() string
+
 	// ConsoleToKafkaConnect takes the connector configurations (key/value pairs) and
 	// before sending these upstream to the Kafka connect cluster, the guide can
 	// modify these configs. One such use case would be a guide that wants to inject
