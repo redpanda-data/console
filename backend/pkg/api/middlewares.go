@@ -92,6 +92,7 @@ func (b *basePathMiddleware) Wrap(next http.Handler) http.Handler {
 		if strings.HasPrefix(r.RequestURI, prefix) {
 			r.RequestURI = "/" + strings.TrimPrefix(r.RequestURI, prefix)
 		}
+		next.ServeHTTP(w, r)
 	})
 }
 
