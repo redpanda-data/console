@@ -12,7 +12,6 @@ package connect
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -20,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/connector/interceptor"
 )
 
 // Service provides the API for interacting with all configured Kafka connect clusters.
@@ -83,7 +83,7 @@ func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 		Cfg:              cfg,
 		Logger:           logger,
 		ClientsByCluster: clientsByCluster,
-		OverrideSvc:      overrideSvc,
+		Interceptor:      interceptor.NewInterceptor(),
 	}
 
 	// 2. Test connectivity against each cluster concurrently
