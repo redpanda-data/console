@@ -27,7 +27,7 @@ type Service struct {
 	Cfg              config.Connect
 	Logger           *zap.Logger
 	ClientsByCluster map[ /*ClusterName*/ string]*ClientWithConfig
-	OverrideSvc      *OverrideService
+	Interceptor      *interceptor.Interceptor
 }
 
 // ClientWithConfig carries the Kafka Connect client, along with the configuration
@@ -77,11 +77,6 @@ func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 			Client: client,
 			Cfg:    clusterCfg,
 		}
-	}
-
-	overrideSvc, err := newOverrideService()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create override service for better connector wizard guidance: %w", err)
 	}
 
 	svc := &Service{
