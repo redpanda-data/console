@@ -17,25 +17,16 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/patch"
 )
 
-// Invocation of the /validate endpoint always applies the following steps
-// 1. Parse user input e.g `{}` or `{sasl.username="hello"}`
-// 2. Apply our respective guide's converters (e.g. sasl.username => jass.config)
-// 3. Get validate response from connect cluster with all props + validation
-
-// 4. Apply all common config patches (e.g. set importance/displaynames etc)
-// 5.
-// 5. Inject (or patch properties if now part of the validate response) additional config properties
-// 6. Apply our converters backwards (e.g. jaas.config => sasl.username & sasl.password)
-// 7. Send response back to user
-
+// Interceptor intercepts all requests between Console and Kafka connect that
+// either validate or create connector configs.
 type Interceptor struct {
 	DefaultGuide  guide.Guide
 	ConfigPatches []patch.ConfigPatch
 	Guides        map[string]guide.Guide
 }
 
-func NewInterceptor() *Interceptor {
-	return &Interceptor{
+func NewInterceptor(opts ...Option) *Interceptor {
+	in := &Interceptor{
 		DefaultGuide: guide.NewDefaultGuide(),
 		ConfigPatches: []patch.ConfigPatch{
 			patch.NewConfigPatchAll(),
@@ -50,6 +41,12 @@ func NewInterceptor() *Interceptor {
 			"io.debezium.connector.mysql.MySqlConnector":    guide.NewDebeziumMySQLGuide(),
 		},
 	}
+
+	for _, opt := range opts {
+		opt(in)
+	}
+
+	return in
 }
 
 // ConsoleToKafkaConnect is called when the user sent a request to Console's /validate
