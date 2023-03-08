@@ -18,6 +18,8 @@ import (
 	con "github.com/cloudhut/connect-client"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
 // ValidateConnectorConfig validates a given connector's configuration that is sent by the frontend.
@@ -27,15 +29,18 @@ import (
 //
 // This function overrides some validation results, so that we can modify what is rendered in the
 // frontend (e.g. removing too advanced configurations from the results).
-func (s *Service) ValidateConnectorConfig(ctx context.Context, clusterName string, pluginClassName string, options con.ValidateConnectorConfigOptions) (con.ConnectorValidationResult, *rest.Error) {
+func (s *Service) ValidateConnectorConfig(ctx context.Context, clusterName string, pluginClassName string, configs map[string]any) (model.ValidationResponse, *rest.Error) {
 	c, restErr := s.getConnectClusterByName(clusterName)
 	if restErr != nil {
-		return con.ConnectorValidationResult{}, restErr
+		return model.ValidationResponse{}, restErr
 	}
 
+	configs = s.Interceptor.ConsoleToKafkaConnect(pluginClassName, configs)
+
+	options := con.ValidateConnectorConfigOptions{Config: configs}
 	cValidationResult, err := c.Client.PutValidateConnectorConfig(ctx, pluginClassName, options)
 	if err != nil {
-		return con.ConnectorValidationResult{}, &rest.Error{
+		return model.ValidationResponse{}, &rest.Error{
 			Err:          fmt.Errorf("failed to validate connector config: %w", err),
 			Status:       http.StatusOK,
 			Message:      fmt.Sprintf("Failed to validate Connector config: %v", err.Error()),
@@ -44,7 +49,7 @@ func (s *Service) ValidateConnectorConfig(ctx context.Context, clusterName strin
 		}
 	}
 
-	cValidationResult = s.OverrideSvc.OverrideResults(cValidationResult, options.Config)
+	consoleValidationResponse := s.Interceptor.KafkaConnectToConsole(pluginClassName, cValidationResult)
 
-	return cValidationResult, nil
+	return consoleValidationResponse, nil
 }

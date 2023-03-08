@@ -27,6 +27,8 @@ func (s *Service) CreateConnector(ctx context.Context, clusterName string, req c
 		return con.ConnectorInfo{}, restErr
 	}
 
+	// TODO: Call interceptor to add additional configs!
+
 	cInfo, err := c.Client.CreateConnector(ctx, req)
 	if err != nil {
 		return con.ConnectorInfo{}, &rest.Error{
