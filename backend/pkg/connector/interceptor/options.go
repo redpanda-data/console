@@ -21,16 +21,14 @@ type Option = func(in *Interceptor)
 // by the Interceptor.
 func WithAdditionalPatches(patches ...patch.ConfigPatch) Option {
 	return func(in *Interceptor) {
-		in.ConfigPatches = append(in.ConfigPatches, patches...)
+		in.configPatches = append(in.configPatches, patches...)
 	}
 }
 
-// WithAdditionalGuides sets one or more Guides to be used by the interceptor.
-// Guides that already exist for a given classname will be replaced.
-func WithAdditionalGuides(additionalGuides map[string]guide.Guide) Option {
+// WithAdditionalGuides sets one or more guides to be used by the interceptor.
+// guides that already exist for a given classname will be replaced.
+func WithAdditionalGuides(guides ...guide.Guide) Option {
 	return func(in *Interceptor) {
-		for className, guide := range additionalGuides {
-			in.Guides[className] = guide
-		}
+		in.guides = append(in.guides, guides...)
 	}
 }

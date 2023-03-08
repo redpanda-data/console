@@ -18,9 +18,9 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
-		ClassName: "com.redpanda.kafka.connect.s3.S3SinkConnector",
-		Options:   o,
-		WizardSteps: []model.ValidationResponseStep{
+		className: "com.redpanda.kafka.connect.s3.S3SinkConnector",
+		options:   o,
+		wizardSteps: []model.ValidationResponseStep{
 			{
 				Name: "Topics to export",
 				Groups: []model.ValidationResponseStepGroup{

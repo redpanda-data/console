@@ -18,7 +18,7 @@ import (
 
 // DefaultGuide is the guide that is used if we haven't defined a guide for
 type DefaultGuide struct {
-	Options Options
+	options Options
 }
 
 func NewDefaultGuide(opts ...Option) Guide {
@@ -26,11 +26,18 @@ func NewDefaultGuide(opts ...Option) Guide {
 	for _, opt := range opts {
 		opt(&o)
 	}
-	return &DefaultGuide{Options: o}
+	return &DefaultGuide{options: o}
+}
+
+// ClassName implements Guide.ClassName().
+func (g *DefaultGuide) ClassName() string {
+	// The class name is used for guide matching, but the default guide is always the fallback guide
+	// that is used when no other guides were matched. Hence no class name to be returned.
+	return ""
 }
 
 func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]any {
-	for _, injectedVal := range g.Options.injectedValues {
+	for _, injectedVal := range g.options.injectedValues {
 		if injectedVal.IsAuthoritative {
 			// We are allowed to override existing user configs
 			configs[injectedVal.Key] = injectedVal.Value

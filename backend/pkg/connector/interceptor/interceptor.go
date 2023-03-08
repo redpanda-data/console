@@ -20,15 +20,23 @@ import (
 // Interceptor intercepts all requests between Console and Kafka connect that
 // either validate or create connector configs.
 type Interceptor struct {
-	DefaultGuide  guide.Guide
-	ConfigPatches []patch.ConfigPatch
-	Guides        map[string]guide.Guide
+	configPatches []patch.ConfigPatch
+
+	// defaultGuide is the guide that will be applied if no guide for the given connector
+	// class is specified. This guide will convert the connector's validate response to
+	// our expected format, but it does not enrich any additional data that benefits the
+	// user experience.
+	defaultGuide guide.Guide
+
+	// guides is the collection of connector specific guides.
+	guides            []guide.Guide
+	guidesByClassName map[string]guide.Guide
 }
 
 func NewInterceptor(opts ...Option) *Interceptor {
 	in := &Interceptor{
-		DefaultGuide: guide.NewDefaultGuide(),
-		ConfigPatches: []patch.ConfigPatch{
+		defaultGuide: guide.NewDefaultGuide(),
+		configPatches: []patch.ConfigPatch{
 			patch.NewConfigPatchAll(),
 			patch.NewConfigPatchCommon(),
 			patch.NewConfigPatchUpperImportance(),
@@ -36,9 +44,9 @@ func NewInterceptor(opts ...Option) *Interceptor {
 
 			patch.NewConfigPatchRedpandaS3(),
 		},
-		Guides: map[string]guide.Guide{
-			"com.redpanda.kafka.connect.s3.S3SinkConnector": guide.NewRedpandaAwsS3SinkGuide(),
-			"io.debezium.connector.mysql.MySqlConnector":    guide.NewDebeziumMySQLGuide(),
+		guides: []guide.Guide{
+			guide.NewRedpandaAwsS3SinkGuide(),
+			guide.NewDebeziumMySQLGuide(),
 		},
 	}
 
@@ -54,9 +62,9 @@ func NewInterceptor(opts ...Option) *Interceptor {
 // connect cluster. We need to modify this request if converters were used before,
 // as these change the configuration properties that are presented to the frontend.
 func (in *Interceptor) ConsoleToKafkaConnect(pluginClassName string, configs map[string]any) map[string]any {
-	guide, exists := in.Guides[pluginClassName]
+	guide, exists := in.guidesByClassName[pluginClassName]
 	if !exists {
-		return configs
+		return in.defaultGuide.ConsoleToKafkaConnect(configs)
 	}
 	return guide.ConsoleToKafkaConnect(configs)
 }
@@ -73,15 +81,15 @@ func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, response co
 	}
 
 	// 2. Apply response patch from guide
-	if g, exists := in.Guides[pluginClassName]; exists {
+	if g, exists := in.guidesByClassName[pluginClassName]; exists {
 		return g.KafkaConnectToConsole(response)
 	}
 
-	return in.DefaultGuide.KafkaConnectToConsole(response)
+	return in.defaultGuide.KafkaConnectToConsole(response)
 }
 
 func (in *Interceptor) applyConfigPatches(pluginClassName string, configDefinition model.ConfigDefinition) model.ConfigDefinition {
-	for _, patch := range in.ConfigPatches {
+	for _, patch := range in.configPatches {
 		if patch.IsMatch(configDefinition.Definition.Name, pluginClassName) {
 			configDefinition = patch.PatchDefinition(configDefinition)
 		}

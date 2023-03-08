@@ -18,9 +18,9 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
-		ClassName: "io.debezium.connector.mysql.MySqlConnector",
-		Options:   o,
-		WizardSteps: []model.ValidationResponseStep{
+		className: "io.debezium.connector.mysql.MySqlConnector",
+		options:   o,
+		wizardSteps: []model.ValidationResponseStep{
 			{
 				Name: "Topics to export",
 				Groups: []model.ValidationResponseStepGroup{
