@@ -78,6 +78,7 @@ type ConfigDefinitionValue struct {
 	Name              string   `json:"name"`
 	Value             any      `json:"value"`
 	RecommendedValues []string `json:"recommended_values"`
+	Errors            []string `json:"errors"`
 	Visible           bool     `json:"visible"`
 }
 
