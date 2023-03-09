@@ -67,16 +67,6 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 					},
 				},
 			},
-
-			{
-				Name: "Sizing",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"tasks.max"},
-					},
-				},
-			},
 		},
 	}
 }
