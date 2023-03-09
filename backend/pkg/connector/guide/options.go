@@ -9,8 +9,22 @@
 
 package guide
 
+import (
+	"github.com/cloudhut/connect-client"
+
+	"github.com/redpanda-data/console/backend/pkg/connector/model"
+)
+
+type KafkaConnectToConsoleHook = func(
+	connectorsValidationResponse connect.ConnectorValidationResult,
+	result model.ValidationResponse) model.ValidationResponse
+type ConsoleToKafkaConnectHook = func(map[string]any) map[string]any
+
 type Options struct {
 	injectedValues []injectedValue
+
+	consoleToKafkaConnectHookFn ConsoleToKafkaConnectHook
+	kafkaConnectToConsoleHookFn KafkaConnectToConsoleHook
 }
 
 type injectedValue struct {
@@ -35,7 +49,25 @@ func WithInjectedValues(keyVals map[string]string, isAuthoritative bool) Option 
 		})
 	}
 
-	return func(c *Options) {
-		c.injectedValues = injectedValues
+	return func(o *Options) {
+		o.injectedValues = injectedValues
+	}
+}
+
+// WithConsoleToKafkaConnectHookFn lets you pass a hook which can modify or extend the connector
+// configurations before they will be sent to Kafka connect. The hook is executed at the end
+// of
+func WithConsoleToKafkaConnectHookFn(fn ConsoleToKafkaConnectHook) Option {
+	return func(o *Options) {
+		o.consoleToKafkaConnectHookFn = fn
+	}
+}
+
+// WithKafkaConnectToConsoleHookFn lets you pass a hook which can modify the connector's validation
+// results before they are sent to the Console frontend. This hook will be called at the end
+// of the Guide's KafkaConnectToConsole func, thus it may have done certain modifications already.
+func WithKafkaConnectToConsoleHookFn(fn KafkaConnectToConsoleHook) Option {
+	return func(o *Options) {
+		o.kafkaConnectToConsoleHookFn = fn
 	}
 }
