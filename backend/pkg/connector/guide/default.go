@@ -10,7 +10,11 @@
 package guide
 
 import (
+	"sort"
+	"strings"
+
 	"github.com/cloudhut/connect-client"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
@@ -82,9 +86,41 @@ func (g *DefaultGuide) KafkaConnectToConsole(response connect.ConnectorValidatio
 		})
 	}
 
-	// 3. Convert all configs that are grouped by their group name into step groups
-	stepGroups := make([]model.ValidationResponseStepGroup, 0, len(configsByGroup))
+	// 3. Order groups in order to achieve a stable order in the UI.
+	// We try to order groups so that the most important configurations for the users show first.
+	// The opinionated grouping is determined as follows:
+	// - Common group first, then
+	// - Groups that have the most important configurations show first, if multiple groups are equal:
+	// - Order by group name asc
+	importanceScoreByGroupName := make(map[string]int)
 	for groupName, configDefs := range configsByGroup {
+		importanceScoreByGroupName[groupName] = 0
+		if strings.ToLower(groupName) == "common" {
+			// Push the common group to the top
+			importanceScoreByGroupName[groupName] += 100
+		}
+		for _, configDef := range configDefs {
+			if configDef.Definition.Required || configDef.Definition.Importance == model.ConfigDefinitionImportanceHigh {
+				importanceScoreByGroupName[groupName]++
+			}
+		}
+	}
+	groupNames := maps.Keys(importanceScoreByGroupName)
+	// Sort by groupname asc
+	slices.SortFunc(groupNames, func(a, b string) bool {
+		return a < b
+	})
+	// Sort by number of required props
+	sort.SliceStable(groupNames, func(a, b int) bool {
+		grpNameA := groupNames[a]
+		grpNameB := groupNames[b]
+		return importanceScoreByGroupName[grpNameA] > importanceScoreByGroupName[grpNameB]
+	})
+
+	// 4. Convert all configs that are grouped by their group name into step groups
+	stepGroups := make([]model.ValidationResponseStepGroup, 0, len(configsByGroup))
+	for _, groupName := range groupNames {
+		configDefs := configsByGroup[groupName]
 		configKeys := make([]string, len(configDefs))
 		for i, configDef := range configDefs {
 			configKeys[i] = configDef.Definition.Name
