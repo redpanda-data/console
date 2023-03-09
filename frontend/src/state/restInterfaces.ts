@@ -1216,9 +1216,21 @@ export interface KafkaConnectorInfoWithStatus { // ConnectorInfoWithStatus
 
 export interface ConnectorValidationResult {
     name: string;
-    error_count: number;
-    groups: string[];
     configs: ConnectorProperty[];
+    steps: ConnectorStep[];
+}
+
+export interface ConnectorStep {
+    name: string;
+    description?: string;
+    groups: ConnectorGroup[];
+}
+
+export interface ConnectorGroup {
+    name: string;
+    description?: string;
+    documentation_link?: string;
+    config_keys: string[];
 }
 
 export interface ConnectorProperty {
@@ -1229,7 +1241,7 @@ export interface ConnectorProperty {
         default_value: null | string;
         importance: PropertyImportance;
         documentation: string;
-        group: null | string;
+        // group: null | string;
         width: PropertyWidth;
         display_name: string;
         dependents: string[];
