@@ -115,7 +115,7 @@ const ConnectorType = observer(
                             },
                         ]} marginBlock="2"
                             onChange={index => state.tabFilter = tabFilterModes[index]}
-                            tabIndex={tabFilterModes.indexOf(state.tabFilter)}
+                            index={tabFilterModes.indexOf(state.tabFilter)}
                         />
 
                         <HiddenRadioList<ConnectorPlugin>
@@ -340,7 +340,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                 try {
                     const validationResult = await api.validateConnectorConfig(activeCluster, selectedPlugin!.class, propertiesObject);
 
-                    if (validationResult.error_count > 0) {
+                    const errorCount = validationResult.configs.sum(x => x.value.errors.length);
+
+                    if (errorCount > 0) {
                         setInvalidValidationResult(validationResult);
                         setLoading(false);
                         return { conditionMet: false };

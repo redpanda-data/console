@@ -422,11 +422,14 @@ export class ConnectorPropertiesStore {
             }
 
             // Create groups
-            const groupNames = [this.fallbackGroupName, ...validationResult.groups];
-            this.allGroups = allProps
-                .groupInto((p) => p.entry.definition.group)
-                .map((g) => this.createPropertyGroup(g.key ?? '', g.items))
-                .sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
+            // todo: handle multiple steps
+            const step = validationResult.steps[0];
+            // const groupNames = [this.fallbackGroupName, ...validationResult.groups];
+            this.allGroups = [];
+            for (const groupDef of step.groups) {
+                const groupProps = groupDef.config_keys.map(k => this.propsByName.get(k)!);
+                this.allGroups.push(this.createPropertyGroup(groupDef.name, groupProps));
+            }
 
             // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
             for (const g of this.allGroups) for (const p of g.properties) p.propertyGroup = g;
@@ -487,6 +490,14 @@ export class ConnectorPropertiesStore {
             // Remove empty groups
             this.allGroups.removeAll((x) => x.properties.length == 0);
 
+            /*
+                Old way:
+                    put new properties into its groups (or create new groups if they dont already exist)
+
+                New way:
+
+            */
+
             // Handle new properties, transfer reported errors and suggested values
             for (const source of srcProps) {
                 const target = this.propsByName.get(source.name);
@@ -495,16 +506,14 @@ export class ConnectorPropertiesStore {
                 if (!target) {
                     this.propsByName.set(source.name, source);
 
-                    // Find existing group it belongs to, or create a new one for it
+/*                     // Find existing group it belongs to (or create one for it)
                     let group = this.allGroups.first((g) => g.groupName == source.entry.definition.group);
                     if (!group) {
                         // Create new group
                         group = this.createPropertyGroup(source.entry.definition.group!, []);
                         this.allGroups.push(group);
 
-                        // Sort groups
-                        const groupNames = [this.fallbackGroupName, ...validationResult.groups];
-                        this.allGroups.sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
+                        // TODO: Sort groups (?)
                     }
 
                     // Add the property to the group
@@ -513,7 +522,7 @@ export class ConnectorPropertiesStore {
 
                     // Sort properties within group
                     group.properties.sort((a, b) => a.entry.definition.order - b.entry.definition.order);
-
+                     */
                     continue;
                 }
 
@@ -546,6 +555,22 @@ export class ConnectorPropertiesStore {
                 }
             }
 
+            // Sort all groups again because order might have changed
+            this.allGroups = this.allGroups.orderBy(x => {
+                // Find "index" of the group
+                let order = 0;
+                for (const s of validationResult.steps) {
+                    for (const g of s.groups) {
+                        if (x.groupName == g.name)
+                            return order;
+                        else
+                            order++;
+                    }
+                }
+
+                return order;
+            });
+
             // Set last error values, so we know when to show the validation error
             for (const g of this.allGroups) for (const p of g.properties) p.lastErrorValue = p.value;
         } catch (err: any) {
@@ -561,8 +586,6 @@ export class ConnectorPropertiesStore {
             const def = p.definition;
 
             if (!def.width || def.width == PropertyWidth.None) def.width = PropertyWidth.Medium;
-
-            if (!def.group) def.group = this.fallbackGroupName;
 
             if (def.order < 0) def.order = Number.POSITIVE_INFINITY;
         }
