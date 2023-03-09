@@ -50,7 +50,11 @@ func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]
 		}
 	}
 
-	return configs
+	if g.options.consoleToKafkaConnectHookFn == nil {
+		return configs
+	} else {
+		return g.options.consoleToKafkaConnectHookFn(configs)
+	}
 }
 
 // KafkaConnectToConsole receives the response from the kafka connect cluster and returns
@@ -93,7 +97,7 @@ func (g *DefaultGuide) KafkaConnectToConsole(response connect.ConnectorValidatio
 		stepGroups = append(stepGroups, sg)
 	}
 
-	return model.ValidationResponse{
+	validationResponse := model.ValidationResponse{
 		Name:    response.Name,
 		Configs: configs,
 		Steps: []model.ValidationResponseStep{
@@ -102,5 +106,11 @@ func (g *DefaultGuide) KafkaConnectToConsole(response connect.ConnectorValidatio
 				Groups: stepGroups,
 			},
 		},
+	}
+
+	if g.options.kafkaConnectToConsoleHookFn == nil {
+		return validationResponse
+	} else {
+		return g.options.kafkaConnectToConsoleHookFn(response, validationResponse)
 	}
 }
