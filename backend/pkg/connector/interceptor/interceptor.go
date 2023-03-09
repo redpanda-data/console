@@ -33,6 +33,19 @@ type Interceptor struct {
 	guidesByClassName map[string]guide.Guide
 }
 
+// CommunityGuides returns all guides we want to add to our interceptor.
+// This is its own function, so that we can create interceptors that further
+// modify these community guides to more specific environment conditions outside
+// of this project. This is handy to inject environment-specific variables such
+// as schema registry credentials or configurations that require a specific
+// Kafka connect cluster.
+func CommunityGuides() []guide.Guide {
+	return []guide.Guide{
+		guide.NewRedpandaAwsS3SinkGuide(),
+		guide.NewDebeziumMySQLGuide(),
+	}
+}
+
 func NewInterceptor(opts ...Option) *Interceptor {
 	in := &Interceptor{
 		defaultGuide: guide.NewDefaultGuide(),
@@ -44,10 +57,7 @@ func NewInterceptor(opts ...Option) *Interceptor {
 
 			patch.NewConfigPatchRedpandaS3(),
 		},
-		guides: []guide.Guide{
-			guide.NewRedpandaAwsS3SinkGuide(),
-			guide.NewDebeziumMySQLGuide(),
-		},
+		guides: CommunityGuides(),
 	}
 
 	for _, opt := range opts {
@@ -62,11 +72,11 @@ func NewInterceptor(opts ...Option) *Interceptor {
 // connect cluster. We need to modify this request if converters were used before,
 // as these change the configuration properties that are presented to the frontend.
 func (in *Interceptor) ConsoleToKafkaConnect(pluginClassName string, configs map[string]any) map[string]any {
-	guide, exists := in.guidesByClassName[pluginClassName]
+	g, exists := in.guidesByClassName[pluginClassName]
 	if !exists {
 		return in.defaultGuide.ConsoleToKafkaConnect(configs)
 	}
-	return guide.ConsoleToKafkaConnect(configs)
+	return g.ConsoleToKafkaConnect(configs)
 }
 
 // KafkaConnectToConsole is called after we retrieved a connector's validate response from
@@ -89,9 +99,9 @@ func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, response co
 }
 
 func (in *Interceptor) applyConfigPatches(pluginClassName string, configDefinition model.ConfigDefinition) model.ConfigDefinition {
-	for _, patch := range in.configPatches {
-		if patch.IsMatch(configDefinition.Definition.Name, pluginClassName) {
-			configDefinition = patch.PatchDefinition(configDefinition)
+	for _, p := range in.configPatches {
+		if p.IsMatch(configDefinition.Definition.Name, pluginClassName) {
+			configDefinition = p.PatchDefinition(configDefinition)
 		}
 	}
 
