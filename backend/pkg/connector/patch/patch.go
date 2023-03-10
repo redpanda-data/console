@@ -7,8 +7,8 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-// Package patches defines strategies how individual configuration definitions
-// that are returned by Kafka connect's validation endpoint shall be modified.
+// Package patch defines strategies how individual configuration definitions
+// that are returned by Kafka Connect's validation endpoint shall be modified.
 // They can be used to change one or more aspects of connector configurations.
 package patch
 
@@ -31,11 +31,17 @@ type ConfigPatch interface {
 	PatchDefinition(definition model.ConfigDefinition) model.ConfigDefinition
 }
 
+// IncludeExcludeSelector is a selector consisting of two regexes that you can use
+// to match a string. The Include regex is used to match results that generally qualify
+// as match. The Exclude regex allows you to filter results which may have matched Include
+// but are not desirable.
 type IncludeExcludeSelector struct {
 	Include *regexp.Regexp
 	Exclude *regexp.Regexp
 }
 
+// IsMatch returns true if the Include regex matches the string and the Exclude
+// regex does not match the given string.
 func (i *IncludeExcludeSelector) IsMatch(s string) bool {
 	if i.Exclude != nil && !i.Exclude.MatchString(s) {
 		return false

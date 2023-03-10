@@ -9,6 +9,8 @@
 
 package model
 
+// ValidationResponse is the response that will be sent to the Console frontend when
+// validating Kafka connectors.
 type ValidationResponse struct {
 	Name    string                   `json:"name"`
 	Configs []ConfigDefinition       `json:"configs"`

@@ -44,6 +44,7 @@ type ConfigPatchAll struct {
 
 var _ ConfigPatch = (*ConfigPatchAll)(nil)
 
+// NewConfigPatchAll returns a ConfigPatch that shall be applied for all connector configurations.
 func NewConfigPatchAll() *ConfigPatchAll {
 	return &ConfigPatchAll{
 		ConfigurationKeySelector: IncludeExcludeSelector{

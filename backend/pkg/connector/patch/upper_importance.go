@@ -15,6 +15,9 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
+// ConfigPatchUpperImportance is a patch to increase the importance of common connector
+// configurations so that they are shown as basic configurations in the Console
+// frontend.
 type ConfigPatchUpperImportance struct {
 	ConfigurationKeySelector IncludeExcludeSelector
 	ConnectorClassSelector   IncludeExcludeSelector
@@ -22,6 +25,8 @@ type ConfigPatchUpperImportance struct {
 
 var _ ConfigPatch = (*ConfigPatchUpperImportance)(nil)
 
+// NewConfigPatchUpperImportance returns a new patch for increasing certain
+// configurations' importance.
 func NewConfigPatchUpperImportance() *ConfigPatchUpperImportance {
 	return &ConfigPatchUpperImportance{
 		ConfigurationKeySelector: IncludeExcludeSelector{
@@ -41,7 +46,7 @@ func (c *ConfigPatchUpperImportance) IsMatch(configKey, connectorClass string) b
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
-func (c *ConfigPatchUpperImportance) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchUpperImportance) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
 	d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	return d
 }

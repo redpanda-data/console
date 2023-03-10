@@ -24,6 +24,7 @@ type ConfigPatchRedpandaS3 struct {
 
 var _ ConfigPatch = (*ConfigPatchRedpandaS3)(nil)
 
+// NewConfigPatchRedpandaS3 returns a new Patch for the Redpanda S3 connectors.
 func NewConfigPatchRedpandaS3() *ConfigPatchRedpandaS3 {
 	return &ConfigPatchRedpandaS3{
 		ConfigurationKeySelector: IncludeExcludeSelector{
@@ -43,7 +44,9 @@ func (c *ConfigPatchRedpandaS3) IsMatch(configKey, connectorClass string) bool {
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
-func (c *ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+//
+//nolint:cyclop // This function defines/patches a lot of things, but it's easy to comprehend.
+func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
 	case "aws.s3.bucket.name":

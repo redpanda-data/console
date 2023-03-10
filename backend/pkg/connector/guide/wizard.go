@@ -33,6 +33,7 @@ type WizardGuide struct {
 	wizardSteps []model.ValidationResponseStep
 }
 
+// ClassName implements Guide.ClassName.
 func (g *WizardGuide) ClassName() string {
 	return g.className
 }
@@ -55,9 +56,8 @@ func (g *WizardGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]a
 
 	if g.options.consoleToKafkaConnectHookFn == nil {
 		return configs
-	} else {
-		return g.options.consoleToKafkaConnectHookFn(configs)
 	}
+	return g.options.consoleToKafkaConnectHookFn(configs)
 }
 
 // KafkaConnectToConsole implements Guide.KafkaConnectToConsole. It will compute the
@@ -94,7 +94,6 @@ func (g *WizardGuide) KafkaConnectToConsole(response connect.ConnectorValidation
 	}
 	if g.options.kafkaConnectToConsoleHookFn == nil {
 		return validationResponse
-	} else {
-		return g.options.kafkaConnectToConsoleHookFn(response, validationResponse)
 	}
+	return g.options.kafkaConnectToConsoleHookFn(response, validationResponse)
 }
