@@ -7,6 +7,10 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
+// Package interceptor introduces the concept of interceptors for Kafka connect.
+// An interceptor can modify the request & responses between Console's frontend
+// and a Kafka connect cluster, so that we can improve the user experience when
+// creating or editing Kafka connectors.
 package interceptor
 
 import (
@@ -41,11 +45,17 @@ type Interceptor struct {
 // Kafka connect cluster.
 func CommunityGuides(opts ...guide.Option) []guide.Guide {
 	return []guide.Guide{
-		guide.NewRedpandaAwsS3SinkGuide(opts...),
 		guide.NewDebeziumMySQLGuide(opts...),
+		guide.NewDebeziumPostgresGuide(opts...),
+		guide.NewJDBCSinkGuide(opts...),
+		guide.NewRedpandaAwsS3SinkGuide(opts...),
+		guide.NewRedpandaGCSSinkGuide(opts...),
+		guide.NewSnowflakeSinkGuide(opts...),
 	}
 }
 
+// NewInterceptor returns an Interceptor that is initialized with a set of guides
+// and config patches that shall be used for the community version of Redpanda Console.
 func NewInterceptor(opts ...Option) *Interceptor {
 	in := &Interceptor{
 		defaultGuide: guide.NewDefaultGuide(),

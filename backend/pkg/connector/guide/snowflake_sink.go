@@ -11,15 +11,15 @@ package guide
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-// NewDebeziumMySQLGuide returns a new guide for Debezium's MySQL connector.
-func NewDebeziumMySQLGuide(opts ...Option) Guide {
+// NewSnowflakeSinkGuide returns a new connector guide for Snowflake's sink connector.
+func NewSnowflakeSinkGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
 		opt(&o)
 	}
 
 	return &WizardGuide{
-		className: "io.debezium.connector.mysql.MySqlConnector",
+		className: "com.snowflake.kafka.connector.SnowflakeSinkConnector",
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
@@ -27,22 +27,23 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
-						ConfigKeys: []string{"topic.prefix"},
+						ConfigKeys: []string{"topics", "topics.regex"},
 					},
 				},
 			},
 
 			{
-				Name: "Connection",
+				Name: "Snowflake Connection",
 				Groups: []model.ValidationResponseStepGroup{
 					{
-						// No Group name and description here
 						ConfigKeys: []string{
-							"database.hostname",
-							"database.port",
-							"database.user",
-							"database.password",
-							"database.ssl.mode",
+							"snowflake.url.name",
+							"snowflake.database.name",
+							"snowflake.user.name",
+							"snowflake.private.key",
+							"snowflake.private.key.passphrase",
+							"snowflake.role.name",
+							"snowflake.schema.name",
 						},
 					},
 				},
@@ -58,13 +59,22 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 							"key.converter",
 							"value.converter",
 							"header.converter",
-
-							"database.exclude.list",
-							"database.include.list",
-							"column.exclude.list",
-							"column.include.list",
-							"inconsistent.schema.handling.mode",
+							"snowflake.topic2table.map",
+							"buffer.count.records",
+							"buffer.flush.time",
+							"buffer.size.bytes",
+							"errors.tolerance",
 						},
+					},
+				},
+			},
+
+			{
+				Name: "Sizing",
+				Groups: []model.ValidationResponseStepGroup{
+					{
+						// No Group name and description here
+						ConfigKeys: []string{"tasks.max"},
 					},
 				},
 			},
