@@ -39,10 +39,10 @@ type Interceptor struct {
 // of this project. This is handy to inject environment-specific variables such
 // as schema registry credentials or configurations that require a specific
 // Kafka connect cluster.
-func CommunityGuides() []guide.Guide {
+func CommunityGuides(opts ...guide.Option) []guide.Guide {
 	return []guide.Guide{
-		guide.NewRedpandaAwsS3SinkGuide(),
-		guide.NewDebeziumMySQLGuide(),
+		guide.NewRedpandaAwsS3SinkGuide(opts...),
+		guide.NewDebeziumMySQLGuide(opts...),
 	}
 }
 
