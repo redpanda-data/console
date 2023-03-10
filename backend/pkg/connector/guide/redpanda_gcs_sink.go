@@ -11,15 +11,15 @@ package guide
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-// NewRedpandaAwsS3SinkGuide returns a new guide for Redpanda's AWS S3 sink connector.
-func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
+// NewRedpandaGCSSinkGuide returns a new guide for Redpanda's GCS sink connector.
+func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
 		opt(&o)
 	}
 
 	return &WizardGuide{
-		className: "com.redpanda.kafka.connect.s3.S3SinkConnector",
+		className: "com.redpanda.kafka.connect.gcs.GcsSinkConnector",
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
@@ -33,17 +33,17 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 			},
 
 			{
-				Name: "S3 Connection",
+				Name: "GCS Connection",
 				Groups: []model.ValidationResponseStepGroup{
 					{
-						Name:              "Authentication with AWS access keys",
-						Description:       "An access key grants programmatic access to AWS resources.",
+						Name:              "Authentication with Google",
+						Description:       "A Google service accounts grants programmatic access to GCP resources.",
 						DocumentationLink: "https://",
-						ConfigKeys:        []string{"aws.access.key.id", "aws.secret.access.key"},
+						ConfigKeys:        []string{"gcp.credentials.json"},
 					},
 					{
-						Name:       "S3 bucket settings",
-						ConfigKeys: []string{"aws.s3.bucket.name", "aws.s3.region"},
+						Name:       "GCS bucket settings",
+						ConfigKeys: []string{"gcs.bucket.name"},
 					},
 				},
 			},
@@ -61,17 +61,18 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 							"format.output.type",
 							"file.max.records",
 							"file.flush.interval.ms",
-							"aws.s3.bucket.check",
+							"gcs.bucket.check",
 							"file.compression.type",
 							"file.name.template",
 							"file.name.prefix",
 							"format.output.fields",
 							"format.output.fields.value.encoding",
-							"aws.s3.region",
-							"aws.s3.part.size.bytes",
-							"aws.s3.backoff.delay.ms",
-							"aws.s3.backoff.max.delay.ms",
-							"aws.s3.backoff.max.retries",
+							"gcs.retry.backoff.initial.delay.ms",
+							"gcs.retry.backoff.max.delay.ms",
+							"gcs.retry.backoff.delay.multiplier",
+							"gcs.retry.backoff.max.attempts",
+							"gcs.retry.backoff.total.timeout.ms",
+							"kafka.retry.backoff.ms",
 							"errors.tolerance",
 						},
 					},

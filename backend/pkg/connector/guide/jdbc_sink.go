@@ -11,15 +11,15 @@ package guide
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-// NewDebeziumMySQLGuide returns a new guide for Debezium's MySQL connector.
-func NewDebeziumMySQLGuide(opts ...Option) Guide {
+// NewJDBCSinkGuide returns a new guide for JDBC sinks.
+func NewJDBCSinkGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
 		opt(&o)
 	}
 
 	return &WizardGuide{
-		className: "io.debezium.connector.mysql.MySqlConnector",
+		className: "com.redpanda.kafka.connect.jdbc.JdbcSinkConnector",
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
@@ -27,7 +27,7 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
-						ConfigKeys: []string{"topic.prefix"},
+						ConfigKeys: []string{"topics", "topics.regex"},
 					},
 				},
 			},
@@ -36,13 +36,10 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 				Name: "Connection",
 				Groups: []model.ValidationResponseStepGroup{
 					{
-						// No Group name and description here
 						ConfigKeys: []string{
-							"database.hostname",
-							"database.port",
-							"database.user",
-							"database.password",
-							"database.ssl.mode",
+							"connection.url",
+							"connection.user",
+							"connection.password",
 						},
 					},
 				},
@@ -58,13 +55,32 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 							"key.converter",
 							"value.converter",
 							"header.converter",
-
-							"database.exclude.list",
-							"database.include.list",
-							"column.exclude.list",
-							"column.include.list",
-							"inconsistent.schema.handling.mode",
+							"auto.create",
+							"auto.evolve",
+							"batch.size",
+							"db.timezone",
+							"dialect.name",
+							"fields.whitelist",
+							"insert.mode",
+							"max.retries",
+							"pk.fields",
+							"pk.mode",
+							"retry.backoff.ms",
+							"sql.quote.identifiers",
+							"table.name.format",
+							"table.name.normalize",
+							"topics.to.tables.mapping",
 						},
+					},
+				},
+			},
+
+			{
+				Name: "Sizing",
+				Groups: []model.ValidationResponseStepGroup{
+					{
+						// No Group name and description here
+						ConfigKeys: []string{"tasks.max"},
 					},
 				},
 			},
