@@ -28,6 +28,7 @@ type ConfigDefinitionKey struct {
 	Dependents         []string                   `json:"dependents"`
 }
 
+// ToMap converts the struct to a key/value map so that it can be sent to Kafka connect.
 func (c *ConfigDefinitionKey) ToMap() map[string]any {
 	return toJSONMapStringAny(c)
 }

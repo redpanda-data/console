@@ -15,11 +15,17 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
+// KafkaConnectToConsoleHook is a function that lets you modify the validation response
+// before it is sent to the Console frontend.
 type KafkaConnectToConsoleHook = func(
 	connectorsValidationResponse connect.ConnectorValidationResult,
 	result model.ValidationResponse) model.ValidationResponse
+
+// ConsoleToKafkaConnectHook is a function that lets you modify the configuration key/value
+// pairs before they are sent from Console to Kafka Connect.
 type ConsoleToKafkaConnectHook = func(map[string]any) map[string]any
 
+// Options for connector guides.
 type Options struct {
 	injectedValues []injectedValue
 

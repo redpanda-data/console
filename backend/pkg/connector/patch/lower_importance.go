@@ -15,21 +15,18 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
+// ConfigPatchLowerImportance is a patch to decrease the importance of common connector
+// configurations.
 type ConfigPatchLowerImportance struct {
-	// ConfigurationKeySelector defines what configuration keys (e.g. `tasks.max`) shall be
-	// matched. The Config patch will be applied to all configuration keys where the configuration
-	// key and connector class selector match.
 	ConfigurationKeySelector IncludeExcludeSelector
-
-	// ConnectorClassSelector defines what connector classes
-	// (e.g. `org.apache.kafka.connect.mirror.MirrorSourceConnector`) shall be matched.
-	// The Config patch will be applied to all configuration keys where the configuration
-	// key and connector class selector match.
-	ConnectorClassSelector IncludeExcludeSelector
+	ConnectorClassSelector   IncludeExcludeSelector
 }
 
 var _ ConfigPatch = (*ConfigPatchLowerImportance)(nil)
 
+// NewConfigPatchLowerImportance returns a new patch to lower the importance of
+// common connector configurations so that they are showed as advanced options in
+// the frontend.
 func NewConfigPatchLowerImportance() *ConfigPatchLowerImportance {
 	return &ConfigPatchLowerImportance{
 		ConfigurationKeySelector: IncludeExcludeSelector{
@@ -49,7 +46,7 @@ func (c *ConfigPatchLowerImportance) IsMatch(configKey, connectorClass string) b
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
-func (c *ConfigPatchLowerImportance) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchLowerImportance) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
 	d.SetImportance(model.ConfigDefinitionImportanceLow)
 	return d
 }

@@ -20,11 +20,14 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
-// DefaultGuide is the guide that is used if we haven't defined a guide for
+// DefaultGuide is the guide that is used if we haven't matched a connector-specific
+// guide. The default guide groups and sorts the returned config properties on a best-effort
+// basis.
 type DefaultGuide struct {
 	options Options
 }
 
+// NewDefaultGuide returns a guide that shall be used by default.
 func NewDefaultGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
@@ -34,12 +37,13 @@ func NewDefaultGuide(opts ...Option) Guide {
 }
 
 // ClassName implements Guide.ClassName().
-func (g *DefaultGuide) ClassName() string {
+func (*DefaultGuide) ClassName() string {
 	// The class name is used for guide matching, but the default guide is always the fallback guide
 	// that is used when no other guides were matched. Hence no class name to be returned.
 	return ""
 }
 
+// ConsoleToKafkaConnect implements Guide.ConsoleToKafkaConnect.
 func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]any {
 	for _, injectedVal := range g.options.injectedValues {
 		if injectedVal.IsAuthoritative {
@@ -56,14 +60,11 @@ func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]
 
 	if g.options.consoleToKafkaConnectHookFn == nil {
 		return configs
-	} else {
-		return g.options.consoleToKafkaConnectHookFn(configs)
 	}
+	return g.options.consoleToKafkaConnectHookFn(configs)
 }
 
-// KafkaConnectToConsole receives the response from the kafka connect cluster and returns
-// the enriched validation response that is understood by Console. The Console validation response
-// contains additional metadata.
+// KafkaConnectToConsole implements Guide.KafkaConnectToConsole.
 func (g *DefaultGuide) KafkaConnectToConsole(response connect.ConnectorValidationResult) model.ValidationResponse {
 	// 1. Extract all configs from the response and index them by their config key
 	configs := make([]model.ConfigDefinition, len(response.Configs))
@@ -95,7 +96,7 @@ func (g *DefaultGuide) KafkaConnectToConsole(response connect.ConnectorValidatio
 	importanceScoreByGroupName := make(map[string]int)
 	for groupName, configDefs := range configsByGroup {
 		importanceScoreByGroupName[groupName] = 0
-		if strings.ToLower(groupName) == "common" {
+		if strings.EqualFold(groupName, "common") {
 			// Push the common group to the top
 			importanceScoreByGroupName[groupName] += 100
 		}
@@ -146,7 +147,6 @@ func (g *DefaultGuide) KafkaConnectToConsole(response connect.ConnectorValidatio
 
 	if g.options.kafkaConnectToConsoleHookFn == nil {
 		return validationResponse
-	} else {
-		return g.options.kafkaConnectToConsoleHookFn(response, validationResponse)
 	}
+	return g.options.kafkaConnectToConsoleHookFn(response, validationResponse)
 }

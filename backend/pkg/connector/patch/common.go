@@ -24,6 +24,7 @@ type ConfigPatchCommon struct {
 
 var _ ConfigPatch = (*ConfigPatchAll)(nil)
 
+// NewConfigPatchCommon returns a new ConfigPatch for common connector configurations.
 func NewConfigPatchCommon() *ConfigPatchCommon {
 	return &ConfigPatchCommon{
 		ConfigurationKeySelector: IncludeExcludeSelector{
@@ -43,7 +44,7 @@ func (c *ConfigPatchCommon) IsMatch(configKey, connectorClass string) bool {
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
-func (c *ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
 	switch d.Definition.Name {
 	case "tasks.max":
 		d.SetDisplayName("Max tasks").SetImportance(model.ConfigDefinitionImportanceHigh)

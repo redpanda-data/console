@@ -26,6 +26,8 @@ type ConfigDefinition struct {
 	Value      ConfigDefinitionValue `json:"value"`
 }
 
+// NewConfigDefinitionFromValidationResult creates a ConfigDefinition based on the validation response
+// from Kafka connect.
 func NewConfigDefinitionFromValidationResult(result connect.ConnectorValidationResultConfig) ConfigDefinition {
 	data, _ := json.Marshal(result)
 
@@ -35,6 +37,7 @@ func NewConfigDefinitionFromValidationResult(result connect.ConnectorValidationR
 	return configDef
 }
 
+// ToValidationResult converts the ConfigDefinition to a Kafka connect compatible Validation response.
 func (c *ConfigDefinition) ToValidationResult() connect.ConnectorValidationResultConfig {
 	return connect.ConnectorValidationResultConfig{
 		Definition: c.Definition.ToMap(),
@@ -82,6 +85,7 @@ type ConfigDefinitionValue struct {
 	Visible           bool     `json:"visible"`
 }
 
+// ToMap converts the struct to a key/value map so that it can be sent to Kafka connect.
 func (c *ConfigDefinitionValue) ToMap() map[string]any {
 	return toJSONMapStringAny(c)
 }
