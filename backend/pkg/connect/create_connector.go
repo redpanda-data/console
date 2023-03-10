@@ -27,7 +27,7 @@ func (s *Service) CreateConnector(ctx context.Context, clusterName string, req c
 		return con.ConnectorInfo{}, restErr
 	}
 
-	// TODO: Call interceptor to add additional configs!
+	req.Config = s.Interceptor.ConsoleToKafkaConnect(req.Name, req.Config)
 
 	cInfo, err := c.Client.CreateConnector(ctx, req)
 	if err != nil {
