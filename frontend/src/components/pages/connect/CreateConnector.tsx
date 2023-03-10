@@ -265,7 +265,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                 }
 
                 try {
-                    await connectClusterStore.createConnector(selectedPlugin!.class);
+                    await connectClusterStore.createConnector(selectedPlugin!.class, parsedUpdatedConfig);
                     message.success({ content: `Connector ${connectorRef?.propsByName.get('name')?.value ?? ''} created correctly` });
                 } catch (e: any) {
                     switch (e?.name) {

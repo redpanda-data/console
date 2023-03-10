@@ -92,7 +92,7 @@ export class ConnectClusterStore {
     }
 
     // CRUD operations
-    createConnector = flow(function*(this: ConnectClusterStore, pluginClass: string) {
+    createConnector = flow(function*(this: ConnectClusterStore, pluginClass: string, updatedConfig: Record<string, any> = {}) {
         const connector = this.getConnector(pluginClass);
         const secrets = connector.secrets;
         if (secrets) {
@@ -109,7 +109,7 @@ export class ConnectClusterStore {
             }
         }
         try {
-            const finalProperties: Record<string, any> = connector.getConfigObject();
+            const finalProperties: Record<string, any> = { ...updatedConfig, ...connector.getConfigObject() };
             yield api.createConnector(this.clusterName, finalProperties.name, pluginClass, finalProperties);
             this.removePluginState(pluginClass);
         } catch (error) {
