@@ -37,6 +37,21 @@ type Interceptor struct {
 	guidesByClassName map[string]guide.Guide
 }
 
+// CommunityPatches returns all patches we want to add to our interceptor.
+// This is its own function, so that we can create interceptors that
+// extend this list of ConfigPatches.
+func CommunityPatches() []patch.ConfigPatch {
+	return []patch.ConfigPatch{
+		patch.NewConfigPatchAll(),
+		patch.NewConfigPatchCommon(),
+		patch.NewConfigPatchUpperImportance(),
+		patch.NewConfigPatchLowerImportance(),
+
+		// Guide specific patches
+		patch.NewConfigPatchRedpandaS3(),
+	}
+}
+
 // CommunityGuides returns all guides we want to add to our interceptor.
 // This is its own function, so that we can create interceptors that further
 // modify these community guides to more specific environment conditions outside
@@ -58,16 +73,9 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 // and config patches that shall be used for the community version of Redpanda Console.
 func NewInterceptor(opts ...Option) *Interceptor {
 	in := &Interceptor{
-		defaultGuide: guide.NewDefaultGuide(),
-		configPatches: []patch.ConfigPatch{
-			patch.NewConfigPatchAll(),
-			patch.NewConfigPatchCommon(),
-			patch.NewConfigPatchUpperImportance(),
-			patch.NewConfigPatchLowerImportance(),
-
-			patch.NewConfigPatchRedpandaS3(),
-		},
-		guides: CommunityGuides(),
+		defaultGuide:  guide.NewDefaultGuide(),
+		configPatches: CommunityPatches(),
+		guides:        CommunityGuides(),
 	}
 
 	for _, opt := range opts {
