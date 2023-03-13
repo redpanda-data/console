@@ -3,7 +3,7 @@ tasks:
   install-golangci-lint:
     desc: install golangci linter
     vars:
-      GO_LINT_VERSION: 1.50.1
+      GO_LINT_VERSION: 1.51.2
     cmds:
       - mkdir -p {{ .BUILD_ROOT}}/bin
       - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "{{ .BUILD_ROOT }}"/bin/go v{{ .GO_LINT_VERSION }}
