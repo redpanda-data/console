@@ -1227,7 +1227,7 @@ export interface ConnectorStep {
 }
 
 export interface ConnectorGroup {
-    name: string;
+    name?: string;
     description?: string;
     documentation_link?: string;
     config_keys: string[];
