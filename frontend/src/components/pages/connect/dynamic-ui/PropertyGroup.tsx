@@ -10,6 +10,7 @@
  */
 
 /* eslint-disable no-useless-escape */
+import { Box, Heading, Link, Text } from '@redpanda-data/ui';
 import { Collapse } from 'antd';
 import { observer } from 'mobx-react';
 import { PropertyGroup } from '../../../../state/connect/state';
@@ -20,10 +21,11 @@ export const PropertyGroupComponent = observer((props: { group: PropertyGroup, a
 
     const filteredProperties = g.filteredProperties;
 
-    if (g.groupName == 'Transforms') {
+
+    if (g.group.name == 'Transforms') {
         // Transforms + its sub groups
         const subGroups = props.allGroups
-            .filter(g => g.groupName.startsWith('Transforms: '))
+            .filter(g => g.group.name?.startsWith('Transforms: '))
             .sort((a, b) => props.allGroups.indexOf(a) - props.allGroups.indexOf(b));
 
         return <div className="dynamicInputs">
@@ -35,9 +37,9 @@ export const PropertyGroupComponent = observer((props: { group: PropertyGroup, a
                     {subGroups.map(subGroup =>
                         <Collapse.Panel
                             className={(subGroup.propertiesWithErrors.length > 0) ? 'hasErrors' : ''}
-                            key={subGroup.groupName}
+                            key={subGroup.group.name ?? '<null>'}
                             header={<div style={{ display: 'flex', alignItems: 'center', gap: '1em' }}>
-                                <span style={{ fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans' }}>{subGroup.groupName}</span>
+                                <span style={{ fontSize: '1.1em', fontWeight: 600, fontFamily: 'Open Sans' }}>{subGroup.group.name}</span>
                                 <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
                             </div>}
                         >
@@ -52,9 +54,24 @@ export const PropertyGroupComponent = observer((props: { group: PropertyGroup, a
     }
     else {
         // Normal group
-        return <div className="dynamicInputs">
-            {filteredProperties.map(p => <PropertyComponent key={p.name} property={p} />)}
-        </div>
+        return <Box>
+            {g.group.name &&
+                <Heading as="h3" size="md" mt="8" mb="4">{g.group.name}</Heading>
+            }
+
+            {g.group.description
+                && <Text>
+                    {g.group.description}
+                    {' '}
+                    {g.group.documentation_link &&
+                        <Link href={g.group.documentation_link}>Documentation</Link>}
+                </Text>
+            }
+
+            <div className="dynamicInputs">
+                {filteredProperties.map(p => <PropertyComponent key={p.name} property={p} />)}
+            </div>
+        </Box>
     }
 
 });

@@ -19,6 +19,8 @@ import {
     PropertyWidth,
     ClusterConnectors,
     ConnectorPossibleStatesLiteral,
+    ConnectorStep,
+    ConnectorGroup,
 } from '../restInterfaces';
 import { removeNamespace } from '../../components/pages/connect/helper';
 import { encodeBase64, retrier } from '../../utils/utils';
@@ -326,6 +328,8 @@ export class ConnectorPropertiesStore {
     fallbackGroupName: string = '';
     reactionDisposers: IReactionDisposer[] = [];
 
+    connectorStepDefinitions: ConnectorStep[] = [];
+
     constructor(
         private clusterName: string,
         private pluginClassName: string,
@@ -344,11 +348,13 @@ export class ConnectorPropertiesStore {
         this.initConfig();
     }
 
-    createPropertyGroup(groupName: string, properties: Property[]) {
+    createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]) {
         const self = this;
 
         return observable<PropertyGroup>({
-            groupName,
+            step,
+            group,
+
             properties,
             propertiesWithErrors: [],
 
@@ -362,7 +368,9 @@ export class ConnectorPropertiesStore {
         });
     }
     getConfigObject(): object {
-        const config = {} as any;
+        const config = {
+            'connector.class': this.pluginClassName,
+        } as any;
 
         for (const g of this.allGroups)
             for (const p of g.properties) {
@@ -421,18 +429,32 @@ export class ConnectorPropertiesStore {
                 for (const p of allProps) if (p.errors.length > 0) p.lastErrorValue = p.value;
             }
 
+
             // Create groups
-            // todo: handle multiple steps
-            const step = validationResult.steps[0];
-            // const groupNames = [this.fallbackGroupName, ...validationResult.groups];
             this.allGroups = [];
-            for (const groupDef of step.groups) {
-                const groupProps = groupDef.config_keys.map(k => this.propsByName.get(k)!);
-                this.allGroups.push(this.createPropertyGroup(groupDef.name, groupProps));
+            for (const step of validationResult.steps) {
+                for (const groupDef of step.groups) {
+                    const groupProps = groupDef.config_keys.map(k => {
+                        const prop = this.propsByName.get(k);
+
+                        if (!prop)
+                            console.log('step[*].group[*].config_keys references a property that does not exist in propsByName!', {
+                                step: step.name,
+                                group: groupDef,
+                                referencedConfigKey: k
+                            });
+                        return prop!;
+                    }).filter(x => x != null);
+
+
+                    this.allGroups.push(this.createPropertyGroup(step, groupDef, groupProps));
+                }
             }
 
             // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
-            for (const g of this.allGroups) for (const p of g.properties) p.propertyGroup = g;
+            for (const g of this.allGroups)
+                for (const p of g.properties)
+                    p.propertyGroup = g;
 
             // Notify groups about errors in their children
             for (const g of this.allGroups) g.propertiesWithErrors.push(...g.properties.filter((p) => p.showErrors));
@@ -463,6 +485,7 @@ export class ConnectorPropertiesStore {
                 )
             );
         } catch (err: any) {
+            console.error('error in initConfig', err);
             this.error = typeof err == 'object' ? err.message ?? JSON.stringify(err, undefined, 4) : JSON.stringify(err, undefined, 4);
         }
 
@@ -470,11 +493,14 @@ export class ConnectorPropertiesStore {
     }
 
     async validate(config: object) {
+
         const { clusterName, pluginClassName } = this;
         try {
             // Validate the current config
             const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, config);
             const srcProps = this.createCustomProperties(validationResult.configs);
+
+            this.connectorStepDefinitions = validationResult.steps;
 
             // Remove properties that don't exist anymore
             const srcNames = new Set(srcProps.map((x) => x.name));
@@ -490,14 +516,6 @@ export class ConnectorPropertiesStore {
             // Remove empty groups
             this.allGroups.removeAll((x) => x.properties.length == 0);
 
-            /*
-                Old way:
-                    put new properties into its groups (or create new groups if they dont already exist)
-
-                New way:
-
-            */
-
             // Handle new properties, transfer reported errors and suggested values
             for (const source of srcProps) {
                 const target = this.propsByName.get(source.name);
@@ -506,7 +524,8 @@ export class ConnectorPropertiesStore {
                 if (!target) {
                     this.propsByName.set(source.name, source);
 
-/*                     // Find existing group it belongs to (or create one for it)
+                    /*
+                    // Find existing group it belongs to (or create one for it)
                     let group = this.allGroups.first((g) => g.groupName == source.entry.definition.group);
                     if (!group) {
                         // Create new group
@@ -561,7 +580,7 @@ export class ConnectorPropertiesStore {
                 let order = 0;
                 for (const s of validationResult.steps) {
                     for (const g of s.groups) {
-                        if (x.groupName == g.name)
+                        if (x.group.name == g.name)
                             return order;
                         else
                             order++;
@@ -672,12 +691,17 @@ const suggestedValues: { [key: string]: string[] } = {
 };
 
 export interface PropertyGroup {
-    groupName: string;
+    step: ConnectorStep;
+    group: ConnectorGroup;
+
     properties: Property[];
 
     readonly filteredProperties: Property[];
 
     propertiesWithErrors: Property[];
+
+    description?: string;
+    documentation_link?: string;
 }
 
 export interface Property {
