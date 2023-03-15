@@ -20,12 +20,14 @@ import OktaLogo from '../../utils/svg/OktaLogo';
 import { Box, Button, FormLabel, Input, Spinner, Stack, Text } from '@redpanda-data/ui';
 import { appGlobal } from '../../state/appGlobal';
 import { toJson } from '../../utils/jsonUtils';
+import AzureADLogo from '../../utils/svg/AzureADLogo';
 
 
 const iconMap = new Map([
     ['google', <GoogleOutlined key="google-icon" style={{ marginBottom: '6px' }} />],
     ['github', <GithubOutlined key="github-icon" style={{ marginBottom: '6px' }} />],
     ['okta', <span key="okata-icon" style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{OktaLogo}</span>],
+    ['azure ad', <span key="azure-ad-icon" style={{ display: 'inline-block', color: 'inherit', marginBottom: '6px', width: '20px', height: '20px', }}>{AzureADLogo}</span>]
 ]);
 
 interface ProvidersResponse {
