@@ -10,7 +10,7 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Box, Heading } from '@redpanda-data/ui';
+import { Box, Heading, Text } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
 import { PropertyGroup } from '../../../../state/connect/state';
 import { ConnectorStep } from '../../../../state/restInterfaces';
@@ -20,10 +20,15 @@ export const ConnectorStepComponent = observer((props: { step: ConnectorStep, gr
     const step = props.step;
     const groups = props.groups;
 
+    const totalVisibleProperties = groups.sum(x => x.filteredProperties.length);
+    if (totalVisibleProperties == 0)
+        return null;
+
     return <Box>
         <Heading as="h3" size="md" mt="8" mb="4">{step.name}</Heading>
+
         {step.description &&
-            <Heading as="h4" size="sm" mb="4">{step.description}</Heading>}
+            <Text size="sm" mb="4">{step.description}</Text>}
 
         {groups.map((g, i) =>
             <PropertyGroupComponent

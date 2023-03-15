@@ -1224,6 +1224,9 @@ export interface ConnectorStep {
     name: string;
     description?: string;
     groups: ConnectorGroup[];
+
+    // added by frontend:
+    stepIndex: number;
 }
 
 export interface ConnectorGroup {
