@@ -14,9 +14,10 @@ import { Skeleton } from 'antd';
 // import { IsDev } from '../../../../utils/env';
 import { OptionGroup } from '../../../../utils/tsxUtils';
 // import { DebugEditor } from './DebugEditor';
-import { ConnectorPropertiesStore } from '../../../../state/connect/state';
+import { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/connect/state';
 import { observer } from 'mobx-react';
 import { ConnectorStepComponent } from './ConnectorStep';
+import { ConnectorStep } from '../../../../state/restInterfaces';
 
 export interface ConfigPageProps {
     connectorStore: ConnectorPropertiesStore;
@@ -41,12 +42,15 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
     if (connectorStore.allGroups.length == 0) return <div>debug: no groups</div>;
 
     // Find all steps
-    const steps = connectorStore.allGroups
-        .groupInto(x => x.step)
-        .orderBy(x => {
-            const stepIndex = connectorStore.connectorStepDefinitions.findIndex(step => step == x.key);
-            return stepIndex;
-        });
+    const steps: {
+        step: ConnectorStep,
+        groups: PropertyGroup[],
+    }[] = [];
+
+    for (const step of connectorStore.connectorStepDefinitions) {
+        const groups = connectorStore.allGroups.filter(g => g.step.stepIndex == step.stepIndex);
+        steps.push({ step, groups });
+    }
 
     return (
         <>
@@ -61,12 +65,9 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
                 onChange={(s) => (connectorStore.advancedMode = s)}
             />
 
-            {steps.map(x => {
-                const step = x.key;
-                const groups = x.items;
-
+            {steps.map(({ step, groups }) => {
                 return <ConnectorStepComponent
-                    key={step.name}
+                    key={step.stepIndex}
                     step={step}
                     groups={groups}
                     allGroups={connectorStore.allGroups}
