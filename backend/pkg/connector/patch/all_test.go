@@ -35,8 +35,8 @@ func TestPatchConfigAll(t *testing.T) {
 			ConfigurationKey: "ssl.protocol",
 			ShouldMatch:      true,
 
-			GivenDisplayName:    "SSL Protocol",
-			ExpectedDisplayName: "SSL Protocol",
+			GivenDisplayName:    "SSL protocol",
+			ExpectedDisplayName: "SSL protocol",
 		},
 
 		{
@@ -45,7 +45,16 @@ func TestPatchConfigAll(t *testing.T) {
 			ShouldMatch:      true,
 
 			GivenDisplayName:    "",
-			ExpectedDisplayName: "SSL Protocol",
+			ExpectedDisplayName: "SSL protocol",
+		},
+
+		{
+			ConnectorClass:   "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+			ConfigurationKey: "ssl.protocol",
+			ShouldMatch:      true,
+
+			GivenDisplayName:    "ssl.protocol",
+			ExpectedDisplayName: "SSL protocol",
 		},
 
 		{
@@ -54,7 +63,7 @@ func TestPatchConfigAll(t *testing.T) {
 			ShouldMatch:      true,
 
 			GivenDisplayName:    "",
-			ExpectedDisplayName: "Refresh Topics Interval Seconds",
+			ExpectedDisplayName: "Refresh topics interval seconds",
 		},
 
 		{
@@ -63,7 +72,7 @@ func TestPatchConfigAll(t *testing.T) {
 			ShouldMatch:      true,
 
 			GivenDisplayName:    "",
-			ExpectedDisplayName: "Sync Topic ACLs Enabled",
+			ExpectedDisplayName: "Sync topic ACLs enabled",
 		},
 
 		{
@@ -81,7 +90,16 @@ func TestPatchConfigAll(t *testing.T) {
 			ShouldMatch:      true,
 
 			GivenDisplayName:    "",
-			ExpectedDisplayName: "Segment Milliseconds",
+			ExpectedDisplayName: "Segment milliseconds",
+		},
+
+		{
+			ConnectorClass:   "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+			ConfigurationKey: "errors.tolerance",
+			ShouldMatch:      true,
+
+			GivenDisplayName:    "",
+			ExpectedDisplayName: "Error tolerance",
 		},
 	}
 

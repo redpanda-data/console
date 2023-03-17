@@ -69,6 +69,12 @@ func (c *ConfigDefinition) SetRequired(isRequired bool) *ConfigDefinition {
 	return c
 }
 
+// SetValue sets the value of the config value.
+func (c *ConfigDefinition) SetValue(value string) *ConfigDefinition {
+	c.Value.Value = value
+	return c
+}
+
 // SetRecommendedValues sets the recommended values of the config value.
 func (c *ConfigDefinition) SetRecommendedValues(recommendedValues []string) *ConfigDefinition {
 	c.Value.RecommendedValues = recommendedValues
