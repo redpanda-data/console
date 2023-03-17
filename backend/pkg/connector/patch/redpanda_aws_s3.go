@@ -66,8 +66,12 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.Co
 		d.SetDisplayName("Max records per file")
 	case "aws.access.key.id":
 		d.SetRequired(true)
+	case "aws.secret.access.key":
+		d.SetRequired(true)
 	case "aws.s3.region":
 		d.SetRecommendedValues(awsRegions)
+	case "name":
+		d.SetValue("s3-connector")
 
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
@@ -86,10 +90,9 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.Co
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "aws.access.key.id", "aws.secret.access.key", "aws.s3.region", "format.output.type":
+	case "aws.access.key.id", "aws.secret.access.key", "aws.s3.bucket.name", "aws.s3.region", "format.output.type":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "aws.s3.bucket.name",
-		"aws.sts.role.arn",
+	case "aws.sts.role.arn",
 		"aws.sts.role.session.name",
 		"aws.sts.role.external.id",
 		"aws.sts.role.session.duration",

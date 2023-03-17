@@ -54,20 +54,18 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
-							"name",
+							"format.output.type",
 							"key.converter",
 							"value.converter",
-							"header.converter",
-							"format.output.type",
-							"file.max.records",
-							"file.flush.interval.ms",
-							"aws.s3.bucket.check",
-							"file.compression.type",
+
 							"file.name.template",
 							"file.name.prefix",
 							"format.output.fields",
 							"format.output.fields.value.encoding",
-							"aws.s3.region",
+							"file.compression.type",
+							"file.max.records",
+							"file.flush.interval.ms",
+							"aws.s3.bucket.check",
 							"aws.s3.part.size.bytes",
 							"aws.s3.backoff.delay.ms",
 							"aws.s3.backoff.max.delay.ms",
@@ -84,6 +82,15 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{"tasks.max"},
+					},
+				},
+			},
+			{
+				Name: "Review and launch",
+				Groups: []model.ValidationResponseStepGroup{
+					{
+						// No Group name and description here
+						ConfigKeys: []string{"name"},
 					},
 				},
 			},

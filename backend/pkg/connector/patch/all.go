@@ -72,7 +72,7 @@ func NewConfigPatchAll() *ConfigPatchAll {
 			"GSSAPI",
 		},
 		Replacers: map[string]string{
-			"ms": "Milliseconds",
+			"ms": "milliseconds",
 		},
 	}
 }
@@ -84,10 +84,16 @@ func (c *ConfigPatchAll) IsMatch(configKey, connectorClass string) bool {
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 func (c *ConfigPatchAll) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
-	if d.Definition.DisplayName == "" {
+	if d.Definition.DisplayName == "" || d.Definition.DisplayName == d.Definition.Name {
 		computedDisplayName := c.configNameToDisplayName(d.Definition.Name)
 		d.SetDisplayName(computedDisplayName)
 	}
+
+	switch d.Definition.Name {
+	case "errors.tolerance":
+		d.SetDisplayName("Error tolerance")
+	}
+
 	return d
 }
 
@@ -98,7 +104,7 @@ func (c *ConfigPatchAll) configNameToDisplayName(key string) string {
 		return ""
 	}
 
-	caser := cases.Title(language.English, cases.NoLower)
+	title := cases.Title(language.English, cases.NoLower)
 	caseWord := func(i string) string {
 		result := strings.ToLower(i)
 		for _, abbrv := range c.CommonAbbreviations {
@@ -109,12 +115,16 @@ func (c *ConfigPatchAll) configNameToDisplayName(key string) string {
 			result = synonym
 		}
 
-		return caser.String(result)
+		return result
 	}
 
 	words := strings.Split(key, ".")
 	for i, word := range words {
-		words[i] = caseWord(word)
+		if i == 0 {
+			words[i] = title.String(caseWord(word))
+		} else {
+			words[i] = caseWord(word)
+		}
 	}
 	return strings.Join(words, " ")
 }
