@@ -27,7 +27,16 @@ func (s *Service) CreateConnector(ctx context.Context, clusterName string, req c
 		return con.ConnectorInfo{}, restErr
 	}
 
-	req.Config = s.Interceptor.ConsoleToKafkaConnect(req.Name, req.Config)
+	className := req.Config["connector.class"].(string)
+	if className == "" {
+		return con.ConnectorInfo{}, &rest.Error{
+			Err:      fmt.Errorf("Connector class is not set"),
+			Status:   http.StatusBadRequest,
+			Message:  "Connector class is not set",
+			IsSilent: false,
+		}
+	}
+	req.Config = s.Interceptor.ConsoleToKafkaConnect(className, req.Config)
 
 	cInfo, err := c.Client.CreateConnector(ctx, req)
 	if err != nil {
