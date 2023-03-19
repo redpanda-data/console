@@ -374,15 +374,19 @@ func (s *Service) tryCreateProtoRegistry() {
 }
 
 func (s *Service) createProtoRegistry() error {
-	var files map[string]filesystem.File
+	files := make(map[string]filesystem.File)
 
 	if s.gitSvc != nil {
-		files = s.gitSvc.GetFilesByFilename()
+		for name, file := range s.gitSvc.GetFilesByFilename() {
+			files[name] = file
+		}
 		s.logger.Debug("fetched .proto files from git service cache",
 			zap.Int("fetched_proto_files", len(files)))
 	}
 	if s.fsSvc != nil {
-		files = s.fsSvc.GetFilesByFilename()
+		for name, file := range s.fsSvc.GetFilesByFilename() {
+			files[name] = file
+		}
 		s.logger.Debug("fetched .proto files from filesystem service cache",
 			zap.Int("fetched_proto_files", len(files)))
 	}
