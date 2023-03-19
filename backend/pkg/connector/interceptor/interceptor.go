@@ -107,18 +107,19 @@ func (in *Interceptor) ConsoleToKafkaConnect(pluginClassName string, configs map
 // that the configuration properties are presented in a more user-friendly fashion.
 func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, response connect.ConnectorValidationResult) model.ValidationResponse {
 	// 1. Run all patches on each configuration
+	patchedConfigs := make([]model.ConfigDefinition, len(response.Configs))
 	for i, config := range response.Configs {
 		configDef := model.NewConfigDefinitionFromValidationResult(config)
 		configDef = in.applyConfigPatches(pluginClassName, configDef)
-		response.Configs[i] = configDef.ToValidationResult()
+		patchedConfigs[i] = configDef
 	}
 
 	// 2. Apply response patch from guide
 	if g, exists := in.guidesByClassName[pluginClassName]; exists {
-		return g.KafkaConnectToConsole(response)
+		return g.KafkaConnectToConsole(pluginClassName, patchedConfigs)
 	}
 
-	return in.defaultGuide.KafkaConnectToConsole(response)
+	return in.defaultGuide.KafkaConnectToConsole(pluginClassName, patchedConfigs)
 }
 
 func (in *Interceptor) applyConfigPatches(pluginClassName string, configDefinition model.ConfigDefinition) model.ConfigDefinition {

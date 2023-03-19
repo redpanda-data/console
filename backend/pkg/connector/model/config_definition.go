@@ -22,8 +22,9 @@ import (
 // returned. Each config definition can also validate the provided user input and return
 // validation errors.
 type ConfigDefinition struct {
-	Definition ConfigDefinitionKey   `json:"definition"`
-	Value      ConfigDefinitionValue `json:"value"`
+	Definition ConfigDefinitionKey      `json:"definition"`
+	Value      ConfigDefinitionValue    `json:"value"`
+	Metadata   ConfigDefinitionMetadata `json:"metadata,omitempty"`
 }
 
 // NewConfigDefinitionFromValidationResult creates a ConfigDefinition based on the validation response
@@ -78,6 +79,19 @@ func (c *ConfigDefinition) SetValue(value string) *ConfigDefinition {
 // SetRecommendedValues sets the recommended values of the config value.
 func (c *ConfigDefinition) SetRecommendedValues(recommendedValues []string) *ConfigDefinition {
 	c.Value.RecommendedValues = recommendedValues
+	return c
+}
+
+func (c *ConfigDefinition) SetComponentType(componentType ComponentType) *ConfigDefinition {
+	c.Metadata.ComponentType = componentType
+	return c
+}
+
+func (c *ConfigDefinition) AddRecommendedValueWithMetadata(value, displayName string) *ConfigDefinition {
+	c.Metadata.RecommendedValues = append(c.Metadata.RecommendedValues, RecommendedValueWithMetadata{
+		Value:       value,
+		DisplayName: displayName,
+	})
 	return c
 }
 

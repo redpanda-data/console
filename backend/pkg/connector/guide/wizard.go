@@ -10,8 +10,6 @@
 package guide
 
 import (
-	"github.com/cloudhut/connect-client"
-
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
@@ -64,11 +62,10 @@ func (g *WizardGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]a
 // metadata that specifies group hierarchy, ordering, additional documentation etc. based
 // on the wizardSteps and return it. All config keys that are not explicitly listed in
 // wizardSteps will be removed from the response.
-func (g *WizardGuide) KafkaConnectToConsole(response connect.ConnectorValidationResult) model.ValidationResponse {
+func (g *WizardGuide) KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition) model.ValidationResponse {
 	// 1. Extract all configs from the response and index them by their config key
 	configsByKey := make(map[string]model.ConfigDefinition)
-	for _, config := range response.Configs {
-		configDef := model.NewConfigDefinitionFromValidationResult(config)
+	for _, configDef := range patchedConfigs {
 		configsByKey[configDef.Definition.Name] = configDef
 	}
 
@@ -88,12 +85,12 @@ func (g *WizardGuide) KafkaConnectToConsole(response connect.ConnectorValidation
 	}
 
 	validationResponse := model.ValidationResponse{
-		Name:    response.Name,
+		Name:    pluginClassName,
 		Configs: configs,
 		Steps:   g.wizardSteps,
 	}
 	if g.options.kafkaConnectToConsoleHookFn == nil {
 		return validationResponse
 	}
-	return g.options.kafkaConnectToConsoleHookFn(response, validationResponse)
+	return g.options.kafkaConnectToConsoleHookFn(validationResponse)
 }

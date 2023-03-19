@@ -12,8 +12,6 @@
 package guide
 
 import (
-	"github.com/cloudhut/connect-client"
-
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
@@ -36,5 +34,5 @@ type Guide interface {
 	// The Console validation response contains additional metadata that allows the frontend
 	// to provide the user with more context, such as Documentation links a two-level grouping,
 	// opinionated ordering etc.
-	KafkaConnectToConsole(response connect.ConnectorValidationResult) model.ValidationResponse
+	KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition) model.ValidationResponse
 }
