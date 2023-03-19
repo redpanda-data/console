@@ -51,15 +51,24 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 	case "key.converter":
 		d.SetDisplayName("Kafka message key format").
 			SetDocumentation("Format of the key in the Kafka topic. A valid schema must be available.").
-			SetImportance(model.ConfigDefinitionImportanceHigh)
+			SetImportance(model.ConfigDefinitionImportanceHigh).
+			SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "String")
 	case "value.converter":
 		d.SetDisplayName("Kafka message value format").
 			SetDocumentation("Format of the value in the Kafka topic. A valid schema must be available.").
-			SetImportance(model.ConfigDefinitionImportanceHigh)
+			SetImportance(model.ConfigDefinitionImportanceHigh).
+			SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "String")
 	case "header.converter":
 		d.SetDisplayName("Kafka message headers format").
 			SetDocumentation("Format of the headers in the Kafka topic. A valid schema must be available.").
-			SetImportance(model.ConfigDefinitionImportanceLow)
+			SetImportance(model.ConfigDefinitionImportanceLow).
+			SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "String")
 	}
 	return d
 }

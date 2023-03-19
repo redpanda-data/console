@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cloudhut/connect-client"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
@@ -65,12 +64,11 @@ func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]
 }
 
 // KafkaConnectToConsole implements Guide.KafkaConnectToConsole.
-func (g *DefaultGuide) KafkaConnectToConsole(response connect.ConnectorValidationResult) model.ValidationResponse {
+func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition) model.ValidationResponse {
 	// 1. Extract all configs from the response and index them by their config key
-	configs := make([]model.ConfigDefinition, len(response.Configs))
+	configs := make([]model.ConfigDefinition, len(patchedConfigs))
 	configsByGroup := make(map[string][]model.ConfigDefinition)
-	for i, config := range response.Configs {
-		configDef := model.NewConfigDefinitionFromValidationResult(config)
+	for i, configDef := range patchedConfigs {
 		configs[i] = configDef
 
 		group := ""
@@ -135,7 +133,7 @@ func (g *DefaultGuide) KafkaConnectToConsole(response connect.ConnectorValidatio
 	}
 
 	validationResponse := model.ValidationResponse{
-		Name:    response.Name,
+		Name:    pluginClassName,
 		Configs: configs,
 		Steps: []model.ValidationResponseStep{
 			{
@@ -148,5 +146,5 @@ func (g *DefaultGuide) KafkaConnectToConsole(response connect.ConnectorValidatio
 	if g.options.kafkaConnectToConsoleHookFn == nil {
 		return validationResponse
 	}
-	return g.options.kafkaConnectToConsoleHookFn(response, validationResponse)
+	return g.options.kafkaConnectToConsoleHookFn(validationResponse)
 }
