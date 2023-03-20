@@ -16,6 +16,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -152,6 +154,24 @@ func (c *Client) GetSchemaByID(id uint32) (*SchemaResponse, error) {
 	parsed, ok := res.Result().(*SchemaResponse)
 	if !ok {
 		return nil, fmt.Errorf("failed to parse schema response")
+	}
+
+	var newSchema []string
+	if parsed.References != nil {
+		for _, reference := range parsed.References {
+			refSchema, err := c.GetSchemaBySubject(reference.Subject, strconv.Itoa(reference.Version))
+
+			if err != nil {
+				return nil, fmt.Errorf("get reference schema by subject failed: %w", err)
+			}
+
+			newSchema = append(newSchema, refSchema.Schema)
+		}
+	}
+
+	if len(newSchema) != 0 {
+		newSchema = append(newSchema, parsed.Schema)
+		parsed.Schema = strings.Join(newSchema, ",")
 	}
 
 	return parsed, nil
