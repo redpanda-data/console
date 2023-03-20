@@ -53,22 +53,28 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			SetDocumentation("Format of the key in the Kafka topic. A valid schema must be available.").
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "String")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES")
 	case "value.converter":
 		d.SetDisplayName("Kafka message value format").
 			SetDocumentation("Format of the value in the Kafka topic. A valid schema must be available.").
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "String")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES")
 	case "header.converter":
 		d.SetDisplayName("Kafka message headers format").
 			SetDocumentation("Format of the headers in the Kafka topic. A valid schema must be available.").
 			SetImportance(model.ConfigDefinitionImportanceLow).
 			SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "String")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES")
 	}
 	return d
 }
