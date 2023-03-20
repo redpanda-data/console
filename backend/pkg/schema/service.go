@@ -262,10 +262,6 @@ func (s *Service) GetAvroSchemaVersionedResponseBySubject(subject string, versio
 			return nil, fmt.Errorf("get schema by subject failed: %w", err)
 		}
 
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse schema: %w", err)
-		}
-
 		return schema, nil
 	})
 
