@@ -254,29 +254,6 @@ func (s *Service) Parse(schema *SchemaResponse) (avro.Schema, error) {
 	return avro.Parse(schema.Schema)
 }
 
-func (s *Service) ParseAvroSchemaByReferences(references []Reference) error {
-	if references == nil {
-		return nil
-	}
-
-	for _, reference := range references {
-		schemaRef, err := s.GetAvroSchemaVersionedResponseBySubject(reference.Subject, strconv.Itoa(reference.Version))
-
-		if err != nil {
-			return fmt.Errorf("get reference schema failed: %w", err)
-		}
-
-		fmt.Println(schemaRef.Subject, schemaRef.Version)
-
-		err = s.ParseAvroSchemaByReferences(schemaRef.References)
-
-		if err != nil {
-			return fmt.Errorf("get reference schema failed: %w", err)
-		}
-	}
-	return nil
-}
-
 func (s *Service) GetAvroSchemaVersionedResponseBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
 	cacheKey := subject + "v" + version
 	cachedSchema, err, _ := s.avroSchemaBySubject.Get(cacheKey, func() (*SchemaVersionedResponse, error) {
