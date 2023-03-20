@@ -84,7 +84,11 @@ func NewInterceptor(opts ...Option) *Interceptor {
 
 	in.guidesByClassName = make(map[string]guide.Guide)
 	for _, guide := range in.guides {
-		in.guidesByClassName[guide.ClassName()] = guide
+		if guide.ClassName() == "" {
+			in.defaultGuide = guide
+		} else {
+			in.guidesByClassName[guide.ClassName()] = guide
+		}
 	}
 
 	return in
