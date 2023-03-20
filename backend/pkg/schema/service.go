@@ -235,7 +235,7 @@ func (s *Service) Parse(schema *SchemaResponse) (avro.Schema, error) {
 			schemaRef, err := s.GetAvroSchemaVersionedResponseBySubject(reference.Subject, strconv.Itoa(reference.Version))
 
 			if err != nil {
-				return nil, fmt.Errorf("get reference schema failed: %w", err)
+				return nil, err
 			}
 
 			_, err = s.Parse(&SchemaResponse{
@@ -244,7 +244,7 @@ func (s *Service) Parse(schema *SchemaResponse) (avro.Schema, error) {
 			})
 
 			if err != nil {
-				return nil, fmt.Errorf("get reference schema failed: %w", err)
+				return nil, err
 			}
 
 			avro.Parse(schemaRef.Schema)
