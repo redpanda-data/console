@@ -1236,6 +1236,11 @@ export interface ConnectorGroup {
     config_keys: string[];
 }
 
+interface ConnectorRecommendedValueEntry {
+    value: string;
+    display_name: string;
+}
+
 export interface ConnectorProperty {
     definition: {
         name: string;
@@ -1260,6 +1265,10 @@ export interface ConnectorProperty {
         errors: string[];
         visible: boolean;
     };
+    metadata: {
+        component_type?: 'RADIO_GROUP';
+        recommended_values?: ConnectorRecommendedValueEntry[]
+    }
 }
 
 export enum PropertyImportance {

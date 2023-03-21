@@ -10,18 +10,20 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Switch, Select, AutoComplete } from 'antd';
+import { Select } from 'antd';
 import { observer } from 'mobx-react';
 import { PropertyWidth } from '../../../../state/restInterfaces';
 import { findPopupContainer } from '../../../../utils/tsxUtils';
 import { Property } from '../../../../state/connect/state';
 import { CommaSeparatedStringList } from './List';
 import { SecretInput } from './forms/SecretInput';
-import { Input, NumberInput, FormField } from '@redpanda-data/ui';
+import { Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
+import { ErrorWrapper } from './forms/ErrorWrapper';
 
 export const PropertyComponent = observer((props: { property: Property }) => {
     const p = props.property;
     const def = p.entry.definition;
+    const metadata = p.entry.metadata;
     if (p.isHidden) return null;
     if (p.entry.value.visible === false) return null;
 
@@ -46,6 +48,23 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         case 'STRING':
         case 'CLASS':
             const recValues = p.entry.value.recommended_values;
+            if (metadata?.component_type === 'RADIO_GROUP') {
+                const options =
+                    metadata.recommended_values && metadata.recommended_values?.length > 0
+                        ? metadata.recommended_values.map(({ value, display_name: label }) => ({ value, label }))
+                        : recValues.map((v) => ({ value: v, label: String(v).toUpperCase() }));
+                inputComp = (
+                    <RadioGroup
+                        value={String(v)}
+                        onChange={(e) => (p.value = e)}
+                        options={options}
+                        name={p.name}
+                        defaultValue={String(v || def.default_value)}
+                    />
+                );
+                break;
+            }
+
             if (recValues && recValues.length) {
                 // Enum (recommended_values)
                 const options = recValues.map((x: string) => ({ label: x, value: x }));
@@ -59,30 +78,15 @@ export const PropertyComponent = observer((props: { property: Property }) => {
                     />
                 );
             } else {
-                // String, Class
-                // Maybe we have some suggestions
-                if (p.suggestedValues && p.suggestedValues.length > 0) {
-                    // Input with suggestions
-                    inputComp = (
-                        <AutoComplete
-                            value={String(v)}
-                            onChange={(e) => (p.value = e)}
-                            options={p.suggestedValues.map((x) => ({ value: x }))}
-                            getPopupContainer={findPopupContainer}
-                            {...{ spellCheck: false }}
-                        />
-                    );
-                } else {
-                    // Input
-                    inputComp = (
-                        <Input
-                            value={String(v)}
-                            onChange={(e) => (p.value = e.target.value)}
-                            defaultValue={def.default_value ?? undefined}
-                            spellCheck={false}
-                        />
-                    );
-                }
+                // Input
+                inputComp = (
+                    <Input
+                        value={String(v)}
+                        onChange={(e) => (p.value = e.target.value)}
+                        defaultValue={def.default_value ?? undefined}
+                        spellCheck={false}
+                    />
+                );
             }
             break;
 
@@ -97,7 +101,6 @@ export const PropertyComponent = observer((props: { property: Property }) => {
                 />
             );
             break;
-
         case 'INT':
         case 'LONG':
         case 'SHORT':
@@ -107,7 +110,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             break;
 
         case 'BOOLEAN':
-            inputComp = <Switch checked={Boolean(p.value)} onChange={(e) => (p.value = e)} />;
+            inputComp = <Switch isChecked={Boolean(p.value)} onChange={(e) => (p.value = e.target.checked)} />;
             break;
 
         case 'LIST':
@@ -133,29 +136,3 @@ const inputSizeToClass = {
     [PropertyWidth.Medium]: 'medium',
     [PropertyWidth.Long]: 'long',
 } as const;
-
-const ErrorWrapper = observer(function(props: { property: Property; input: JSX.Element }) {
-    const { property, input } = props;
-    const showErrors = property.errors.length > 0;
-
-    const errors = showErrors ? property.errors : property.lastErrors;
-
-    const errorToShow = showErrors ? errors[property.currentErrorIndex % errors.length] : undefined;
-
-    const cycleError = showErrors ? () => property.currentErrorIndex++ : undefined;
-
-    return (
-        <div>
-            <FormField
-                isInvalid={!!errorToShow}
-                isRequired={property.entry.definition.required}
-                label={property.entry.definition.display_name}
-                errorText={errorToShow}
-                description={property.entry.definition.documentation}
-                onClick={cycleError}
-            >
-                {input}
-            </FormField>
-        </div>
-    );
-});

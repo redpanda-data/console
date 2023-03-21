@@ -642,7 +642,6 @@ export class ConnectorPropertiesStore {
                     entry: p,
                     value: value,
                     isHidden: hiddenProperties.includes(name),
-                    suggestedValues: suggestedValues[name],
                     errors: p.value.errors ?? [],
                     lastErrors: [],
                     showErrors: p.value.errors.length > 0,
@@ -675,21 +674,6 @@ const hiddenProperties = [
     'connector.class', // user choses that in the first page of the wizard
 ];
 
-const converters = [
-    'io.confluent.connect.avro.AvroConverter',
-    'io.confluent.connect.protobuf.ProtobufConverter',
-    'org.apache.kafka.connect.storage.StringConverter',
-    'org.apache.kafka.connect.json.JsonConverter',
-    'io.confluent.connect.json.JsonSchemaConverter',
-    'org.apache.kafka.connect.converters.ByteArrayConverter',
-];
-const suggestedValues: { [key: string]: string[] } = {
-    'key.converter': converters,
-    'value.converter': converters,
-    'header.converter': converters,
-    'config.action.reload': ['restart', 'none'],
-};
-
 export interface PropertyGroup {
     step: ConnectorStep;
     group: ConnectorGroup;
@@ -708,9 +692,7 @@ export interface Property {
     name: string;
     entry: ConnectorProperty;
     value: null | string | number | boolean | string[];
-
     isHidden: boolean; // currently only used for "connector.class"
-    suggestedValues: undefined | string[]; // values that are not listed in entry.value.recommended_values
     errors: string[]; // current errors
     showErrors: boolean; // true = property has errors currently
     lastErrors: string[]; // previous errors, used so we can fade/animate them out when they get fixed
