@@ -182,7 +182,6 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
 		}
 
 		codec, err := s.Parse(schemaRes)
-
 		if err != nil {
 			s.logger.Warn("failed to parse avro schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
 			return nil, fmt.Errorf("failed to parse schema: %w", err)
@@ -233,7 +232,6 @@ func (s *Service) Parse(schema *SchemaResponse) (avro.Schema, error) {
 	if schema.References != nil {
 		for _, reference := range schema.References {
 			schemaRef, err := s.GetAvroSchemaVersionedResponseBySubject(reference.Subject, strconv.Itoa(reference.Version))
-
 			if err != nil {
 				return nil, err
 			}
