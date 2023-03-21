@@ -22,15 +22,7 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 		className: "com.redpanda.kafka.connect.s3.S3SinkConnector",
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
-			{
-				Name: "Topics to export",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"topics", "topics.regex"},
-					},
-				},
-			},
+			topicsToExport(),
 
 			{
 				Name: "S3 Connection",
@@ -54,9 +46,9 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
-							"format.output.type",
 							"key.converter",
 							"value.converter",
+							"format.output.type",
 
 							"file.name.template",
 							"file.name.prefix",
@@ -76,24 +68,9 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 				},
 			},
 
-			{
-				Name: "Sizing",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"tasks.max"},
-					},
-				},
-			},
-			{
-				Name: "Review and launch",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"name"},
-					},
-				},
-			},
+			sizing(),
+
+			reviewAndLaunch(),
 		},
 	}
 }
