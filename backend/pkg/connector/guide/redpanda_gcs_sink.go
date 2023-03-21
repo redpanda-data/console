@@ -39,7 +39,7 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 						Name:              "Authentication with Google",
 						Description:       "A Google service accounts grants programmatic access to GCP resources.",
 						DocumentationLink: "https://",
-						ConfigKeys:        []string{"gcp.credentials.json"},
+						ConfigKeys:        []string{"gcs.credentials.json"},
 					},
 					{
 						Name:       "GCS bucket settings",
@@ -54,19 +54,18 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
-							"name",
+							"format.output.type",
 							"key.converter",
 							"value.converter",
-							"header.converter",
-							"format.output.type",
-							"file.max.records",
-							"file.flush.interval.ms",
-							"gcs.bucket.check",
-							"file.compression.type",
+
 							"file.name.template",
 							"file.name.prefix",
 							"format.output.fields",
 							"format.output.fields.value.encoding",
+							"file.compression.type",
+							"file.max.records",
+							"file.flush.interval.ms",
+							"gcs.bucket.check",
 							"gcs.retry.backoff.initial.delay.ms",
 							"gcs.retry.backoff.max.delay.ms",
 							"gcs.retry.backoff.delay.multiplier",
@@ -85,6 +84,15 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{"tasks.max"},
+					},
+				},
+			},
+			{
+				Name: "Review and launch",
+				Groups: []model.ValidationResponseStepGroup{
+					{
+						// No Group name and description here
+						ConfigKeys: []string{"name"},
 					},
 				},
 			},
