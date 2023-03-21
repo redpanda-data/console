@@ -49,8 +49,6 @@ func (c *ConfigPatchRedpandaS3) IsMatch(configKey, connectorClass string) bool {
 func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
-	case "aws.s3.bucket.name":
-		d.SetDisplayName("S3 Bucket Name")
 	case "format.output.type":
 		d.SetDisplayName("S3 file format").
 			SetDocumentation("Format of the key coming from the Kafka topic. A valid schema must be available.").
@@ -91,20 +89,17 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.Co
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "aws.access.key.id", "aws.secret.access.key", "aws.s3.bucket.name", "aws.s3.region", "format.output.type":
+	case "aws.access.key.id",
+		"aws.secret.access.key",
+		"aws.s3.bucket.name",
+		"aws.s3.region",
+		"format.output.type":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	case "aws.sts.role.arn",
 		"aws.sts.role.session.name",
 		"aws.sts.role.external.id",
 		"aws.sts.role.session.duration",
 		"aws.sts.config.endpoint",
-		"file.compression.type",
-		"file.name.template",
-		"file.name.prefix",
-		"format.output.fields",
-		"format.output.fields.value.encoding",
-		"format.output.envelope",
-		"file.max.records",
 		"config.action.reload":
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	}
