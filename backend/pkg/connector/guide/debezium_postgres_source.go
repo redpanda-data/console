@@ -11,7 +11,7 @@ package guide
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-// NewDebeziumPostgresGuide returns a new Guide for Debezium's MySQL connector.
+// NewDebeziumPostgresGuide returns a new Guide for Debezium's Postgres source connector.
 func NewDebeziumPostgresGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
@@ -19,11 +19,11 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 	}
 
 	return &WizardGuide{
-		className: "io.debezium.connector.mysql.MySqlConnector",
+		className: "io.debezium.connector.postgresql.PostgresConnector",
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
-				Name: "Topics to export",
+				Name: "Topics to import",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
@@ -53,7 +53,6 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
-							"name",
 							"key.converter",
 							"value.converter",
 							"header.converter",
@@ -138,6 +137,16 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 							"unavailable.value.placeholder",
 							"xmin.fetch.interval.ms",
 						},
+					},
+				},
+			},
+
+			{
+				Name: "Review and launch",
+				Groups: []model.ValidationResponseStepGroup{
+					{
+						// No Group name and description here
+						ConfigKeys: []string{"name"},
 					},
 				},
 			},

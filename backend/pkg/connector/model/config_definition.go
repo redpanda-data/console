@@ -87,6 +87,11 @@ func (c *ConfigDefinition) SetComponentType(componentType ComponentType) *Config
 	return c
 }
 
+func (c *ConfigDefinition) ClearRecommendedValuesWithMetadata() *ConfigDefinition {
+	c.Metadata.RecommendedValues = make([]RecommendedValueWithMetadata, 0)
+	return c
+}
+
 func (c *ConfigDefinition) AddRecommendedValueWithMetadata(value, displayName string) *ConfigDefinition {
 	c.Metadata.RecommendedValues = append(c.Metadata.RecommendedValues, RecommendedValueWithMetadata{
 		Value:       value,
