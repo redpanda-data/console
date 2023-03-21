@@ -15,43 +15,44 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
-// ConfigPatchRedpandaGCS is a config patch that includes changes that shall be applied to the
-// Redpanda GCS Source and Sink connectors.
-type ConfigPatchRedpandaGCS struct {
+// ConfigPatchRedpandaS3 is a config patch that includes changes that shall be applied to the
+// Redpanda S3 Sink connector.
+type ConfigPatchRedpandaS3 struct {
 	ConfigurationKeySelector IncludeExcludeSelector
 	ConnectorClassSelector   IncludeExcludeSelector
 }
 
-var _ ConfigPatch = (*ConfigPatchRedpandaGCS)(nil)
+var _ ConfigPatch = (*ConfigPatchRedpandaS3)(nil)
 
-// NewConfigPatchRedpandaGCS returns a new Patch for the Redpanda GCS connectors.
-func NewConfigPatchRedpandaGCS() *ConfigPatchRedpandaGCS {
-	return &ConfigPatchRedpandaGCS{
+// NewConfigPatchRedpandaS3 returns a new Patch for the Redpanda S3 connector.
+func NewConfigPatchRedpandaS3() *ConfigPatchRedpandaS3 {
+	return &ConfigPatchRedpandaS3{
 		ConfigurationKeySelector: IncludeExcludeSelector{
 			Include: regexp.MustCompile(`.*`),
 			Exclude: nil,
 		},
 		ConnectorClassSelector: IncludeExcludeSelector{
-			Include: regexp.MustCompile(`com.redpanda.kafka.connect.gcs\..*`),
+			Include: regexp.MustCompile(`com.redpanda.kafka.connect.s3\..*`),
 			Exclude: nil,
 		},
 	}
 }
 
 // IsMatch implements the ConfigPatch.IsMatch interface.
-func (c *ConfigPatchRedpandaGCS) IsMatch(configKey, connectorClass string) bool {
+func (c *ConfigPatchRedpandaS3) IsMatch(configKey, connectorClass string) bool {
 	return c.ConfigurationKeySelector.IsMatch(configKey) && c.ConnectorClassSelector.IsMatch(connectorClass)
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 //
 //nolint:cyclop // This function defines/patches a lot of things, but it's easy to comprehend.
-func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
 	case "format.output.type":
-		d.SetDisplayName("GCS file format").
-			SetDocumentation("Format of the key coming from the Kafka topic. A valid schema must be available.")
+		d.SetDisplayName("S3 file format").
+			SetDocumentation("Format of the key coming from the Kafka topic. A valid schema must be available.").
+			SetComponentType(model.ComponentRadioGroup)
 	case "file.compression.type":
 		d.SetDisplayName("Output file compression")
 	case "format.output.fields":
@@ -62,8 +63,14 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.C
 		d.SetDisplayName("Envelope for primitives")
 	case "file.max.records":
 		d.SetDisplayName("Max records per file")
+	case "aws.access.key.id":
+		d.SetRequired(true)
+	case "aws.secret.access.key":
+		d.SetRequired(true)
+	case "aws.s3.region":
+		d.SetRecommendedValues(awsRegions)
 	case "name":
-		d.SetValue("gcs-connector")
+		d.SetValue("s3-connector")
 
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
@@ -72,13 +79,28 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.C
 		d.SetDisplayName("Retry back-off").
 			SetDocumentation("Retry backoff in milliseconds. Useful for performing recovery in case " +
 				"of transient exceptions. Maximum value is 86400000 (24 hours).")
+	case "aws.s3.backoff.max.delay.ms":
+		d.SetDisplayName("S3 maximum back-off")
+	case "aws.s3.backoff.max.retries":
+		d.SetDisplayName("S3 max retries")
+	case "aws.s3.backoff.delay.ms":
+		d.SetDisplayName("S3 retry back-off")
 	}
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "format.output.type":
+	case "aws.access.key.id",
+		"aws.secret.access.key",
+		"aws.s3.bucket.name",
+		"aws.s3.region",
+		"format.output.type":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "config.action.reload":
+	case "aws.sts.role.arn",
+		"aws.sts.role.session.name",
+		"aws.sts.role.external.id",
+		"aws.sts.role.session.duration",
+		"aws.sts.config.endpoint",
+		"config.action.reload":
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	}
 
