@@ -28,7 +28,7 @@ var _ ConfigPatch = (*ConfigPatchAll)(nil)
 func NewConfigPatchCommon() *ConfigPatchCommon {
 	return &ConfigPatchCommon{
 		ConfigurationKeySelector: IncludeExcludeSelector{
-			Include: regexp.MustCompile(`(tasks.max|key.converter|value.converter|header.converter)`),
+			Include: regexp.MustCompile(`(tasks.max|key.converter|value.converter|header.converter|config.action.reload)`),
 			Exclude: nil,
 		},
 		ConnectorClassSelector: IncludeExcludeSelector{
@@ -56,7 +56,8 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
+			AddRecommendedValueWithMetadata("", "NONE")
 	case "value.converter":
 		d.SetDisplayName("Kafka message value format").
 			SetDocumentation("Format of the value in the Kafka topic. A valid schema must be available.").
@@ -65,7 +66,8 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
+			AddRecommendedValueWithMetadata("", "NONE")
 	case "header.converter":
 		d.SetDisplayName("Kafka message headers format").
 			SetDocumentation("Format of the headers in the Kafka topic. A valid schema must be available.").
@@ -74,7 +76,12 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
+			AddRecommendedValueWithMetadata("", "NONE")
+	case "config.action.reload":
+		d.SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("restart", "RESTART").
+			AddRecommendedValueWithMetadata("none", "NONE")
 	}
 	return d
 }
