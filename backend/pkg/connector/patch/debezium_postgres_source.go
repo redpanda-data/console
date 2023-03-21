@@ -51,21 +51,27 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 	switch d.Definition.Name {
 	case "name":
 		d.SetValue("postgres-connector")
+	case "plugin.name":
+		d.SetValue("pgoutput")
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
 		d.SetDisplayName("Retry timeout")
 	case "key.converter":
-		d.ClearRecommendedValuesWithMetadata().
+		d.SetValue("io.confluent.connect.avro.AvroConverter").
+			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
 	case "value.converter":
-		d.ClearRecommendedValuesWithMetadata().
+		d.SetValue("io.confluent.connect.avro.AvroConverter").
+			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
 	}
 
 	// Importance Patches
 	switch d.Definition.Name {
+	case "database.dbname":
+		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	case "table.include.list",
 		"schema.include.list":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
