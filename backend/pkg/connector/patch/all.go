@@ -70,6 +70,7 @@ func NewConfigPatchAll() *ConfigPatchAll {
 			"KMS",
 			"IAM",
 			"GSSAPI",
+			"JSON",
 		},
 		Replacers: map[string]string{
 			"ms": "milliseconds",

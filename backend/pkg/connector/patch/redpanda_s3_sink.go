@@ -54,11 +54,14 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.Co
 			SetDocumentation("Format of the key coming from the Kafka topic. A valid schema must be available.").
 			SetComponentType(model.ComponentRadioGroup)
 	case "file.compression.type":
-		d.SetDisplayName("Output file compression")
+		d.SetDisplayName("Output file compression").
+			SetComponentType(model.ComponentRadioGroup)
 	case "format.output.fields":
-		d.SetDisplayName("Output fields")
+		d.SetDisplayName("Output fields").
+			SetComponentType(model.ComponentRadioGroup)
 	case "format.output.fields.value.encoding":
-		d.SetDisplayName("Value field encoding")
+		d.SetDisplayName("Value field encoding").
+			SetComponentType(model.ComponentRadioGroup)
 	case "format.output.envelope":
 		d.SetDisplayName("Envelope for primitives")
 	case "file.max.records":
