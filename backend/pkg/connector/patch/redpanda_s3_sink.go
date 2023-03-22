@@ -65,10 +65,15 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.Co
 		d.SetDisplayName("Max records per file")
 	case "aws.access.key.id":
 		d.SetRequired(true)
+		d.SetDocumentation("")
 	case "aws.secret.access.key":
 		d.SetRequired(true)
+		d.SetDocumentation("")
+	case "aws.s3.bucket.name":
+		d.SetDocumentation("")
 	case "aws.s3.region":
 		d.SetRecommendedValues(awsRegions)
+		d.SetDocumentation("")
 	case "name":
 		d.SetValue("s3-connector")
 

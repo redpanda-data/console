@@ -49,6 +49,8 @@ func (c *ConfigPatchRedpandaGCS) IsMatch(configKey, connectorClass string) bool 
 func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
+	case "gcs.credentials.json":
+		d.SetDocumentation("")
 	case "format.output.type":
 		d.SetDisplayName("GCS file format").
 			SetDocumentation("Format of the key coming from the Kafka topic. A valid schema must be available.")
