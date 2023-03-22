@@ -111,7 +111,7 @@ func (in *Interceptor) ConsoleToKafkaConnect(pluginClassName string, configs map
 // KafkaConnectToConsole is called after we retrieved a connector's validate response from
 // the target Kafka connect cluster. We apply modifications based on that response so
 // that the configuration properties are presented in a more user-friendly fashion.
-func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, response connect.ConnectorValidationResult) model.ValidationResponse {
+func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, response connect.ConnectorValidationResult, configs map[string]any) model.ValidationResponse {
 	// 1. Run all patches on each configuration
 	patchedConfigs := make([]model.ConfigDefinition, len(response.Configs))
 	for i, config := range response.Configs {
@@ -122,10 +122,10 @@ func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, response co
 
 	// 2. Apply response patch from guide
 	if g, exists := in.guidesByClassName[pluginClassName]; exists {
-		return g.KafkaConnectToConsole(pluginClassName, patchedConfigs)
+		return g.KafkaConnectToConsole(pluginClassName, patchedConfigs, configs)
 	}
 
-	return in.defaultGuide.KafkaConnectToConsole(pluginClassName, patchedConfigs)
+	return in.defaultGuide.KafkaConnectToConsole(pluginClassName, patchedConfigs, configs)
 }
 
 func (in *Interceptor) applyConfigPatches(pluginClassName string, configDefinition model.ConfigDefinition) model.ConfigDefinition {
