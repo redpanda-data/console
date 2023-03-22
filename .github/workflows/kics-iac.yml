@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: run kics Scan
-        uses: checkmarx/kics-github-action@v1.6
+        uses: checkmarx/kics-github-action@v1.6.3
         with:
           path: .
           ignore_on_exit: results
