@@ -10,7 +10,6 @@
 package schema
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
 
