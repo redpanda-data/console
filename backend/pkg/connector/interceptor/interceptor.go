@@ -51,6 +51,7 @@ func CommunityPatches() []patch.ConfigPatch {
 		patch.NewConfigPatchRedpandaS3(),
 		patch.NewConfigPatchRedpandaGCS(),
 		patch.NewConfigPatchDebeziumPostgresSource(),
+		patch.NewConfigPatchDebeziumMysqlSource(),
 	}
 }
 

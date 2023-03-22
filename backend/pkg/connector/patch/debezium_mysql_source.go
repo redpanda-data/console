@@ -10,49 +10,54 @@
 package patch
 
 import (
-	"regexp"
-
+	"fmt"
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
+	"math/rand"
+	"regexp"
 )
 
-// ConfigPatchDebeziumPostgresSource is a config patch that includes changes that shall be applied to the
-// Debezium Postgres source connectors.
-type ConfigPatchDebeziumPostgresSource struct {
+// ConfigPatchDebeziumMysqlSource is a config patch that includes changes that shall be applied to the
+// Debezium Mysql source connectors.
+type ConfigPatchDebeziumMysqlSource struct {
 	ConfigurationKeySelector IncludeExcludeSelector
 	ConnectorClassSelector   IncludeExcludeSelector
 }
 
-var _ ConfigPatch = (*ConfigPatchDebeziumPostgresSource)(nil)
+var _ ConfigPatch = (*ConfigPatchDebeziumMysqlSource)(nil)
 
-// NewConfigPatchDebeziumPostgresSource returns a new Patch for the Debezium Postgres source connectors.
-func NewConfigPatchDebeziumPostgresSource() *ConfigPatchDebeziumPostgresSource {
-	return &ConfigPatchDebeziumPostgresSource{
+// NewConfigPatchDebeziumMysqlSource returns a new Patch for the Debezium Mysql source connectors.
+func NewConfigPatchDebeziumMysqlSource() *ConfigPatchDebeziumMysqlSource {
+	return &ConfigPatchDebeziumMysqlSource{
 		ConfigurationKeySelector: IncludeExcludeSelector{
 			Include: regexp.MustCompile(`.*`),
 			Exclude: nil,
 		},
 		ConnectorClassSelector: IncludeExcludeSelector{
-			Include: regexp.MustCompile(`io.debezium.connector.postgresql\..*`),
+			Include: regexp.MustCompile(`io.debezium.connector.mysql\..*`),
 			Exclude: nil,
 		},
 	}
 }
 
 // IsMatch implements the ConfigPatch.IsMatch interface.
-func (c *ConfigPatchDebeziumPostgresSource) IsMatch(configKey, connectorClass string) bool {
+func (c *ConfigPatchDebeziumMysqlSource) IsMatch(configKey, connectorClass string) bool {
 	return c.ConfigurationKeySelector.IsMatch(configKey) && c.ConnectorClassSelector.IsMatch(connectorClass)
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 //
 //nolint:cyclop // This function defines/patches a lot of things, but it's easy to comprehend.
-func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+	schemaHistoryTopic := fmt.Sprintf("%s%d", "schema-changes.inventory-", rand.Intn(100))
+
 	// Misc patches
 	switch d.Definition.Name {
 	case "name":
-		d.SetValue("debezium-postgresql-connector")
-	case "plugin.name":
-		d.SetValue("pgoutput")
+		d.SetValue("debezium-mysql-connector")
+	case "database.allowPublicKeyRetrieval":
+		d.SetValue("true")
+	case "schema.history.internal.kafka.topic":
+		d.SetValue(schemaHistoryTopic)
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
 		d.SetDisplayName("Retry timeout")
@@ -70,9 +75,9 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "database.dbname":
-		d.SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "schema.include.list",
+	case "connect.timeout.ms",
+		"database.allowPublicKeyRetrieval",
+		"schema.include.list",
 		"schema.exclude.list",
 		"database.include.list",
 		"database.exclude.list",
@@ -80,8 +85,6 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 		"table.exclude.list",
 		"column.include.list",
 		"column.exclude.list",
-		"database.ssl.mode",
-		"money.fraction.digits",
 		"topic.creation.enable",
 		"topic.creation.default.partitions",
 		"topic.creation.default.replication.factor",

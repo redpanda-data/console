@@ -43,6 +43,8 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 							"database.user",
 							"database.password",
 							"database.ssl.mode",
+							"connect.timeout.ms",
+							"database.allowPublicKeyRetrieval",
 						},
 					},
 				},
@@ -54,7 +56,6 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
-							"name",
 							"key.converter",
 							"value.converter",
 							"header.converter",
@@ -63,8 +64,34 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 							"database.include.list",
 							"column.exclude.list",
 							"column.include.list",
-							"inconsistent.schema.handling.mode",
+							"bigint.unsigned.handling.mode",
+							"binary.handling.mode",
+							"database.connectionTimeZone",
+							"column.propagate.source.type",
+							"datatype.propagate.source.type",
+							"decimal.handling.mode",
+							"event.deserialization.failure.handling.mode",
+							"gtid.source.excludes",
+							"gtid.source.includes",
+							"max.batch.size",
+							"max.queue.size",
+							"max.queue.size.in.bytes",
+							"message.key.columns",
+							"poll.interval.ms",
+							"schema.name.adjustment.mode",
+							"tombstones.on.delete",
+							"schema.history.internal.kafka.topic",
 						},
+					},
+				},
+			},
+
+			{
+				Name: "Review and launch",
+				Groups: []model.ValidationResponseStepGroup{
+					{
+						// No Group name and description here
+						ConfigKeys: []string{"name"},
 					},
 				},
 			},
