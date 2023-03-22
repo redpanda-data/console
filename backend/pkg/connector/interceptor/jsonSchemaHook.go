@@ -20,7 +20,7 @@ func KafkaConnectToConsoleJsonSchemaHook(response model.ValidationResponse, conf
 				DefaultValue:  "true",
 				Importance:    importance,
 				Required:      false,
-				DisplayName:   prefix + " JSON contain schema",
+				DisplayName:   "Message " + prefix + " JSON contains schema",
 				Documentation: "Whether your message " + prefix + " contains schema in the schema field",
 			},
 			Value: model.ConfigDefinitionValue{
