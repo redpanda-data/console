@@ -59,8 +59,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.C
 		d.SetDisplayName("Output file compression").
 			SetComponentType(model.ComponentRadioGroup)
 	case "format.output.fields":
-		d.SetDisplayName("Output fields").
-			SetComponentType(model.ComponentRadioGroup)
+		d.SetDisplayName("Output fields")
 	case "format.output.fields.value.encoding":
 		d.SetDisplayName("Value field encoding").
 			SetComponentType(model.ComponentRadioGroup)
