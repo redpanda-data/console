@@ -77,7 +77,7 @@ func NewInterceptor(opts ...Option) *Interceptor {
 	in := &Interceptor{
 		defaultGuide:  guide.NewDefaultGuide(),
 		configPatches: CommunityPatches(),
-		guides:        CommunityGuides(),
+		guides:        CommunityGuides(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
 	}
 
 	for _, opt := range opts {

@@ -52,6 +52,12 @@ func (c *ConfigDefinition) SetImportance(importance ConfigDefinitionImportance) 
 	return c
 }
 
+// SetVisible sets the visibility of the config value.
+func (c *ConfigDefinition) SetVisible(visible bool) *ConfigDefinition {
+	c.Value.Visible = visible
+	return c
+}
+
 // SetDisplayName sets the display name of the config definition.
 func (c *ConfigDefinition) SetDisplayName(displayName string) *ConfigDefinition {
 	c.Definition.DisplayName = displayName
