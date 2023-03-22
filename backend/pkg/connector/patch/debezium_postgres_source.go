@@ -72,8 +72,20 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 	switch d.Definition.Name {
 	case "database.dbname":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "table.include.list",
-		"schema.include.list":
+	case "schema.include.list",
+		"schema.exclude.list",
+		"database.include.list",
+		"database.exclude.list",
+		"table.include.list",
+		"table.exclude.list",
+		"column.include.list",
+		"column.exclude.list",
+		"database.ssl.mode",
+		"money.fraction.digits",
+		"topic.creation.enable",
+		"topic.creation.default.partitions",
+		"topic.creation.default.replication.factor",
+		"topic.creation.default.cleanup.policy":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 
