@@ -2,7 +2,7 @@ package interceptor
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-func KafkaConnectToConsoleJsonSchemaHook(response model.ValidationResponse) model.ValidationResponse {
+func KafkaConnectToConsoleJsonSchemaHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
 	for _, prefix := range []string{"key", "value", "header"} {
 		schemaSelectorVisible := false
 		importance := model.ConfigDefinitionImportanceLow
@@ -25,7 +25,7 @@ func KafkaConnectToConsoleJsonSchemaHook(response model.ValidationResponse) mode
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              prefix + ".converter.schemas.enable",
-				Value:             "true",
+				Value:             getSchemaValueFromConfig(prefix+".converter.schemas.enable", config),
 				RecommendedValues: []string{"true", "false"},
 				Visible:           schemaSelectorVisible,
 				Errors:            []string{},
@@ -34,4 +34,13 @@ func KafkaConnectToConsoleJsonSchemaHook(response model.ValidationResponse) mode
 	}
 
 	return response
+}
+
+func getSchemaValueFromConfig(name string, configs map[string]any) any {
+	config, exists := configs[name]
+	if exists {
+		return config
+	}
+
+	return "true"
 }

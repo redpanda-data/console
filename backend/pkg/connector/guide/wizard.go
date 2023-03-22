@@ -62,7 +62,7 @@ func (g *WizardGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]a
 // metadata that specifies group hierarchy, ordering, additional documentation etc. based
 // on the wizardSteps and return it. All config keys that are not explicitly listed in
 // wizardSteps will be removed from the response.
-func (g *WizardGuide) KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition) model.ValidationResponse {
+func (g *WizardGuide) KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition, originalConfig map[string]any) model.ValidationResponse {
 	// 1. Extract all configs from the response and index them by their config key
 	configsByKey := make(map[string]model.ConfigDefinition)
 	for _, configDef := range patchedConfigs {
@@ -92,5 +92,5 @@ func (g *WizardGuide) KafkaConnectToConsole(pluginClassName string, patchedConfi
 	if g.options.kafkaConnectToConsoleHookFn == nil {
 		return validationResponse
 	}
-	return g.options.kafkaConnectToConsoleHookFn(validationResponse)
+	return g.options.kafkaConnectToConsoleHookFn(validationResponse, originalConfig)
 }

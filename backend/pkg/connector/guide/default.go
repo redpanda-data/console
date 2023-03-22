@@ -64,7 +64,7 @@ func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]
 }
 
 // KafkaConnectToConsole implements Guide.KafkaConnectToConsole.
-func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition) model.ValidationResponse {
+func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConfigs []model.ConfigDefinition, originalConfig map[string]any) model.ValidationResponse {
 	// 1. Extract all configs from the response and index them by their config key
 	configs := make([]model.ConfigDefinition, len(patchedConfigs))
 	configsByGroup := make(map[string][]model.ConfigDefinition)
@@ -146,5 +146,5 @@ func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConf
 	if g.options.kafkaConnectToConsoleHookFn == nil {
 		return validationResponse
 	}
-	return g.options.kafkaConnectToConsoleHookFn(validationResponse)
+	return g.options.kafkaConnectToConsoleHookFn(validationResponse, originalConfig)
 }

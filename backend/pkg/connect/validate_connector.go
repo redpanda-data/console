@@ -49,7 +49,7 @@ func (s *Service) ValidateConnectorConfig(ctx context.Context, clusterName strin
 		}
 	}
 
-	consoleValidationResponse := s.Interceptor.KafkaConnectToConsole(pluginClassName, cValidationResult)
+	consoleValidationResponse := s.Interceptor.KafkaConnectToConsole(pluginClassName, cValidationResult, configs)
 
 	return consoleValidationResponse, nil
 }

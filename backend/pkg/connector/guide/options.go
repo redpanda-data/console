@@ -15,7 +15,7 @@ import (
 
 // KafkaConnectToConsoleHook is a function that lets you modify the validation response
 // before it is sent to the Console frontend.
-type KafkaConnectToConsoleHook = func(result model.ValidationResponse) model.ValidationResponse
+type KafkaConnectToConsoleHook = func(result model.ValidationResponse, config map[string]any) model.ValidationResponse
 
 // ConsoleToKafkaConnectHook is a function that lets you modify the configuration key/value
 // pairs before they are sent from Console to Kafka Connect.
