@@ -59,6 +59,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES")
 	case "value.converter":
 		d.SetDisplayName("Kafka message value format").
+			SetValue("org.apache.kafka.connect.converters.ByteArrayConverter").
 			SetDocumentation("Format of the value in the Kafka topic. A valid schema must be available.").
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
@@ -68,6 +69,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES")
 	case "header.converter":
 		d.SetDisplayName("Kafka message headers format").
+			SetValue("org.apache.kafka.connect.converters.ByteArrayConverter").
 			SetDocumentation("Format of the headers in the Kafka topic. A valid schema must be available.").
 			SetImportance(model.ConfigDefinitionImportanceLow).
 			SetComponentType(model.ComponentRadioGroup).
