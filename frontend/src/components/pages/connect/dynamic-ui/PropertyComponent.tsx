@@ -38,11 +38,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
         </div>
     );
 
-    let v = p.value;
-    if (typeof p.value != 'string') {
-        if (typeof p.value == 'number' || typeof p.value == 'boolean') v = String(v);
-        else v = '';
-    }
+    const v = p.value;
 
     switch (def.type) {
         case 'STRING':
@@ -110,7 +106,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
             break;
 
         case 'BOOLEAN':
-            inputComp = <Switch isChecked={Boolean(p.value)} onChange={(e) => (p.value = e.target.checked)} />;
+            inputComp = <Switch isChecked={Boolean(v)} onChange={(e) => (p.value = e.target.checked)} />;
             break;
 
         case 'LIST':
