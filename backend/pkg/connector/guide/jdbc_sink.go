@@ -51,7 +51,6 @@ func NewJDBCSinkGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
-							"name",
 							"key.converter",
 							"value.converter",
 							"header.converter",
@@ -81,6 +80,16 @@ func NewJDBCSinkGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{"tasks.max"},
+					},
+				},
+			},
+
+			{
+				Name: "Review and launch",
+				Groups: []model.ValidationResponseStepGroup{
+					{
+						// No Group name and description here
+						ConfigKeys: []string{"name"},
 					},
 				},
 			},

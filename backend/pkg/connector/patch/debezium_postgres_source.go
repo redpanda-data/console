@@ -80,12 +80,10 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 		"table.exclude.list",
 		"column.include.list",
 		"column.exclude.list",
-		"database.ssl.mode",
 		"money.fraction.digits",
 		"topic.creation.enable",
 		"topic.creation.default.partitions",
-		"topic.creation.default.replication.factor",
-		"topic.creation.default.cleanup.policy":
+		"topic.creation.default.replication.factor":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 
