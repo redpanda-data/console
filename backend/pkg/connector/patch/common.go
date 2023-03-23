@@ -50,6 +50,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 		d.SetDisplayName("Max tasks").SetImportance(model.ConfigDefinitionImportanceHigh)
 	case "key.converter":
 		d.SetDisplayName("Kafka message key format").
+			SetValue("org.apache.kafka.connect.converters.ByteArrayConverter").
 			SetDocumentation("Format of the key in the Kafka topic. A valid schema must be available.").
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
