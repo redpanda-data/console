@@ -50,19 +50,19 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 	// Misc patches
 	switch d.Definition.Name {
 	case "name":
-		d.SetValue("debezium-postgresql-connector")
+		d.SetDefaultValue("debezium-postgresql-connector")
 	case "plugin.name":
-		d.SetValue("pgoutput")
+		d.SetDefaultValue("pgoutput")
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
 		d.SetDisplayName("Retry timeout")
 	case "key.converter":
-		d.SetValue("io.confluent.connect.avro.AvroConverter").
+		d.SetDefaultValue("io.confluent.connect.avro.AvroConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
 	case "value.converter":
-		d.SetValue("io.confluent.connect.avro.AvroConverter").
+		d.SetDefaultValue("io.confluent.connect.avro.AvroConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")

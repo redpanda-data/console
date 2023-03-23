@@ -53,21 +53,21 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 	// Misc patches
 	switch d.Definition.Name {
 	case "name":
-		d.SetValue("debezium-mysql-connector")
+		d.SetDefaultValue("debezium-mysql-connector")
 	case "database.allowPublicKeyRetrieval":
-		d.SetValue("true")
+		d.SetDefaultValue("true")
 	case "schema.history.internal.kafka.topic":
-		d.SetValue(schemaHistoryTopic)
+		d.SetDefaultValue(schemaHistoryTopic)
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
 		d.SetDisplayName("Retry timeout")
 	case "key.converter":
-		d.SetValue("io.confluent.connect.avro.AvroConverter").
+		d.SetDefaultValue("io.confluent.connect.avro.AvroConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
 	case "value.converter":
-		d.SetValue("io.confluent.connect.avro.AvroConverter").
+		d.SetDefaultValue("io.confluent.connect.avro.AvroConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
