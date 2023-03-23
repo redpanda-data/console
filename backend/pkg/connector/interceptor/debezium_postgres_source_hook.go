@@ -8,7 +8,7 @@ func KafkaConnectToConsoleDebeziumPostgresSourceHook(response model.ValidationRe
 			Name:          "database.include.list",
 			Type:          "STRING",
 			DefaultValue:  "",
-			Importance:    model.ConfigDefinitionImportanceHigh,
+			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "Include Databases",
 			Documentation: "The databases for which changes are to be captured",
