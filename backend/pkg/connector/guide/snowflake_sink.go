@@ -22,15 +22,7 @@ func NewSnowflakeSinkGuide(opts ...Option) Guide {
 		className: "com.snowflake.kafka.connector.SnowflakeSinkConnector",
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
-			{
-				Name: "Topics to export",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"topics", "topics.regex"},
-					},
-				},
-			},
+			topicsToExport(),
 
 			{
 				Name: "Snowflake Connection",
@@ -55,10 +47,8 @@ func NewSnowflakeSinkGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
-							"name",
-							"key.converter",
+							"snowflake.ingestion.method",
 							"value.converter",
-							"header.converter",
 							"snowflake.topic2table.map",
 							"buffer.count.records",
 							"buffer.flush.time",
@@ -69,15 +59,9 @@ func NewSnowflakeSinkGuide(opts ...Option) Guide {
 				},
 			},
 
-			{
-				Name: "Sizing",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"tasks.max"},
-					},
-				},
-			},
+			sizing(),
+
+			reviewAndLaunch(),
 		},
 	}
 }

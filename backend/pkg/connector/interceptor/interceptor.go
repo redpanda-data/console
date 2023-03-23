@@ -52,6 +52,7 @@ func CommunityPatches() []patch.ConfigPatch {
 		patch.NewConfigPatchRedpandaGCS(),
 		patch.NewConfigPatchDebeziumPostgresSource(),
 		patch.NewConfigPatchDebeziumMysqlSource(),
+		patch.NewConfigPatchSnowflake(),
 	}
 }
 
@@ -63,12 +64,12 @@ func CommunityPatches() []patch.ConfigPatch {
 // Kafka connect cluster.
 func CommunityGuides(opts ...guide.Option) []guide.Guide {
 	return []guide.Guide{
-		guide.NewDebeziumMySQLGuide(opts...),
-		guide.NewDebeziumPostgresGuide(opts...),
-		guide.NewJDBCSinkGuide(opts...),
 		guide.NewRedpandaAwsS3SinkGuide(opts...),
 		guide.NewRedpandaGCSSinkGuide(opts...),
+		guide.NewDebeziumPostgresGuide(opts...),
+		guide.NewDebeziumMySQLGuide(opts...),
 		guide.NewSnowflakeSinkGuide(opts...),
+		guide.NewJDBCSinkGuide(opts...),
 	}
 }
 
