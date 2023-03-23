@@ -5,18 +5,38 @@ import "github.com/redpanda-data/console/backend/pkg/connector/model"
 func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
-			Name:          "topic.creation.enable",
+			Name:          "database.allowPublicKeyRetrieval",
 			Type:          "BOOLEAN",
 			DefaultValue:  "true",
-			Importance:    model.ConfigDefinitionImportanceLow,
+			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
-			DisplayName:   "Topic creation enabled",
-			Documentation: "Whether to allow automatic creation of topics. Enabled by default.",
+			DisplayName:   "Allow public key retrieval",
+			Documentation: "Allow the client to automatically request the public key from the server.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
-			Name:              "topic.creation.enable",
+			Name:              "database.allowPublicKeyRetrieval",
 			Value:             "true",
+			RecommendedValues: []string{},
+			Visible:           true,
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
+			Name:          "database.connectionTimeZone",
+			Type:          "STRING",
+			DefaultValue:  "true",
+			Importance:    model.ConfigDefinitionImportanceLow,
+			Required:      false,
+			DisplayName:   "Database connection time zone",
+			Documentation: "Time zone to specify explicitly the database 'connectionTimeZone' MySQL configuration option.",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "database.connectionTimeZone",
+			Value:             "",
 			RecommendedValues: []string{},
 			Visible:           true,
 			Errors:            []string{},

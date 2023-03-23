@@ -10,9 +10,7 @@
 package patch
 
 import (
-	"fmt"
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
-	"math/rand"
 	"regexp"
 )
 
@@ -48,16 +46,14 @@ func (c *ConfigPatchDebeziumMysqlSource) IsMatch(configKey, connectorClass strin
 //
 //nolint:cyclop // This function defines/patches a lot of things, but it's easy to comprehend.
 func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
-	schemaHistoryTopic := fmt.Sprintf("%s%d", "schema-changes.inventory-", rand.Intn(100))
-
 	// Misc patches
 	switch d.Definition.Name {
 	case "name":
 		d.SetDefaultValue("debezium-mysql-connector")
 	case "database.allowPublicKeyRetrieval":
 		d.SetDefaultValue("true")
-	case "schema.history.internal.kafka.topic":
-		d.SetDefaultValue(schemaHistoryTopic)
+	case "tombstones.on.delete":
+		d.SetDefaultValue("true")
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
 		d.SetDisplayName("Retry timeout")
@@ -85,10 +81,10 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 		"table.exclude.list",
 		"column.include.list",
 		"column.exclude.list",
+		"gtid.source.includes",
 		"topic.creation.enable",
 		"topic.creation.default.partitions",
-		"topic.creation.default.replication.factor",
-		"topic.creation.default.cleanup.policy":
+		"topic.creation.default.replication.factor":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 

@@ -66,8 +66,8 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 	return []guide.Guide{
 		guide.NewRedpandaAwsS3SinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
 		guide.NewRedpandaGCSSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
-		guide.NewDebeziumPostgresGuide(opts...),
-		guide.NewDebeziumMySQLGuide(opts...),
+		guide.NewDebeziumPostgresGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumPostgresSourceHook)),
+		guide.NewDebeziumMySQLGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumMysqlSourceHook)),
 		guide.NewSnowflakeSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleSnowflakeHook)),
 		guide.NewJDBCSinkGuide(opts...),
 	}
