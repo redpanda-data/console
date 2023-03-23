@@ -76,12 +76,6 @@ func (c *ConfigDefinition) SetRequired(isRequired bool) *ConfigDefinition {
 	return c
 }
 
-// SetValue sets the value of the config value.
-func (c *ConfigDefinition) SetValue(value string) *ConfigDefinition {
-	c.Value.Value = value
-	return c
-}
-
 // SetDefaultValue sets the custom default value of the config definition.
 func (c *ConfigDefinition) SetDefaultValue(value string) *ConfigDefinition {
 	c.Definition.CustomDefaultValue = &value
