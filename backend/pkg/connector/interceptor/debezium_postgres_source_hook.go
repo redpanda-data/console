@@ -110,7 +110,7 @@ func KafkaConnectToConsoleDebeziumPostgresSourceHook(response model.ValidationRe
 			DefaultValue:  "-1",
 			Importance:    model.ConfigDefinitionImportanceLow,
 			Required:      false,
-			DisplayName:   "Topic creation default partitions",
+			DisplayName:   "Topic creation partitions",
 			Documentation: "Number of partitions for the created topics.",
 			Dependents:    []string{},
 		},
