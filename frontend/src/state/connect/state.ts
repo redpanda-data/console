@@ -47,7 +47,67 @@ export class ConnectorCreationError extends CustomError { }
 
 export class SecretCreationError extends CustomError { }
 
-export class ConnectorsStore { }
+/* compact following logic in the functions  sanitizeValue and sanitizeDefaultValue */
+
+/* let defaultValue: any = p.definition.default_value;
+ * let initialValue: any = p.value.value;
+ * if (p.definition.type == DataType.Boolean) {
+ *     // Boolean
+ *     // convert 'false' | 'true' to actual boolean values
+ *     console.log(name, initialValue);
+ *     if (typeof defaultValue == 'string')
+ *         if (defaultValue.toLowerCase() == 'false') defaultValue = p.definition.default_value = false as any;
+ *         else if (defaultValue.toLowerCase() == 'true') defaultValue = p.definition.default_value = true as any;
+ *
+ *     if (typeof initialValue == 'string')
+ *         if (initialValue.toLowerCase() == 'false') initialValue = p.value.value = false as any;
+ *         else if (initialValue.toLowerCase() == 'true') initialValue = p.value.value = true as any;
+ * }
+ * if (p.definition.type == DataType.Int || p.definition.type == DataType.Long || p.definition.type == DataType.Short) {
+ *     // Number
+ *     const n = Number.parseFloat(defaultValue);
+ *     if (Number.isFinite(n)) defaultValue = p.definition.default_value = n as any;
+ * }
+ *
+ * let value: any = initialValue ?? defaultValue;
+ * if (p.definition.type == DataType.Boolean && value == null) value = false;
+ */
+
+const sanitizeBoolean = (val: any) => {
+    if (typeof val === 'boolean') return val;
+    if (typeof val === 'string') {
+        const lVal = val.toLowerCase();
+        return lVal === 'true' ? true : lVal === 'false' ? false : val;
+    }
+    return false;
+};
+
+const sanitizeNumber = (val: any) => {
+    const n = Number.parseFloat(val);
+    return Number.isFinite(n) ? n : null;
+};
+
+function sanitizeDefaultValue(value: any, type: any) {
+    switch (type) {
+        case DataType.Boolean:
+            return sanitizeBoolean(value);
+        case DataType.Int:
+        case DataType.Long:
+        case DataType.Short:
+            return sanitizeNumber(value);
+        default:
+            return value;
+    }
+}
+
+function sanitizeValue(value: any, type: any) {
+    switch (type) {
+        case DataType.Boolean:
+            return sanitizeBoolean(value);
+        default:
+            return value;
+    }
+}
 
 export class ConnectClusterStore {
     private clusterName: string;
@@ -429,32 +489,30 @@ export class ConnectorPropertiesStore {
                 for (const p of allProps) if (p.errors.length > 0) p.lastErrorValue = p.value;
             }
 
-
             // Create groups
             this.allGroups = [];
             for (const step of validationResult.steps) {
                 for (const groupDef of step.groups) {
-                    const groupProps = groupDef.config_keys.map(k => {
-                        const prop = this.propsByName.get(k);
+                    const groupProps = groupDef.config_keys
+                        .map((k) => {
+                            const prop = this.propsByName.get(k);
 
-                        if (!prop)
-                            console.log('step[*].group[*].config_keys references a property that does not exist in propsByName!', {
-                                step: step.name,
-                                group: groupDef,
-                                referencedConfigKey: k
-                            });
-                        return prop!;
-                    }).filter(x => x != null);
-
+                            if (!prop)
+                                console.log('step[*].group[*].config_keys references a property that does not exist in propsByName!', {
+                                    step: step.name,
+                                    group: groupDef,
+                                    referencedConfigKey: k,
+                                });
+                            return prop!;
+                        })
+                        .filter((x) => x != null);
 
                     this.allGroups.push(this.createPropertyGroup(step, groupDef, groupProps));
                 }
             }
 
             // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
-            for (const g of this.allGroups)
-                for (const p of g.properties)
-                    p.propertyGroup = g;
+            for (const g of this.allGroups) for (const p of g.properties) p.propertyGroup = g;
 
             // Notify groups about errors in their children
             for (const g of this.allGroups) g.propertiesWithErrors.push(...g.properties.filter((p) => p.showErrors));
@@ -493,7 +551,6 @@ export class ConnectorPropertiesStore {
     }
 
     async validate(config: object) {
-
         const { clusterName, pluginClassName } = this;
         try {
             // Validate the current config
@@ -550,6 +607,9 @@ export class ConnectorPropertiesStore {
                 const suggestedTar = target.entry.value.recommended_values;
                 if (!suggestedSrc.isEqual(suggestedTar)) suggestedTar.updateWith(suggestedSrc);
 
+                // Update: field visibility
+                target.entry.value.visible = source.entry.value.visible;
+
                 // Update: errors
                 if (!target.errors.isEqual(source.errors)) {
                     if (source.errors.length > 0) target.lastErrors = [...source.errors]; // create copy, so 'updateWith' won't modify this array as well
@@ -575,15 +635,13 @@ export class ConnectorPropertiesStore {
             }
 
             // Sort all groups again because order might have changed
-            this.allGroups = this.allGroups.orderBy(x => {
+            this.allGroups = this.allGroups.orderBy((x) => {
                 // Find "index" of the group
                 let order = 0;
                 for (const s of validationResult.steps) {
                     for (const g of s.groups) {
-                        if (x.group.name == g.name)
-                            return order;
-                        else
-                            order++;
+                        if (x.group.name == g.name) return order;
+                        else order++;
                     }
                 }
 
@@ -613,29 +671,12 @@ export class ConnectorPropertiesStore {
         const allProps = properties
             .map((p) => {
                 const name = p.definition.name;
+                const definitionType = p.definition.type;
 
                 // Fix type of default values
-                let defaultValue: any = p.definition.default_value;
-                let initialValue: any = p.value.value;
-                if (p.definition.type == DataType.Boolean) {
-                    // Boolean
-                    // convert 'false' | 'true' to actual boolean values
-                    if (typeof defaultValue == 'string')
-                        if (defaultValue.toLowerCase() == 'false') defaultValue = p.definition.default_value = false as any;
-                        else if (defaultValue.toLowerCase() == 'true') defaultValue = p.definition.default_value = true as any;
-
-                    if (typeof initialValue == 'string')
-                        if (initialValue.toLowerCase() == 'false') initialValue = p.value.value = false as any;
-                        else if (initialValue.toLowerCase() == 'true') initialValue = p.value.value = true as any;
-                }
-                if (p.definition.type == DataType.Int || p.definition.type == DataType.Long || p.definition.type == DataType.Short) {
-                    // Number
-                    const n = Number.parseFloat(defaultValue);
-                    if (Number.isFinite(n)) defaultValue = p.definition.default_value = n as any;
-                }
-
-                let value: any = initialValue ?? defaultValue;
-                if (p.definition.type == DataType.Boolean && value == null) value = false; // use 'false' as default for boolean
+                const defaultValue: any = sanitizeDefaultValue(p.definition.default_value, definitionType);
+                const initialValue: any = sanitizeValue(p.value.value, definitionType);
+                const value: any = initialValue ?? defaultValue;
 
                 const property = observable({
                     name: name,
@@ -660,7 +701,8 @@ export class ConnectorPropertiesStore {
                     });
                 }
 
-                if (this.appliedConfig != null && this.appliedConfig[name]) property.value = this.appliedConfig[name];
+                if (this.appliedConfig != null && this.appliedConfig[name])
+                    property.value = sanitizeValue(this.appliedConfig[name], definitionType);
 
                 return property;
             })
