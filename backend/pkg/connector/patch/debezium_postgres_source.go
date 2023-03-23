@@ -53,6 +53,20 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 		d.SetDefaultValue("debezium-postgresql-connector")
 	case "plugin.name":
 		d.SetDefaultValue("pgoutput")
+	case "flush.lsn.source":
+		d.SetDefaultValue("true")
+	case "tombstones.on.delete":
+		d.SetDefaultValue("true")
+	case "slot.drop.on.stop":
+		d.SetDefaultValue("false")
+	case "include.unknown.datatypes":
+		d.SetDefaultValue("false")
+	case "database.tcpKeepAlive":
+		d.SetDefaultValue("true")
+	case "table.ignore.builtin":
+		d.SetVisible(false)
+	case "provide.transaction.metadata":
+		d.SetVisible(false)
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
 		d.SetDisplayName("Retry timeout")
