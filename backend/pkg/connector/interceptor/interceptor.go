@@ -64,11 +64,11 @@ func CommunityPatches() []patch.ConfigPatch {
 // Kafka connect cluster.
 func CommunityGuides(opts ...guide.Option) []guide.Guide {
 	return []guide.Guide{
-		guide.NewRedpandaAwsS3SinkGuide(opts...),
-		guide.NewRedpandaGCSSinkGuide(opts...),
+		guide.NewRedpandaAwsS3SinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
+		guide.NewRedpandaGCSSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
 		guide.NewDebeziumPostgresGuide(opts...),
 		guide.NewDebeziumMySQLGuide(opts...),
-		guide.NewSnowflakeSinkGuide(opts...),
+		guide.NewSnowflakeSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleSnowflakeHook)),
 		guide.NewJDBCSinkGuide(opts...),
 	}
 }
@@ -79,7 +79,7 @@ func NewInterceptor(opts ...Option) *Interceptor {
 	in := &Interceptor{
 		defaultGuide:  guide.NewDefaultGuide(),
 		configPatches: CommunityPatches(),
-		guides:        CommunityGuides(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
+		guides:        CommunityGuides(),
 	}
 
 	for _, opt := range opts {
