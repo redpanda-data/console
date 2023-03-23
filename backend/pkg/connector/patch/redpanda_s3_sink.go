@@ -49,6 +49,10 @@ func (c *ConfigPatchRedpandaS3) IsMatch(configKey, connectorClass string) bool {
 func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
+	case "key.converter":
+		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
+	case "value.converter":
+		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "format.output.type":
 		d.SetDisplayName("S3 file format").
 			SetDocumentation("Format of the key coming from the Kafka topic. A valid schema must be available.").
@@ -77,7 +81,7 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.Co
 		d.SetRecommendedValues(awsRegions)
 		d.SetDocumentation("")
 	case "name":
-		d.SetValue("s3-connector")
+		d.SetDefaultValue("s3-connector")
 
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":

@@ -82,6 +82,12 @@ func (c *ConfigDefinition) SetValue(value string) *ConfigDefinition {
 	return c
 }
 
+// SetDefaultValue sets the custom default value of the config definition.
+func (c *ConfigDefinition) SetDefaultValue(value string) *ConfigDefinition {
+	c.Definition.CustomDefaultValue = &value
+	return c
+}
+
 // SetRecommendedValues sets the recommended values of the config value.
 func (c *ConfigDefinition) SetRecommendedValues(recommendedValues []string) *ConfigDefinition {
 	c.Value.RecommendedValues = recommendedValues

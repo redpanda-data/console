@@ -57,7 +57,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
-			AddRecommendedValueWithMetadata("", "NONE")
+			SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "value.converter":
 		d.SetDisplayName("Kafka message value format").
 			SetDocumentation("Format of the value in the Kafka topic. A valid schema must be available.").
@@ -67,7 +67,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
-			AddRecommendedValueWithMetadata("", "NONE")
+			SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "header.converter":
 		d.SetDisplayName("Kafka message headers format").
 			SetDocumentation("Format of the headers in the Kafka topic. A valid schema must be available.").
@@ -77,7 +77,8 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
-			AddRecommendedValueWithMetadata("", "NONE")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.SimpleHeaderConverter", "SIMPLE").
+			SetDefaultValue("org.apache.kafka.connect.storage.SimpleHeaderConverter")
 	case "config.action.reload":
 		d.SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("restart", "RESTART").

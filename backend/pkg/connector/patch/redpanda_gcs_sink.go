@@ -51,6 +51,10 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.C
 	switch d.Definition.Name {
 	case "gcs.credentials.json":
 		d.SetDocumentation("")
+	case "key.converter":
+		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
+	case "value.converter":
+		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "format.output.type":
 		d.SetDisplayName("GCS file format").
 			SetDocumentation("Format of the key coming from the Kafka topic. A valid schema must be available.").
@@ -68,7 +72,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.C
 	case "file.max.records":
 		d.SetDisplayName("Max records per file")
 	case "name":
-		d.SetValue("gcs-connector")
+		d.SetDefaultValue("gcs-connector")
 
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
