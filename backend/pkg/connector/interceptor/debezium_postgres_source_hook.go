@@ -95,7 +95,7 @@ func KafkaConnectToConsoleDebeziumPostgresSourceHook(response model.ValidationRe
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
-			Name:              "money.fraction.digits",
+			Name:              "topic.creation.enable",
 			Value:             "true",
 			RecommendedValues: []string{},
 			Visible:           true,
