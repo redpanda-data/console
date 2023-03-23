@@ -93,6 +93,7 @@ kafka:
   #     repository:
   #       url:
   #       branch: (defaults to primary/default branch)
+  #       baseDirectory: (defaults to the root directory of the repo/branch above)
   #     # How often Console shall pull the repository to look for new files. Set 0 to disable periodic pulls
   #     refreshInterval: 1m
   #     # Basic Auth

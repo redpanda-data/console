@@ -35,14 +35,15 @@ owl:
     git:
       enabled: true
       repository:
-        url: https://github.com/redpanda-data/topic-docs
-        branch: master
+        url: https://github.com/redpanda-data/redpanda-examples
+        branch: main
+        baseDirectory: console/topic-documentation 
       # How often Console shall pull the repository to look for new files. Set 0 to disable periodic pulls
       refreshInterval: 1m
       # Basic Auth
       # If you want to use GitHub's personal access tokens use `token` as username and pass the token as password
       basicAuth:
-        enabled: true
+        enabled: false
         username: token
         password: #  This can be set via the via the --owl.topic-documentation.git.basic-auth.password flag as well
       # SSH Auth
