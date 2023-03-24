@@ -106,6 +106,11 @@ func (c *ConfigDefinition) AddRecommendedValueWithMetadata(value, displayName st
 	return c
 }
 
+func (c *ConfigDefinition) AddError(error string) *ConfigDefinition {
+	c.Value.Errors = append(c.Value.Errors, error)
+	return c
+}
+
 // ConfigDefinitionValue represents the computed configuration properties that will
 // be parsed from JSON.
 type ConfigDefinitionValue struct {

@@ -4,30 +4,30 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
-func KafkaConnectToConsoleSnowflakeHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
+func KafkaConnectToConsoleSnowflakeHook(response model.ValidationResponse, _ map[string]any) model.ValidationResponse {
 
-	ingestion, err := getConfig(response, "snowflake.ingestion.method")
-	if err != nil {
+	ingestion := getConfig(&response, "snowflake.ingestion.method")
+	if ingestion == nil {
 		return response
 	}
 
-	converter, err := getConfig(response, "value.converter")
-	if err != nil {
+	converter := getConfig(&response, "value.converter")
+	if converter == nil {
 		return response
 	}
 
-	if response.Configs[ingestion].Value.Value == "snowpipe_streaming" && response.Configs[converter].Value.Value != "org.apache.kafka.connect.storage.StringConverter" {
-		response.Configs[converter].Value.Errors = append(response.Configs[converter].Value.Errors, "For SNOWPIPE_STREAMING only STRING converter can be used")
+	if ingestion.Value.Value == "snowpipe_streaming" && converter.Value.Value != "org.apache.kafka.connect.storage.StringConverter" {
+		converter.AddError("For SNOWPIPE_STREAMING only STRING converter can be used")
 	}
 
 	return response
 }
 
-func getConfig(response model.ValidationResponse, name string) (int, error) {
-	for i, config := range response.Configs {
-		if config.Value.Name == name {
-			return i, nil
+func getConfig(response *model.ValidationResponse, name string) *model.ConfigDefinition {
+	for i := range response.Configs {
+		if response.Configs[i].Value.Name == name {
+			return &response.Configs[i]
 		}
 	}
-	return 0, nil
+	return nil
 }
