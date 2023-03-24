@@ -112,6 +112,8 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 							"include.query",
 							"table.ignore.builtin",
 							"binlog.buffer.size",
+							"database.server.id",
+							"schema.history.internal.kafka.topic",
 							"topic.creation.enable",
 							"topic.creation.default.partitions",
 							"topic.creation.default.replication.factor",

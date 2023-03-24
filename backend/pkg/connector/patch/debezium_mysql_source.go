@@ -50,6 +50,8 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 	switch d.Definition.Name {
 	case "name":
 		d.SetDefaultValue("debezium-mysql-connector")
+	case "database.server.id", "schema.history.internal.kafka.topic":
+		d.SetVisible(false)
 	case "table.include.list":
 		d.SetDocumentation("A comma-separated list of regular expressions that match fully-qualified table identifiers of tables whose changes are to be captured")
 	case "column.include.list":
