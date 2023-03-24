@@ -50,6 +50,12 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 	switch d.Definition.Name {
 	case "name":
 		d.SetDefaultValue("debezium-mysql-connector")
+	case "table.include.list":
+		d.SetDocumentation("The comma-separated list of regular expressions that match fully-qualified table identifiers of tables whose changes are to be captured.")
+	case "column.include.list":
+		d.SetDocumentation("Regular expressions matching fully-qualified names of columns to include in change events.")
+	case "column.exclude.list":
+		d.SetDocumentation("Regular expressions matching fully-qualified names of columns to exclude from change events.")
 	case "database.allowPublicKeyRetrieval",
 		"include.schema.changes",
 		"tombstones.on.delete",
@@ -75,9 +81,7 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "database.include.list",
-		"table.include.list",
-		"gtid.source.includes",
+	case "gtid.source.includes",
 		"database.server.id.offset":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}

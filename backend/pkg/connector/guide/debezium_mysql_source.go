@@ -65,6 +65,8 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 
 							"database.include.list",
 							"database.exclude.list",
+							"table.include.list",
+							"table.exclude.list",
 							"column.include.list",
 							"column.exclude.list",
 							"message.key.columns",
