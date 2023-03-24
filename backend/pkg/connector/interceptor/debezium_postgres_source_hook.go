@@ -5,66 +5,6 @@ import "github.com/redpanda-data/console/backend/pkg/connector/model"
 func KafkaConnectToConsoleDebeziumPostgresSourceHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
-			Name:          "database.include.list",
-			Type:          "STRING",
-			DefaultValue:  "",
-			Importance:    model.ConfigDefinitionImportanceMedium,
-			Required:      false,
-			DisplayName:   "Include Databases",
-			Documentation: "The databases for which changes are to be captured",
-			Dependents:    []string{},
-		},
-		Value: model.ConfigDefinitionValue{
-			Name:              "database.include.list",
-			Value:             "",
-			RecommendedValues: []string{},
-			Visible:           true,
-			Errors:            []string{},
-		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
-		Definition: model.ConfigDefinitionKey{
-			Name:          "database.exclude.list",
-			Type:          "STRING",
-			DefaultValue:  "",
-			Importance:    model.ConfigDefinitionImportanceMedium,
-			Required:      false,
-			DisplayName:   "Exclude Databases",
-			Documentation: "A comma-separated list of regular expressions that match database names to be excluded from monitoring",
-			Dependents:    []string{},
-		},
-		Value: model.ConfigDefinitionValue{
-			Name:              "database.exclude.list",
-			Value:             "",
-			RecommendedValues: []string{},
-			Visible:           true,
-			Errors:            []string{},
-		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
-		Definition: model.ConfigDefinitionKey{
-			Name:          "schema.exclude.list",
-			Type:          "STRING",
-			DefaultValue:  "",
-			Importance:    model.ConfigDefinitionImportanceMedium,
-			Required:      false,
-			DisplayName:   "Exclude Schemas",
-			Documentation: "The schemas for which events must not be captured",
-			Dependents:    []string{},
-		},
-		Value: model.ConfigDefinitionValue{
-			Name:              "schema.exclude.list",
-			Value:             "",
-			RecommendedValues: []string{},
-			Visible:           true,
-			Errors:            []string{},
-		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
-		Definition: model.ConfigDefinitionKey{
 			Name:          "money.fraction.digits",
 			Type:          "SHORT",
 			DefaultValue:  "2",

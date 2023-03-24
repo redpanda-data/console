@@ -45,6 +45,26 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
+			Name:          "topic.creation.enable",
+			Type:          "BOOLEAN",
+			DefaultValue:  "true",
+			Importance:    model.ConfigDefinitionImportanceLow,
+			Required:      false,
+			DisplayName:   "Topic creation enabled",
+			Documentation: "Whether to allow automatic creation of topics. Enabled by default.",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "topic.creation.enable",
+			Value:             "true",
+			RecommendedValues: []string{},
+			Visible:           true,
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
 			Name:          "topic.creation.default.partitions",
 			Type:          "LONG",
 			DefaultValue:  "-1",

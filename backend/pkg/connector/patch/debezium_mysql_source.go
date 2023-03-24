@@ -50,9 +50,13 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 	switch d.Definition.Name {
 	case "name":
 		d.SetDefaultValue("debezium-mysql-connector")
-	case "database.allowPublicKeyRetrieval":
-		d.SetDefaultValue("true")
-	case "tombstones.on.delete":
+	case "database.allowPublicKeyRetrieval",
+		"include.schema.changes",
+		"tombstones.on.delete",
+		"enable.time.adjuster",
+		"connect.keep.alive",
+		"table.ignore.builtin",
+		"gtid.source.filter.dml.events":
 		d.SetDefaultValue("true")
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
@@ -71,20 +75,10 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "connect.timeout.ms",
-		"database.allowPublicKeyRetrieval",
-		"schema.include.list",
-		"schema.exclude.list",
-		"database.include.list",
-		"database.exclude.list",
+	case "database.include.list",
 		"table.include.list",
-		"table.exclude.list",
-		"column.include.list",
-		"column.exclude.list",
 		"gtid.source.includes",
-		"topic.creation.enable",
-		"topic.creation.default.partitions",
-		"topic.creation.default.replication.factor":
+		"database.server.id.offset":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 
