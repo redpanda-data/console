@@ -50,7 +50,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 		d.SetDisplayName("Max tasks").SetImportance(model.ConfigDefinitionImportanceHigh)
 	case "key.converter":
 		d.SetDisplayName("Kafka message key format").
-			SetDocumentation("Format of the key in the Kafka topic. A valid schema must be available.").
+			SetDocumentation("Format of the key in the Kafka topic.").
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
@@ -60,7 +60,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "value.converter":
 		d.SetDisplayName("Kafka message value format").
-			SetDocumentation("Format of the value in the Kafka topic. A valid schema must be available.").
+			SetDocumentation("Format of the value in the Kafka topic.").
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
@@ -70,7 +70,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.Config
 			SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "header.converter":
 		d.SetDisplayName("Kafka message headers format").
-			SetDocumentation("Format of the headers in the Kafka topic. A valid schema must be available.").
+			SetDocumentation("Format of the headers in the Kafka topic.").
 			SetImportance(model.ConfigDefinitionImportanceLow).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").

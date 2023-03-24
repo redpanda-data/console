@@ -55,7 +55,7 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition) model.Co
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "format.output.type":
 		d.SetDisplayName("S3 file format").
-			SetDocumentation("Format of the key coming from the Kafka topic. A valid schema must be available.").
+			SetDocumentation("Format of the key coming from the Kafka topic.").
 			SetComponentType(model.ComponentRadioGroup)
 	case "file.compression.type":
 		d.SetDisplayName("Output file compression").

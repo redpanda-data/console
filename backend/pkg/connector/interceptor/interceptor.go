@@ -53,6 +53,7 @@ func CommunityPatches() []patch.ConfigPatch {
 		patch.NewConfigPatchDebeziumPostgresSource(),
 		patch.NewConfigPatchDebeziumMysqlSource(),
 		patch.NewConfigPatchSnowflake(),
+		patch.NewConfigPatchBigQuery(),
 	}
 }
 
@@ -69,6 +70,7 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 		guide.NewDebeziumPostgresGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumPostgresSourceHook)),
 		guide.NewDebeziumMySQLGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumMysqlSourceHook)),
 		guide.NewSnowflakeSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleSnowflakeHook)),
+		guide.NewBigQuerySinkGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectBigQueryHook)),
 		guide.NewJDBCSinkGuide(opts...),
 	}
 }

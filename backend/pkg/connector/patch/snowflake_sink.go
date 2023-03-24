@@ -64,8 +64,10 @@ func (*ConfigPatchSnowflake) PatchDefinition(d model.ConfigDefinition) model.Con
 		"snowflake.user.name",
 		"snowflake.role.name":
 		d.SetDocumentation("")
-	case "snowflake.private.key",
-		"snowflake.private.key.passphrase":
+	case "snowflake.private.key":
+		d.SetDefaultValue("").
+			SetRequired(true)
+	case "snowflake.private.key.passphrase":
 		d.SetDefaultValue("")
 	case "snowflake.schema.name":
 		d.SetDefaultValue("PUBLIC")
