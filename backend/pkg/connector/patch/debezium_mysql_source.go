@@ -50,7 +50,7 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 	switch d.Definition.Name {
 	case "name":
 		d.SetDefaultValue("debezium-mysql-connector")
-	case "database.server.id", "schema.history.internal.kafka.topic":
+	case "database.server.id":
 		d.SetVisible(false)
 	case "table.include.list":
 		d.SetDocumentation("A comma-separated list of regular expressions that match fully-qualified table identifiers of tables whose changes are to be captured")
@@ -62,20 +62,21 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 		"include.schema.changes",
 		"tombstones.on.delete",
 		"enable.time.adjuster",
-		"connect.keep.alive",
 		"table.ignore.builtin",
 		"gtid.source.filter.dml.events":
+		d.SetDefaultValue("true")
+	case "connect.keep.alive":
 		d.SetDefaultValue("true")
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":
 		d.SetDisplayName("Retry timeout")
 	case "key.converter":
-		d.SetDefaultValue("io.confluent.connect.avro.AvroConverter").
+		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
 	case "value.converter":
-		d.SetDefaultValue("io.confluent.connect.avro.AvroConverter").
+		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")

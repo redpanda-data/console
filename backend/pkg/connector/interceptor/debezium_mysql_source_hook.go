@@ -27,7 +27,7 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 		Definition: model.ConfigDefinitionKey{
 			Name:          "database.connectionTimeZone",
 			Type:          "STRING",
-			DefaultValue:  "true",
+			DefaultValue:  "",
 			Importance:    model.ConfigDefinitionImportanceLow,
 			Required:      false,
 			DisplayName:   "Database connection time zone",
@@ -39,6 +39,26 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 			Value:             "",
 			RecommendedValues: []string{},
 			Visible:           true,
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
+			Name:          "schema.history.internal.kafka.topic",
+			Type:          "STRING",
+			DefaultValue:  "",
+			Importance:    model.ConfigDefinitionImportanceLow,
+			Required:      false,
+			DisplayName:   "Schema history internal kafka topic",
+			Documentation: "Schema history internal kafka topic",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "schema.history.internal.kafka.topic",
+			Value:             "",
+			RecommendedValues: []string{},
+			Visible:           false,
 			Errors:            []string{},
 		},
 	})
@@ -76,7 +96,7 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 		},
 		Value: model.ConfigDefinitionValue{
 			Name:              "topic.creation.default.partitions",
-			Value:             "-1",
+			Value:             "1",
 			RecommendedValues: []string{},
 			Visible:           true,
 			Errors:            []string{},
