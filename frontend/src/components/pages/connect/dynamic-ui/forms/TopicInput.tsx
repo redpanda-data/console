@@ -1,4 +1,4 @@
-import { FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Checkbox } from '@redpanda-data/ui';
+import { FormControl, FormErrorMessage, FormHelperText, Input, Checkbox } from '@redpanda-data/ui';
 import { observer, useLocalObservable } from 'mobx-react';
 import { PropsWithoutRef } from 'react';
 import { Property } from '../../../../../state/connect/state';
@@ -28,7 +28,6 @@ export const TopicInput = observer(({ properties }: PropsWithoutRef<{ properties
 
     return (
         <FormControl>
-            <FormLabel>{$state.property.name}</FormLabel>
             {$state.properties.has('topics.regex') && (
                 <Checkbox
                     onChange={(e) => {
