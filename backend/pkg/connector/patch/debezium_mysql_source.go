@@ -52,6 +52,8 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 		d.SetDefaultValue("debezium-mysql-connector")
 	case "database.server.id":
 		d.SetVisible(false)
+	case "database.include.list":
+		d.SetDocumentation("A comma-separated list of regular expressions that match the names of the databases for which to capture changes")
 	case "table.include.list":
 		d.SetDocumentation("A comma-separated list of regular expressions that match fully-qualified table identifiers of tables whose changes are to be captured")
 	case "column.include.list":
