@@ -12,12 +12,12 @@
 /* eslint-disable no-useless-escape */
 import { Skeleton } from 'antd';
 // import { IsDev } from '../../../../utils/env';
-import { OptionGroup } from '../../../../utils/tsxUtils';
 // import { DebugEditor } from './DebugEditor';
 import { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/connect/state';
 import { observer } from 'mobx-react';
 import { ConnectorStepComponent } from './ConnectorStep';
 import { ConnectorStep } from '../../../../state/restInterfaces';
+import { Switch } from '@redpanda-data/ui';
 
 export interface ConfigPageProps {
     connectorStore: ConnectorPropertiesStore;
@@ -54,16 +54,12 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
 
     return (
         <>
-            <OptionGroup
-                style={{ marginBottom: '1rem' }}
-                label={undefined}
-                options={{
-                    'Show Basic Options': 'simple',
-                    'Show All Options': 'advanced',
-                }}
-                value={connectorStore.advancedMode}
-                onChange={(s) => (connectorStore.advancedMode = s)}
-            />
+            <Switch 
+                isChecked={connectorStore.showAdvancedOptions} 
+                onChange={(s) => (connectorStore.showAdvancedOptions = s.target.checked)}
+            >
+                Show advanced options
+            </Switch>
 
             {steps.map(({ step, groups }) => {
                 return <ConnectorStepComponent
@@ -71,7 +67,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
                     step={step}
                     groups={groups}
                     allGroups={connectorStore.allGroups}
-                    mode={connectorStore.advancedMode}
+                    showAdvancedOptions={connectorStore.showAdvancedOptions}
                 />
             })}
 

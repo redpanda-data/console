@@ -20,7 +20,7 @@ import { PropertyComponent } from './PropertyComponent';
 const topicsFields = ['topics', 'topics.regex'];
 
 export const PropertyGroupComponent = observer(
-    (props: { group: PropertyGroup; allGroups: PropertyGroup[]; mode: 'simple' | 'advanced' }) => {
+    (props: { group: PropertyGroup; allGroups: PropertyGroup[]; showAdvancedOptions: boolean }) => {
         const g = props.group;
 
         const filteredProperties = g.filteredProperties;
@@ -54,7 +54,7 @@ export const PropertyGroupComponent = observer(
                                         </div>
                                     }
                                 >
-                                    <PropertyGroupComponent group={subGroup} allGroups={props.allGroups} mode={props.mode} />
+                                    <PropertyGroupComponent group={subGroup} allGroups={props.allGroups} showAdvancedOptions={props.showAdvancedOptions} />
                                 </Collapse.Panel>
                             ))}
                         </Collapse>

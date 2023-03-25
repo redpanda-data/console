@@ -383,7 +383,7 @@ export class ConnectorPropertiesStore {
     error: string | undefined = undefined;
     crud: 'create' | 'update' = 'create';
     secrets: SecretsStore | null = null;
-    advancedMode = 'simple' as 'simple' | 'advanced';
+    showAdvancedOptions = false;
     initPending = true;
     fallbackGroupName: string = '';
     reactionDisposers: IReactionDisposer[] = [];
@@ -419,7 +419,7 @@ export class ConnectorPropertiesStore {
             propertiesWithErrors: [],
 
             get filteredProperties(): Property[] {
-                if (self.advancedMode == 'advanced')
+                if (self.showAdvancedOptions)
                     // advanced mode shows all settings
                     return this.properties;
                 // in simple mode, we only show props that are high importance
