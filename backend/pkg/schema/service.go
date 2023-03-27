@@ -34,6 +34,7 @@ type Service struct {
 	registryClient *Client
 
 	avroSchemaByID      *cache.Cache[uint32, avro.Schema]
+	// Second cache to store all references of the main schema and avoid unnecessary calls to schema registry
 	avroSchemaBySubject *cache.Cache[string, *SchemaVersionedResponse]
 }
 
