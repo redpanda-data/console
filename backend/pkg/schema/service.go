@@ -229,27 +229,28 @@ func (s *Service) GetSubjectConfig(subject string) (*ConfigResponse, error) {
 }
 
 func (s *Service) Parse(schema *SchemaResponse) (avro.Schema, error) {
-	if schema.References != nil {
-		for _, reference := range schema.References {
-			schemaRef, err := s.GetAvroSchemaVersionedResponseBySubject(reference.Subject, strconv.Itoa(reference.Version))
-			if err != nil {
-				return nil, err
-			}
+        if schema.References == nil {
+        	return avro.Parse(schema.Schema)
+        }
 
-			_, err = s.Parse(&SchemaResponse{
-				Schema:     schemaRef.Schema,
-				References: schemaRef.References,
-			})
-
-			if err != nil {
-				return nil, err
-			}
-
-			avro.Parse(schemaRef.Schema)
-		}
-	}
-
-	return avro.Parse(schema.Schema)
+        for _, reference := range schema.References {
+	        schemaRef, err := s.GetAvroSchemaVersionedResponseBySubject(reference.Subject, strconv.Itoa(reference.Version))
+	        if err != nil {
+		        return nil, err
+	        }
+        
+	        _, err = s.Parse(&SchemaResponse{
+		        Schema:     schemaRef.Schema,
+		        References: schemaRef.References,
+	        })
+        
+	        if err != nil {
+		        return nil, err
+	        }
+        
+	        avro.Parse(schemaRef.Schema)
+        }
+	
 }
 
 func (s *Service) GetAvroSchemaVersionedResponseBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
