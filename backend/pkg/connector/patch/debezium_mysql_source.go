@@ -86,7 +86,9 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "gtid.source.includes",
+	case "table.include.list",
+		"database.include.list",
+		"gtid.source.includes",
 		"database.server.id.offset":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
