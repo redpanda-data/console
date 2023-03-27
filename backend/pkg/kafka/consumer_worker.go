@@ -88,7 +88,6 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup, is
 			IsTransactional: record.Attrs.IsTransactional(),
 			Key:             deserializedRec.Key,
 			Value:           deserializedRec.Value,
-			IsValueNull:     record.Value == nil,
 			IsMessageOk:     isOK,
 			ErrorMessage:    errMessage,
 			MessageSize:     int64(len(record.Key) + len(record.Value)),

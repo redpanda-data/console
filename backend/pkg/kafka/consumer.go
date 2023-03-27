@@ -44,8 +44,6 @@ type TopicMessage struct {
 	Key     *deserializedPayload `json:"key"`
 	Value   *deserializedPayload `json:"value"`
 
-	IsValueNull bool `json:"isValueNull"` // true = tombstone
-
 	// Below properties are used for the internal communication via Go channels
 	IsMessageOk  bool   `json:"-"`
 	ErrorMessage string `json:"-"`

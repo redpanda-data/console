@@ -41,16 +41,17 @@ type deserializer struct {
 type messageEncoding string
 
 const (
-	messageEncodingNone            messageEncoding = "none"
-	messageEncodingAvro            messageEncoding = "avro"
-	messageEncodingProtobuf        messageEncoding = "protobuf"
-	messageEncodingJSON            messageEncoding = "json"
-	messageEncodingXML             messageEncoding = "xml"
-	messageEncodingText            messageEncoding = "text"
-	messageEncodingConsumerOffsets messageEncoding = "consumerOffsets"
-	messageEncodingBinary          messageEncoding = "binary"
-	messageEncodingMsgP            messageEncoding = "msgpack"
-	messageEncodingSmile           messageEncoding = "smile"
+	messageEncodingNone                 messageEncoding = "none"
+	messageEncodingAvro                 messageEncoding = "avro"
+	messageEncodingProtobuf             messageEncoding = "protobuf"
+	messageEncodingJSON                 messageEncoding = "json"
+	messageEncodingXML                  messageEncoding = "xml"
+	messageEncodingText                 messageEncoding = "text"
+	messageEncodingUtf8WithControlChars messageEncoding = "utf8WithControlChars"
+	messageEncodingConsumerOffsets      messageEncoding = "consumerOffsets"
+	messageEncodingBinary               messageEncoding = "binary"
+	messageEncodingMsgP                 messageEncoding = "msgpack"
+	messageEncodingSmile                messageEncoding = "smile"
 )
 
 // normalizedPayload is a wrapper of the original message with the purpose of having a custom JSON marshal method
@@ -68,7 +69,7 @@ func (d *normalizedPayload) MarshalJSON() ([]byte, error) {
 		return []byte("{}"), nil
 	case messageEncodingText:
 		return json.Marshal(string(d.Payload))
-	case messageEncodingBinary:
+	case messageEncodingBinary, messageEncodingUtf8WithControlChars:
 		b64 := base64.StdEncoding.EncodeToString(d.Payload)
 		return json.Marshal(b64)
 	default:
@@ -77,7 +78,8 @@ func (d *normalizedPayload) MarshalJSON() ([]byte, error) {
 }
 
 type deserializedPayload struct {
-	Payload normalizedPayload `json:"payload"`
+	Payload       normalizedPayload `json:"payload"`
+	IsPayloadNull bool              `json:"isPayloadNull"`
 
 	// Object is the parsed version of the payload. This will be passed to the JavaScript interpreter
 	Object             interface{}     `json:"-"`
@@ -130,18 +132,30 @@ func (d *deserializer) DeserializeRecord(record *kgo.Record) *deserializedRecord
 func (d *deserializer) deserializePayload(payload []byte, topicName string, recordType proto.RecordPropertyType) *deserializedPayload {
 	// 0. Check if payload is empty / whitespace only
 	if len(payload) == 0 {
-		return &deserializedPayload{Payload: normalizedPayload{
-			Payload:            payload,
+		return &deserializedPayload{
+			Payload: normalizedPayload{
+				Payload:            payload,
+				RecognizedEncoding: messageEncodingNone,
+			},
+			IsPayloadNull:      payload == nil,
+			Object:             nil,
 			RecognizedEncoding: messageEncodingNone,
-		}, Object: nil, RecognizedEncoding: messageEncodingNone, Size: len(payload)}
+			Size:               len(payload),
+		}
 	}
 
 	trimmed := bytes.TrimLeft(payload, " \t\r\n")
 	if len(trimmed) == 0 {
-		return &deserializedPayload{Payload: normalizedPayload{
-			Payload:            payload,
+		return &deserializedPayload{
+			Payload: normalizedPayload{
+				Payload:            payload,
+				RecognizedEncoding: messageEncodingText,
+			},
+			IsPayloadNull:      payload == nil,
+			Object:             string(payload),
 			RecognizedEncoding: messageEncodingText,
-		}, Object: string(payload), RecognizedEncoding: messageEncodingText, Size: len(payload)}
+			Size:               len(payload),
+		}
 	}
 
 	// 1. Test for valid JSON
@@ -150,10 +164,16 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		var obj interface{}
 		err := json.Unmarshal(payload, &obj)
 		if err == nil {
-			return &deserializedPayload{Payload: normalizedPayload{
-				Payload:            trimmed,
+			return &deserializedPayload{
+				Payload: normalizedPayload{
+					Payload:            trimmed,
+					RecognizedEncoding: messageEncodingJSON,
+				},
+				IsPayloadNull:      payload == nil,
+				Object:             obj,
 				RecognizedEncoding: messageEncodingJSON,
-			}, Object: obj, RecognizedEncoding: messageEncodingJSON, Size: len(payload)}
+				Size:               len(payload),
+			}
 		}
 	}
 
@@ -168,10 +188,17 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 			var obj interface{}
 			err := json.Unmarshal(payload[5:], &obj)
 			if err == nil {
-				return &deserializedPayload{Payload: normalizedPayload{
-					Payload:            trimmed,
+				return &deserializedPayload{
+					Payload: normalizedPayload{
+						Payload:            trimmed,
+						RecognizedEncoding: messageEncodingJSON,
+					},
+					IsPayloadNull:      payload == nil,
+					Object:             obj,
 					RecognizedEncoding: messageEncodingJSON,
-				}, Object: obj, RecognizedEncoding: messageEncodingJSON, SchemaID: schemaID, Size: len(payload)}
+					SchemaID:           schemaID,
+					Size:               len(payload),
+				}
 			}
 		}
 	}
@@ -184,10 +211,16 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		if err == nil {
 			var obj interface{}
 			_ = json.Unmarshal(jsonPayload.Bytes(), &obj) // no err possible unless the xml2json package is buggy
-			return &deserializedPayload{Payload: normalizedPayload{
-				Payload:            jsonPayload.Bytes(),
+			return &deserializedPayload{
+				Payload: normalizedPayload{
+					Payload:            jsonPayload.Bytes(),
+					RecognizedEncoding: messageEncodingXML,
+				},
+				IsPayloadNull:      payload == nil,
+				Object:             obj,
 				RecognizedEncoding: messageEncodingXML,
-			}, Object: obj, RecognizedEncoding: messageEncodingXML, Size: len(payload)}
+				Size:               len(payload),
+			}
 		}
 	}
 
@@ -207,6 +240,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 							Payload:            jsonBytes,
 							RecognizedEncoding: messageEncodingAvro,
 						},
+						IsPayloadNull:      payload == nil,
 						Object:             obj,
 						RecognizedEncoding: messageEncodingAvro,
 						SchemaID:           schemaID,
@@ -229,6 +263,7 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 						Payload:            jsonBytes,
 						RecognizedEncoding: messageEncodingProtobuf,
 					},
+					IsPayloadNull:      payload == nil,
 					Object:             native,
 					RecognizedEncoding: messageEncodingProtobuf,
 					SchemaID:           uint32(schemaID),
@@ -245,10 +280,16 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		if err == nil {
 			data, err := json.Marshal(obj)
 			if err == nil {
-				return &deserializedPayload{Payload: normalizedPayload{
-					Payload:            data,
+				return &deserializedPayload{
+					Payload: normalizedPayload{
+						Payload:            data,
+						RecognizedEncoding: messageEncodingMsgP,
+					},
+					IsPayloadNull:      payload == nil,
+					Object:             string(payload),
 					RecognizedEncoding: messageEncodingMsgP,
-				}, Object: string(payload), RecognizedEncoding: messageEncodingMsgP, Size: len(payload)}
+					Size:               len(payload),
+				}
 			}
 		}
 	}
@@ -260,10 +301,16 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 		if err == nil {
 			jsonBytes, err := json.Marshal(obj)
 			if err == nil {
-				return &deserializedPayload{Payload: normalizedPayload{
-					Payload:            jsonBytes,
+				return &deserializedPayload{
+					Payload: normalizedPayload{
+						Payload:            jsonBytes,
+						RecognizedEncoding: messageEncodingSmile,
+					},
+					IsPayloadNull:      payload == nil,
+					Object:             obj,
 					RecognizedEncoding: messageEncodingSmile,
-				}, Object: obj, RecognizedEncoding: messageEncodingSmile, Size: len(payload)}
+					Size:               len(payload),
+				}
 			}
 		}
 	}
@@ -271,17 +318,44 @@ func (d *deserializer) deserializePayload(payload []byte, topicName string, reco
 	// 8. Test for UTF-8 validity
 	isUTF8 := utf8.Valid(payload)
 	if isUTF8 {
-		return &deserializedPayload{Payload: normalizedPayload{
-			Payload:            payload,
+		// If we have an UTF8 string with control chars (e.g. byte array with 0x00) we want to
+		// render all control chars as pills and the rest as a human-readable string.
+		// Thus, if the utf8 string contains any control chars we will send it as binary data.
+		if d.containsControlChars(payload) {
+			return &deserializedPayload{
+				Payload: normalizedPayload{
+					Payload:            payload,
+					RecognizedEncoding: messageEncodingUtf8WithControlChars,
+				},
+				IsPayloadNull:      payload == nil,
+				Object:             payload,
+				RecognizedEncoding: messageEncodingUtf8WithControlChars,
+				Size:               len(payload),
+			}
+		}
+		return &deserializedPayload{
+			Payload: normalizedPayload{
+				Payload:            payload,
+				RecognizedEncoding: messageEncodingText,
+			},
+			IsPayloadNull:      payload == nil,
+			Object:             string(payload),
 			RecognizedEncoding: messageEncodingText,
-		}, Object: string(payload), RecognizedEncoding: messageEncodingText, Size: len(payload)}
+			Size:               len(payload),
+		}
 	}
 
 	// Anything else is considered as binary content
-	return &deserializedPayload{Payload: normalizedPayload{
-		Payload:            payload,
+	return &deserializedPayload{
+		Payload: normalizedPayload{
+			Payload:            payload,
+			RecognizedEncoding: messageEncodingBinary,
+		},
+		IsPayloadNull:      payload == nil,
+		Object:             payload,
 		RecognizedEncoding: messageEncodingBinary,
-	}, Object: payload, RecognizedEncoding: messageEncodingBinary, Size: len(payload)}
+		Size:               len(payload),
+	}
 }
 
 // deserializeConsumerOffset deserializes the binary messages in the __consumer_offsets topic
@@ -382,4 +456,13 @@ func (*deserializer) deserializeConsumerOffset(record *kgo.Record) (*deserialize
 		Value:   deserializedVal,
 		Headers: nil,
 	}, nil
+}
+
+func (d *deserializer) containsControlChars(b []byte) bool {
+	for _, v := range b {
+		if (v <= 31) || (v >= 127 && v <= 159) {
+			return true
+		}
+	}
+	return false
 }

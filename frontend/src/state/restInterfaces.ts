@@ -138,7 +138,7 @@ export interface GetTopicConsumersResponse {
 }
 
 
-export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'consumerOffsets' | 'binary' | 'msgpack';
+export type MessageDataType = 'none' | 'avro' | 'protobuf' | 'json' | 'xml' | 'text' | 'utf8WithControlChars' | 'consumerOffsets' | 'binary' | 'msgpack';
 export enum CompressionType {
     Unknown = 'unknown',
 
@@ -151,6 +151,7 @@ export enum CompressionType {
 
 export interface Payload {
     payload: any, // json obj
+    isPayloadNull: boolean,
     encoding: MessageDataType, // actual format of the message (before the backend converted it to json)
     schemaId: number,
     size: number,
@@ -171,12 +172,11 @@ export interface TopicMessage {
     key: Payload,
     value: Payload,
 
-    isValueNull: boolean, // todo: rename to isTombstone
-
     // Added by the frontend
     valueJson: string,
     valueBinHexPreview: string,
     keyJson: string,
+    keyBinHexPreview: string,
 }
 
 export interface ListMessageResponse {

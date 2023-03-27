@@ -382,17 +382,14 @@ const apiStore = {
                     m.keyJson = JSON.stringify(m.key.payload);
                     m.valueJson = JSON.stringify(m.value.payload);
 
-                    if (m.value.encoding == 'binary') {
-                        m.value.payload = decodeBase64(m.value.payload);
+                    if (m.key.encoding == 'binary' || m.key.encoding == 'utf8WithControlChars') {
+                        m.key.payload = decodeBase64(m.key.payload);
+                        m.keyBinHexPreview = this.base64ToHexString(m.key.payload);
+                    }
 
-                        const str = m.value.payload as string;
-                        let hex = '';
-                        for (let i = 0; i < str.length && i < 50; i++) {
-                            let n = str.charCodeAt(i).toString(16);
-                            if (n.length == 1) n = '0' + n;
-                            hex += n + ' ';
-                        }
-                        m.valueBinHexPreview = hex;
+                    if (m.value.encoding == 'binary' || m.key.encoding == 'utf8WithControlChars') {
+                        m.value.payload = decodeBase64(m.value.payload);
+                        m.valueBinHexPreview = this.base64ToHexString(m.value.payload);
                     }
 
 
@@ -403,6 +400,16 @@ const apiStore = {
             }
         };
         currentWS.onmessage = onMessageHandler;
+    },
+
+    base64ToHexString(b64: string): string {
+        let hex = '';
+        for (let i = 0; i < b64.length && i < 50; i++) {
+            let n = b64.charCodeAt(i).toString(16);
+            if (n.length == 1) n = '0' + n;
+            hex += n + ' ';
+        }
+        return hex
     },
 
     stopMessageSearch() {
