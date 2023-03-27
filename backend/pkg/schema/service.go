@@ -11,6 +11,7 @@ package schema
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/hamba/avro/v2"
@@ -32,7 +33,10 @@ type Service struct {
 
 	registryClient *Client
 
-	avroSchemaByID *cache.Cache[uint32, avro.Schema]
+	// schemaBySubjectVersion caches schema response by subject and version. Caching schemas
+	// by subjects is needed to lookup references in avro schemas.
+	schemaBySubjectVersion *cache.Cache[string, *SchemaVersionedResponse]
+	avroSchemaByID         *cache.Cache[uint32, avro.Schema]
 }
 
 // NewService to access schema registry. Returns an error if connection can't be established.
@@ -43,11 +47,12 @@ func NewService(cfg config.Schema, logger *zap.Logger) (*Service, error) {
 	}
 
 	return &Service{
-		cfg:            cfg,
-		logger:         logger,
-		requestGroup:   singleflight.Group{},
-		registryClient: client,
-		avroSchemaByID: cache.New[uint32, avro.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
+		cfg:                    cfg,
+		logger:                 logger,
+		requestGroup:           singleflight.Group{},
+		registryClient:         client,
+		avroSchemaByID:         cache.New[uint32, avro.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
+		schemaBySubjectVersion: cache.New[string, *SchemaVersionedResponse](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 	}, nil
 }
 
@@ -178,7 +183,7 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
 			return nil, fmt.Errorf("failed to get schema from registry: %w", err)
 		}
 
-		codec, err := avro.Parse(schemaRes.Schema)
+		codec, err := s.ParseAvroSchemaWithReferences(schemaRes)
 		if err != nil {
 			s.logger.Warn("failed to parse avro schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
 			return nil, fmt.Errorf("failed to parse schema: %w", err)
@@ -223,4 +228,53 @@ func (s *Service) GetConfig() (*ConfigResponse, error) {
 // GetSubjectConfig gets compatibility level for a given subject.
 func (s *Service) GetSubjectConfig(subject string) (*ConfigResponse, error) {
 	return s.registryClient.GetSubjectConfig(subject)
+}
+
+// ParseAvroSchemaWithReferences parses an avro schema that potentially has references
+// to other schemas. References will be resolved by requesting and parsing them
+// recursively. If any of the referenced schemas can't be fetched or parsed an
+// error will be returned.
+func (s *Service) ParseAvroSchemaWithReferences(schema *SchemaResponse) (avro.Schema, error) {
+	if len(schema.References) == 0 {
+		return avro.Parse(schema.Schema)
+	}
+
+	// Fetch and parse all schema references recursively. All schemas that have
+	// been parsed successfully will be cached by the avro library.
+	for _, reference := range schema.References {
+		schemaRef, err := s.GetSchemaBySubjectAndVersion(reference.Subject, strconv.Itoa(reference.Version))
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err := s.ParseAvroSchemaWithReferences(&SchemaResponse{
+			Schema:     schemaRef.Schema,
+			SchemaType: schemaRef.Type,
+			References: schemaRef.References,
+		}); err != nil {
+			return nil, fmt.Errorf(
+				"failed to parse schema reference (subject: %q, version %q): %w",
+				reference.Subject, reference.Version, err,
+			)
+		}
+	}
+
+	// Parse the main schema in the end after solving all references
+	return avro.Parse(schema.Schema)
+}
+
+// GetSchemaBySubjectAndVersion retrieves a schema from the schema registry
+// by a given <subject, version> tuple.
+func (s *Service) GetSchemaBySubjectAndVersion(subject string, version string) (*SchemaVersionedResponse, error) {
+	cacheKey := subject + "v" + version
+	cachedSchema, err, _ := s.schemaBySubjectVersion.Get(cacheKey, func() (*SchemaVersionedResponse, error) {
+		schema, err := s.registryClient.GetSchemaBySubject(subject, version)
+		if err != nil {
+			return nil, fmt.Errorf("get schema by subject failed: %w", err)
+		}
+
+		return schema, nil
+	})
+
+	return cachedSchema, err
 }
