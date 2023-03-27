@@ -75,6 +75,7 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 		guide.NewSnowflakeSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleSnowflakeHook)),
 		guide.NewBigQuerySinkGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectBigQueryHook)),
 		guide.NewJDBCSinkGuide(opts...),
+		guide.NewJDBCSourceGuide(opts...),
 	}
 }
 
