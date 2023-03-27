@@ -23,7 +23,7 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
-				Name: "Topics to export",
+				Name: "Topics to import",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here

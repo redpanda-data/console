@@ -60,5 +60,11 @@ func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition) model.Co
 		d.SetDefaultValue("jdbc-source-connector")
 	}
 
+	// Importance Patches
+	switch d.Definition.Name {
+	case "mode", "poll.interval.ms", "timestamp.delay.interval.ms":
+		d.SetImportance(model.ConfigDefinitionImportanceMedium)
+	}
+
 	return d
 }

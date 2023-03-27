@@ -55,6 +55,7 @@ func CommunityPatches() []patch.ConfigPatch {
 		patch.NewConfigPatchSnowflake(),
 		patch.NewConfigPatchBigQuery(),
 		patch.NewConfigPatchJdbcSink(),
+		patch.NewConfigPatchJdbcSource(),
 	}
 }
 
