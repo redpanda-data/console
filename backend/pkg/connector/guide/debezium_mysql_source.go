@@ -60,7 +60,9 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 						// No Group name and description here
 						ConfigKeys: []string{
 							"key.converter",
+							"key.converter.schemas.enable",
 							"value.converter",
+							"value.converter.schemas.enable",
 							"header.converter",
 
 							"database.include.list",

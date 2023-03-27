@@ -54,6 +54,7 @@ func CommunityPatches() []patch.ConfigPatch {
 		patch.NewConfigPatchDebeziumMysqlSource(),
 		patch.NewConfigPatchSnowflake(),
 		patch.NewConfigPatchBigQuery(),
+		patch.NewConfigPatchJdbcSink(),
 	}
 }
 
