@@ -124,15 +124,7 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 				},
 			},
 
-			{
-				Name: "Review and launch",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"name"},
-					},
-				},
-			},
+			reviewAndLaunch(),
 		},
 	}
 }

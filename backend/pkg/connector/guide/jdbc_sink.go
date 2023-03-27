@@ -74,25 +74,9 @@ func NewJDBCSinkGuide(opts ...Option) Guide {
 				},
 			},
 
-			{
-				Name: "Sizing",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"tasks.max"},
-					},
-				},
-			},
+			sizing(),
 
-			{
-				Name: "Review and launch",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"name"},
-					},
-				},
-			},
+			reviewAndLaunch(),
 		},
 	}
 }
