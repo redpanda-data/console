@@ -34,6 +34,7 @@ type Service struct {
 	registryClient *Client
 
 	avroSchemaByID      *cache.Cache[uint32, avro.Schema]
+	// Second cache to store all references of the main schema and avoid unnecessary calls to schema registry
 	avroSchemaBySubject *cache.Cache[string, *SchemaVersionedResponse]
 }
 
@@ -50,7 +51,6 @@ func NewService(cfg config.Schema, logger *zap.Logger) (*Service, error) {
 		requestGroup:        singleflight.Group{},
 		registryClient:      client,
 		avroSchemaByID:      cache.New[uint32, avro.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
-		// Second cache to store all references of the main schema and avoid unnecessary calls to schema registry
 		avroSchemaBySubject: cache.New[string, *SchemaVersionedResponse](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 	}, nil
 }
