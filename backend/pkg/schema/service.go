@@ -34,7 +34,6 @@ type Service struct {
 	registryClient *Client
 
 	avroSchemaByID      *cache.Cache[uint32, avro.Schema]
-	// Second cache to store all references of the main schema and avoid unnecessary calls to schema registry
 	avroSchemaBySubject *cache.Cache[string, *SchemaVersionedResponse]
 }
 
@@ -51,6 +50,7 @@ func NewService(cfg config.Schema, logger *zap.Logger) (*Service, error) {
 		requestGroup:        singleflight.Group{},
 		registryClient:      client,
 		avroSchemaByID:      cache.New[uint32, avro.Schema](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
+		// Second cache to store all references of the main schema and avoid unnecessary calls to schema registry
 		avroSchemaBySubject: cache.New[string, *SchemaVersionedResponse](cache.MaxAge(5*time.Minute), cache.MaxErrorAge(time.Second)),
 	}, nil
 }
@@ -183,6 +183,7 @@ func (s *Service) GetAvroSchemaByID(schemaID uint32) (avro.Schema, error) {
 		}
 
 		codec, err := s.Parse(schemaRes)
+
 		if err != nil {
 			s.logger.Warn("failed to parse avro schema", zap.Uint32("schema_id", schemaID), zap.Error(err))
 			return nil, fmt.Errorf("failed to parse schema: %w", err)
@@ -230,28 +231,29 @@ func (s *Service) GetSubjectConfig(subject string) (*ConfigResponse, error) {
 }
 
 func (s *Service) Parse(schema *SchemaResponse) (avro.Schema, error) {
-        if schema.References == nil {
-        	return avro.Parse(schema.Schema)
-        }
+	if schema.References != nil {
+		for _, reference := range schema.References {
+			schemaRef, err := s.GetAvroSchemaVersionedResponseBySubject(reference.Subject, strconv.Itoa(reference.Version))
 
-        for _, reference := range schema.References {
-	        schemaRef, err := s.GetAvroSchemaVersionedResponseBySubject(reference.Subject, strconv.Itoa(reference.Version))
-	        if err != nil {
-		        return nil, err
-	        }
-        
-	        _, err = s.Parse(&SchemaResponse{
-		        Schema:     schemaRef.Schema,
-		        References: schemaRef.References,
-	        })
-        
-	        if err != nil {
-		        return nil, err
-	        }
-        
-	        avro.Parse(schemaRef.Schema)
-        }
-	
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = s.Parse(&SchemaResponse{
+				Schema:     schemaRef.Schema,
+				References: schemaRef.References,
+			})
+
+			if err != nil {
+				return nil, err
+			}
+
+			avro.Parse(schemaRef.Schema)
+		}
+	}
+
+	// need to Parse the main schema in the end after solving all references
+	return avro.Parse(schema.Schema)
 }
 
 func (s *Service) GetAvroSchemaVersionedResponseBySubject(subject string, version string) (*SchemaVersionedResponse, error) {
