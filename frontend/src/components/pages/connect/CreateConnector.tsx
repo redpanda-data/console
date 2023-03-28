@@ -83,7 +83,7 @@ const ConnectorType = observer(
                                 <Text>
                                     Select a managed connector. Connectors simplify importing and exporting data between Redpanda and popular data sources.
                                     {' '}
-                                    <Link href="">Learn more</Link>
+                                    <Link href="https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/">Learn more</Link>
                                 </Text>
 
                                 <Box marginBlock="4" marginTop="8">
