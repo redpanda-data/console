@@ -30,7 +30,7 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 					{
 						Name:              "Authentication with AWS access keys",
 						Description:       "An access key grants programmatic access to AWS resources.",
-						DocumentationLink: "https://",
+						DocumentationLink: "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html",
 						ConfigKeys:        []string{"aws.access.key.id", "aws.secret.access.key"},
 					},
 					{

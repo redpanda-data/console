@@ -53,7 +53,8 @@ func (*ConfigPatchSnowflake) PatchDefinition(d model.ConfigDefinition) model.Con
 	switch d.Definition.Name {
 	case "snowflake.ingestion.method":
 		d.SetRecommendedValues([]string{"snowpipe", "snowpipe_streaming"}).
-			SetComponentType(model.ComponentRadioGroup)
+			SetComponentType(model.ComponentRadioGroup).
+			SetDocumentation("SNOWPIPE allows for structured data, SNOWPIPE_STREAMING is lower latency option")
 	case "value.converter":
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("com.snowflake.kafka.connector.records.SnowflakeJsonConverter", "SNOWFLAKE_JSON").

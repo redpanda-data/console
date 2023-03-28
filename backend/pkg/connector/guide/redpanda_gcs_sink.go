@@ -30,7 +30,7 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 					{
 						Name:              "Authentication with Google",
 						Description:       "A Google service accounts grants programmatic access to GCP resources.",
-						DocumentationLink: "https://",
+						DocumentationLink: "https://cloud.google.com/iam/docs/keys-create-delete",
 						ConfigKeys:        []string{"gcs.credentials.json"},
 					},
 					{
