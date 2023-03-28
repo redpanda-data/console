@@ -25,7 +25,7 @@ func NewRedpandaAwsS3SinkGuide(opts ...Option) Guide {
 			topicsToExport(),
 
 			{
-				Name: "S3 Connection",
+				Name: "S3 connection",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						Name:              "Authentication with AWS access keys",

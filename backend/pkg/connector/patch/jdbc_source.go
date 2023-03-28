@@ -73,6 +73,14 @@ func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition) model.Co
 			SetDisplayName("Include Tables")
 	case "catalog.pattern":
 		d.SetDocumentation("Catalog pattern to fetch table metadata from the database. null - (default) means that the catalog name should not be used to narrow the search so that all table metadata would be fetched, regardless of their catalog. \"\" - retrieves those without a catalog")
+	case "connection.url":
+		d.SetDocumentation("Database JDBC connection URL")
+	case "connection.user":
+		d.SetDisplayName("User").
+			SetDocumentation("Name of the database user to be used when connecting to the database.")
+	case "connection.password":
+		d.SetDisplayName("Password").
+			SetDocumentation("Password of the database user to be used when connecting to the database.")
 	case "name":
 		d.SetDefaultValue("jdbc-source-connector-" + strings.ToLower(random.String(4)))
 	}

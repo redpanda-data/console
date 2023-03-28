@@ -25,7 +25,7 @@ func NewSnowflakeSinkGuide(opts ...Option) Guide {
 			topicsToExport(),
 
 			{
-				Name: "Snowflake Connection",
+				Name: "Snowflake connection",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						ConfigKeys: []string{

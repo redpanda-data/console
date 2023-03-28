@@ -25,7 +25,7 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 			topicsToExport(),
 
 			{
-				Name: "GCS Connection",
+				Name: "GCS connection",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						Name:              "Authentication with Google",

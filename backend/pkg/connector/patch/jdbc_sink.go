@@ -80,6 +80,14 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition) model.Conf
 			SetDefaultValue("none")
 	case "name":
 		d.SetDefaultValue("jdbc-sink-connector-" + strings.ToLower(random.String(4)))
+	case "connection.url":
+		d.SetDocumentation("Database JDBC connection URL.")
+	case "connection.user":
+		d.SetDisplayName("User").
+			SetDocumentation("Name of the database user to be used when connecting to the database.")
+	case "connection.password":
+		d.SetDisplayName("Password").
+			SetDocumentation("Password of the database user to be used when connecting to the database.")
 	}
 
 	// Importance Patches
