@@ -120,7 +120,9 @@ const connectorMetadata: ConnectorMetadata[] = [
     {
         classNamePrefix: 'io.debezium.connector.mysql.',
         logo: <img src={MySqlLogo} alt="MySQL logo" className="connectorLogo" />,
-        author: 'Debezium'
+        author: 'Debezium',
+        friendlyName: 'MySQL (Debezium)',
+        learnMoreLink: 'https://debezium.io/documentation/reference/stable/connectors/mysql.html',
     } as const,
     {
         classNamePrefix: 'io.debezium.connector.mongodb.',
@@ -130,7 +132,9 @@ const connectorMetadata: ConnectorMetadata[] = [
     {
         classNamePrefix: 'io.debezium.connector.postgresql.',
         logo: <img src={PostgresqlLogo} alt="PostgreSQL logo" className="connectorLogo" />,
-        author: 'Debezium'
+        author: 'Debezium',
+        friendlyName: 'PostgreSQL (Debezium)',
+        learnMoreLink: 'https://debezium.io/documentation/reference/stable/connectors/postgresql.html',
     } as const,
     {
         classNamePrefix: 'io.debezium.connector.cassandra.',
@@ -147,15 +151,28 @@ const connectorMetadata: ConnectorMetadata[] = [
     {
         classNamePrefix: 'com.redpanda.kafka.connect.s3.',
         logo: <img src={AmazonS3} alt="Amazon S3 logo" className="connectorLogo" />,
-        author: 'Redpanda'
+        author: 'Redpanda',
+        friendlyName: 'S3',
+        learnMoreLink: 'https://aws.amazon.com/s3/'
     } as const,
     {
         classNamePrefix: 'com.redpanda.kafka.connect.gcs.',
         logo: <img src={GoogleCloudStorageLogo} alt="Google Cloud Storage logo" className="connectorLogo" />,
         author: 'Redpanda',
         friendlyName: 'Google Cloud Storage',
-        description: 'Example description that could be as long as three lines, but then it keeps going until more text bla bla',
-        learnMoreLink: 'https://www.google.com',
+        learnMoreLink: 'https://cloud.google.com/storage'
+    } as const,
+    {
+        classNamePrefix: 'com.redpanda.kafka.connect.jdbc.JdbcSourceConnector',
+        logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" />,
+        author: 'Redpanda',
+        friendlyName: 'JDBC'
+    } as const,
+    {
+        classNamePrefix: 'com.redpanda.kafka.connect.jdbc.JdbcSinkConnector',
+        logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" />,
+        author: 'Redpanda',
+        friendlyName: 'JDBC'
     } as const,
 
     // Stream Reactor / Lenses
@@ -169,14 +186,18 @@ const connectorMetadata: ConnectorMetadata[] = [
     {
         classNamePrefix: 'com.wepay.kafka.connect.bigquery.',
         logo: <img src={BigQueryLogo} alt="Google BigQuery logo" className="connectorLogo" />,
-        author: 'WePay'
+        author: 'WePay',
+        friendlyName: 'Google BigQuery',
+        learnMoreLink: 'https://cloud.google.com/bigquery'
     } as const,
 
     // Snowflake Connectors
     {
         classNamePrefix: 'com.snowflake.kafka.connector',
         logo: <img src={SnowflakeLogo} alt="Snowflake logo" className="connectorLogo" />,
-        author: 'Snowflake'
+        author: 'Snowflake',
+        friendlyName: 'Snowflake',
+        learnMoreLink: 'https://www.snowflake.com'
     } as const,
 
     // Community Connector
@@ -193,7 +214,8 @@ const connectorMetadata: ConnectorMetadata[] = [
     {
         classNamePrefix: 'com.github.castorm.kafka.connect.http.HttpSourceConnector',
         logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
-        author: 'Cástor Rodríguez'
+        author: 'Cástor Rodríguez',
+        friendlyName: 'HTTP'
     } as const,
 
     // Fallbacks with a very generous classname prefix (usually just the maintainers' logo)
