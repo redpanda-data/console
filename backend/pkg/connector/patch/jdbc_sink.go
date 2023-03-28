@@ -88,6 +88,8 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition) model.Conf
 	case "connection.password":
 		d.SetDisplayName("Password").
 			SetDocumentation("Password of the database user to be used when connecting to the database.")
+	case "fields.whitelist":
+		d.SetDisplayName("Include Fields")
 	}
 
 	// Importance Patches
