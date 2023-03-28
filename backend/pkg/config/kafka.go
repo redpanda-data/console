@@ -28,6 +28,10 @@ type Kafka struct {
 
 	TLS  KafkaTLS  `yaml:"tls"`
 	SASL KafkaSASL `yaml:"sasl"`
+
+	// Startup contains relevant configurations such as connection max retries
+	// for the initial Kafka service creation.
+	Startup KafkaStartup `yaml:"startup"`
 }
 
 // RegisterFlags registers all nested config flags.
@@ -64,6 +68,11 @@ func (c *Kafka) Validate() error {
 		return fmt.Errorf("failed to validate msgpack config: %w", err)
 	}
 
+	err = c.Startup.Validate()
+	if err != nil {
+		return fmt.Errorf("failed to validate startup config: %w", err)
+	}
+
 	return nil
 }
 
@@ -74,6 +83,7 @@ func (c *Kafka) SetDefaults() {
 	c.SASL.SetDefaults()
 	c.Protobuf.SetDefaults()
 	c.MessagePack.SetDefaults()
+	c.Startup.SetDefaults()
 }
 
 // RedactedConfig returns a copy of the config object which redacts sensitive fields. This is useful if you
