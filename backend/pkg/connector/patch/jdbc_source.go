@@ -51,13 +51,28 @@ func (c *ConfigPatchJdbcSource) IsMatch(configKey, connectorClass string) bool {
 func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
-	case "key.converter":
-		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	case "value.converter":
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
+	case "mode":
+		d.SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("bulk", "BULK").
+			AddRecommendedValueWithMetadata("incrementing", "INCREMENTING").
+			AddRecommendedValueWithMetadata("timestamp", "TIMESTAMP").
+			AddRecommendedValueWithMetadata("timestamp+incrementing", "TIMESTAMP+INCREMENTING").
+			SetDefaultValue("bulk")
+	case "numeric.mapping":
+		d.SetDefaultValue("none")
+	case "table.blacklist":
+		d.SetDocumentation("List of tables to exclude from copying. If specified, Include Tables may not be set.").
+			SetDisplayName("Exclude Tables")
+	case "table.whitelist":
+		d.SetDocumentation("List of tables to include in copying. If specified, Exclude Tables may not be set.").
+			SetDisplayName("Include Tables")
+	case "catalog.pattern":
+		d.SetDocumentation("Catalog pattern to fetch table metadata from the database. null - (default) means that the catalog name should not be used to narrow the search so that all table metadata would be fetched, regardless of their catalog. \"\" - retrieves those without a catalog")
 	case "name":
 		d.SetDefaultValue("jdbc-source-connector-" + strings.ToLower(random.String(4)))
 	}
@@ -66,6 +81,8 @@ func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition) model.Co
 	switch d.Definition.Name {
 	case "mode", "poll.interval.ms", "timestamp.delay.interval.ms":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
+	case "key.converter":
+		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	}
 
 	return d
