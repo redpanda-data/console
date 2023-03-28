@@ -144,6 +144,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         logo: <img src={MySqlLogo} alt="MySQL logo" className="connectorLogo" />,
         author: 'Debezium',
         friendlyName: 'MySQL (Debezium)',
+        description: 'Imports a stream of changes from MySQL, Amazon RDS and Amazon Aurora',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/',
     } as const,
     {
@@ -156,6 +157,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         logo: <img src={PostgresqlLogo} alt="PostgreSQL logo" className="connectorLogo" />,
         author: 'Debezium',
         friendlyName: 'PostgreSQL (Debezium)',
+        description: 'Imports a stream of changes from PostgreSQL',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/',
     } as const,
     {
@@ -175,6 +177,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         logo: <img src={AmazonS3} alt="Amazon S3 logo" className="connectorLogo" />,
         author: 'Redpanda',
         friendlyName: 'S3',
+        description: 'Exports messages to files in S3 buckets',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/create-s3-sink-connector/'
     } as const,
     {
@@ -182,6 +185,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         logo: <img src={GoogleCloudStorageLogo} alt="Google Cloud Storage logo" className="connectorLogo" />,
         author: 'Redpanda',
         friendlyName: 'Google Cloud Storage',
+        description: 'Exports messages to files in Google Cloud Storage',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
     {
@@ -189,6 +193,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" />,
         author: 'Redpanda',
         friendlyName: 'JDBC',
+        description: 'Imports batches of rows from MySQL, PostgreSQL, SQLite and SQL Server',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
     {
@@ -196,6 +201,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         logo: <img src={RedpandaLogo} alt="Redpanda logo" className="connectorLogo" />,
         author: 'Redpanda',
         friendlyName: 'JDBC',
+        description: 'Exports messages to tables in MySQL, PostgreSQL, SQLite and SQL Server',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
 
@@ -212,6 +218,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         logo: <img src={BigQueryLogo} alt="Google BigQuery logo" className="connectorLogo" />,
         author: 'WePay',
         friendlyName: 'Google BigQuery',
+        description: 'Exports messages to Google BigQuery tables',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
 
@@ -221,6 +228,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         logo: <img src={SnowflakeLogo} alt="Snowflake logo" className="connectorLogo" />,
         author: 'Snowflake',
         friendlyName: 'Snowflake',
+        description: 'Exports messages to Snowflake tables',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
 
@@ -240,6 +248,7 @@ const connectorMetadata: ConnectorMetadata[] = [
         logo: <img src={RedpandaLogo} alt="Redpanda Logo" className="connectorLogo" />,
         author: 'Cástor Rodríguez',
         friendlyName: 'HTTP',
+        description: 'Imports data from HTTP services as batches or increments',
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
 
