@@ -11,8 +11,10 @@ package patch
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
+	"github.com/redpanda-data/console/backend/pkg/random"
 )
 
 // ConfigPatchSnowflake is a config patch that includes changes that shall be applied to the
@@ -72,7 +74,7 @@ func (*ConfigPatchSnowflake) PatchDefinition(d model.ConfigDefinition) model.Con
 	case "snowflake.schema.name":
 		d.SetDefaultValue("PUBLIC")
 	case "name":
-		d.SetDefaultValue("snowflake-connector")
+		d.SetDefaultValue("snowflake-connector-" + strings.ToLower(random.String(4)))
 	}
 
 	// Importance Patches

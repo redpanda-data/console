@@ -11,8 +11,10 @@ package patch
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
+	"github.com/redpanda-data/console/backend/pkg/random"
 )
 
 // ConfigPatchBigQuery is a config patch that includes changes that shall be applied to the
@@ -81,7 +83,7 @@ func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition) model.Conf
 		d.SetDisplayName("Time partitioning type").
 			SetComponentType(model.ComponentRadioGroup)
 	case "name":
-		d.SetDefaultValue("bigquery-connector")
+		d.SetDefaultValue("bigquery-connector-" + strings.ToLower(random.String(4)))
 	}
 
 	// Importance Patches

@@ -10,8 +10,11 @@
 package patch
 
 import (
-	"github.com/redpanda-data/console/backend/pkg/connector/model"
 	"regexp"
+	"strings"
+
+	"github.com/redpanda-data/console/backend/pkg/connector/model"
+	"github.com/redpanda-data/console/backend/pkg/random"
 )
 
 // ConfigPatchDebeziumMysqlSource is a config patch that includes changes that shall be applied to the
@@ -49,7 +52,7 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 	// Misc patches
 	switch d.Definition.Name {
 	case "name":
-		d.SetDefaultValue("debezium-mysql-connector")
+		d.SetDefaultValue("debezium-mysql-connector-" + strings.ToLower(random.String(4)))
 	case "database.server.id":
 		d.SetVisible(false)
 	case "database.include.list":

@@ -11,8 +11,10 @@ package patch
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
+	"github.com/redpanda-data/console/backend/pkg/random"
 )
 
 // ConfigPatchJdbcSink is a config patch that includes changes that shall be applied to the
@@ -77,7 +79,7 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition) model.Conf
 			AddRecommendedValueWithMetadata("record_value", "RECORD_VALUE").
 			SetDefaultValue("none")
 	case "name":
-		d.SetDefaultValue("jdbc-sink-connector")
+		d.SetDefaultValue("jdbc-sink-connector-" + strings.ToLower(random.String(4)))
 	}
 
 	// Importance Patches

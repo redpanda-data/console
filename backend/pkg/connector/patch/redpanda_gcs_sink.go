@@ -11,8 +11,10 @@ package patch
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
+	"github.com/redpanda-data/console/backend/pkg/random"
 )
 
 // ConfigPatchRedpandaGCS is a config patch that includes changes that shall be applied to the
@@ -72,7 +74,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.C
 	case "file.max.records":
 		d.SetDisplayName("Max records per file")
 	case "name":
-		d.SetDefaultValue("gcs-connector")
+		d.SetDefaultValue("gcs-connector-" + strings.ToLower(random.String(4)))
 
 	// Below properties will be grouped into "Error Handling"
 	case "errors.retry.timeout":

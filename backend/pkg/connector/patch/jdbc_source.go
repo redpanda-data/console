@@ -11,8 +11,10 @@ package patch
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
+	"github.com/redpanda-data/console/backend/pkg/random"
 )
 
 // ConfigPatchJdbcSource is a config patch that includes changes that shall be applied to the
@@ -57,7 +59,7 @@ func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition) model.Co
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
 	case "name":
-		d.SetDefaultValue("jdbc-source-connector")
+		d.SetDefaultValue("jdbc-source-connector-" + strings.ToLower(random.String(4)))
 	}
 
 	// Importance Patches
