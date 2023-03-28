@@ -123,5 +123,5 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 		},
 	})
 
-	return response
+	return KafkaConnectToConsoleTopicCreationHook(KafkaConnectToConsoleJsonSchemaHook(response, config), config)
 }
