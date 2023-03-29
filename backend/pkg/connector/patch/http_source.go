@@ -61,18 +61,9 @@ func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition) model.Co
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
-	case "http.auth.type":
-		d.AddRecommendedValueWithMetadata("None", "None").
-			AddRecommendedValueWithMetadata("Basic", "Basic").
-			SetDefaultValue("None")
-	case "http.request.method":
-		d.AddRecommendedValueWithMetadata("GET", "GET").
-			AddRecommendedValueWithMetadata("POST", "POST").
-			AddRecommendedValueWithMetadata("HEAD", "HEAD").
-			AddRecommendedValueWithMetadata("PUT", "PUT").
-			AddRecommendedValueWithMetadata("DELETE", "DELETE").
-			AddRecommendedValueWithMetadata("PATCH", "PATCH").
-			SetDefaultValue("GET")
+	case "http.offset.initial":
+		d.SetDisplayName("HTTP initial offset").
+			SetDocumentation("Initial offset, comma separated list of pairs, example: 'property1=value1,property2=value2'. It is used to define where connector should start reading data from.")
 	case "name":
 		d.SetDefaultValue("http-source-connector-" + strings.ToLower(random.String(4)))
 	}
@@ -81,6 +72,8 @@ func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition) model.Co
 	switch d.Definition.Name {
 	case "key.converter":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
+	case "http.offset.initial":
+		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 
 	return d

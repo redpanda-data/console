@@ -5,13 +5,33 @@ import "github.com/redpanda-data/console/backend/pkg/connector/model"
 func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
+			Name:          "kafka.topic",
+			Type:          "STRING",
+			DefaultValue:  "",
+			Importance:    model.ConfigDefinitionImportanceHigh,
+			Required:      true,
+			DisplayName:   "Topic",
+			Documentation: "Name of the topic where the record will be sent to.",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "kafka.topic",
+			Value:             "",
+			RecommendedValues: []string{},
+			Visible:           true,
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
 			Name:          "http.request.url",
 			Type:          "STRING",
 			DefaultValue:  "",
 			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      true,
 			DisplayName:   "HTTP URL",
-			Documentation: "HTTP URL url to use in the request.",
+			Documentation: "HTTP URL to use in the request.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -31,7 +51,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP request headers",
-			Documentation: "Http headers to use in the request. , separated list of : separated pairs. Example: 'Name:Value,Name2:Value2'",
+			Documentation: "Http headers to use in the request, comma separated list of : separated pairs. Example: 'Name:Value,Name2:Value2'",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -57,7 +77,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 		Value: model.ConfigDefinitionValue{
 			Name:              "http.request.method",
 			Value:             "GET",
-			RecommendedValues: []string{},
+			RecommendedValues: []string{"GET", "POST", "PUT", "HEAD", "DELETE", "PATCH"},
 			Visible:           true,
 			Errors:            []string{},
 		},
@@ -90,14 +110,14 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			DefaultValue:  "None",
 			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      false,
-			DisplayName:   "Type of authentication",
-			Documentation: "",
+			DisplayName:   "HTTP Authentication type",
+			Documentation: "Type of authentication.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
 			Name:              "http.auth.type",
 			Value:             "None",
-			RecommendedValues: []string{},
+			RecommendedValues: []string{"None", "Basic"},
 			Visible:           true,
 			Errors:            []string{},
 		},
@@ -110,8 +130,8 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			DefaultValue:  "",
 			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      false,
-			DisplayName:   "User for Basic authentication type",
-			Documentation: "",
+			DisplayName:   "HTTP user",
+			Documentation: "Basic authentication user.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -126,12 +146,12 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.auth.password",
-			Type:          "STRING",
+			Type:          "PASSWORD",
 			DefaultValue:  "",
 			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      false,
-			DisplayName:   "Password for Basic authentication type",
-			Documentation: "",
+			DisplayName:   "HTTP password",
+			Documentation: "Basic authentication password.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -143,5 +163,5 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 		},
 	})
 
-	return KafkaConnectToConsoleTopicCreationHook(KafkaConnectToConsoleJsonSchemaHook(response, config), config)
+	return KafkaConnectToConsoleTopicCreationHook(response, config)
 }
