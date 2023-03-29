@@ -79,15 +79,15 @@ export const PropertyGroupComponent = observer(
                             </Text>
                         )}
 
-                        <div className="dynamicInputs">
-                            {<TopicInput properties={filteredProperties.filter((p) => topicsFields.any((v) => v === p.name))} />}
+                        <div>
+                            {<TopicInput properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))} />}
                             {filteredProperties
                                 .filter((p) => topicsFields.every((v) => v !== p.name))
                                 .map((p) => (
                                     <PropertyComponent key={p.name} property={p} />
                                 ))}
                         </div>
-                        <Divider mt={20} />
+                        <Divider my={12} />
                     </Box>
                 </>
             );
