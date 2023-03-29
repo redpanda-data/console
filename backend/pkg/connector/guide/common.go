@@ -13,7 +13,6 @@ import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
 // sizing returns a sizing wizard step.
 func sizing() model.ValidationResponseStep {
-
 	return model.ValidationResponseStep{
 		Name: "Sizing",
 		Groups: []model.ValidationResponseStepGroup{
@@ -27,7 +26,6 @@ func sizing() model.ValidationResponseStep {
 
 // reviewAndLaunch returns a review and launch wizard step.
 func reviewAndLaunch() model.ValidationResponseStep {
-
 	return model.ValidationResponseStep{
 		Name: "Review and launch",
 		Groups: []model.ValidationResponseStepGroup{
@@ -41,7 +39,6 @@ func reviewAndLaunch() model.ValidationResponseStep {
 
 // topicsToExport returns a topics to export wizard step.
 func topicsToExport() model.ValidationResponseStep {
-
 	return model.ValidationResponseStep{
 		Name: "Topics to export",
 		Groups: []model.ValidationResponseStepGroup{

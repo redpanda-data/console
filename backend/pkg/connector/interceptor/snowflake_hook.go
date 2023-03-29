@@ -5,7 +5,6 @@ import (
 )
 
 func KafkaConnectToConsoleSnowflakeHook(response model.ValidationResponse, _ map[string]any) model.ValidationResponse {
-
 	ingestion := getConfig(&response, "snowflake.ingestion.method")
 	if ingestion == nil {
 		return response
