@@ -71,7 +71,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP method",
-			Documentation: "Http method to use in the request. Default: GET",
+			Documentation: "HTTP method to use in the request. Default: GET",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -211,7 +211,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP timer interval in millis",
-			Documentation: "Interval in between requests when up-to-date (milliseconds)",
+			Documentation: "Interval in between requests when up-to-date in milliseconds.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -231,7 +231,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP timer catchup interval in millis",
-			Documentation: "Interval in between requests when catching up (milliseconds)",
+			Documentation: "Interval in between requests when catching up in milliseconds.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -251,7 +251,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP client connection timeout in millis",
-			Documentation: "Timeout for opening a connection (milliseconds)",
+			Documentation: "Timeout for opening a connection in milliseconds.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -271,7 +271,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "Read timeout in millis",
-			Documentation: "Timeout for reading a response (milliseconds)",
+			Documentation: "Timeout for reading a response in milliseconds.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -310,7 +310,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			DefaultValue:  "300..399",
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
-			DisplayName:   "Skip HTTP response codes policy",
+			DisplayName:   "HTTP response codes skipping policy",
 			Documentation: "Comma separated list of code ranges that will result in the parser skipping the response. Example: '300..305, 307..310'",
 			Dependents:    []string{},
 		},
