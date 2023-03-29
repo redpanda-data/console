@@ -11,8 +11,8 @@ package guide
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-// NewJDBCSourceGuide returns a new guide for JDBC sources.
-func NewJDBCSourceGuide(opts ...Option) Guide {
+// NewJdbcSourceGuide returns a new guide for JDBC sources.
+func NewJdbcSourceGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
 		opt(&o)

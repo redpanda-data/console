@@ -11,23 +11,23 @@ package guide
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-// NewJdbcSinkGuide returns a new guide for JDBC sinks.
-func NewJdbcSinkGuide(opts ...Option) Guide {
+// NewHttpSourceGuide returns a new guide for Http sources.
+func NewHttpSourceGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
 		opt(&o)
 	}
 
 	return &WizardGuide{
-		className: "com.redpanda.kafka.connect.jdbc.JdbcSinkConnector",
+		className: "com.github.castorm.kafka.connect.http.HttpSourceConnector",
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
-				Name: "Topics to export",
+				Name: "Topics to import",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
-						ConfigKeys: []string{"topics", "topics.regex"},
+						ConfigKeys: []string{"kafka.topic"},
 					},
 				},
 			},
@@ -37,9 +37,15 @@ func NewJdbcSinkGuide(opts ...Option) Guide {
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						ConfigKeys: []string{
-							"connection.url",
-							"connection.user",
-							"connection.password",
+							"http.request.url",
+							"http.request.params",
+							"http.request.method",
+							"http.request.body",
+							"http.request.headers",
+							"http.auth.type",
+							"http.auth.user",
+							"http.auth.password",
+							"http.client.read.timeout.millis",
 						},
 					},
 				},
@@ -54,22 +60,15 @@ func NewJdbcSinkGuide(opts ...Option) Guide {
 							"key.converter",
 							"value.converter",
 							"header.converter",
-							"fields.whitelist",
-							"topics.to.tables.mapping",
-							"table.name.format",
-							"table.name.normalize",
-							"sql.quote.identifiers",
-							"auto.create",
-							"auto.evolve",
-							"batch.size",
-							"db.timezone",
-							"insert.mode",
-							"pk.mode",
-							"pk.fields",
-							"max.retries",
-							"retry.backoff.ms",
 
-							"dialect.name",
+							"http.offset.initial",
+							"http.response.list.pointer",
+							"http.response.record.offset.pointer",
+							"http.timer.catchup.interval.millis",
+							"http.timer.interval.millis",
+							"topic.creation.enable",
+							"topic.creation.default.partitions",
+							"topic.creation.default.replication.factor",
 						},
 					},
 				},
