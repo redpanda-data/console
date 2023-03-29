@@ -345,6 +345,26 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
+			Name:          "http.request.body",
+			Type:          "STRING",
+			DefaultValue:  "",
+			Importance:    model.ConfigDefinitionImportanceMedium,
+			Required:      false,
+			DisplayName:   "HTTP request body",
+			Documentation: "HTTP body to use in the request.",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "http.request.body",
+			Value:             "",
+			RecommendedValues: []string{},
+			Visible:           true,
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.record.offset.pointer",
 			Type:          "STRING",
 			DefaultValue:  "",
