@@ -415,7 +415,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			DefaultValue:  "300000",
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
-			DisplayName:   "Time to live for the connection in millis",
+			DisplayName:   "Time to live for the connection",
 			Documentation: "",
 			Dependents:    []string{},
 		},
