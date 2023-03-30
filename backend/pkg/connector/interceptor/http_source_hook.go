@@ -326,12 +326,12 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.record.mapper",
-			Type:          "STRING",
+			Type:          "CLASS",
 			DefaultValue:  "com.github.castorm.kafka.connect.http.record.SchemedKvSourceRecordMapper",
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP response record mapper",
-			Documentation: "'com.github.castorm.kafka.connect.http.record.SchemedKvSourceRecordMapper' maps key to a Struct schema with a single property key and value to a Struct schema with a single property value. 'com.github.castorm.kafka.connect.http.record.StringKvSourceRecordMapper' maps both key and value to a String schema.",
+			Documentation: "'SchemedKvSourceRecordMapper' maps key to a Struct schema with a single property key and value to a Struct schema with a single property value. 'StringKvSourceRecordMapper' maps both key and value to a String schema.",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -366,7 +366,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.record.timestamp.parser",
-			Type:          "STRING",
+			Type:          "CLASS",
 			DefaultValue:  "com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser",
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,

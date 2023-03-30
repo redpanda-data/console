@@ -62,16 +62,17 @@ func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition) model.Co
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
 	case "http.timer":
-		d.SetDocumentation("Controls the rate at which HTTP requests are performed by informing the task, how long until the next execution is due.").
-			AddRecommendedValue("com.github.castorm.kafka.connect.timer.AdaptableIntervalTimer").
-			AddRecommendedValue("com.github.castorm.kafka.connect.timer.FixedIntervalTimer").
+		d.SetComponentType(model.ComponentRadioGroup).
+			SetDocumentation("Controls the rate at which HTTP requests are performed by informing the task, how long until the next execution is due.").
+			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.timer.AdaptableIntervalTimer", "AdaptableIntervalTimer").
+			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.timer.FixedIntervalTimer", "FixedIntervalTimer").
 			SetDefaultValue("com.github.castorm.kafka.connect.timer.AdaptableIntervalTimer").
 			SetDisplayName("HTTP timer")
 	case "http.response.parser":
 		d.SetDocumentation("A class translating HTTP response into the list of SourceRecords expected by Kafka Connect.").
 			SetDisplayName("HTTP response parser").
-			AddRecommendedValue("com.github.castorm.kafka.connect.http.response.PolicyHttpResponseParser").
-			AddRecommendedValue("com.github.castorm.kafka.connect.http.response.KvHttpResponseParser").
+			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.http.response.PolicyHttpResponseParser", "PolicyHttpResponseParser").
+			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.http.response.KvHttpResponseParser", "KvHttpResponseParser").
 			SetDefaultValue("com.github.castorm.kafka.connect.http.response.PolicyHttpResponseParser")
 	case "http.offset.initial":
 		d.SetDisplayName("HTTP initial offset").
