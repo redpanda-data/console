@@ -69,7 +69,8 @@ func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition) model.Co
 			SetDefaultValue("com.github.castorm.kafka.connect.timer.AdaptableIntervalTimer").
 			SetDisplayName("HTTP timer")
 	case "http.response.parser":
-		d.SetDocumentation("A class translating HTTP response into the list of SourceRecords expected by Kafka Connect.").
+		d.SetComponentType(model.ComponentRadioGroup).
+			SetDocumentation("A class translating HTTP response into the list of SourceRecords expected by Kafka Connect.").
 			SetDisplayName("HTTP response parser").
 			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.http.response.PolicyHttpResponseParser", "PolicyHttpResponseParser").
 			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.http.response.KvHttpResponseParser", "KvHttpResponseParser").
