@@ -9,7 +9,9 @@
 
 package guide
 
-import "github.com/redpanda-data/console/backend/pkg/connector/model"
+import (
+	"github.com/redpanda-data/console/backend/pkg/connector/model"
+)
 
 // NewHttpSourceGuide returns a new guide for Http sources.
 func NewHttpSourceGuide(opts ...Option) Guide {
@@ -40,11 +42,11 @@ func NewHttpSourceGuide(opts ...Option) Guide {
 							"http.request.url",
 							"http.request.params",
 							"http.request.method",
-							"http.request.body",
-							"http.request.headers",
 							"http.auth.type",
 							"http.auth.user",
 							"http.auth.password",
+							"http.request.body",
+							"http.request.headers",
 							"http.client.connection.timeout.millis",
 							"http.client.connection.ttl.millis",
 							"http.client.read.timeout.millis",
@@ -68,7 +70,16 @@ func NewHttpSourceGuide(opts ...Option) Guide {
 							"http.response.record.offset.pointer",
 							"http.timer.catchup.interval.millis",
 							"http.timer.interval.millis",
+							"http.response.policy.codes.process",
 							"http.response.policy.codes.skip",
+							"http.response.list.order.direction",
+							"http.timer",
+							"http.response.parser",
+							"http.response.record.mapper",
+							"http.response.record.timestamp.parser",
+							"http.response.record.timestamp.parser.pattern",
+							"http.response.record.timestamp.parser.regex",
+							"http.response.record.timestamp.parser.zone",
 							"topic.creation.enable",
 							"topic.creation.default.partitions",
 							"topic.creation.default.replication.factor",

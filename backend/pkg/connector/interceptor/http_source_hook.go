@@ -51,7 +51,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP request headers",
-			Documentation: "Http headers to use in the request, comma separated list of : separated pairs. Example: 'Name:Value,Name2:Value2'",
+			Documentation: "HTTP headers to use in the request, comma separated list of : separated pairs. Example: 'Name:Value,Name2:Value2'",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -88,7 +88,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Name:          "http.request.params",
 			Type:          "STRING",
 			DefaultValue:  "",
-			Importance:    model.ConfigDefinitionImportanceMedium,
+			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      false,
 			DisplayName:   "HTTP request params",
 			Documentation: "HTTP query parameters to use in the request. & separated list of = separated pairs. Example: 'name=value&name2=value2'",
@@ -171,7 +171,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP response list pointer",
-			Documentation: "JsonPointer to the property in the response body containing an array of records. Example: '/items'",
+			Documentation: "JsonPointer to the property in the response body containing an array of records. Example: /items",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -305,6 +305,91 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
+			Name:          "http.response.policy.codes.process",
+			Type:          "STRING",
+			DefaultValue:  "200..299",
+			Importance:    model.ConfigDefinitionImportanceMedium,
+			Required:      false,
+			DisplayName:   "HTTP response codes process policy",
+			Documentation: "Comma separated list of code ranges that will result in the parser processing the response. Example: `200..205, 207..210`",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "http.response.policy.codes.process",
+			Value:             "200..299",
+			RecommendedValues: []string{},
+			Visible:           true,
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
+			Name:          "http.response.record.mapper",
+			Type:          "STRING",
+			DefaultValue:  "com.github.castorm.kafka.connect.http.record.SchemedKvSourceRecordMapper",
+			Importance:    model.ConfigDefinitionImportanceMedium,
+			Required:      false,
+			DisplayName:   "HTTP response record mapper",
+			Documentation: "'com.github.castorm.kafka.connect.http.record.SchemedKvSourceRecordMapper' maps key to a Struct schema with a single property key and value to a Struct schema with a single property value. 'com.github.castorm.kafka.connect.http.record.StringKvSourceRecordMapper' maps both key and value to a String schema.",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "http.response.record.mapper",
+			Value:             "com.github.castorm.kafka.connect.http.record.SchemedKvSourceRecordMapper",
+			RecommendedValues: []string{"com.github.castorm.kafka.connect.http.record.SchemedKvSourceRecordMapper", "com.github.castorm.kafka.connect.http.record.StringKvSourceRecordMapper"},
+			Visible:           true,
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
+			Name:          "http.response.list.order.direction",
+			Type:          "STRING",
+			DefaultValue:  "IMPLICIT",
+			Importance:    model.ConfigDefinitionImportanceMedium,
+			Required:      false,
+			DisplayName:   "HTTP response list order direction",
+			Documentation: "Order direction of the results in the response list. Default: IMPLICIT",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "http.response.list.order.direction",
+			Value:             "IMPLICIT",
+			RecommendedValues: []string{"ASC", "DESC", "IMPLICIT"},
+			Visible:           true,
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
+			Name:          "http.response.record.timestamp.parser",
+			Type:          "STRING",
+			DefaultValue:  "com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser",
+			Importance:    model.ConfigDefinitionImportanceMedium,
+			Required:      false,
+			DisplayName:   "HTTP response record timestamp parser",
+			Documentation: "Class responsible for converting the timestamp property captured above into a java.time.Instant.",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:  "http.response.record.timestamp.parser",
+			Value: "com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser",
+			RecommendedValues: []string{"com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisTimestampParser",
+				"com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser",
+				"com.github.castorm.kafka.connect.http.response.timestamp.DateTimeFormatterTimestampParser",
+				"com.github.castorm.kafka.connect.http.response.timestamp.NattyTimestampParser",
+				"com.github.castorm.kafka.connect.http.response.timestamp.RegexTimestampParser",
+			},
+			Visible: true,
+			Errors:  []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
 			Name:          "http.request.body",
 			Type:          "STRING",
 			DefaultValue:  "",
@@ -343,13 +428,82 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 		},
 	})
 
-	return KafkaConnectToConsoleTopicCreationHook(response, config)
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
+			Name:          "http.response.record.timestamp.parser.zone",
+			Type:          "STRING",
+			DefaultValue:  "UTC",
+			Importance:    model.ConfigDefinitionImportanceMedium,
+			Required:      false,
+			DisplayName:   "HTTP response record timestamp zone",
+			Documentation: "Timezone of the timestamp. Accepts java.time.ZoneId valid identifiers. Default: UTC",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "http.response.record.timestamp.parser.zone",
+			Value:             "UTC",
+			RecommendedValues: []string{},
+			Visible:           true,
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
+			Name:          "http.response.record.timestamp.parser.pattern",
+			Type:          "STRING",
+			DefaultValue:  "yyyy-MM-dd'T'HH:mm:ss[.SSS]X",
+			Importance:    model.ConfigDefinitionImportanceMedium,
+			Required:      false,
+			DisplayName:   "HTTP response record timestamp parser pattern",
+			Documentation: "When using DateTimeFormatterTimestampParser, a custom pattern can be specified. Default: yyyy-MM-dd'T'HH:mm:ss[.SSS]X",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "http.response.record.timestamp.parser.pattern",
+			Value:             "yyyy-MM-dd'T'HH:mm:ss[.SSS]X",
+			RecommendedValues: []string{},
+			Visible:           isParserClassSelected(config, "com.github.castorm.kafka.connect.http.response.timestamp.DateTimeFormatterTimestampParser"),
+			Errors:            []string{},
+		},
+	})
+
+	response.Configs = append(response.Configs, model.ConfigDefinition{
+		Definition: model.ConfigDefinitionKey{
+			Name:          "http.response.record.timestamp.parser.regex",
+			Type:          "STRING",
+			DefaultValue:  ".*",
+			Importance:    model.ConfigDefinitionImportanceMedium,
+			Required:      false,
+			DisplayName:   "HTTP response record timestamp parser regex",
+			Documentation: "When using RegexTimestampParser, a custom regex pattern can be specified. Default: .*",
+			Dependents:    []string{},
+		},
+		Value: model.ConfigDefinitionValue{
+			Name:              "http.response.record.timestamp.parser.regex",
+			Value:             ".*",
+			RecommendedValues: []string{},
+			Visible:           isParserClassSelected(config, "com.github.castorm.kafka.connect.http.response.timestamp.RegexTimestampParser"),
+			Errors:            []string{},
+		},
+	})
+
+	return KafkaConnectToConsoleJsonSchemaHook(KafkaConnectToConsoleTopicCreationHook(response, config), config)
 }
 
 func isBasicAuthEnabled(configs map[string]any) bool {
 	config, exists := configs["http.auth.type"]
 	if exists {
 		return config == "Basic"
+	}
+
+	return false
+}
+
+func isParserClassSelected(configs map[string]any, parserClass string) bool {
+	config, exists := configs["http.response.record.timestamp.parser"]
+	if exists {
+		return config == parserClass
 	}
 
 	return false

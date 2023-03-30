@@ -61,6 +61,18 @@ func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition) model.Co
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
+	case "http.timer":
+		d.SetDocumentation("Controls the rate at which HTTP requests are performed by informing the task, how long until the next execution is due.").
+			AddRecommendedValue("com.github.castorm.kafka.connect.timer.AdaptableIntervalTimer").
+			AddRecommendedValue("com.github.castorm.kafka.connect.timer.FixedIntervalTimer").
+			SetDefaultValue("com.github.castorm.kafka.connect.timer.AdaptableIntervalTimer").
+			SetDisplayName("HTTP timer")
+	case "http.response.parser":
+		d.SetDocumentation("A class translates a HTTP response into the list of SourceRecords expected by Kafka Connect.").
+			SetDisplayName("HTTP response parser").
+			AddRecommendedValue("com.github.castorm.kafka.connect.http.response.PolicyHttpResponseParser").
+			AddRecommendedValue("com.github.castorm.kafka.connect.http.response.KvHttpResponseParser").
+			SetDefaultValue("com.github.castorm.kafka.connect.http.response.PolicyHttpResponseParser")
 	case "http.offset.initial":
 		d.SetDisplayName("HTTP initial offset").
 			SetDocumentation("Initial offset, comma separated list of pairs, example: 'property1=value1,property2=value2'. It is used to define where connector should start reading data from.")
@@ -72,7 +84,7 @@ func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition) model.Co
 	switch d.Definition.Name {
 	case "key.converter":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "http.offset.initial":
+	case "http.offset.initial", "http.timer", "http.response.parser":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 
