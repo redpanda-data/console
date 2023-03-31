@@ -13,6 +13,19 @@ func ConsoleToKafkaConnectMirrorSourceHook(config map[string]any) map[string]any
 		setIfNotExists(config, "security.protocol", config["source.cluster.security.protocol"])
 	}
 
+	module := "org.apache.kafka.common.security.plain.PlainLoginModule"
+	if saslMechanism, exists := config["source.cluster.sasl.mechanism"]; exists {
+		if strings.HasPrefix(saslMechanism.(string), "SCRAM") {
+			module = "org.apache.kafka.common.security.scram.ScramLoginModule"
+		}
+	}
+
+	if config["username"] != nil && config["password"] != nil && config["source.cluster.sasl.jaas.config"] == nil {
+		config["source.cluster.sasl.jaas.config"] = module + " required username='" + config["username"].(string) + "' password='" + config["password"].(string) + "';"
+		delete(config, "username")
+		delete(config, "password")
+	}
+
 	return config
 }
 
@@ -87,17 +100,33 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 		},
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
-				Name:          "source.cluster.sasl.jaas.config",
-				Type:          "STRING",
-				DefaultValue:  "org.apache.kafka.common.security.plain.PlainLoginModule required username='...' password='...';",
-				Importance:    "HIGH",
-				Required:      false,
-				DisplayName:   "Source cluster SASL JAAS config",
-				Documentation: "JAAS login context parameters for SASL connections in the format used by JAAS configuration files. JAAS configuration file format is described <a href=\\\"http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/LoginConfigFile.html\\\">here</a>. The format for the value is: <code>loginModuleClass controlFlag (optionName=optionValue)*;</code>. For brokers, the config must be prefixed with listener prefix and SASL mechanism name in lower-case. For example, listener.name.sasl_ssl.scram-sha-256.sasl.jaas.config=com.example.ScramLoginModule required;",
+				Name:         "username",
+				Type:         "STRING",
+				DefaultValue: "",
+				Importance:   "HIGH",
+				Required:     false,
+				DisplayName:  "SASL username",
 			},
 			Value: model.ConfigDefinitionValue{
-				Name:              "source.cluster.sasl.jaas.config",
-				Value:             "org.apache.kafka.common.security.plain.PlainLoginModule required username='...' password='...';",
+				Name:              "username",
+				Value:             "",
+				RecommendedValues: []string{},
+				Visible:           sasl,
+				Errors:            []string{},
+			},
+		},
+		model.ConfigDefinition{
+			Definition: model.ConfigDefinitionKey{
+				Name:         "password",
+				Type:         "PASSWORD",
+				DefaultValue: "",
+				Importance:   "HIGH",
+				Required:     false,
+				DisplayName:  "SASL password",
+			},
+			Value: model.ConfigDefinitionValue{
+				Name:              "password",
+				Value:             "",
 				RecommendedValues: []string{},
 				Visible:           sasl,
 				Errors:            []string{},
