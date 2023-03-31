@@ -90,6 +90,8 @@ func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition) model.Conf
 	switch d.Definition.Name {
 	case "keyfile":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
+	case "autoCreateTables":
+		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 
 	return d

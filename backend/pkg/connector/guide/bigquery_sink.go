@@ -45,6 +45,8 @@ func NewBigQuerySinkGuide(opts ...Option) Guide {
 						ConfigKeys: []string{
 							"key.converter",
 							"value.converter",
+							"value.converter.schemas.enable",
+							"autoCreateTables",
 							"topic2TableMap",
 							"allowNewBigQueryFields",
 							"allowBigQueryRequiredFieldRelaxation",
