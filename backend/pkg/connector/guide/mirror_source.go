@@ -38,6 +38,7 @@ func NewMirrorSourceGuide(opts ...Option) Guide {
 					{
 						ConfigKeys: []string{
 							"source.cluster.bootstrap.servers",
+							"security.protocol",
 							"source.cluster.security.protocol",
 							"source.cluster.sasl.mechanism",
 							"source.cluster.sasl.jaas.config",

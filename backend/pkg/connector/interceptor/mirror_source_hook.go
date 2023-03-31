@@ -1,15 +1,30 @@
 package interceptor
 
-import "github.com/redpanda-data/console/backend/pkg/connector/model"
+import (
+	"github.com/redpanda-data/console/backend/pkg/connector/model"
+	"strings"
+)
 
 func ConsoleToKafkaConnectMirrorSourceHook(config map[string]any) map[string]any {
 	setIfNotExists(config, "source.cluster.ssl.truststore.type", "PEM")
 	setIfNotExists(config, "source.cluster.ssl.keystore.type", "PEM")
 
+	if _, exists := config["source.cluster.security.protocol"]; exists {
+		setIfNotExists(config, "security.protocol", config["source.cluster.security.protocol"])
+	}
+
 	return config
 }
 
 func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
+	securityProtocol := getConfig(&response, "security.protocol")
+
+	sasl := false
+	if securityProtocol != nil {
+		sasl = strings.Contains(securityProtocol.Value.Value.(string), "SASL")
+		securityProtocol.Value.Visible = false
+	}
+
 	response.Configs = append(response.Configs,
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
@@ -57,7 +72,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 				Name:          "source.cluster.sasl.mechanism",
 				Type:          "STRING",
 				DefaultValue:  "PLAIN",
-				Importance:    "MEDIUM",
+				Importance:    "HIGH",
 				Required:      false,
 				DisplayName:   "Source cluster SASL mechanism",
 				Documentation: "SASL mechanism used for client connections. This may be any mechanism for which a security provider is available. GSSAPI is the default mechanism.",
@@ -66,7 +81,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 				Name:              "source.cluster.sasl.mechanism",
 				Value:             "PLAIN",
 				RecommendedValues: []string{"PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512", "GSSAPI"},
-				Visible:           true,
+				Visible:           sasl,
 				Errors:            []string{},
 			},
 		},
@@ -75,7 +90,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 				Name:          "source.cluster.sasl.jaas.config",
 				Type:          "STRING",
 				DefaultValue:  "org.apache.kafka.common.security.plain.PlainLoginModule required username='...' password='...';",
-				Importance:    "MEDIUM",
+				Importance:    "HIGH",
 				Required:      false,
 				DisplayName:   "Source cluster SASL JAAS config",
 				Documentation: "JAAS login context parameters for SASL connections in the format used by JAAS configuration files. JAAS configuration file format is described <a href=\\\"http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/LoginConfigFile.html\\\">here</a>. The format for the value is: <code>loginModuleClass controlFlag (optionName=optionValue)*;</code>. For brokers, the config must be prefixed with listener prefix and SASL mechanism name in lower-case. For example, listener.name.sasl_ssl.scram-sha-256.sasl.jaas.config=com.example.ScramLoginModule required;",
@@ -84,7 +99,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 				Name:              "source.cluster.sasl.jaas.config",
 				Value:             "org.apache.kafka.common.security.plain.PlainLoginModule required username='...' password='...';",
 				RecommendedValues: []string{},
-				Visible:           true,
+				Visible:           sasl,
 				Errors:            []string{},
 			},
 		},
@@ -190,7 +205,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 	return response
 }
 
-func setIfNotExists(config map[string]any, key string, value string) {
+func setIfNotExists(config map[string]any, key string, value any) {
 	if _, exists := config[key]; !exists {
 		config[key] = value
 	}
