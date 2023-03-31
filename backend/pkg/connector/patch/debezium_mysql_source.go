@@ -92,7 +92,8 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition)
 	case "table.include.list",
 		"database.include.list",
 		"gtid.source.includes",
-		"database.server.id.offset":
+		"database.server.id.offset",
+		"database.server.id":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 

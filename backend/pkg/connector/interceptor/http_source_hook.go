@@ -377,7 +377,8 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 		Value: model.ConfigDefinitionValue{
 			Name:  "http.response.record.timestamp.parser",
 			Value: "com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser",
-			RecommendedValues: []string{"com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisTimestampParser",
+			RecommendedValues: []string{
+				"com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisTimestampParser",
 				"com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser",
 				"com.github.castorm.kafka.connect.http.response.timestamp.DateTimeFormatterTimestampParser",
 				"com.github.castorm.kafka.connect.http.response.timestamp.NattyTimestampParser",
