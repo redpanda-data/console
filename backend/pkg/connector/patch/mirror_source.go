@@ -79,8 +79,13 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition) model.
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "mode":
+	case "sync.topic.configs.enabled",
+		"sync.topic.acls.enabled":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
+	case "source.cluster.alias",
+		"topics.exclude",
+		"config.properties.exclude":
+		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	case "key.converter",
 		"value.converter",
 		"header.converter":

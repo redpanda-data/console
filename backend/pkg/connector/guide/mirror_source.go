@@ -55,10 +55,6 @@ func NewMirrorSourceGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
-							"key.converter",
-							"value.converter",
-							"header.converter",
-
 							"source.cluster.alias",
 							"replication.policy.class",
 							"topics.exclude",
