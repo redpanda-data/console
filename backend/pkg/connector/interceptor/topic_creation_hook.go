@@ -4,7 +4,7 @@ import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
 // KafkaConnectToConsoleTopicCreationHook adds topic creation specific properties
 // missing in Validate Kafka Connect response
-func KafkaConnectToConsoleTopicCreationHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
+func KafkaConnectToConsoleTopicCreationHook(response model.ValidationResponse, _ map[string]any) model.ValidationResponse {
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "topic.creation.enable",
