@@ -144,7 +144,7 @@ func (in *Interceptor) KafkaConnectToConsole(pluginClassName string, response co
 func (in *Interceptor) applyConfigPatches(pluginClassName string, configDefinition model.ConfigDefinition) model.ConfigDefinition {
 	for _, p := range in.configPatches {
 		if p.IsMatch(configDefinition.Definition.Name, pluginClassName) {
-			configDefinition = p.PatchDefinition(configDefinition)
+			configDefinition = p.PatchDefinition(configDefinition, pluginClassName)
 		}
 	}
 

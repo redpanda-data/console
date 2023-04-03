@@ -118,7 +118,7 @@ func TestPatchConfigAll(t *testing.T) {
 					DisplayName: tc.GivenDisplayName,
 				},
 			}
-			patchedDefinition := patcher.PatchDefinition(dummyConfigDefinition)
+			patchedDefinition := patcher.PatchDefinition(dummyConfigDefinition, "")
 			assert.Equal(t, tc.ExpectedDisplayName, patchedDefinition.Definition.DisplayName)
 		})
 	}

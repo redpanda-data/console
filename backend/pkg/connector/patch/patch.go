@@ -28,7 +28,7 @@ type ConfigPatch interface {
 	IsMatch(configKey, connectorClass string) bool
 
 	// PatchDefinition lets you change the definition.
-	PatchDefinition(definition model.ConfigDefinition) model.ConfigDefinition
+	PatchDefinition(definition model.ConfigDefinition, connectorClass string) model.ConfigDefinition
 }
 
 // IncludeExcludeSelector is a selector consisting of two regexes that you can use

@@ -44,7 +44,7 @@ func (c *ConfigPatchCommon) IsMatch(configKey, connectorClass string) bool {
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
-func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	switch d.Definition.Name {
 	case "tasks.max":
 		d.SetDisplayName("Max tasks").SetImportance(model.ConfigDefinitionImportanceHigh)

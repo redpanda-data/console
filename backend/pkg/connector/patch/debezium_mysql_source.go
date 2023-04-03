@@ -48,7 +48,7 @@ func (c *ConfigPatchDebeziumMysqlSource) IsMatch(configKey, connectorClass strin
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 //
 //nolint:cyclop // This function defines/patches a lot of things, but it's easy to comprehend.
-func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
 	case "name":

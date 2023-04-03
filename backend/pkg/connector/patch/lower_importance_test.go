@@ -53,7 +53,7 @@ func TestPatchConfigLowerImportance(t *testing.T) {
 			dummyConfigDefinition := model.ConfigDefinition{
 				Definition: model.ConfigDefinitionKey{Importance: model.ConfigDefinitionImportanceHigh},
 			}
-			patchedDefinition := patcher.PatchDefinition(dummyConfigDefinition)
+			patchedDefinition := patcher.PatchDefinition(dummyConfigDefinition, "")
 			assert.Equal(t, tc.ExpectedImportance, patchedDefinition.Definition.Importance)
 		})
 	}

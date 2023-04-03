@@ -46,7 +46,7 @@ func (c *ConfigPatchLowerImportance) IsMatch(configKey, connectorClass string) b
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
-func (*ConfigPatchLowerImportance) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchLowerImportance) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	d.SetImportance(model.ConfigDefinitionImportanceLow)
 	return d
 }

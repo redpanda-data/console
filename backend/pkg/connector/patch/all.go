@@ -85,7 +85,7 @@ func (c *ConfigPatchAll) IsMatch(configKey, connectorClass string) bool {
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
-func (c *ConfigPatchAll) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (c *ConfigPatchAll) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	if d.Definition.DisplayName == "" || d.Definition.DisplayName == d.Definition.Name {
 		computedDisplayName := c.configNameToDisplayName(d.Definition.Name)
 		d.SetDisplayName(computedDisplayName)

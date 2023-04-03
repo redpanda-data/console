@@ -48,7 +48,7 @@ func (c *ConfigPatchSnowflake) IsMatch(configKey, connectorClass string) bool {
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 //
 //nolint:cyclop // This function defines/patches a lot of things, but it's easy to comprehend.
-func (*ConfigPatchSnowflake) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchSnowflake) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
 	case "snowflake.ingestion.method":

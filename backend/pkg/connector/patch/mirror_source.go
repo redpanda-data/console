@@ -26,6 +26,8 @@ type ConfigPatchMirrorSource struct {
 
 var _ ConfigPatch = (*ConfigPatchMirrorSource)(nil)
 
+const classSelectorRegexp = `org.apache.kafka.connect.mirror.Mirror(.*)Connector`
+
 // NewConfigPatchMirrorSource returns a new Patch for the MirrorSourceConnector.
 func NewConfigPatchMirrorSource() *ConfigPatchMirrorSource {
 	return &ConfigPatchMirrorSource{
@@ -34,7 +36,7 @@ func NewConfigPatchMirrorSource() *ConfigPatchMirrorSource {
 			Exclude: nil,
 		},
 		ConnectorClassSelector: IncludeExcludeSelector{
-			Include: regexp.MustCompile(`org.apache.kafka.connect.mirror.MirrorSourceConnector`),
+			Include: regexp.MustCompile(classSelectorRegexp),
 			Exclude: nil,
 		},
 	}
@@ -48,7 +50,7 @@ func (c *ConfigPatchMirrorSource) IsMatch(configKey, connectorClass string) bool
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 //
 //nolint:cyclop // This function defines/patches a lot of things, but it's easy to comprehend.
-func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition) model.ConfigDefinition {
+func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connectorClass string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
 	case "header.converter":
@@ -76,7 +78,7 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition) model.
 		d.SetDefaultValue(".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas")
 
 	case "name":
-		d.SetDefaultValue("mirror-source-connector-" + strings.ToLower(random.String(4)))
+		d.SetDefaultValue("mirror-" + extractType(connectorClass) + "-connector-" + strings.ToLower(random.String(4)))
 	}
 
 	// Importance Patches
@@ -95,4 +97,11 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition) model.
 	}
 
 	return d
+}
+
+func extractType(connectorClass string) string {
+	re := regexp.MustCompile(classSelectorRegexp)
+	match := re.FindStringSubmatch(connectorClass)
+
+	return strings.ToLower(match[1])
 }
