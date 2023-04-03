@@ -51,7 +51,7 @@ func (c *ConfigPatchDebeziumMysqlSource) IsMatch(configKey, connectorClass strin
 func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
-	case "name":
+	case name:
 		d.SetDefaultValue("debezium-mysql-connector-" + strings.ToLower(random.String(4)))
 	case "database.server.id":
 		d.SetVisible(false)
@@ -73,7 +73,7 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition,
 	case "connect.keep.alive":
 		d.SetDefaultValue("true")
 	// Below properties will be grouped into "Error Handling"
-	case "errors.retry.timeout":
+	case errorsRetryTimeout:
 		d.SetDisplayName("Retry timeout")
 	case "key.converter":
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").

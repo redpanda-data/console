@@ -78,7 +78,7 @@ func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition, _ string
 	case "http.offset.initial":
 		d.SetDisplayName("HTTP initial offset").
 			SetDocumentation("Initial offset, comma separated list of pairs, example: 'property1=value1,property2=value2'. It is used to define where connector should start reading data from.")
-	case "name":
+	case name:
 		d.SetDefaultValue("http-source-connector-" + strings.ToLower(random.String(4)))
 	}
 

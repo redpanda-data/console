@@ -74,7 +74,7 @@ func (*ConfigPatchSnowflake) PatchDefinition(d model.ConfigDefinition, _ string)
 		d.SetDefaultValue("")
 	case "snowflake.schema.name":
 		d.SetDefaultValue("PUBLIC")
-	case "name":
+	case name:
 		d.SetDefaultValue("snowflake-connector-" + strings.ToLower(random.String(4)))
 	}
 

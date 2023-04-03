@@ -84,7 +84,7 @@ func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition, _ string) 
 	case "timePartitioningType":
 		d.SetDisplayName("Time partitioning type").
 			SetComponentType(model.ComponentRadioGroup)
-	case "name":
+	case name:
 		d.SetDefaultValue("bigquery-connector-" + strings.ToLower(random.String(4)))
 	}
 

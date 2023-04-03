@@ -82,11 +82,11 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition, _ string
 	case "aws.s3.region":
 		d.SetRecommendedValues(awsRegions)
 		d.SetDocumentation("")
-	case "name":
+	case name:
 		d.SetDefaultValue("s3-connector-" + strings.ToLower(random.String(4)))
 
 	// Below properties will be grouped into "Error Handling"
-	case "errors.retry.timeout":
+	case errorsRetryTimeout:
 		d.SetDisplayName("Retry timeout")
 	case "kafka.retry.backoff.ms":
 		d.SetDisplayName("Retry back-off").

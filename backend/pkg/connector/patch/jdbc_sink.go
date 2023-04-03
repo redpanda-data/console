@@ -78,7 +78,7 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition, _ string) 
 			AddRecommendedValueWithMetadata("record_key", "RECORD_KEY").
 			AddRecommendedValueWithMetadata("record_value", "RECORD_VALUE").
 			SetDefaultValue("none")
-	case "name":
+	case name:
 		d.SetDefaultValue("jdbc-sink-connector-" + strings.ToLower(random.String(4)))
 	case "connection.url":
 		d.SetDocumentation("Database JDBC connection URL.")

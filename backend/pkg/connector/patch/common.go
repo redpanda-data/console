@@ -15,6 +15,9 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
+const errorsRetryTimeout = "errors.retry.timeout"
+const name = "name"
+
 // ConfigPatchCommon is a config patch that applies specific patches on a set of configurations
 // that is common across several connectors (e.g. tasks.max).
 type ConfigPatchCommon struct {

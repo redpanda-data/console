@@ -83,7 +83,7 @@ func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition, _ string
 			SetDocumentation("Password of the database user to be used when connecting to the database.")
 	case "validate.non.null", "timestamp.column.name", "incrementing.column.name":
 		d.SetVisible(true)
-	case "name":
+	case name:
 		d.SetDefaultValue("jdbc-source-connector-" + strings.ToLower(random.String(4)))
 	}
 

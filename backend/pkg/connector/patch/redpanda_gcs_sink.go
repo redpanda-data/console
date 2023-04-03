@@ -75,11 +75,11 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition, _ strin
 		d.SetDisplayName("Envelope for primitives")
 	case "file.max.records":
 		d.SetDisplayName("Max records per file")
-	case "name":
+	case name:
 		d.SetDefaultValue("gcs-connector-" + strings.ToLower(random.String(4)))
 
 	// Below properties will be grouped into "Error Handling"
-	case "errors.retry.timeout":
+	case errorsRetryTimeout:
 		d.SetDisplayName("Retry timeout")
 	case "kafka.retry.backoff.ms":
 		d.SetDisplayName("Retry back-off").

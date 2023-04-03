@@ -51,7 +51,7 @@ func (c *ConfigPatchDebeziumPostgresSource) IsMatch(configKey, connectorClass st
 func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
-	case "name":
+	case name:
 		d.SetDefaultValue("debezium-postgresql-connector-" + strings.ToLower(random.String(4)))
 	case "schema.exclude.list":
 		d.SetVisible(true)
@@ -64,7 +64,7 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 	case "table.ignore.builtin", "provide.transaction.metadata":
 		d.SetVisible(false)
 	// Below properties will be grouped into "Error Handling"
-	case "errors.retry.timeout":
+	case errorsRetryTimeout:
 		d.SetDisplayName("Retry timeout")
 	case "key.converter":
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").

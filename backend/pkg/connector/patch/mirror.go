@@ -79,7 +79,7 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 		d.SetDefaultValue(".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas")
 	case "sync.group.offsets.enabled":
 		d.SetDefaultValue("true")
-	case "name":
+	case name:
 		d.SetDefaultValue("mirror-" + extractType(connectorClass) + "-connector-" + strings.ToLower(random.String(4)))
 	}
 
