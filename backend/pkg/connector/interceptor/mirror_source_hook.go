@@ -22,8 +22,6 @@ func ConsoleToKafkaConnectMirrorSourceHook(config map[string]any) map[string]any
 
 	if config["source.cluster.sasl.username"] != nil && config["source.cluster.sasl.password"] != nil && config["source.cluster.sasl.jaas.config"] == nil {
 		config["source.cluster.sasl.jaas.config"] = module + " required username='" + config["source.cluster.sasl.username"].(string) + "' password='" + config["source.cluster.sasl.password"].(string) + "';"
-		delete(config, "source.cluster.sasl.username")
-		delete(config, "source.cluster.sasl.password")
 	}
 
 	return config
@@ -38,6 +36,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 		securityProtocol.Value.Visible = false
 	}
 
+	plain := "PLAIN"
 	response.Configs = append(response.Configs,
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
@@ -79,23 +78,30 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 				Visible:           true,
 				Errors:            []string{},
 			},
+			Metadata: model.ConfigDefinitionMetadata{
+				ComponentType: model.ComponentRadioGroup,
+			},
 		},
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
-				Name:          "source.cluster.sasl.mechanism",
-				Type:          "STRING",
-				DefaultValue:  "PLAIN",
-				Importance:    "HIGH",
-				Required:      false,
-				DisplayName:   "Source cluster SASL mechanism",
-				Documentation: "SASL mechanism used for client connections. This may be any mechanism for which a security provider is available. GSSAPI is the default mechanism.",
+				Name:               "source.cluster.sasl.mechanism",
+				Type:               "STRING",
+				DefaultValue:       "GSSAPI",
+				CustomDefaultValue: &plain,
+				Importance:         "HIGH",
+				Required:           false,
+				DisplayName:        "Source cluster SASL mechanism",
+				Documentation:      "SASL mechanism used for client connections. This may be any mechanism for which a security provider is available. PLAIN is the default mechanism.",
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "source.cluster.sasl.mechanism",
-				Value:             "PLAIN",
+				Value:             "GSSAPI",
 				RecommendedValues: []string{"PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512", "GSSAPI"},
 				Visible:           sasl,
 				Errors:            []string{},
+			},
+			Metadata: model.ConfigDefinitionMetadata{
+				ComponentType: model.ComponentRadioGroup,
 			},
 		},
 		model.ConfigDefinition{
