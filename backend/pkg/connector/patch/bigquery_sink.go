@@ -69,6 +69,8 @@ func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition) model.Conf
 			SetDisplayName("Sanitize topics")
 	case "defaultDataset":
 		d.SetDisplayName("Default dataset")
+	case "autoCreateTables":
+		d.SetDisplayName("Auto create tables")
 	case "topic2TableMap":
 		d.SetDisplayName("Topic to table map")
 	case "allowNewBigQueryFields":
