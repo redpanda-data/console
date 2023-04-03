@@ -1,8 +1,9 @@
 package interceptor
 
 import (
-	"github.com/redpanda-data/console/backend/pkg/connector/model"
 	"strings"
+
+	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
 // ConsoleToKafkaConnectMirrorSourceHook sets MirrorMaker source connector
