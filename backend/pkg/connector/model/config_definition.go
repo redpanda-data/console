@@ -88,16 +88,19 @@ func (c *ConfigDefinition) SetRecommendedValues(recommendedValues []string) *Con
 	return c
 }
 
+// SetComponentType sets the component type to be used in the UI
 func (c *ConfigDefinition) SetComponentType(componentType ComponentType) *ConfigDefinition {
 	c.Metadata.ComponentType = componentType
 	return c
 }
 
+// ClearRecommendedValuesWithMetadata removes all recommended values
 func (c *ConfigDefinition) ClearRecommendedValuesWithMetadata() *ConfigDefinition {
 	c.Metadata.RecommendedValues = make([]RecommendedValueWithMetadata, 0)
 	return c
 }
 
+// AddRecommendedValueWithMetadata adds recommended value with metadata
 func (c *ConfigDefinition) AddRecommendedValueWithMetadata(value, displayName string) *ConfigDefinition {
 	c.Metadata.RecommendedValues = append(c.Metadata.RecommendedValues, RecommendedValueWithMetadata{
 		Value:       value,

@@ -4,6 +4,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
+// KafkaConnectToConsoleSnowflakeHook adds Snowflake sink specific config options
+// missing in Validate Kafka Connect response
 func KafkaConnectToConsoleSnowflakeHook(response model.ValidationResponse, _ map[string]any) model.ValidationResponse {
 	ingestion := getConfig(&response, "snowflake.ingestion.method")
 	if ingestion == nil {

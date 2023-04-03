@@ -26,6 +26,8 @@ type ConfigPatchRedpandaGCS struct {
 
 var _ ConfigPatch = (*ConfigPatchRedpandaGCS)(nil)
 
+const formatOutputType = "format.output.type"
+
 // NewConfigPatchRedpandaGCS returns a new Patch for the Redpanda GCS connector.
 func NewConfigPatchRedpandaGCS() *ConfigPatchRedpandaGCS {
 	return &ConfigPatchRedpandaGCS{
@@ -57,7 +59,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.C
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "value.converter":
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
-	case "format.output.type":
+	case formatOutputType:
 		d.SetDisplayName("GCS file format").
 			SetDocumentation("Format of the key coming from the Kafka topic.").
 			SetComponentType(model.ComponentRadioGroup)
@@ -87,7 +89,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition) model.C
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "format.output.type":
+	case formatOutputType:
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	case "config.action.reload":
 		d.SetImportance(model.ConfigDefinitionImportanceLow)

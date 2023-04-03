@@ -2,6 +2,8 @@ package interceptor
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
+// KafkaConnectToConsoleDebeziumPostgresSourceHook adds Postgres Debezium source specific config options
+// missing in Validate Kafka Connect response
 func KafkaConnectToConsoleDebeziumPostgresSourceHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
