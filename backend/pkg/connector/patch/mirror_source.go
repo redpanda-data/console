@@ -72,6 +72,8 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition) model.
 	case "replication.factor":
 		d.SetDocumentation("Replication factor for newly created remote topics. Set -1 for cluster default.").
 			SetDefaultValue("-1")
+	case "topics.exclude":
+		d.SetDefaultValue(".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas")
 
 	case "name":
 		d.SetDefaultValue("mirror-source-connector-" + strings.ToLower(random.String(4)))

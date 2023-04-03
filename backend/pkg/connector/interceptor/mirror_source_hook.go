@@ -20,10 +20,10 @@ func ConsoleToKafkaConnectMirrorSourceHook(config map[string]any) map[string]any
 		}
 	}
 
-	if config["username"] != nil && config["password"] != nil && config["source.cluster.sasl.jaas.config"] == nil {
-		config["source.cluster.sasl.jaas.config"] = module + " required username='" + config["username"].(string) + "' password='" + config["password"].(string) + "';"
-		delete(config, "username")
-		delete(config, "password")
+	if config["source.cluster.sasl.username"] != nil && config["source.cluster.sasl.password"] != nil && config["source.cluster.sasl.jaas.config"] == nil {
+		config["source.cluster.sasl.jaas.config"] = module + " required username='" + config["source.cluster.sasl.username"].(string) + "' password='" + config["source.cluster.sasl.password"].(string) + "';"
+		delete(config, "source.cluster.sasl.username")
+		delete(config, "source.cluster.sasl.password")
 	}
 
 	return config
@@ -100,15 +100,15 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 		},
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
-				Name:         "username",
+				Name:         "source.cluster.sasl.username",
 				Type:         "STRING",
 				DefaultValue: "",
 				Importance:   "HIGH",
 				Required:     false,
-				DisplayName:  "SASL username",
+				DisplayName:  "Source cluster SASL username",
 			},
 			Value: model.ConfigDefinitionValue{
-				Name:              "username",
+				Name:              "source.cluster.sasl.username",
 				Value:             "",
 				RecommendedValues: []string{},
 				Visible:           sasl,
@@ -117,15 +117,15 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, co
 		},
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
-				Name:         "password",
+				Name:         "source.cluster.sasl.password",
 				Type:         "PASSWORD",
 				DefaultValue: "",
 				Importance:   "HIGH",
 				Required:     false,
-				DisplayName:  "SASL password",
+				DisplayName:  "Source cluster SASL password",
 			},
 			Value: model.ConfigDefinitionValue{
-				Name:              "password",
+				Name:              "source.cluster.sasl.password",
 				Value:             "",
 				RecommendedValues: []string{},
 				Visible:           sasl,
