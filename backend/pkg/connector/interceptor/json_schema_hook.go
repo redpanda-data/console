@@ -2,6 +2,8 @@ package interceptor
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
+// KafkaConnectToConsoleJsonSchemaHook adds key, value and header *.converter.schemas.enable properties
+// to Validate response from Kafka Connect
 func KafkaConnectToConsoleJsonSchemaHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
 	for _, prefix := range []string{"key", "value", "header"} {
 		schemaSelectorVisible := false
