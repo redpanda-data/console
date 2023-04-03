@@ -53,7 +53,7 @@ func (c *ConfigPatchMirrorSource) IsMatch(configKey, connectorClass string) bool
 func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connectorClass string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
-	case "header.converter":
+	case headerConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "source.cluster.alias":
 		d.SetDefaultValue("source").
@@ -92,9 +92,9 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 		"topics.exclude",
 		"config.properties.exclude":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
-	case "key.converter",
-		"value.converter",
-		"header.converter":
+	case keyConverter,
+		valueConverter,
+		headerConverter:
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	}
 

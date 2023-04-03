@@ -17,6 +17,11 @@ import (
 
 const errorsRetryTimeout = "errors.retry.timeout"
 const name = "name"
+const headerConverter = "header.converter"
+const keyConverter = "key.converter"
+const valueConverter = "value.converter"
+const configActionReload = "config.action.reload"
+const tableIncludeList = "table.include.list"
 
 // ConfigPatchCommon is a config patch that applies specific patches on a set of configurations
 // that is common across several connectors (e.g. tasks.max).
@@ -51,7 +56,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition, _ string) mo
 	switch d.Definition.Name {
 	case "tasks.max":
 		d.SetDisplayName("Max tasks").SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "key.converter":
+	case keyConverter:
 		d.SetDisplayName("Kafka message key format").
 			SetDocumentation("Format of the key in the Kafka topic.").
 			SetImportance(model.ConfigDefinitionImportanceHigh).
@@ -71,7 +76,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition, _ string) mo
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.StringConverter", "STRING").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
 			SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
-	case "header.converter":
+	case headerConverter:
 		d.SetDisplayName("Kafka message headers format").
 			SetDocumentation("Format of the headers in the Kafka topic.").
 			SetImportance(model.ConfigDefinitionImportanceLow).
@@ -82,7 +87,7 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition, _ string) mo
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.storage.SimpleHeaderConverter", "SIMPLE").
 			SetDefaultValue("org.apache.kafka.connect.storage.SimpleHeaderConverter")
-	case "config.action.reload":
+	case configActionReload:
 		d.SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("restart", "RESTART").
 			AddRecommendedValueWithMetadata("none", "NONE")

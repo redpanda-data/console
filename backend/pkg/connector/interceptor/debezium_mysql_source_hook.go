@@ -23,9 +23,7 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "database.connectionTimeZone",
 			Type:          "STRING",
@@ -43,9 +41,7 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "schema.history.internal.kafka.topic",
 			Type:          "STRING",

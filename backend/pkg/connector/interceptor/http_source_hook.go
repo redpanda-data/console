@@ -23,9 +23,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.request.url",
 			Type:          "STRING",
@@ -43,9 +41,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.request.headers",
 			Type:          "STRING",
@@ -63,9 +59,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.request.method",
 			Type:          "STRING",
@@ -83,9 +77,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.request.params",
 			Type:          "STRING",
@@ -103,9 +95,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.auth.type",
 			Type:          "STRING",
@@ -123,9 +113,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.auth.user",
 			Type:          "STRING",
@@ -143,9 +131,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           isBasicAuthEnabled(config),
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.auth.password",
 			Type:          "PASSWORD",
@@ -163,9 +149,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           isBasicAuthEnabled(config),
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.list.pointer",
 			Type:          "STRING",
@@ -183,9 +167,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.record.offset.pointer",
 			Type:          "STRING",
@@ -203,9 +185,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.timer.interval.millis",
 			Type:          "LONG",
@@ -223,9 +203,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.timer.catchup.interval.millis",
 			Type:          "LONG",
@@ -243,9 +221,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.client.connection.timeout.millis",
 			Type:          "LONG",
@@ -263,9 +239,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.client.read.timeout.millis",
 			Type:          "LONG",
@@ -283,9 +257,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.policy.codes.skip",
 			Type:          "STRING",
@@ -303,9 +275,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.policy.codes.process",
 			Type:          "STRING",
@@ -323,9 +293,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.record.mapper",
 			Type:          "CLASS",
@@ -343,9 +311,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.list.order.direction",
 			Type:          "STRING",
@@ -363,9 +329,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.record.timestamp.parser",
 			Type:          "CLASS",
@@ -389,9 +353,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible: true,
 			Errors:  []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.request.body",
 			Type:          "STRING",
@@ -409,9 +371,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.client.connection.ttl.millis",
 			Type:          "LONG",
@@ -429,9 +389,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.record.timestamp.parser.zone",
 			Type:          "STRING",
@@ -449,9 +407,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.record.timestamp.parser.pattern",
 			Type:          "STRING",
@@ -469,9 +425,7 @@ func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, conf
 			Visible:           isParserClassSelected(config, "com.github.castorm.kafka.connect.http.response.timestamp.DateTimeFormatterTimestampParser"),
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "http.response.record.timestamp.parser.regex",
 			Type:          "STRING",

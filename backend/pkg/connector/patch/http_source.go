@@ -51,12 +51,12 @@ func (c *ConfigPatchHttpSource) IsMatch(configKey, connectorClass string) bool {
 func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
-	case "key.converter":
+	case keyConverter:
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
-	case "value.converter":
+	case valueConverter:
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
@@ -84,7 +84,7 @@ func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition, _ string
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "key.converter":
+	case keyConverter:
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	case "http.offset.initial", "http.timer", "http.response.parser":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)

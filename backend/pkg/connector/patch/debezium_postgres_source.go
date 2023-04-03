@@ -66,12 +66,12 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 	// Below properties will be grouped into "Error Handling"
 	case errorsRetryTimeout:
 		d.SetDisplayName("Retry timeout")
-	case "key.converter":
+	case keyConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
-	case "value.converter":
+	case valueConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
@@ -83,7 +83,7 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 	case "database.dbname":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	case "schema.include.list",
-		"table.include.list":
+		tableIncludeList:
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 

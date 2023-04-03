@@ -30,13 +30,13 @@ func TestPatchConfigUpperImportance(t *testing.T) {
 	}{
 		{
 			ConnectorClass:     "org.apache.kafka.connect.mirror.MirrorSourceConnector",
-			ConfigurationKey:   "key.converter",
+			ConfigurationKey:   keyConverter,
 			ShouldMatch:        true,
 			ExpectedImportance: model.ConfigDefinitionImportanceHigh,
 		},
 		{
 			ConnectorClass:     "org.apache.kafka.connect.mirror.MirrorSourceConnector",
-			ConfigurationKey:   "value.converter",
+			ConfigurationKey:   valueConverter,
 			ShouldMatch:        true,
 			ExpectedImportance: model.ConfigDefinitionImportanceHigh,
 		},

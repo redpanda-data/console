@@ -55,9 +55,9 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition, _ strin
 	switch d.Definition.Name {
 	case "gcs.credentials.json":
 		d.SetDocumentation("")
-	case "key.converter":
+	case keyConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
-	case "value.converter":
+	case valueConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case formatOutputType:
 		d.SetDisplayName("GCS file format").
@@ -91,7 +91,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition, _ strin
 	switch d.Definition.Name {
 	case formatOutputType:
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "config.action.reload":
+	case configActionReload:
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	}
 

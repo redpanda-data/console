@@ -57,7 +57,7 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition,
 		d.SetVisible(false)
 	case "database.include.list":
 		d.SetDocumentation("A comma-separated list of regular expressions that match the names of the databases for which to capture changes")
-	case "table.include.list":
+	case tableIncludeList:
 		d.SetDocumentation("A comma-separated list of regular expressions that match fully-qualified table identifiers of tables whose changes are to be captured")
 	case "column.include.list":
 		d.SetDocumentation("A comma-separated list of regular expressions matching fully-qualified names of columns to include in change events")
@@ -75,12 +75,12 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition,
 	// Below properties will be grouped into "Error Handling"
 	case errorsRetryTimeout:
 		d.SetDisplayName("Retry timeout")
-	case "key.converter":
+	case keyConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
-	case "value.converter":
+	case valueConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
@@ -89,7 +89,7 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition,
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "table.include.list",
+	case tableIncludeList,
 		"database.include.list",
 		"gtid.source.includes",
 		"database.server.id.offset",

@@ -23,9 +23,7 @@ func KafkaConnectToConsoleTopicCreationHook(response model.ValidationResponse, _
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "topic.creation.default.partitions",
 			Type:          "LONG",
@@ -43,9 +41,7 @@ func KafkaConnectToConsoleTopicCreationHook(response model.ValidationResponse, _
 			Visible:           true,
 			Errors:            []string{},
 		},
-	})
-
-	response.Configs = append(response.Configs, model.ConfigDefinition{
+	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "topic.creation.default.replication.factor",
 			Type:          "LONG",

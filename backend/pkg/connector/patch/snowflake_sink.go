@@ -55,7 +55,7 @@ func (*ConfigPatchSnowflake) PatchDefinition(d model.ConfigDefinition, _ string)
 		d.SetRecommendedValues([]string{"snowpipe", "snowpipe_streaming"}).
 			SetComponentType(model.ComponentRadioGroup).
 			SetDocumentation("SNOWPIPE allows for structured data, SNOWPIPE_STREAMING is lower latency option")
-	case "value.converter":
+	case valueConverter:
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("com.snowflake.kafka.connector.records.SnowflakeJsonConverter", "SNOWFLAKE_JSON").
 			AddRecommendedValueWithMetadata("com.snowflake.kafka.connector.records.SnowflakeAvroConverter", "SNOWFLAKE_AVRO").
@@ -86,7 +86,7 @@ func (*ConfigPatchSnowflake) PatchDefinition(d model.ConfigDefinition, _ string)
 	case "snowflake.schema.name",
 		"snowflake.ingestion.method":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
-	case "key.converter":
+	case keyConverter:
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	}
 

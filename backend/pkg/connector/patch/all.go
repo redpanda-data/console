@@ -91,8 +91,7 @@ func (c *ConfigPatchAll) PatchDefinition(d model.ConfigDefinition, _ string) mod
 		d.SetDisplayName(computedDisplayName)
 	}
 
-	switch d.Definition.Name {
-	case "errors.tolerance":
+	if d.Definition.Name == "errors.tolerance" {
 		d.SetDisplayName("Error tolerance")
 	}
 

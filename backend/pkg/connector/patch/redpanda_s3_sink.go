@@ -51,9 +51,9 @@ func (c *ConfigPatchRedpandaS3) IsMatch(configKey, connectorClass string) bool {
 func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
-	case "key.converter":
+	case keyConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
-	case "value.converter":
+	case valueConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "format.output.type":
 		d.SetDisplayName("S3 file format").
@@ -113,7 +113,7 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition, _ string
 		"aws.sts.role.external.id",
 		"aws.sts.role.session.duration",
 		"aws.sts.config.endpoint",
-		"config.action.reload":
+		configActionReload:
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	}
 

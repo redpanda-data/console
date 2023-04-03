@@ -51,9 +51,9 @@ func (c *ConfigPatchBigQuery) IsMatch(configKey, connectorClass string) bool {
 func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
-	case "key.converter":
+	case keyConverter:
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
-	case "value.converter":
+	case valueConverter:
 		d.ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
