@@ -9,9 +9,17 @@
 
 package random
 
-import "math/rand"
+import (
+	"crypto/rand"
+	"math/big"
+)
 
 // IntInRange returns a random number in the range between lo and hi.
 func IntInRange(low, hi int) int {
-	return low + rand.Intn(hi-low)
+	// Generate 20 random numbers with exclusive max of 100.
+	// ... So max value returned is 99.
+	//     All values returned are 0 or greater as well.
+	result, _ := rand.Int(rand.Reader, big.NewInt(int64(hi-low)))
+
+	return int(result.Int64())
 }
