@@ -35,7 +35,7 @@ func randCryptoInts(length int) []int32 {
 
 // String returns a random string made of numbers, upper-, and lower-case letters
 func String(length int) string {
-	ar := make([]byte, length, length)
+	ar := make([]byte, length)
 	randInts := randCryptoInts(length)
 	alphabetLength := int32(len(alphabet))
 
