@@ -9,9 +9,11 @@
 
 package model
 
+// ComponentType type of component to be used in UI
 type ComponentType = string
 
 const (
+	// ComponentRadioGroup radio button group component
 	ComponentRadioGroup ComponentType = "RADIO_GROUP"
 )
 
