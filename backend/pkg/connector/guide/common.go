@@ -49,3 +49,25 @@ func topicsToExport() model.ValidationResponseStep {
 		},
 	}
 }
+
+// mirrorClusterConnection returns a mirror cluster connection wizard step.
+func mirrorClusterConnection() model.ValidationResponseStep {
+	return model.ValidationResponseStep{
+		Name: "Connection",
+		Groups: []model.ValidationResponseStepGroup{
+			{
+				ConfigKeys: []string{
+					"source.cluster.bootstrap.servers",
+					"security.protocol",
+					"source.cluster.security.protocol",
+					"source.cluster.sasl.mechanism",
+					"source.cluster.sasl.username",
+					"source.cluster.sasl.password",
+					"source.cluster.ssl.truststore.certificates",
+					"source.cluster.ssl.keystore.key",
+					"source.cluster.ssl.keystore.certificate.chain",
+				},
+			},
+		},
+	}
+}
