@@ -445,7 +445,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 		},
 	})
 
-	return KafkaConnectToConsoleJsonSchemaHook(KafkaConnectToConsoleTopicCreationHook(response, config), config)
+	return KafkaConnectToConsoleJSONSchemaHook(KafkaConnectToConsoleTopicCreationHook(response, config), config)
 }
 
 func isBasicAuthEnabled(configs map[string]any) bool {

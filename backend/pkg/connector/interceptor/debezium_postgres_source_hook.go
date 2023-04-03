@@ -25,5 +25,5 @@ func KafkaConnectToConsoleDebeziumPostgresSourceHook(response model.ValidationRe
 		},
 	})
 
-	return KafkaConnectToConsoleTopicCreationHook(KafkaConnectToConsoleJsonSchemaHook(response, config), config)
+	return KafkaConnectToConsoleTopicCreationHook(KafkaConnectToConsoleJSONSchemaHook(response, config), config)
 }

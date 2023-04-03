@@ -56,7 +56,7 @@ func CommunityPatches() []patch.ConfigPatch {
 		patch.NewConfigPatchBigQuery(),
 		patch.NewConfigPatchJdbcSink(),
 		patch.NewConfigPatchJdbcSource(),
-		patch.NewConfigPatchHttpSource(),
+		patch.NewConfigPatchHTTPSource(),
 		patch.NewConfigPatchMirrorSource(),
 	}
 }
@@ -69,13 +69,13 @@ func CommunityPatches() []patch.ConfigPatch {
 // Kafka connect cluster.
 func CommunityGuides(opts ...guide.Option) []guide.Guide {
 	return []guide.Guide{
-		guide.NewRedpandaAwsS3SinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
-		guide.NewRedpandaGCSSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
+		guide.NewRedpandaAwsS3SinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
+		guide.NewRedpandaGCSSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
 		guide.NewDebeziumPostgresGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumPostgresSourceHook)),
 		guide.NewDebeziumMySQLGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumMysqlSourceHook)),
 		guide.NewSnowflakeSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleSnowflakeHook)),
 		guide.NewBigQuerySinkGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectBigQueryHook),
-			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
 		guide.NewJdbcSinkGuide(opts...),
 		guide.NewJdbcSourceGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleTopicCreationHook)),
 		guide.NewHTTPSourceGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleHTTPSourceHook)),

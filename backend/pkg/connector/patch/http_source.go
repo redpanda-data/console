@@ -17,18 +17,18 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/random"
 )
 
-// ConfigPatchHttpSource is a config patch that includes changes that shall be applied to the
+// ConfigPatchHTTPSource is a config patch that includes changes that shall be applied to the
 // BigQuery source connector.
-type ConfigPatchHttpSource struct {
+type ConfigPatchHTTPSource struct {
 	ConfigurationKeySelector IncludeExcludeSelector
 	ConnectorClassSelector   IncludeExcludeSelector
 }
 
 var _ ConfigPatch = (*ConfigPatchBigQuery)(nil)
 
-// NewConfigPatchHttpSource returns a new Patch for the BigQuery source connector.
-func NewConfigPatchHttpSource() *ConfigPatchHttpSource {
-	return &ConfigPatchHttpSource{
+// NewConfigPatchHTTPSource returns a new Patch for the BigQuery source connector.
+func NewConfigPatchHTTPSource() *ConfigPatchHTTPSource {
+	return &ConfigPatchHTTPSource{
 		ConfigurationKeySelector: IncludeExcludeSelector{
 			Include: regexp.MustCompile(`.*`),
 			Exclude: nil,
@@ -41,14 +41,14 @@ func NewConfigPatchHttpSource() *ConfigPatchHttpSource {
 }
 
 // IsMatch implements the ConfigPatch.IsMatch interface.
-func (c *ConfigPatchHttpSource) IsMatch(configKey, connectorClass string) bool {
+func (c *ConfigPatchHTTPSource) IsMatch(configKey, connectorClass string) bool {
 	return c.ConfigurationKeySelector.IsMatch(configKey) && c.ConnectorClassSelector.IsMatch(connectorClass)
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 //
 //nolint:cyclop // This function defines/patches a lot of things, but it's easy to comprehend.
-func (*ConfigPatchHttpSource) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
+func (*ConfigPatchHTTPSource) PatchDefinition(d model.ConfigDefinition, _ string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
 	case keyConverter:
