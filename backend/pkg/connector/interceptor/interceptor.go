@@ -81,6 +81,8 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 		guide.NewHttpSourceGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleHttpSourceHook)),
 		guide.NewMirrorSourceGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMirrorSourceHook),
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMirrorSourceHook)),
+		guide.NewMirrorCheckpointGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMirrorSourceHook),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMirrorSourceHook)),
 	}
 }
 

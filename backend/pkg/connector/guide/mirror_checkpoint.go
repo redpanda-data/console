@@ -11,15 +11,15 @@ package guide
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-// NewMirrorSourceGuide returns a new guide for MirrorSourceConnector.
-func NewMirrorSourceGuide(opts ...Option) Guide {
+// NewMirrorCheckpointGuide returns a new guide for MirrorCheckpointConnector.
+func NewMirrorCheckpointGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
 		opt(&o)
 	}
 
 	return &WizardGuide{
-		className: "org.apache.kafka.connect.mirror.MirrorSourceConnector",
+		className: "org.apache.kafka.connect.mirror.MirrorCheckpointConnector",
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
 			{
@@ -40,19 +40,16 @@ func NewMirrorSourceGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
-							"sync.topic.configs.enabled",
-							"sync.topic.configs.interval.seconds",
-							"sync.topic.acls.enabled",
-							"sync.topic.acls.interval.seconds",
+							"groups",
 							"topics.exclude",
 							"source.cluster.alias",
 							"replication.policy.class",
-							"replication.factor",
-							"refresh.topics.interval.seconds",
+							"emit.checkpoints.interval.seconds",
+							"sync.group.offsets.enabled",
+							"sync.group.offsets.interval.seconds",
+							"refresh.groups.interval.seconds",
 							"offset-syncs.topic.location",
-							"offset-syncs.topic.replication.factor",
-							"config.properties.exclude",
-							"producer.override.compression.type",
+							"checkpoints.topic.replication.factor",
 						},
 					},
 				},

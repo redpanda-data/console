@@ -41,6 +41,50 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 		securityProtocol.Value.Visible = false
 	}
 
+	if getConfig(&response, "topics") == nil {
+		response.Configs = append(response.Configs,
+			model.ConfigDefinition{
+				Definition: model.ConfigDefinitionKey{
+					Name:          "topics",
+					Type:          "LIST",
+					DefaultValue:  ".*",
+					Importance:    "HIGH",
+					Required:      false,
+					DisplayName:   "Topics",
+					Documentation: "Topics to replicate. Supports comma-separated topic names and regexes.",
+				},
+				Value: model.ConfigDefinitionValue{
+					Name:              "topics",
+					Value:             ".*",
+					RecommendedValues: []string{},
+					Visible:           true,
+					Errors:            []string{},
+				},
+			})
+	}
+
+	if getConfig(&response, "topics.exclude") == nil {
+		response.Configs = append(response.Configs,
+			model.ConfigDefinition{
+				Definition: model.ConfigDefinitionKey{
+					Name:          "topics.exclude",
+					Type:          "LIST",
+					DefaultValue:  ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas",
+					Importance:    "MEDIUM",
+					Required:      false,
+					DisplayName:   "Topics exclude",
+					Documentation: "Excluded topics. Supports comma-separated topic names and regexes.",
+				},
+				Value: model.ConfigDefinitionValue{
+					Name:              "topics",
+					Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas",
+					RecommendedValues: []string{},
+					Visible:           true,
+					Errors:            []string{},
+				},
+			})
+	}
+
 	plain := "PLAIN"
 	response.Configs = append(response.Configs,
 		model.ConfigDefinition{
