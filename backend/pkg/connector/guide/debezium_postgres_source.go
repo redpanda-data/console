@@ -64,7 +64,7 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 
 							"schema.include.list",
 							"schema.exclude.list",
-							tableIncludeList,
+							"table.include.list",
 							"table.exclude.list",
 							"column.include.list",
 							"column.exclude.list",
