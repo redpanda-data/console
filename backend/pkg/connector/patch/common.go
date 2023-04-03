@@ -15,13 +15,15 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
-const errorsRetryTimeout = "errors.retry.timeout"
-const name = "name"
-const headerConverter = "header.converter"
-const keyConverter = "key.converter"
-const valueConverter = "value.converter"
-const configActionReload = "config.action.reload"
-const tableIncludeList = "table.include.list"
+const (
+	errorsRetryTimeout = "errors.retry.timeout"
+	name               = "name"
+	headerConverter    = "header.converter"
+	keyConverter       = "key.converter"
+	valueConverter     = "value.converter"
+	configActionReload = "config.action.reload"
+	tableIncludeList   = "table.include.list"
+)
 
 // ConfigPatchCommon is a config patch that applies specific patches on a set of configurations
 // that is common across several connectors (e.g. tasks.max).

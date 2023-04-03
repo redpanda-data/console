@@ -13,8 +13,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
-// NewHttpSourceGuide returns a new guide for Http sources.
-func NewHttpSourceGuide(opts ...Option) Guide {
+// NewHTTPSourceGuide returns a new guide for Http sources.
+func NewHTTPSourceGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
 		opt(&o)

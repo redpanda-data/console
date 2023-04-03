@@ -2,9 +2,9 @@ package interceptor
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-// KafkaConnectToConsoleHttpSourceHook adds HTTP source specific config options
+// KafkaConnectToConsoleHTTPSourceHook adds HTTP source specific config options
 // missing in Validate Kafka Connect response
-func KafkaConnectToConsoleHttpSourceHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
+func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, config map[string]any) model.ValidationResponse {
 	response.Configs = append(response.Configs, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
 			Name:          "kafka.topic",

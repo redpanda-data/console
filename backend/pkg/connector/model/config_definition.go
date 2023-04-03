@@ -109,7 +109,7 @@ func (c *ConfigDefinition) AddRecommendedValueWithMetadata(value, displayName st
 	return c
 }
 
-func (c *ConfigDefinition) AddError(error string) *ConfigDefinition {
+func (c *ConfigDefinition) AddValueErrors(error string) *ConfigDefinition {
 	c.Value.Errors = append(c.Value.Errors, error)
 	return c
 }

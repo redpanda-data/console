@@ -30,7 +30,7 @@ func (s *Service) PutConnectorConfig(ctx context.Context, clusterName string, co
 	className := req.Config["connector.class"].(string)
 	if className == "" {
 		return con.ConnectorInfo{}, &rest.Error{
-			Err:      fmt.Errorf("Connector class is not set"),
+			Err:      fmt.Errorf("connector class is not set"),
 			Status:   http.StatusBadRequest,
 			Message:  "Connector class is not set",
 			IsSilent: false,

@@ -78,7 +78,7 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJsonSchemaHook)),
 		guide.NewJdbcSinkGuide(opts...),
 		guide.NewJdbcSourceGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleTopicCreationHook)),
-		guide.NewHttpSourceGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleHttpSourceHook)),
+		guide.NewHTTPSourceGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleHTTPSourceHook)),
 		guide.NewMirrorSourceGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMirrorSourceHook),
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMirrorSourceHook)),
 		guide.NewMirrorCheckpointGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMirrorSourceHook),
