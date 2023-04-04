@@ -57,10 +57,17 @@ func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]
 		}
 	}
 
-	if g.options.consoleToKafkaConnectHookFn == nil {
-		return configs
+	if g.options.consoleToKafkaConnectHookFn != nil {
+		configs = g.options.consoleToKafkaConnectHookFn(configs)
 	}
-	return g.options.consoleToKafkaConnectHookFn(configs)
+
+	_, topicsExists := configs["topics"]
+	_, topicsRegexExists := configs["topics.regex"]
+	if !topicsExists && !topicsRegexExists {
+		configs["topics.regex"] = "topics"
+	}
+
+	return configs
 }
 
 // KafkaConnectToConsole implements Guide.KafkaConnectToConsole.
