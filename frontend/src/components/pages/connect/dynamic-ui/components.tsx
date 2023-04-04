@@ -54,8 +54,8 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
 
     return (
         <>
-            <Switch 
-                isChecked={connectorStore.showAdvancedOptions} 
+            <Switch
+                isChecked={connectorStore.showAdvancedOptions}
                 onChange={(s) => (connectorStore.showAdvancedOptions = s.target.checked)}
             >
                 Show advanced options
@@ -68,6 +68,7 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
                     groups={groups}
                     allGroups={connectorStore.allGroups}
                     showAdvancedOptions={connectorStore.showAdvancedOptions}
+                    connectorType={connectorStore.connectorType}
                 />
             })}
 

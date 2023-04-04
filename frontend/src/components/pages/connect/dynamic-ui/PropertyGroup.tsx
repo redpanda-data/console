@@ -19,8 +19,12 @@ import { PropertyComponent } from './PropertyComponent';
 
 const topicsFields = ['topics', 'topics.regex'];
 
-export const PropertyGroupComponent = observer(
-    (props: { group: PropertyGroup; allGroups: PropertyGroup[]; showAdvancedOptions: boolean }) => {
+export const PropertyGroupComponent = observer((props: {
+    group: PropertyGroup;
+    allGroups: PropertyGroup[];
+    showAdvancedOptions: boolean;
+    connectorType: 'sink' | 'source';
+}) => {
         const g = props.group;
 
         const filteredProperties = g.filteredProperties;
@@ -54,7 +58,12 @@ export const PropertyGroupComponent = observer(
                                         </div>
                                     }
                                 >
-                                    <PropertyGroupComponent group={subGroup} allGroups={props.allGroups} showAdvancedOptions={props.showAdvancedOptions} />
+                                    <PropertyGroupComponent
+                                        group={subGroup}
+                                        allGroups={props.allGroups}
+                                        showAdvancedOptions={props.showAdvancedOptions}
+                                        connectorType={props.connectorType}
+                                    />
                                 </Collapse.Panel>
                             ))}
                         </Collapse>
@@ -80,7 +89,7 @@ export const PropertyGroupComponent = observer(
                         )}
 
                         <div>
-                            {<TopicInput properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))} />}
+                            {<TopicInput properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))} connectorType={props.connectorType} />}
                             {filteredProperties
                                 .filter((p) => topicsFields.every((v) => v !== p.name))
                                 .map((p) => (

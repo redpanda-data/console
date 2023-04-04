@@ -12,15 +12,14 @@
 import { FormControl, FormErrorMessage, FormHelperText, Input, Checkbox, Grid } from '@redpanda-data/ui';
 import { Select } from 'antd';
 import { observer, useLocalObservable } from 'mobx-react';
-import { PropsWithoutRef } from 'react';
 import { api } from '../../../../../state/backendApi';
 import { Property } from '../../../../../state/connect/state';
 import { ExpandableText } from '../../../../misc/ExpandableText';
 
-export const TopicInput = observer(({ properties }: PropsWithoutRef<{ properties: Property[] }>) => {
+export const TopicInput = observer((p: { properties: Property[], connectorType: 'sink' | 'source' }) => {
     const state = useLocalObservable(() => {
-        const props = new Map(properties.map((p) => [p.name, p]));
-        const topicsRegex = properties.find(x => x.name == 'topics.regex');
+        const props = new Map(p.properties.map((p) => [p.name, p]));
+        const topicsRegex = p.properties.find(x => x.name == 'topics.regex');
         const initialSelection = topicsRegex?.value ? 'topics.regex' : 'topics';
 
         api.refreshTopics();
@@ -78,7 +77,8 @@ export const TopicInput = observer(({ properties }: PropsWithoutRef<{ properties
                     </ExpandableText>
                 </FormHelperText>
 
-                {state.isRegex
+                {/* A 'source' connector imports data into the cluster. So we let the user choose the name of the topic directly  */}
+                {(state.isRegex || p.connectorType == 'source')
                     ? <Input value={String(state.property.value)} onChange={(e) => (state.property.value = e.target.value)} spellCheck={false} />
                     : <Select style={{ minWidth: '300px' }}
                         mode="multiple"

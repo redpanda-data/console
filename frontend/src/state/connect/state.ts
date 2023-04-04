@@ -21,6 +21,7 @@ import {
     ConnectorPossibleStatesLiteral,
     ConnectorStep,
     ConnectorGroup,
+    ClusterAdditionalInfo,
 } from '../restInterfaces';
 import { removeNamespace } from '../../components/pages/connect/helper';
 import { encodeBase64, retrier } from '../../utils/utils';
@@ -114,12 +115,14 @@ export class ConnectClusterStore {
     isInitialized: boolean = false;
     private connectors: Map<string, ConnectorPropertiesStore>;
     features: ConnectorClusterFeatures = { secretStore: false };
+    additionalClusterInfo: ClusterAdditionalInfo;
 
     static connectClusters: Map<string, ConnectClusterStore> = new Map();
     constructor(clusterName: string) {
         this.clusterName = clusterName;
         makeAutoObservable<ConnectClusterStore, 'plugins' | 'connectors'>(this, {
             setup: action.bound,
+            refreshData: action.bound,
             createConnector: flow.bound,
             deleteConnector: flow.bound,
             updateConnnector: flow.bound,
@@ -142,8 +145,8 @@ export class ConnectClusterStore {
             this.connectors = new Map();
             await this.refreshData(false);
 
-            const additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName);
-            this.features.secretStore = !!additionalClusterInfo?.enabledFeatures?.some((x) => x === 'SECRET_STORE');
+            this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
+            this.features.secretStore = !!this.additionalClusterInfo?.enabledFeatures?.some((x) => x === 'SECRET_STORE');
             this.isInitialized = true;
         }
     }
@@ -151,11 +154,12 @@ export class ConnectClusterStore {
     async refreshData(force: boolean) {
         await api.refreshConnectClusters(force);
         await api.refreshClusterAdditionalInfo(this.clusterName, force);
+        this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
     }
 
     // CRUD operations
-    createConnector = flow(function*(this: ConnectClusterStore, pluginClass: string, updatedConfig: Record<string, any> = {}) {
-        const connector = this.getConnector(pluginClass);
+    createConnector = flow(function* (this: ConnectClusterStore, pluginClass: string, connectorType: 'sink' | 'source', updatedConfig: Record<string, any> = {}) {
+        const connector = this.getConnector(pluginClass, connectorType);
         const secrets = connector.secrets;
         if (secrets) {
             try {
@@ -187,7 +191,7 @@ export class ConnectClusterStore {
         }
     });
 
-    deleteConnector = flow(function*(this: ConnectClusterStore, connectorName: string) {
+    deleteConnector = flow(function* (this: ConnectClusterStore, connectorName: string) {
         const connectorState = this.getConnectorStore(connectorName);
         const secrets = connectorState.secrets;
 
@@ -228,7 +232,8 @@ export class ConnectClusterStore {
         const identifier = connectorName ? `${pluginClassName}/${connectorName}` : pluginClassName;
         let connectorStore = this.connectors.get(identifier);
         if (!connectorStore) {
-            connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, initialConfig, {
+            const connectorType = this.additionalClusterInfo.plugins.first(x => x.class == pluginClassName)!.type;
+            connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, connectorType, initialConfig, {
                 secretStore: this.features.secretStore,
                 editing: initialConfig != null,
             });
@@ -393,6 +398,7 @@ export class ConnectorPropertiesStore {
     constructor(
         private clusterName: string,
         private pluginClassName: string,
+        public connectorType: 'sink' | 'source',
         private appliedConfig: Record<string, any> | undefined,
         features?: ConnectorClusterFeatures
     ) {

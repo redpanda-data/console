@@ -16,7 +16,13 @@ import { PropertyGroup } from '../../../../state/connect/state';
 import { ConnectorStep } from '../../../../state/restInterfaces';
 import { PropertyGroupComponent } from './PropertyGroup';
 
-export const ConnectorStepComponent = observer((props: { step: ConnectorStep, groups: PropertyGroup[], allGroups: PropertyGroup[], showAdvancedOptions: boolean }) => {
+export const ConnectorStepComponent = observer((props: {
+    step: ConnectorStep;
+    groups: PropertyGroup[];
+    allGroups: PropertyGroup[];
+    showAdvancedOptions: boolean;
+    connectorType: 'sink' | 'source';
+}) => {
     const step = props.step;
     const groups = props.groups;
 
@@ -36,6 +42,7 @@ export const ConnectorStepComponent = observer((props: { step: ConnectorStep, gr
                 group={g}
                 allGroups={props.allGroups}
                 showAdvancedOptions={props.showAdvancedOptions}
+                connectorType={props.connectorType}
             />
         )}
     </Box>
