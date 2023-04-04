@@ -10,6 +10,8 @@
 package guide
 
 import (
+	"strings"
+
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
@@ -56,10 +58,11 @@ func (g *WizardGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]a
 		configs = g.options.consoleToKafkaConnectHookFn(configs)
 	}
 
-	_, topicsExists := configs["topics"]
-	_, topicsRegexExists := configs["topics.regex"]
-	if !topicsExists && !topicsRegexExists {
-		configs["topics.regex"] = "topics"
+	topics := configs["topics"]
+	topicsRegex := configs["topics.regex"]
+	if (topics == nil || strings.TrimSpace(topics.(string)) == "") &&
+		(topicsRegex == nil || strings.TrimSpace(topicsRegex.(string)) == "") {
+		configs["topics.regex"] = TOPICS_REGEX_PLACEHOLDER
 	}
 
 	return configs
@@ -73,6 +76,9 @@ func (g *WizardGuide) KafkaConnectToConsole(pluginClassName string, patchedConfi
 	// 1. Extract all configs from the response and index them by their config key
 	configsByKey := make(map[string]model.ConfigDefinition)
 	for _, configDef := range patchedConfigs {
+		if configDef.Definition.Name == "topics.regex" && configDef.Value.Value == TOPICS_REGEX_PLACEHOLDER {
+			configDef.Value.Value = ""
+		}
 		configsByKey[configDef.Definition.Name] = configDef
 	}
 
