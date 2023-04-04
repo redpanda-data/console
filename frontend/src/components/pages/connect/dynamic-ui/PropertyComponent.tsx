@@ -123,7 +123,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
 
     inputComp = <ErrorWrapper property={p} input={inputComp} />;
     // Wrap name and input element
-    return <div className={inputSizeToClass[def.width]}>{inputComp}</div>;
+    return <div className={inputSizeToClass[def.width]} style={{ marginTop: '1rem' }}>{inputComp}</div>;
 });
 
 const inputSizeToClass = {
