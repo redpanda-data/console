@@ -48,8 +48,6 @@ func (c *ConfigPatchMirrorSource) IsMatch(configKey, connectorClass string) bool
 }
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
-//
-//nolint:cyclop // This function defines/patches a lot of things, but it's easy to comprehend.
 func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connectorClass string) model.ConfigDefinition {
 	// Misc patches
 	switch d.Definition.Name {
