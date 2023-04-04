@@ -158,8 +158,8 @@ export class ConnectClusterStore {
     }
 
     // CRUD operations
-    createConnector = flow(function* (this: ConnectClusterStore, pluginClass: string, connectorType: 'sink' | 'source', updatedConfig: Record<string, any> = {}) {
-        const connector = this.getConnector(pluginClass, connectorType);
+    createConnector = flow(function* (this: ConnectClusterStore, pluginClass: string, updatedConfig: Record<string, any> = {}) {
+        const connector = this.getConnector(pluginClass);
         const secrets = connector.secrets;
         if (secrets) {
             try {
