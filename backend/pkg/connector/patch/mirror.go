@@ -60,7 +60,7 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 			SetDocumentation("When using DefaultReplicationPolicy, topic names will be prefixed with it.")
 	case "replication.policy.class":
 		d.SetComponentType(model.ComponentRadioGroup).
-			SetDocumentation("Class which defines the remote topic naming convention. Use IdentityReplicationPolicy to preserver topic names. DefaultReplicationPolicy prefixes topic with the Source cluster alias.").
+			SetDocumentation("Class which defines the remote topic naming convention. Use IdentityReplicationPolicy to preserve topic names. DefaultReplicationPolicy prefixes topic with the Source cluster alias.").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.mirror.IdentityReplicationPolicy", "IdentityReplicationPolicy").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.mirror.DefaultReplicationPolicy", "DefaultReplicationPolicy").
 			SetDefaultValue("org.apache.kafka.connect.mirror.IdentityReplicationPolicy")
