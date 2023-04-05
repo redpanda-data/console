@@ -474,8 +474,6 @@ export class ConnectorPropertiesStore {
             const basicConfig = {
                 'connector.class': pluginClassName,
                 name: '',
-                topic: 'topic',
-                topics: 'topics',
             };
 
             const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, this.appliedConfig ?? basicConfig);
