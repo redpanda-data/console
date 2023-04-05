@@ -18,7 +18,7 @@ import (
 )
 
 // ConfigPatchMirrorSource is a config patch that includes changes that shall be applied to the
-// MirrorSourceConnector.
+// MirrorSourceConnector and MirrorCheckpointConnector.
 type ConfigPatchMirrorSource struct {
 	ConfigurationKeySelector IncludeExcludeSelector
 	ConnectorClassSelector   IncludeExcludeSelector
@@ -26,9 +26,12 @@ type ConfigPatchMirrorSource struct {
 
 var _ ConfigPatch = (*ConfigPatchMirrorSource)(nil)
 
-const classSelectorRegexp = `org.apache.kafka.connect.mirror.Mirror(.*)Connector`
+const (
+	classSelectorRegexp = `org.apache.kafka.connect.mirror.Mirror(Source|Checkpoint)Connector`
+	sourceClusterAlias  = "source.cluster.alias"
+)
 
-// NewConfigPatchMirrorSource returns a new Patch for the MirrorSourceConnector.
+// NewConfigPatchMirrorSource returns a new Patch for the MirrorSourceConnector and MirrorCheckpointConnector.
 func NewConfigPatchMirrorSource() *ConfigPatchMirrorSource {
 	return &ConfigPatchMirrorSource{
 		ConfigurationKeySelector: IncludeExcludeSelector{
@@ -53,7 +56,7 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 	switch d.Definition.Name {
 	case headerConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
-	case "source.cluster.alias":
+	case sourceClusterAlias:
 		d.SetDefaultValue("source").
 			SetDocumentation("When using DefaultReplicationPolicy, topic names will be prefixed with it.")
 	case "replication.policy.class":
@@ -86,7 +89,7 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 	case "sync.topic.configs.enabled",
 		"sync.topic.acls.enabled":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "source.cluster.alias",
+	case sourceClusterAlias,
 		"topics.exclude",
 		"config.properties.exclude":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)

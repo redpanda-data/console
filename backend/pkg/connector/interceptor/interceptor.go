@@ -58,6 +58,7 @@ func CommunityPatches() []patch.ConfigPatch {
 		patch.NewConfigPatchJdbcSource(),
 		patch.NewConfigPatchHTTPSource(),
 		patch.NewConfigPatchMirrorSource(),
+		patch.NewConfigPatchMirrorHeartbeat(),
 	}
 }
 
@@ -83,6 +84,7 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMirrorSourceHook)),
 		guide.NewMirrorCheckpointGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMirrorSourceHook),
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMirrorSourceHook)),
+		guide.NewMirrorHeartbeatGuide(opts...),
 	}
 }
 
