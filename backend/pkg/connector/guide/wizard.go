@@ -58,11 +58,16 @@ func (g *WizardGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]a
 		configs = g.options.consoleToKafkaConnectHookFn(configs)
 	}
 
-	topics := configs["topics"]
-	topicsRegex := configs["topics.regex"]
-	if (topics == nil || strings.TrimSpace(topics.(string)) == "") &&
-		(topicsRegex == nil || strings.TrimSpace(topicsRegex.(string)) == "") {
-		configs["topics.regex"] = topicsRegexPlaceholder
+	connectorClass := configs["connector.class"]
+	if connectorClass != nil && !strings.Contains(connectorClass.(string), "Source") &&
+		!strings.Contains(connectorClass.(string), "debezium") &&
+		!strings.Contains(connectorClass.(string), "mirror") {
+		topics := configs["topics"]
+		topicsRegex := configs["topics.regex"]
+		if (topics == nil || strings.TrimSpace(topics.(string)) == "") &&
+			(topicsRegex == nil || strings.TrimSpace(topicsRegex.(string)) == "") {
+			configs["topics.regex"] = topicsRegexPlaceholder
+		}
 	}
 
 	return configs
