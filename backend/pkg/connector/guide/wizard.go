@@ -62,7 +62,7 @@ func (g *WizardGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]a
 	topicsRegex := configs["topics.regex"]
 	if (topics == nil || strings.TrimSpace(topics.(string)) == "") &&
 		(topicsRegex == nil || strings.TrimSpace(topicsRegex.(string)) == "") {
-		configs["topics.regex"] = TOPICS_REGEX_PLACEHOLDER
+		configs["topics.regex"] = topicsRegexPlaceholder
 	}
 
 	return configs
@@ -76,7 +76,7 @@ func (g *WizardGuide) KafkaConnectToConsole(pluginClassName string, patchedConfi
 	// 1. Extract all configs from the response and index them by their config key
 	configsByKey := make(map[string]model.ConfigDefinition)
 	for _, configDef := range patchedConfigs {
-		if configDef.Definition.Name == "topics.regex" && configDef.Value.Value == TOPICS_REGEX_PLACEHOLDER {
+		if configDef.Definition.Name == "topics.regex" && configDef.Value.Value == topicsRegexPlaceholder {
 			configDef.Value.Value = ""
 		}
 		configsByKey[configDef.Definition.Name] = configDef

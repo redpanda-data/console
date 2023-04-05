@@ -19,7 +19,9 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
-const TOPICS_REGEX_PLACEHOLDER = "__TOPICS_REGEX_PLACEHOLDER"
+const (
+	topicsRegexPlaceholder = "__TOPICS_REGEX_PLACEHOLDER"
+)
 
 // DefaultGuide is the guide that is used if we haven't matched a connector-specific
 // guide. The default guide groups and sorts the returned config properties on a best-effort
@@ -67,7 +69,7 @@ func (g *DefaultGuide) ConsoleToKafkaConnect(configs map[string]any) map[string]
 	topicsRegex := configs["topics.regex"]
 	if (topics == nil || strings.TrimSpace(topics.(string)) == "") &&
 		(topicsRegex == nil || strings.TrimSpace(topicsRegex.(string)) == "") {
-		configs["topics.regex"] = TOPICS_REGEX_PLACEHOLDER
+		configs["topics.regex"] = topicsRegexPlaceholder
 	}
 
 	return configs
@@ -79,7 +81,7 @@ func (g *DefaultGuide) KafkaConnectToConsole(pluginClassName string, patchedConf
 	configs := make([]model.ConfigDefinition, len(patchedConfigs))
 	configsByGroup := make(map[string][]model.ConfigDefinition)
 	for i, configDef := range patchedConfigs {
-		if configDef.Definition.Name == "topics.regex" && configDef.Value.Value == TOPICS_REGEX_PLACEHOLDER {
+		if configDef.Definition.Name == "topics.regex" && configDef.Value.Value == topicsRegexPlaceholder {
 			configDef.Value.Value = ""
 		}
 		configs[i] = configDef
