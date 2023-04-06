@@ -10,7 +10,7 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Button, Skeleton, Tooltip } from 'antd';
+import { Button, Modal, Skeleton, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
@@ -35,6 +35,7 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
 import { delay } from '../../../utils/utils';
+import { Box, Flex } from '@redpanda-data/ui';
 
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
@@ -102,6 +103,7 @@ const KafkaConnectorMain = observer(
                         </span>
 
                         <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '.5em', fontSize: '12px' }}>
+                            <ViewConfigModal connector={connector} />
                             {connectClusterStore.validateConnectorState(connectorName, ['FAILED', 'UNASSIGNED']) ? (
                                 <TaskState observable={connector} />
                             ) : (
@@ -420,3 +422,33 @@ const TaskActionsColumn = observer(
         );
     }
 );
+
+const ViewConfigModal = (p: { connector: ClusterConnectorInfo }) => {
+    const [showConfig, setShowConfig] = useState(false);
+
+    const closeConfigModal = () => setShowConfig(false);
+    const viewConfigModal = <Modal open={showConfig} onOk={closeConfigModal} onCancel={closeConfigModal} cancelButtonProps={{ style: { display: 'none' } }}
+        bodyStyle={{ paddingBottom: '8px', paddingTop: '14px' }}
+        centered
+        closable={false} maskClosable={true}
+        okText="Close" width="60%"
+    >
+        <>
+            <Flex alignItems="center" mb="8px">
+                <Box fontSize="medium" fontWeight={500}>Connector Config (JSON)</Box>
+
+                <Button style={{ marginLeft: '16px', paddingInline: '8px' }} onClick={() => {
+                    navigator.clipboard.writeText(p.connector.jsonConfig);
+                }}>Copy</Button>
+            </Flex>
+            <div className="codeBox" style={{ whiteSpace: 'pre', overflow: 'scroll', width: '100%', padding: '10px 8px' }}>
+                {p.connector.jsonConfig}
+            </div>
+        </>
+    </Modal>;
+
+    return <>
+        <Button onClick={() => setShowConfig(true)}>Show Config</Button>
+        {viewConfigModal}
+    </>
+};
