@@ -486,6 +486,7 @@ export class ConnectorPropertiesStore {
                 // Set default values
                 for (const p of allProps)
                     if (p.entry.definition.custom_default_value != undefined) {
+                        console.log(p.name);
                         p.value = p.entry.definition.custom_default_value;
                     }
 
@@ -696,17 +697,16 @@ export class ConnectorPropertiesStore {
                     crud: this.crud,
                 });
 
+                if (this.appliedConfig != null && this.appliedConfig[name])
+                    property.value = sanitizeValue(this.appliedConfig[name], definitionType);
                 if (p.definition.type === DataType.Password && !!this.secrets) {
                     const secret = this.secrets.getSecret(property.name);
+                    secret.extractSecretId(property.value);
                     intercept(property, 'value', (change) => {
-                        secret.extractSecretId(change.newValue);
                         secret.value = change.newValue;
                         return change;
                     });
                 }
-
-                if (this.appliedConfig != null && this.appliedConfig[name])
-                    property.value = sanitizeValue(this.appliedConfig[name], definitionType);
 
                 return property;
             })
