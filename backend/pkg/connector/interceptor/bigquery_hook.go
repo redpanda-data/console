@@ -7,5 +7,10 @@ func ConsoleToKafkaConnectBigQueryHook(config map[string]any) map[string]any {
 		config["keySource"] = "JSON"
 	}
 
+	_, exists = config["bigQueryPartitionDecorator"]
+	if !exists {
+		config["bigQueryPartitionDecorator"] = "false"
+	}
+
 	return config
 }
