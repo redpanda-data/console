@@ -505,9 +505,10 @@ func isParserClassSelected(configs map[string]any, parserClass string) bool {
 	return false
 }
 
-// ConsoleToKafkaConnectHTTPSourceHook sets HTTP source connector config options
+// ConsoleToKafkaConnectHTTPSourceHook clears user credentials if
+// Basic auth type is not set
 func ConsoleToKafkaConnectHTTPSourceHook(config map[string]any) map[string]any {
-	if authType, _ := config["http.auth.type"]; authType != "Basic" {
+	if authType := config["http.auth.type"]; authType != "Basic" {
 		delete(config, "http.auth.user")
 		delete(config, "http.auth.password")
 	}

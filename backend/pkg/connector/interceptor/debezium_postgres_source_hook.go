@@ -28,6 +28,7 @@ func KafkaConnectToConsoleDebeziumPostgresSourceHook(response model.ValidationRe
 	return KafkaConnectToConsoleTopicCreationHook(KafkaConnectToConsoleJSONSchemaHook(response, config), config)
 }
 
+// ConsoleToKafkaConnectDebeziumPostgresConfigsHook sets tasks max always to exactly one task
 func ConsoleToKafkaConnectDebeziumPostgresConfigsHook(userReq map[string]any) map[string]any {
 	userReq["tasks.max"] = "1"
 	return userReq
