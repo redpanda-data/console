@@ -94,6 +94,8 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition, _ string) 
 	switch d.Definition.Name {
 	case "pk.mode", "insert.mode":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
+	case "auto.create":
+		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	}
 
 	return d

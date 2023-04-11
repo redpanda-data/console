@@ -1,6 +1,8 @@
 package interceptor
 
-import "github.com/redpanda-data/console/backend/pkg/connector/model"
+import (
+	"github.com/redpanda-data/console/backend/pkg/connector/model"
+)
 
 // KafkaConnectToConsoleHTTPSourceHook adds HTTP source specific config options
 // missing in Validate Kafka Connect response
@@ -73,9 +75,20 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 		Value: model.ConfigDefinitionValue{
 			Name:              "http.request.method",
 			Value:             "GET",
-			RecommendedValues: []string{"GET", "POST", "PUT", "HEAD", "DELETE", "PATCH"},
+			RecommendedValues: []string{},
 			Visible:           true,
 			Errors:            []string{},
+		},
+		Metadata: model.ConfigDefinitionMetadata{
+			ComponentType: model.ComponentRadioGroup,
+			RecommendedValues: []model.RecommendedValueWithMetadata{
+				{Value: "GET", DisplayName: "GET"},
+				{Value: "POST", DisplayName: "POST"},
+				{Value: "PUT", DisplayName: "PUT"},
+				{Value: "HEAD", DisplayName: "HEAD"},
+				{Value: "DELETE", DisplayName: "DELETE"},
+				{Value: "PATCH", DisplayName: "PATCH"},
+			},
 		},
 	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
@@ -112,6 +125,13 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			RecommendedValues: []string{"None", "Basic"},
 			Visible:           true,
 			Errors:            []string{},
+		},
+		Metadata: model.ConfigDefinitionMetadata{
+			ComponentType: model.ComponentRadioGroup,
+			RecommendedValues: []model.RecommendedValueWithMetadata{
+				{Value: "None", DisplayName: "None"},
+				{Value: "Basic", DisplayName: "Basic"},
+			},
 		},
 	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
@@ -307,9 +327,16 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 		Value: model.ConfigDefinitionValue{
 			Name:              "http.response.record.mapper",
 			Value:             "com.github.castorm.kafka.connect.http.record.SchemedKvSourceRecordMapper",
-			RecommendedValues: []string{"com.github.castorm.kafka.connect.http.record.SchemedKvSourceRecordMapper", "com.github.castorm.kafka.connect.http.record.StringKvSourceRecordMapper"},
+			RecommendedValues: []string{},
 			Visible:           true,
 			Errors:            []string{},
+		},
+		Metadata: model.ConfigDefinitionMetadata{
+			ComponentType: model.ComponentRadioGroup,
+			RecommendedValues: []model.RecommendedValueWithMetadata{
+				{Value: "com.github.castorm.kafka.connect.http.record.SchemedKvSourceRecordMapper", DisplayName: "SchemedKvSourceRecordMapper"},
+				{Value: "com.github.castorm.kafka.connect.http.record.StringKvSourceRecordMapper", DisplayName: "StringKvSourceRecordMapper"},
+			},
 		},
 	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
@@ -325,9 +352,17 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 		Value: model.ConfigDefinitionValue{
 			Name:              "http.response.list.order.direction",
 			Value:             "IMPLICIT",
-			RecommendedValues: []string{"ASC", "DESC", "IMPLICIT"},
+			RecommendedValues: []string{},
 			Visible:           true,
 			Errors:            []string{},
+		},
+		Metadata: model.ConfigDefinitionMetadata{
+			ComponentType: model.ComponentRadioGroup,
+			RecommendedValues: []model.RecommendedValueWithMetadata{
+				{Value: "ASC", DisplayName: "ASC"},
+				{Value: "DESC", DisplayName: "DESC"},
+				{Value: "IMPLICIT", DisplayName: "IMPLICIT"},
+			},
 		},
 	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
@@ -337,21 +372,25 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP response record timestamp parser",
-			Documentation: "Class responsible for converting the timestamp property captured above into a java.time.Instant.",
+			Documentation: "Class responsible for converting the timestamp property captured above into a java.time.Instant",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
-			Name:  "http.response.record.timestamp.parser",
-			Value: "com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser",
-			RecommendedValues: []string{
-				"com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisTimestampParser",
-				"com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser",
-				"com.github.castorm.kafka.connect.http.response.timestamp.DateTimeFormatterTimestampParser",
-				"com.github.castorm.kafka.connect.http.response.timestamp.NattyTimestampParser",
-				"com.github.castorm.kafka.connect.http.response.timestamp.RegexTimestampParser",
+			Name:              "http.response.record.timestamp.parser",
+			Value:             "com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser",
+			RecommendedValues: []string{},
+			Visible:           true,
+			Errors:            []string{},
+		},
+		Metadata: model.ConfigDefinitionMetadata{
+			ComponentType: model.ComponentRadioGroup,
+			RecommendedValues: []model.RecommendedValueWithMetadata{
+				{Value: "com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisTimestampParser", DisplayName: "EpochMillisTimestampParser"},
+				{Value: "com.github.castorm.kafka.connect.http.response.timestamp.EpochMillisOrDelegateTimestampParser", DisplayName: "EpochMillisOrDelegateTimestampParser"},
+				{Value: "com.github.castorm.kafka.connect.http.response.timestamp.DateTimeFormatterTimestampParser", DisplayName: "DateTimeFormatterTimestampParser"},
+				{Value: "com.github.castorm.kafka.connect.http.response.timestamp.NattyTimestampParser", DisplayName: "NattyTimestampParser"},
+				{Value: "com.github.castorm.kafka.connect.http.response.timestamp.RegexTimestampParser", DisplayName: "RegexTimestampParser"},
 			},
-			Visible: true,
-			Errors:  []string{},
 		},
 	}, model.ConfigDefinition{
 		Definition: model.ConfigDefinitionKey{
@@ -464,4 +503,13 @@ func isParserClassSelected(configs map[string]any, parserClass string) bool {
 	}
 
 	return false
+}
+
+// ConsoleToKafkaConnectHttpSourceHook sets HTTP source connector config options
+func ConsoleToKafkaConnectHttpSourceHook(config map[string]any) map[string]any {
+	if authType, _ := config["http.auth.type"]; authType != "Basic" {
+		delete(config, "http.auth.user")
+		delete(config, "http.auth.password")
+	}
+	return config
 }
