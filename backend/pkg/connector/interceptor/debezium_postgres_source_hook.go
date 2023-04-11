@@ -27,3 +27,8 @@ func KafkaConnectToConsoleDebeziumPostgresSourceHook(response model.ValidationRe
 
 	return KafkaConnectToConsoleTopicCreationHook(KafkaConnectToConsoleJSONSchemaHook(response, config), config)
 }
+
+func ConsoleToKafkaConnectDebeziumPostgresConfigsHook(userReq map[string]any) map[string]any {
+	userReq["tasks.max"] = "1"
+	return userReq
+}

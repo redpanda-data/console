@@ -63,3 +63,8 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 
 	return KafkaConnectToConsoleTopicCreationHook(KafkaConnectToConsoleJSONSchemaHook(response, config), config)
 }
+
+func ConsoleToKafkaConnectDebeziumMySQLConfigsHook(userReq map[string]any) map[string]any {
+	userReq["tasks.max"] = "1"
+	return userReq
+}
