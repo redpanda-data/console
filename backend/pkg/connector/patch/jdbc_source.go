@@ -61,6 +61,14 @@ func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition, _ string
 			AddRecommendedValueWithMetadata("timestamp", "TIMESTAMP").
 			AddRecommendedValueWithMetadata("timestamp+incrementing", "TIMESTAMP+INCREMENTING").
 			SetDefaultValue("bulk")
+	case "dialect.name":
+		d.SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("", "AUTO").
+			AddRecommendedValueWithMetadata("MySqlDatabaseDialect", "MySQL").
+			AddRecommendedValueWithMetadata("PostgreSqlDatabaseDialect", "PostgreSQL").
+			AddRecommendedValueWithMetadata("SqliteDatabaseDialect", "SQLite").
+			AddRecommendedValueWithMetadata("SqlServerDatabaseDialect", "SQL Server").
+			SetDefaultValue("")
 	case "numeric.mapping":
 		d.SetDefaultValue("none")
 	case "table.blacklist":

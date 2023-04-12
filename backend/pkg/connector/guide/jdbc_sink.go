@@ -68,7 +68,6 @@ func NewJdbcSinkGuide(opts ...Option) Guide {
 							"pk.fields",
 							"max.retries",
 							"retry.backoff.ms",
-
 							"dialect.name",
 						},
 					},
