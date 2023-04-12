@@ -70,7 +70,8 @@ func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition, _ string) 
 	case "defaultDataset":
 		d.SetDisplayName("Default dataset")
 	case "autoCreateTables":
-		d.SetDisplayName("Auto create tables")
+		d.SetDisplayName("Auto create tables").
+			SetDocumentation("Automatically create BigQuery tables if they don't already exist. If a table does not exist your messages need to have schema")
 	case "topic2TableMap":
 		d.SetDisplayName("Topic to table map")
 	case "allowNewBigQueryFields":
