@@ -235,6 +235,13 @@ const connectorMetadata: ConnectorMetadata[] = [
         learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
 
+    // MongoDB Connectors
+    {
+        classNamePrefix: 'com.mongodb.kafka.connect.',
+        logo: <img src={MongoDBLogo} alt="MongoDB logo" className="connectorLogo" />,
+        author: 'MongoDB'
+    } as const,
+
     // Community Connector
     {
         classNamePrefix: 'com.github.jcustenborder.kafka.connect.twitter',
