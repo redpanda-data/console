@@ -83,7 +83,8 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition, _ string) 
 			AddRecommendedValueWithMetadata("PostgreSqlDatabaseDialect", "PostgreSQL").
 			AddRecommendedValueWithMetadata("SqliteDatabaseDialect", "SQLite").
 			AddRecommendedValueWithMetadata("SqlServerDatabaseDialect", "SQL Server").
-			SetDefaultValue("")
+			SetDefaultValue("").
+			SetDocumentation("The name of the database dialect that should be used for this connector. By default. the connector automatically determines the dialect based upon the JDBC connection URL. Use this if you want to override that behavior and use a specific dialect.")
 	case name:
 		d.SetDefaultValue("jdbc-sink-connector-" + strings.ToLower(random.String(4)))
 	case "connection.url":
