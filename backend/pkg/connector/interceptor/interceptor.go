@@ -59,6 +59,7 @@ func CommunityPatches() []patch.ConfigPatch {
 		patch.NewConfigPatchHTTPSource(),
 		patch.NewConfigPatchMirrorSource(),
 		patch.NewConfigPatchMirrorHeartbeat(),
+		patch.NewConfigPatchMongoDB(),
 	}
 }
 
@@ -87,6 +88,9 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 		guide.NewMirrorCheckpointGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMirrorSourceHook),
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMirrorSourceHook)),
 		guide.NewMirrorHeartbeatGuide(opts...),
+		guide.NewMongoSourceGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMongoDBHook),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMongoDBHook),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
 	}
 }
 
