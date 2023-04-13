@@ -96,7 +96,7 @@ func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition, _ string
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "mode", "poll.interval.ms", "timestamp.delay.interval.ms":
+	case "mode", "poll.interval.ms", "timestamp.delay.interval.ms", "key.converter":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
 	}
 
