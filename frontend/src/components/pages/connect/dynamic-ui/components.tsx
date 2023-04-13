@@ -10,13 +10,14 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Collapse, Skeleton } from 'antd';
+import { Skeleton } from 'antd';
 // import { IsDev } from '../../../../utils/env';
-import { OptionGroup } from '../../../../utils/tsxUtils';
-import { PropertyGroupComponent } from './PropertyGroup';
 // import { DebugEditor } from './DebugEditor';
-import { ConnectorPropertiesStore } from '../../../../state/connect/state';
+import { ConnectorPropertiesStore, PropertyGroup } from '../../../../state/connect/state';
 import { observer } from 'mobx-react';
+import { ConnectorStepComponent } from './ConnectorStep';
+import { ConnectorStep } from '../../../../state/restInterfaces';
+import { Switch } from '@redpanda-data/ui';
 
 export interface ConfigPageProps {
     connectorStore: ConnectorPropertiesStore;
@@ -40,42 +41,36 @@ export const ConfigPage: React.FC<ConfigPageProps> = observer(({ connectorStore 
 
     if (connectorStore.allGroups.length == 0) return <div>debug: no groups</div>;
 
-    const defaultExpanded = connectorStore.allGroups[0].groupName;
+    // Find all steps
+    const steps: {
+        step: ConnectorStep,
+        groups: PropertyGroup[],
+    }[] = [];
 
-    const rootGroups = connectorStore.allGroups
-        // The individual transforms sub-groups are not rendered on the root level, they're nested under the "Transforms" group
-        .filter((g) => !g.groupName.startsWith('Transforms: '))
-        // if properties get filtered, and it results in a group being empty, don't render it
-        .filter((g) => g.filteredProperties.length > 0);
+    for (const step of connectorStore.connectorStepDefinitions) {
+        const groups = connectorStore.allGroups.filter(g => g.step.stepIndex == step.stepIndex);
+        steps.push({ step, groups });
+    }
 
     return (
         <>
-            <OptionGroup
-                style={{ marginBottom: '1rem' }}
-                label={undefined}
-                options={{
-                    'Show Basic Options': 'simple',
-                    'Show All Options': 'advanced',
-                }}
-                value={connectorStore.advancedMode}
-                onChange={(s) => (connectorStore.advancedMode = s)}
-            />
-            <Collapse defaultActiveKey={defaultExpanded} ghost bordered={false}>
-                {rootGroups.map((g) => (
-                    <Collapse.Panel
-                        className={g.propertiesWithErrors.length > 0 ? 'hasErrors' : ''}
-                        key={g.groupName}
-                        header={
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1em' }}>
-                                <span style={{ fontSize: 'larger', fontWeight: 600, fontFamily: 'Open Sans' }}>{g.groupName}</span>
-                                <span className="issuesTag">{g.propertiesWithErrors.length} issues</span>
-                            </div>
-                        }
-                    >
-                        <PropertyGroupComponent group={g} allGroups={connectorStore.allGroups} mode={connectorStore.advancedMode} />
-                    </Collapse.Panel>
-                ))}
-            </Collapse>
+            <Switch
+                isChecked={connectorStore.showAdvancedOptions}
+                onChange={(s) => (connectorStore.showAdvancedOptions = s.target.checked)}
+            >
+                Show advanced options
+            </Switch>
+
+            {steps.map(({ step, groups }) => {
+                return <ConnectorStepComponent
+                    key={step.stepIndex}
+                    step={step}
+                    groups={groups}
+                    allGroups={connectorStore.allGroups}
+                    showAdvancedOptions={connectorStore.showAdvancedOptions}
+                    connectorType={connectorStore.connectorType}
+                />
+            })}
 
             {/* {IsDev && <DebugEditor observable={connectorStore} />} */}
         </>

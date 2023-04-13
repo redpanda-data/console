@@ -15,7 +15,7 @@ import { message } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ApiOutlined, DatabaseOutlined, SearchOutlined } from '@ant-design/icons';
 import { Wizard, WizardStep } from '../../misc/Wizard';
-import { observer } from 'mobx-react';
+import { observer, useLocalObservable } from 'mobx-react';
 import { api } from '../../../state/backendApi';
 import { uiState } from '../../../state/uiState';
 import { appGlobal } from '../../../state/appGlobal';
@@ -28,9 +28,11 @@ import KowlEditor from '../../misc/KowlEditor';
 // import { useHistory } from 'react-router-dom';
 
 import styles from './CreateConnector.module.scss';
-import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
+import { Flex, Text, Tabs, Link, SearchField, Box } from '@redpanda-data/ui';
+import { findConnectorMetadata } from './helper';
+import { containsIgnoreCase } from '../../../utils/utils';
 const { Option } = Select;
 
 const ConnectorType = observer(
@@ -41,6 +43,14 @@ const ConnectorType = observer(
         selectedPlugin: ConnectorPlugin | null;
         onPluginSelectionChange: (plugin: ConnectorPlugin | null) => void;
     }) => {
+
+        const tabFilterModes = ['all', 'export', 'import'] as const;
+        const state = useLocalObservable(() => ({
+            textFilter: '',
+            tabFilter: 'all' as 'all' | 'export' | 'import'
+        }));
+
+
         return (
             <>
                 {p.connectClusters.length > 1 && (
@@ -65,17 +75,90 @@ const ConnectorType = observer(
 
                 {p.activeCluster && (
                     <>
-                        <h2>Connector Type</h2>
+                        <Flex direction="column" gap="1em">
+                            <Text fontSize="x-large" fontWeight="semibold">
+                                Create Connector
+                            </Text>
+                            <Box maxWidth="600px">
+                                <Text>
+                                    Select a managed connector. Connectors simplify importing and exporting data between Redpanda and popular data sources.
+                                    {' '}
+                                    <Link href="https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/">Learn more</Link>
+                                </Text>
+
+                                <Box marginBlock="4" marginTop="8">
+                                    <SearchField
+                                        placeholderText="Search"
+                                        searchText={state.textFilter}
+                                        setSearchText={x => state.textFilter = x}
+                                        icon="filter"
+                                    />
+                                </Box>
+                            </Box>
+                        </Flex>
+
+                        <Tabs isLazy items={[
+                            {
+                                key: 'all',
+                                name: 'All',
+                                component: <></>
+                            },
+                            {
+                                key: 'export',
+                                name: 'Export to',
+                                component: <></>
+                            },
+                            {
+                                key: 'import',
+                                name: 'Import from',
+                                component: <></>
+                            },
+                        ]} marginBlock="2"
+                            onChange={index => state.tabFilter = tabFilterModes[index]}
+                            index={tabFilterModes.indexOf(state.tabFilter)}
+                        />
 
                         <HiddenRadioList<ConnectorPlugin>
                             name={'connector-type'}
                             onChange={p.onPluginSelectionChange}
                             value={p.selectedPlugin ?? undefined}
                             options={
-                                api.connectAdditionalClusterInfo.get(p.activeCluster)?.plugins.map((plugin) => ({
-                                    value: plugin,
-                                    render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
-                                })) || []
+                                api.connectAdditionalClusterInfo
+                                    .get(p.activeCluster)?.plugins
+                                    .filter(p => {
+                                        if (state.tabFilter == 'export' && p.type == 'source')
+                                            return false; // not an "export" type
+
+                                        if (state.tabFilter == 'import' && p.type == 'sink')
+                                            return false; // not an "import" type
+
+                                        const meta = findConnectorMetadata(p.class);
+                                        if (!meta)
+                                            return true; // no metadata, show it always
+
+                                        if (state.textFilter) {
+                                            let matchesFilter = false;
+
+                                            if (meta.friendlyName && containsIgnoreCase(meta.friendlyName, state.textFilter))
+                                                matchesFilter = true;
+
+                                            if (p.class && containsIgnoreCase(p.class, state.textFilter))
+                                                matchesFilter = true;
+
+                                            if (meta.description && containsIgnoreCase(meta.description, state.textFilter))
+                                                matchesFilter = true;
+
+                                            if (!matchesFilter)
+                                                return false; // doesn't match the text filter
+                                        }
+
+                                        // no filters active that would remove the entry from the list
+                                        return true;
+                                    })
+                                    .map((plugin) => ({
+                                        value: plugin,
+                                        render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
+                                    })) || []
                             }
                         />
                     </>
@@ -109,11 +192,13 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
 
         return (
             <PageContent>
+                <ConnectorWizard connectClusters={clusters} activeCluster={clusterName} />
+                {/*
                 <Section>
                     <div className={styles.wizardView}>
-                        <ConnectorWizard connectClusters={clusters} activeCluster={clusterName} />
+
                     </div>
-                </Section>
+                </Section> */}
             </PageContent>
         );
     }
@@ -255,7 +340,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                 try {
                     const validationResult = await api.validateConnectorConfig(activeCluster, selectedPlugin!.class, propertiesObject);
 
-                    if (validationResult.error_count > 0) {
+                    const errorCount = validationResult.configs.sum(x => x.value.errors.length);
+
+                    if (errorCount > 0) {
                         setInvalidValidationResult(validationResult);
                         setLoading(false);
                         return { conditionMet: false };

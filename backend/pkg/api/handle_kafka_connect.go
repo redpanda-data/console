@@ -245,14 +245,14 @@ func (api *API) handlePutValidateConnectorConfig() http.HandlerFunc {
 			return
 		}
 
-		var req map[string]interface{}
+		var req map[string]any
 		restErr = rest.Decode(w, r, &req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
 
-		cInfo, restErr := api.ConnectSvc.ValidateConnectorConfig(r.Context(), clusterName, pluginClassName, con.ValidateConnectorConfigOptions{Config: req})
+		cInfo, restErr := api.ConnectSvc.ValidateConnectorConfig(r.Context(), clusterName, pluginClassName, req)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return

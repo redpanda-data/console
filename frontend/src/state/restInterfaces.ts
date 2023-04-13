@@ -1143,7 +1143,7 @@ export interface ClusterAdditionalInfo {
     clusterVersion: string;
     plugins: {
         class: string;
-        type?: string;
+        type: 'sink' | 'source';
         version?: string;
     }[];
     enabledFeatures?: string[];
@@ -1216,9 +1216,29 @@ export interface KafkaConnectorInfoWithStatus { // ConnectorInfoWithStatus
 
 export interface ConnectorValidationResult {
     name: string;
-    error_count: number;
-    groups: string[];
     configs: ConnectorProperty[];
+    steps: ConnectorStep[];
+}
+
+export interface ConnectorStep {
+    name: string;
+    description?: string;
+    groups: ConnectorGroup[];
+
+    // added by frontend:
+    stepIndex: number;
+}
+
+export interface ConnectorGroup {
+    name?: string;
+    description?: string;
+    documentation_link?: string;
+    config_keys: string[];
+}
+
+interface ConnectorRecommendedValueEntry {
+    value: string;
+    display_name: string;
 }
 
 export interface ConnectorProperty {
@@ -1229,7 +1249,7 @@ export interface ConnectorProperty {
         default_value: null | string;
         importance: PropertyImportance;
         documentation: string;
-        group: null | string;
+        // group: null | string;
         width: PropertyWidth;
         display_name: string;
         dependents: string[];
@@ -1245,6 +1265,10 @@ export interface ConnectorProperty {
         errors: string[];
         visible: boolean;
     };
+    metadata: {
+        component_type?: 'RADIO_GROUP';
+        recommended_values?: ConnectorRecommendedValueEntry[]
+    }
 }
 
 export enum PropertyImportance {

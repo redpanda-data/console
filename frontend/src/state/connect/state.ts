@@ -19,6 +19,9 @@ import {
     PropertyWidth,
     ClusterConnectors,
     ConnectorPossibleStatesLiteral,
+    ConnectorStep,
+    ConnectorGroup,
+    ClusterAdditionalInfo,
 } from '../restInterfaces';
 import { removeNamespace } from '../../components/pages/connect/helper';
 import { encodeBase64, retrier } from '../../utils/utils';
@@ -45,19 +48,81 @@ export class ConnectorCreationError extends CustomError { }
 
 export class SecretCreationError extends CustomError { }
 
-export class ConnectorsStore { }
+/* compact following logic in the functions  sanitizeValue and sanitizeDefaultValue */
+
+/* let defaultValue: any = p.definition.default_value;
+ * let initialValue: any = p.value.value;
+ * if (p.definition.type == DataType.Boolean) {
+ *     // Boolean
+ *     // convert 'false' | 'true' to actual boolean values
+ *     console.log(name, initialValue);
+ *     if (typeof defaultValue == 'string')
+ *         if (defaultValue.toLowerCase() == 'false') defaultValue = p.definition.default_value = false as any;
+ *         else if (defaultValue.toLowerCase() == 'true') defaultValue = p.definition.default_value = true as any;
+ *
+ *     if (typeof initialValue == 'string')
+ *         if (initialValue.toLowerCase() == 'false') initialValue = p.value.value = false as any;
+ *         else if (initialValue.toLowerCase() == 'true') initialValue = p.value.value = true as any;
+ * }
+ * if (p.definition.type == DataType.Int || p.definition.type == DataType.Long || p.definition.type == DataType.Short) {
+ *     // Number
+ *     const n = Number.parseFloat(defaultValue);
+ *     if (Number.isFinite(n)) defaultValue = p.definition.default_value = n as any;
+ * }
+ *
+ * let value: any = initialValue ?? defaultValue;
+ * if (p.definition.type == DataType.Boolean && value == null) value = false;
+ */
+
+const sanitizeBoolean = (val: any) => {
+    if (typeof val === 'boolean') return val;
+    if (typeof val === 'string') {
+        const lVal = val.toLowerCase();
+        return lVal === 'true' ? true : lVal === 'false' ? false : val;
+    }
+    return false;
+};
+
+const sanitizeNumber = (val: any) => {
+    const n = Number.parseFloat(val);
+    return Number.isFinite(n) ? n : null;
+};
+
+function sanitizeDefaultValue(value: any, type: any) {
+    switch (type) {
+        case DataType.Boolean:
+            return sanitizeBoolean(value);
+        case DataType.Int:
+        case DataType.Long:
+        case DataType.Short:
+            return sanitizeNumber(value);
+        default:
+            return value;
+    }
+}
+
+function sanitizeValue(value: any, type: any) {
+    switch (type) {
+        case DataType.Boolean:
+            return sanitizeBoolean(value);
+        default:
+            return value;
+    }
+}
 
 export class ConnectClusterStore {
     private clusterName: string;
     isInitialized: boolean = false;
     private connectors: Map<string, ConnectorPropertiesStore>;
     features: ConnectorClusterFeatures = { secretStore: false };
+    additionalClusterInfo: ClusterAdditionalInfo;
 
     static connectClusters: Map<string, ConnectClusterStore> = new Map();
     constructor(clusterName: string) {
         this.clusterName = clusterName;
         makeAutoObservable<ConnectClusterStore, 'plugins' | 'connectors'>(this, {
             setup: action.bound,
+            refreshData: action.bound,
             createConnector: flow.bound,
             deleteConnector: flow.bound,
             updateConnnector: flow.bound,
@@ -80,8 +145,8 @@ export class ConnectClusterStore {
             this.connectors = new Map();
             await this.refreshData(false);
 
-            const additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName);
-            this.features.secretStore = !!additionalClusterInfo?.enabledFeatures?.some((x) => x === 'SECRET_STORE');
+            this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
+            this.features.secretStore = !!this.additionalClusterInfo?.enabledFeatures?.some((x) => x === 'SECRET_STORE');
             this.isInitialized = true;
         }
     }
@@ -89,10 +154,11 @@ export class ConnectClusterStore {
     async refreshData(force: boolean) {
         await api.refreshConnectClusters(force);
         await api.refreshClusterAdditionalInfo(this.clusterName, force);
+        this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
     }
 
     // CRUD operations
-    createConnector = flow(function*(this: ConnectClusterStore, pluginClass: string, updatedConfig: Record<string, any> = {}) {
+    createConnector = flow(function* (this: ConnectClusterStore, pluginClass: string, updatedConfig: Record<string, any> = {}) {
         const connector = this.getConnector(pluginClass);
         const secrets = connector.secrets;
         if (secrets) {
@@ -125,7 +191,7 @@ export class ConnectClusterStore {
         }
     });
 
-    deleteConnector = flow(function*(this: ConnectClusterStore, connectorName: string) {
+    deleteConnector = flow(function* (this: ConnectClusterStore, connectorName: string) {
         const connectorState = this.getConnectorStore(connectorName);
         const secrets = connectorState.secrets;
 
@@ -166,7 +232,8 @@ export class ConnectClusterStore {
         const identifier = connectorName ? `${pluginClassName}/${connectorName}` : pluginClassName;
         let connectorStore = this.connectors.get(identifier);
         if (!connectorStore) {
-            connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, initialConfig, {
+            const connectorType = this.additionalClusterInfo.plugins.first(x => x.class == pluginClassName)!.type;
+            connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, connectorType, initialConfig, {
                 secretStore: this.features.secretStore,
                 editing: initialConfig != null,
             });
@@ -321,14 +388,17 @@ export class ConnectorPropertiesStore {
     error: string | undefined = undefined;
     crud: 'create' | 'update' = 'create';
     secrets: SecretsStore | null = null;
-    advancedMode = 'simple' as 'simple' | 'advanced';
+    showAdvancedOptions = false;
     initPending = true;
     fallbackGroupName: string = '';
     reactionDisposers: IReactionDisposer[] = [];
 
+    connectorStepDefinitions: ConnectorStep[] = [];
+
     constructor(
         private clusterName: string,
         private pluginClassName: string,
+        public connectorType: 'sink' | 'source',
         private appliedConfig: Record<string, any> | undefined,
         features?: ConnectorClusterFeatures
     ) {
@@ -344,16 +414,18 @@ export class ConnectorPropertiesStore {
         this.initConfig();
     }
 
-    createPropertyGroup(groupName: string, properties: Property[]) {
+    createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]) {
         const self = this;
 
         return observable<PropertyGroup>({
-            groupName,
+            step,
+            group,
+
             properties,
             propertiesWithErrors: [],
 
             get filteredProperties(): Property[] {
-                if (self.advancedMode == 'advanced')
+                if (self.showAdvancedOptions)
                     // advanced mode shows all settings
                     return this.properties;
                 // in simple mode, we only show props that are high importance
@@ -362,7 +434,9 @@ export class ConnectorPropertiesStore {
         });
     }
     getConfigObject(): object {
-        const config = {} as any;
+        const config = {
+            'connector.class': this.pluginClassName,
+        } as any;
 
         for (const g of this.allGroups)
             for (const p of g.properties) {
@@ -400,8 +474,6 @@ export class ConnectorPropertiesStore {
             const basicConfig = {
                 'connector.class': pluginClassName,
                 name: '',
-                topic: 'topic',
-                topics: 'topics',
             };
 
             const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, this.appliedConfig ?? basicConfig);
@@ -414,6 +486,7 @@ export class ConnectorPropertiesStore {
                 // Set default values
                 for (const p of allProps)
                     if (p.entry.definition.custom_default_value != undefined) {
+                        console.log(p.name);
                         p.value = p.entry.definition.custom_default_value;
                     }
 
@@ -422,11 +495,26 @@ export class ConnectorPropertiesStore {
             }
 
             // Create groups
-            const groupNames = [this.fallbackGroupName, ...validationResult.groups];
-            this.allGroups = allProps
-                .groupInto((p) => p.entry.definition.group)
-                .map((g) => this.createPropertyGroup(g.key ?? '', g.items))
-                .sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
+            this.allGroups = [];
+            for (const step of validationResult.steps) {
+                for (const groupDef of step.groups) {
+                    const groupProps = groupDef.config_keys
+                        .map((k) => {
+                            const prop = this.propsByName.get(k);
+
+                            if (!prop)
+                                console.log('step[*].group[*].config_keys references a property that does not exist in propsByName!', {
+                                    step: step.name,
+                                    group: groupDef,
+                                    referencedConfigKey: k,
+                                });
+                            return prop!;
+                        })
+                        .filter((x) => x != null);
+
+                    this.allGroups.push(this.createPropertyGroup(step, groupDef, groupProps));
+                }
+            }
 
             // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
             for (const g of this.allGroups) for (const p of g.properties) p.propertyGroup = g;
@@ -460,6 +548,7 @@ export class ConnectorPropertiesStore {
                 )
             );
         } catch (err: any) {
+            console.error('error in initConfig', err);
             this.error = typeof err == 'object' ? err.message ?? JSON.stringify(err, undefined, 4) : JSON.stringify(err, undefined, 4);
         }
 
@@ -472,6 +561,8 @@ export class ConnectorPropertiesStore {
             // Validate the current config
             const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, config);
             const srcProps = this.createCustomProperties(validationResult.configs);
+
+            this.connectorStepDefinitions = validationResult.steps;
 
             // Remove properties that don't exist anymore
             const srcNames = new Set(srcProps.map((x) => x.name));
@@ -495,16 +586,15 @@ export class ConnectorPropertiesStore {
                 if (!target) {
                     this.propsByName.set(source.name, source);
 
-                    // Find existing group it belongs to, or create a new one for it
+                    /*
+                    // Find existing group it belongs to (or create one for it)
                     let group = this.allGroups.first((g) => g.groupName == source.entry.definition.group);
                     if (!group) {
                         // Create new group
                         group = this.createPropertyGroup(source.entry.definition.group!, []);
                         this.allGroups.push(group);
 
-                        // Sort groups
-                        const groupNames = [this.fallbackGroupName, ...validationResult.groups];
-                        this.allGroups.sort((a, b) => groupNames.indexOf(a.groupName) - groupNames.indexOf(b.groupName));
+                        // TODO: Sort groups (?)
                     }
 
                     // Add the property to the group
@@ -513,7 +603,7 @@ export class ConnectorPropertiesStore {
 
                     // Sort properties within group
                     group.properties.sort((a, b) => a.entry.definition.order - b.entry.definition.order);
-
+                     */
                     continue;
                 }
 
@@ -521,6 +611,9 @@ export class ConnectorPropertiesStore {
                 const suggestedSrc = source.entry.value.recommended_values;
                 const suggestedTar = target.entry.value.recommended_values;
                 if (!suggestedSrc.isEqual(suggestedTar)) suggestedTar.updateWith(suggestedSrc);
+
+                // Update: field visibility
+                target.entry.value.visible = source.entry.value.visible;
 
                 // Update: errors
                 if (!target.errors.isEqual(source.errors)) {
@@ -546,6 +639,20 @@ export class ConnectorPropertiesStore {
                 }
             }
 
+            // Sort all groups again because order might have changed
+            this.allGroups = this.allGroups.orderBy((x) => {
+                // Find "index" of the group
+                let order = 0;
+                for (const s of validationResult.steps) {
+                    for (const g of s.groups) {
+                        if (x.group.name == g.name) return order;
+                        else order++;
+                    }
+                }
+
+                return order;
+            });
+
             // Set last error values, so we know when to show the validation error
             for (const g of this.allGroups) for (const p of g.properties) p.lastErrorValue = p.value;
         } catch (err: any) {
@@ -562,8 +669,6 @@ export class ConnectorPropertiesStore {
 
             if (!def.width || def.width == PropertyWidth.None) def.width = PropertyWidth.Medium;
 
-            if (!def.group) def.group = this.fallbackGroupName;
-
             if (def.order < 0) def.order = Number.POSITIVE_INFINITY;
         }
 
@@ -571,36 +676,18 @@ export class ConnectorPropertiesStore {
         const allProps = properties
             .map((p) => {
                 const name = p.definition.name;
+                const definitionType = p.definition.type;
 
                 // Fix type of default values
-                let defaultValue: any = p.definition.default_value;
-                let initialValue: any = p.value.value;
-                if (p.definition.type == DataType.Boolean) {
-                    // Boolean
-                    // convert 'false' | 'true' to actual boolean values
-                    if (typeof defaultValue == 'string')
-                        if (defaultValue.toLowerCase() == 'false') defaultValue = p.definition.default_value = false as any;
-                        else if (defaultValue.toLowerCase() == 'true') defaultValue = p.definition.default_value = true as any;
-
-                    if (typeof initialValue == 'string')
-                        if (initialValue.toLowerCase() == 'false') initialValue = p.value.value = false as any;
-                        else if (initialValue.toLowerCase() == 'true') initialValue = p.value.value = true as any;
-                }
-                if (p.definition.type == DataType.Int || p.definition.type == DataType.Long || p.definition.type == DataType.Short) {
-                    // Number
-                    const n = Number.parseFloat(defaultValue);
-                    if (Number.isFinite(n)) defaultValue = p.definition.default_value = n as any;
-                }
-
-                let value: any = initialValue ?? defaultValue;
-                if (p.definition.type == DataType.Boolean && value == null) value = false; // use 'false' as default for boolean
+                const defaultValue: any = sanitizeDefaultValue(p.definition.default_value, definitionType);
+                const initialValue: any = sanitizeValue(p.value.value, definitionType);
+                const value: any = initialValue ?? defaultValue;
 
                 const property = observable({
                     name: name,
                     entry: p,
                     value: value,
                     isHidden: hiddenProperties.includes(name),
-                    suggestedValues: suggestedValues[name],
                     errors: p.value.errors ?? [],
                     lastErrors: [],
                     showErrors: p.value.errors.length > 0,
@@ -610,16 +697,16 @@ export class ConnectorPropertiesStore {
                     crud: this.crud,
                 });
 
+                if (this.appliedConfig != null && this.appliedConfig[name])
+                    property.value = sanitizeValue(this.appliedConfig[name], definitionType);
                 if (p.definition.type === DataType.Password && !!this.secrets) {
                     const secret = this.secrets.getSecret(property.name);
+                    secret.extractSecretId(property.value);
                     intercept(property, 'value', (change) => {
-                        secret.extractSecretId(change.newValue);
                         secret.value = change.newValue;
                         return change;
                     });
                 }
-
-                if (this.appliedConfig != null && this.appliedConfig[name]) property.value = this.appliedConfig[name];
 
                 return property;
             })
@@ -633,37 +720,25 @@ const hiddenProperties = [
     'connector.class', // user choses that in the first page of the wizard
 ];
 
-const converters = [
-    'io.confluent.connect.avro.AvroConverter',
-    'io.confluent.connect.protobuf.ProtobufConverter',
-    'org.apache.kafka.connect.storage.StringConverter',
-    'org.apache.kafka.connect.json.JsonConverter',
-    'io.confluent.connect.json.JsonSchemaConverter',
-    'org.apache.kafka.connect.converters.ByteArrayConverter',
-];
-const suggestedValues: { [key: string]: string[] } = {
-    'key.converter': converters,
-    'value.converter': converters,
-    'header.converter': converters,
-    'config.action.reload': ['restart', 'none'],
-};
-
 export interface PropertyGroup {
-    groupName: string;
+    step: ConnectorStep;
+    group: ConnectorGroup;
+
     properties: Property[];
 
     readonly filteredProperties: Property[];
 
     propertiesWithErrors: Property[];
+
+    description?: string;
+    documentation_link?: string;
 }
 
 export interface Property {
     name: string;
     entry: ConnectorProperty;
     value: null | string | number | boolean | string[];
-
     isHidden: boolean; // currently only used for "connector.class"
-    suggestedValues: undefined | string[]; // values that are not listed in entry.value.recommended_values
     errors: string[]; // current errors
     showErrors: boolean; // true = property has errors currently
     lastErrors: string[]; // previous errors, used so we can fade/animate them out when they get fixed

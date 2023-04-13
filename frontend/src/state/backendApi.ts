@@ -1259,7 +1259,13 @@ const apiStore = {
             ],
             body: JSON.stringify(config),
         });
-        return parseOrUnwrap<ConnectorValidationResult>(response, null);
+        const result = await parseOrUnwrap<ConnectorValidationResult>(response, null);
+
+        for (let i = 0; i < result.steps.length; i++) {
+            result.steps[i].stepIndex = i;
+        }
+
+        return result;
     },
 
     async createConnector(clusterName: string, connectorName: string, pluginClassName: string, config: object): Promise<void> {

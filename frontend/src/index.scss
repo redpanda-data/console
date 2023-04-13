@@ -3094,15 +3094,15 @@ $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.150, 0.860);
     }
 
     .short {
-        grid-column: span 1;
+        grid-column: 1 / span 1;
     }
 
     .medium {
-        grid-column: span 2;
+        grid-column: 1 / span 2;
     }
 
     .long {
-        grid-column: span 3;
+        grid-column: 1 / span 3;
     }
 
 

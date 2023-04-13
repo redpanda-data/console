@@ -12,7 +12,6 @@ package connect
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -20,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/connector/interceptor"
 )
 
 // Service provides the API for interacting with all configured Kafka connect clusters.
@@ -27,7 +27,7 @@ type Service struct {
 	Cfg              config.Connect
 	Logger           *zap.Logger
 	ClientsByCluster map[ /*ClusterName*/ string]*ClientWithConfig
-	OverrideSvc      *OverrideService
+	Interceptor      *interceptor.Interceptor
 }
 
 // ClientWithConfig carries the Kafka Connect client, along with the configuration
@@ -50,7 +50,10 @@ func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 			zap.String("cluster_name", clusterCfg.Name),
 			zap.String("cluster_address", clusterCfg.URL))
 
-		opts := []con.ClientOption{con.WithTimeout(cfg.ReadTimeout), con.WithUserAgent("Redpanda Console")}
+		opts := []con.ClientOption{
+			con.WithTimeout(cfg.ReadTimeout),
+			con.WithUserAgent("Redpanda Console"),
+		}
 
 		opts = append(opts, con.WithHost(clusterCfg.URL))
 		// TLS Config
@@ -79,16 +82,11 @@ func NewService(cfg config.Connect, logger *zap.Logger) (*Service, error) {
 		}
 	}
 
-	overrideSvc, err := newOverrideService()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create override service for better connector wizard guidance: %w", err)
-	}
-
 	svc := &Service{
 		Cfg:              cfg,
 		Logger:           logger,
 		ClientsByCluster: clientsByCluster,
-		OverrideSvc:      overrideSvc,
+		Interceptor:      interceptor.NewInterceptor(),
 	}
 
 	// 2. Test connectivity against each cluster concurrently
