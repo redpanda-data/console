@@ -6,7 +6,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
 
-// ConsoleToKafkaConnectMongoDBHook sets connection.uri if not set
+// ConsoleToKafkaConnectMongoDBHook sets connection authentication and output format properties
 func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 	_, exists := config["connection.uri"]
 	if !exists {
@@ -19,6 +19,20 @@ func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 			u.User = url.UserPassword(config["connection.username"].(string), config["connection.password"].(string))
 		}
 		config["connection.uri"] = u.String()
+	}
+
+	for _, field := range []string{"key", "value"} {
+		if config["output.format."+field] == nil {
+			switch config[field+".converter"] {
+			case "org.apache.kafka.connect.json.JsonConverter",
+				"io.confluent.connect.avro.AvroConverter":
+				config["output.format."+field] = "schema"
+			case "org.apache.kafka.connect.storage.StringConverter":
+				config["output.format."+field] = "json"
+			case "org.apache.kafka.connect.converters.ByteArrayConverter":
+				config["output.format."+field] = "bson"
+			}
+		}
 	}
 
 	return config

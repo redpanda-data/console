@@ -57,10 +57,8 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 		d.SetDefaultValue("mongodb://")
 	case keyConverter, valueConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
-	case "output.format.key",
-		"output.format.value":
-		d.SetComponentType(model.ComponentRadioGroup).
-			SetDefaultValue("schema")
+	case "output.schema.infer.value":
+		d.SetDocumentation("Infer the schema for the value. Each Document will be processed in isolation, which may lead to multiple schema definitions for the data. Only applied when Kafka message value format is set to AVRO or JSON.")
 	case "change.stream.full.document",
 		"change.stream.full.document.before.change":
 		d.SetComponentType(model.ComponentRadioGroup)
@@ -78,7 +76,6 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 	switch d.Definition.Name {
 	case "topic.prefix",
 		"database",
-		"output.schema.infer.value",
 		"collection",
 		"startup.mode":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
