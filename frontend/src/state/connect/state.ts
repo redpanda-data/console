@@ -486,7 +486,6 @@ export class ConnectorPropertiesStore {
                 // Set default values
                 for (const p of allProps)
                     if (p.entry.definition.custom_default_value != undefined) {
-                        console.log(p.name);
                         p.value = p.entry.definition.custom_default_value;
                     }
 
