@@ -14,6 +14,8 @@ import (
 	"fmt"
 	"sort"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // BrokerWithLogDirs described by some basic broker properties
@@ -36,6 +38,8 @@ type BrokerWithLogDirs struct {
 // GetBrokersWithLogDirs returns a slice of all brokers in a cluster along with
 // their metadata, storage and configs. If we fail to get metadata from the cluster
 // this function will return an error.
+//
+//nolint:gocognit // Breaking it up would make it harder to comprehend; currently seems still okayish.
 func (s *Service) GetBrokersWithLogDirs(ctx context.Context) ([]BrokerWithLogDirs, error) {
 	metadata, err := s.kafkaSvc.KafkaAdmClient.Metadata(ctx)
 	if err != nil {
@@ -68,13 +72,24 @@ func (s *Service) GetBrokersWithLogDirs(ctx context.Context) ([]BrokerWithLogDir
 
 	describedLogDirs, err := s.kafkaSvc.KafkaAdmClient.DescribeAllLogDirs(childCtx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to describe broker log dirs: %w", err)
+		// When an error is set we still receive a partial response from the admin client.
+		// Also, describing broker log dirs is not considered mandatory for serving a
+		// response here.
+		s.logger.Warn("describing broker log dirs returned an error for one or more shards", zap.Error(err))
 	}
 
 	sortedLogDirs := describedLogDirs.Sorted()
 	primaryBytesByNodeID := make(map[int32]int64)
 	totalBytesByNodeID := make(map[int32]int64)
 	for _, logDir := range sortedLogDirs {
+		if logDir.Err != nil {
+			s.logger.Warn("failed to described this broker's log dir",
+				zap.Int32("broker_id", logDir.Broker),
+				zap.String("log_dir", logDir.Dir),
+				zap.Error(logDir.Err))
+			continue
+		}
+
 		for topicName, t := range logDir.Topics {
 			for pID, p := range t {
 				// Check if this LogDir stores the primary bytes for the given partition
