@@ -24,17 +24,19 @@ func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 		config["connection.uri"] = "mongodb://"
 	}
 
-	if config["connection.username"] != nil && config["connection.password"] != nil && config["connection.uri"] != nil {
+	if config["connection.username"] != nil && config["connection.password"] != nil && config["connection.url"] != nil {
 		password := config["connection.password"].(string)
 		if hasKafkaConnectConfigProvider(config["connection.password"].(string)) {
 			password = passwordPlaceholder
 		}
-		if hasKafkaConnectConfigProvider(config["connection.uri"].(string)) {
-			config["connection.uri"] = configProviderRegex.ReplaceAllString(config["connection.uri"].(string), passwordPlaceholder)
+		if hasKafkaConnectConfigProvider(config["connection.url"].(string)) {
+			config["connection.url"] = configProviderRegex.ReplaceAllString(config["connection.url"].(string), passwordPlaceholder)
 		}
 
-		u, e := url.Parse(config["connection.uri"].(string))
+		u, e := url.Parse(config["connection.url"].(string))
 		if e == nil {
+			u.User = nil
+			config["connection.url"] = u.String()
 			u.User = url.UserPassword(config["connection.username"].(string), password)
 			config["connection.uri"] = u.String()
 
@@ -61,9 +63,27 @@ func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 	return config
 }
 
-// KafkaConnectToConsoleMongoDBHook adds username and password fields
+// KafkaConnectToConsoleMongoDBHook adds connection fields: URL, username and password
 func KafkaConnectToConsoleMongoDBHook(response model.ValidationResponse, _ map[string]any) model.ValidationResponse {
 	response.Configs = append(response.Configs,
+		model.ConfigDefinition{
+			Definition: model.ConfigDefinitionKey{
+				Name:          "connection.url",
+				Type:          "STRING",
+				DefaultValue:  "",
+				Importance:    "HIGH",
+				Required:      true,
+				DisplayName:   "MongoDB Connection URI",
+				Documentation: "The connection URI as supported by the official drivers. eg: mongodb://locahost/.",
+			},
+			Value: model.ConfigDefinitionValue{
+				Name:              "connection.url",
+				Value:             "",
+				RecommendedValues: []string{},
+				Visible:           true,
+				Errors:            []string{},
+			},
+		},
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
 				Name:         "connection.username",
