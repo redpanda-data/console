@@ -59,6 +59,7 @@ func NewJdbcSourceGuide(opts ...Option) Guide {
 
 							"table.whitelist",
 							"table.blacklist",
+							"table.names.qualify",
 							"catalog.pattern",
 							"schema.pattern",
 							"db.timezone",
