@@ -57,7 +57,7 @@ const ConnectorType = observer(
                     <>
                         <h2>Installation Target</h2>
                         <Select<string>
-                            style={{ minWidth: '300px' }}
+                            style={{ minWidth: '400px' }}
                             placeholder="Choose Connect Cluster…"
                             onChange={(clusterName) => {
                                 p.onActiveClusterChange(clusterName);
@@ -269,7 +269,10 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                         history.push(`/connect-clusters/${encodeURIComponent(clusterName!)}/create-connector`);
                     }}
                     selectedPlugin={selectedPlugin}
-                    onPluginSelectionChange={setSelectedPlugin}
+                    onPluginSelectionChange={e => {
+                        setSelectedPlugin(e);
+                        setCurrentStep(1);
+                    }}
                 />
             ),
             postConditionMet: () => activeCluster != null && selectedPlugin != null,
