@@ -2,9 +2,17 @@ package interceptor
 
 import (
 	"net/url"
+	"regexp"
+	"strings"
 
 	"github.com/redpanda-data/console/backend/pkg/connector/model"
 )
+
+const (
+	passwordPlaceholder = "__PASSWORD_PLACEHOLDER"
+)
+
+var isKafkaConnectConfigProvider = regexp.MustCompile(`\${.+:.*:.+}`).MatchString
 
 // ConsoleToKafkaConnectMongoDBHook sets connection authentication and output format properties
 func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
@@ -14,11 +22,20 @@ func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 	}
 
 	if config["connection.username"] != nil && config["connection.password"] != nil && config["connection.uri"] != nil {
+		password := config["connection.password"].(string)
+		if isKafkaConnectConfigProvider(config["connection.password"].(string)) {
+			password = passwordPlaceholder
+		}
+
 		u, e := url.Parse(config["connection.uri"].(string))
 		if e == nil {
-			u.User = url.UserPassword(config["connection.username"].(string), config["connection.password"].(string))
+			u.User = url.UserPassword(config["connection.username"].(string), password)
 		}
 		config["connection.uri"] = u.String()
+
+		if isKafkaConnectConfigProvider(config["connection.password"].(string)) {
+			config["connection.uri"] = strings.ReplaceAll(config["connection.uri"].(string), passwordPlaceholder, config["connection.password"].(string))
+		}
 	}
 
 	for _, field := range []string{"key", "value"} {
