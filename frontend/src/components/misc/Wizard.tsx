@@ -41,8 +41,8 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
                     </Button>
                 ) : null}
                 <Button type={'primary'} onClick={state.next} disabled={!state.canContinue()} className={styles.nextButton}>
-                    {currentStep.nextButtonLabel ?? state.isLast() ? 'Finish' : 'Next'}
-                    <ChevronRightIcon />
+                    {currentStep.nextButtonLabel ?? state.isLast() ? 'Create' : 'Next'}
+                    {!state.isLast() && <ChevronRightIcon />}
                 </Button>
             </div>
         </div>
