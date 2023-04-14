@@ -11,61 +11,18 @@ package kafka
 
 import (
 	"context"
-	"fmt"
-	"sync"
 
-	"github.com/twmb/franz-go/pkg/kerr"
-	"github.com/twmb/franz-go/pkg/kmsg"
-	"golang.org/x/sync/errgroup"
+	"github.com/twmb/franz-go/pkg/kadm"
+	"go.uber.org/zap"
 )
 
-// ListConsumerGroupOffsets returns the committed group offsets for a single group
-func (s *Service) ListConsumerGroupOffsets(ctx context.Context, group string) (*kmsg.OffsetFetchResponse, error) {
-	req := kmsg.OffsetFetchRequest{
-		Group:  group,
-		Topics: nil, // Requests all topics for this consumer group
-	}
-	res, err := req.RequestWith(ctx, s.KafkaClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to request group offsets for group '%v': %w", group, err)
-	}
-
-	err = kerr.ErrorForCode(res.ErrorCode)
-	if err != nil {
-		return nil, fmt.Errorf("failed to request group offsets for group '%v'. Inner error: %w", group, err)
-	}
-
-	return res, nil
-}
-
-// ListConsumerGroupOffsetsBulk returns a map which has the Consumer group name as key
-func (s *Service) ListConsumerGroupOffsetsBulk(ctx context.Context, groups []string) (map[string]*kmsg.OffsetFetchResponse, error) {
-	eg, _ := errgroup.WithContext(ctx)
-
-	mutex := sync.Mutex{}
-	res := make(map[string]*kmsg.OffsetFetchResponse)
-
-	f := func(group string) func() error {
-		return func() error {
-			offsets, err := s.ListConsumerGroupOffsets(ctx, group)
-			if err != nil {
-				return err
-			}
-
-			mutex.Lock()
-			res[group] = offsets
-			mutex.Unlock()
-			return nil
-		}
-	}
-
-	for _, group := range groups {
-		eg.Go(f(group))
-	}
-
-	if err := eg.Wait(); err != nil {
-		return nil, err
-	}
-
-	return res, nil
+// ListConsumerGroupOffsetsBulk returns the committed group offsets for one or more consumer groups.
+func (s *Service) ListConsumerGroupOffsetsBulk(ctx context.Context, groups []string) kadm.FetchOffsetsResponses {
+	res := s.KafkaAdmClient.FetchManyOffsets(ctx, groups...)
+	res.EachError(func(shardRes kadm.FetchOffsetsResponse) {
+		s.Logger.Warn("failed to fetch group offset",
+			zap.String("group", shardRes.Group),
+			zap.Error(shardRes.Err))
+	})
+	return res
 }

@@ -13,8 +13,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/twmb/franz-go/pkg/kerr"
-	"github.com/twmb/franz-go/pkg/kmsg"
+	"github.com/twmb/franz-go/pkg/kadm"
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/kafka"
@@ -41,59 +40,60 @@ type PartitionOffsets struct {
 	Lag           int64  `json:"lag"`
 }
 
-// convertOffsets returns a map where the key is the topic name
-func convertOffsets(offsets *kmsg.OffsetFetchResponse) map[string]partitionOffsets {
-	res := make(map[string]partitionOffsets, len(offsets.Topics))
-	for _, topic := range offsets.Topics {
-		pOffsets := make(partitionOffsets, len(topic.Partitions))
-		for _, partition := range topic.Partitions {
-			pOffsets[partition.Partition] = partition.Offset
-		}
-
-		res[topic.Topic] = pOffsets
-	}
-
-	return res
-}
-
 // getConsumerGroupOffsets returns a nested map where the group id is the key
 //
-//nolint:gocognit,cyclop // Eventually this should be refactored to use the franz-go admin client
+//nolint:gocognit,cyclop // Consider using kadm's CalculateGroupLag. Works slightly different, required DescribedGroup.
 func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) (map[string][]GroupTopicOffsets, error) {
 	// 1. Fetch all Consumer Group Offsets for each Topic
-	offsets, err := s.kafkaSvc.ListConsumerGroupOffsetsBulk(ctx, groups)
-	if err != nil {
-		s.logger.Error("failed to list consumer group offsets in bulk", zap.Error(err))
-		return nil, fmt.Errorf("failed to list consumer group offsets in bulk")
+	fetchOffsetResponses := s.kafkaSvc.KafkaAdmClient.FetchManyOffsets(ctx, groups...)
+	var lastErr error
+	fetchOffsetResponses.EachError(func(shardRes kadm.FetchOffsetsResponse) {
+		s.logger.Warn("failed to fetch group offset",
+			zap.String("group", shardRes.Group),
+			zap.Error(shardRes.Err))
+		lastErr = shardRes.Err
+	})
+	if fetchOffsetResponses.AllFailed() {
+		s.logger.Error("failed to list consumer group offsets", zap.Error(lastErr))
+		return nil, fmt.Errorf("all requests for fetchinf group offsets have failed, last error is: %w", lastErr)
 	}
 
-	offsetsByGroup := make(map[string]map[string]partitionOffsets) // GroupID -> TopicName -> partitionOffsets
-	for group, offset := range offsets {
-		offsetsByGroup[group] = convertOffsets(offset)
+	groupOffsets := make(map[string]map[string]partitionOffsets) // Group -> Topic -> PartitionID -> Offset
+	for group, offsetResponses := range fetchOffsetResponses {
+		if offsetResponses.Err != nil {
+			continue // We already logged this error earlier
+		}
+		groupOffsets[group] = make(map[string]partitionOffsets)
+		offsetResponses.Fetched.Each(func(offsetResponse kadm.OffsetResponse) {
+			if offsetResponse.Err != nil {
+				s.logger.Warn("failed to retrieve group offset",
+					zap.String("group", group),
+					zap.String("topic", offsetResponse.Topic),
+					zap.Int32("partition", offsetResponse.Partition),
+					zap.Error(offsetResponse.Err))
+				return
+			}
+
+			if _, exists := groupOffsets[offsetResponse.Topic]; !exists {
+				groupOffsets[group][offsetResponse.Topic] = make(map[int32]int64)
+			}
+
+			groupOffsets[group][offsetResponse.Topic][offsetResponse.Partition] = offsetResponse.At
+		})
 	}
 
 	// 2. Fetch all partition watermarks so that we can calculate the consumer group lags
-	// Fetch all consumed topics and their partitions so that we know whose partitions we want the high water marks for.
-	// Use a (hash) map so that we filter duplicates
-	topicsByName := make(map[string]struct{}, 0)
-	for _, topicOffset := range offsetsByGroup {
-		for topic := range topicOffset {
-			topicsByName[topic] = struct{}{}
-		}
-	}
-	topicNames := make([]string, 0, len(topicsByName))
-	for topicName := range topicsByName {
-		topicNames = append(topicNames, topicName)
-	}
+	// Fetch all consumed topics and their partitions so that we know whose partitions we want the high watermarks for.
+	topicsWithOffsets := fetchOffsetResponses.CommittedPartitions().Topics()
 
-	metadata, err := s.kafkaSvc.GetMetadata(ctx, topicNames)
+	metadata, err := s.kafkaSvc.KafkaAdmClient.Metadata(ctx, topicsWithOffsets...)
 	if err != nil {
-		s.logger.Error("failed to get topic metadata", zap.Strings("topics", topicNames), zap.Error(err))
+		s.logger.Error("failed to get topic metadata", zap.Strings("topics", topicsWithOffsets), zap.Error(err))
 		return nil, fmt.Errorf("failed to get topic metadata: %w", err)
 	}
 
-	// topicPartitions whose high water mark shall be requested
-	topicPartitions := make(map[string][]int32, len(topicNames))
+	// topicPartitions whose high watermark shall be requested
+	topicPartitions := make(map[string][]int32, len(metadata.Topics))
 
 	type partitionInfo struct {
 		PartitionID   int32
@@ -102,31 +102,27 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 	}
 	partitionInfoByIDAndTopic := make(map[string]map[int32]partitionInfo)
 
-	for _, topic := range metadata.Topics {
-		topicName := *topic.Topic
-		partitionInfoByIDAndTopic[topicName] = make(map[int32]partitionInfo)
-
-		for _, partition := range topic.Partitions {
-			partitionID := partition.Partition
-			err := kerr.ErrorForCode(partition.ErrorCode)
-			errMsg := ""
-			if err != nil {
-				errMsg = err.Error()
+	for _, td := range metadata.Topics {
+		partitionInfoByIDAndTopic[td.Topic] = make(map[int32]partitionInfo)
+		for _, partition := range td.Partitions {
+			var errMsg string
+			if partition.Err != nil {
+				errMsg = partition.Err.Error()
 			} else {
-				// Not an offline partition, so let's try to request this partition's high watermark
-				topicPartitions[topicName] = append(topicPartitions[topicName], partitionID)
+				// Not an offline partition nor unauthorized, so let's add it to the list
+				// of partition high watermarks we want to request
+				topicPartitions[td.Topic] = append(topicPartitions[td.Topic], partition.Partition)
 			}
-			partitionInfoByIDAndTopic[topicName][partitionID] = partitionInfo{
-				PartitionID:   partitionID,
+			partitionInfoByIDAndTopic[td.Topic][partition.Partition] = partitionInfo{
+				PartitionID:   partition.Partition,
 				Error:         errMsg,
 				HighWaterMark: -1, // Not yet requested
 			}
 		}
 	}
 
+	// 3. Request & format high watermarks
 	highMarkRes := s.kafkaSvc.ListOffsets(ctx, topicPartitions, kafka.TimestampLatest)
-
-	// 3. Format high water marks
 	for topicName, partitions := range highMarkRes {
 		for pID, partition := range partitions {
 			if err != nil {
@@ -148,7 +144,8 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 	res := make(map[string][]GroupTopicOffsets, len(groups))
 	for _, group := range groups {
 		topicLags := make([]GroupTopicOffsets, 0)
-		for topic, partitionOffsets := range offsetsByGroup[group] {
+
+		for topic, partitionOffsets := range groupOffsets[group] {
 			// In this scope we iterate on a single group's, single topic's offset
 			childLogger := s.logger.With(zap.String("group", group), zap.String("topic", topic))
 
