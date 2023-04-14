@@ -402,14 +402,23 @@ const apiStore = {
         currentWS.onmessage = onMessageHandler;
     },
 
-    base64ToHexString(b64: string): string {
-        let hex = '';
-        for (let i = 0; i < b64.length && i < 50; i++) {
-            let n = b64.charCodeAt(i).toString(16);
-            if (n.length == 1) n = '0' + n;
-            hex += n + ' ';
+    base64ToHexString(base64: string): string {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
         }
-        return hex
+        
+        let hex = '';
+        for (let i = 0; i < bytes.length; i++) {
+            const b = bytes[i].toString(16);
+            hex += b.length === 1 ? '0' + b : b;
+            
+            if (i < bytes.length - 1)
+                hex += ' ';
+        }
+        
+        return hex;
     },
 
     stopMessageSearch() {
