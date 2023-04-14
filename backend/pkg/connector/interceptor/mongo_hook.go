@@ -12,7 +12,10 @@ const (
 	passwordPlaceholder = "__PASSWORD_PLACEHOLDER"
 )
 
-var isKafkaConnectConfigProvider = regexp.MustCompile(`\${.+:.*:.+}`).MatchString
+var (
+	configProviderRegex           = regexp.MustCompile(`\${.+:.*:.+}`)
+	hasKafkaConnectConfigProvider = configProviderRegex.MatchString
+)
 
 // ConsoleToKafkaConnectMongoDBHook sets connection authentication and output format properties
 func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
@@ -23,18 +26,21 @@ func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 
 	if config["connection.username"] != nil && config["connection.password"] != nil && config["connection.uri"] != nil {
 		password := config["connection.password"].(string)
-		if isKafkaConnectConfigProvider(config["connection.password"].(string)) {
+		if hasKafkaConnectConfigProvider(config["connection.password"].(string)) {
 			password = passwordPlaceholder
+		}
+		if hasKafkaConnectConfigProvider(config["connection.uri"].(string)) {
+			config["connection.uri"] = configProviderRegex.ReplaceAllString(config["connection.uri"].(string), passwordPlaceholder)
 		}
 
 		u, e := url.Parse(config["connection.uri"].(string))
 		if e == nil {
 			u.User = url.UserPassword(config["connection.username"].(string), password)
-		}
-		config["connection.uri"] = u.String()
+			config["connection.uri"] = u.String()
 
-		if isKafkaConnectConfigProvider(config["connection.password"].(string)) {
-			config["connection.uri"] = strings.ReplaceAll(config["connection.uri"].(string), passwordPlaceholder, config["connection.password"].(string))
+			if hasKafkaConnectConfigProvider(config["connection.password"].(string)) {
+				config["connection.uri"] = strings.ReplaceAll(config["connection.uri"].(string), passwordPlaceholder, config["connection.password"].(string))
+			}
 		}
 	}
 
