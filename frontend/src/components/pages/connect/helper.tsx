@@ -624,11 +624,10 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     const task = p.observable;
     const state = task.state;
 
-    const iconWrapper = (icon: JSX.Element) => <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle' }}>
-        <ZeroSizeWrapper width="17px">
+    const iconWrapper = (icon: JSX.Element) =>
+        <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle', height: '17px' }}>
             {icon}
-        </ZeroSizeWrapper>
-    </span>
+        </span>
 
     let icon: JSX.Element = <></>;
     if (state == ConnectorState.Running) icon = iconWrapper(okIcon);
@@ -645,12 +644,10 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     let errBtn: JSX.Element | undefined = undefined;
     let errModal: JSX.Element | undefined = undefined;
     if (task.trace) {
-        errBtn = <ZeroSizeWrapper height="12px" width="autos">
-            <Button danger onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
-                {stateContent}
-                <span>(Show Error)</span>
-            </Button>
-        </ZeroSizeWrapper>
+        errBtn = <Button danger onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
+            {stateContent}
+            <span>(Show Error)</span>
+        </Button>
 
         const close = () => showErr(undefined);
         errModal = <Modal open={err != null} onOk={close} onCancel={close} cancelButtonProps={{ style: { display: 'none' } }}
