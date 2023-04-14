@@ -11,6 +11,7 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -183,12 +184,16 @@ func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, 
 			return
 		default:
 			fetches := client.PollFetches(ctx)
-			errors := fetches.Errors()
-			for _, err := range errors {
-				s.Logger.Error("errors while fetching records",
-					zap.String("topic_name", err.Topic),
-					zap.Int32("partition", err.Partition),
-					zap.Error(err.Err))
+			fetchErrors := fetches.Errors()
+			for _, err := range fetchErrors {
+				// We cancel the context when we know the search is complete, hence this is expected and
+				// should not be logged as error in this case.
+				if !errors.Is(err.Err, context.Canceled) {
+					s.Logger.Error("errors while fetching records",
+						zap.String("topic_name", err.Topic),
+						zap.Int32("partition", err.Partition),
+						zap.Error(err.Err))
+				}
 			}
 			iter := fetches.RecordIter()
 
