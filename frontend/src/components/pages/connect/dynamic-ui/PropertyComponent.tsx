@@ -71,6 +71,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
                         options={options}
                         getPopupContainer={findPopupContainer}
                         {...{ spellCheck: false }}
+                        style={{ minWidth: '260px' }}
                     />
                 );
             } else {
