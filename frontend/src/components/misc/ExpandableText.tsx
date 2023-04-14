@@ -29,8 +29,8 @@ export function ExpandableText(p: { children: string, maxChars: number }) {
         {showExpander &&
             <Box display="inline" onClick={() => setExpanded(!expanded)} fontWeight="semibold" cursor="pointer" px="2" userSelect="none" mt="1px">
                 {expanded
-                    ? <span style={{ whiteSpace: 'nowrap' }}>Less <Icon as={ChevronUpIcon} /></span>
-                    : <span style={{ whiteSpace: 'nowrap' }}>More <Icon as={ChevronDownIcon} /></span>
+                    ? <span style={{ whiteSpace: 'nowrap' }}>less <Icon as={ChevronUpIcon} /></span>
+                    : <span style={{ whiteSpace: 'nowrap' }}>more <Icon as={ChevronDownIcon} /></span>
                 }
             </Box>
         }
