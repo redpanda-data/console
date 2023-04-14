@@ -57,8 +57,6 @@ func NewMongoSourceGuide(opts ...Option) Guide {
 							"key.converter.schemas.enable",
 							"value.converter",
 							"value.converter.schemas.enable",
-							"output.schema.key",
-							"output.schema.value",
 							"output.schema.infer.value",
 							"collection",
 							"startup.mode",

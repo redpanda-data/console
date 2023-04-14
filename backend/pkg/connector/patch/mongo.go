@@ -79,14 +79,13 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 		"collection",
 		"startup.mode":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
-	case "output.schema.key",
-		"output.schema.value",
-		"change.stream.full.document",
+	case "change.stream.full.document",
 		"change.stream.full.document.before.change",
 		"publish.full.document.only",
 		"collation":
 		d.SetImportance(model.ConfigDefinitionImportanceMedium)
-	case "zzz":
+	case "output.schema.key",
+		"output.schema.value":
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	}
 
