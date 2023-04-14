@@ -237,13 +237,6 @@ const connectorMetadata: ConnectorMetadata[] = [
 
     // MongoDB Connectors
     {
-        classNamePrefix: 'com.mongodb.kafka.connect.',
-        logo: <img src={MongoDBLogo} alt="MongoDB logo" className="connectorLogo" />,
-        author: 'MongoDB'
-    } as const,
-
-    // MongoDB Connectors
-    {
         classNamePrefix: 'com.mongodb.kafka.connect.MongoSourceConnector',
         logo: <img src={MongoDBLogo} alt="MongoDB logo" className="connectorLogo" />,
         author: 'MongoDB',
