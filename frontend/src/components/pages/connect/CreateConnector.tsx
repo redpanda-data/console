@@ -300,7 +300,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                     <CreateConnectorHeading plugin={selectedPlugin} />
 
                     {selectedPlugin ? (
-                        <ConfigPage connectorStore={connectClusterStore.getConnector(selectedPlugin.class)} />
+                        <Box maxWidth="800px">
+                            <ConfigPage connectorStore={connectClusterStore.getConnector(selectedPlugin.class)} />
+                        </Box>
                     ) : (
                         <div>no cluster or plugin selected</div>
                     )}
