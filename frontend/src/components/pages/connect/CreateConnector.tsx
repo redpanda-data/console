@@ -436,15 +436,15 @@ function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
     if (!p.plugin)
         return <Heading>Creating Connector</Heading>
 
-    const { logo } = findConnectorMetadata(p.plugin.class) ?? {};
+    // const { logo } = findConnectorMetadata(p.plugin.class) ?? {};
     const displayName = getConnectorFriendlyName(p.plugin.class);
 
     return <>
         <Heading as="h1" fontSize="2xl" display="flex" alignItems="center" gap=".5ch" mb="8">
-            <Box width="28px" height="28px" mr="1">{logo}</Box>
             <>Create Connector: </>
             {p.plugin.type == 'source' ? 'import data from ' : 'export data to '}
             {displayName}
+            {/* <Box width="28px" height="28px" mr="1">{logo}</Box> */}
         </Heading>
     </>
 }
