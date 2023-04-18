@@ -15,6 +15,7 @@ import (
 	"net/http"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/cloudhut/connect-client"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -27,7 +28,7 @@ func (s *Service) RestartConnector(ctx context.Context, clusterName string, conn
 		return restErr
 	}
 
-	err := c.Client.RestartConnector(ctx, connector)
+	err := c.Client.RestartConnector(ctx, connector, connect.RestartConnectorOptions{})
 	if err != nil {
 		return &rest.Error{
 			Err:          err,

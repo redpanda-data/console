@@ -6,7 +6,7 @@ require (
 	github.com/basgys/goxml2json v1.1.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/cloudhut/common v0.8.0
-	github.com/cloudhut/connect-client v0.0.0-20220929214026-6c714f7b6651
+	github.com/cloudhut/connect-client v0.0.0-20230417124247-963e5bcdfee7
 	github.com/dop251/goja v0.0.0-20230216180835-5937a312edda
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/cors v1.2.1
@@ -35,9 +35,9 @@ require (
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
-	golang.org/x/net v0.7.0
+	golang.org/x/net v0.9.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/text v0.7.0
+	golang.org/x/text v0.9.0
 	google.golang.org/protobuf v1.28.1
 )
 
@@ -96,7 +96,7 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20230223222841-637eb2293923 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
