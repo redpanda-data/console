@@ -335,7 +335,7 @@ const ConfigOverviewTab = observer((p: {
                 <Alert status="error" variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
                     <AlertIcon />
                     {errorTitle}
-                    <Button ml="auto" variant="ghost" colorScheme="gray" size="sm" mt="1px">View Details</Button>
+                    <Button ml="auto" variant="ghost" colorScheme="gray" size="sm" mt="1px">View details</Button>
                 </Alert>
 
                 <RPModal onClose={onClose} size="6xl" isOpen={isOpen}>
