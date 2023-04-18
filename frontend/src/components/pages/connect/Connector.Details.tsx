@@ -10,7 +10,7 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Button, Modal, Skeleton, Tooltip } from 'antd';
+import { Modal, Skeleton, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
@@ -28,7 +28,7 @@ import './helper';
 import { ConfirmModal, NotConfigured, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
 import { delay } from '../../../utils/utils';
-import { Box, CodeBlock, Flex, Grid, Heading, Tabs, Text } from '@redpanda-data/ui';
+import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@redpanda-data/ui';
 import Section from '../../misc/Section';
 import React from 'react';
 
@@ -90,14 +90,14 @@ const KafkaConnectorMain = observer(
             </Flex>
 
             {/* [Pause] [Restart] [Delete] */}
-            <Flex flexDirection="row" alignItems="center" gap="0.5em">
+            <Flex flexDirection="row" alignItems="center" gap="1">
 
                 {/* [View JSON Config] */}
                 <ViewConfigModalButton connector={connector} />
 
                 {/* [Pause/Resume]  [Restart] */}
                 {connectClusterStore.validateConnectorState(connectorName, ['FAILED', 'UNASSIGNED']) ? (
-                    <TaskState observable={connector} />
+                    null
                 ) : (
                     <>
                         <Tooltip
@@ -134,7 +134,8 @@ const KafkaConnectorMain = observer(
                     overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                 >
                     <Button
-                        danger
+                        variant="outline"
+                        colorScheme="red"
                         disabled={!canEdit}
                         onClick={() => ($state.deletingConnector = connectorName)}
                         style={{ marginLeft: '1em', minWidth: '8em' }}
@@ -173,8 +174,7 @@ const KafkaConnectorMain = observer(
                                         overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                                     >
                                         <Button
-                                            type="primary"
-                                            ghost
+                                            variant="outline"
                                             style={{ width: '200px' }}
                                             disabled={(() => {
                                                 if (!canEdit) return true;
@@ -316,14 +316,60 @@ const ConfigOverviewTab = observer((p: {
     const { connectClusterStore, connector } = p;
     const connectorName = connector.name;
 
+    const { isOpen, onOpen, onClose } = useDisclosure();
+
+    const errorTitle = 'Error in connector';
+
     return <>
         <Grid
-            templateAreas={`"health details"
-                        "tasks details"`}
+            templateAreas={`
+                "errors errors"
+                "health details"
+                "tasks details"
+            `}
             gridTemplateRows="auto"
             alignItems="start"
             gap="6"
         >
+            <Box gridArea="errors">
+                <Alert status="error" variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
+                    <AlertIcon />
+                    {errorTitle}
+                    <Button ml="auto" variant="ghost" colorScheme="gray" size="sm" mt="1px">View Details</Button>
+                </Alert>
+
+                <RPModal onClose={onClose} size="6xl" isOpen={isOpen}>
+                    <ModalOverlay />
+                    <ModalContent>
+                        <ModalHeader>{errorTitle}</ModalHeader>
+                        <ModalCloseButton />
+                        <ModalBody>
+                            <CodeBlock language="json" codeString={`
+org.apache.kafka.common.config.ConfigException: Cannot connect to 'c' S3 bucket due to: The specified bucket is not valid.
+	at com.redpanda.kafka.connect.s3.config.AwsConfigValidator.validate(AwsConfigValidator.java:57)
+	at com.redpanda.kafka.connect.s3.S3SinkConnector.start(S3SinkConnector.java:71)
+	at org.apache.kafka.connect.runtime.WorkerConnector.doStart(WorkerConnector.java:190)
+	at org.apache.kafka.connect.runtime.WorkerConnector.start(WorkerConnector.java:215)
+	at org.apache.kafka.connect.runtime.WorkerConnector.doTransitionTo(WorkerConnector.java:360)
+	at org.apache.kafka.connect.runtime.WorkerConnector.doTransitionTo(WorkerConnector.java:343)
+	at org.apache.kafka.connect.runtime.WorkerConnector.doRun(WorkerConnector.java:143)
+	at org.apache.kafka.connect.runtime.WorkerConnector.run(WorkerConnector.java:121)
+	at org.apache.kafka.connect.runtime.isolation.Plugins.lambda$withClassLoader$1(Plugins.java:177)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:833)
+                            `} />
+                        </ModalBody>
+                        <ModalFooter>
+                            <Button onClick={onClose}>Close</Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </RPModal>
+
+            </Box>
+
             <Section gridArea="health">
                 <Flex flexDirection="row" gap="4" m="1">
                     <Box width="5px" borderRadius="3px" background="green" />
@@ -447,10 +493,6 @@ const ViewConfigModalButton = (p: { connector: ClusterConnectorInfo }) => {
         <>
             <Flex alignItems="center" mb="8px">
                 <Box fontSize="medium" fontWeight={500}>Connector Config (JSON)</Box>
-
-                <Button style={{ marginLeft: '16px', paddingInline: '24px' }} onClick={() => {
-                    navigator.clipboard.writeText(p.connector.jsonConfig);
-                }}>Copy</Button>
             </Flex>
 
             <CodeBlock codeString={p.connector.jsonConfig} language="json" showCopyButton />
@@ -458,7 +500,7 @@ const ViewConfigModalButton = (p: { connector: ClusterConnectorInfo }) => {
     </Modal>;
 
     return <>
-        <Button onClick={() => setShowConfig(true)}>View Json Config</Button>
+        <Button variant="outline" onClick={() => setShowConfig(true)}>View Json Config</Button>
         {viewConfigModal}
     </>
 };
