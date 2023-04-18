@@ -29,6 +29,24 @@ const (
 	connectorStateRunning    connectorState = "RUNNING"
 	connectorStatePaused     connectorState = "PAUSED"
 	connectorStateFAILED     connectorState = "FAILED"
+	connectorStateRestarting connectorState = "RESTARTING"
+)
+
+// connectorStatus is our holistic unified connector status that takes into account not just the
+// connector instance state, but also state of all the tasks within the connector
+type connectorStatus = string
+
+const (
+	// Connector is in "running" state, >0 tasks, all of them running state
+	connectorStatusHealthy connectorStatus = "HEALTHY"
+	// Connector is "error" state
+	connectorStatusUnhealthy connectorStatus = "UNHEALTHY"
+	// Connector is "running" state, 0 tasks OR at least one task in failed state
+	connectorStatusDegraded connectorStatus = "DEGRADED"
+	// Connector is in "paused" state, or at least one task is in paused state
+	connectorStatusPaused connectorStatus = "PAUSED"
+	// Connector is in "restarting" state or at least one task is in restarting state
+	connectorStatusRestarting connectorStatus = "RESTARTING"
 )
 
 // ClusterConnectors contains all available information about the deployed connectors
@@ -55,7 +73,8 @@ type ClusterConnectorInfo struct {
 	Config       map[string]string          `json:"config"`
 	Type         string                     `json:"type"`  // Source or Sink
 	Topic        string                     `json:"topic"` // Kafka Topic name
-	State        string                     `json:"state"` // Running, ..
+	State        connectorState             `json:"state"` // Running, ..
+	Status       connectorStatus            `json:"status"`
 	TotalTasks   int                        `json:"totalTasks"`
 	RunningTasks int                        `json:"runningTasks"`
 	Trace        string                     `json:"trace,omitempty"`
@@ -81,6 +100,9 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 	ch := make(chan *ClusterConnectors, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
 		go func(cfg config.ConnectCluster, c *con.Client) {
+
+			fmt.Println("GetAllClusterConnectors")
+
 			connectors, err := c.ListConnectorsExpanded(ctx)
 			errMsg := ""
 			if err != nil {
@@ -107,6 +129,9 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 			totalConnectors := 0
 			runningConnectors := 0
 			for _, connector := range connectors {
+
+				fmt.Printf("connector: %+v\n", connector)
+
 				totalConnectors++
 				if connector.Status.Connector.State == connectorStateRunning {
 					runningConnectors++
@@ -136,6 +161,9 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 // GetClusterConnectors returns the GET /connectors response for a single connect cluster. A cluster can be referenced
 // by it's name (as specified in the user config).
 func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) (ClusterConnectors, *rest.Error) {
+
+	fmt.Println("GetClusterConnectors")
+
 	c, restErr := s.getConnectClusterByName(clusterName)
 	if restErr != nil {
 		return ClusterConnectors{}, restErr
@@ -148,6 +176,8 @@ func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) 
 			zap.String("cluster_name", c.Cfg.Name), zap.String("cluster_address", c.Cfg.URL), zap.Error(err))
 		errMsg = err.Error()
 	}
+
+	fmt.Printf("connectors: %+v\n", connectors)
 
 	return ClusterConnectors{
 		ClusterName:    c.Cfg.Name,
