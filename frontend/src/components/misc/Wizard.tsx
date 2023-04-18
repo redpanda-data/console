@@ -10,9 +10,9 @@
  */
 
 import styles from './Wizard.module.scss';
-import { Button, Steps } from 'antd';
+import { Steps } from 'antd';
+import { Button } from '@redpanda-data/ui';
 import React from 'react';
-import { ChevronRightIcon, ChevronLeftIcon } from '@primer/octicons-react';
 
 const { Step } = Steps;
 
@@ -34,16 +34,18 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
             </Steps>
             <div className={styles.content}>{currentStep.content}</div>
             <div className={styles.footer}>
+                {currentStep.nextButtonLabel !== null &&
+                    <Button variant="solid" colorScheme="brand" onClick={state.next} disabled={!state.canContinue()} px="8">
+                        {currentStep.nextButtonLabel ?? 'Next'}
+                    </Button>
+                }
+
                 {!state.isFirst() ? (
-                    <Button type={'default'} onClick={state.previous} className={styles.prevButton}>
-                        <ChevronLeftIcon />
-                        {currentStep.prevButtonLabel ?? 'Previous Step'}
+                    <Button variant="outline" onClick={state.previous} className={styles.prevButton} px="8">
+                        {currentStep.prevButtonLabel ?? 'Back'}
                     </Button>
                 ) : null}
-                <Button type={'primary'} onClick={state.next} disabled={!state.canContinue()} className={styles.nextButton}>
-                    {currentStep.nextButtonLabel ?? state.isLast() ? 'Create' : 'Next'}
-                    {!state.isLast() && <ChevronRightIcon />}
-                </Button>
+
             </div>
         </div>
     );

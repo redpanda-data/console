@@ -22,15 +22,12 @@ import { appGlobal } from '../../../state/appGlobal';
 import { ClusterConnectors, ConnectorValidationResult } from '../../../state/restInterfaces';
 import { Alert, Select, Skeleton, Table } from 'antd';
 import { HiddenRadioList } from '../../misc/HiddenRadioList';
-import { ConnectorBoxCard, ConnectorPlugin } from './ConnectorBoxCard';
-import { /* ConfigPage */ ConfigPage } from './dynamic-ui/components';
+import { ConnectorBoxCard, ConnectorPlugin, getConnectorFriendlyName } from './ConnectorBoxCard';
+import { ConfigPage } from './dynamic-ui/components';
 import KowlEditor from '../../misc/KowlEditor';
-// import { useHistory } from 'react-router-dom';
-
-import styles from './CreateConnector.module.scss';
 import PageContent from '../../misc/PageContent';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
-import { Flex, Text, Tabs, Link, SearchField, Box } from '@redpanda-data/ui';
+import { Flex, Text, Tabs, Link, SearchField, Box, Heading } from '@redpanda-data/ui';
 import { findConnectorMetadata } from './helper';
 import { containsIgnoreCase } from '../../../utils/utils';
 const { Option } = Select;
@@ -49,6 +46,54 @@ const ConnectorType = observer(
             textFilter: '',
             tabFilter: 'all' as 'all' | 'export' | 'import'
         }));
+
+
+        let filteredPlugins = [] as {
+            class: string;
+            type: 'sink' | 'source';
+            version?: string | undefined;
+        }[];
+
+        if (p.activeCluster) {
+            const allPlugins = api.connectAdditionalClusterInfo.get(p.activeCluster)?.plugins;
+
+            filteredPlugins = allPlugins?.filter(p => {
+                if (state.tabFilter == 'export' && p.type == 'source')
+                    return false; // not an "export" type
+
+                if (state.tabFilter == 'import' && p.type == 'sink')
+                    return false; // not an "import" type
+
+                const meta = findConnectorMetadata(p.class);
+                if (!meta)
+                    return true; // no metadata, show it always
+
+                if (state.textFilter) {
+                    let matchesFilter = false;
+
+                    if (meta.friendlyName && containsIgnoreCase(meta.friendlyName, state.textFilter))
+                        matchesFilter = true;
+
+                    if (p.class && containsIgnoreCase(p.class, state.textFilter))
+                        matchesFilter = true;
+
+                    if (meta.description && containsIgnoreCase(meta.description, state.textFilter))
+                        matchesFilter = true;
+
+                    if (!matchesFilter)
+                        return false; // doesn't match the text filter
+                }
+
+                // no filters active that would remove the entry from the list
+                return true;
+            }) || [];
+        }
+
+        const noResultsBox = (filteredPlugins?.length > 0) ? null : <>
+            <Flex p="10" alignItems="center" justifyContent="center" background="blackAlpha.100" borderRadius="8px">
+                <Text fontSize="large" color="gray">No connectors that match the search filters</Text>
+            </Flex>
+        </>
 
 
         return (
@@ -122,45 +167,13 @@ const ConnectorType = observer(
                             name={'connector-type'}
                             onChange={p.onPluginSelectionChange}
                             value={p.selectedPlugin ?? undefined}
-                            options={
-                                api.connectAdditionalClusterInfo
-                                    .get(p.activeCluster)?.plugins
-                                    .filter(p => {
-                                        if (state.tabFilter == 'export' && p.type == 'source')
-                                            return false; // not an "export" type
-
-                                        if (state.tabFilter == 'import' && p.type == 'sink')
-                                            return false; // not an "import" type
-
-                                        const meta = findConnectorMetadata(p.class);
-                                        if (!meta)
-                                            return true; // no metadata, show it always
-
-                                        if (state.textFilter) {
-                                            let matchesFilter = false;
-
-                                            if (meta.friendlyName && containsIgnoreCase(meta.friendlyName, state.textFilter))
-                                                matchesFilter = true;
-
-                                            if (p.class && containsIgnoreCase(p.class, state.textFilter))
-                                                matchesFilter = true;
-
-                                            if (meta.description && containsIgnoreCase(meta.description, state.textFilter))
-                                                matchesFilter = true;
-
-                                            if (!matchesFilter)
-                                                return false; // doesn't match the text filter
-                                        }
-
-                                        // no filters active that would remove the entry from the list
-                                        return true;
-                                    })
-                                    .map((plugin) => ({
-                                        value: plugin,
-                                        render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
-                                    })) || []
-                            }
+                            options={filteredPlugins.map((plugin) => ({
+                                value: plugin,
+                                render: (card) => <ConnectorBoxCard {...card} connectorPlugin={plugin} />,
+                            }))}
                         />
+
+                        {noResultsBox}
                     </>
                 )}
             </>
@@ -276,6 +289,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                 />
             ),
             postConditionMet: () => activeCluster != null && selectedPlugin != null,
+            nextButtonLabel: null,
         },
         {
             title: 'Properties',
@@ -283,17 +297,8 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             icon: <ApiOutlined />,
             content: (
                 <>
-                    {selectedPlugin != null ? (
-                        <div className={styles.connectorBoxCard}>
-                            <ConnectorBoxCard
-                                id="selectedConnector"
-                                connectorPlugin={selectedPlugin}
-                                borderStyle={'dashed'}
-                                borderWidth={'medium'}
-                                hoverable={false}
-                            />
-                        </div>
-                    ) : null}
+                    <CreateConnectorHeading plugin={selectedPlugin} />
+
                     {selectedPlugin ? (
                         <ConfigPage connectorStore={connectClusterStore.getConnector(selectedPlugin.class)} />
                     ) : (
@@ -374,6 +379,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                 setLoading(false);
                 return { conditionMet: true };
             },
+            nextButtonLabel: 'Create'
         },
     ];
 
@@ -401,9 +407,20 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                         return history.push(`/connect-clusters/${encodeURIComponent(activeCluster)}`);
                     }
 
+                    setTimeout(() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 10);
+
                     return currentStep < steps.length - 1 ? setCurrentStep((n) => n + 1) : undefined;
                 },
-                previous: () => (currentStep > 0 ? setCurrentStep((n) => n - 1) : undefined),
+                previous: () => {
+
+                    setTimeout(() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 10);
+
+                    return (currentStep > 0 ? setCurrentStep((n) => n - 1) : undefined);
+                },
                 isLast,
                 isFirst: () => currentStep === 0,
                 getCurrentStep: () => [currentStep, steps[currentStep]],
@@ -412,6 +429,27 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
         />
     );
 });
+
+
+
+function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
+    if (!p.plugin)
+        return <Heading>Creating Connector</Heading>
+
+    const { logo } = findConnectorMetadata(p.plugin.class) ?? {};
+    const displayName = getConnectorFriendlyName(p.plugin.class);
+
+    return <>
+        <Heading as="h1" fontSize="2xl" display="flex" alignItems="center" gap=".5ch" mb="8">
+            <Box width="40px" height="40px" mr="1">{logo}</Box>
+            <>Create Connector: </>
+            {p.plugin.type == 'source' ? 'import data from ' : 'export data to '}
+            {displayName}
+        </Heading>
+    </>
+}
+
+
 
 interface ReviewProps {
     connectorPlugin: ConnectorPlugin | null;

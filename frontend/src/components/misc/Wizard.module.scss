@@ -38,15 +38,14 @@
 .footer {
     margin: 0;
     display: flex;
-    justify-content: space-between;
+    gap: 1rem;
 }
 
 .nextButton {
-    margin-left: auto;
+
 }
 
 .prevButton {
-    margin-right: 15px;
 }
 
 .nextButton,
