@@ -441,7 +441,7 @@ function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
 
     return <>
         <Heading as="h1" fontSize="2xl" display="flex" alignItems="center" gap=".5ch" mb="8">
-            <Box width="40px" height="40px" mr="1">{logo}</Box>
+            <Box width="28px" height="28px" mr="1">{logo}</Box>
             <>Create Connector: </>
             {p.plugin.type == 'source' ? 'import data from ' : 'export data to '}
             {displayName}
