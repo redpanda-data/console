@@ -13,6 +13,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/cloudhut/common/rest"
 	con "github.com/cloudhut/connect-client"
@@ -28,7 +29,7 @@ const (
 	connectorStateUnassigned connectorState = "UNASSIGNED"
 	connectorStateRunning    connectorState = "RUNNING"
 	connectorStatePaused     connectorState = "PAUSED"
-	connectorStateFAILED     connectorState = "FAILED"
+	connectorStateFailed     connectorState = "FAILED"
 	connectorStateRestarting connectorState = "RESTARTING"
 )
 
@@ -68,17 +69,32 @@ type ClusterConnectors struct {
 // ClusterConnectorInfo contains all information we can retrieve about a single
 // connector in a Kafka connect cluster.
 type ClusterConnectorInfo struct {
-	Name         string                     `json:"name"`
-	Class        string                     `json:"class"`
-	Config       map[string]string          `json:"config"`
-	Type         string                     `json:"type"`  // Source or Sink
-	Topic        string                     `json:"topic"` // Kafka Topic name
-	State        connectorState             `json:"state"` // Running, ..
-	Status       connectorStatus            `json:"status"`
-	TotalTasks   int                        `json:"totalTasks"`
-	RunningTasks int                        `json:"runningTasks"`
-	Trace        string                     `json:"trace,omitempty"`
-	Tasks        []ClusterConnectorTaskInfo `json:"tasks"`
+	Name         string                      `json:"name"`
+	Class        string                      `json:"class"`
+	Config       map[string]string           `json:"config"`
+	Type         string                      `json:"type"`  // Source or Sink
+	Topic        string                      `json:"topic"` // Kafka Topic name
+	State        connectorState              `json:"state"` // Running, ..
+	Status       connectorStatus             `json:"status"`
+	TotalTasks   int                         `json:"totalTasks"`
+	RunningTasks int                         `json:"runningTasks"`
+	Trace        string                      `json:"trace,omitempty"`
+	Errors       []ClusterConnectorInfoError `json:"errors"`
+	Tasks        []ClusterConnectorTaskInfo  `json:"tasks"`
+}
+
+type connectorErrorType = string
+
+const (
+	connectorErrorTypeError   = "ERROR"
+	connectorErrorTypeWarning = "WARNING"
+)
+
+// ClusterConnectorInfoError provides nicer information about connector errors gathered from connector traces
+type ClusterConnectorInfoError struct {
+	Type    connectorErrorType `json:"type"`
+	Title   string             `json:"title"`
+	Content string             `json:"content"`
 }
 
 // ClusterConnectorTaskInfo provides information about a connector's task.
@@ -100,9 +116,6 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 	ch := make(chan *ClusterConnectors, len(s.ClientsByCluster))
 	for _, cluster := range s.ClientsByCluster {
 		go func(cfg config.ConnectCluster, c *con.Client) {
-
-			fmt.Println("GetAllClusterConnectors")
-
 			connectors, err := c.ListConnectorsExpanded(ctx)
 			errMsg := ""
 			if err != nil {
@@ -129,9 +142,6 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 			totalConnectors := 0
 			runningConnectors := 0
 			for _, connector := range connectors {
-
-				fmt.Printf("connector: %+v\n", connector)
-
 				totalConnectors++
 				if connector.Status.Connector.State == connectorStateRunning {
 					runningConnectors++
@@ -161,9 +171,6 @@ func (s *Service) GetAllClusterConnectors(ctx context.Context) ([]*ClusterConnec
 // GetClusterConnectors returns the GET /connectors response for a single connect cluster. A cluster can be referenced
 // by it's name (as specified in the user config).
 func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) (ClusterConnectors, *rest.Error) {
-
-	fmt.Println("GetClusterConnectors")
-
 	c, restErr := s.getConnectClusterByName(clusterName)
 	if restErr != nil {
 		return ClusterConnectors{}, restErr
@@ -176,8 +183,6 @@ func (s *Service) GetClusterConnectors(ctx context.Context, clusterName string) 
 			zap.String("cluster_name", c.Cfg.Name), zap.String("cluster_address", c.Cfg.URL), zap.Error(err))
 		errMsg = err.Error()
 	}
-
-	fmt.Printf("connectors: %+v\n", connectors)
 
 	return ClusterConnectors{
 		ClusterName:    c.Cfg.Name,
@@ -244,6 +249,7 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 	}, nil
 }
 
+//nolint:gocognit,cyclop // lots of inspection of state and tasks to determine status and errors
 func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnectorsResponseExpanded) []ClusterConnectorInfo {
 	if l == nil {
 		return []ClusterConnectorInfo{}
@@ -252,7 +258,12 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 	connectorInfo := make([]ClusterConnectorInfo, 0, len(l))
 	for _, c := range l {
 		tasks := make([]ClusterConnectorTaskInfo, len(c.Status.Tasks))
+		connectorTaskErrors := make([]ClusterConnectorInfoError, 0, len(c.Status.Tasks))
+
 		runningTasks := 0
+		failedTasks := 0
+		pausedTasks := 0
+		restartingTasks := 0
 		for i, task := range c.Status.Tasks {
 			tasks[i] = ClusterConnectorTaskInfo{
 				TaskID:   task.ID,
@@ -260,10 +271,59 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 				WorkerID: task.WorkerID,
 				Trace:    task.Trace,
 			}
-			if task.State == connectorStateRunning {
+
+			switch task.State {
+			case connectorStateRunning:
 				runningTasks++
+			case connectorStateFailed:
+				failedTasks++
+
+				errTitle := fmt.Sprintf("Connector %s Task %d is in failed state", c.Info.Name, task.ID)
+				connectorTaskErrors = append(connectorTaskErrors, ClusterConnectorInfoError{
+					Type:    connectorErrorTypeError,
+					Title:   errTitle,
+					Content: errorContentFromTrace(errTitle, task.Trace),
+				})
+			case connectorStatePaused:
+				pausedTasks++
+			case connectorStateRestarting:
+				restartingTasks++
 			}
 		}
+
+		// See const definitions for rules
+		var connStatus connectorStatus
+		//nolint:gocritic // this if else is easier to read as they map to rules specified above
+		if (c.Status.Connector.State == connectorStateRunning) && (runningTasks == len(c.Status.Tasks)) {
+			connStatus = connectorStatusHealthy
+		} else if c.Status.Connector.State == connectorStateFailed {
+			connStatus = connectorStatusUnhealthy
+		} else if (c.Status.Connector.State == connectorStateRunning) && (len(c.Status.Tasks) == 0 || (failedTasks > 0)) {
+			connStatus = connectorStatusDegraded
+		} else if (c.Status.Connector.State == connectorStatePaused) || (len(c.Status.Tasks) > 0 && (pausedTasks > 0)) {
+			connStatus = connectorStatusPaused
+		} else if (c.Status.Connector.State == connectorStateRestarting) || (len(c.Status.Tasks) > 0 && (restartingTasks > 0)) {
+			connStatus = connectorStatusRestarting
+		}
+
+		connectorErrors := make([]ClusterConnectorInfoError, 0)
+		if c.Status.Connector.State == connectorStateFailed {
+			errTitle := "connector " + c.Info.Name + " is in failed state"
+			connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
+				Type:    connectorErrorTypeError,
+				Title:   errTitle,
+				Content: errorContentFromTrace(errTitle, c.Status.Connector.Trace),
+			})
+		} else if len(c.Status.Connector.Trace) > 0 {
+			errTitle := "connector " + c.Info.Name + " has an error"
+			connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
+				Type:    connectorErrorTypeError,
+				Title:   errTitle,
+				Content: errorContentFromTrace(errTitle, c.Status.Connector.Trace),
+			})
+		}
+
+		connectorErrors = append(connectorErrors, connectorTaskErrors...)
 
 		connectorInfo = append(connectorInfo, ClusterConnectorInfo{
 			Name:         c.Info.Name,
@@ -272,12 +332,67 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 			Config:       c.Info.Config,
 			Type:         c.Info.Type,
 			State:        c.Status.Connector.State,
+			Status:       connStatus,
 			Tasks:        tasks,
 			Trace:        c.Status.Connector.Trace,
+			Errors:       connectorErrors,
 			TotalTasks:   len(c.Status.Tasks),
 			RunningTasks: runningTasks,
 		})
 	}
 
 	return connectorInfo
+}
+
+func errorContentFromTrace(defaultValue, trace string) string {
+	content := ""
+
+	if len(trace) > 0 {
+		lines := strings.Split(trace, "\n")
+
+		filtered := make([]string, 0, len(lines))
+
+		for _, l := range lines {
+			l := strings.Trim(l, "\t")
+			if !strings.HasSuffix(l, "exception") && !strings.HasSuffix(l, ")") {
+				filtered = append(filtered, l)
+			}
+		}
+
+		if len(filtered) > 0 {
+			// some lines have 'caused by' prefix which has description
+			for _, l := range filtered {
+				if strings.HasPrefix(strings.ToLower(l), "caused by") {
+					content = sanitizeTraceLine(l)
+				}
+			}
+
+			if content == "" {
+				content = sanitizeTraceLine(filtered[0])
+			}
+		}
+	}
+
+	if content == "" {
+		content = defaultValue
+	}
+
+	return content
+}
+
+func sanitizeTraceLine(l string) string {
+	lower := strings.ToLower(l)
+	if strings.HasPrefix(lower, "caused by:") {
+		l = strings.TrimPrefix(l, "caused by:")
+		l = strings.TrimPrefix(l, "Caused by:")
+	}
+
+	var content string
+	if strings.Index(l, ":") > 0 {
+		content = l[strings.Index(l, ":")+1:]
+	}
+
+	content = strings.TrimSpace(content)
+
+	return content
 }
