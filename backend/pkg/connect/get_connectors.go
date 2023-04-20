@@ -259,10 +259,11 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 	return connectorInfo
 }
 
-//nolint:gocognit,cyclop,gocyclo // lots of inspection of state and tasks to determine status and errors
+//nolint:gocognit,cyclop // lots of inspection of state and tasks to determine status and errors
 func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
-	tasks := make([]ClusterConnectorTaskInfo, len(c.Status.Tasks))
-	connectorTaskErrors := make([]ClusterConnectorInfoError, 0, len(c.Status.Tasks))
+	totalTasks := len(c.Status.Tasks)
+	tasks := make([]ClusterConnectorTaskInfo, totalTasks)
+	connectorTaskErrors := make([]ClusterConnectorInfoError, 0, totalTasks)
 
 	runningTasks := 0
 	failedTasks := 0
@@ -296,33 +297,37 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	}
 
 	// LOGIC:
-	// HEALTHY: Connector is in "running" state, >0 tasks, all of them running state.
-	// UNHEALTHY: Connector is "error" state.
-	//			Or Connector is in running state but has 0 tasks or > 0 failed tasks.
-	// 			Or Connector is in paused state but has 0 tasks or > 0 failed tasks.
-	// DEGRADED: Connector has >0 tasks, is in "paused" state, but not all tasks are in paused state.
+	// HEALTHY: Connector is in running state, > 0 tasks, all of them in running state.
+	// UNHEALTHY: Connector is failed state.
+	//			Or Connector is in running state but has 0 tasks.
+	// 			Or Connector is in running state, has > 0 tasks, and all tasks are in failed state.
+	// DEGRADED: Connector is in running state, has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
 	// PAUSED: Connector is in paused state, and all tasks are in paused state.
-	// RESTARTING: Connector is in "restarting" state or at least one task is in restarting state.
+	// RESTARTING: Connector is in restarting state, or at least one task is in restarting state.
 	var connStatus connectorStatus
 	var errDetailedContent string
 	//nolint:gocritic // this if else is easier to read as they map to rules and logic specified above.
-	if (c.Status.Connector.State == connectorStateRunning) && runningTasks > 0 && (runningTasks == len(c.Status.Tasks)) {
+	if (c.Status.Connector.State == connectorStateRunning) &&
+		totalTasks > 0 && runningTasks == totalTasks {
 		connStatus = connectorStatusHealthy
 	} else if (c.Status.Connector.State == connectorStateFailed) ||
-		((c.Status.Connector.State == connectorStateRunning) && (len(c.Status.Tasks) == 0 || (failedTasks > 0))) ||
-		((c.Status.Connector.State == connectorStatePaused) && (len(c.Status.Tasks) == 0 || (failedTasks > 0))) {
+		((c.Status.Connector.State == connectorStateRunning) && (totalTasks == 0 || totalTasks == failedTasks)) {
 		connStatus = connectorStatusUnhealthy
-		if len(c.Status.Tasks) == 0 {
+		if totalTasks == 0 {
 			errDetailedContent = "Connector is in " + strings.ToLower(c.Status.Connector.State) + " state but has no tasks."
-		} else if failedTasks > 0 {
-			errDetailedContent = "Connector is in " + strings.ToLower(c.Status.Connector.State) + " state but has failed tasks."
+		} else if totalTasks == failedTasks {
+			errDetailedContent = "Connector is in " + strings.ToLower(c.Status.Connector.State) + " state but all tasks are in failed state."
 		}
-	} else if (len(c.Status.Tasks) > 0) && (c.Status.Connector.State == connectorStatePaused) && (pausedTasks != len(c.Status.Tasks)) {
+	} else if (c.Status.Connector.State == connectorStateRunning) &&
+		(totalTasks > 0 && failedTasks > 0 && failedTasks < totalTasks) {
 		connStatus = connectorStatusDegraded
-		errDetailedContent = "Connector is in " + strings.ToLower(c.Status.Connector.State) + " state but not all tasks are in the same state."
-	} else if (c.Status.Connector.State == connectorStatePaused) && (len(c.Status.Tasks) > 0 && (pausedTasks == len(c.Status.Tasks))) {
+		errDetailedContent = fmt.Sprintf("Connector is in %s state but has %d / %d failed tasks.",
+			strings.ToLower(c.Status.Connector.State), failedTasks, totalTasks)
+	} else if (c.Status.Connector.State == connectorStatePaused) &&
+		(totalTasks > 0 && pausedTasks == totalTasks) {
 		connStatus = connectorStatusPaused
-	} else if (c.Status.Connector.State == connectorStateRestarting) && (len(c.Status.Tasks) > 0 && (restartingTasks > 0)) {
+	} else if (c.Status.Connector.State == connectorStateRestarting) ||
+		(totalTasks > 0 && restartingTasks > 0) {
 		connStatus = connectorStatusRestarting
 	}
 
