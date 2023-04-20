@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/bmizerany/assert"
+	"github.com/cloudhut/connect-client"
 )
 
-func Test_errorContentFromTrace(t *testing.T) {
+func Test_traceToErrorContent(t *testing.T) {
 	// tests
 	type test struct {
 		name         string
@@ -82,7 +83,322 @@ func Test_errorContentFromTrace(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := errorContentFromTrace(tc.initialValue, tc.trace)
+			actual := traceToErrorContent(tc.initialValue, tc.trace)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
+	// tests
+	type test struct {
+		name     string
+		input    *connect.ListConnectorsResponseExpanded
+		expected *ClusterConnectorInfo
+	}
+
+	tests := []test{
+		{
+			name: "healthy",
+			input: &connect.ListConnectorsResponseExpanded{
+				Info: connect.ListConnectorsResponseExpandedInfo{
+					Name: "http-source-connector-wtue",
+					Config: map[string]string{
+						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+						"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+						"http.request.url":                          "https://httpbin.org/uuid",
+						"http.timer.catchup.interval.millis":        "30000",
+						"http.timer.interval.millis":                "180000",
+						"kafka.topic":                               "httpbin-input",
+						"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+						"key.converter.schemas.enable":              "false",
+						"name":                                      "http-source-connector-wtue",
+						"topic.creation.default.partitions":         "1",
+						"topic.creation.default.replication.factor": "1",
+						"topic.creation.enable":                     "true",
+						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+						"value.converter.schemas.enable":            "false",
+					},
+					Tasks: []struct {
+						Connector string `json:"connector"`
+						Task      int    `json:"task"`
+					}{
+						{
+							Connector: "http-source-connector-wtue",
+							Task:      0,
+						},
+					},
+					Type: "source",
+				},
+				Status: connect.ListConnectorsResponseExpandedStatus{
+					Name: "http-source-connector-wtue",
+					Connector: struct {
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						State:    "RUNNING",
+						WorkerID: "172.21.0.5:8083",
+					},
+					Tasks: []struct {
+						ID       int    `json:"id"`
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						{
+							ID:       0,
+							State:    "RUNNING",
+							WorkerID: "172.21.0.5:8083",
+						},
+					},
+				},
+			},
+			expected: &ClusterConnectorInfo{
+				Name:  "http-source-connector-wtue",
+				Class: "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+				Config: map[string]string{
+					"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+					"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+					"http.request.url":                          "https://httpbin.org/uuid",
+					"http.timer.catchup.interval.millis":        "30000",
+					"http.timer.interval.millis":                "180000",
+					"kafka.topic":                               "httpbin-input",
+					"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+					"key.converter.schemas.enable":              "false",
+					"name":                                      "http-source-connector-wtue",
+					"topic.creation.default.partitions":         "1",
+					"topic.creation.default.replication.factor": "1",
+					"topic.creation.enable":                     "true",
+					"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+					"value.converter.schemas.enable":            "false",
+				},
+				Type:         "source",
+				Topic:        "httpbin-input",
+				State:        connectorStateRunning,
+				Status:       connectorStatusHealthy,
+				TotalTasks:   1,
+				RunningTasks: 1,
+				Trace:        "",
+				Errors:       []ClusterConnectorInfoError{},
+				Tasks: []ClusterConnectorTaskInfo{
+					{
+						TaskID:   0,
+						State:    connectorStateRunning,
+						WorkerID: "172.21.0.5:8083",
+					},
+				},
+			},
+		},
+		{
+			name: "degraded - 0 tasks",
+			input: &connect.ListConnectorsResponseExpanded{
+				Info: connect.ListConnectorsResponseExpandedInfo{
+					Name: "http-source-connector-wtue",
+					Config: map[string]string{
+						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+						"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+						"http.request.url":                          "https://httpbin.org/uuid",
+						"http.timer.catchup.interval.millis":        "30000",
+						"http.timer.interval.millis":                "180000",
+						"kafka.topic":                               "httpbin-input",
+						"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+						"key.converter.schemas.enable":              "false",
+						"name":                                      "http-source-connector-wtue",
+						"topic.creation.default.partitions":         "1",
+						"topic.creation.default.replication.factor": "1",
+						"topic.creation.enable":                     "true",
+						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+						"value.converter.schemas.enable":            "false",
+					},
+					Tasks: []struct {
+						Connector string `json:"connector"`
+						Task      int    `json:"task"`
+					}{},
+					Type: "source",
+				},
+				Status: connect.ListConnectorsResponseExpandedStatus{
+					Name: "http-source-connector-wtue",
+					Connector: struct {
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						State:    "RUNNING",
+						WorkerID: "172.21.0.5:8083",
+					},
+					Tasks: []struct {
+						ID       int    `json:"id"`
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{},
+				},
+			},
+			expected: &ClusterConnectorInfo{
+				Name:  "http-source-connector-wtue",
+				Class: "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+				Config: map[string]string{
+					"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+					"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+					"http.request.url":                          "https://httpbin.org/uuid",
+					"http.timer.catchup.interval.millis":        "30000",
+					"http.timer.interval.millis":                "180000",
+					"kafka.topic":                               "httpbin-input",
+					"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+					"key.converter.schemas.enable":              "false",
+					"name":                                      "http-source-connector-wtue",
+					"topic.creation.default.partitions":         "1",
+					"topic.creation.default.replication.factor": "1",
+					"topic.creation.enable":                     "true",
+					"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+					"value.converter.schemas.enable":            "false",
+				},
+				Type:         "source",
+				Topic:        "httpbin-input",
+				State:        connectorStateRunning,
+				Status:       connectorStatusDegraded,
+				TotalTasks:   0,
+				RunningTasks: 0,
+				Trace:        "",
+				Errors: []ClusterConnectorInfoError{
+					{
+						Type:    connectorErrorTypeError,
+						Title:   "connector http-source-connector-wtue is in degraded state",
+						Content: "connector is in running state but has no tasks",
+					},
+				},
+				Tasks: []ClusterConnectorTaskInfo{},
+			},
+		},
+		{
+			name: "degraded - failed tasks",
+			input: &connect.ListConnectorsResponseExpanded{
+				Info: connect.ListConnectorsResponseExpandedInfo{
+					Name: "http-source-connector-wtue",
+					Config: map[string]string{
+						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+						"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+						"http.request.url":                          "https://httpbin.org/uuid",
+						"http.timer.catchup.interval.millis":        "30000",
+						"http.timer.interval.millis":                "180000",
+						"kafka.topic":                               "httpbin-input",
+						"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+						"key.converter.schemas.enable":              "false",
+						"name":                                      "http-source-connector-wtue",
+						"topic.creation.default.partitions":         "1",
+						"topic.creation.default.replication.factor": "1",
+						"topic.creation.enable":                     "true",
+						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+						"value.converter.schemas.enable":            "false",
+					},
+					Tasks: []struct {
+						Connector string `json:"connector"`
+						Task      int    `json:"task"`
+					}{
+						{
+							Connector: "http-source-connector-wtue",
+							Task:      0,
+						},
+					},
+					Type: "source",
+				},
+				Status: connect.ListConnectorsResponseExpandedStatus{
+					Name: "http-source-connector-wtue",
+					Connector: struct {
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						State:    "RUNNING",
+						WorkerID: "172.21.0.5:8083",
+					},
+					Tasks: []struct {
+						ID       int    `json:"id"`
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						{
+							ID:       0,
+							State:    "RUNNING",
+							WorkerID: "172.21.0.5:8083",
+						},
+						{
+							ID:       1,
+							State:    "FAILED",
+							WorkerID: "172.21.0.5:8083",
+						},
+						{
+							ID:       2,
+							State:    "RUNNING",
+							WorkerID: "172.21.0.5:8083",
+						},
+					},
+				},
+			},
+			expected: &ClusterConnectorInfo{
+				Name:  "http-source-connector-wtue",
+				Class: "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+				Config: map[string]string{
+					"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+					"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+					"http.request.url":                          "https://httpbin.org/uuid",
+					"http.timer.catchup.interval.millis":        "30000",
+					"http.timer.interval.millis":                "180000",
+					"kafka.topic":                               "httpbin-input",
+					"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+					"key.converter.schemas.enable":              "false",
+					"name":                                      "http-source-connector-wtue",
+					"topic.creation.default.partitions":         "1",
+					"topic.creation.default.replication.factor": "1",
+					"topic.creation.enable":                     "true",
+					"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+					"value.converter.schemas.enable":            "false",
+				},
+				Type:         "source",
+				Topic:        "httpbin-input",
+				State:        connectorStateRunning,
+				Status:       connectorStatusDegraded,
+				TotalTasks:   3,
+				RunningTasks: 2,
+				Trace:        "",
+				Errors: []ClusterConnectorInfoError{
+					{
+						Type:    connectorErrorTypeError,
+						Title:   "connector http-source-connector-wtue is in degraded state",
+						Content: "connector is in running state but has failed tasks",
+					},
+					{
+						Type:    connectorErrorTypeError,
+						Title:   "Connector http-source-connector-wtue Task 1 is in failed state",
+						Content: "Connector http-source-connector-wtue Task 1 is in failed state",
+					},
+				},
+				Tasks: []ClusterConnectorTaskInfo{
+					{
+						TaskID:   0,
+						State:    connectorStateRunning,
+						WorkerID: "172.21.0.5:8083",
+					},
+					{
+						TaskID:   1,
+						State:    connectorStateFailed,
+						WorkerID: "172.21.0.5:8083",
+					},
+					{
+						TaskID:   2,
+						State:    connectorStateRunning,
+						WorkerID: "172.21.0.5:8083",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := connectorsResponseToClusterConnectorInfo(tc.input)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}

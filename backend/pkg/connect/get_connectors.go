@@ -79,7 +79,7 @@ type ClusterConnectorInfo struct {
 	TotalTasks   int                         `json:"totalTasks"`
 	RunningTasks int                         `json:"runningTasks"`
 	Trace        string                      `json:"trace,omitempty"`
-	Errors       []ClusterConnectorInfoError `json:"errors"`
+	Errors       []ClusterConnectorInfoError `json:"errors,omitempty"`
 	Tasks        []ClusterConnectorTaskInfo  `json:"tasks"`
 }
 
@@ -257,94 +257,117 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 
 	connectorInfo := make([]ClusterConnectorInfo, 0, len(l))
 	for _, c := range l {
-		tasks := make([]ClusterConnectorTaskInfo, len(c.Status.Tasks))
-		connectorTaskErrors := make([]ClusterConnectorInfoError, 0, len(c.Status.Tasks))
-
-		runningTasks := 0
-		failedTasks := 0
-		pausedTasks := 0
-		restartingTasks := 0
-		for i, task := range c.Status.Tasks {
-			tasks[i] = ClusterConnectorTaskInfo{
-				TaskID:   task.ID,
-				State:    task.State,
-				WorkerID: task.WorkerID,
-				Trace:    task.Trace,
-			}
-
-			switch task.State {
-			case connectorStateRunning:
-				runningTasks++
-			case connectorStateFailed:
-				failedTasks++
-
-				errTitle := fmt.Sprintf("Connector %s Task %d is in failed state", c.Info.Name, task.ID)
-				connectorTaskErrors = append(connectorTaskErrors, ClusterConnectorInfoError{
-					Type:    connectorErrorTypeError,
-					Title:   errTitle,
-					Content: errorContentFromTrace(errTitle, task.Trace),
-				})
-			case connectorStatePaused:
-				pausedTasks++
-			case connectorStateRestarting:
-				restartingTasks++
-			}
-		}
-
-		// See const definitions for rules
-		var connStatus connectorStatus
-		//nolint:gocritic // this if else is easier to read as they map to rules specified above
-		if (c.Status.Connector.State == connectorStateRunning) && (runningTasks == len(c.Status.Tasks)) {
-			connStatus = connectorStatusHealthy
-		} else if c.Status.Connector.State == connectorStateFailed {
-			connStatus = connectorStatusUnhealthy
-		} else if (c.Status.Connector.State == connectorStateRunning) && (len(c.Status.Tasks) == 0 || (failedTasks > 0)) {
-			connStatus = connectorStatusDegraded
-		} else if (c.Status.Connector.State == connectorStatePaused) || (len(c.Status.Tasks) > 0 && (pausedTasks > 0)) {
-			connStatus = connectorStatusPaused
-		} else if (c.Status.Connector.State == connectorStateRestarting) || (len(c.Status.Tasks) > 0 && (restartingTasks > 0)) {
-			connStatus = connectorStatusRestarting
-		}
-
-		connectorErrors := make([]ClusterConnectorInfoError, 0)
-		if c.Status.Connector.State == connectorStateFailed {
-			errTitle := "connector " + c.Info.Name + " is in failed state"
-			connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
-				Type:    connectorErrorTypeError,
-				Title:   errTitle,
-				Content: errorContentFromTrace(errTitle, c.Status.Connector.Trace),
-			})
-		} else if len(c.Status.Connector.Trace) > 0 {
-			errTitle := "connector " + c.Info.Name + " has an error"
-			connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
-				Type:    connectorErrorTypeError,
-				Title:   errTitle,
-				Content: errorContentFromTrace(errTitle, c.Status.Connector.Trace),
-			})
-		}
-
-		connectorErrors = append(connectorErrors, connectorTaskErrors...)
-
-		connectorInfo = append(connectorInfo, ClusterConnectorInfo{
-			Name:         c.Info.Name,
-			Class:        getMapValueOrString(c.Info.Config, "connector.class", "unknown"),
-			Topic:        getMapValueOrString(c.Info.Config, "kafka.topic", "unknown"),
-			Config:       c.Info.Config,
-			Type:         c.Info.Type,
-			State:        c.Status.Connector.State,
-			Status:       connStatus,
-			Tasks:        tasks,
-			Trace:        c.Status.Connector.Trace,
-			Errors:       connectorErrors,
-			TotalTasks:   len(c.Status.Tasks),
-			RunningTasks: runningTasks,
-		})
+		cInfo := connectorsResponseToClusterConnectorInfo(&c)
+		connectorInfo = append(connectorInfo, *cInfo)
 	}
 
 	return connectorInfo
 }
 
-func errorContentFromTrace(defaultValue, trace string) string {
+func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
+	tasks := make([]ClusterConnectorTaskInfo, len(c.Status.Tasks))
+	connectorTaskErrors := make([]ClusterConnectorInfoError, 0, len(c.Status.Tasks))
+
+	runningTasks := 0
+	failedTasks := 0
+	pausedTasks := 0
+	restartingTasks := 0
+	for i, task := range c.Status.Tasks {
+		tasks[i] = ClusterConnectorTaskInfo{
+			TaskID:   task.ID,
+			State:    task.State,
+			WorkerID: task.WorkerID,
+			Trace:    task.Trace,
+		}
+
+		switch task.State {
+		case connectorStateRunning:
+			runningTasks++
+		case connectorStateFailed:
+			failedTasks++
+
+			errTitle := fmt.Sprintf("Connector %s Task %d is in failed state", c.Info.Name, task.ID)
+			connectorTaskErrors = append(connectorTaskErrors, ClusterConnectorInfoError{
+				Type:    connectorErrorTypeError,
+				Title:   errTitle,
+				Content: traceToErrorContent(errTitle, task.Trace),
+			})
+		case connectorStatePaused:
+			pausedTasks++
+		case connectorStateRestarting:
+			restartingTasks++
+		}
+	}
+
+	// See const definitions for rules
+	var connStatus connectorStatus
+	var errDetailedContent string
+	//nolint:gocritic // this if else is easier to read as they map to rules specified above
+	if (c.Status.Connector.State == connectorStateRunning) && runningTasks > 0 && (runningTasks == len(c.Status.Tasks)) {
+		connStatus = connectorStatusHealthy
+	} else if c.Status.Connector.State == connectorStateFailed {
+		connStatus = connectorStatusUnhealthy
+	} else if (c.Status.Connector.State == connectorStateRunning) && (len(c.Status.Tasks) == 0 || (failedTasks > 0)) {
+		connStatus = connectorStatusDegraded
+		if len(c.Status.Tasks) == 0 {
+			errDetailedContent = "connector is in running state but has no tasks"
+		} else if failedTasks > 0 {
+			errDetailedContent = "connector is in running state but has failed tasks"
+		}
+	} else if (c.Status.Connector.State == connectorStatePaused) || (len(c.Status.Tasks) > 0 && (pausedTasks > 0)) {
+		connStatus = connectorStatusPaused
+	} else if (c.Status.Connector.State == connectorStateRestarting) || (len(c.Status.Tasks) > 0 && (restartingTasks > 0)) {
+		connStatus = connectorStatusRestarting
+	}
+
+	connectorErrors := make([]ClusterConnectorInfoError, 0)
+	if connStatus == connectorStatusUnhealthy ||
+		connStatus == connectorStatusDegraded {
+		stateStr := "unhealthy"
+		if connStatus == connectorStatusDegraded {
+			stateStr = "degraded"
+		}
+
+		errTitle := "connector " + c.Info.Name + " is in " + stateStr + " state"
+
+		defaultContent := errTitle
+		if errDetailedContent != "" {
+			defaultContent = errDetailedContent
+		}
+
+		connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
+			Type:    connectorErrorTypeError,
+			Title:   errTitle,
+			Content: traceToErrorContent(defaultContent, c.Status.Connector.Trace),
+		})
+	} else if len(c.Status.Connector.Trace) > 0 {
+		errTitle := "connector " + c.Info.Name + " has an error"
+		connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
+			Type:    connectorErrorTypeError,
+			Title:   errTitle,
+			Content: traceToErrorContent(errTitle, c.Status.Connector.Trace),
+		})
+	}
+
+	connectorErrors = append(connectorErrors, connectorTaskErrors...)
+
+	return &ClusterConnectorInfo{
+		Name:         c.Info.Name,
+		Class:        getMapValueOrString(c.Info.Config, "connector.class", "unknown"),
+		Topic:        getMapValueOrString(c.Info.Config, "kafka.topic", "unknown"),
+		Config:       c.Info.Config,
+		Type:         c.Info.Type,
+		State:        c.Status.Connector.State,
+		Status:       connStatus,
+		Tasks:        tasks,
+		Trace:        c.Status.Connector.Trace,
+		Errors:       connectorErrors,
+		TotalTasks:   len(c.Status.Tasks),
+		RunningTasks: runningTasks,
+	}
+}
+
+func traceToErrorContent(defaultValue, trace string) string {
 	content := ""
 
 	if len(trace) > 0 {
