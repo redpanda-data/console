@@ -249,7 +249,6 @@ func (s *Service) GetConnector(ctx context.Context, clusterName string, connecto
 	}, nil
 }
 
-//nolint:gocognit,cyclop // lots of inspection of state and tasks to determine status and errors
 func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnectorsResponseExpanded) []ClusterConnectorInfo {
 	if l == nil {
 		return []ClusterConnectorInfo{}
@@ -257,6 +256,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 
 	connectorInfo := make([]ClusterConnectorInfo, 0, len(l))
 	for _, c := range l {
+		c := c
 		cInfo := connectorsResponseToClusterConnectorInfo(&c)
 		connectorInfo = append(connectorInfo, *cInfo)
 	}
@@ -264,6 +264,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 	return connectorInfo
 }
 
+//nolint:gocognit,cyclop // lots of inspection of state and tasks to determine status and errors
 func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
 	tasks := make([]ClusterConnectorTaskInfo, len(c.Status.Tasks))
 	connectorTaskErrors := make([]ClusterConnectorInfoError, 0, len(c.Status.Tasks))
