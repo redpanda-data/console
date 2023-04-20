@@ -373,6 +373,9 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	}
 }
 
+// traceToErrorContent takes two parameters: a defaultValue string and a trace string.
+// It returns a error message optimized for humans that is the sanitized trace line or the
+// provided default value if no trace line is found.
 func traceToErrorContent(defaultValue, trace string) string {
 	if trace == "" {
 		return defaultValue
