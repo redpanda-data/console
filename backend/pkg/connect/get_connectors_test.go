@@ -18,7 +18,7 @@ func Test_traceToErrorContent(t *testing.T) {
 	tests := []test{
 		{
 			name:         "empty trace",
-			initialValue: "connector 0 error",
+			initialValue: "connector 0 error.",
 			trace:        "",
 			expected:     "connector 0 error.",
 		},
@@ -262,7 +262,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 				Errors: []ClusterConnectorInfoError{
 					{
 						Type:    connectorErrorTypeError,
-						Title:   "Connector http-source-connector-wtue is in unhealthy state",
+						Title:   "Connector http-source-connector-wtue is in unhealthy state.",
 						Content: "Connector is in running state but has no tasks.",
 					},
 				},
@@ -364,12 +364,12 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 				Errors: []ClusterConnectorInfoError{
 					{
 						Type:    connectorErrorTypeError,
-						Title:   "Connector http-source-connector-wtue is in unhealthy state",
+						Title:   "Connector http-source-connector-wtue is in unhealthy state.",
 						Content: "Connector is in running state but has failed tasks.",
 					},
 					{
 						Type:    connectorErrorTypeError,
-						Title:   "Connector http-source-connector-wtue Task 1 is in failed state",
+						Title:   "Connector http-source-connector-wtue Task 1 is in failed state.",
 						Content: "Connector http-source-connector-wtue Task 1 is in failed state.",
 					},
 				},
@@ -466,7 +466,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 				Errors: []ClusterConnectorInfoError{
 					{
 						Type:    connectorErrorTypeError,
-						Title:   "Connector http-source-connector-wtue is in unhealthy state",
+						Title:   "Connector http-source-connector-wtue is in unhealthy state.",
 						Content: "Connector is in paused state but has no tasks.",
 					},
 				},
@@ -568,12 +568,12 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 				Errors: []ClusterConnectorInfoError{
 					{
 						Type:    connectorErrorTypeError,
-						Title:   "Connector http-source-connector-wtue is in unhealthy state",
+						Title:   "Connector http-source-connector-wtue is in unhealthy state.",
 						Content: "Connector is in paused state but has failed tasks.",
 					},
 					{
 						Type:    connectorErrorTypeError,
-						Title:   "Connector http-source-connector-wtue Task 1 is in failed state",
+						Title:   "Connector http-source-connector-wtue Task 1 is in failed state.",
 						Content: "Connector http-source-connector-wtue Task 1 is in failed state.",
 					},
 				},
@@ -691,7 +691,7 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 				Errors: []ClusterConnectorInfoError{
 					{
 						Type:    connectorErrorTypeError,
-						Title:   "Connector http-source-connector-wtue is in degraded state",
+						Title:   "Connector http-source-connector-wtue is in degraded state.",
 						Content: "Connector is in paused state but not all tasks are in the same state.",
 					},
 				},

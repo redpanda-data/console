@@ -282,7 +282,7 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 		case connectorStateFailed:
 			failedTasks++
 
-			errTitle := fmt.Sprintf("Connector %s Task %d is in failed state", c.Info.Name, task.ID)
+			errTitle := fmt.Sprintf("Connector %s Task %d is in failed state.", c.Info.Name, task.ID)
 			connectorTaskErrors = append(connectorTaskErrors, ClusterConnectorInfoError{
 				Type:    connectorErrorTypeError,
 				Title:   errTitle,
@@ -334,7 +334,7 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 			stateStr = "degraded"
 		}
 
-		errTitle := "Connector " + c.Info.Name + " is in " + stateStr + " state"
+		errTitle := "Connector " + c.Info.Name + " is in " + stateStr + " state."
 
 		defaultContent := errTitle
 		if errDetailedContent != "" {
@@ -374,44 +374,31 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 }
 
 func traceToErrorContent(defaultValue, trace string) string {
-	content := ""
+	if trace == "" {
+		return defaultValue
+	}
 
-	if len(trace) > 0 {
-		lines := strings.Split(trace, "\n")
-
-		filtered := make([]string, 0, len(lines))
-
-		for _, l := range lines {
-			l := strings.Trim(l, "\t")
-			if !strings.HasSuffix(l, "exception") && !strings.HasSuffix(l, ")") {
-				filtered = append(filtered, l)
-			}
-		}
-
-		if len(filtered) > 0 {
-			// some lines have 'caused by' prefix which has description
-			for _, l := range filtered {
-				if strings.HasPrefix(strings.ToLower(l), "caused by") {
-					content = sanitizeTraceLine(l)
-				}
-			}
-
-			if content == "" {
-				content = sanitizeTraceLine(filtered[0])
-			}
+	lines := strings.Split(trace, "\n")
+	filtered := make([]string, 0, len(lines))
+	for _, l := range lines {
+		l := strings.Trim(l, "\t")
+		if !strings.HasSuffix(l, "exception") && !strings.HasSuffix(l, ")") {
+			filtered = append(filtered, l)
 		}
 	}
 
-	if content == "" {
-		content = defaultValue
+	// some lines have 'caused by' prefix which has description
+	for _, l := range filtered {
+		if strings.HasPrefix(strings.ToLower(l), "caused by") {
+			return sanitizeTraceLine(l)
+		}
 	}
 
-	// add period at end if not present
-	if content[len(content)-1:] != "." {
-		content += "."
+	if len(filtered) > 0 {
+		return sanitizeTraceLine(filtered[0])
 	}
 
-	return content
+	return defaultValue
 }
 
 func sanitizeTraceLine(l string) string {
