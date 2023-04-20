@@ -38,15 +38,10 @@ const (
 type connectorStatus = string
 
 const (
-	// Connector is in "running" state, >0 tasks, all of them running state
-	connectorStatusHealthy connectorStatus = "HEALTHY"
-	// Connector is "error" state
-	connectorStatusUnhealthy connectorStatus = "UNHEALTHY"
-	// Connector is "running" state, 0 tasks OR at least one task in failed state
-	connectorStatusDegraded connectorStatus = "DEGRADED"
-	// Connector is in "paused" state, or at least one task is in paused state
-	connectorStatusPaused connectorStatus = "PAUSED"
-	// Connector is in "restarting" state or at least one task is in restarting state
+	connectorStatusHealthy    connectorStatus = "HEALTHY"
+	connectorStatusUnhealthy  connectorStatus = "UNHEALTHY"
+	connectorStatusDegraded   connectorStatus = "DEGRADED"
+	connectorStatusPaused     connectorStatus = "PAUSED"
 	connectorStatusRestarting connectorStatus = "RESTARTING"
 )
 
@@ -79,7 +74,7 @@ type ClusterConnectorInfo struct {
 	TotalTasks   int                         `json:"totalTasks"`
 	RunningTasks int                         `json:"runningTasks"`
 	Trace        string                      `json:"trace,omitempty"`
-	Errors       []ClusterConnectorInfoError `json:"errors,omitempty"`
+	Errors       []ClusterConnectorInfoError `json:"errors"`
 	Tasks        []ClusterConnectorTaskInfo  `json:"tasks"`
 }
 
@@ -264,7 +259,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 	return connectorInfo
 }
 
-//nolint:gocognit,cyclop // lots of inspection of state and tasks to determine status and errors
+//nolint:gocognit,cyclop,gocyclo // lots of inspection of state and tasks to determine status and errors
 func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
 	tasks := make([]ClusterConnectorTaskInfo, len(c.Status.Tasks))
 	connectorTaskErrors := make([]ClusterConnectorInfoError, 0, len(c.Status.Tasks))
@@ -300,24 +295,34 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 		}
 	}
 
-	// See const definitions for rules
+	// LOGIC:
+	// HEALTHY: Connector is in "running" state, >0 tasks, all of them running state.
+	// UNHEALTHY: Connector is "error" state.
+	//			Or Connector is in running state but has 0 tasks or > 0 failed tasks.
+	// 			Or Connector is in paused state but has 0 tasks or > 0 failed tasks.
+	// DEGRADED: Connector has >0 tasks, is in "paused" state, but not all tasks are in paused state.
+	// PAUSED: Connector is in paused state, and all tasks are in paused state.
+	// RESTARTING: Connector is in "restarting" state or at least one task is in restarting state.
 	var connStatus connectorStatus
 	var errDetailedContent string
-	//nolint:gocritic // this if else is easier to read as they map to rules specified above
+	//nolint:gocritic // this if else is easier to read as they map to rules and logic specified above.
 	if (c.Status.Connector.State == connectorStateRunning) && runningTasks > 0 && (runningTasks == len(c.Status.Tasks)) {
 		connStatus = connectorStatusHealthy
-	} else if c.Status.Connector.State == connectorStateFailed {
+	} else if (c.Status.Connector.State == connectorStateFailed) ||
+		((c.Status.Connector.State == connectorStateRunning) && (len(c.Status.Tasks) == 0 || (failedTasks > 0))) ||
+		((c.Status.Connector.State == connectorStatePaused) && (len(c.Status.Tasks) == 0 || (failedTasks > 0))) {
 		connStatus = connectorStatusUnhealthy
-	} else if (c.Status.Connector.State == connectorStateRunning) && (len(c.Status.Tasks) == 0 || (failedTasks > 0)) {
-		connStatus = connectorStatusDegraded
 		if len(c.Status.Tasks) == 0 {
-			errDetailedContent = "connector is in running state but has no tasks"
+			errDetailedContent = "Connector is in " + strings.ToLower(c.Status.Connector.State) + " state but has no tasks."
 		} else if failedTasks > 0 {
-			errDetailedContent = "connector is in running state but has failed tasks"
+			errDetailedContent = "Connector is in " + strings.ToLower(c.Status.Connector.State) + " state but has failed tasks."
 		}
-	} else if (c.Status.Connector.State == connectorStatePaused) || (len(c.Status.Tasks) > 0 && (pausedTasks > 0)) {
+	} else if (len(c.Status.Tasks) > 0) && (c.Status.Connector.State == connectorStatePaused) && (pausedTasks != len(c.Status.Tasks)) {
+		connStatus = connectorStatusDegraded
+		errDetailedContent = "Connector is in " + strings.ToLower(c.Status.Connector.State) + " state but not all tasks are in the same state."
+	} else if (c.Status.Connector.State == connectorStatePaused) && (len(c.Status.Tasks) > 0 && (pausedTasks == len(c.Status.Tasks))) {
 		connStatus = connectorStatusPaused
-	} else if (c.Status.Connector.State == connectorStateRestarting) || (len(c.Status.Tasks) > 0 && (restartingTasks > 0)) {
+	} else if (c.Status.Connector.State == connectorStateRestarting) && (len(c.Status.Tasks) > 0 && (restartingTasks > 0)) {
 		connStatus = connectorStatusRestarting
 	}
 
@@ -329,7 +334,7 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 			stateStr = "degraded"
 		}
 
-		errTitle := "connector " + c.Info.Name + " is in " + stateStr + " state"
+		errTitle := "Connector " + c.Info.Name + " is in " + stateStr + " state"
 
 		defaultContent := errTitle
 		if errDetailedContent != "" {
@@ -342,7 +347,7 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 			Content: traceToErrorContent(defaultContent, c.Status.Connector.Trace),
 		})
 	} else if len(c.Status.Connector.Trace) > 0 {
-		errTitle := "connector " + c.Info.Name + " has an error"
+		errTitle := "Connector " + c.Info.Name + " has an error"
 		connectorErrors = append(connectorErrors, ClusterConnectorInfoError{
 			Type:    connectorErrorTypeError,
 			Title:   errTitle,
@@ -399,6 +404,11 @@ func traceToErrorContent(defaultValue, trace string) string {
 
 	if content == "" {
 		content = defaultValue
+	}
+
+	// add period at end if not present
+	if content[len(content)-1:] != "." {
+		content += "."
 	}
 
 	return content
