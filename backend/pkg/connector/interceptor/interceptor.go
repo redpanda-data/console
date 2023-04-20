@@ -91,6 +91,9 @@ func CommunityGuides(opts ...guide.Option) []guide.Guide {
 		guide.NewMongoSourceGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMongoDBHook),
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMongoDBHook),
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
+		guide.NewMongoSinkGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectMongoDBHook),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleMongoDBHook),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
 	}
 }
 

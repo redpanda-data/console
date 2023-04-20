@@ -11,26 +11,18 @@ package guide
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
-// NewMongoSourceGuide returns a new guide for MongoSourceConnector.
-func NewMongoSourceGuide(opts ...Option) Guide {
+// NewMongoSinkGuide returns a new guide for MongoSinkConnector.
+func NewMongoSinkGuide(opts ...Option) Guide {
 	var o Options
 	for _, opt := range opts {
 		opt(&o)
 	}
 
 	return &WizardGuide{
-		className: "com.mongodb.kafka.connect.MongoSourceConnector",
+		className: "com.mongodb.kafka.connect.MongoSinkConnector",
 		options:   o,
 		wizardSteps: []model.ValidationResponseStep{
-			{
-				Name: "Topic prefix",
-				Groups: []model.ValidationResponseStepGroup{
-					{
-						// No Group name and description here
-						ConfigKeys: []string{"topic.prefix"},
-					},
-				},
-			},
+			topicsToExport(),
 
 			{
 				Name: "Connection",
@@ -57,17 +49,24 @@ func NewMongoSourceGuide(opts ...Option) Guide {
 							"key.converter.schemas.enable",
 							"value.converter",
 							"value.converter.schemas.enable",
-							"output.schema.infer.value",
 							"collection",
-							"startup.mode",
-							"startup.mode.timestamp.start.at.operation.time",
-							"startup.mode.copy.existing.namespace.regex",
-							"startup.mode.copy.existing.pipeline",
-							"pipeline",
-							"change.stream.full.document",
-							"change.stream.full.document.before.change",
-							"publish.full.document.only",
-							"publish.full.document.only.tombstone.on.delete",
+
+							"change.data.capture.handler",
+
+							"key.projection.type",
+							"key.projection.list",
+							"value.projection.type",
+							"value.projection.list",
+
+							"field.renamer.mapping",
+
+							"timeseries.timefield",
+							"timeseries.metafield",
+							"timeseries.timefield.auto.convert",
+							"timeseries.timefield.auto.convert.date.format",
+							"timeseries.expire.after.seconds",
+							"timeseries.granularity",
+
 							"mongo.errors.tolerance",
 						},
 					},

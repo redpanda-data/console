@@ -56,7 +56,11 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 	case "connection.uri":
 		d.SetDefaultValue("mongodb://")
 	case keyConverter, valueConverter:
-		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
+		converterType, _, _ := strings.Cut(d.Definition.Name, ".")
+		d.SetDefaultValue("org.apache.kafka.connect.storage.StringConverter")
+		if strings.HasSuffix(connectorClass, "SourceConnector") {
+			d.SetDocumentation("Format of the " + converterType + " in the Kafka topic. Use AVRO or JSON for schematic output, STRING for plain JSON or BYTES for BSON")
+		}
 	case "output.schema.infer.value":
 		d.SetDocumentation("Infer the schema for the value. Each Document will be processed in isolation, which may lead to multiple schema definitions for the data. Only applied when Kafka message value format is set to AVRO or JSON.")
 	case "change.stream.full.document",
@@ -68,6 +72,28 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 			AddRecommendedValueWithMetadata("copy_existing", "COPY_EXISTING").
 			SetComponentType(model.ComponentRadioGroup).
 			SetDefaultValue("latest")
+	case "key.projection.type",
+		"value.projection.type":
+		d.AddRecommendedValueWithMetadata("none", "NONE").
+			AddRecommendedValueWithMetadata("allowlist", "ALLOWLIST").
+			AddRecommendedValueWithMetadata("blocklist", "BLOCKLIST").
+			SetComponentType(model.ComponentRadioGroup).
+			SetDefaultValue("none")
+	case "change.data.capture.handler":
+		d.AddRecommendedValueWithMetadata("", "NONE").
+			AddRecommendedValueWithMetadata("com.mongodb.kafka.connect.sink.cdc.mongodb.ChangeStreamHandler", "MongoDB").
+			AddRecommendedValueWithMetadata("com.mongodb.kafka.connect.sink.cdc.debezium.mongodb.MongoDbHandler", "Debezium MongoDB").
+			AddRecommendedValueWithMetadata("com.mongodb.kafka.connect.sink.cdc.debezium.rdbms.postgres.PostgresHandler", "Debezium Postgres").
+			AddRecommendedValueWithMetadata("com.mongodb.kafka.connect.sink.cdc.debezium.rdbms.mysql.MysqlHandler", "Debezium MySQL").
+			AddRecommendedValueWithMetadata("com.mongodb.kafka.connect.sink.cdc.qlik.rdbms.RdbmsHandler", "Qlik").
+			SetComponentType(model.ComponentRadioGroup).
+			SetDefaultValue("").
+			SetDocumentation("The CDC handler to use for processing. MongoDB handler requires plain JSON or BSON format.")
+	case "mongo.errors.tolerance":
+		d.AddRecommendedValueWithMetadata("none", "NONE").
+			AddRecommendedValueWithMetadata("all", "ALL").
+			SetComponentType(model.ComponentRadioGroup).
+			SetDocumentation("Behavior for tolerating errors during connector operation. 'NONE' is the default value and signals that any error will result in an immediate connector task failure; 'ALL' changes the behavior to skip over problematic records.")
 	case name:
 		d.SetDefaultValue("mongodb-" + extractType(connectorClass, mongoClassSelectorRegexp) + "-connector-" + strings.ToLower(random.String(4)))
 	}

@@ -17,8 +17,16 @@ var (
 	hasKafkaConnectConfigProvider = configProviderRegex.MatchString
 )
 
-// ConsoleToKafkaConnectMongoDBHook sets connection authentication and output format properties
+// ConsoleToKafkaConnectMongoDBHook sets connection authentication, output format properties and post processor chain
 func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
+	setConnectionURI(config)
+	setFormatOutputStream(config)
+	setPostProcessorChain(config)
+
+	return config
+}
+
+func setConnectionURI(config map[string]any) {
 	_, exists := config["connection.uri"]
 	if !exists {
 		config["connection.uri"] = "mongodb://"
@@ -45,7 +53,9 @@ func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 			}
 		}
 	}
+}
 
+func setFormatOutputStream(config map[string]any) {
 	for _, field := range []string{"key", "value"} {
 		if config["output.format."+field] == nil {
 			switch config[field+".converter"] {
@@ -59,8 +69,45 @@ func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 			}
 		}
 	}
+}
 
-	return config
+func setPostProcessorChain(config map[string]any) {
+	var postProcessorChain string
+	if config["post.processor.chain"] != nil {
+		postProcessorChain = config["post.processor.chain"].(string)
+	} else {
+		postProcessorChain = "com.mongodb.kafka.connect.sink.processor.DocumentIdAdder"
+	}
+
+	switch config["key.projection.type"] {
+	case "allowlist":
+		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.AllowListKeyProjector") {
+			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.AllowListKeyProjector"
+		}
+	case "blocklist":
+		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.BlockListKeyProjector") {
+			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.BlockListKeyProjector"
+		}
+	}
+
+	switch config["value.projection.type"] {
+	case "allowlist":
+		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.AllowListValueProjector") {
+			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.AllowListValueProjector"
+		}
+	case "blocklist":
+		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.BlockListValueProjector") {
+			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.BlockListValueProjector"
+		}
+	}
+
+	if config["field.renamer.mapping"] != nil && config["field.renamer.mapping"] != "[]" {
+		if !strings.Contains(postProcessorChain, "com.mongodb.kafka.connect.sink.processor.field.renaming.RenameByMapping") {
+			postProcessorChain += ",com.mongodb.kafka.connect.sink.processor.field.renaming.RenameByMapping"
+		}
+	}
+
+	config["post.processor.chain"] = postProcessorChain
 }
 
 // KafkaConnectToConsoleMongoDBHook adds connection fields: URL, username and password
