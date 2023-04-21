@@ -59,6 +59,13 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 		d.SetDefaultValue("true")
 	case "slot.drop.on.stop", "include.unknown.datatypes":
 		d.SetDefaultValue("false")
+	case "database.sslmode":
+		d.SetDocumentation("Whether to use an encrypted connection to the PostgreSQL server. 'disable' uses an unencrypted connection. 'require' uses a secure (encrypted) connection, and fails if one cannot be established.").
+			SetComponentType(model.ComponentRadioGroup).
+			ClearRecommendedValuesWithMetadata().
+			AddRecommendedValueWithMetadata("disable", "disable").
+			AddRecommendedValueWithMetadata("require", "require").
+			SetDefaultValue("disable")
 	case "table.ignore.builtin", "provide.transaction.metadata":
 		d.SetVisible(false)
 	// Below properties will be grouped into "Error Handling"
@@ -78,7 +85,7 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 
 	// Importance Patches
 	switch d.Definition.Name {
-	case "database.dbname":
+	case "database.dbname", "database.sslmode":
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	case "schema.include.list",
 		tableIncludeList:
