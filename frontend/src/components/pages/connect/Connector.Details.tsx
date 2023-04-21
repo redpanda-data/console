@@ -16,7 +16,7 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { ClusterConnectorInfo, PropertyImportance } from '../../../state/restInterfaces';
+import { ClusterConnectorInfo, DataType, PropertyImportance } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { Code, findPopupContainer } from '../../../utils/tsxUtils';
 import { sortField } from '../../misc/common';
@@ -31,6 +31,7 @@ import { delay } from '../../../utils/utils';
 import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@redpanda-data/ui';
 import Section from '../../misc/Section';
 import React from 'react';
+import { getConnectorFriendlyName } from './ConnectorBoxCard';
 
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
@@ -87,6 +88,11 @@ const KafkaConnectorMain = observer(
                 <span style={{ fontSize: 'x-large', fontWeight: 600 }}>
                     {connectorName}
                 </span>
+                <Box display="inline" fontSize="13px" opacity="0.8" backgroundColor="#0001" padding=".2em .8em" borderRadius="100px">
+                    {connector.type == 'source' ? 'Import from' : 'Export to'}
+                    {' '}
+                    {getConnectorFriendlyName(connector.class)}
+                </Box>
             </Flex>
 
             {/* [Pause] [Restart] [Delete] */}
@@ -381,7 +387,7 @@ org.apache.kafka.common.config.ConfigException: Cannot connect to 'c' S3 bucket 
                 </Flex>
             </Section>
 
-            <Section py={4} gridArea="tasks">
+            <Section py={4} gridArea="tasks" minWidth="500px">
                 <Flex alignItems="center" mt="2" mb="6" gap="2">
                     <Heading as="h3" fontSize="1rem" fontWeight="semibold" textTransform="uppercase" color="blackAlpha.800">
                         Tasks
@@ -433,14 +439,7 @@ org.apache.kafka.common.config.ConfigException: Cannot connect to 'c' S3 bucket 
                     Connector Details
                 </Heading>
 
-                <ConnectorDetails config={[
-                    { name: 'Type', value: 'Name of type', importance: PropertyImportance.High, isSensitive: false },
-                    { name: 'Topics', value: 'a,b,c,d,e', importance: PropertyImportance.High, isSensitive: false },
-                    { name: 'Bucket name', value: 'example!', importance: PropertyImportance.High, isSensitive: false },
-                    { name: 'Bucket region', value: 'us-east-1', importance: PropertyImportance.High, isSensitive: false },
-                    { name: 'Key format', value: 'AVRO', importance: PropertyImportance.High, isSensitive: false },
-                    { name: 'Max tasks', value: '5', importance: PropertyImportance.High, isSensitive: false },
-                ]} />
+                <ConnectorDetails clusterName={p.clusterName} connectClusterStore={connectClusterStore} connector={connector} />
             </Section>
         </Grid>
 
@@ -505,38 +504,62 @@ const ViewConfigModalButton = (p: { connector: ClusterConnectorInfo }) => {
     </>
 };
 
-interface PlaceholderConfigEntry {
-    name: string;
-    value: string;
-    importance: PropertyImportance;
-    isSensitive: boolean;
-}
+const ConnectorDetails = observer((p: {
+    clusterName: string,
+    connectClusterStore: ConnectClusterStore,
+    connector: ClusterConnectorInfo,
+}) => {
+    const store = p.connectClusterStore.getConnectorStore(p.connector.name);
 
-function ConnectorDetails(p: { config: PlaceholderConfigEntry[] }) {
-    const { config } = p;
+    const allProps = [...store.propsByName.values()];
 
-    const items = config
-        .filter(x => !x.isSensitive && x.importance == PropertyImportance.High)
+    const items = allProps
+        .filter(x => {
+            if (x.isHidden) return false;
+            if (x.entry.definition.type == DataType.Password) return false;
+            if (x.entry.definition.importance != PropertyImportance.High) return false;
+
+            if (!x.value) return false;
+            if (x.name == 'name') return false;
+
+            return true;
+        })
         .orderBy(x => {
-            const name = x.name;
-            switch (name) {
-                case 'type':
-                    return -2;
-                case 'topics':
-                case 'topics.regex':
-                    return -1;
+            let i = 0;
+            for (const s of store.connectorStepDefinitions)
+                for (const g of s.groups)
+                    for (const p of g.config_keys) {
+                        if (p == x.name)
+                            return i;
+                        i++
+                    }
 
-                default:
-                    return 100;
-            }
+            return 0;
         });
 
+    const displayEntries = items.map(e => {
+        const r = {
+            name: e.entry.definition.display_name,
+            value: String(e.value)
+        };
+
+        // Try to undo mapping
+        if (e.entry.metadata.recommended_values?.length) {
+            const match = e.entry.metadata.recommended_values.find(x => x.value == e.value);
+            if (match) {
+                r.value = String(match.display_name);
+            }
+        }
+
+        return r;
+    });
+
     return <Grid templateColumns="auto 1fr" rowGap="3" columnGap="10">
-        {items.map(x =>
+        {displayEntries.map(x =>
             <React.Fragment key={x.name}>
                 <Text fontWeight="semibold" whiteSpace="nowrap">{x.name}</Text>
-                <Text>{x.value}</Text>
+                <Text whiteSpace="nowrap" textOverflow="ellipsis" overflow="hidden">{x.value}</Text>
             </React.Fragment>
         )}
     </Grid>
-}
+});
