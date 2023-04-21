@@ -43,6 +43,7 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 							"database.user",
 							"database.password",
 							"database.dbname",
+							"database.sslmode",
 							"plugin.name",
 							"database.tcpKeepAlive",
 						},
