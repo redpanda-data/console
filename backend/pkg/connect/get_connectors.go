@@ -259,7 +259,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 	return connectorInfo
 }
 
-//nolint:gocognit,cyclop // lots of inspection of state and tasks to determine status and errors
+//nolint:gocognit,cyclop,gocyclo // lots of inspection of state and tasks to determine status and errors
 func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
 	totalTasks := len(c.Status.Tasks)
 	tasks := make([]ClusterConnectorTaskInfo, totalTasks)
@@ -313,16 +313,19 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	} else if (c.Status.Connector.State == connectorStateFailed) ||
 		((c.Status.Connector.State == connectorStateRunning) && (totalTasks == 0 || totalTasks == failedTasks)) {
 		connStatus = connectorStatusUnhealthy
-		if totalTasks == 0 {
-			errDetailedContent = "Connector is in " + strings.ToLower(c.Status.Connector.State) + " state but has no tasks."
+
+		if c.Status.Connector.State == connectorStateFailed {
+			errDetailedContent = "Connector " + c.Info.Name + " is in failed state."
+		} else if totalTasks == 0 {
+			errDetailedContent = "Connector " + c.Info.Name + " is in " + strings.ToLower(c.Status.Connector.State) + " state but has no tasks."
 		} else if totalTasks == failedTasks {
-			errDetailedContent = "Connector is in " + strings.ToLower(c.Status.Connector.State) + " state but all tasks are in failed state."
+			errDetailedContent = "Connector " + c.Info.Name + " is in " + strings.ToLower(c.Status.Connector.State) + " state. All tasks are in failed state."
 		}
 	} else if (c.Status.Connector.State == connectorStateRunning) &&
 		(totalTasks > 0 && failedTasks > 0 && failedTasks < totalTasks) {
 		connStatus = connectorStatusDegraded
-		errDetailedContent = fmt.Sprintf("Connector is in %s state but has %d / %d failed tasks.",
-			strings.ToLower(c.Status.Connector.State), failedTasks, totalTasks)
+		errDetailedContent = fmt.Sprintf("Connector %s is in %s state but has %d / %d failed tasks.",
+			c.Info.Name, strings.ToLower(c.Status.Connector.State), failedTasks, totalTasks)
 	} else if (c.Status.Connector.State == connectorStatePaused) &&
 		(totalTasks > 0 && pausedTasks == totalTasks) {
 		connStatus = connectorStatusPaused
