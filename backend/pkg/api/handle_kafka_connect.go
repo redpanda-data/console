@@ -220,6 +220,14 @@ func (api *API) handlePutConnectorConfig() http.HandlerFunc {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
 		}
+
+		// restart the instance and all the tasks
+		restErr = api.ConnectSvc.RestartConnector(r.Context(), clusterName, connectorName, true)
+		if restErr != nil {
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, cInfo)
 	}
 }
@@ -441,7 +449,7 @@ func (api *API) handleRestartConnector() http.HandlerFunc {
 			return
 		}
 
-		restErr = api.ConnectSvc.RestartConnector(ctx, clusterName, connector)
+		restErr = api.ConnectSvc.RestartConnector(ctx, clusterName, connector, true)
 		if restErr != nil {
 			rest.SendRESTError(w, r, api.Logger, restErr)
 			return
