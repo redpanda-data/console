@@ -27,9 +27,12 @@ func ConsoleToKafkaConnectMongoDBHook(config map[string]any) map[string]any {
 }
 
 func setConnectionURI(config map[string]any) {
-	_, exists := config["connection.uri"]
-	if !exists {
-		config["connection.uri"] = "mongodb://"
+	if _, exists := config["connection.uri"]; !exists {
+		if _, exists := config["connection.url"]; exists {
+			config["connection.uri"] = config["connection.url"]
+		} else {
+			config["connection.uri"] = "mongodb://"
+		}
 	}
 
 	if config["connection.username"] != nil && config["connection.password"] != nil && config["connection.url"] != nil {
