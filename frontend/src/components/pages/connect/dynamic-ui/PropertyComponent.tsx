@@ -17,7 +17,7 @@ import { findPopupContainer } from '../../../../utils/tsxUtils';
 import { Property } from '../../../../state/connect/state';
 import { CommaSeparatedStringList } from './List';
 import { SecretInput } from './forms/SecretInput';
-import { Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
+import { Box, Input, NumberInput, RadioGroup, Switch } from '@redpanda-data/ui';
 import { ErrorWrapper } from './forms/ErrorWrapper';
 
 export const PropertyComponent = observer((props: { property: Property }) => {
@@ -124,7 +124,7 @@ export const PropertyComponent = observer((props: { property: Property }) => {
 
     inputComp = <ErrorWrapper property={p} input={inputComp} />;
     // Wrap name and input element
-    return <div className={inputSizeToClass[def.width]} style={{ marginTop: '1rem' }}>{inputComp}</div>;
+    return <Box className={inputSizeToClass[def.width]} mt="6">{inputComp}</Box>;
 });
 
 const inputSizeToClass = {

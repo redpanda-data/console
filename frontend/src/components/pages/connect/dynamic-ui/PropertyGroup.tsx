@@ -99,7 +99,7 @@ export const PropertyGroupComponent = observer((props: {
                                 <PropertyComponent key={p.name} property={p} />
                             ))}
                     </div>
-                    <Divider my={12} />
+                    <Divider my={10} />
                 </Box>
             </>
         );
