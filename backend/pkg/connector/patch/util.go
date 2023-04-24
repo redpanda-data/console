@@ -9,6 +9,11 @@
 
 package patch
 
+import (
+	"regexp"
+	"strings"
+)
+
 var awsRegions = []string{
 	"us-east-1",
 	"us-east-2",
@@ -41,4 +46,11 @@ var awsRegions = []string{
 	"me-central-1",
 	"us-gov-east-1",
 	"us-gov-west-1",
+}
+
+func extractType(connectorClass string, classSelectorRegexp string) string {
+	re := regexp.MustCompile(classSelectorRegexp)
+	match := re.FindStringSubmatch(connectorClass)
+
+	return strings.ToLower(match[1])
 }
