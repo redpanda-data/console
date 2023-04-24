@@ -301,6 +301,7 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	// UNHEALTHY: Connector is failed state.
 	//			Or Connector is in running state but has 0 tasks.
 	// 			Or Connector is in running state, has > 0 tasks, and all tasks are in failed state.
+	// 			Or Connector is in paused state, has > 0 tasks, and all tasks are in failed state.
 	// DEGRADED: Connector is in running state or paused state,
 	// 			 has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
 	// PAUSED: Connector is in paused state, and all tasks are in paused state.
@@ -312,7 +313,8 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 		totalTasks > 0 && runningTasks == totalTasks {
 		connStatus = connectorStatusHealthy
 	} else if (c.Status.Connector.State == connectorStateFailed) ||
-		((c.Status.Connector.State == connectorStateRunning) && (totalTasks == 0 || totalTasks == failedTasks)) {
+		((c.Status.Connector.State == connectorStateRunning || c.Status.Connector.State == connectorStatePaused) &&
+			(totalTasks == 0 || totalTasks == failedTasks)) {
 		connStatus = connectorStatusUnhealthy
 
 		if c.Status.Connector.State == connectorStateFailed {
