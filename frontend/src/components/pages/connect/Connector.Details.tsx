@@ -16,7 +16,7 @@ import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { ClusterConnectorInfo, DataType, PropertyImportance } from '../../../state/restInterfaces';
+import { ClusterConnectorInfo, ConnectorError, DataType, PropertyImportance } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { Code, findPopupContainer } from '../../../utils/tsxUtils';
 import { sortField } from '../../misc/common';
@@ -25,7 +25,7 @@ import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectClusterStore } from '../../../state/connect/state';
 import { ConfigPage } from './dynamic-ui/components';
 import './helper';
-import { ConfirmModal, NotConfigured, TaskState } from './helper';
+import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
 import { delay } from '../../../utils/utils';
 import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@redpanda-data/ui';
@@ -88,15 +88,10 @@ const KafkaConnectorMain = observer(
                 <span style={{ fontSize: 'x-large', fontWeight: 600 }}>
                     {connectorName}
                 </span>
-                <Box display="inline" fontSize="13px" opacity="0.8" backgroundColor="#0001" padding=".2em .8em" borderRadius="100px">
-                    {connector.type == 'source' ? 'Import from' : 'Export to'}
-                    {' '}
-                    {getConnectorFriendlyName(connector.class)}
-                </Box>
             </Flex>
 
             {/* [Pause] [Restart] [Delete] */}
-            <Flex flexDirection="row" alignItems="center" gap="1">
+            <Flex flexDirection="row" alignItems="center" gap="3">
 
                 {/* [View JSON Config] */}
                 <ViewConfigModalButton connector={connector} />
@@ -113,7 +108,7 @@ const KafkaConnectorMain = observer(
                             getPopupContainer={findPopupContainer}
                             overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                         >
-                            <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)}>
+                                <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
                                 {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
                             </Button>
                         </Tooltip>
@@ -124,7 +119,7 @@ const KafkaConnectorMain = observer(
                             getPopupContainer={findPopupContainer}
                             overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                         >
-                            <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)}>
+                                <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
                                 Restart
                             </Button>
                         </Tooltip>
@@ -144,7 +139,7 @@ const KafkaConnectorMain = observer(
                         colorScheme="red"
                         disabled={!canEdit}
                         onClick={() => ($state.deletingConnector = connectorName)}
-                        style={{ marginLeft: '1em', minWidth: '8em' }}
+                        minWidth="32"
                     >
                         Delete
                     </Button>
@@ -165,13 +160,13 @@ const KafkaConnectorMain = observer(
                         key: 'configuration',
                         name: 'Configuration',
                         component: <Box mt="8">
-                            <Box>
+                            <Box maxWidth="800px">
                                 <ConfigPage connectorStore={connectorStore} />
                             </Box>
 
                             {/* Update Config Button */}
                             <div style={{ marginTop: '1em' }}>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
+                                <div style={{ display: 'flex', margin: '1em 0', marginBottom: '1.5em' }}>
                                     <Tooltip
                                         placement="top"
                                         trigger={!canEdit ? 'hover' : 'none'}
@@ -322,10 +317,6 @@ const ConfigOverviewTab = observer((p: {
     const { connectClusterStore, connector } = p;
     const connectorName = connector.name;
 
-    const { isOpen, onOpen, onClose } = useDisclosure();
-
-    const errorTitle = 'Error in connector';
-
     return <>
         <Grid
             templateAreas={`
@@ -337,51 +328,16 @@ const ConfigOverviewTab = observer((p: {
             alignItems="start"
             gap="6"
         >
-            <Box gridArea="errors">
-                <Alert status="error" variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
-                    <AlertIcon />
-                    {errorTitle}
-                    <Button ml="auto" variant="ghost" colorScheme="gray" size="sm" mt="1px">View details</Button>
-                </Alert>
-
-                <RPModal onClose={onClose} size="6xl" isOpen={isOpen}>
-                    <ModalOverlay />
-                    <ModalContent>
-                        <ModalHeader>{errorTitle}</ModalHeader>
-                        <ModalCloseButton />
-                        <ModalBody>
-                            <CodeBlock language="json" codeString={`
-org.apache.kafka.common.config.ConfigException: Cannot connect to 'c' S3 bucket due to: The specified bucket is not valid.
-	at com.redpanda.kafka.connect.s3.config.AwsConfigValidator.validate(AwsConfigValidator.java:57)
-	at com.redpanda.kafka.connect.s3.S3SinkConnector.start(S3SinkConnector.java:71)
-	at org.apache.kafka.connect.runtime.WorkerConnector.doStart(WorkerConnector.java:190)
-	at org.apache.kafka.connect.runtime.WorkerConnector.start(WorkerConnector.java:215)
-	at org.apache.kafka.connect.runtime.WorkerConnector.doTransitionTo(WorkerConnector.java:360)
-	at org.apache.kafka.connect.runtime.WorkerConnector.doTransitionTo(WorkerConnector.java:343)
-	at org.apache.kafka.connect.runtime.WorkerConnector.doRun(WorkerConnector.java:143)
-	at org.apache.kafka.connect.runtime.WorkerConnector.run(WorkerConnector.java:121)
-	at org.apache.kafka.connect.runtime.isolation.Plugins.lambda$withClassLoader$1(Plugins.java:177)
-	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
-	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-	at java.base/java.lang.Thread.run(Thread.java:833)
-                            `} />
-                        </ModalBody>
-                        <ModalFooter>
-                            <Button onClick={onClose}>Close</Button>
-                        </ModalFooter>
-                    </ModalContent>
-                </RPModal>
-
-            </Box>
+            <Flex gridArea="errors" flexDirection="column" gap="2">
+                {connector.errors.map(e => <ConnectorErrorModal key={e.title} error={e} />)}
+            </Flex>
 
             <Section gridArea="health">
                 <Flex flexDirection="row" gap="4" m="1">
-                    <Box width="5px" borderRadius="3px" background="green" />
+                    <Box width="5px" borderRadius="3px" background={statusColors[connector.status]} backgroundColor="gra" />
 
                     <Flex flexDirection="column">
-                        <Text fontWeight="semibold" fontSize="3xl">Running</Text>
+                        <Text fontWeight="semibold" fontSize="3xl">{connector.status}</Text>
                         <Text opacity=".5">Status</Text>
                     </Flex>
                 </Flex>
@@ -446,6 +402,36 @@ org.apache.kafka.common.config.ConfigException: Cannot connect to 'c' S3 bucket 
     </>
 });
 
+const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
+    const { isOpen, onOpen, onClose } = useDisclosure();
+
+    const errorType = p.error.type == 'ERROR'
+        ? 'error'
+        : 'warning';
+
+    return <>
+        <Alert status={errorType} variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
+            <AlertIcon />
+            {p.error.title}
+            <Button ml="auto" variant="ghost" colorScheme="gray" size="sm" mt="1px">View details</Button>
+        </Alert>
+
+        <RPModal onClose={onClose} size="6xl" isOpen={isOpen}>
+            <ModalOverlay />
+            <ModalContent>
+                <ModalHeader>{p.error.title}</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                    <CodeBlock language="json" codeString={p.error.content} />
+                </ModalBody>
+                <ModalFooter>
+                    <Button onClick={onClose}>Close</Button>
+                </ModalFooter>
+            </ModalContent>
+        </RPModal>
+    </>
+});
+
 @observer
 class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connector: string }> {
     initPage(p: PageInitHelper): void {
@@ -499,7 +485,7 @@ const ViewConfigModalButton = (p: { connector: ClusterConnectorInfo }) => {
     </Modal>;
 
     return <>
-        <Button variant="outline" onClick={() => setShowConfig(true)}>View Json Config</Button>
+        <Button variant="outline" onClick={() => setShowConfig(true)}>View JSON Config</Button>
         {viewConfigModal}
     </>
 };
@@ -554,11 +540,18 @@ const ConnectorDetails = observer((p: {
         return r;
     });
 
+    displayEntries.unshift({
+        name: 'Type',
+        value: (p.connector.type == 'source' ? 'Import from' : 'Export to')
+            + ' '
+            + getConnectorFriendlyName(p.connector.class)
+    });
+
     return <Grid templateColumns="auto 1fr" rowGap="3" columnGap="10">
         {displayEntries.map(x =>
             <React.Fragment key={x.name}>
                 <Text fontWeight="semibold" whiteSpace="nowrap">{x.name}</Text>
-                <Text whiteSpace="nowrap" textOverflow="ellipsis" overflow="hidden">{x.value}</Text>
+                <Text whiteSpace="nowrap" textOverflow="ellipsis" overflow="hidden" title={x.value}>{x.value}</Text>
             </React.Fragment>
         )}
     </Grid>

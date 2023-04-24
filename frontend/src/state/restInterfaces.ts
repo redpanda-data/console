@@ -1105,6 +1105,19 @@ export enum ConnectorState {
     Failed = 'FAILED',
 }
 
+export type ConnectorStatus =
+    | 'HEALTHY'
+    | 'UNHEALTHY'
+    | 'DEGRADED'
+    | 'PAUSED'
+    | 'RESTARTING';
+
+export interface ConnectorError {
+    type: 'ERROR' | 'WARNING';
+    title: string;
+    content: string;
+}
+
 export type TaskState = ConnectorState;
 
 export type ConnectorPossibleStatesLiteral = `${ConnectorState}`;
@@ -1116,6 +1129,8 @@ export interface ClusterConnectorInfo {
     type: string;  // Source or Sink
     topic: string; // Kafka Topic name
     state: ConnectorState;
+    status: ConnectorStatus;
+    errors: ConnectorError[];
 
     totalTasks: number;
     runningTasks: number;

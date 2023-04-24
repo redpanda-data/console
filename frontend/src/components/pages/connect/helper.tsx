@@ -16,7 +16,7 @@ import { observer } from 'mobx-react';
 import React, { Component, CSSProperties, useState } from 'react';
 
 import { api } from '../../../state/backendApi';
-import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
+import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
 import { findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 
 import ElasticLogo from '../../../assets/connectors/elastic.svg';
@@ -681,3 +681,13 @@ const pauseIcon = <span style={{ color: '#555' }}><PauseCircleOutlined /></span>
 
 export const mr05: CSSProperties = { marginRight: '.5em' };
 export const ml05: CSSProperties = { marginLeft: '.5em' };
+
+
+// Mapping from health status to chakra color variables
+export const statusColors = {
+    'HEALTHY': 'green.500',
+    'UNHEALTHY': 'red.500',
+    'DEGRADED': 'orange.500',
+    'PAUSED': 'gray.500',
+    'RESTARTING': 'blue.500',
+} as Record<ConnectorStatus, string>;

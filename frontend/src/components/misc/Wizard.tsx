@@ -41,7 +41,7 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
                 }
 
                 {!state.isFirst() ? (
-                    <Button variant="outline" onClick={state.previous} className={styles.prevButton} px="8">
+                    <Button variant="link" onClick={state.previous} className={styles.prevButton} px="8">
                         {currentStep.prevButtonLabel ?? 'Back'}
                     </Button>
                 ) : null}
