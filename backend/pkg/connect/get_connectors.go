@@ -259,7 +259,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 	return connectorInfo
 }
 
-//nolint:gocognit,cyclop,gocyclo // lots of inspection of state and tasks to determine status and errors
+//nolint:gocognit,cyclop // lots of inspection of state and tasks to determine status and errors
 func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
 	totalTasks := len(c.Status.Tasks)
 	tasks := make([]ClusterConnectorTaskInfo, totalTasks)
@@ -301,10 +301,8 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	// UNHEALTHY: Connector is failed state.
 	//			Or Connector is in running state but has 0 tasks.
 	// 			Or Connector is in running state, has > 0 tasks, and all tasks are in failed state.
-	// 			Or Connector is in paused state, has > 0 tasks, and all tasks are in failed state.
-	// DEGRADED: Connector is in running state or paused state,
-	// 			 has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
-	// PAUSED: Connector is in paused state, and all tasks are in paused state.
+	// DEGRADED: Connector is in running state, has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
+	// PAUSED: Connector is in paused state, regardless of individual tasks' states.
 	// RESTARTING: Connector is in restarting state, or at least one task is in restarting state.
 	var connStatus connectorStatus
 	var errDetailedContent string
@@ -313,8 +311,7 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 		totalTasks > 0 && runningTasks == totalTasks {
 		connStatus = connectorStatusHealthy
 	} else if (c.Status.Connector.State == connectorStateFailed) ||
-		((c.Status.Connector.State == connectorStateRunning || c.Status.Connector.State == connectorStatePaused) &&
-			(totalTasks == 0 || totalTasks == failedTasks)) {
+		((c.Status.Connector.State == connectorStateRunning) && (totalTasks == 0 || totalTasks == failedTasks)) {
 		connStatus = connectorStatusUnhealthy
 
 		if c.Status.Connector.State == connectorStateFailed {
@@ -324,13 +321,11 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 		} else if totalTasks == failedTasks {
 			errDetailedContent = "Connector " + c.Info.Name + " is in " + strings.ToLower(c.Status.Connector.State) + " state. All tasks are in failed state."
 		}
-	} else if (c.Status.Connector.State == connectorStateRunning || c.Status.Connector.State == connectorStatePaused) &&
-		(totalTasks > 0 && failedTasks > 0 && failedTasks < totalTasks) {
+	} else if (c.Status.Connector.State == connectorStateRunning) && (totalTasks > 0 && failedTasks > 0 && failedTasks < totalTasks) {
 		connStatus = connectorStatusDegraded
 		errDetailedContent = fmt.Sprintf("Connector %s is in %s state but has %d / %d failed tasks.",
 			c.Info.Name, strings.ToLower(c.Status.Connector.State), failedTasks, totalTasks)
-	} else if (c.Status.Connector.State == connectorStatePaused) &&
-		(totalTasks > 0 && pausedTasks == totalTasks) {
+	} else if c.Status.Connector.State == connectorStatePaused {
 		connStatus = connectorStatusPaused
 	} else if (c.Status.Connector.State == connectorStateRestarting) ||
 		(totalTasks > 0 && restartingTasks > 0) {
