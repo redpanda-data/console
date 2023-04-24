@@ -237,9 +237,20 @@ const connectorMetadata: ConnectorMetadata[] = [
 
     // MongoDB Connectors
     {
-        classNamePrefix: 'com.mongodb.kafka.connect.',
+        classNamePrefix: 'com.mongodb.kafka.connect.MongoSourceConnector',
         logo: <img src={MongoDBLogo} alt="MongoDB logo" className="connectorLogo" />,
-        author: 'MongoDB'
+        author: 'MongoDB',
+        friendlyName: 'MongoDB',
+        description: 'Imports collections from MongoDB',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
+    } as const,
+    {
+        classNamePrefix: 'com.mongodb.kafka.connect.MongoSinkConnector',
+        logo: <img src={MongoDBLogo} alt="MongoDB logo" className="connectorLogo" />,
+        author: 'MongoDB',
+        friendlyName: 'MongoDB',
+        description: 'Exports messages to MongoDB collections',
+        learnMoreLink: 'https://docs.redpanda.com/docs/deploy/deployment-option/cloud/managed-connectors/'
     } as const,
 
     // Community Connector

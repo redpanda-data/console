@@ -61,7 +61,14 @@ func WithInjectedValues(keyVals map[string]string, isAuthoritative bool) Option 
 // of
 func WithConsoleToKafkaConnectHookFn(fn ConsoleToKafkaConnectHook) Option {
 	return func(o *Options) {
-		o.consoleToKafkaConnectHookFn = fn
+		if o.consoleToKafkaConnectHookFn != nil {
+			previousHook := o.consoleToKafkaConnectHookFn
+			o.consoleToKafkaConnectHookFn = func(config map[string]any) map[string]any {
+				return fn(previousHook(config))
+			}
+		} else {
+			o.consoleToKafkaConnectHookFn = fn
+		}
 	}
 }
 
@@ -70,6 +77,13 @@ func WithConsoleToKafkaConnectHookFn(fn ConsoleToKafkaConnectHook) Option {
 // of the Guide's KafkaConnectToConsole func, thus it may have done certain modifications already.
 func WithKafkaConnectToConsoleHookFn(fn KafkaConnectToConsoleHook) Option {
 	return func(o *Options) {
-		o.kafkaConnectToConsoleHookFn = fn
+		if o.kafkaConnectToConsoleHookFn != nil {
+			previousHook := o.kafkaConnectToConsoleHookFn
+			o.kafkaConnectToConsoleHookFn = func(result model.ValidationResponse, config map[string]any) model.ValidationResponse {
+				return fn(previousHook(result, config), config)
+			}
+		} else {
+			o.kafkaConnectToConsoleHookFn = fn
+		}
 	}
 }

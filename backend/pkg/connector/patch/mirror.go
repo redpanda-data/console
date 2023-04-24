@@ -27,8 +27,8 @@ type ConfigPatchMirrorSource struct {
 var _ ConfigPatch = (*ConfigPatchMirrorSource)(nil)
 
 const (
-	classSelectorRegexp = `org.apache.kafka.connect.mirror.Mirror(Source|Checkpoint)Connector`
-	sourceClusterAlias  = "source.cluster.alias"
+	mirrorClassSelectorRegexp = `org.apache.kafka.connect.mirror.Mirror(Source|Checkpoint)Connector`
+	sourceClusterAlias        = "source.cluster.alias"
 )
 
 // NewConfigPatchMirrorSource returns a new Patch for the MirrorSourceConnector and MirrorCheckpointConnector.
@@ -39,7 +39,7 @@ func NewConfigPatchMirrorSource() *ConfigPatchMirrorSource {
 			Exclude: nil,
 		},
 		ConnectorClassSelector: IncludeExcludeSelector{
-			Include: regexp.MustCompile(classSelectorRegexp),
+			Include: regexp.MustCompile(mirrorClassSelectorRegexp),
 			Exclude: nil,
 		},
 	}
@@ -81,7 +81,7 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 	case "sync.group.offsets.enabled":
 		d.SetDefaultValue("true")
 	case name:
-		d.SetDefaultValue("mirror-" + extractType(connectorClass) + "-connector-" + strings.ToLower(random.String(4)))
+		d.SetDefaultValue("mirror-" + extractType(connectorClass, mirrorClassSelectorRegexp) + "-connector-" + strings.ToLower(random.String(4)))
 	}
 
 	// Importance Patches
@@ -100,11 +100,4 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 	}
 
 	return d
-}
-
-func extractType(connectorClass string) string {
-	re := regexp.MustCompile(classSelectorRegexp)
-	match := re.FindStringSubmatch(connectorClass)
-
-	return strings.ToLower(match[1])
 }
