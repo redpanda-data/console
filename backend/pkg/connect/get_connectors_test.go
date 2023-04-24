@@ -619,6 +619,129 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 			},
 		},
 		{
+			name: "degraded - connector paused, has tasks but 1 task failed",
+			input: &connect.ListConnectorsResponseExpanded{
+				Info: connect.ListConnectorsResponseExpandedInfo{
+					Name: "http-source-connector-wtue",
+					Config: map[string]string{
+						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+						"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+						"http.request.url":                          "https://httpbin.org/uuid",
+						"http.timer.catchup.interval.millis":        "30000",
+						"http.timer.interval.millis":                "180000",
+						"kafka.topic":                               "httpbin-input",
+						"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+						"key.converter.schemas.enable":              "false",
+						"name":                                      "http-source-connector-wtue",
+						"topic.creation.default.partitions":         "1",
+						"topic.creation.default.replication.factor": "1",
+						"topic.creation.enable":                     "true",
+						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+						"value.converter.schemas.enable":            "false",
+					},
+					Tasks: []struct {
+						Connector string `json:"connector"`
+						Task      int    `json:"task"`
+					}{
+						{
+							Connector: "http-source-connector-wtue",
+							Task:      0,
+						},
+					},
+					Type: "source",
+				},
+				Status: connect.ListConnectorsResponseExpandedStatus{
+					Name: "http-source-connector-wtue",
+					Connector: struct {
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						State:    "PAUSED",
+						WorkerID: "172.21.0.5:8083",
+					},
+					Tasks: []struct {
+						ID       int    `json:"id"`
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						{
+							ID:       0,
+							State:    "PAUSED",
+							WorkerID: "172.21.0.5:8083",
+						},
+						{
+							ID:       1,
+							State:    "PAUSED",
+							WorkerID: "172.21.0.5:8083",
+						},
+						{
+							ID:       2,
+							State:    "FAILED",
+							WorkerID: "172.21.0.5:8083",
+						},
+					},
+				},
+			},
+			expected: &ClusterConnectorInfo{
+				Name:  "http-source-connector-wtue",
+				Class: "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+				Config: map[string]string{
+					"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+					"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+					"http.request.url":                          "https://httpbin.org/uuid",
+					"http.timer.catchup.interval.millis":        "30000",
+					"http.timer.interval.millis":                "180000",
+					"kafka.topic":                               "httpbin-input",
+					"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+					"key.converter.schemas.enable":              "false",
+					"name":                                      "http-source-connector-wtue",
+					"topic.creation.default.partitions":         "1",
+					"topic.creation.default.replication.factor": "1",
+					"topic.creation.enable":                     "true",
+					"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+					"value.converter.schemas.enable":            "false",
+				},
+				Type:         "source",
+				Topic:        "httpbin-input",
+				State:        connectorStatePaused,
+				Status:       connectorStatusDegraded,
+				TotalTasks:   3,
+				RunningTasks: 0,
+				Trace:        "",
+				Errors: []ClusterConnectorInfoError{
+					{
+						Type:    connectorErrorTypeError,
+						Title:   "Connector http-source-connector-wtue is in degraded state.",
+						Content: "Connector http-source-connector-wtue is in paused state but has 1 / 3 failed tasks.",
+					},
+					{
+						Type:    connectorErrorTypeError,
+						Title:   "Connector http-source-connector-wtue Task 2 is in failed state.",
+						Content: "Connector http-source-connector-wtue Task 2 is in failed state.",
+					},
+				},
+				Tasks: []ClusterConnectorTaskInfo{
+					{
+						TaskID:   0,
+						State:    connectorStatePaused,
+						WorkerID: "172.21.0.5:8083",
+					},
+					{
+						TaskID:   1,
+						State:    connectorStatePaused,
+						WorkerID: "172.21.0.5:8083",
+					},
+					{
+						TaskID:   2,
+						State:    connectorStateFailed,
+						WorkerID: "172.21.0.5:8083",
+					},
+				},
+			},
+		},
+		{
 			name: "paused - connector paused, all tasks paused",
 			input: &connect.ListConnectorsResponseExpanded{
 				Info: connect.ListConnectorsResponseExpandedInfo{
