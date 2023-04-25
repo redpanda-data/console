@@ -149,8 +149,7 @@ export const RouteView = (() =>
     <AnimatePresence mode="wait">
         <Switch>
             {/* Index */}
-            {/* <Route exact path='/' component={IndexPage} /> */}
-            <Route exact path="/" render={() => <Redirect to="/topics" />} />
+            <Route exact path="/" render={() => <Redirect to="/overview" />} />
 
             {/* Emit all <Route/> elements */}
             {EmitRouteViews(APP_ROUTES)}
@@ -302,7 +301,7 @@ export const APP_ROUTES: IRouteEntry[] = [
     MakeRoute<{ clusterName: string }>('/connect-clusters/:clusterName', KafkaClusterDetails, 'Connect Cluster'),
     MakeRoute<{ clusterName: string}>('/connect-clusters/:clusterName/create-connector', CreateConnector, 'Create Connector', undefined, undefined, routeVisibility(false)),
     MakeRoute<{ clusterName: string, connector: string }>('/connect-clusters/:clusterName/:connector', KafkaConnectorDetails, 'Connector Details'),
-    
+
     MakeRoute<{}>('/reassign-partitions', ReassignPartitions, 'Reassign Partitions', BeakerIcon, false,
         routeVisibility(true,
             [Feature.GetReassignments, Feature.PatchReassignments],
