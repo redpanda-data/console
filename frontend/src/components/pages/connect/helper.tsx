@@ -636,7 +636,7 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     const state = task.state;
 
     const iconWrapper = (icon: JSX.Element) =>
-        <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle', height: '17px' }}>
+        <span style={{ fontSize: '17px' }}>
             {icon}
         </span>
 
