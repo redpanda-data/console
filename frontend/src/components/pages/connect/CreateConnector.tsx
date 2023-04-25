@@ -122,9 +122,6 @@ const ConnectorType = observer(
                 {p.activeCluster && (
                     <>
                         <Flex direction="column" gap="1em">
-                            <Text fontSize="x-large" fontWeight="semibold">
-                                Create Connector
-                            </Text>
                             <Box maxWidth="600px">
                                 <Text>
                                     Select a managed connector. Connectors simplify importing and exporting data between Redpanda and popular data sources.

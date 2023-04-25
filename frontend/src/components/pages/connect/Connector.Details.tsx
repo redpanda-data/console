@@ -83,13 +83,6 @@ const KafkaConnectorMain = observer(
         if (!connector) return null;
 
         return <>
-            {/* Title */}
-            <Flex flexDirection="row" alignItems="center" gap="1em">
-                <span style={{ fontSize: 'x-large', fontWeight: 600 }}>
-                    {connectorName}
-                </span>
-            </Flex>
-
             {/* [Pause] [Restart] [Delete] */}
             <Flex flexDirection="row" alignItems="center" gap="3">
 
