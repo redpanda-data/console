@@ -13,7 +13,7 @@ import { ChevronRightIcon } from '@primer/octicons-react';
 import { Route as AntBreadcrumbRoute } from 'antd/lib/breadcrumb/Breadcrumb';
 import { PageHeader } from 'antd';
 import { observer } from 'mobx-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useRouteMatch } from 'react-router-dom';
 import { isEmbedded } from '../../config';
 import { uiState } from '../../state/uiState';
 import { MotionDiv } from '../../utils/animationProps';
@@ -36,12 +36,16 @@ const AppPageHeader = observer(() => {
     if (isEmbedded())
         breadcrumbs.splice(0, breadcrumbs.length - 1);
 
+    const showRefresh = useShouldShowRefresh();
+
     const breadcrumbRender = (r: AntBreadcrumbRoute, params: any) => (r.breadcrumbName === params.breadcrumbName && r.path === params.path)
         ? <>
             <div className="breadcrumbLast">{r.breadcrumbName}</div>
-            <ZeroSizeWrapper justifyContent="start">
-                <DataRefreshButton />
-            </ZeroSizeWrapper>
+            {showRefresh &&
+                <ZeroSizeWrapper justifyContent="start">
+                    <DataRefreshButton />
+                </ZeroSizeWrapper>
+            }
         </>
         : <NavLink to={r.path}>{r.breadcrumbName}</NavLink>;
 
@@ -64,3 +68,22 @@ const AppPageHeader = observer(() => {
 });
 
 export default AppPageHeader;
+
+
+function useShouldShowRefresh() {
+
+    const match = useRouteMatch<{ clusterName: string, connectorName: string }>({
+        path: '/connect-clusters/:clusterName/:connectorName',
+        strict: true,
+        sensitive: true,
+        exact: true
+    });
+
+    if (match) {
+        // console.log('useRouteMatch found a route where showing the refresh button does not make sense', match);
+        if (match.params.connectorName == 'create-connector')
+            return false;
+    }
+
+    return true;
+}
