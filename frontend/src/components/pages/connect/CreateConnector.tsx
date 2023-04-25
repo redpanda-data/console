@@ -27,9 +27,10 @@ import { ConfigPage } from './dynamic-ui/components';
 import KowlEditor from '../../misc/KowlEditor';
 import PageContent from '../../misc/PageContent';
 import { ConnectClusterStore, ConnectorValidationError } from '../../../state/connect/state';
-import { Flex, Text, Tabs, Link, SearchField, Box, Heading } from '@redpanda-data/ui';
+import { Flex, Text, Tabs, Link, SearchField, Box, Heading, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Spinner } from '@redpanda-data/ui';
 import { findConnectorMetadata } from './helper';
-import { containsIgnoreCase } from '../../../utils/utils';
+import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
+import { useDisclosure } from '@chakra-ui/react-use-disclosure';
 const { Option } = Select;
 
 const ConnectorType = observer(
@@ -235,6 +236,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
     const [postCondition, setPostCondition] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [connectClusterStore, setConnectClusterStore] = useState(ConnectClusterStore.getInstance(activeCluster));
+    const { isOpen: isCreatingModalOpen, onOpen: openCreatingModal, onClose: closeCreatingModal } = useDisclosure();
 
     useEffect(() => {
         const init = async () => {
@@ -362,8 +364,39 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                 }
 
                 try {
+                    openCreatingModal();
+
                     await connectClusterStore.createConnector(selectedPlugin!.class, parsedUpdatedConfig);
-                    message.success({ content: `Connector ${connectorRef?.propsByName.get('name')?.value ?? ''} created correctly` });
+
+                    // Wait a bit for the connector to appear, then navigate to it
+                    const maxScanTime = 5000;
+                    const intervalSec = 100;
+                    const timer = new TimeSince();
+
+                    const connectorName = connectorRef.propsByName.get('name')!.value as string;
+
+                    while (true) {
+                        const elapsedTime = timer.value;
+                        console.log('scanning for new connector...', { connectorName, elapsedTime });
+                        if (elapsedTime > maxScanTime) {
+                            // Abort, tried to wait for too long
+                            history.push(`/connect-clusters/${encodeURIComponent(activeCluster)}`);
+                            break;
+                        }
+
+                        await connectClusterStore.refreshData(true);
+                        const connector = connectClusterStore.getConnectorState(connectorName);
+
+                        if (connector) {
+                            // Success
+                            history.push(`/connect-clusters/${encodeURIComponent(activeCluster)}/${encodeURIComponent(connectorName)}`);
+                            break;
+                        }
+
+                        await delay(intervalSec);
+                    }
+                    message.success({ content: `Connector ${connectorName} created` });
+
                 } catch (e: any) {
                     switch (e?.name) {
                         case 'ConnectorValidationError':
@@ -377,6 +410,9 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                     }
                     setLoading(false);
                     return { conditionMet: false };
+                }
+                finally {
+                    closeCreatingModal();
                 }
                 setLoading(false);
                 return { conditionMet: true };
@@ -394,7 +430,7 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
             </div>
         );
 
-    return (
+    return <>
         <Wizard
             state={{
                 canContinue: () => steps[currentStep].postConditionMet(),
@@ -403,10 +439,6 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                     if (transitionConditionMet) {
                         const { conditionMet } = await transitionConditionMet();
                         if (!conditionMet) return;
-                    }
-
-                    if (isLast()) {
-                        return history.push(`/connect-clusters/${encodeURIComponent(activeCluster)}`);
                     }
 
                     setTimeout(() => {
@@ -429,7 +461,19 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                 getSteps: () => steps,
             }}
         />
-    );
+
+        <Modal isCentered isOpen={isCreatingModalOpen} onClose={() => { }}>
+            <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(5px)" />
+            <ModalContent>
+                <ModalHeader>Creating connector...</ModalHeader>
+                <ModalBody py="8">
+                    <Flex alignItems="center" justifyContent="center">
+                        <Spinner size="xl" />
+                    </Flex>
+                </ModalBody>
+            </ModalContent>
+        </Modal>
+    </>
 });
 
 
@@ -530,7 +574,7 @@ function Review({
                         />
                     ) : null}
 
-                    <h2>Connector Properties</h2>
+                        <Heading as="h2" mt="4" fontSize="1.4em" fontWeight="500">Connector Properties</Heading>
                     <div style={{ margin: '0 auto 1.5rem' }}>
                         <KowlEditor
                             language="json"
