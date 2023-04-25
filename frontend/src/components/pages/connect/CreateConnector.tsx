@@ -446,6 +446,8 @@ const ConnectorWizard = observer(({ connectClusters, activeCluster }: ConnectorW
                 },
                 previous: () => {
 
+                    clearErrors();
+
                     setTimeout(() => {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }, 10);
