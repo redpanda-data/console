@@ -21,14 +21,13 @@ import (
 )
 
 // RestartConnector restarts the connector. Return 409 (Conflict) if rebalance is in process.
-// No tasks are restarted as a result of a call to this endpoint. To restart tasks, see restart task.
-func (s *Service) RestartConnector(ctx context.Context, clusterName string, connector string) *rest.Error {
+func (s *Service) RestartConnector(ctx context.Context, clusterName string, connector string, restartTasks bool) *rest.Error {
 	c, restErr := s.getConnectClusterByName(clusterName)
 	if restErr != nil {
 		return restErr
 	}
 
-	err := c.Client.RestartConnector(ctx, connector, connect.RestartConnectorOptions{})
+	err := c.Client.RestartConnector(ctx, connector, connect.RestartConnectorOptions{IncludeTasks: restartTasks})
 	if err != nil {
 		return &rest.Error{
 			Err:          err,

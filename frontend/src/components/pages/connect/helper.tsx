@@ -16,7 +16,7 @@ import { observer } from 'mobx-react';
 import React, { Component, CSSProperties, useState } from 'react';
 
 import { api } from '../../../state/backendApi';
-import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState } from '../../../state/restInterfaces';
+import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
 import { findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 
 import ElasticLogo from '../../../assets/connectors/elastic.svg';
@@ -635,11 +635,10 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     const task = p.observable;
     const state = task.state;
 
-    const iconWrapper = (icon: JSX.Element) => <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle' }}>
-        <ZeroSizeWrapper width="17px">
+    const iconWrapper = (icon: JSX.Element) =>
+        <span style={{ display: 'inline-flex', fontSize: '17px', verticalAlign: 'middle', height: '17px' }}>
             {icon}
-        </ZeroSizeWrapper>
-    </span>
+        </span>
 
     let icon: JSX.Element = <></>;
     if (state == ConnectorState.Running) icon = iconWrapper(okIcon);
@@ -656,12 +655,10 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     let errBtn: JSX.Element | undefined = undefined;
     let errModal: JSX.Element | undefined = undefined;
     if (task.trace) {
-        errBtn = <ZeroSizeWrapper height="12px" width="autos">
-            <Button danger onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
-                {stateContent}
-                <span>(Show Error)</span>
-            </Button>
-        </ZeroSizeWrapper>
+        errBtn = <Button danger onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
+            {stateContent}
+            <span>(Show Error)</span>
+        </Button>
 
         const close = () => showErr(undefined);
         errModal = <Modal open={err != null} onOk={close} onCancel={close} cancelButtonProps={{ style: { display: 'none' } }}
@@ -695,3 +692,13 @@ const pauseIcon = <span style={{ color: '#555' }}><PauseCircleOutlined /></span>
 
 export const mr05: CSSProperties = { marginRight: '.5em' };
 export const ml05: CSSProperties = { marginLeft: '.5em' };
+
+
+// Mapping from health status to chakra color variables
+export const statusColors = {
+    'HEALTHY': 'green.500',
+    'UNHEALTHY': 'red.500',
+    'DEGRADED': 'orange.500',
+    'PAUSED': 'gray.500',
+    'RESTARTING': 'blue.500',
+} as Record<ConnectorStatus, string>;

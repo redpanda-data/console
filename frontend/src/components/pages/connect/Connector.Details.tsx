@@ -10,13 +10,13 @@
  */
 
 /* eslint-disable no-useless-escape */
-import { Button, Modal, Skeleton, Tooltip } from 'antd';
+import { Modal, Skeleton, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
 import { observer, useLocalObservable } from 'mobx-react';
 import { comparer } from 'mobx';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
-import { ClusterConnectorInfo } from '../../../state/restInterfaces';
+import { ClusterConnectorInfo, ConnectorError, DataType, PropertyImportance } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
 import { Code, findPopupContainer } from '../../../utils/tsxUtils';
 import { sortField } from '../../misc/common';
@@ -24,17 +24,14 @@ import { KowlTable } from '../../misc/KowlTable';
 import { PageComponent, PageInitHelper } from '../Page';
 import { ConnectClusterStore } from '../../../state/connect/state';
 import { ConfigPage } from './dynamic-ui/components';
-
 import './helper';
-
-// React Editor
-
-// Monaco Type
-import { ConfirmModal, ConnectorStatisticsCard, NotConfigured, okIcon, TaskState, warnIcon } from './helper';
+import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
 import PageContent from '../../misc/PageContent';
-import { isEmbedded } from '../../../config';
 import { delay } from '../../../utils/utils';
-import { Box, Flex, Tabs } from '@redpanda-data/ui';
+import { Button, Alert, AlertIcon, Box, CodeBlock, Flex, Grid, Heading, Tabs, Text, useDisclosure, Modal as RPModal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter } from '@redpanda-data/ui';
+import Section from '../../misc/Section';
+import React from 'react';
+import { getConnectorFriendlyName } from './ConnectorBoxCard';
 
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
@@ -88,22 +85,20 @@ const KafkaConnectorMain = observer(
         return <>
             {/* Title */}
             <Flex flexDirection="row" alignItems="center" gap="1em">
-                <span style={{ fontSize: '26px', display: 'inline-block' }}>
-                    {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? okIcon : warnIcon}
-                </span>
                 <span style={{ fontSize: 'x-large', fontWeight: 600 }}>
                     {connectorName}
-                </span>
-                <span style={{ fontSize: 'medium', opacity: 0.5 }}>
-                    ({connectClusterStore.getConnectorState(connectorName)?.toLowerCase() ?? '<empty>'})
                 </span>
             </Flex>
 
             {/* [Pause] [Restart] [Delete] */}
-            <Flex flexDirection="row" alignItems="center" gap="0.5em">
+            <Flex flexDirection="row" alignItems="center" gap="3">
+
+                {/* [View JSON Config] */}
                 <ViewConfigModalButton connector={connector} />
+
+                {/* [Pause/Resume]  [Restart] */}
                 {connectClusterStore.validateConnectorState(connectorName, ['FAILED', 'UNASSIGNED']) ? (
-                    <TaskState observable={connector} />
+                    null
                 ) : (
                     <>
                         <Tooltip
@@ -113,7 +108,7 @@ const KafkaConnectorMain = observer(
                             getPopupContainer={findPopupContainer}
                             overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                         >
-                            <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)}>
+                                <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
                                 {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
                             </Button>
                         </Tooltip>
@@ -124,12 +119,14 @@ const KafkaConnectorMain = observer(
                             getPopupContainer={findPopupContainer}
                             overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                         >
-                            <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)}>
+                                <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
                                 Restart
                             </Button>
                         </Tooltip>
                     </>
                 )}
+
+                {/* [Delete] */}
                 <Tooltip
                     placement="top"
                     trigger={!canEdit ? 'hover' : 'none'}
@@ -138,10 +135,11 @@ const KafkaConnectorMain = observer(
                     overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                 >
                     <Button
-                        danger
+                        variant="outline"
+                        colorScheme="red"
                         disabled={!canEdit}
                         onClick={() => ($state.deletingConnector = connectorName)}
-                        style={{ marginLeft: '1em', minWidth: '8em' }}
+                        minWidth="32"
                     >
                         Delete
                     </Button>
@@ -162,11 +160,13 @@ const KafkaConnectorMain = observer(
                         key: 'configuration',
                         name: 'Configuration',
                         component: <Box mt="8">
-                            <ConfigPage connectorStore={connectorStore} />
+                            <Box maxWidth="800px">
+                                <ConfigPage connectorStore={connectorStore} />
+                            </Box>
 
                             {/* Update Config Button */}
                             <div style={{ marginTop: '1em' }}>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '1em 0', marginBottom: '1.5em' }}>
+                                <div style={{ display: 'flex', margin: '1em 0', marginBottom: '1.5em' }}>
                                     <Tooltip
                                         placement="top"
                                         trigger={!canEdit ? 'hover' : 'none'}
@@ -175,8 +175,7 @@ const KafkaConnectorMain = observer(
                                         overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
                                     >
                                         <Button
-                                            type="primary"
-                                            ghost
+                                            variant="outline"
                                             style={{ width: '200px' }}
                                             disabled={(() => {
                                                 if (!canEdit) return true;
@@ -319,45 +318,117 @@ const ConfigOverviewTab = observer((p: {
     const connectorName = connector.name;
 
     return <>
-        {/* Task List */}
-        <KowlTable
-            key="taskList"
-            dataSource={connectClusterStore.getConnectorTasks(connectorName)}
-            columns={[
-                {
-                    title: 'Task',
-                    dataIndex: 'taskId',
-                    width: 200,
-                    sorter: sortField('taskId'),
-                    defaultSortOrder: 'ascend',
-                    render: (v) => <Code nowrap>Task-{v}</Code>,
-                },
-                {
-                    title: 'Status',
-                    dataIndex: 'state',
-                    sorter: sortField('state'),
-                    render: (_, r) => <TaskState observable={r} />,
-                    filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: (x) => String(x).toLowerCase() },
-                },
-                {
-                    title: 'Worker',
-                    dataIndex: 'workerId',
-                    sorter: sortField('workerId'),
-                    render: (_, r) => <Code nowrap>{r.workerId}</Code>,
-                    filterType: { type: 'enum' },
-                }
-            ]}
-            rowKey="taskId"
-            search={{
-                searchColumnIndex: 0,
-                isRowMatch: (row, regex) =>
-                    regex.test(String(row.taskId)) || regex.test(row.state) || regex.test(row.workerId),
-            }}
-            observableSettings={uiSettings.kafkaConnect.connectorDetails}
-            pagination={{
-                defaultPageSize: 10,
-            }}
-        />
+        <Grid
+            templateAreas={`
+                "errors errors"
+                "health details"
+                "tasks details"
+            `}
+            gridTemplateRows="auto"
+            alignItems="start"
+            gap="6"
+        >
+            <Flex gridArea="errors" flexDirection="column" gap="2">
+                {connector.errors.map(e => <ConnectorErrorModal key={e.title} error={e} />)}
+            </Flex>
+
+            <Section gridArea="health">
+                <Flex flexDirection="row" gap="4" m="1">
+                    <Box width="5px" borderRadius="3px" background={statusColors[connector.status]} backgroundColor="gra" />
+
+                    <Flex flexDirection="column">
+                        <Text fontWeight="semibold" fontSize="3xl">{connector.status}</Text>
+                        <Text opacity=".5">Status</Text>
+                    </Flex>
+                </Flex>
+            </Section>
+
+            <Section py={4} gridArea="tasks" minWidth="500px">
+                <Flex alignItems="center" mt="2" mb="6" gap="2">
+                    <Heading as="h3" fontSize="1rem" fontWeight="semibold" textTransform="uppercase" color="blackAlpha.800">
+                        Tasks
+                    </Heading>
+                    <Text opacity=".5" fontWeight="normal">({connectClusterStore.getConnectorTasks(connectorName)?.length || 0})</Text>
+                </Flex>
+                <KowlTable
+                    key="taskList"
+                    dataSource={connectClusterStore.getConnectorTasks(connectorName)}
+                    columns={[
+                        {
+                            title: 'Task',
+                            dataIndex: 'taskId',
+                            width: 200,
+                            sorter: sortField('taskId'),
+                            defaultSortOrder: 'ascend',
+                            render: (v) => <Code nowrap>Task-{v}</Code>,
+                        },
+                        {
+                            title: 'Status',
+                            dataIndex: 'state',
+                            sorter: sortField('state'),
+                            render: (_, r) => <TaskState observable={r} />,
+                            filterType: { type: 'enum', optionClassName: 'capitalize', toDisplay: (x) => String(x).toLowerCase() },
+                        },
+                        {
+                            title: 'Worker',
+                            dataIndex: 'workerId',
+                            sorter: sortField('workerId'),
+                            render: (_, r) => <Code nowrap>{r.workerId}</Code>,
+                            filterType: { type: 'enum' },
+                        }
+                    ]}
+                    rowKey="taskId"
+                    search={{
+                        searchColumnIndex: 0,
+                        isRowMatch: (row, regex) =>
+                            regex.test(String(row.taskId)) || regex.test(row.state) || regex.test(row.workerId),
+                    }}
+                    observableSettings={uiSettings.kafkaConnect.connectorDetails}
+                    pagination={{
+                        defaultPageSize: 10,
+                    }}
+                />
+            </Section>
+
+            <Section py={4} gridArea="details">
+                <Heading as="h3" mb="6" mt="2" fontSize="1rem" fontWeight="semibold" textTransform="uppercase" color="blackAlpha.800">
+                    Connector Details
+                </Heading>
+
+                <ConnectorDetails clusterName={p.clusterName} connectClusterStore={connectClusterStore} connector={connector} />
+            </Section>
+        </Grid>
+
+    </>
+});
+
+const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
+    const { isOpen, onOpen, onClose } = useDisclosure();
+
+    const errorType = p.error.type == 'ERROR'
+        ? 'error'
+        : 'warning';
+
+    return <>
+        <Alert status={errorType} variant="solid" height="12" borderRadius="8px" onClick={onOpen}>
+            <AlertIcon />
+            {p.error.title}
+            <Button ml="auto" variant="ghost" colorScheme="gray" size="sm" mt="1px">View details</Button>
+        </Alert>
+
+        <RPModal onClose={onClose} size="6xl" isOpen={isOpen}>
+            <ModalOverlay />
+            <ModalContent>
+                <ModalHeader>{p.error.title}</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                    <CodeBlock language="json" codeString={p.error.content} />
+                </ModalBody>
+                <ModalFooter>
+                    <Button onClick={onClose}>Close</Button>
+                </ModalFooter>
+            </ModalContent>
+        </RPModal>
     </>
 });
 
@@ -386,9 +457,6 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
 
         return (
             <PageContent>
-                {isEmbedded() ? <></> : <ConnectorStatisticsCard clusterName={clusterName} connectorName={connectorName} />}
-
-                {/* Main Card */}
                 <KafkaConnectorMain clusterName={clusterName} connectorName={connectorName} refreshData={this.refreshData} />
             </PageContent>
         );
@@ -410,19 +478,81 @@ const ViewConfigModalButton = (p: { connector: ClusterConnectorInfo }) => {
         <>
             <Flex alignItems="center" mb="8px">
                 <Box fontSize="medium" fontWeight={500}>Connector Config (JSON)</Box>
-
-                <Button style={{ marginLeft: '16px', paddingInline: '8px' }} onClick={() => {
-                    navigator.clipboard.writeText(p.connector.jsonConfig);
-                }}>Copy</Button>
             </Flex>
-            <div className="codeBox" style={{ whiteSpace: 'pre', overflow: 'scroll', width: '100%', padding: '10px 8px' }}>
-                {p.connector.jsonConfig}
-            </div>
+
+            <CodeBlock codeString={p.connector.jsonConfig} language="json" showCopyButton />
         </>
     </Modal>;
 
     return <>
-        <Button onClick={() => setShowConfig(true)}>Show Config</Button>
+        <Button variant="outline" onClick={() => setShowConfig(true)}>View JSON Config</Button>
         {viewConfigModal}
     </>
 };
+
+const ConnectorDetails = observer((p: {
+    clusterName: string,
+    connectClusterStore: ConnectClusterStore,
+    connector: ClusterConnectorInfo,
+}) => {
+    const store = p.connectClusterStore.getConnectorStore(p.connector.name);
+
+    const allProps = [...store.propsByName.values()];
+
+    const items = allProps
+        .filter(x => {
+            if (x.isHidden) return false;
+            if (x.entry.definition.type == DataType.Password) return false;
+            if (x.entry.definition.importance != PropertyImportance.High) return false;
+
+            if (!x.value) return false;
+            if (x.name == 'name') return false;
+
+            return true;
+        })
+        .orderBy(x => {
+            let i = 0;
+            for (const s of store.connectorStepDefinitions)
+                for (const g of s.groups)
+                    for (const p of g.config_keys) {
+                        if (p == x.name)
+                            return i;
+                        i++
+                    }
+
+            return 0;
+        });
+
+    const displayEntries = items.map(e => {
+        const r = {
+            name: e.entry.definition.display_name,
+            value: String(e.value)
+        };
+
+        // Try to undo mapping
+        if (e.entry.metadata.recommended_values?.length) {
+            const match = e.entry.metadata.recommended_values.find(x => x.value == e.value);
+            if (match) {
+                r.value = String(match.display_name);
+            }
+        }
+
+        return r;
+    });
+
+    displayEntries.unshift({
+        name: 'Type',
+        value: (p.connector.type == 'source' ? 'Import from' : 'Export to')
+            + ' '
+            + getConnectorFriendlyName(p.connector.class)
+    });
+
+    return <Grid templateColumns="auto 1fr" rowGap="3" columnGap="10">
+        {displayEntries.map(x =>
+            <React.Fragment key={x.name}>
+                <Text fontWeight="semibold" whiteSpace="nowrap">{x.name}</Text>
+                <Text whiteSpace="nowrap" textOverflow="ellipsis" overflow="hidden" title={x.value}>{x.value}</Text>
+            </React.Fragment>
+        )}
+    </Grid>
+});

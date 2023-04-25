@@ -54,3 +54,13 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
         }
     </Flex>
 }
+
+export function getConnectorFriendlyName(className?: string) {
+    if (!className)
+        return '';
+
+    const { friendlyName } = findConnectorMetadata(className) ?? {};
+    const displayName = friendlyName ?? removeNamespace(className);
+
+    return displayName;
+}

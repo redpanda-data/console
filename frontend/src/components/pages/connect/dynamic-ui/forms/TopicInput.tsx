@@ -61,13 +61,13 @@ export const TopicInput = observer((p: { properties: Property[], connectorType: 
     const cycleError = showErrors ? () => state.property.currentErrorIndex++ : undefined;
 
     return (
-        <Grid templateColumns="400px 1fr" gap="10">
+        <Grid templateColumns="1fr" gap="10">
             <FormControl position="relative">
                 {state.properties.has('topics.regex') && (
                     <Checkbox
                         isChecked={state.isRegex}
                         onChange={(e) => state.setSelectedProp(e.target.checked ? 'topics.regex' : 'topics')}>
-                        Use regular expresions
+                        Use regular expressions
                     </Checkbox>
                 )}
 
@@ -79,8 +79,8 @@ export const TopicInput = observer((p: { properties: Property[], connectorType: 
 
                 {/* A 'source' connector imports data into the cluster. So we let the user choose the name of the topic directly  */}
                 {(state.isRegex || p.connectorType == 'source')
-                    ? <Input value={String(state.property.value)} onChange={(e) => (state.property.value = e.target.value)} spellCheck={false} />
-                    : <Select style={{ minWidth: '300px' }}
+                    ? <Input value={String(state.property.value)} onChange={(e) => (state.property.value = e.target.value)} spellCheck={false} autoComplete="off" />
+                    : <Select style={{ width: '100%', minWidth: '300px' }}
                         mode="multiple"
                         allowClear showArrow showSearch
                         options={api.topics?.map(x => ({ value: x.topicName })) ?? []}
