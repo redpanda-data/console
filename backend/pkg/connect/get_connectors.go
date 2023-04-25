@@ -43,6 +43,8 @@ const (
 	connectorStatusDegraded   connectorStatus = "DEGRADED"
 	connectorStatusPaused     connectorStatus = "PAUSED"
 	connectorStatusRestarting connectorStatus = "RESTARTING"
+	connectorStatusUnassigned connectorStatus = "UNASSIGNED"
+	connectorStatusUnknown    connectorStatus = "UNKNOWN"
 )
 
 // ClusterConnectors contains all available information about the deployed connectors
@@ -304,6 +306,8 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	// DEGRADED: Connector is in running state, has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
 	// PAUSED: Connector is in paused state, regardless of individual tasks' states.
 	// RESTARTING: Connector is in restarting state, or at least one task is in restarting state.
+	// UNASSIGNED: Connector is in unassigned state, regardless of any tasks.
+	// UNKNOWN: Any other scenario.
 	var connStatus connectorStatus
 	var errDetailedContent string
 	//nolint:gocritic // this if else is easier to read as they map to rules and logic specified above.
@@ -330,6 +334,12 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	} else if (c.Status.Connector.State == connectorStateRestarting) ||
 		(totalTasks > 0 && restartingTasks > 0) {
 		connStatus = connectorStatusRestarting
+	} else if c.Status.Connector.State == connectorStateUnassigned {
+		connStatus = connectorStatusUnassigned
+	} else {
+		connStatus = connectorStatusUnknown
+		errDetailedContent = fmt.Sprintf("Unknown connector status. Connector %s is in %s state.",
+			c.Info.Name, strings.ToLower(c.Status.Connector.State))
 	}
 
 	connectorErrors := make([]ClusterConnectorInfoError, 0)
