@@ -334,7 +334,7 @@ const ConfigOverviewTab = observer((p: {
 
             <Section gridArea="health">
                 <Flex flexDirection="row" gap="4" m="1">
-                    <Box width="5px" borderRadius="3px" background={statusColors[connector.status]} backgroundColor="gra" />
+                    <Box width="5px" borderRadius="3px" background={statusColors[connector.status]} />
 
                     <Flex flexDirection="column">
                         <Text fontWeight="semibold" fontSize="3xl">{connector.status}</Text>
@@ -422,7 +422,7 @@ const ConnectorErrorModal = observer((p: { error: ConnectorError }) => {
                 <ModalHeader>{p.error.title}</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody>
-                    <CodeBlock language="json" codeString={p.error.content} />
+                    <CodeBlock language="json" codeString={p.error.content} showScroll={false} />
                 </ModalBody>
                 <ModalFooter>
                     <Button onClick={onClose}>Close</Button>
