@@ -1373,6 +1373,98 @@ func Test_connectorsResponseToClusterConnectorInfo(t *testing.T) {
 			},
 		},
 		{
+			name: "destroyed - connector is destroyed",
+			input: &connect.ListConnectorsResponseExpanded{
+				Info: connect.ListConnectorsResponseExpandedInfo{
+					Name: "http-source-connector-wtue",
+					Config: map[string]string{
+						"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+						"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+						"http.request.url":                          "https://httpbin.org/uuid",
+						"http.timer.catchup.interval.millis":        "30000",
+						"http.timer.interval.millis":                "180000",
+						"kafka.topic":                               "httpbin-input",
+						"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+						"key.converter.schemas.enable":              "false",
+						"name":                                      "http-source-connector-wtue",
+						"topic.creation.default.partitions":         "1",
+						"topic.creation.default.replication.factor": "1",
+						"topic.creation.enable":                     "true",
+						"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+						"value.converter.schemas.enable":            "false",
+					},
+					Tasks: []struct {
+						Connector string `json:"connector"`
+						Task      int    `json:"task"`
+					}{
+						{
+							Connector: "http-source-connector-wtue",
+							Task:      0,
+						},
+					},
+					Type: "source",
+				},
+				Status: connect.ListConnectorsResponseExpandedStatus{
+					Name: "http-source-connector-wtue",
+					Connector: struct {
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						State:    "DESTROYED",
+						WorkerID: "172.21.0.5:8083",
+					},
+					Tasks: []struct {
+						ID       int    `json:"id"`
+						State    string `json:"state"`
+						WorkerID string `json:"worker_id"`
+						Trace    string `json:"trace,omitempty"`
+					}{
+						{
+							ID:       0,
+							State:    "DESTROYED",
+							WorkerID: "172.21.0.5:8083",
+						},
+					},
+				},
+			},
+			expected: &ClusterConnectorInfo{
+				Name:  "http-source-connector-wtue",
+				Class: "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+				Config: map[string]string{
+					"connector.class":                           "com.github.castorm.kafka.connect.http.HttpSourceConnector",
+					"header.converter":                          "org.apache.kafka.connect.storage.SimpleHeaderConverter",
+					"http.request.url":                          "https://httpbin.org/uuid",
+					"http.timer.catchup.interval.millis":        "30000",
+					"http.timer.interval.millis":                "180000",
+					"kafka.topic":                               "httpbin-input",
+					"key.converter":                             "org.apache.kafka.connect.json.JsonConverter",
+					"key.converter.schemas.enable":              "false",
+					"name":                                      "http-source-connector-wtue",
+					"topic.creation.default.partitions":         "1",
+					"topic.creation.default.replication.factor": "1",
+					"topic.creation.enable":                     "true",
+					"value.converter":                           "org.apache.kafka.connect.json.JsonConverter",
+					"value.converter.schemas.enable":            "false",
+				},
+				Type:         "source",
+				Topic:        "httpbin-input",
+				State:        connectorStateDestroyed,
+				Status:       connectorStatusDestroyed,
+				TotalTasks:   1,
+				RunningTasks: 0,
+				Trace:        "",
+				Errors:       []ClusterConnectorInfoError{},
+				Tasks: []ClusterConnectorTaskInfo{
+					{
+						TaskID:   0,
+						State:    connectorStateDestroyed,
+						WorkerID: "172.21.0.5:8083",
+					},
+				},
+			},
+		},
+		{
 			name: "unknown - connector is state we do not track",
 			input: &connect.ListConnectorsResponseExpanded{
 				Info: connect.ListConnectorsResponseExpandedInfo{
