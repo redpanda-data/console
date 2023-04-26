@@ -31,6 +31,7 @@ const (
 	connectorStatePaused     connectorState = "PAUSED"
 	connectorStateFailed     connectorState = "FAILED"
 	connectorStateRestarting connectorState = "RESTARTING"
+	connectorStateDestroyed  connectorState = "DESTROYED"
 )
 
 // connectorStatus is our holistic unified connector status that takes into account not just the
@@ -44,6 +45,7 @@ const (
 	connectorStatusPaused     connectorStatus = "PAUSED"
 	connectorStatusRestarting connectorStatus = "RESTARTING"
 	connectorStatusUnassigned connectorStatus = "UNASSIGNED"
+	connectorStatusDestroyed  connectorStatus = "DESTROYED"
 	connectorStatusUnknown    connectorStatus = "UNKNOWN"
 )
 
@@ -261,7 +263,7 @@ func listConnectorsExpandedToClusterConnectorInfo(l map[string]con.ListConnector
 	return connectorInfo
 }
 
-//nolint:gocognit,cyclop // lots of inspection of state and tasks to determine status and errors
+//nolint:gocognit,cyclop,gocyclo // lots of inspection of state and tasks to determine status and errors
 func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpanded) *ClusterConnectorInfo {
 	totalTasks := len(c.Status.Tasks)
 	tasks := make([]ClusterConnectorTaskInfo, totalTasks)
@@ -307,6 +309,7 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	// PAUSED: Connector is in paused state, regardless of individual tasks' states.
 	// RESTARTING: Connector is in restarting state, or at least one task is in restarting state.
 	// UNASSIGNED: Connector is in unassigned state, regardless of any tasks.
+	// DESTROYED: Connector is in destroyed state, regardless of any tasks.
 	// UNKNOWN: Any other scenario.
 	var connStatus connectorStatus
 	var errDetailedContent string
@@ -336,6 +339,8 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 		connStatus = connectorStatusRestarting
 	} else if c.Status.Connector.State == connectorStateUnassigned {
 		connStatus = connectorStatusUnassigned
+	} else if c.Status.Connector.State == connectorStateDestroyed {
+		connStatus = connectorStatusDestroyed
 	} else {
 		connStatus = connectorStatusUnknown
 		errDetailedContent = fmt.Sprintf("Unknown connector status. Connector %s is in %s state.",
