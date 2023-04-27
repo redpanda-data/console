@@ -87,6 +87,10 @@ kafka:
   #     enabled: false
   #     paths: []
   #     refreshInterval: 5m
+  #   importPaths is a list of paths from which to import Proto files into Redpanda Console.
+  #   Paths are relative to the root directory.
+  #   The `git` configuration must be enabled to use this feature.
+  #   importPaths: []
   #   # Git is where the .proto files come from, in the future there might be additional options
   #   git:
   #     enabled: false
@@ -113,6 +117,7 @@ kafka:
   # messagePack:
   #   enabled: false
   #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
+
 # connect:
 #   enabled: false
 #   # An empty array for clusters is the default, but you have to specify at least one cluster, as soon as
@@ -161,6 +166,11 @@ kafka:
 #         privateKeyFilepath:
 #         passphrase: # This can be set via the via the --console.topic-documentation.git.ssh.passphrase flag as well
 
+# analytics configures the telemetry service that sends anonymized usage statistics to Redpanda.
+# Redpanda uses these statistics to evaluate feature usage.
+# analytics:
+#   enabled: true
+
 # server:
 #   listenPort: 8080
 #   listenAddress:
@@ -173,6 +183,11 @@ kafka:
 #   basePath: # Sub-path under which Console is hosted. See 'docs/features/hosting.md' for more information
 #   setBasePathFromXForwardedPrefix: true # Whether or not to check the 'X-Forwarded-Prefix' header to (potentially) override 'basePath'
 #   stripPrefix: true # Whether or not Console should strip the prefix internally
+#
+#   AllowedOrigins is a list of origins that can send requests from a browser to the Console
+#   API. By default, a same-site policy is enforced to prevent CSRF-attacks.
+#   Only in very specific deployment models you may need to change the secure default.
+#   allowedOrigins: []
 
 # logger:
 #   level: info # Valid values are: debug, info, warn, error, fatal

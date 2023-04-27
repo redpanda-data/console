@@ -5,13 +5,15 @@ path: /docs/features/topic-documentation
 
 # Topic Documentation
 
-If you wish to embed your topic's documentation into the Redpanda Console user interface you can do this by providing access to a git repository which hosts your documentations in Markdown format. In practice this could look like this:
+You can embed your topic's documentation into the Redpanda Console user interface by providing access to a GitHub 
+repository that hosts your documentation files in Markdown format.
 
 ![Console Topic documentation embedded](../assets/topic-documentation.png)
 
-## How does it work
+## Integrating topic documentation into Redpanda Console
 
-Console clones the provided git repository, recursively iterates through all directories in the repository (up to a max depth of 5) and stores all `.md` files it finds in memory.
+Redpanda Console clones the provided GitHub repository, recursively iterates through all directories in the 
+repository (up to a max depth of 5) and stores all `.md` files it finds in memory. 
 The "Documentation" tab in the frontend will show the markdown of the file matching the name of the Kafka topic.
 
 | Path/Filename        | Kafka Topic Name | Matches            |
@@ -23,12 +25,14 @@ The "Documentation" tab in the frontend will show the markdown of the file match
 
 ## Config
 
-Beside the repository url and branch you usually need to configure authentication credentials so that you can access private repositories. We support SSH as well as basic auth. If neither is specified you could still pull publicly accessible repositories.
+In addition to the repository URL and branch, you usually need to configure authentication credentials so 
+that you can access private repositories. Redpanda Console supports SSH as well as basic auth. 
+If neither is specified you could still pull publicly accessible repositories.
 
-Configuration is described below:
+Following is the configuration:
 
 ```yaml
-owl:
+console:
   topicDocumentation:
     enabled: true
     # Git is where the topic documentation can come from, in the future there might be additional

@@ -75,6 +75,10 @@ kafka:
       - topicName: xy
         valueProtoType: fake_model.Order # You can specify the proto type for the record key and/or value (just one will work too)
         keyProtoType: package.Type
+    # importPaths is a list of paths from which to import Proto files into Redpanda Console.
+    # Paths are relative to the root directory.
+    # The `git` configuration must be enabled to use this feature.
+    importPaths: []
     git:
       enabled: true
       refreshInterval: 5m
