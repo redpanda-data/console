@@ -701,4 +701,7 @@ export const statusColors = {
     'DEGRADED': 'orange.500',
     'PAUSED': 'gray.500',
     'RESTARTING': 'blue.500',
+    'UNASSIGNED': 'gray.500',
+    'DESTROYED': 'red.500',
+    'UNKNOWN': 'gray.500',
 } as Record<ConnectorStatus, string>;

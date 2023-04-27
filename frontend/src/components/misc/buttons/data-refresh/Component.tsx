@@ -8,7 +8,8 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-import { PlayIcon, SyncIcon } from '@primer/octicons-react';
+import { SyncIcon } from '@primer/octicons-react';
+import { MdPause, MdPlayCircleOutline } from 'react-icons/md';
 import { Button, Popover } from 'antd';
 import { autorun, observable } from 'mobx';
 import { observer } from 'mobx-react';
@@ -18,6 +19,7 @@ import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backendApi';
 import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
 import styles from '../buttons.module.scss';
+import { Icon } from '@redpanda-data/ui';
 
 
 const autoRefresh = observable({
@@ -105,7 +107,14 @@ export const DataRefreshButton = observer(() => {
     // maybe we need to use the same 'no vertical expansion' trick:
     return <div className={styles.dataRefreshButton}>
         <Popover title="Auto Refresh" content={autoRefreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
-            <Button icon={< PlayIcon size={16} />} shape="circle" className={`${styles.hoverButton} ${autoRefresh.active ? styles.pulsating : ''}`} onClick={autoRefresh.toggleAutorefresh} />
+            <Button
+                style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center' }}
+                icon={autoRefresh.active
+                    ? <Icon as={MdPause} fontSize="16px" />
+                    : <Icon as={MdPlayCircleOutline} fontSize="19px" />}
+                shape="circle"
+                className={`${styles.hoverButton} ${autoRefresh.active ? styles.pulsating : ''}`}
+                onClick={autoRefresh.toggleAutorefresh} />
         </Popover>
         {
             (api.activeRequests.length == 0)
