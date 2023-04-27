@@ -35,6 +35,10 @@ func setConnectionURI(config map[string]any) {
 		}
 	}
 
+	if _, exists := config["connection.url"]; !exists {
+		config["connection.url"] = config["connection.uri"]
+	}
+
 	if config["connection.username"] != nil && config["connection.password"] != nil && config["connection.url"] != nil {
 		password := config["connection.password"].(string)
 		if hasKafkaConnectConfigProvider(config["connection.password"].(string)) {
