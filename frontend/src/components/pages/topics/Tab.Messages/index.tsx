@@ -48,6 +48,7 @@ import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import colors from '../../../../colors';
 import { CollapsedFieldProps } from '@textea/json-viewer';
+import { Buffer } from 'buffer';
 
 
 const { Text } = Typography;
@@ -430,7 +431,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 dataIndex: 'value',
                 width: 'auto',
                 title: <span>Value {previewButton}</span>,
-                render: (_t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} />,
+                render: (_t, r) => <MessagePreview msg={r} previewFields={() => this.activePreviewTags} isCompactTopic={this.props.topic.cleanupPolicy.includes('compact')} />,
                 //filteredValue: ['?'],
                 //onFilter: (value, record) => { console.log(`Filtering value: ${value}`); return true; },
             },
@@ -444,7 +445,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         <SettingFilled style={IsColumnSettingsEnabled ? { color: colors.brandOrange } : { color: '#a092a0' }} />
                     </Tooltip>;
                 },
-                render: (_text, record) => !record.isValueNull && (
+                render: (_text, record) => !record.value.isPayloadNull && (
                     <NoClipboardPopover placement="left">
                         <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
                             <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={this.copyDropdown(record)} trigger={['click']}>
@@ -492,7 +493,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     dataSource={this.messageSource.data}
 
                     rowKey={r => r.offset + ' ' + r.partitionID + r.timestamp}
-                    rowClassName={(r: TopicMessage) => (r.isValueNull && showTombstones) ? 'tombstone' : ''}
+                    rowClassName={(r: TopicMessage) => (r.value.isPayloadNull && showTombstones) ? 'tombstone' : ''}
                     onRow={r => {
                         return {
                             onDoubleClick: e => {
@@ -508,8 +509,8 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
                     expandable={{
                         expandRowByClick: false,
-                        expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'value'),
-                        rowExpandable: _ => filteredColumns.findIndex(c => c.dataIndex === 'value') === -1 ? false : true,
+                        expandIconColumnIndex: filteredColumns.findIndex(c => c.dataIndex === 'offset'),
+                        rowExpandable: () => true,
                         expandedRowRender: record => renderExpandedMessage(record),
                         expandedRowKeys: this.expandedKeys.slice(),
                         onExpand: (_p, r) => {
@@ -795,31 +796,51 @@ class SaveMessagesDialog extends Component<{ messages: TopicMessage[] | null, on
 @observer
 class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; }> {
     render() {
-        const value = this.props.msg.key.payload;
-        const text = typeof value === 'string' ? value : toJson(value);
+        const msg = this.props.msg;
+        const key = msg.key;
 
-        if (value == undefined || value == null || text.length == 0 || text == '{}')
-            return renderEmptyIcon('Empty Key');
+        const isPrimitive =
+            typeof key.payload === 'string' ||
+            typeof key.payload === 'number' ||
+            typeof key.payload === 'boolean';
+        try {
+            if (key.isPayloadNull)
+                return renderEmptyIcon('Key is null');
+            if (key.payload == null || key.payload.length == 0)
+                return null;
 
-        if (typeof value == 'object') {
-            const previewTags = this.props.previewFields().filter(t => t.searchInMessageKey);
-            if (previewTags.length > 0) {
-                const tags = getPreviewTags(value, previewTags);
-                return <span className="cellDiv fade" style={{ fontSize: '95%' }}>
-                    <div className={'previewTags previewTags-' + uiState.topicSettings.previewDisplayMode}>
-                        {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
-                    </div>
-                </span>;
+            let text: ReactNode = <></>;
+
+            if (key.encoding == 'binary' || key.encoding == 'utf8WithControlChars') {
+                text = cullText(msg.keyBinHexPreview, 44);
             }
+            else if (isPrimitive) {
+                text = cullText(key.payload, 44)
+            }
+            else {
+                // Only thing left is 'object'
+                // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
+                const previewTags = this.props.previewFields().filter(t => t.searchInMessageValue);
+                if (previewTags.length > 0) {
+                    const tags = getPreviewTags(key.payload, previewTags);
+                    text = <span className="cellDiv fade" style={{ fontSize: '95%' }}>
+                        <div className={'previewTags previewTags-' + uiState.topicSettings.previewDisplayMode}>
+                            {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
+                        </div>
+                    </span>;
+                    return text;
+                }
+                // Normal display (json, no filters). Just stringify the whole object
+                text = cullText(JSON.stringify(key.payload), 44);
+            }
+
+            return <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
+                <code style={{ fontSize: '95%' }}>{text}</code>
+            </span>;
         }
-
-        const content = text.length > 44
-            ? <>{text.slice(0, 44)}&hellip;</>
-            : text;
-
-        return <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
-            <code style={{ fontSize: '95%' }}>{content}</code>
-        </span>;
+        catch (e) {
+            return <span style={{ color: 'red' }}>Error in RenderPreview: {((e as Error).message ?? String(e))}</span>;
+        }
     }
 }
 
@@ -887,37 +908,43 @@ class DateTimePickerExtraFooter extends Component {
 
 
 @observer
-class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; }> {
+class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () => PreviewTagV2[]; isCompactTopic: boolean}> {
     render() {
         const msg = this.props.msg;
-        const value = msg.value.payload;
+        const value = msg.value;
 
         const isPrimitive =
-            typeof value === 'string' ||
-            typeof value === 'number' ||
-            typeof value === 'boolean';
+            typeof value.payload === 'string' ||
+            typeof value.payload === 'number' ||
+            typeof value.payload === 'boolean';
 
         try {
             let text: ReactNode = <></>;
 
-            if (value === null || value === undefined || msg.isValueNull) {
-                // null: tombstone
+
+
+            if (value.isPayloadNull) {
+                if (!this.props.isCompactTopic) {
+                    return renderEmptyIcon('Value is null');
+                }
                 text = <><DeleteOutlined style={{ fontSize: 16, color: 'rgba(0,0,0, 0.35)', verticalAlign: 'text-bottom', marginRight: '4px', marginLeft: '1px' }} /><code>Tombstone</code></>;
             }
-            else if (msg.value.encoding == 'binary') {
-                // If the original data was binary, display as hex dump
+            else if (value.payload == null || value.payload.length == 0)
+                return null;
+            else if (msg.value.encoding == 'binary' || msg.value.encoding == 'utf8WithControlChars') {
+                // If the original data was binary or had control characters, display as hex dump
                 text = msg.valueBinHexPreview;
             }
             else if (isPrimitive) {
                 // If we can show the value as a primitive, do so.
-                text = value;
+                text = value.payload;
             }
             else {
                 // Only thing left is 'object'
                 // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
                 const previewTags = this.props.previewFields().filter(t => t.searchInMessageValue);
                 if (previewTags.length > 0) {
-                    const tags = getPreviewTags(value, previewTags);
+                    const tags = getPreviewTags(value.payload, previewTags);
                     text = <span className="cellDiv fade" style={{ fontSize: '95%' }}>
                         <div className={'previewTags previewTags-' + uiState.topicSettings.previewDisplayMode}>
                             {tags.map((t, i) => <React.Fragment key={i}>{t}</React.Fragment>)}
@@ -928,7 +955,7 @@ class MessagePreview extends Component<{ msg: TopicMessage, previewFields: () =>
                 }
                 else {
                     // Normal display (json, no filters). Just stringify the whole object
-                    text = cullText(JSON.stringify(value), 300);
+                    text = cullText(JSON.stringify(value.payload), 300);
                 }
             }
 
@@ -1003,6 +1030,33 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
             }
         }
 
+        // Decode payload from base64 and render control characters as code highlighted text, such as
+        // `NUL`, `ACK` etc.
+        if (payload.encoding == 'utf8WithControlChars') {
+            const decodedString = Buffer.from(val, 'base64').toString('utf8');
+
+            const elements: JSX.Element[] = [];
+            // To reduce the number of JSX elements we try to append normal chars to a single string
+            // until we hit a control character.
+            let sequentialChars = '';
+            for (const char of decodedString) {
+                const code = char.charCodeAt(0);
+                if (code < 32) {
+                    if (sequentialChars.length > 0) {
+                        elements.push(<>{sequentialChars}</>)
+                        sequentialChars = ''
+                    }
+                    elements.push(<span className="codeBox">{getControlCharacterName(code)}</span>)
+                } else {
+                    sequentialChars += char;
+                }
+            }
+            if (sequentialChars.length > 0) {
+                elements.push(<>{sequentialChars}</>)
+            }
+            return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{elements}</code>;
+        }
+
         if (isPrimitive) {
             return <div className="codeBox">{String(val)}</div>;
         }
@@ -1014,11 +1068,49 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
     }
 }
 
+function getControlCharacterName(code: number): string {
+    switch (code) {
+      case 0: return 'NUL';
+      case 1: return 'SOH';
+      case 2: return 'STX';
+      case 3: return 'ETX';
+      case 4: return 'EOT';
+      case 5: return 'ENQ';
+      case 6: return 'ACK';
+      case 7: return 'BEL';
+      case 8: return 'BS';
+      case 9: return 'HT';
+      case 10: return 'LF';
+      case 11: return 'VT';
+      case 12: return 'FF';
+      case 13: return 'CR';
+      case 14: return 'SO';
+      case 15: return 'SI';
+      case 16: return 'DLE';
+      case 17: return 'DC1';
+      case 18: return 'DC2';
+      case 19: return 'DC3';
+      case 20: return 'DC4';
+      case 21: return 'NAK';
+      case 22: return 'SYN';
+      case 23: return 'ETB';
+      case 24: return 'CAN';
+      case 25: return 'EM';
+      case 26: return 'SUB';
+      case 27: return 'ESC';
+      case 28: return 'FS';
+      case 29: return 'GS';
+      case 30: return 'RS';
+      case 31: return 'US';
+      default: return '';
+    }
+};
+
 const MessageMetaData = observer((props: { msg: TopicMessage; }) => {
     const msg = props.msg;
     const data = {
-        'Key': `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
-        'Value': `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
+        'Key': msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding)} (${prettyBytes(msg.key.size)})`,
+        'Value': msg.value.isPayloadNull ? 'Null' : `${titleCase(msg.value.encoding)} (${msg.value.schemaId > 0 ? `${msg.value.schemaId} / ` : ''}${prettyBytes(msg.value.size)})`,
         'Headers': msg.headers.length > 0 ? `${msg.headers.length}` : 'No headers set',
         'Compression': msg.compression,
         'Transactional': msg.isTransactional ? 'true' : 'false',
