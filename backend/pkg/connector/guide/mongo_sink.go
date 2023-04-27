@@ -30,6 +30,7 @@ func NewMongoSinkGuide(opts ...Option) Guide {
 					{
 						// No Group name and description here
 						ConfigKeys: []string{
+							"connection.uri",
 							"connection.url",
 							"connection.username",
 							"connection.password",

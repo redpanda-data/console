@@ -54,7 +54,9 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 	// Misc patches
 	switch d.Definition.Name {
 	case "connection.uri":
-		d.SetDefaultValue("mongodb://")
+		d.SetDefaultValue("mongodb://").
+			SetVisible(false).
+			SetType(model.ConfigDefinitionTypePassword)
 	case keyConverter, valueConverter:
 		converterType, _, _ := strings.Cut(d.Definition.Name, ".")
 		d.SetDefaultValue("org.apache.kafka.connect.storage.StringConverter")

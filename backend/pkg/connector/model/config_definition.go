@@ -58,6 +58,12 @@ func (c *ConfigDefinition) SetVisible(visible bool) *ConfigDefinition {
 	return c
 }
 
+// SetType sets the type of the config definition.
+func (c *ConfigDefinition) SetType(configDefinitionType ConfigDefinitionType) *ConfigDefinition {
+	c.Definition.Type = configDefinitionType
+	return c
+}
+
 // SetDisplayName sets the display name of the config definition.
 func (c *ConfigDefinition) SetDisplayName(displayName string) *ConfigDefinition {
 	c.Definition.DisplayName = displayName
