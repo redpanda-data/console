@@ -73,7 +73,7 @@ class Overview extends PageComponent {
             : '...';
 
         const renderIdColumn = (text: string, record: BrokerWithConfigAndStorage) => {
-            if (record.brokerId != overview.kafka.controllerId) return text;
+            if (!record.isController) return text;
             return <>{text}
                 <Tooltip mouseEnterDelay={0} overlay={'This broker is the current controller of the cluster'} getPopupContainer={findPopupContainer} placement="right">
                     <CrownOutlined style={{ padding: '2px', fontSize: '16px', color: '#0008', float: 'right' }} />

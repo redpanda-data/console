@@ -64,7 +64,6 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
         if (!broker) {
             return DefaultSkeleton;
         }
-        const isController = api.clusterOverview?.kafka.controllerId == this.id;
 
         // Handle error while getting config
         if (typeof brokerConfigs == 'string') return (
@@ -81,7 +80,7 @@ class BrokerDetails extends PageComponent<{ brokerId: string }> {
                 <Section py={4}>
                     <Row>
                         <Statistic title="Broker ID" value={this.id} />
-                        <Statistic title="Role" value={isController ? 'Controller' : 'Follower'} />
+                        <Statistic title="Role" value={broker.isController ? 'Controller' : 'Follower'} />
                         <Statistic title="Storage" value={prettyBytesOrNA(broker.totalLogDirSizeBytes!)} />
                         {broker.rack && <Statistic title="Rack" value={broker.rack} />}
                     </Row>
