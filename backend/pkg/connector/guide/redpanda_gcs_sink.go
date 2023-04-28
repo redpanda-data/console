@@ -51,6 +51,7 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 							"value.converter",
 							"value.converter.schemas.enable",
 							"format.output.type",
+							"avro.codec",
 
 							"file.name.template",
 							"file.name.prefix",

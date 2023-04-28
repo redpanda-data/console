@@ -71,8 +71,10 @@ func CommunityPatches() []patch.ConfigPatch {
 // Kafka connect cluster.
 func CommunityGuides(opts ...guide.Option) []guide.Guide {
 	return []guide.Guide{
-		guide.NewRedpandaAwsS3SinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
-		guide.NewRedpandaGCSSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook)),
+		guide.NewRedpandaAwsS3SinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleAvroCodecHook)),
+		guide.NewRedpandaGCSSinkGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleJSONSchemaHook),
+			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleAvroCodecHook)),
 		guide.NewDebeziumPostgresGuide(guide.WithConsoleToKafkaConnectHookFn(ConsoleToKafkaConnectDebeziumPostgresConfigsHook),
 			guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumPostgresSourceHook)),
 		guide.NewDebeziumMySQLGuide(guide.WithKafkaConnectToConsoleHookFn(KafkaConnectToConsoleDebeziumMysqlSourceHook)),

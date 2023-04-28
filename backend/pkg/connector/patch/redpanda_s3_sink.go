@@ -98,6 +98,14 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition, _ string
 		d.SetDisplayName("S3 max retries")
 	case "aws.s3.backoff.delay.ms":
 		d.SetDisplayName("S3 retry back-off")
+	case "avro.codec":
+		d.SetComponentType(model.ComponentRadioGroup).
+			SetDocumentation("The Avro compression codec to be used for Avro output files.").
+			AddRecommendedValueWithMetadata("null", "uncompressed").
+			AddRecommendedValueWithMetadata("deflate", "deflate").
+			AddRecommendedValueWithMetadata("snappy", "snappy").
+			AddRecommendedValueWithMetadata("bzip2", "bzip2").
+			SetDefaultValue("null")
 	}
 
 	// Importance Patches
