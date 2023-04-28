@@ -135,6 +135,7 @@ func (s *Service) getKafkaOverview(ctx context.Context) OverviewKafka {
 		TopicsCount:     len(metadata.Topics),
 		PartitionsCount: partitionCount,
 		ReplicasCount:   replicaCount,
+		ControllerID:    metadata.Controller,
 		Authorizer:      &authorizer,
 	}
 }
