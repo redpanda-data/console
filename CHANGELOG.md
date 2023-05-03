@@ -1,8 +1,21 @@
 # Changelog
 
+## v2.2.4 / 2023-05-03
+
+[ENHANCEMENT] Set `USER` instruction to `redpandaconsole` in Dockerfile.
+
+## v2.2.3 / 2023-03-22
+
+[ENHANCEMENT] Build with CGO disabled.
+[ENHANCEMENT] Various improvements to authorization.
+
+## v2.2.2 / 2023-03-03
+
+- [ENHANCEMENT] Report license expiry time.
+
 ## v2.2.1 / 2023-03-03
 
-- [ENHACEMENT] Build with Go v1.20
+- [ENHANCEMENT] Build with Go v1.20
 - [BUGFIX] Show guessed Kafka version on new overview page
 - [BUGFIX] Reduce number of properties shown in stats bar topics & consumer groups page to minimize required browser width
 - [BUGFIX] Escape all URL & query parameters. Consumer groups or Kafka connectors with special characters will no longer fail in Console
@@ -11,7 +24,7 @@
 
 - [FEATURE] Editing topic configurations
 - [FEATURE] Rework brokers page into a new overview page
-- [ENHACEMENT] Visual update towards a new Redpanda UI theme
+- [ENHANCEMENT] Visual update towards a new Redpanda UI theme
 - [CHANGE] We removed the support for using encrypted PEM certificates as specified in RFC 1423 because it's insecure by design and should not be used by anyone
 - [BUGFIX] Enforce CORS-checks on websocket connection. Defaults to a same-site policy. Allowed origins are configurable via `server.allowedOrigins`
 - [BUGFIX] Emit Protobuf default values when viewing the JSON-rendered records in the message viewer
@@ -25,12 +38,12 @@
 
 ## v2.1.1 / 2022-12-01
 
-- [ENHACEMENT] Auto refresh capability in the frontend (via https://github.com/redpanda-data/console/pull/536 by @victorgawk)
+- [ENHANCEMENT] Auto refresh capability in the frontend (via https://github.com/redpanda-data/console/pull/536 by @victorgawk)
 - [BUGFIX] Some Avro serialized messages failed to deserialize. We replaced LinkedIn's go-avro library with [hamba/avro](https://github.com/hamba/avro) which supports more types
 
 **Enterprise changelog:**
 
-- [ENHACEMENT] Add possibility to chunk session cookie into multiple cookies in order to store more data inside of Cookies. Must be enabled via `login.useCookieChunking`
+- [ENHANCEMENT] Add possibility to chunk session cookie into multiple cookies in order to store more data inside of Cookies. Must be enabled via `login.useCookieChunking`
 - [BUGFIX] Only refresh session tokens if they are actually about to expire 
 
 ## 2.1.0 / 2022-11-15
