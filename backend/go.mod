@@ -26,8 +26,8 @@ require (
 	github.com/prometheus/client_golang v1.15.0
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20230502073202-367d8130cd94
 	github.com/stretchr/testify v1.8.2
-	github.com/twmb/franz-go v1.13.3
-	github.com/twmb/franz-go/pkg/kadm v1.8.0
+	github.com/twmb/franz-go v1.13.4-0.20230503140309-bf5970577daf
+	github.com/twmb/franz-go/pkg/kadm v1.8.2-0.20230503140309-bf5970577daf
 	github.com/twmb/franz-go/pkg/kmsg v1.5.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/twmb/go-cache v1.0.0
