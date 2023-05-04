@@ -91,6 +91,14 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition, _ strin
 		d.SetImportance(model.ConfigDefinitionImportanceHigh)
 	case configActionReload:
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
+	case "avro.codec":
+		d.SetComponentType(model.ComponentRadioGroup).
+			SetDocumentation("The Avro compression codec to be used for Avro output files.").
+			AddRecommendedValueWithMetadata("null", "uncompressed").
+			AddRecommendedValueWithMetadata("deflate", "deflate").
+			AddRecommendedValueWithMetadata("snappy", "snappy").
+			AddRecommendedValueWithMetadata("bzip2", "bzip2").
+			SetDefaultValue("null")
 	}
 
 	return d
