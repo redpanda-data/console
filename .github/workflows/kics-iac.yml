@@ -18,7 +18,7 @@ jobs:
           path: .
           ignore_on_exit: results
           output_path: res/
-          exclude_paths: helm/examples/,helm/console/templates/
+          exclude_paths: helm/examples/,helm/console/templates/,docs/
       - name: display kics results
         run: |
           cat res/results.json
