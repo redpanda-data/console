@@ -51,6 +51,17 @@ func (c *ConfigPatchMongoDB) IsMatch(configKey, connectorClass string) bool {
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorClass string) model.ConfigDefinition {
+	// Patches for sink connector only
+	if isSink(connectorClass) {
+		switch d.Definition.Name {
+		case "database":
+			d.SetDisplayName("MongoDB database name").
+				SetDocumentation("The name of an existing MongoDB database to store output files in")
+		case "collection":
+			d.SetDisplayName("Default MongoDB collection name")
+		}
+	}
+
 	// Misc patches
 	switch d.Definition.Name {
 	case "connection.uri":
@@ -74,13 +85,21 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 			AddRecommendedValueWithMetadata("copy_existing", "COPY_EXISTING").
 			SetComponentType(model.ComponentRadioGroup).
 			SetDefaultValue("latest")
-	case "key.projection.type",
-		"value.projection.type":
+	case "key.projection.type":
 		d.AddRecommendedValueWithMetadata("none", "NONE").
 			AddRecommendedValueWithMetadata("allowlist", "ALLOWLIST").
 			AddRecommendedValueWithMetadata("blocklist", "BLOCKLIST").
 			SetComponentType(model.ComponentRadioGroup).
-			SetDefaultValue("none")
+			SetDefaultValue("none").
+			SetDocumentation("The type of key projection to use, either: `AllowList` or `BlockList`")
+	case "value.projection.type":
+		d.AddRecommendedValueWithMetadata("none", "NONE").
+			AddRecommendedValueWithMetadata("allowlist", "ALLOWLIST").
+			AddRecommendedValueWithMetadata("blocklist", "BLOCKLIST").
+			SetComponentType(model.ComponentRadioGroup).
+			SetDefaultValue("none").
+			SetDisplayName("The value projection type").
+			SetDocumentation("The type of value projection to use, either: `AllowList` or `BlockList`")
 	case "change.data.capture.handler":
 		d.AddRecommendedValueWithMetadata("", "NONE").
 			AddRecommendedValueWithMetadata("com.mongodb.kafka.connect.sink.cdc.mongodb.ChangeStreamHandler", "MongoDB").
@@ -118,4 +137,8 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 	}
 
 	return d
+}
+
+func isSink(connectorClass string) bool {
+	return extractType(connectorClass, mongoClassSelectorRegexp) == "sink"
 }

@@ -95,6 +95,8 @@ func (c *ConfigPatchAll) PatchDefinition(d model.ConfigDefinition, _ string) mod
 		d.SetDisplayName("Error tolerance")
 	}
 
+	d.SetDocumentation(strings.TrimRight(d.Definition.Documentation, "."))
+
 	return d
 }
 
