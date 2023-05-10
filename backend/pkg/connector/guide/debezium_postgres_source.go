@@ -96,7 +96,7 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 
 			{
 				Name:        "Advanced connector configuration",
-				Description: "The following options list contains advanced connector properties. The default values for these properties rarely need to be changed.",
+				Description: "The following options list contains advanced connector properties. The default values for these properties rarely need to be changed",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here

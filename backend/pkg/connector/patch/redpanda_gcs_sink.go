@@ -59,7 +59,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition, _ strin
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case formatOutputType:
 		d.SetDisplayName("GCS file format").
-			SetDocumentation("Format of the key coming from the Kafka topic.").
+			SetDocumentation("Format of the key coming from the Kafka topic").
 			SetComponentType(model.ComponentRadioGroup)
 	case "file.compression.type":
 		d.SetDisplayName("Output file compression").
@@ -82,7 +82,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition, _ strin
 	case "kafka.retry.backoff.ms":
 		d.SetDisplayName("Retry back-off").
 			SetDocumentation("Retry backoff in milliseconds. Useful for performing recovery in case " +
-				"of transient exceptions. Maximum value is 86400000 (24 hours).")
+				"of transient exceptions. Maximum value is 86400000 (24 hours)")
 	}
 
 	// Importance Patches
@@ -93,7 +93,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition, _ strin
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	case "avro.codec":
 		d.SetComponentType(model.ComponentRadioGroup).
-			SetDocumentation("The Avro compression codec to be used for Avro output files.").
+			SetDocumentation("The Avro compression codec to be used for Avro output files").
 			AddRecommendedValueWithMetadata("null", "uncompressed").
 			AddRecommendedValueWithMetadata("deflate", "deflate").
 			AddRecommendedValueWithMetadata("snappy", "snappy").

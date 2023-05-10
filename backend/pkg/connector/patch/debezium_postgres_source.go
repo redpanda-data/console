@@ -60,7 +60,7 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 	case "slot.drop.on.stop", "include.unknown.datatypes":
 		d.SetDefaultValue("false")
 	case "database.sslmode":
-		d.SetDocumentation("Whether to use an encrypted connection to the PostgreSQL server. 'disable' uses an unencrypted connection. 'require' uses a secure (encrypted) connection, and fails if one cannot be established.").
+		d.SetDocumentation("Whether to use an encrypted connection to the PostgreSQL server. 'disable' uses an unencrypted connection. 'require' uses a secure (encrypted) connection, and fails if one cannot be established").
 			SetComponentType(model.ComponentRadioGroup).
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("disable", "disable").

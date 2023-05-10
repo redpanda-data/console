@@ -58,10 +58,10 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case sourceClusterAlias:
 		d.SetDefaultValue("source").
-			SetDocumentation("When using DefaultReplicationPolicy, topic names will be prefixed with it.")
+			SetDocumentation("When using DefaultReplicationPolicy, topic names will be prefixed with it")
 	case "replication.policy.class":
 		d.SetComponentType(model.ComponentRadioGroup).
-			SetDocumentation("Class which defines the remote topic naming convention. Use IdentityReplicationPolicy to preserve topic names. DefaultReplicationPolicy prefixes topic with the Source cluster alias.").
+			SetDocumentation("Class which defines the remote topic naming convention. Use IdentityReplicationPolicy to preserve topic names. DefaultReplicationPolicy prefixes topic with the Source cluster alias").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.mirror.IdentityReplicationPolicy", "IdentityReplicationPolicy").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.mirror.DefaultReplicationPolicy", "DefaultReplicationPolicy").
 			SetDefaultValue("org.apache.kafka.connect.mirror.IdentityReplicationPolicy")
@@ -74,7 +74,7 @@ func (*ConfigPatchMirrorSource) PatchDefinition(d model.ConfigDefinition, connec
 		"checkpoints.topic.replication.factor":
 		d.SetDefaultValue("-1")
 	case "replication.factor":
-		d.SetDocumentation("Replication factor for newly created remote topics. Set -1 for cluster default.").
+		d.SetDocumentation("Replication factor for newly created remote topics. Set -1 for cluster default").
 			SetDefaultValue("-1")
 	case "topics.exclude":
 		d.SetDefaultValue(".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas")

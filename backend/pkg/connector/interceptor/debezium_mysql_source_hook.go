@@ -13,7 +13,7 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "Allow public key retrieval",
-			Documentation: "Allow the client to automatically request the public key from the server.",
+			Documentation: "Allow the client to automatically request the public key from the server",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -31,7 +31,7 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 			Importance:    model.ConfigDefinitionImportanceLow,
 			Required:      false,
 			DisplayName:   "Database connection time zone",
-			Documentation: "Time zone to specify explicitly the database 'connectionTimeZone' MySQL configuration option.",
+			Documentation: "Time zone to specify explicitly the database 'connectionTimeZone' MySQL configuration option",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{

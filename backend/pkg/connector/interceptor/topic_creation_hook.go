@@ -13,7 +13,7 @@ func KafkaConnectToConsoleTopicCreationHook(response model.ValidationResponse, _
 			Importance:    model.ConfigDefinitionImportanceLow,
 			Required:      false,
 			DisplayName:   "Topic creation enabled",
-			Documentation: "Whether to allow automatic creation of topics. Enabled by default.",
+			Documentation: "Whether to allow automatic creation of topics. Enabled by default",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -31,7 +31,7 @@ func KafkaConnectToConsoleTopicCreationHook(response model.ValidationResponse, _
 			Importance:    model.ConfigDefinitionImportanceLow,
 			Required:      false,
 			DisplayName:   "Topic creation partitions",
-			Documentation: "Number of partitions for the created topics.",
+			Documentation: "Number of partitions for the created topics",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -49,7 +49,7 @@ func KafkaConnectToConsoleTopicCreationHook(response model.ValidationResponse, _
 			Importance:    model.ConfigDefinitionImportanceLow,
 			Required:      false,
 			DisplayName:   "Topic creation replication factor",
-			Documentation: "Replication factor for the created topics.",
+			Documentation: "Replication factor for the created topics",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
