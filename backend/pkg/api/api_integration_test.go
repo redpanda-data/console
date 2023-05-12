@@ -1,6 +1,6 @@
 //go:build integration
 
-package console
+package api
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 
 var testSeedBroker string
 
-const TEST_TOPIC_NAME = "test.redpanda.console.console.topic"
+const TEST_TOPIC_NAME = "test.redpanda.console.api.topic"
 
 func TestMain(m *testing.M) {
 	os.Exit(func() int {
