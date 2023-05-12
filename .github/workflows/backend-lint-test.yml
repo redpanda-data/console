@@ -44,3 +44,4 @@ jobs:
           go-version-file: 'backend/go.mod'
       
       - run: go test -failfast -race -json ./...
+        working-directory: backend
