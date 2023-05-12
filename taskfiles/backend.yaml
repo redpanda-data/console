@@ -31,6 +31,28 @@ tasks:
     status:
       - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/gci >/dev/null 2>&1'
 
+  install-tparse:
+    vars:
+      TPARSE_VERSION: 0.12.1
+    desc: install tparse go test parser
+    cmds:
+      - |
+        GOBIN={{ .BUILD_ROOT }}/bin/go go install github.com/mfridman/tparse@v{{ .TPARSE_VERSION }}
+    status:
+      - '[ -f ''{{ .BUILD_ROOT }}/bin/go'' ] || command -v {{ .BUILD_ROOT }}/bin/go/tparse >/dev/null 2>&1'
+      - '[[ $({{ .BUILD_ROOT }}/bin/go/tparse --version) == tparse version:v{{.TPARSE_VERSION}} ]]'
+
+  install-gomock:
+    vars:
+      GOMOCK_VERSION: 1.6.0
+    desc: install gomock
+    cmds:
+      - |
+        GOBIN={{ .BUILD_ROOT }}/bin/go go install github.com/golang/mock/mockgen@v{{ .GOMOCK_VERSION }}
+    status:
+      - "[ -f '{{ .BUILD_ROOT }}/bin/go' ] || command -v {{ .BUILD_ROOT }}/bin/go/mockgen >/dev/null 2>&1"
+      - "[[ $({{ .BUILD_ROOT }}/bin/go/mockgen --version) == 'v{{.GOMOCK_VERSION}}' ]]"
+
   fmt:
     desc: Format Go code
     deps:
@@ -48,3 +70,33 @@ tasks:
     dir: "{{.BACKEND_ROOT}}"
     cmds:
       - '{{ .BUILD_ROOT }}/bin/go/golangci-lint run --timeout 10m ./...'
+
+  generate:
+    dir: "{{.BACKEND_ROOT}}"
+    desc: Run Go generate
+    deps:
+      - install-gomock
+    cmds:
+      - |
+        export PATH=$PATH:{{ .BUILD_ROOT }}/bin/go
+        GOBIN={{ .BUILD_ROOT }}/bin/go go generate ./...
+
+  test-unit:
+    dir: "{{.BACKEND_ROOT}}"
+    desc: Run Go unit tests
+    cmds:
+      - |
+        GOBIN={{ .BUILD_ROOT }}/bin/go go test ./...
+  test-integration:
+    dir: "{{.BACKEND_ROOT}}"
+    desc: Run integration tests
+    cmds:
+      - |
+        GOBIN={{ .BUILD_ROOT }}/bin/go go test --tags=integration ./...
+  
+  cover:
+    dir: "{{.BACKEND_ROOT}}"
+    desc: Run integration tests with code coverage
+    cmds:
+      - |
+        GOBIN={{ .BUILD_ROOT }}/bin/go go test --tags=integration -json -cover ./... | {{ .BUILD_ROOT }}/bin/go/tparse

@@ -23,6 +23,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/interpreter"
 )
 
+//go:generate mockgen -destination=./mocks/kafka.go -package=mocks github.com/redpanda-data/console/backend/pkg/kafka IListMessagesProgress
+
 // IListMessagesProgress specifies the methods 'ListMessages' will call on your progress-object.
 type IListMessagesProgress interface {
 	OnPhase(name string) // todo(?): eventually we might want to convert this into an enum
