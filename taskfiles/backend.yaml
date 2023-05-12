@@ -84,12 +84,17 @@ tasks:
   test-unit:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run Go unit tests
+    deps:
+      - generate
     cmds:
       - |
         GOBIN={{ .BUILD_ROOT }}/bin/go go test ./...
+
   test-integration:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run integration tests
+    deps:
+      - generate
     cmds:
       - |
         GOBIN={{ .BUILD_ROOT }}/bin/go go test --tags=integration ./...
@@ -97,6 +102,9 @@ tasks:
   cover:
     dir: "{{.BACKEND_ROOT}}"
     desc: Run integration tests with code coverage
+    deps:
+      - install-tparse
+      - generate
     cmds:
       - |
-        GOBIN={{ .BUILD_ROOT }}/bin/go go test --tags=integration -json -cover ./... | {{ .BUILD_ROOT }}/bin/go/tparse
+        GOBIN={{ .BUILD_ROOT }}/bin/go go test -race --tags=integration -json -cover ./... | {{ .BUILD_ROOT }}/bin/go/tparse

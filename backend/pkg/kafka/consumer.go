@@ -174,9 +174,11 @@ func (s *Service) FetchMessages(ctx context.Context, progress IListMessagesProgr
 	return nil
 }
 
+// consumeKafkaMessages consumes messages for the consume request and sends responses to the jobs channel.
+// This function will close the channel.
+// The caller is responsible for closing the client if desired.
 func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, consumeReq TopicConsumeRequest, jobs chan<- *kgo.Record) {
 	defer close(jobs)
-	defer client.Close()
 
 	for {
 		select {

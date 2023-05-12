@@ -32,3 +32,15 @@ jobs:
           version: v1.51.2
           args: --timeout=5m
           working-directory: backend
+    
+  gotest:
+      name: test
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: 'backend/go.mod'
+      
+      - run: go test -failfast -race -json ./...
