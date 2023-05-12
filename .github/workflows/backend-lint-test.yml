@@ -16,13 +16,13 @@ permissions:
   contents: read
 
 jobs:
-  golangci:
-    name: lint
+  verify:
+    name: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version-file: 'backend/go.mod'
 
@@ -33,15 +33,6 @@ jobs:
           args: --timeout=5m
           working-directory: backend
     
-  gotest:
-      name: test
-      runs-on: ubuntu-latest
-      steps:
-      - uses: actions/checkout@v3
-      
-      - uses: actions/setup-go@v3
-        with:
-          go-version-file: 'backend/go.mod'
-      
-      - run: go test -race ./...
+      - name: test
+        run: go test -race ./...
         working-directory: backend
