@@ -40,7 +40,7 @@ import (
 
 func Test_ListMessages(t *testing.T) {
 	ctx := context.Background()
-	log, err := zap.NewProduction()
+	log, err := zap.NewDevelopment()
 	assert.NoError(t, err)
 
 	testTopicName := topicNameForTest("list_messages")

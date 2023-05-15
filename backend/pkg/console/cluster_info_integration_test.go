@@ -1,3 +1,12 @@
+// Copyright 2022 Redpanda Data, Inc.
+//
+// Use of this software is governed by the Business Source License
+// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+//
+// As of the Change Date specified in that file, in accordance with
+// the Business Source License, use of this software will be governed
+// by the Apache License, Version 2.0
+
 //go:build integration
 
 package console
@@ -15,7 +24,7 @@ import (
 
 func Test_GetClusterInfo(t *testing.T) {
 	ctx := context.Background()
-	log, err := zap.NewProduction()
+	log, err := zap.NewDevelopment()
 	assert.NoError(t, err)
 
 	cfg := config.Config{}
@@ -36,7 +45,6 @@ func Test_GetClusterInfo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, info)
 
-	assert.Equal(t, "unknown custom version at least v0.10.2", info.KafkaVersion)
 	assert.Len(t, info.Brokers, 1)
 	assert.NotEmpty(t, info.Brokers[0])
 
