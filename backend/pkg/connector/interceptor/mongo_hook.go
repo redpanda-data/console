@@ -127,8 +127,8 @@ func KafkaConnectToConsoleMongoDBHook(response model.ValidationResponse, _ map[s
 				DefaultValue:  "",
 				Importance:    "HIGH",
 				Required:      true,
-				DisplayName:   "MongoDB Connection URI",
-				Documentation: "The connection URI as supported by the official drivers. eg: mongodb://locahost/.",
+				DisplayName:   "MongoDB Connection URL",
+				Documentation: "The connection URL as supported by the official drivers. eg: mongodb://locahost/",
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "connection.url",
