@@ -108,3 +108,10 @@ tasks:
     cmds:
       - |
         GOBIN={{ .BUILD_ROOT }}/bin/go go test -race --tags=integration -json -cover ./... | {{ .BUILD_ROOT }}/bin/go/tparse
+
+  verify:
+    dir: "{{.BACKEND_ROOT}}"
+    desc: Run lint and tests
+    cmds: 
+      - task: 'lint'
+      - task: 'cover'
