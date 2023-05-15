@@ -55,12 +55,12 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 		d.SetVisible(true)
 	case "plugin.name":
 		d.SetDefaultValue("pgoutput")
-	case "flush.lsn.source", "tombstones.on.delete", "database.tcpKeepAlive":
+	case "flush.lsn.source", "tombstones.on.delete":
 		d.SetDefaultValue("true")
 	case "slot.drop.on.stop", "include.unknown.datatypes":
 		d.SetDefaultValue("false")
 	case "database.sslmode":
-		d.SetDocumentation("Whether to use an encrypted connection to the PostgreSQL server. 'disable' uses an unencrypted connection. 'require' uses a secure (encrypted) connection, and fails if one cannot be established.").
+		d.SetDocumentation("Whether to use an encrypted connection to the PostgreSQL server. 'disable' uses an unencrypted connection. 'require' uses a secure (encrypted) connection, and fails if one cannot be established").
 			SetComponentType(model.ComponentRadioGroup).
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("disable", "disable").
@@ -81,6 +81,9 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
+	case "database.tcpKeepAlive":
+		d.SetDocumentation("Enable to avoid dropping TCP connection. Disable otherwise").
+			SetDefaultValue("true")
 	}
 
 	// Importance Patches
