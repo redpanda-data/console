@@ -23,11 +23,15 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 )
 
@@ -39,7 +43,7 @@ type restAPIError struct {
 func Test_handleCreateTopic(t *testing.T) {
 	port := rand.Intn(50000) + 10000
 
-	api := New(&config.Config{
+	cfg := &config.Config{
 		REST: config.Server{
 			Config: rest.Config{
 				HTTPListenAddress: "0.0.0.0",
@@ -56,7 +60,9 @@ func Test_handleCreateTopic(t *testing.T) {
 			LogLevelInput: "info",
 			LogLevel:      zap.NewAtomicLevel(),
 		},
-	})
+	}
+
+	api := New(cfg)
 
 	go api.Start()
 
@@ -75,6 +81,7 @@ func Test_handleCreateTopic(t *testing.T) {
 		name        string
 		input       *createTopicRequest
 		customHooks func(t *testing.T) *Hooks
+		fakeControl func(fakeCluster *kfake.Cluster)
 		expect      func(context.Context, *http.Response, []byte)
 		expectError string
 		cleanup     func(context.Context)
@@ -262,6 +269,57 @@ func Test_handleCreateTopic(t *testing.T) {
 				assert.Equal(t, 403, apiErr.Status)
 			},
 		},
+		{
+			name: "create topic fail",
+			input: &createTopicRequest{
+				TopicName:         topicNameForTest("create_topic_fail"),
+				PartitionCount:    1,
+				ReplicationFactor: 1,
+			},
+			fakeControl: func(fakeCluster *kfake.Cluster) {
+				fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
+					fakeCluster.KeepControl()
+
+					switch v := req.(type) {
+					case *kmsg.ApiVersionsRequest:
+						return nil, nil, false
+					case *kmsg.MetadataRequest:
+						return nil, nil, false
+					case *kmsg.CreateTopicsRequest:
+						assert.Len(t, v.Topics, 1)
+						assert.Equal(t, topicNameForTest("create_topic_fail"), v.Topics[0].Topic)
+
+						ctRes := v.ResponseKind().(*kmsg.CreateTopicsResponse)
+						ctRes.Topics = make([]kmsg.CreateTopicsResponseTopic, 1)
+						ctRes.Topics[0] = kmsg.NewCreateTopicsResponseTopic()
+						ctRes.Topics[0].Topic = topicNameForTest("create_topic_fail")
+						ctRes.Topics[0].ReplicationFactor = int16(1)
+						ctRes.Topics[0].NumPartitions = int32(1)
+
+						ctRes.Topics[0].ErrorCode = kerr.PolicyViolation.Code
+
+						return ctRes, nil, true
+
+					default:
+						assert.Fail(t, fmt.Sprintf("unexpected call to fake kafka request %+T", v))
+
+						return nil, nil, false
+					}
+				})
+			},
+			expect: func(ctx context.Context, res *http.Response, body []byte) {
+				assert.Equal(t, 503, res.StatusCode)
+
+				apiErr := restAPIError{}
+
+				err := json.Unmarshal(body, &apiErr)
+				assert.NoError(t, err)
+
+				assert.Equal(t, `Failed to create topic, kafka responded with the following error: POLICY_VIOLATION: Request parameters do not satisfy the configured policy.`, apiErr.Message)
+
+				assert.Equal(t, 503, apiErr.Status)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -279,6 +337,57 @@ func Test_handleCreateTopic(t *testing.T) {
 			defer func() {
 				if oldHooks != nil {
 					api.Hooks = oldHooks
+				}
+			}()
+
+			oldKafkaSvc := api.KafkaSvc
+			oldConsoleSvc := api.ConsoleSvc
+			if tc.fakeControl != nil {
+				// fake cluster
+				fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
+				assert.Nil(t, err)
+
+				log, err := zap.NewDevelopment()
+				assert.NoError(t, err)
+
+				// hacky way to copy config struct
+				cfgJSON, err := json.Marshal(cfg)
+				require.NoError(t, err)
+
+				newConfig := config.Config{}
+				err = json.Unmarshal(cfgJSON, &newConfig)
+				require.NoError(t, err)
+
+				// new kafka service
+				newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
+				newKafkaSvc, err := kafka.NewService(&newConfig, log,
+					metricNameForTest(strings.ReplaceAll(tc.name, " ", "")))
+				assert.NoError(t, err)
+
+				// new console service
+				newConsoleSvc, err := console.NewService(newConfig.Console, log, newKafkaSvc, api.RedpandaSvc, api.ConnectSvc)
+				assert.NoError(t, err)
+
+				// save old
+				oldConsoleSvc = api.ConsoleSvc
+				oldKafkaSvc = api.KafkaSvc
+
+				// switch
+				api.KafkaSvc = newKafkaSvc
+				api.ConsoleSvc = newConsoleSvc
+
+				// call the fake control and expect function
+				tc.fakeControl(fakeCluster)
+			}
+
+			defer func() {
+				if tc.fakeControl != nil {
+					if oldKafkaSvc != nil {
+						api.KafkaSvc = oldKafkaSvc
+					}
+					if oldConsoleSvc != nil {
+						api.ConsoleSvc = oldConsoleSvc
+					}
 				}
 			}()
 
