@@ -59,8 +59,8 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition, _ string) mo
 	case "tasks.max":
 		d.SetDisplayName("Max tasks").SetImportance(model.ConfigDefinitionImportanceHigh)
 	case keyConverter:
-		d.SetDisplayName("Kafka message key format").
-			SetDocumentation("Format of the key in the Kafka topic").
+		d.SetDisplayName("Redpanda message key format").
+			SetDocumentation("Format of the key in the Redpanda topic").
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
@@ -69,8 +69,8 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition, _ string) mo
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
 			SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "value.converter":
-		d.SetDisplayName("Kafka message value format").
-			SetDocumentation("Format of the value in the Kafka topic").
+		d.SetDisplayName("Redpanda message value format").
+			SetDocumentation("Format of the value in the Redpanda topic").
 			SetImportance(model.ConfigDefinitionImportanceHigh).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
@@ -79,8 +79,8 @@ func (*ConfigPatchCommon) PatchDefinition(d model.ConfigDefinition, _ string) mo
 			AddRecommendedValueWithMetadata("org.apache.kafka.connect.converters.ByteArrayConverter", "BYTES").
 			SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case headerConverter:
-		d.SetDisplayName("Kafka message headers format").
-			SetDocumentation("Format of the headers in the Kafka topic").
+		d.SetDisplayName("Redpanda message headers format").
+			SetDocumentation("Format of the headers in the Redpanda topic").
 			SetImportance(model.ConfigDefinitionImportanceLow).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
