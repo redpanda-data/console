@@ -15,7 +15,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -24,65 +23,17 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	"github.com/testcontainers/testcontainers-go/modules/redpanda"
-	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"github.com/twmb/franz-go/pkg/kversion"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/kafka/mocks"
 )
 
-type ListMessagesTestSuite struct {
-	suite.Suite
-
-	redpandaContainer *redpanda.Container
-
-	kafkaClient      *kgo.Client
-	kafkaAdminClient *kadm.Client
-
-	testSeedBroker string
-	testTopicName  string
-}
-
-func TestSuite(t *testing.T) {
-	suite.Run(t, &ListMessagesTestSuite{})
-}
-
-func (s *ListMessagesTestSuite) SetupSuite() {
-	fmt.Println("!!! SetupSuite")
-	t := s.T()
-	require := require.New(t)
-
-	ctx := context.Background()
-	container, err := redpanda.RunContainer(ctx)
-	require.NoError(err)
-	s.redpandaContainer = container
-
-	seedBroker, err := container.KafkaSeedBroker(ctx)
-	require.NoError(err)
-
-	s.testSeedBroker = seedBroker
-	s.testTopicName = topicNameForTest("list_messages")
-
-	s.kafkaClient, s.kafkaAdminClient = createTestData(t, ctx, []string{seedBroker}, s.testTopicName)
-}
-
-func (s *ListMessagesTestSuite) TearDownSuite() {
-	t := s.T()
-	assert := require.New(t)
-
-	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
-}
-
-func (s *ListMessagesTestSuite) TestListMessages() {
+func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 	ctx := context.Background()
 	t := s.T()
 	assert := assert.New(t)
@@ -93,7 +44,9 @@ func (s *ListMessagesTestSuite) TestListMessages() {
 	log, err := logCfg.Build()
 	require.NoError(err)
 
-	testTopicName := s.testTopicName
+	testTopicName := topicNameForTest("list_messages")
+
+	createTestData(t, ctx, s.kafkaClient, s.kafkaAdminClient, testTopicName)
 
 	t.Run("empty topic", func(t *testing.T) {
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil,
@@ -314,8 +267,9 @@ func (s *ListMessagesTestSuite) TestListMessages() {
 
 		defer fakeCluster.Close()
 
-		// create test topic and test data in the fake redpanda cluster
-		_, _ = createTestData(t, ctx, fakeCluster.ListenAddrs(), testTopicName)
+		fakeClient, fakeAdminClient := createClients(t, fakeCluster.ListenAddrs())
+
+		createTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
 		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0])
 
@@ -406,8 +360,9 @@ func (s *ListMessagesTestSuite) TestListMessages() {
 
 		defer fakeCluster.Close()
 
-		// create test topic and test data in the fake redpanda cluster
-		_, _ = createTestData(t, ctx, fakeCluster.ListenAddrs(), testTopicName)
+		fakeClient, fakeAdminClient := createClients(t, fakeCluster.ListenAddrs())
+
+		createTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
 		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0])
 
@@ -470,8 +425,9 @@ func (s *ListMessagesTestSuite) TestListMessages() {
 
 		defer fakeCluster.Close()
 
-		// create test topic and test data in the fake redpanda cluster
-		_, _ = createTestData(t, ctx, fakeCluster.ListenAddrs(), testTopicName)
+		fakeClient, fakeAdminClient := createClients(t, fakeCluster.ListenAddrs())
+
+		createTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
 		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0])
 
@@ -591,69 +547,4 @@ func (m *orderMatcher) String() string {
 
 func matchesOrder(id string) gomock.Matcher {
 	return &orderMatcher{expectedID: id}
-}
-
-func createTestData(t *testing.T, ctx context.Context, brokers []string, testTopicName string) (*kgo.Client, *kadm.Client) {
-	cfg := config.Config{}
-	cfg.SetDefaults()
-	cfg.MetricsNamespace = metricNameForTest("console_list_messages")
-	cfg.Kafka.Brokers = brokers
-
-	opts := []kgo.Opt{
-		kgo.SeedBrokers(cfg.Kafka.Brokers...),
-		kgo.MaxVersions(kversion.V2_6_0()),
-		kgo.FetchMaxBytes(5 * 1000 * 1000), // 5MB
-		kgo.MaxConcurrentFetches(12),
-		kgo.KeepControlRecords(),
-	}
-
-	kClient, err := kgo.NewClient(opts...)
-	kafkaAdmCl := kadm.NewClient(kClient)
-
-	_, err = kafkaAdmCl.CreateTopic(ctx, 1, 1, nil, testTopicName)
-	assert.NoError(t, err)
-
-	g := new(errgroup.Group)
-	g.Go(func() error {
-		produceOrders(t, ctx, kClient, testTopicName)
-		return nil
-	})
-
-	err = g.Wait()
-	assert.NoError(t, err)
-
-	return kClient, kafkaAdmCl
-}
-
-func produceOrders(t *testing.T, ctx context.Context, kafkaCl *kgo.Client, topic string) {
-	t.Helper()
-
-	ticker := time.NewTicker(100 * time.Millisecond)
-
-	recordTimeStamp := time.Date(2010, time.November, 10, 13, 0, 0, 0, time.UTC)
-
-	i := 0
-	for i < 20 {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			order := Order{ID: strconv.Itoa(i)}
-			serializedOrder, err := json.Marshal(order)
-			require.NoError(t, err)
-
-			r := &kgo.Record{
-				Key:       []byte(order.ID),
-				Value:     serializedOrder,
-				Topic:     topic,
-				Timestamp: recordTimeStamp,
-			}
-			results := kafkaCl.ProduceSync(ctx, r)
-			require.NoError(t, results.FirstErr())
-
-			i++
-
-			recordTimeStamp = recordTimeStamp.Add(1 * time.Minute)
-		}
-	}
 }
