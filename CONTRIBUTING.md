@@ -103,6 +103,22 @@ code. In order to use them:
 3. If you run `task backend:lint` in the repository root the output will highlight
    linting issues.
 
+### Tests
+
+Whether you are fixing an issue or adding a new feature, it is recommended that new
+tests are added to cover the new functionality. Tests can be run from command line.
+
+**Frontend:**
+- Open a terminal tab and go to the /frontend directory
+- Run `npm test` to run all tests
+
+**Backend:**
+- Some integration tests require a running Docker instance
+- In the repository root run `task backend:test-unit` to run the unit tests
+- Run `task backend:test-integration` to run the unit and integration tests
+- Run `task backend:cover` to run the unit and integration tests with code coverage report
+- Run `task backend:verify` to run the linter and all tests
+
 ### Commit history
 
 The ordering and structure of commits in a pull request is very important. This

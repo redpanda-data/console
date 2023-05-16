@@ -1,4 +1,4 @@
-name: "Backend lint"
+name: "Backend verify"
 
 on:
   push:
@@ -16,13 +16,13 @@ permissions:
   contents: read
 
 jobs:
-  golangci:
-    name: lint
+  verify:
+    name: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version-file: 'backend/go.mod'
 
@@ -32,3 +32,7 @@ jobs:
           version: v1.51.2
           args: --timeout=5m
           working-directory: backend
+    
+      - name: test
+        run: go test -race ./...
+        working-directory: backend
