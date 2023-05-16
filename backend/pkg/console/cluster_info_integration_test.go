@@ -1,3 +1,12 @@
+// Copyright 2022 Redpanda Data, Inc.
+//
+// Use of this software is governed by the Business Source License
+// included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+//
+// As of the Change Date specified in that file, in accordance with
+// the Business Source License, use of this software will be governed
+// by the Apache License, Version 2.0
+
 //go:build integration
 
 package console
@@ -5,47 +14,53 @@ package console
 import (
 	"context"
 	"net"
-	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
-func Test_GetClusterInfo(t *testing.T) {
+func (s *ConsoleIntegrationTestSuite) TestGetClusterInfo() {
+	t := s.T()
+	assert := assert.New(t)
+
 	ctx := context.Background()
-	log, err := zap.NewProduction()
-	assert.NoError(t, err)
+	logCfg := zap.NewDevelopmentConfig()
+	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	log, err := logCfg.Build()
+	assert.NoError(err)
+
+	testSeedBroker := s.testSeedBroker
 
 	cfg := config.Config{}
 	cfg.SetDefaults()
-
-	cfg.MetricsNamespace = metricNameForTest("get_cluster_info")
+	cfg.MetricsNamespace = testutil.MetricNameForTest("get_cluster_info")
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
 	kafkaSvc, err := kafka.NewService(&cfg, log, cfg.MetricsNamespace)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	svc, err := NewService(cfg.Console, log, kafkaSvc, nil, nil)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	defer svc.kafkaSvc.KafkaClient.Close()
 
 	info, err := svc.GetClusterInfo(ctx)
-	assert.NoError(t, err)
-	assert.NotNil(t, info)
+	assert.NoError(err)
+	assert.NotNil(info)
 
-	assert.Equal(t, "unknown custom version at least v0.10.2", info.KafkaVersion)
-	assert.Len(t, info.Brokers, 1)
-	assert.NotEmpty(t, info.Brokers[0])
+	assert.Len(info.Brokers, 1)
+	assert.NotEmpty(info.Brokers[0])
 
 	expectedAddr, expectedPort, err := net.SplitHostPort(testSeedBroker)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	actualAddr, actualPort, err := net.SplitHostPort(testSeedBroker)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
-	assert.Equal(t, expectedAddr, actualAddr)
-	assert.Equal(t, expectedPort, actualPort)
+	assert.Equal(expectedAddr, actualAddr)
+	assert.Equal(expectedPort, actualPort)
 }

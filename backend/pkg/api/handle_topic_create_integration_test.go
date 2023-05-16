@@ -20,11 +20,6 @@ import (
 	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
-	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/connect"
-	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
@@ -33,6 +28,13 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/connect"
+	"github.com/redpanda-data/console/backend/pkg/console"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
 type restAPIError struct {
@@ -40,7 +42,16 @@ type restAPIError struct {
 	Message string `json:"message"`
 }
 
-func Test_handleCreateTopic(t *testing.T) {
+func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	logCfg := zap.NewDevelopmentConfig()
+	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	log, err := logCfg.Build()
+	require.NoError(err)
+
 	port := rand.Intn(50000) + 10000
 
 	cfg := &config.Config{
@@ -51,7 +62,7 @@ func Test_handleCreateTopic(t *testing.T) {
 			},
 		},
 		Kafka: config.Kafka{
-			Brokers: []string{testSeedBroker},
+			Brokers: []string{s.testSeedBroker},
 		},
 		Connect: config.Connect{
 			Enabled: false,
@@ -66,8 +77,8 @@ func Test_handleCreateTopic(t *testing.T) {
 
 	go api.Start()
 
-	kafkaClient, err := kgo.NewClient(kgo.SeedBrokers(testSeedBroker))
-	require.NoError(t, err)
+	kafkaClient, err := kgo.NewClient(kgo.SeedBrokers(s.testSeedBroker))
+	require.NoError(err)
 
 	kafkaAdminClient := kadm.NewClient(kafkaClient)
 
@@ -77,343 +88,339 @@ func Test_handleCreateTopic(t *testing.T) {
 
 	apiServer := api.Cfg.REST.HTTPListenAddress + ":" + strconv.FormatInt(int64(port), 10)
 
-	type test struct {
-		name        string
-		input       *createTopicRequest
-		customHooks func(t *testing.T) *Hooks
-		fakeControl func(fakeCluster *kfake.Cluster)
-		expect      func(context.Context, *http.Response, []byte)
-		expectError string
-		cleanup     func(context.Context)
-	}
-
-	tests := []test{
-		{
-			name: "happy path",
-			input: &createTopicRequest{
-				TopicName:         topicNameForTest("create_topic"),
-				PartitionCount:    1,
-				ReplicationFactor: 1,
-			},
-			expect: func(ctx context.Context, res *http.Response, body []byte) {
-				assert.Equal(t, 200, res.StatusCode)
-
-				createTopicRes := console.CreateTopicResponse{}
-
-				topicName := topicNameForTest("create_topic")
-
-				err := json.Unmarshal(body, &createTopicRes)
-				assert.NoError(t, err)
-				assert.Equal(t, topicName, createTopicRes.TopicName)
-				assert.Equal(t, int32(-1), createTopicRes.PartitionCount)    // is this correct?
-				assert.Equal(t, int16(-1), createTopicRes.ReplicationFactor) // is this correct?
-				assert.Len(t, createTopicRes.CreateTopicResponseConfigs, 4)
-
-				mdRes, err := kafkaAdminClient.Metadata(ctx, topicName)
-				assert.NoError(t, err)
-				assert.Len(t, mdRes.Topics, 1)
-
-				assert.NotEmpty(t, mdRes.Topics[topicName])
-
-				topic := mdRes.Topics[topicName]
-
-				assert.Len(t, topic.Partitions, 1)
-				assert.NotEmpty(t, topic.Partitions[0])
-				assert.Len(t, topic.Partitions[0].Replicas, 1)
-				assert.Empty(t, topic.Err)
-
-				dtRes, err := kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
-				assert.NoError(t, err)
-
-				assert.Len(t, dtRes, 1)
-
-				assert.NoError(t, dtRes[0].Err)
-				assert.True(t, len(dtRes[0].Configs) > 0)
-				assert.Equal(t, dtRes[0].Name, topicName)
-			},
-		},
-		{
-			name: "happy path multi partition",
-			input: &createTopicRequest{
-				TopicName:         topicNameForTest("create_topic_multi"),
-				PartitionCount:    2,
-				ReplicationFactor: 1,
-			},
-			expect: func(ctx context.Context, res *http.Response, body []byte) {
-				assert.Equal(t, 200, res.StatusCode)
-
-				createTopicRes := console.CreateTopicResponse{}
-
-				topicName := topicNameForTest("create_topic_multi")
-
-				err := json.Unmarshal(body, &createTopicRes)
-				assert.NoError(t, err)
-				assert.Equal(t, topicName, createTopicRes.TopicName)
-				assert.Equal(t, int32(-1), createTopicRes.PartitionCount)
-				assert.Equal(t, int16(-1), createTopicRes.ReplicationFactor)
-				assert.Len(t, createTopicRes.CreateTopicResponseConfigs, 4)
-
-				mdRes, err := kafkaAdminClient.Metadata(ctx, topicName)
-				assert.NoError(t, err)
-				assert.Len(t, mdRes.Topics, 1)
-
-				assert.NotEmpty(t, mdRes.Topics[topicName])
-
-				topic := mdRes.Topics[topicName]
-
-				assert.Len(t, topic.Partitions, 2)
-				assert.NotEmpty(t, topic.Partitions[0])
-				assert.Len(t, topic.Partitions[0].Replicas, 1)
-				assert.NotEmpty(t, topic.Partitions[1], 1)
-				assert.Len(t, topic.Partitions[1].Replicas, 1)
-				assert.Empty(t, topic.Err)
-
-				dtRes, err := kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
-				assert.NoError(t, err)
-
-				assert.Len(t, dtRes, 1)
-
-				assert.NoError(t, dtRes[0].Err)
-				assert.True(t, len(dtRes[0].Configs) > 0)
-				assert.Equal(t, dtRes[0].Name, topicName)
-			},
-		},
-		{
-			name: "no partition",
-			input: &createTopicRequest{
-				TopicName:         topicNameForTest("no_partition"),
-				PartitionCount:    0,
-				ReplicationFactor: 1,
-			},
-			expect: func(ctx context.Context, res *http.Response, body []byte) {
-				assert.Equal(t, 400, res.StatusCode)
-
-				apiErr := restAPIError{}
-
-				err := json.Unmarshal(body, &apiErr)
-				assert.NoError(t, err)
-
-				assert.Equal(t,
-					"validating the decoded object failed: you must create a topic with at least one partition",
-					apiErr.Message)
-
-				assert.Equal(t, 400, apiErr.Status)
-			},
-		},
-		{
-			name: "no replication",
-			input: &createTopicRequest{
-				TopicName:         topicNameForTest("no_replication"),
-				PartitionCount:    1,
-				ReplicationFactor: 0,
-			},
-			expect: func(ctx context.Context, res *http.Response, body []byte) {
-				assert.Equal(t, 400, res.StatusCode)
-
-				apiErr := restAPIError{}
-
-				err := json.Unmarshal(body, &apiErr)
-				assert.NoError(t, err)
-
-				assert.Equal(t,
-					"validating the decoded object failed: replication factor must be 1 or more",
-					apiErr.Message)
-
-				assert.Equal(t, 400, apiErr.Status)
-			},
-		},
-		{
-			name: "invalid topic name",
-			input: &createTopicRequest{
-				TopicName:         topicNameForTest("invalid topic name"),
-				PartitionCount:    1,
-				ReplicationFactor: 0,
-			},
-			expect: func(ctx context.Context, res *http.Response, body []byte) {
-				assert.Equal(t, 400, res.StatusCode)
-
-				apiErr := restAPIError{}
-
-				err := json.Unmarshal(body, &apiErr)
-				assert.NoError(t, err)
-
-				assert.Equal(t,
-					`validating the decoded object failed: valid characters for Kafka topics are the ASCII alphanumeric characters and '.', '_', '-'`,
-					apiErr.Message)
-
-				assert.Equal(t, 400, apiErr.Status)
-			},
-		},
-		{
-			name: "no permission",
-			input: &createTopicRequest{
-				TopicName:         topicNameForTest("no_permission"),
-				PartitionCount:    1,
-				ReplicationFactor: 1,
-			},
-			customHooks: func(t *testing.T) *Hooks {
-				return newAssertHooks(t, map[string]bool{
-					"CanCreateTopic": false,
-				})
-			},
-			expect: func(ctx context.Context, res *http.Response, body []byte) {
-				assert.Equal(t, 403, res.StatusCode)
-
-				apiErr := restAPIError{}
-
-				err := json.Unmarshal(body, &apiErr)
-				assert.NoError(t, err)
-
-				assert.Equal(t, `You don't have permissions to create this topic.`, apiErr.Message)
-
-				assert.Equal(t, 403, apiErr.Status)
-			},
-		},
-		{
-			name: "create topic fail",
-			input: &createTopicRequest{
-				TopicName:         topicNameForTest("create_topic_fail"),
-				PartitionCount:    1,
-				ReplicationFactor: 1,
-			},
-			fakeControl: func(fakeCluster *kfake.Cluster) {
-				fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
-					fakeCluster.KeepControl()
-
-					switch v := req.(type) {
-					case *kmsg.ApiVersionsRequest:
-						return nil, nil, false
-					case *kmsg.MetadataRequest:
-						return nil, nil, false
-					case *kmsg.CreateTopicsRequest:
-						assert.Len(t, v.Topics, 1)
-						assert.Equal(t, topicNameForTest("create_topic_fail"), v.Topics[0].Topic)
-
-						ctRes := v.ResponseKind().(*kmsg.CreateTopicsResponse)
-						ctRes.Topics = make([]kmsg.CreateTopicsResponseTopic, 1)
-						ctRes.Topics[0] = kmsg.NewCreateTopicsResponseTopic()
-						ctRes.Topics[0].Topic = topicNameForTest("create_topic_fail")
-						ctRes.Topics[0].ReplicationFactor = int16(1)
-						ctRes.Topics[0].NumPartitions = int32(1)
-
-						ctRes.Topics[0].ErrorCode = kerr.PolicyViolation.Code
-
-						return ctRes, nil, true
-
-					default:
-						assert.Fail(t, fmt.Sprintf("unexpected call to fake kafka request %+T", v))
-
-						return nil, nil, false
-					}
-				})
-			},
-			expect: func(ctx context.Context, res *http.Response, body []byte) {
-				assert.Equal(t, 503, res.StatusCode)
-
-				apiErr := restAPIError{}
-
-				err := json.Unmarshal(body, &apiErr)
-				assert.NoError(t, err)
-
-				assert.Equal(t, `Failed to create topic, kafka responded with the following error: POLICY_VIOLATION: Request parameters do not satisfy the configured policy.`, apiErr.Message)
-
-				assert.Equal(t, 503, apiErr.Status)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-
-			var oldHooks *Hooks
-			if tc.customHooks != nil {
-				oldHooks = api.Hooks
-				newHooks := tc.customHooks(t)
-				if newHooks != nil {
-					api.Hooks = newHooks
-				}
-			}
-
-			defer func() {
-				if oldHooks != nil {
-					api.Hooks = oldHooks
-				}
-			}()
-
-			oldKafkaSvc := api.KafkaSvc
-			oldConsoleSvc := api.ConsoleSvc
-			if tc.fakeControl != nil {
-				// fake cluster
-				fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
-				assert.Nil(t, err)
-
-				log, err := zap.NewDevelopment()
-				assert.NoError(t, err)
-
-				// hacky way to copy config struct
-				cfgJSON, err := json.Marshal(cfg)
-				require.NoError(t, err)
-
-				newConfig := config.Config{}
-				err = json.Unmarshal(cfgJSON, &newConfig)
-				require.NoError(t, err)
-
-				// new kafka service
-				newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
-				newKafkaSvc, err := kafka.NewService(&newConfig, log,
-					metricNameForTest(strings.ReplaceAll(tc.name, " ", "")))
-				assert.NoError(t, err)
-
-				// new console service
-				newConsoleSvc, err := console.NewService(newConfig.Console, log, newKafkaSvc, api.RedpandaSvc, api.ConnectSvc)
-				assert.NoError(t, err)
-
-				// save old
-				oldConsoleSvc = api.ConsoleSvc
-				oldKafkaSvc = api.KafkaSvc
-
-				// switch
-				api.KafkaSvc = newKafkaSvc
-				api.ConsoleSvc = newConsoleSvc
-
-				// call the fake control and expect function
-				tc.fakeControl(fakeCluster)
-			}
-
-			defer func() {
-				if tc.fakeControl != nil {
-					if oldKafkaSvc != nil {
-						api.KafkaSvc = oldKafkaSvc
-					}
-					if oldConsoleSvc != nil {
-						api.ConsoleSvc = oldConsoleSvc
-					}
-				}
-			}()
-
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			data, err := json.Marshal(tc.input)
-			require.NoError(t, err)
-
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+apiServer+"/api/topics", bytes.NewReader(data))
-			require.NoError(t, err)
-
-			req.Header.Set("Content-Type", "application/json")
-
-			res, err := http.DefaultClient.Do(req)
-			assert.NoError(t, err)
-
-			body, err := io.ReadAll(res.Body)
-			res.Body.Close()
-			assert.NoError(t, err)
-
-			fmt.Println(string(body))
-
-			tc.expect(ctx, res, body)
+	t.Run("happy path", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		input := &createTopicRequest{
+			TopicName:         testutil.TopicNameForTest("create_topic"),
+			PartitionCount:    1,
+			ReplicationFactor: 1,
+		}
+
+		res, body := apiRequest(t, ctx, apiServer, input)
+
+		assert.Equal(200, res.StatusCode)
+
+		createTopicRes := console.CreateTopicResponse{}
+
+		topicName := testutil.TopicNameForTest("create_topic")
+
+		err := json.Unmarshal(body, &createTopicRes)
+		assert.NoError(err)
+		assert.Equal(topicName, createTopicRes.TopicName)
+		assert.Equal(int32(-1), createTopicRes.PartitionCount)    // is this correct?
+		assert.Equal(int16(-1), createTopicRes.ReplicationFactor) // is this correct?
+		assert.Len(createTopicRes.CreateTopicResponseConfigs, 4)
+
+		mdRes, err := kafkaAdminClient.Metadata(ctx, topicName)
+		assert.NoError(err)
+		assert.Len(mdRes.Topics, 1)
+
+		assert.NotEmpty(mdRes.Topics[topicName])
+
+		topic := mdRes.Topics[topicName]
+
+		assert.Len(topic.Partitions, 1)
+		assert.NotEmpty(topic.Partitions[0])
+		assert.Len(topic.Partitions[0].Replicas, 1)
+		assert.Empty(topic.Err)
+
+		dtRes, err := kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
+		assert.NoError(err)
+
+		assert.Len(dtRes, 1)
+
+		assert.NoError(dtRes[0].Err)
+		assert.True(len(dtRes[0].Configs) > 0)
+		assert.Equal(dtRes[0].Name, topicName)
+	})
+
+	t.Run("happy path multi partition", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		input := &createTopicRequest{
+			TopicName:         testutil.TopicNameForTest("create_topic_multi"),
+			PartitionCount:    2,
+			ReplicationFactor: 1,
+		}
+
+		res, body := apiRequest(t, ctx, apiServer, input)
+
+		assert.Equal(200, res.StatusCode)
+
+		createTopicRes := console.CreateTopicResponse{}
+
+		topicName := testutil.TopicNameForTest("create_topic_multi")
+
+		err := json.Unmarshal(body, &createTopicRes)
+		assert.NoError(err)
+		assert.Equal(topicName, createTopicRes.TopicName)
+		assert.Equal(int32(-1), createTopicRes.PartitionCount)
+		assert.Equal(int16(-1), createTopicRes.ReplicationFactor)
+		assert.Len(createTopicRes.CreateTopicResponseConfigs, 4)
+
+		mdRes, err := kafkaAdminClient.Metadata(ctx, topicName)
+		assert.NoError(err)
+		assert.Len(mdRes.Topics, 1)
+
+		assert.NotEmpty(mdRes.Topics[topicName])
+
+		topic := mdRes.Topics[topicName]
+
+		assert.Len(topic.Partitions, 2)
+		assert.NotEmpty(topic.Partitions[0])
+		assert.Len(topic.Partitions[0].Replicas, 1)
+		assert.NotEmpty(topic.Partitions[1], 1)
+		assert.Len(topic.Partitions[1].Replicas, 1)
+		assert.Empty(topic.Err)
+
+		dtRes, err := kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
+		assert.NoError(err)
+
+		assert.Len(dtRes, 1)
+
+		assert.NoError(dtRes[0].Err)
+		assert.True(len(dtRes[0].Configs) > 0)
+		assert.Equal(dtRes[0].Name, topicName)
+	})
+
+	t.Run("no partition", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		input := &createTopicRequest{
+			TopicName:         testutil.TopicNameForTest("no_partition"),
+			PartitionCount:    0,
+			ReplicationFactor: 1,
+		}
+
+		res, body := apiRequest(t, ctx, apiServer, input)
+
+		assert.Equal(400, res.StatusCode)
+
+		apiErr := restAPIError{}
+
+		err := json.Unmarshal(body, &apiErr)
+		assert.NoError(err)
+
+		assert.Equal(
+			"validating the decoded object failed: you must create a topic with at least one partition",
+			apiErr.Message)
+
+		assert.Equal(400, apiErr.Status)
+	})
+
+	t.Run("no replication", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		input := &createTopicRequest{
+			TopicName:         testutil.TopicNameForTest("no_replication"),
+			PartitionCount:    1,
+			ReplicationFactor: 0,
+		}
+
+		res, body := apiRequest(t, ctx, apiServer, input)
+
+		assert.Equal(400, res.StatusCode)
+
+		apiErr := restAPIError{}
+
+		err := json.Unmarshal(body, &apiErr)
+		assert.NoError(err)
+
+		assert.Equal(
+			"validating the decoded object failed: replication factor must be 1 or more",
+			apiErr.Message)
+
+		assert.Equal(400, apiErr.Status)
+	})
+
+	t.Run("invalid topic name", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		input := &createTopicRequest{
+			TopicName:         testutil.TopicNameForTest("invalid topic name"),
+			PartitionCount:    1,
+			ReplicationFactor: 0,
+		}
+
+		res, body := apiRequest(t, ctx, apiServer, input)
+
+		assert.Equal(400, res.StatusCode)
+
+		apiErr := restAPIError{}
+
+		err := json.Unmarshal(body, &apiErr)
+		assert.NoError(err)
+
+		assert.Equal(
+			`validating the decoded object failed: valid characters for Kafka topics are the ASCII alphanumeric characters and '.', '_', '-'`,
+			apiErr.Message)
+
+		assert.Equal(400, apiErr.Status)
+	})
+
+	t.Run("no permission", func(t *testing.T) {
+		oldHooks := api.Hooks
+		newHooks := newAssertHooks(t, map[string]bool{
+			"CanCreateTopic": false,
 		})
-	}
+
+		if newHooks != nil {
+			api.Hooks = newHooks
+		}
+
+		defer func() {
+			if oldHooks != nil {
+				api.Hooks = oldHooks
+			}
+		}()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		input := &createTopicRequest{
+			TopicName:         testutil.TopicNameForTest("no_permission"),
+			PartitionCount:    1,
+			ReplicationFactor: 1,
+		}
+
+		res, body := apiRequest(t, ctx, apiServer, input)
+
+		assert.Equal(403, res.StatusCode)
+
+		apiErr := restAPIError{}
+
+		err := json.Unmarshal(body, &apiErr)
+		assert.NoError(err)
+
+		assert.Equal(`You don't have permissions to create this topic.`, apiErr.Message)
+
+		assert.Equal(403, apiErr.Status)
+	})
+
+	t.Run("create topic fail", func(t *testing.T) {
+		// fake cluster
+		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
+		assert.NoError(err)
+
+		// hacky way to copy config struct
+		cfgJSON, err := json.Marshal(cfg)
+		require.NoError(err)
+
+		newConfig := config.Config{}
+		err = json.Unmarshal(cfgJSON, &newConfig)
+		require.NoError(err)
+
+		// new kafka service
+		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
+		newKafkaSvc, err := kafka.NewService(&newConfig, log,
+			testutil.MetricNameForTest(strings.ReplaceAll(t.Name(), " ", "")))
+		assert.NoError(err)
+
+		// new console service
+		newConsoleSvc, err := console.NewService(newConfig.Console, log, newKafkaSvc, api.RedpandaSvc, api.ConnectSvc)
+		assert.NoError(err)
+
+		// save old
+		oldConsoleSvc := api.ConsoleSvc
+		oldKafkaSvc := api.KafkaSvc
+
+		// switch
+		api.KafkaSvc = newKafkaSvc
+		api.ConsoleSvc = newConsoleSvc
+
+		// call the fake control and expect function
+		fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
+			fakeCluster.KeepControl()
+
+			switch v := req.(type) {
+			case *kmsg.ApiVersionsRequest:
+				return nil, nil, false
+			case *kmsg.MetadataRequest:
+				return nil, nil, false
+			case *kmsg.CreateTopicsRequest:
+				assert.Len(v.Topics, 1)
+				assert.Equal(testutil.TopicNameForTest("create_topic_fail"), v.Topics[0].Topic)
+
+				ctRes := v.ResponseKind().(*kmsg.CreateTopicsResponse)
+				ctRes.Topics = make([]kmsg.CreateTopicsResponseTopic, 1)
+				ctRes.Topics[0] = kmsg.NewCreateTopicsResponseTopic()
+				ctRes.Topics[0].Topic = testutil.TopicNameForTest("create_topic_fail")
+				ctRes.Topics[0].ReplicationFactor = int16(1)
+				ctRes.Topics[0].NumPartitions = int32(1)
+
+				ctRes.Topics[0].ErrorCode = kerr.PolicyViolation.Code
+
+				return ctRes, nil, true
+
+			default:
+				assert.Fail(fmt.Sprintf("unexpected call to fake kafka request %+T", v))
+
+				return nil, nil, false
+			}
+		})
+
+		// undo switch
+		defer func() {
+			if oldKafkaSvc != nil {
+				api.KafkaSvc = oldKafkaSvc
+			}
+			if oldConsoleSvc != nil {
+				api.ConsoleSvc = oldConsoleSvc
+			}
+		}()
+
+		// make the request
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		input := &createTopicRequest{
+			TopicName:         testutil.TopicNameForTest("create_topic_fail"),
+			PartitionCount:    1,
+			ReplicationFactor: 1,
+		}
+
+		res, body := apiRequest(t, ctx, apiServer, input)
+
+		assert.Equal(503, res.StatusCode)
+
+		apiErr := restAPIError{}
+
+		err = json.Unmarshal(body, &apiErr)
+		assert.NoError(err)
+
+		assert.Equal(`Failed to create topic, kafka responded with the following error: POLICY_VIOLATION: Request parameters do not satisfy the configured policy.`, apiErr.Message)
+
+		assert.Equal(503, apiErr.Status)
+	})
+}
+
+func apiRequest(t *testing.T, ctx context.Context,
+	apiServer string, input *createTopicRequest,
+) (*http.Response, []byte) {
+	t.Helper()
+
+	data, err := json.Marshal(input)
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+apiServer+"/api/topics", bytes.NewReader(data))
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+	assert.NoError(t, err)
+
+	return res, body
 }
 
 func assertHookCall(t *testing.T) {
@@ -448,7 +455,6 @@ func (a *assertHooks) getCallReturnValue() bool {
 }
 
 func newAssertHooks(t *testing.T, returnValues map[string]bool) *Hooks {
-
 	h := &assertHooks{
 		allowedCalls: map[string]struct{}{},
 		returnValues: map[string]bool{},
@@ -557,6 +563,7 @@ func (a *assertHooks) AllowedTopicActions(_ context.Context, _ string) ([]string
 	}
 	return []string{}, nil
 }
+
 func (a *assertHooks) PrintListMessagesAuditLog(_ *http.Request, _ *console.ListMessageRequest) {
 	if !a.isCallAllowed() {
 		assertHookCall(a.t)

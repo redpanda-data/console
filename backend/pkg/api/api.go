@@ -126,7 +126,11 @@ func (api *API) Start() {
 	}
 
 	// Server
-	server := rest.NewServer(&api.Cfg.REST.Config, api.Logger, api.routes())
+	server, err := rest.NewServer(&api.Cfg.REST.Config, api.Logger, api.routes())
+	if err != nil {
+		api.Logger.Fatal("failed to create HTTP server", zap.Error(err))
+	}
+
 	err = server.Start()
 	if err != nil {
 		api.Logger.Fatal("REST Server returned an error", zap.Error(err))

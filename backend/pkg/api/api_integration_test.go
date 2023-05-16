@@ -4,63 +4,52 @@ package api
 
 import (
 	"context"
-	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+
+	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
-var testSeedBroker string
+type APIIntegrationTestSuite struct {
+	suite.Suite
 
-const TEST_TOPIC_NAME = "test.redpanda.console.api.topic"
+	redpandaContainer *redpanda.Container
 
-func TestMain(m *testing.M) {
-	os.Exit(func() int {
-		ctx := context.Background()
-		container, err := redpanda.RunContainer(ctx)
-		if err != nil {
-			panic(err)
-		}
+	kafkaClient      *kgo.Client
+	kafkaAdminClient *kadm.Client
 
-		defer func() {
-			if err := container.Terminate(ctx); err != nil {
-				panic(err)
-			}
-		}()
-
-		seedBroker, err := container.KafkaSeedBroker(ctx)
-		if err != nil {
-			panic(err)
-		}
-
-		testSeedBroker = seedBroker
-
-		// create a long lived stock test topic
-		kafkaCl, err := kgo.NewClient(
-			kgo.SeedBrokers(seedBroker),
-		)
-		if err != nil {
-			panic(err)
-		}
-
-		kafkaAdmCl := kadm.NewClient(kafkaCl)
-		_, err = kafkaAdmCl.CreateTopic(ctx, 1, 1, nil, TEST_TOPIC_NAME)
-		if err != nil {
-			panic(err)
-		}
-
-		kafkaCl.Close()
-
-		return m.Run()
-	}())
+	testSeedBroker string
 }
 
-func metricNameForTest(testName string) string {
-	return "test_redpanda_console_" + testName
+func TestSuite(t *testing.T) {
+	suite.Run(t, &APIIntegrationTestSuite{})
 }
 
-func topicNameForTest(testName string) string {
-	return "test.redpanda.console." + testName
+func (s *APIIntegrationTestSuite) SetupSuite() {
+	t := s.T()
+	require := require.New(t)
+
+	ctx := context.Background()
+	container, err := redpanda.RunContainer(ctx)
+	require.NoError(err)
+	s.redpandaContainer = container
+
+	seedBroker, err := container.KafkaSeedBroker(ctx)
+	require.NoError(err)
+
+	s.testSeedBroker = seedBroker
+
+	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
+}
+
+func (s *APIIntegrationTestSuite) TearDownSuite() {
+	t := s.T()
+	assert := require.New(t)
+
+	assert.NoError(s.redpandaContainer.Terminate(context.Background()))
 }

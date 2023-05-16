@@ -51,6 +51,17 @@ func (c *ConfigPatchMongoDB) IsMatch(configKey, connectorClass string) bool {
 
 // PatchDefinition implements the ConfigPatch.PatchDefinition interface.
 func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorClass string) model.ConfigDefinition {
+	// Patches for sink connector only
+	if isSink(connectorClass) {
+		switch d.Definition.Name {
+		case "database":
+			d.SetDisplayName("MongoDB database name").
+				SetDocumentation("The name of an existing MongoDB database to store output files in")
+		case "collection":
+			d.SetDisplayName("Default MongoDB collection name")
+		}
+	}
+
 	// Misc patches
 	switch d.Definition.Name {
 	case "connection.uri":
@@ -61,10 +72,10 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 		converterType, _, _ := strings.Cut(d.Definition.Name, ".")
 		d.SetDefaultValue("org.apache.kafka.connect.storage.StringConverter")
 		if strings.HasSuffix(connectorClass, "SourceConnector") {
-			d.SetDocumentation("Format of the " + converterType + " in the Kafka topic. Use AVRO or JSON for schematic output, STRING for plain JSON or BYTES for BSON")
+			d.SetDocumentation("Format of the " + converterType + " in the Redpanda topic. Use AVRO or JSON for schematic output, STRING for plain JSON or BYTES for BSON")
 		}
 	case "output.schema.infer.value":
-		d.SetDocumentation("Infer the schema for the value. Each Document will be processed in isolation, which may lead to multiple schema definitions for the data. Only applied when Kafka message value format is set to AVRO or JSON.")
+		d.SetDocumentation("Infer the schema for the value. Each Document will be processed in isolation, which may lead to multiple schema definitions for the data. Only applied when Redpanda message value format is set to AVRO or JSON")
 	case "change.stream.full.document",
 		"change.stream.full.document.before.change":
 		d.SetComponentType(model.ComponentRadioGroup)
@@ -74,13 +85,21 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 			AddRecommendedValueWithMetadata("copy_existing", "COPY_EXISTING").
 			SetComponentType(model.ComponentRadioGroup).
 			SetDefaultValue("latest")
-	case "key.projection.type",
-		"value.projection.type":
+	case "key.projection.type":
 		d.AddRecommendedValueWithMetadata("none", "NONE").
 			AddRecommendedValueWithMetadata("allowlist", "ALLOWLIST").
 			AddRecommendedValueWithMetadata("blocklist", "BLOCKLIST").
 			SetComponentType(model.ComponentRadioGroup).
-			SetDefaultValue("none")
+			SetDefaultValue("none").
+			SetDocumentation("The type of key projection to use, either: `AllowList` or `BlockList`")
+	case "value.projection.type":
+		d.AddRecommendedValueWithMetadata("none", "NONE").
+			AddRecommendedValueWithMetadata("allowlist", "ALLOWLIST").
+			AddRecommendedValueWithMetadata("blocklist", "BLOCKLIST").
+			SetComponentType(model.ComponentRadioGroup).
+			SetDefaultValue("none").
+			SetDisplayName("The value projection type").
+			SetDocumentation("The type of value projection to use, either: `AllowList` or `BlockList`")
 	case "change.data.capture.handler":
 		d.AddRecommendedValueWithMetadata("", "NONE").
 			AddRecommendedValueWithMetadata("com.mongodb.kafka.connect.sink.cdc.mongodb.ChangeStreamHandler", "MongoDB").
@@ -90,16 +109,22 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 			AddRecommendedValueWithMetadata("com.mongodb.kafka.connect.sink.cdc.qlik.rdbms.RdbmsHandler", "Qlik").
 			SetComponentType(model.ComponentRadioGroup).
 			SetDefaultValue("").
-			SetDocumentation("The CDC handler to use for processing. MongoDB handler requires plain JSON or BSON format.")
+			SetDocumentation("The CDC handler to use for processing. MongoDB handler requires plain JSON or BSON format")
 	case "mongo.errors.tolerance":
 		d.AddRecommendedValueWithMetadata("none", "NONE").
 			AddRecommendedValueWithMetadata("all", "ALL").
 			SetComponentType(model.ComponentRadioGroup).
-			SetDocumentation("Behavior for tolerating errors during connector operation. 'NONE' is the default value and signals that any error will result in an immediate connector task failure; 'ALL' changes the behavior to skip over problematic records.")
+			SetDocumentation("Behavior for tolerating errors during connector operation. 'NONE' is the default value and signals that any error will result in an immediate connector task failure; 'ALL' changes the behavior to skip over problematic records")
 	case name:
 		d.SetDefaultValue("mongodb-" + extractType(connectorClass, mongoClassSelectorRegexp) + "-connector-" + strings.ToLower(random.String(4)))
 	}
 
+	patchImportance(d)
+
+	return d
+}
+
+func patchImportance(d model.ConfigDefinition) {
 	// Importance Patches
 	switch d.Definition.Name {
 	case "topic.prefix",
@@ -116,6 +141,8 @@ func (*ConfigPatchMongoDB) PatchDefinition(d model.ConfigDefinition, connectorCl
 		"output.schema.value":
 		d.SetImportance(model.ConfigDefinitionImportanceLow)
 	}
+}
 
-	return d
+func isSink(connectorClass string) bool {
+	return extractType(connectorClass, mongoClassSelectorRegexp) == "sink"
 }
