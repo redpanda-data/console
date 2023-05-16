@@ -117,6 +117,14 @@ kafka:
   # messagePack:
   #   enabled: false
   #   topicNames: ["/.*/"] # List of topic name regexes, defaults to /.*/
+  # Startup is a configuration block to specify how often and with what delays
+  # we should try to connect to the Kafka service. If all attempts have failed the
+  # application will exit with code 1.
+  # startup:
+  #   maxRetries: 5
+  #   retryInterval: 1s
+  #   maxRetryInterval 60s
+  #   backoffMultiplier: 2
 
 # connect:
 #   enabled: false
@@ -172,8 +180,17 @@ kafka:
 #   enabled: true
 
 # server:
-#   listenPort: 8080
 #   listenAddress:
+#   listenPort: 8080
+#   # HTTPSListenPort and HTTPListenPort are separate so that we can listen
+#   # on both and redirect users to the HTTPS url.
+#   httpsListenPort: 8081
+#   # AdvertisedHTTPSListenPort is the HTTPS port that will be used for
+#	# redirecting the user in the browser. If your application is serving
+#	# the TLS port on 8081 but some LoadBalancer between the user and your
+#	# Go application remaps this to 443 you want to set this port to
+#	# 443 as well. Otherwise, users will be redirected to your httpsListenPort.
+#   advertisedHttpsListenPort:
 #   gracefulShutdownTimeout: 30s
 #   listenPort: 8080
 #   readTimeout: 30s
@@ -183,10 +200,18 @@ kafka:
 #   basePath: # Sub-path under which Console is hosted. See 'docs/features/hosting.md' for more information
 #   setBasePathFromXForwardedPrefix: true # Whether or not to check the 'X-Forwarded-Prefix' header to (potentially) override 'basePath'
 #   stripPrefix: true # Whether or not Console should strip the prefix internally
-#
-#   AllowedOrigins is a list of origins that can send requests from a browser to the Console
-#   API. By default, a same-site policy is enforced to prevent CSRF-attacks.
-#   Only in very specific deployment models you may need to change the secure default.
+#   # TLS contains the configuration properties for the HTTP
+#   # TLS configuration. If enabled, the HTTP server will serve on
+#   # HTTPS and terminate TLS. Additional to the TLS server Console
+#   # will start an HTTP server that is in charge of redirecting HTTP
+#   # requests to the HTTPS version.
+#   tls:
+#     enabled: false
+#     certFilepath:
+#     keyFilepath:
+#   # AllowedOrigins is a list of origins that can send requests from a browser to the Console
+#   # API. By default, a same-site policy is enforced to prevent CSRF-attacks.
+#   # Only in very specific deployment models you may need to change the secure default.
 #   allowedOrigins: []
 
 # logger:
