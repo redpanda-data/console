@@ -1,13 +1,29 @@
 # Changelog
 
+## v2.3.0 / To be released
+
+- [FEATURE] New Kafka connect setup & edit experience
+- [ENHANCEMENT] Support for serving Console on HTTPS / TLS Termination
+- [ENHANCEMENT] Support deserializing Avro payloads with schema references (by @igormq)
+- [ENHANCEMENT] Configurable Kafka connection retry parameters (new config block: `kafka.startup`)
+- [BUGFIX] Show correct controllerId on the overview page
+- [CHANGE] Run docker container as non-root user
+- [CHANGE] Don't log expected error messages for context cancellation on message search
+
+**Enterprise changelog**
+
+- [FEATURE] Support Keycloak as identity provider
+- [FEATURE] Support AzureAD as identity provider
+- [BUGFIX] Report license expiry time correctly
+
 ## v2.2.4 / 2023-05-03
 
-[ENHANCEMENT] Set `USER` instruction to `redpandaconsole` in Dockerfile.
+- [ENHANCEMENT] Set `USER` instruction to `redpandaconsole` in Dockerfile.
 
 ## v2.2.3 / 2023-03-22
 
-[ENHANCEMENT] Build with CGO disabled.
-[ENHANCEMENT] Various improvements to authorization.
+- [ENHANCEMENT] Build with CGO disabled.
+- [ENHANCEMENT] Various improvements to authorization.
 
 ## v2.2.2 / 2023-03-03
 
