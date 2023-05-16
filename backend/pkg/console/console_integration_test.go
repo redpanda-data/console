@@ -14,6 +14,7 @@ package console
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
@@ -67,9 +68,13 @@ func TestMain(m *testing.M) {
 }
 
 func metricNameForTest(testName string) string {
+	testName = testName[strings.LastIndex(testName, "/")+1:]
+
 	return "test_redpanda_console_" + testName
 }
 
 func topicNameForTest(testName string) string {
+	testName = testName[strings.LastIndex(testName, "/")+1:]
+
 	return "test.redpanda.console." + testName
 }
