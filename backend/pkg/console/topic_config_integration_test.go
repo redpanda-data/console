@@ -13,39 +13,51 @@ package console
 
 import (
 	"context"
-	"testing"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
-func Test_GetTopicConfigs(t *testing.T) {
+func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
+	t := s.T()
+	assert := assert.New(t)
+	require := require.New(t)
+
 	ctx := context.Background()
-	log, err := zap.NewDevelopment()
-	assert.NoError(t, err)
+	logCfg := zap.NewDevelopmentConfig()
+	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	log, err := logCfg.Build()
+	assert.NoError(err)
+
+	testSeedBroker := s.testSeedBroker
+	topicName := topicNameForTest("get_topic_configs")
+
+	// setup
+	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
+	require.NoError(err)
 
 	cfg := config.Config{}
 	cfg.SetDefaults()
-
-	cfg.MetricsNamespace = metricNameForTest("_get_configs")
+	cfg.MetricsNamespace = metricNameForTest("get_topic_configs")
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
 	kafkaSvc, err := kafka.NewService(&cfg, log, cfg.MetricsNamespace)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	svc, err := NewService(cfg.Console, log, kafkaSvc, nil, nil)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	defer svc.kafkaSvc.KafkaClient.Close()
 
-	topicConfig, restErr := svc.GetTopicConfigs(ctx, TEST_TOPIC_NAME, nil)
-	assert.Nil(t, restErr)
-	assert.NotNil(t, topicConfig)
-	assert.Equal(t, TEST_TOPIC_NAME, topicConfig.TopicName)
-	assert.NotEmpty(t, topicConfig.ConfigEntries)
+	topicConfig, restErr := svc.GetTopicConfigs(ctx, topicName, nil)
+	assert.Nil(restErr)
+	assert.NotNil(topicConfig)
+	assert.Equal(topicName, topicConfig.TopicName)
+	assert.NotEmpty(topicConfig.ConfigEntries)
 
-	assert.NotNil(t, topicConfig.ConfigEntries[0])
-	assert.False(t, topicConfig.ConfigEntries[0].IsReadOnly)
+	assert.NotNil(topicConfig.ConfigEntries[0])
+	assert.False(topicConfig.ConfigEntries[0].IsReadOnly)
 }

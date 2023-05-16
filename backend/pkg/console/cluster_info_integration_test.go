@@ -14,7 +14,6 @@ package console
 import (
 	"context"
 	"net"
-	"testing"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
@@ -22,38 +21,44 @@ import (
 	"go.uber.org/zap"
 )
 
-func Test_GetClusterInfo(t *testing.T) {
+func (s *ConsoleIntegrationTestSuite) TestGetClusterInfo() {
+	t := s.T()
+	assert := assert.New(t)
+
 	ctx := context.Background()
-	log, err := zap.NewDevelopment()
-	assert.NoError(t, err)
+	logCfg := zap.NewDevelopmentConfig()
+	logCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	log, err := logCfg.Build()
+	assert.NoError(err)
+
+	testSeedBroker := s.testSeedBroker
 
 	cfg := config.Config{}
 	cfg.SetDefaults()
-
 	cfg.MetricsNamespace = metricNameForTest("get_cluster_info")
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
 	kafkaSvc, err := kafka.NewService(&cfg, log, cfg.MetricsNamespace)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	svc, err := NewService(cfg.Console, log, kafkaSvc, nil, nil)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	defer svc.kafkaSvc.KafkaClient.Close()
 
 	info, err := svc.GetClusterInfo(ctx)
-	assert.NoError(t, err)
-	assert.NotNil(t, info)
+	assert.NoError(err)
+	assert.NotNil(info)
 
-	assert.Len(t, info.Brokers, 1)
-	assert.NotEmpty(t, info.Brokers[0])
+	assert.Len(info.Brokers, 1)
+	assert.NotEmpty(info.Brokers[0])
 
 	expectedAddr, expectedPort, err := net.SplitHostPort(testSeedBroker)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	actualAddr, actualPort, err := net.SplitHostPort(testSeedBroker)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
-	assert.Equal(t, expectedAddr, actualAddr)
-	assert.Equal(t, expectedPort, actualPort)
+	assert.Equal(expectedAddr, actualAddr)
+	assert.Equal(expectedPort, actualPort)
 }
