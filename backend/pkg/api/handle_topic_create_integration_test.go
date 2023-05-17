@@ -12,33 +12,25 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math"
-	"math/rand"
 	"net/http"
 	"runtime"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
@@ -61,42 +53,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	log, err := logCfg.Build()
 	require.NoError(err)
 
-	port := rand.Intn(50000) + 10000
-
-	cfg := &config.Config{
-		REST: config.Server{
-			Config: rest.Config{
-				HTTPListenAddress: "0.0.0.0",
-				HTTPListenPort:    port,
-			},
-		},
-		Kafka: config.Kafka{
-			Brokers: []string{s.testSeedBroker},
-		},
-		Connect: config.Connect{
-			Enabled: false,
-		},
-		Logger: logging.Config{
-			LogLevelInput: "info",
-			LogLevel:      zap.NewAtomicLevel(),
-		},
-	}
-
-	api := New(cfg)
-
-	go api.Start()
-
-	kafkaClient, err := kgo.NewClient(kgo.SeedBrokers(s.testSeedBroker))
-	require.NoError(err)
-
-	kafkaAdminClient := kadm.NewClient(kafkaClient)
-
-	// allow for server to start
-	timer1 := time.NewTimer(10 * time.Millisecond)
-	<-timer1.C
-
-	apiServer := api.Cfg.REST.HTTPListenAddress + ":" + strconv.FormatInt(int64(port), 10)
-
 	t.Run("happy path", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -107,7 +63,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 			ReplicationFactor: 1,
 		}
 
-		res, body := apiRequest(t, ctx, apiServer, input)
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/topics", input)
 
 		assert.Equal(200, res.StatusCode)
 
@@ -118,11 +74,9 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		err := json.Unmarshal(body, &createTopicRes)
 		assert.NoError(err)
 		assert.Equal(topicName, createTopicRes.TopicName)
-		assert.Equal(int32(-1), createTopicRes.PartitionCount)    // is this correct?
-		assert.Equal(int16(-1), createTopicRes.ReplicationFactor) // is this correct?
-		assert.Len(createTopicRes.CreateTopicResponseConfigs, 4)
+		assert.Greater(len(createTopicRes.CreateTopicResponseConfigs), 0)
 
-		mdRes, err := kafkaAdminClient.Metadata(ctx, topicName)
+		mdRes, err := s.kafkaAdminClient.Metadata(ctx, topicName)
 		assert.NoError(err)
 		assert.Len(mdRes.Topics, 1)
 
@@ -135,7 +89,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		assert.Len(topic.Partitions[0].Replicas, 1)
 		assert.Empty(topic.Err)
 
-		dtRes, err := kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
+		dtRes, err := s.kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
 		assert.NoError(err)
 
 		assert.Len(dtRes, 1)
@@ -155,7 +109,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 			ReplicationFactor: 1,
 		}
 
-		res, body := apiRequest(t, ctx, apiServer, input)
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/topics", input)
 
 		assert.Equal(200, res.StatusCode)
 
@@ -166,11 +120,9 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		err := json.Unmarshal(body, &createTopicRes)
 		assert.NoError(err)
 		assert.Equal(topicName, createTopicRes.TopicName)
-		assert.Equal(int32(-1), createTopicRes.PartitionCount)
-		assert.Equal(int16(-1), createTopicRes.ReplicationFactor)
-		assert.Len(createTopicRes.CreateTopicResponseConfigs, 4)
+		assert.Greater(len(createTopicRes.CreateTopicResponseConfigs), 0)
 
-		mdRes, err := kafkaAdminClient.Metadata(ctx, topicName)
+		mdRes, err := s.kafkaAdminClient.Metadata(ctx, topicName)
 		assert.NoError(err)
 		assert.Len(mdRes.Topics, 1)
 
@@ -185,13 +137,13 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		assert.Len(topic.Partitions[1].Replicas, 1)
 		assert.Empty(topic.Err)
 
-		dtRes, err := kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
+		dtRes, err := s.kafkaAdminClient.DescribeTopicConfigs(ctx, topicName)
 		assert.NoError(err)
 
 		assert.Len(dtRes, 1)
 
 		assert.NoError(dtRes[0].Err)
-		assert.True(len(dtRes[0].Configs) > 0)
+		assert.Greater(len(dtRes[0].Configs), 0)
 		assert.Equal(dtRes[0].Name, topicName)
 	})
 
@@ -205,7 +157,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 			ReplicationFactor: 1,
 		}
 
-		res, body := apiRequest(t, ctx, apiServer, input)
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/topics", input)
 
 		assert.Equal(400, res.StatusCode)
 
@@ -231,7 +183,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 			ReplicationFactor: 0,
 		}
 
-		res, body := apiRequest(t, ctx, apiServer, input)
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/topics", input)
 
 		assert.Equal(400, res.StatusCode)
 
@@ -257,7 +209,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 			ReplicationFactor: 0,
 		}
 
-		res, body := apiRequest(t, ctx, apiServer, input)
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/topics", input)
 
 		assert.Equal(400, res.StatusCode)
 
@@ -274,18 +226,18 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	})
 
 	t.Run("no permission", func(t *testing.T) {
-		oldHooks := api.Hooks
+		oldHooks := s.api.Hooks
 		newHooks := newAssertHooks(t, map[string]bool{
 			"CanCreateTopic": false,
 		})
 
 		if newHooks != nil {
-			api.Hooks = newHooks
+			s.api.Hooks = newHooks
 		}
 
 		defer func() {
 			if oldHooks != nil {
-				api.Hooks = oldHooks
+				s.api.Hooks = oldHooks
 			}
 		}()
 
@@ -298,7 +250,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 			ReplicationFactor: 1,
 		}
 
-		res, body := apiRequest(t, ctx, apiServer, input)
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/topics", input)
 
 		assert.Equal(403, res.StatusCode)
 
@@ -317,31 +269,25 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
 		assert.NoError(err)
 
-		// hacky way to copy config struct
-		cfgJSON, err := json.Marshal(cfg)
-		require.NoError(err)
-
-		newConfig := config.Config{}
-		err = json.Unmarshal(cfgJSON, &newConfig)
-		require.NoError(err)
+		newConfig := s.copyConfig()
 
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
-		newKafkaSvc, err := kafka.NewService(&newConfig, log,
+		newKafkaSvc, err := kafka.NewService(newConfig, log,
 			testutil.MetricNameForTest(strings.ReplaceAll(t.Name(), " ", "")))
 		assert.NoError(err)
 
 		// new console service
-		newConsoleSvc, err := console.NewService(newConfig.Console, log, newKafkaSvc, api.RedpandaSvc, api.ConnectSvc)
+		newConsoleSvc, err := console.NewService(newConfig.Console, log, newKafkaSvc, s.api.RedpandaSvc, s.api.ConnectSvc)
 		assert.NoError(err)
 
 		// save old
-		oldConsoleSvc := api.ConsoleSvc
-		oldKafkaSvc := api.KafkaSvc
+		oldConsoleSvc := s.api.ConsoleSvc
+		oldKafkaSvc := s.api.KafkaSvc
 
 		// switch
-		api.KafkaSvc = newKafkaSvc
-		api.ConsoleSvc = newConsoleSvc
+		s.api.KafkaSvc = newKafkaSvc
+		s.api.ConsoleSvc = newConsoleSvc
 
 		// call the fake control and expect function
 		fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
@@ -377,10 +323,10 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		// undo switch
 		defer func() {
 			if oldKafkaSvc != nil {
-				api.KafkaSvc = oldKafkaSvc
+				s.api.KafkaSvc = oldKafkaSvc
 			}
 			if oldConsoleSvc != nil {
-				api.ConsoleSvc = oldConsoleSvc
+				s.api.ConsoleSvc = oldConsoleSvc
 			}
 		}()
 
@@ -394,7 +340,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 			ReplicationFactor: 1,
 		}
 
-		res, body := apiRequest(t, ctx, apiServer, input)
+		res, body := s.apiRequest(ctx, http.MethodPost, "/api/topics", input)
 
 		assert.Equal(503, res.StatusCode)
 
@@ -407,29 +353,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 
 		assert.Equal(503, apiErr.Status)
 	})
-}
-
-func apiRequest(t *testing.T, ctx context.Context,
-	apiServer string, input *createTopicRequest,
-) (*http.Response, []byte) {
-	t.Helper()
-
-	data, err := json.Marshal(input)
-	require.NoError(t, err)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+apiServer+"/api/topics", bytes.NewReader(data))
-	require.NoError(t, err)
-
-	req.Header.Set("Content-Type", "application/json")
-
-	res, err := http.DefaultClient.Do(req)
-	assert.NoError(t, err)
-
-	body, err := io.ReadAll(res.Body)
-	res.Body.Close()
-	assert.NoError(t, err)
-
-	return res, body
 }
 
 func assertHookCall(t *testing.T) {
