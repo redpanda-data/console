@@ -14,11 +14,13 @@ package console
 import (
 	"context"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
 func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
@@ -33,7 +35,7 @@ func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
 	assert.NoError(err)
 
 	testSeedBroker := s.testSeedBroker
-	topicName := topicNameForTest("get_topic_configs")
+	topicName := testutil.TopicNameForTest("get_topic_configs")
 
 	// setup
 	_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil, topicName)
@@ -41,7 +43,7 @@ func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
 
 	cfg := config.Config{}
 	cfg.SetDefaults()
-	cfg.MetricsNamespace = metricNameForTest("get_topic_configs")
+	cfg.MetricsNamespace = testutil.MetricNameForTest("get_topic_configs")
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
 	kafkaSvc, err := kafka.NewService(&cfg, log, cfg.MetricsNamespace)

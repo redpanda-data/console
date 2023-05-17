@@ -15,10 +15,12 @@ import (
 	"context"
 	"net"
 
-	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/redpanda-data/console/backend/pkg/config"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
 func (s *ConsoleIntegrationTestSuite) TestGetClusterInfo() {
@@ -35,7 +37,7 @@ func (s *ConsoleIntegrationTestSuite) TestGetClusterInfo() {
 
 	cfg := config.Config{}
 	cfg.SetDefaults()
-	cfg.MetricsNamespace = metricNameForTest("get_cluster_info")
+	cfg.MetricsNamespace = testutil.MetricNameForTest("get_cluster_info")
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
 	kafkaSvc, err := kafka.NewService(&cfg, log, cfg.MetricsNamespace)

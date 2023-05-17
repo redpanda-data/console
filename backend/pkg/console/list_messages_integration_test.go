@@ -13,7 +13,6 @@ package console
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -31,6 +30,7 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/kafka/mocks"
+	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
 func (s *ConsoleIntegrationTestSuite) TestListMessages() {
@@ -44,17 +44,17 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 	log, err := logCfg.Build()
 	require.NoError(err)
 
-	testTopicName := topicNameForTest("list_messages")
+	testTopicName := testutil.TopicNameForTest("list_messages")
 
-	createTestData(t, ctx, s.kafkaClient, s.kafkaAdminClient, testTopicName)
+	testutil.CreateTestData(t, ctx, s.kafkaClient, s.kafkaAdminClient, testTopicName)
 
 	t.Run("empty topic", func(t *testing.T) {
 		_, err := s.kafkaAdminClient.CreateTopic(ctx, 1, 1, nil,
-			topicNameForTest("list_messages_empty_topic"))
+			testutil.TopicNameForTest("list_messages_empty_topic"))
 		require.NoError(err)
 
 		defer func() {
-			s.kafkaAdminClient.DeleteTopics(ctx, topicNameForTest("list_messages_empty_topic"))
+			s.kafkaAdminClient.DeleteTopics(ctx, testutil.TopicNameForTest("list_messages_empty_topic"))
 		}()
 
 		mockCtrl := gomock.NewController(t)
@@ -69,7 +69,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		svc := createNewTestService(t, log, t.Name(), s.testSeedBroker)
 
 		input := ListMessageRequest{
-			TopicName:    topicNameForTest("list_messages_empty_topic"),
+			TopicName:    testutil.TopicNameForTest("list_messages_empty_topic"),
 			PartitionID:  -1,
 			StartOffset:  -2,
 			MessageCount: 100,
@@ -119,7 +119,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(matchesOrder("10")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("10")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -147,11 +147,11 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(matchesOrder("10")).Times(1)
-		mockProgress.EXPECT().OnMessage(matchesOrder("11")).Times(1)
-		mockProgress.EXPECT().OnMessage(matchesOrder("12")).Times(1)
-		mockProgress.EXPECT().OnMessage(matchesOrder("13")).Times(1)
-		mockProgress.EXPECT().OnMessage(matchesOrder("14")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("10")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("11")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("12")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("13")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("14")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(5)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -179,7 +179,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(matchesOrder("19")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("19")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -208,11 +208,11 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(matchesOrder("11")).Times(1)
-		mockProgress.EXPECT().OnMessage(matchesOrder("12")).Times(1)
-		mockProgress.EXPECT().OnMessage(matchesOrder("13")).Times(1)
-		mockProgress.EXPECT().OnMessage(matchesOrder("14")).Times(1)
-		mockProgress.EXPECT().OnMessage(matchesOrder("15")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("11")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("12")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("13")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("14")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("15")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(5)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -267,9 +267,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		defer fakeCluster.Close()
 
-		fakeClient, fakeAdminClient := createClients(t, fakeCluster.ListenAddrs())
+		fakeClient, fakeAdminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
 
-		createTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
+		testutil.CreateTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
 		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0])
 
@@ -278,7 +278,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(matchesOrder("10")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("10")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -360,9 +360,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		defer fakeCluster.Close()
 
-		fakeClient, fakeAdminClient := createClients(t, fakeCluster.ListenAddrs())
+		fakeClient, fakeAdminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
 
-		createTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
+		testutil.CreateTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
 		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0])
 
@@ -425,9 +425,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 		defer fakeCluster.Close()
 
-		fakeClient, fakeAdminClient := createClients(t, fakeCluster.ListenAddrs())
+		fakeClient, fakeAdminClient := testutil.CreateClients(t, fakeCluster.ListenAddrs())
 
-		createTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
+		testutil.CreateTestData(t, ctx, fakeClient, fakeAdminClient, testTopicName)
 
 		svc := createNewTestService(t, log, t.Name(), fakeCluster.ListenAddrs()[0])
 
@@ -436,7 +436,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 		mockProgress.EXPECT().OnPhase("Get Partitions")
 		mockProgress.EXPECT().OnPhase("Get Watermarks and calculate consuming requests")
 		mockProgress.EXPECT().OnPhase("Consuming messages")
-		mockProgress.EXPECT().OnMessage(matchesOrder("16")).Times(1)
+		mockProgress.EXPECT().OnMessage(testutil.MatchesOrder("16")).Times(1)
 		mockProgress.EXPECT().OnMessageConsumed(gomock.AssignableToTypeOf(int64Type)).Times(1)
 		mockProgress.EXPECT().OnComplete(gomock.AssignableToTypeOf(int64Type), false)
 
@@ -496,8 +496,9 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 }
 
 func createNewTestService(t *testing.T, log *zap.Logger,
-	testName string, seedBrokers string) *Service {
-	metricName := metricNameForTest(strings.ReplaceAll(testName, " ", ""))
+	testName string, seedBrokers string,
+) *Service {
+	metricName := testutil.MetricNameForTest(strings.ReplaceAll(testName, " ", ""))
 
 	cfg := config.Config{}
 	cfg.SetDefaults()
@@ -511,40 +512,4 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 	assert.NoError(t, err)
 
 	return svc
-}
-
-type Order struct {
-	ID string
-}
-
-type orderMatcher struct {
-	expectedID string
-	actualID   string
-	err        string
-}
-
-func (om *orderMatcher) Matches(x interface{}) bool {
-	if m, ok := x.(*kafka.TopicMessage); ok {
-		order := Order{}
-		err := json.Unmarshal(m.Value.Payload.Payload, &order)
-		if err != nil {
-			om.err = fmt.Sprintf("marshal error: %s", err.Error())
-			return false
-		}
-
-		om.actualID = order.ID
-
-		return order.ID == om.expectedID
-	}
-
-	om.err = "value is not a TopicMessage"
-	return false
-}
-
-func (m *orderMatcher) String() string {
-	return fmt.Sprintf("has order ID %s expected order ID %s. err: %s", m.actualID, m.expectedID, m.err)
-}
-
-func matchesOrder(id string) gomock.Matcher {
-	return &orderMatcher{expectedID: id}
 }
