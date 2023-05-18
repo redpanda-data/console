@@ -63,7 +63,10 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 		if offsetResponses.Err != nil {
 			continue // We already logged this error earlier
 		}
-		groupOffsets[group] = make(map[string]partitionOffsets)
+		if _, exists := groupOffsets[group]; !exists {
+			groupOffsets[group] = make(map[string]partitionOffsets)
+		}
+
 		offsetResponses.Fetched.Each(func(offsetResponse kadm.OffsetResponse) {
 			if offsetResponse.Err != nil {
 				s.logger.Warn("failed to retrieve group offset",
@@ -74,7 +77,7 @@ func (s *Service) getConsumerGroupOffsets(ctx context.Context, groups []string) 
 				return
 			}
 
-			if _, exists := groupOffsets[offsetResponse.Topic]; !exists {
+			if _, exists := groupOffsets[group][offsetResponse.Topic]; !exists {
 				groupOffsets[group][offsetResponse.Topic] = make(map[int32]int64)
 			}
 
