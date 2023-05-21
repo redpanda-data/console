@@ -74,4 +74,50 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		assert.Equal(testutil.TopicNameForTest("get_topics_1"), getRes.Topics[1].TopicName)
 		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[2].TopicName)
 	})
+
+	t.Run("no see permission", func(t *testing.T) {
+		topicName := testutil.TopicNameForTest("get_topics_1")
+
+		oldHooks := s.api.Hooks
+		newHooks := newAssertHooks(t, map[string]map[string]bool{
+			"CanSeeTopic": {
+				testutil.TopicNameForTest("get_topics_0"): true,
+				topicName: false,
+				testutil.TopicNameForTest("get_topics_2"): true,
+			},
+			"AllowedTopicActions": {
+				"any": true,
+			},
+		})
+
+		if newHooks != nil {
+			s.api.Hooks = newHooks
+		}
+
+		defer func() {
+			if oldHooks != nil {
+				s.api.Hooks = oldHooks
+			}
+		}()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/topics", nil)
+
+		assert.Equal(200, res.StatusCode)
+
+		type response struct {
+			Topics []*console.TopicSummary `json:"topics"`
+		}
+
+		getRes := response{}
+
+		err := json.Unmarshal(body, &getRes)
+		assert.NoError(err)
+
+		assert.Len(getRes.Topics, 2)
+		assert.Equal(testutil.TopicNameForTest("get_topics_0"), getRes.Topics[0].TopicName)
+		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[1].TopicName)
+	})
 }

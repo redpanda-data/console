@@ -234,9 +234,14 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	})
 
 	t.Run("no permission", func(t *testing.T) {
+
+		topicName := testutil.TopicNameForTest("no_permission")
+
 		oldHooks := s.api.Hooks
-		newHooks := newAssertHooks(t, map[string]bool{
-			"CanCreateTopic": false,
+		newHooks := newAssertHooks(t, map[string]map[string]bool{
+			"CanCreateTopic": {
+				topicName: false,
+			},
 		})
 
 		if newHooks != nil {
@@ -253,7 +258,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 		defer cancel()
 
 		input := &createTopicRequest{
-			TopicName:         testutil.TopicNameForTest("no_permission"),
+			TopicName:         topicName,
 			PartitionCount:    1,
 			ReplicationFactor: 1,
 		}
@@ -373,35 +378,57 @@ func assertHookCall(t *testing.T) {
 type assertHooks struct {
 	t *testing.T
 
-	allowedCalls map[string]struct{}
-	returnValues map[string]bool
+	allowedCalls map[string]map[string]bool
+	returnValues map[string]map[string]bool
 }
 
-func (a *assertHooks) isCallAllowed() bool {
+func (a *assertHooks) isCallAllowed(topicName string) bool {
 	pc, _, _, _ := runtime.Caller(1)
 	fnName := runtime.FuncForPC(pc).Name()
 	parts := strings.Split(fnName, ".")
 	fnName = parts[len(parts)-1]
-	_, ok := a.allowedCalls[fnName]
-	return ok
+	topicMap, ok := a.allowedCalls[fnName]
+	if !ok || len(topicMap) == 0 {
+		return false
+	}
+
+	if v, ok := topicMap["any"]; ok {
+		return v
+	}
+	return topicMap[topicName]
+
 }
 
-func (a *assertHooks) getCallReturnValue() bool {
+func (a *assertHooks) getCallReturnValue(topicName string) bool {
 	pc, _, _, _ := runtime.Caller(1)
 	fnName := runtime.FuncForPC(pc).Name()
 	parts := strings.Split(fnName, ".")
 	fnName = parts[len(parts)-1]
-	return a.returnValues[fnName]
+	topicMap, ok := a.returnValues[fnName]
+	if !ok || len(topicMap) == 0 {
+		return false
+	}
+	if v, ok := topicMap["any"]; ok {
+		return v
+	}
+	return topicMap[topicName]
 }
 
-func newAssertHooks(t *testing.T, returnValues map[string]bool) *Hooks {
+func newAssertHooks(t *testing.T, returnValues map[string]map[string]bool) *Hooks {
 	h := &assertHooks{
-		allowedCalls: map[string]struct{}{},
-		returnValues: map[string]bool{},
+		allowedCalls: map[string]map[string]bool{},
+		returnValues: map[string]map[string]bool{},
 	}
 
 	for n, v := range returnValues {
-		h.allowedCalls[n] = struct{}{}
+		for tn, _ := range v {
+			if len(h.allowedCalls[n]) == 0 {
+				h.allowedCalls[n] = map[string]bool{}
+			}
+
+			h.allowedCalls[n][tn] = true
+		}
+
 		h.returnValues[n] = v
 	}
 
@@ -419,218 +446,218 @@ func (a *assertHooks) ConfigInternalRouter(_ chi.Router) {}
 func (a *assertHooks) ConfigRouter(_ chi.Router)         {}
 
 // Authorization Hooks
-func (a *assertHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanSeeTopic(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
 
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanCreateTopic(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanCreateTopic(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanEditTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanEditTopicConfig(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanDeleteTopic(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanDeleteTopic(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanPublishTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanPublishTopicRecords(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanDeleteTopicRecords(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanDeleteTopicRecords(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanViewTopicPartitions(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanViewTopicPartitions(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanViewTopicConfig(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanViewTopicConfig(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanViewTopicMessages(_ context.Context, _ *ListMessagesRequest) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanViewTopicMessages(_ context.Context, r *ListMessagesRequest) (bool, *rest.Error) {
+	if !a.isCallAllowed(r.TopicName) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(r.TopicName), nil
 }
 
-func (a *assertHooks) CanUseMessageSearchFilters(_ context.Context, _ *ListMessagesRequest) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanUseMessageSearchFilters(_ context.Context, r *ListMessagesRequest) (bool, *rest.Error) {
+	if !a.isCallAllowed(r.TopicName) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(r.TopicName), nil
 }
 
-func (a *assertHooks) CanViewTopicConsumers(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanViewTopicConsumers(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) AllowedTopicActions(_ context.Context, _ string) ([]string, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) AllowedTopicActions(_ context.Context, topic string) ([]string, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
 	return []string{}, nil
 }
 
-func (a *assertHooks) PrintListMessagesAuditLog(_ *http.Request, _ *console.ListMessageRequest) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) PrintListMessagesAuditLog(_ *http.Request, r *console.ListMessageRequest) {
+	if !a.isCallAllowed(r.TopicName) {
 		assertHookCall(a.t)
 	}
 }
 
 func (a *assertHooks) CanListACLs(_ context.Context) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue("any"), nil
 }
 
 func (a *assertHooks) CanCreateACL(_ context.Context) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue("any"), nil
 }
 
 func (a *assertHooks) CanDeleteACL(_ context.Context) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue("any"), nil
 }
 
 func (a *assertHooks) CanListQuotas(_ context.Context) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue("any"), nil
 }
 
-func (a *assertHooks) CanSeeConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanSeeConsumerGroup(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanEditConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanEditConsumerGroup(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanDeleteConsumerGroup(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanDeleteConsumerGroup(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
 func (a *assertHooks) AllowedConsumerGroupActions(_ context.Context, _ string) ([]string, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
 	return []string{}, nil
 }
 
 func (a *assertHooks) CanPatchPartitionReassignments(_ context.Context) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue("any"), nil
 }
 
 func (a *assertHooks) CanPatchConfigs(_ context.Context) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue("any"), nil
 }
 
-func (a *assertHooks) CanViewConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanViewConnectCluster(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanEditConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanEditConnectCluster(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) CanDeleteConnectCluster(_ context.Context, _ string) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) CanDeleteConnectCluster(_ context.Context, topic string) (bool, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue(topic), nil
 }
 
-func (a *assertHooks) AllowedConnectClusterActions(_ context.Context, _ string) ([]string, *rest.Error) {
-	if !a.isCallAllowed() {
+func (a *assertHooks) AllowedConnectClusterActions(_ context.Context, topic string) ([]string, *rest.Error) {
+	if !a.isCallAllowed(topic) {
 		assertHookCall(a.t)
 	}
 	return []string{}, nil
 }
 
 func (a *assertHooks) CanListKafkaUsers(_ context.Context) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue("any"), nil
 }
 
 func (a *assertHooks) CanCreateKafkaUsers(_ context.Context) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue("any"), nil
 }
 
 func (a *assertHooks) CanDeleteKafkaUsers(_ context.Context) (bool, *rest.Error) {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
-	return a.getCallReturnValue(), nil
+	return a.getCallReturnValue("any"), nil
 }
 
 func (a *assertHooks) IsProtectedKafkaUser(_ string) bool {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
 	return false
@@ -638,28 +665,28 @@ func (a *assertHooks) IsProtectedKafkaUser(_ string) bool {
 
 // Console hooks
 func (a *assertHooks) ConsoleLicenseInformation(_ context.Context) redpanda.License {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
 	return redpanda.License{Source: redpanda.LicenseSourceConsole, Type: redpanda.LicenseTypeOpenSource, ExpiresAt: math.MaxInt32}
 }
 
 func (a *assertHooks) EnabledFeatures() []string {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
 	return []string{}
 }
 
 func (a *assertHooks) EndpointCompatibility() []console.EndpointCompatibilityEndpoint {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
 	return nil
 }
 
 func (a *assertHooks) EnabledConnectClusterFeatures(_ context.Context, _ string) []connect.ClusterFeature {
-	if !a.isCallAllowed() {
+	if !a.isCallAllowed("any") {
 		assertHookCall(a.t)
 	}
 	return nil
