@@ -132,8 +132,13 @@ func (s *APIIntegrationTestSuite) apiRequest(ctx context.Context,
 	method, path string, input interface{},
 ) (*http.Response, []byte) {
 	t := s.T()
-	data, err := json.Marshal(input)
-	require.NoError(t, err)
+
+	var err error
+	var data []byte
+	if input != nil {
+		data, err = json.Marshal(input)
+		require.NoError(t, err)
+	}
 
 	req, err := http.NewRequestWithContext(ctx, method, s.httpAddress()+path, bytes.NewReader(data))
 	require.NoError(t, err)

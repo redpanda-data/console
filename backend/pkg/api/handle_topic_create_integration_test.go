@@ -67,9 +67,13 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 
 		assert.Equal(200, res.StatusCode)
 
-		createTopicRes := console.CreateTopicResponse{}
-
 		topicName := testutil.TopicNameForTest("create_topic")
+
+		defer func() {
+			s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+		}()
+
+		createTopicRes := console.CreateTopicResponse{}
 
 		err := json.Unmarshal(body, &createTopicRes)
 		assert.NoError(err)
@@ -113,9 +117,13 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 
 		assert.Equal(200, res.StatusCode)
 
-		createTopicRes := console.CreateTopicResponse{}
-
 		topicName := testutil.TopicNameForTest("create_topic_multi")
+
+		defer func() {
+			s.kafkaAdminClient.DeleteTopics(ctx, topicName)
+		}()
+
+		createTopicRes := console.CreateTopicResponse{}
 
 		err := json.Unmarshal(body, &createTopicRes)
 		assert.NoError(err)
