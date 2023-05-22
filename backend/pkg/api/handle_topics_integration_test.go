@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudhut/common/rest"
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
@@ -126,6 +127,52 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		assert.Len(getRes.Topics, 2)
 		assert.Equal(testutil.TopicNameForTest("get_topics_0"), getRes.Topics[0].TopicName)
 		assert.Equal(testutil.TopicNameForTest("get_topics_2"), getRes.Topics[1].TopicName)
+	})
+
+	t.Run("allow topic action error", func(t *testing.T) {
+		topicName := testutil.TopicNameForTest("get_topics_1")
+
+		oldHooks := s.api.Hooks
+		newHooks := newAssertHooks(t, map[string]map[string]assertCallReturnValue{
+			"CanSeeTopic": {
+				"any": assertCallReturnValue{BoolValue: true, Err: nil},
+			},
+			"AllowedTopicActions": {
+				testutil.TopicNameForTest("get_topics_0"): assertCallReturnValue{SliceValue: []string{}, Err: nil},
+				topicName: assertCallReturnValue{Err: &rest.Error{
+					Err:     fmt.Errorf("error from test"),
+					Status:  505,
+					Message: "public error from test",
+				}},
+				testutil.TopicNameForTest("get_topics_2"): assertCallReturnValue{SliceValue: []string{}, Err: nil},
+			},
+		})
+
+		if newHooks != nil {
+			s.api.Hooks = newHooks
+		}
+
+		defer func() {
+			if oldHooks != nil {
+				s.api.Hooks = oldHooks
+			}
+		}()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/topics", nil)
+
+		assert.Equal(505, res.StatusCode)
+
+		apiErr := restAPIError{}
+
+		err = json.Unmarshal(body, &apiErr)
+		assert.NoError(err)
+
+		assert.Equal(`public error from test`, apiErr.Message)
+
+		assert.Equal(505, apiErr.Status)
 	})
 
 	t.Run("get metadata fail", func(t *testing.T) {
