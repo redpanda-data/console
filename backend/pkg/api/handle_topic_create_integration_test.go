@@ -39,7 +39,6 @@ type restAPIError struct {
 
 func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	t := s.T()
-	t.Skip("temp skip")
 	require := require.New(t)
 	assert := assert.New(t)
 
