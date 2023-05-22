@@ -86,14 +86,14 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		topicName := testutil.TopicNameForTest("get_topics_1")
 
 		oldHooks := s.api.Hooks
-		newHooks := newAssertHooks(t, map[string]map[string]bool{
+		newHooks := newAssertHooks(t, map[string]map[string]assertCallReturnValue{
 			"CanSeeTopic": {
-				testutil.TopicNameForTest("get_topics_0"): true,
-				topicName: false,
-				testutil.TopicNameForTest("get_topics_2"): true,
+				testutil.TopicNameForTest("get_topics_0"): assertCallReturnValue{BoolValue: true, Err: nil},
+				topicName: assertCallReturnValue{BoolValue: false, Err: nil},
+				testutil.TopicNameForTest("get_topics_2"): assertCallReturnValue{BoolValue: true, Err: nil},
 			},
 			"AllowedTopicActions": {
-				"any": true,
+				"any": assertCallReturnValue{BoolValue: true, Err: nil},
 			},
 		})
 
