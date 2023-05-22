@@ -141,7 +141,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 				testutil.TopicNameForTest("get_topics_0"): assertCallReturnValue{SliceValue: []string{}, Err: nil},
 				topicName: assertCallReturnValue{Err: &rest.Error{
 					Err:     fmt.Errorf("error from test"),
-					Status:  505,
+					Status:  http.StatusUnauthorized,
 					Message: "public error from test",
 				}},
 				testutil.TopicNameForTest("get_topics_2"): assertCallReturnValue{SliceValue: []string{}, Err: nil},
@@ -163,7 +163,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 
 		res, body := s.apiRequest(ctx, http.MethodGet, "/api/topics", nil)
 
-		assert.Equal(505, res.StatusCode)
+		assert.Equal(401, res.StatusCode)
 
 		apiErr := restAPIError{}
 
@@ -172,7 +172,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 
 		assert.Equal(`public error from test`, apiErr.Message)
 
-		assert.Equal(505, apiErr.Status)
+		assert.Equal(401, apiErr.Status)
 	})
 
 	t.Run("get metadata fail", func(t *testing.T) {
