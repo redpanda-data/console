@@ -164,10 +164,8 @@ func (s *APIIntegrationTestSuite) apiRequest(ctx context.Context,
 }
 
 type assertCallReturnValue struct {
-	Err *rest.Error
-
-	BoolValue bool
-
+	Err        *rest.Error
+	BoolValue  bool
 	SliceValue []string
 }
 
@@ -194,12 +192,10 @@ func (a *assertHooks) isCallAllowed(topicName string) bool {
 	if !ok || len(topicMap) == 0 {
 		return false
 	}
-
 	if v, ok := topicMap["any"]; ok {
 		return v
 	}
 	return topicMap[topicName]
-
 }
 
 func (a *assertHooks) getCallReturnValue(topicName string) assertCallReturnValue {
