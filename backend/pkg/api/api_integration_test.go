@@ -39,9 +39,8 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/testutil"
-
 	rp "github.com/redpanda-data/console/backend/pkg/redpanda"
+	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
 type APIIntegrationTestSuite struct {
@@ -220,7 +219,7 @@ func newAssertHooks(t *testing.T, returnValues map[string]map[string]assertCallR
 	}
 
 	for n, v := range returnValues {
-		for tn, _ := range v {
+		for tn := range v {
 			if len(h.allowedCalls[n]) == 0 {
 				h.allowedCalls[n] = map[string]bool{}
 			}

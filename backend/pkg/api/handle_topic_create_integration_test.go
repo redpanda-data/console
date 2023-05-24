@@ -228,7 +228,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 	})
 
 	t.Run("no permission", func(t *testing.T) {
-
 		topicName := testutil.TopicNameForTest("no_permission")
 
 		oldHooks := s.api.Hooks
