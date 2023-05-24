@@ -10,10 +10,10 @@
 package console
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kerr"
-	"golang.org/x/net/context"
 )
 
 // QuotaResponse is a helper type that carries the sum of all quota responses
