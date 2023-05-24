@@ -85,12 +85,14 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition,
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("io.debezium.converters.CloudEventsConverter", "CloudEvents")
 	case valueConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("io.debezium.converters.CloudEventsConverter", "CloudEvents")
 	}
 
 	// Importance Patches

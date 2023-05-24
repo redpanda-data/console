@@ -75,12 +75,14 @@ func (*ConfigPatchDebeziumPostgresSource) PatchDefinition(d model.ConfigDefiniti
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("io.debezium.converters.CloudEventsConverter", "CloudEvents")
 	case valueConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("io.debezium.converters.CloudEventsConverter", "CloudEvents")
 	case "database.tcpKeepAlive":
 		d.SetDocumentation("Enable to avoid dropping TCP connection. Disable otherwise").
 			SetDefaultValue("true")

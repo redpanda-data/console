@@ -61,8 +61,10 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 						ConfigKeys: []string{
 							"key.converter",
 							"key.converter.schemas.enable",
+							"key.converter.json.schemas.enable",
 							"value.converter",
 							"value.converter.schemas.enable",
+							"value.converter.json.schemas.enable",
 							"header.converter",
 
 							"database.include.list",
