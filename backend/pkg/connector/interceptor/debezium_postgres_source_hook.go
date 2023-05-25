@@ -13,7 +13,7 @@ func KafkaConnectToConsoleDebeziumPostgresSourceHook(response model.ValidationRe
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "Money fraction digits",
-			Documentation: "Number of fractional digits when money type is converted to 'precise' decimal number.",
+			Documentation: "Number of fractional digits when money type is converted to 'precise' decimal number",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{

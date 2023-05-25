@@ -51,10 +51,10 @@ func (*ConfigPatchMirrorHeartbeat) PatchDefinition(d model.ConfigDefinition, _ s
 	switch d.Definition.Name {
 	case sourceClusterAlias:
 		d.SetDefaultValue("source").
-			SetDocumentation("Used to generate heartbeat topic key.")
+			SetDocumentation("Used to generate heartbeat topic key")
 	case "target.cluster.alias":
 		d.SetDefaultValue("target").
-			SetDocumentation("Used to generate heartbeat topic key.")
+			SetDocumentation("Used to generate heartbeat topic key")
 	case "heartbeats.topic.replication.factor":
 		d.SetDefaultValue("-1")
 	case name:

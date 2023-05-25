@@ -58,7 +58,7 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition, _ string) 
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
 	case "insert.mode":
 		d.SetDisplayName("Insert Mode").
-			SetDocumentation("The insertion mode to use. INSERT - Use standard SQL 'INSERT' statements. MULTI - Use multi-row `INSERT` statements. 'UPSERT' - Use the appropriate upsert semantics for the target database if it is supported by the connector, e.g. 'INSERT .. ON CONFLICT .. DO UPDATE SET ..'. 'UPDATE' - Use the appropriate update semantics for the target database if it is supported by the connector, e.g. 'UPDATE'.").
+			SetDocumentation("The insertion mode to use. INSERT - Use standard SQL 'INSERT' statements. MULTI - Use multi-row `INSERT` statements. 'UPSERT' - Use the appropriate upsert semantics for the target database if it is supported by the connector, e.g. 'INSERT .. ON CONFLICT .. DO UPDATE SET ..'. 'UPDATE' - Use the appropriate update semantics for the target database if it is supported by the connector, e.g. 'UPDATE'").
 			SetImportance(model.ConfigDefinitionImportanceMedium).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("insert", "INSERT").
@@ -68,7 +68,7 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition, _ string) 
 			SetDefaultValue("insert")
 	case "pk.mode":
 		d.SetDisplayName("Primary Key Mode").
-			SetDocumentation("The primary key mode, also refer to 'Primary Key Fields' documentation for interplay. Supported modes are: 'NONE' - No keys utilized. 'KAFKA' - Redpanda coordinates (the topic, partition, and offset) are used as the PK. 'RECORD_KEY' - Field(s) from the record key are used, which may be a primitive or a struct. 'RECORD_VALUE' - Field(s) from the record value are used, which must be a struct.").
+			SetDocumentation("The primary key mode, also refer to 'Primary Key Fields' documentation for interplay. Supported modes are: 'NONE' - No keys utilized. 'KAFKA' - Redpanda coordinates (the topic, partition, and offset) are used as the PK. 'RECORD_KEY' - Field(s) from the record key are used, which may be a primitive or a struct. 'RECORD_VALUE' - Field(s) from the record value are used, which must be a struct").
 			SetImportance(model.ConfigDefinitionImportanceMedium).
 			SetComponentType(model.ComponentRadioGroup).
 			AddRecommendedValueWithMetadata("none", "NONE").
@@ -84,17 +84,17 @@ func (*ConfigPatchJdbcSink) PatchDefinition(d model.ConfigDefinition, _ string) 
 			AddRecommendedValueWithMetadata("SqliteDatabaseDialect", "SQLite").
 			AddRecommendedValueWithMetadata("SqlServerDatabaseDialect", "SQL Server").
 			SetDefaultValue("").
-			SetDocumentation("The name of the database dialect that should be used for this connector. By default. the connector automatically determines the dialect based upon the JDBC connection URL. Use this if you want to override that behavior and use a specific dialect.")
+			SetDocumentation("The name of the database dialect that should be used for this connector. By default. the connector automatically determines the dialect based upon the JDBC connection URL. Use this if you want to override that behavior and use a specific dialect")
 	case name:
 		d.SetDefaultValue("jdbc-sink-connector-" + strings.ToLower(random.String(4)))
 	case "connection.url":
-		d.SetDocumentation("Database JDBC connection URL.")
+		d.SetDocumentation("Database JDBC connection URL")
 	case "connection.user":
 		d.SetDisplayName("User").
-			SetDocumentation("Name of the database user to be used when connecting to the database.")
+			SetDocumentation("Name of the database user to be used when connecting to the database")
 	case "connection.password":
 		d.SetDisplayName("Password").
-			SetDocumentation("Password of the database user to be used when connecting to the database.")
+			SetDocumentation("Password of the database user to be used when connecting to the database")
 	case "fields.whitelist":
 		d.SetDisplayName("Include Fields").
 			SetDocumentation("List of comma-separated record value field names. If empty, all fields from the record value are utilized, otherwise used to filter to the desired fields. Note that `Primary Key Fields` is applied independently in the context of which field(s) form the primary key columns in the destination database, while this configuration is applicable for the other columns")

@@ -96,7 +96,7 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 
 			{
 				Name:        "Expert options",
-				Description: "The following options list contains expert connector properties. The default values for these properties rarely need to be changed.",
+				Description: "The following options list contains expert connector properties. The default values for these properties rarely need to be changed",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
