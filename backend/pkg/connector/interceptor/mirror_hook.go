@@ -95,7 +95,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 				Importance:   "HIGH",
 				Required:     true,
 				DisplayName:  "Source cluster broker list",
-				Documentation: "A list of host/port pairs to use for establishing the initial connection to the Kafka cluster. " +
+				Documentation: "A list of host/port pairs to use for establishing the initial connection to the Redpanda cluster. " +
 					"The client will make use of all servers irrespective of which servers are specified here for " +
 					"bootstrapping - this list only impacts the initial hosts used to discover the full set of servers. " +
 					"This list should be in the form \"host1:port1,host2:port2,...\". Since these servers are just used " +

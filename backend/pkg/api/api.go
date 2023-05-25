@@ -54,6 +54,9 @@ type API struct {
 
 	// Hooks to add additional functionality from the outside at different places
 	Hooks *Hooks
+
+	// internal server intance
+	server *rest.Server
 }
 
 // New creates a new API instance
@@ -126,8 +129,12 @@ func (api *API) Start() {
 	}
 
 	// Server
-	server := rest.NewServer(&api.Cfg.REST.Config, api.Logger, api.routes())
-	err = server.Start()
+	api.server, err = rest.NewServer(&api.Cfg.REST.Config, api.Logger, api.routes())
+	if err != nil {
+		api.Logger.Fatal("failed to create HTTP server", zap.Error(err))
+	}
+
+	err = api.server.Start()
 	if err != nil {
 		api.Logger.Fatal("REST Server returned an error", zap.Error(err))
 	}

@@ -59,7 +59,7 @@ func (*ConfigPatchRedpandaGCS) PatchDefinition(d model.ConfigDefinition, _ strin
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case formatOutputType:
 		d.SetDisplayName("GCS file format").
-			SetDocumentation("Format of the key coming from the Kafka topic").
+			SetDocumentation("Format of the key coming from the Redpanda topic").
 			SetComponentType(model.ComponentRadioGroup)
 	case "file.compression.type":
 		d.SetDisplayName("Output file compression").

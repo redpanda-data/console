@@ -7,16 +7,7 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-package kafka
+// Package tools  contains imports required for additional tooling
+package tools
 
-import (
-	"context"
-
-	"github.com/twmb/franz-go/pkg/kmsg"
-)
-
-// DescribeQuotas requests a list of configured Quota rules via the Kafka API.
-func (s *Service) DescribeQuotas(ctx context.Context) (*kmsg.DescribeClientQuotasResponse, error) {
-	r := kmsg.NewDescribeClientQuotasRequest()
-	return r.RequestWith(ctx, s.KafkaClient)
-}
+import _ "github.com/golang/mock/mockgen/model" // blank import to add mock mockgen module to go mod

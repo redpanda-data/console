@@ -48,8 +48,8 @@ func KafkaConnectToConsoleDebeziumMysqlSourceHook(response model.ValidationRespo
 			DefaultValue:  "",
 			Importance:    model.ConfigDefinitionImportanceLow,
 			Required:      false,
-			DisplayName:   "Schema history internal kafka topic",
-			Documentation: "Schema history internal kafka topic",
+			DisplayName:   "Schema history internal Redpanda topic",
+			Documentation: "Schema history internal Redpanda topic",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
