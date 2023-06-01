@@ -273,6 +273,7 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	failedTasks := 0
 	pausedTasks := 0
 	restartingTasks := 0
+	unassignedTasks := 0
 	for i, task := range c.Status.Tasks {
 		tasks[i] = ClusterConnectorTaskInfo{
 			TaskID:   task.ID,
@@ -297,6 +298,8 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 			pausedTasks++
 		case connectorStateRestarting:
 			restartingTasks++
+		case connectorStatusUnassigned:
+			unassignedTasks++
 		}
 	}
 
@@ -308,7 +311,8 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	// DEGRADED: Connector is in running state, has > 0 tasks, but has at least one state in failed state, but not all tasks are failed.
 	// PAUSED: Connector is in paused state, regardless of individual tasks' states.
 	// RESTARTING: Connector is in restarting state, or at least one task is in restarting state.
-	// UNASSIGNED: Connector is in unassigned state, regardless of any tasks.
+	// UNASSIGNED: Connector is in unassigned state.
+	//				Or Connector is in running state, and there are unassigned tasks.
 	// DESTROYED: Connector is in destroyed state, regardless of any tasks.
 	// UNKNOWN: Any other scenario.
 	var connStatus connectorStatus
@@ -337,7 +341,8 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 	} else if (c.Status.Connector.State == connectorStateRestarting) ||
 		(totalTasks > 0 && restartingTasks > 0) {
 		connStatus = connectorStatusRestarting
-	} else if c.Status.Connector.State == connectorStateUnassigned {
+	} else if (c.Status.Connector.State == connectorStateUnassigned) ||
+		((c.Status.Connector.State == connectorStateRunning) && (totalTasks > 0 && unassignedTasks > 0)) {
 		connStatus = connectorStatusUnassigned
 	} else if c.Status.Connector.State == connectorStateDestroyed {
 		connStatus = connectorStatusDestroyed
