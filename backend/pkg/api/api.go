@@ -26,7 +26,6 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/embed"
 	"github.com/redpanda-data/console/backend/pkg/git"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/redpanda"
 	"github.com/redpanda-data/console/backend/pkg/version"
 )
@@ -76,9 +75,12 @@ func New(cfg *config.Config, opts ...Option) *API {
 		logger.Fatal("failed to create Kafka connect service", zap.Error(err))
 	}
 
-	consoleSvc, err := console.NewService(cfg.Console, logger, kafkaSvc, redpandaSvc, connectSvc)
-	if err != nil {
-		logger.Fatal("failed to create owl service", zap.Error(err))
+	var consoleSvc console.Servicer
+	if cfg.Console.Enabled {
+		consoleSvc, err = console.NewService(cfg, logger, redpandaSvc, connectSvc)
+		if err != nil {
+			logger.Fatal("failed to create console service", zap.Error(err))
+		}
 	}
 
 	// Use default frontend resources from embeds. They may be overridden via functional options.
@@ -91,7 +93,6 @@ func New(cfg *config.Config, opts ...Option) *API {
 	a := &API{
 		Cfg:               cfg,
 		Logger:            logger,
-		KafkaSvc:          kafkaSvc,
 		ConsoleSvc:        consoleSvc,
 		ConnectSvc:        connectSvc,
 		RedpandaSvc:       redpandaSvc,
@@ -112,12 +113,7 @@ func New(cfg *config.Config, opts ...Option) *API {
 
 // Start the API server and block
 func (api *API) Start() {
-	err := api.KafkaSvc.Start()
-	if err != nil {
-		api.Logger.Fatal("failed to start kafka service", zap.Error(err))
-	}
-
-	err = api.ConsoleSvc.Start()
+	err := api.ConsoleSvc.Start()
 	if err != nil {
 		api.Logger.Fatal("failed to start console service", zap.Error(err))
 	}
