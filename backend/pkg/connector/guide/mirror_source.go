@@ -58,6 +58,8 @@ func NewMirrorSourceGuide(opts ...Option) Guide {
 				},
 			},
 
+			sizing(),
+
 			reviewAndLaunch(),
 		},
 	}
