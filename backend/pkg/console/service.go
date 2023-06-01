@@ -43,7 +43,7 @@ func NewService(
 	kafkaSvc *kafka.Service,
 	redpandaSvc *redpanda.Service,
 	connectSvc *connect.Service,
-) (*Service, error) {
+) (Servicer, error) {
 	var gitSvc *git.Service
 	cfg.TopicDocumentation.Git.AllowedFileExtensions = []string{"md"}
 	if cfg.TopicDocumentation.Enabled && cfg.TopicDocumentation.Git.Enabled {

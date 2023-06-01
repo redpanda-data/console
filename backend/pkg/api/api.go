@@ -36,8 +36,7 @@ type API struct {
 	Cfg *config.Config
 
 	Logger      *zap.Logger
-	KafkaSvc    *kafka.Service
-	ConsoleSvc  *console.Service
+	ConsoleSvc  console.Servicer
 	ConnectSvc  *connect.Service
 	GitSvc      *git.Service
 	RedpandaSvc *redpanda.Service
