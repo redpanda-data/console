@@ -19,14 +19,20 @@ import (
 // we should try to connect to the Kafka service. If all attempts have failed the
 // application will exit with code 1.
 type KafkaStartup struct {
-	MaxRetries        int           `yaml:"maxRetries"`
-	RetryInterval     time.Duration `yaml:"retryInterval"`
-	MaxRetryInterval  time.Duration `yaml:"maxRetryInterval"`
-	BackoffMultiplier float64       `yaml:"backoffMultiplier"`
+	// EstablishConnectionEagerly determines whether the Kafka connection should
+	// be tested when it is created. This is handy to ensure the Kafka connection
+	// is working before issuing any further requests, but it requires some extra
+	// latency as requests are sent and awaited.
+	EstablishConnectionEagerly bool          `yaml:"establishConnectionEagerly"`
+	MaxRetries                 int           `yaml:"maxRetries"`
+	RetryInterval              time.Duration `yaml:"retryInterval"`
+	MaxRetryInterval           time.Duration `yaml:"maxRetryInterval"`
+	BackoffMultiplier          float64       `yaml:"backoffMultiplier"`
 }
 
 // SetDefaults for Kafka startup configuration.
 func (k *KafkaStartup) SetDefaults() {
+	k.EstablishConnectionEagerly = true
 	k.MaxRetries = 5
 	k.RetryInterval = time.Second
 	k.MaxRetryInterval = 60 * time.Second
