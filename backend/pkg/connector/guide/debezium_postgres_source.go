@@ -139,6 +139,7 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 							"topic.naming.strategy",
 							"unavailable.value.placeholder",
 							"xmin.fetch.interval.ms",
+							"producer.override.max.request.size",
 							"topic.creation.enable",
 							"topic.creation.default.partitions",
 							"topic.creation.default.replication.factor",

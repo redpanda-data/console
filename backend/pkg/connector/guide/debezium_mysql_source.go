@@ -134,6 +134,7 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 							"database.initial.statements",
 							"event.processing.failure.handling.mode",
 							"gtid.source.filter.dml.events",
+							"producer.override.max.request.size",
 							"topic.creation.enable",
 							"topic.creation.default.partitions",
 							"topic.creation.default.replication.factor",
