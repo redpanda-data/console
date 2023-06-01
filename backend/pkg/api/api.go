@@ -66,11 +66,6 @@ func New(cfg *config.Config, opts ...Option) *API {
 		zap.String("version", version.Version),
 		zap.String("built_at", version.BuiltAt))
 
-	kafkaSvc, err := kafka.NewService(cfg, logger, cfg.MetricsNamespace)
-	if err != nil {
-		logger.Fatal("failed to create kafka service", zap.Error(err))
-	}
-
 	redpandaSvc, err := redpanda.NewService(cfg.Redpanda, logger)
 	if err != nil {
 		logger.Fatal("failed to create Redpanda service", zap.Error(err))

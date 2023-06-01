@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -30,7 +29,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -201,20 +199,15 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
-		newKafkaSvc, err := kafka.NewService(newConfig, log,
-			testutil.MetricNameForTest(strings.ReplaceAll(t.Name(), " ", "")))
-		assert.NoError(err)
 
 		// new console service
-		newConsoleSvc, err := console.NewService(newConfig.Console, log, newKafkaSvc, s.api.RedpandaSvc, s.api.ConnectSvc)
+		newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
 		assert.NoError(err)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
-		oldKafkaSvc := s.api.KafkaSvc
 
 		// switch
-		s.api.KafkaSvc = newKafkaSvc
 		s.api.ConsoleSvc = newConsoleSvc
 
 		// call the fake control and expect function
@@ -250,9 +243,6 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 
 		// undo switch
 		defer func() {
-			if oldKafkaSvc != nil {
-				s.api.KafkaSvc = oldKafkaSvc
-			}
 			if oldConsoleSvc != nil {
 				s.api.ConsoleSvc = oldConsoleSvc
 			}
@@ -304,20 +294,15 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
-		newKafkaSvc, err := kafka.NewService(newConfig, log,
-			testutil.MetricNameForTest(strings.ReplaceAll(t.Name(), " ", "")))
-		assert.NoError(err)
 
 		// new console service
-		newConsoleSvc, err := console.NewService(newConfig.Console, log, newKafkaSvc, s.api.RedpandaSvc, s.api.ConnectSvc)
+		newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
 		assert.NoError(err)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
-		oldKafkaSvc := s.api.KafkaSvc
 
 		// switch
-		s.api.KafkaSvc = newKafkaSvc
 		s.api.ConsoleSvc = newConsoleSvc
 
 		// call the fake control and expect function
@@ -365,9 +350,6 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 
 		// undo switch
 		defer func() {
-			if oldKafkaSvc != nil {
-				s.api.KafkaSvc = oldKafkaSvc
-			}
 			if oldConsoleSvc != nil {
 				s.api.ConsoleSvc = oldConsoleSvc
 			}

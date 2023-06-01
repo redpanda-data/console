@@ -18,6 +18,7 @@ import (
 	"io"
 	"math"
 	"math/rand"
+	"net"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -25,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudhut/common/logging"
 	"github.com/cloudhut/common/rest"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +34,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
@@ -77,32 +76,30 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 
 	s.kafkaClient, s.kafkaAdminClient = testutil.CreateClients(t, []string{seedBroker})
 
-	s.cfg = &config.Config{
-		REST: config.Server{
-			Config: rest.Config{
-				HTTPListenAddress: "0.0.0.0",
-				HTTPListenPort:    rand.Intn(50000) + 10000,
-			},
-		},
-		Kafka: config.Kafka{
-			Brokers: []string{s.testSeedBroker},
-		},
-		Connect: config.Connect{
-			Enabled: false,
-		},
-		Logger: logging.Config{
-			LogLevelInput: "info",
-			LogLevel:      zap.NewAtomicLevel(),
+	httpListenPort := rand.Intn(50000) + 10000
+	s.cfg = &config.Config{}
+	s.cfg.SetDefaults()
+	s.cfg.REST = config.Server{
+		Config: rest.Config{
+			HTTPListenAddress: "0.0.0.0",
+			HTTPListenPort:    httpListenPort,
 		},
 	}
-
+	s.cfg.Kafka.Brokers = []string{s.testSeedBroker}
 	s.api = New(s.cfg)
 
 	go s.api.Start()
 
 	// allow for server to start
-	timer1 := time.NewTimer(10 * time.Millisecond)
-	<-timer1.C
+	httpServerAddress := net.JoinHostPort("localhost", strconv.Itoa(httpListenPort))
+	retries := 60
+	for retries > 0 {
+		if _, err := net.DialTimeout("tcp", httpServerAddress, 100*time.Millisecond); err == nil {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+		retries--
+	}
 }
 
 func (s *APIIntegrationTestSuite) TearDownSuite() {
@@ -153,7 +150,7 @@ func (s *APIIntegrationTestSuite) apiRequest(ctx context.Context,
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()

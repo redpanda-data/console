@@ -497,7 +497,7 @@ func (s *ConsoleIntegrationTestSuite) TestListMessages() {
 
 func createNewTestService(t *testing.T, log *zap.Logger,
 	testName string, seedBrokers string,
-) *Service {
+) Servicer {
 	metricName := testutil.MetricNameForTest(strings.ReplaceAll(testName, " ", ""))
 
 	cfg := config.Config{}
@@ -505,10 +505,7 @@ func createNewTestService(t *testing.T, log *zap.Logger,
 	cfg.MetricsNamespace = metricName
 	cfg.Kafka.Brokers = []string{seedBrokers}
 
-	kafkaSvc, err := kafka.NewService(&cfg, log, metricName)
-	assert.NoError(t, err)
-
-	svc, err := NewService(cfg.Console, log, kafkaSvc, nil, nil)
+	svc, err := NewService(&cfg, log, nil, nil)
 	assert.NoError(t, err)
 
 	return svc

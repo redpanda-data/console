@@ -9,7 +9,10 @@
 
 package console
 
+//go:generate ifacemaker --file ./*.go --struct Service --iface Servicer --doc false --pkg console --output servicer.go -y "Servicer is an interface for the Console package that offers all methods to serve the responses for the API layer."
+
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -38,16 +41,15 @@ type Service struct {
 
 // NewService for the Console package
 func NewService(
-	cfg config.Console,
+	cfg *config.Config,
 	logger *zap.Logger,
-	kafkaSvc *kafka.Service,
 	redpandaSvc *redpanda.Service,
 	connectSvc *connect.Service,
 ) (Servicer, error) {
 	var gitSvc *git.Service
-	cfg.TopicDocumentation.Git.AllowedFileExtensions = []string{"md"}
-	if cfg.TopicDocumentation.Enabled && cfg.TopicDocumentation.Git.Enabled {
-		svc, err := git.NewService(cfg.TopicDocumentation.Git, logger, nil)
+	cfg.Console.TopicDocumentation.Git.AllowedFileExtensions = []string{"md"}
+	if cfg.Console.TopicDocumentation.Enabled && cfg.Console.TopicDocumentation.Git.Enabled {
+		svc, err := git.NewService(cfg.Console.TopicDocumentation.Git, logger, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create git service: %w", err)
 		}
@@ -57,6 +59,11 @@ func NewService(
 	configExtensionsByName, err := loadConfigExtensions()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config extensions: %w", err)
+	}
+
+	kafkaSvc, err := kafka.NewService(cfg, logger, cfg.MetricsNamespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kafka svc: %w", err)
 	}
 
 	return &Service{
@@ -76,5 +83,19 @@ func (s *Service) Start() error {
 	if s.gitSvc == nil {
 		return nil
 	}
+
+	if err := s.kafkaSvc.Start(); err != nil {
+		return fmt.Errorf("failed to start kafka service: %w", err)
+	}
+
 	return s.gitSvc.Start()
+}
+
+// Stop stops running go routines and releases allocated resources.
+func (s *Service) Stop() {
+	s.kafkaSvc.KafkaClient.Close()
+}
+
+func (s *Service) IsHealthy(ctx context.Context) error {
+	return s.kafkaSvc.IsHealthy(ctx)
 }
