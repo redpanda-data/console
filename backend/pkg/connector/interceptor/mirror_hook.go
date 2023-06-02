@@ -189,6 +189,23 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 		},
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
+				Name:         "source.cluster.sasl.jaas.config",
+				Type:         "PASSWORD",
+				DefaultValue: "",
+				Importance:   "MEDIUM",
+				Required:     false,
+				DisplayName:  "Source cluster SASL JAAS config",
+			},
+			Value: model.ConfigDefinitionValue{
+				Name:              "source.cluster.sasl.jaas.config",
+				Value:             "",
+				RecommendedValues: []string{},
+				Visible:           false,
+				Errors:            []string{},
+			},
+		},
+		model.ConfigDefinition{
+			Definition: model.ConfigDefinitionKey{
 				Name:          "source.cluster.ssl.truststore.certificates",
 				Type:          "PASSWORD",
 				DefaultValue:  "",
