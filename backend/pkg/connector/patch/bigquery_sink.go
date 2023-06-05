@@ -82,6 +82,10 @@ func (*ConfigPatchBigQuery) PatchDefinition(d model.ConfigDefinition, _ string) 
 		d.SetDisplayName("Upsert enabled")
 	case "deleteEnabled":
 		d.SetDisplayName("Delete enabled")
+	case "bigQueryRetry":
+		d.SetDisplayName("BigQuery retry attempts")
+	case "bigQueryRetryWait":
+		d.SetDisplayName("BigQuery retry attempts interval")
 	case "timePartitioningType":
 		d.SetDisplayName("Time partitioning type").
 			SetComponentType(model.ComponentRadioGroup)
