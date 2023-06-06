@@ -49,7 +49,7 @@ import {
     OverviewNewsEntry
 } from './restInterfaces';
 import { uiState } from './uiState';
-import { config as appConfig } from '../config';
+import { config as appConfig, isEmbedded } from '../config';
 
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
@@ -101,7 +101,7 @@ async function handle401(res: Response) {
     // store.urlBeforeLogin = window.location.href;
 
     // Redirect to login
-    appGlobal.history.push('/login');
+    appGlobal.history.push(isEmbedded() ? '/unauthorized' : '/login');
 }
 
 function processVersionInfo(headers: Headers) {
