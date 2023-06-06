@@ -7,7 +7,9 @@
  * As of the Change Date specified in that file, in accordance with
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
- */import { useEffect } from 'react';
+ */
+ 
+ import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 /* start global stylesheets */
