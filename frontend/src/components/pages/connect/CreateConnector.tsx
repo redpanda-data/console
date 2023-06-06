@@ -140,7 +140,7 @@ const ConnectorType = observer(
                             </Box>
                         </Flex>
 
-                        <Tabs isLazy items={[
+                        <Tabs items={[
                             {
                                 key: 'all',
                                 name: 'All',
@@ -157,8 +157,9 @@ const ConnectorType = observer(
                                 component: <></>
                             },
                         ]} marginBlock="2"
-                            onChange={index => state.tabFilter = tabFilterModes[index]}
-                            index={tabFilterModes.indexOf(state.tabFilter)}
+                            onChange={(_, key) => {
+                                state.tabFilter = key as typeof tabFilterModes[number];
+                            }}
                         />
 
                         <HiddenRadioList<ConnectorPlugin>

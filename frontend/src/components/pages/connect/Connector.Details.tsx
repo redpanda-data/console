@@ -139,7 +139,7 @@ const KafkaConnectorMain = observer(
                 </Tooltip>
             </Flex>
 
-            <Tabs isLazy marginBlock="2"
+            <Tabs marginBlock="2"
                 size="lg"
                 items={[
                     {

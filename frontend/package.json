@@ -26,7 +26,7 @@
         "@heroicons/react": "^1.0.6",
         "@monaco-editor/react": "^4.4",
         "@primer/octicons-react": "^17",
-        "@redpanda-data/ui": "^2.24.0",
+        "@redpanda-data/ui": "^2.41.0",
         "@textea/json-viewer": "^1.24.4",
         "antd": "^4.21",
         "array-move": "^4",
