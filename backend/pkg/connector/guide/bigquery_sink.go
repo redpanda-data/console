@@ -53,6 +53,8 @@ func NewBigQuerySinkGuide(opts ...Option) Guide {
 							"upsertEnabled",
 							"deleteEnabled",
 							"timePartitioningType",
+							"bigQueryRetry",
+							"bigQueryRetryWait",
 							"errors.tolerance",
 						},
 					},
