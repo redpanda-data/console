@@ -408,16 +408,16 @@ const apiStore = {
         for (let i = 0; i < binary.length; i++) {
             bytes[i] = binary.charCodeAt(i);
         }
-        
+
         let hex = '';
         for (let i = 0; i < bytes.length; i++) {
             const b = bytes[i].toString(16);
             hex += b.length === 1 ? '0' + b : b;
-            
+
             if (i < bytes.length - 1)
                 hex += ' ';
         }
-        
+
         return hex;
     },
 
@@ -438,19 +438,22 @@ const apiStore = {
     refreshTopics(force?: boolean) {
         cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force)
             .then(v => {
-                for (const t of v.topics) {
-                    if (!t.allowedActions) continue;
+                if (v?.topics != null) {
+                    for (const t of v.topics) {
+                        if (!t.allowedActions) continue;
 
-                    // DEBUG: randomly remove some allowedActions
-                    /*
-                    const numToRemove = Math.round(Math.random() * t.allowedActions.length);
-                    for (let i = 0; i < numToRemove; i++) {
-                        const randomIndex = Math.round(Math.random() * (t.allowedActions.length - 1));
-                        t.allowedActions.splice(randomIndex, 1);
+                        // DEBUG: randomly remove some allowedActions
+                        /*
+                        const numToRemove = Math.round(Math.random() * t.allowedActions.length);
+                        for (let i = 0; i < numToRemove; i++) {
+                            const randomIndex = Math.round(Math.random() * (t.allowedActions.length - 1));
+                            t.allowedActions.splice(randomIndex, 1);
+                        }
+                        */
                     }
-                    */
+
                 }
-                this.topics = v.topics;
+                this.topics = v?.topics;
             }, addError);
     },
 
@@ -760,24 +763,26 @@ const apiStore = {
     refreshCluster(force?: boolean) {
         cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force)
             .then(v => {
-                transaction(() => {
-                    // add 'type' to each synonym entry
-                    for (const broker of v.clusterInfo.brokers)
-                        if (broker.config && !broker.config.error)
-                            prepareSynonyms(broker.config.configs);
+                if (v?.clusterInfo != null) {
+                    transaction(() => {
+                        // add 'type' to each synonym entry
+                        for (const broker of v.clusterInfo.brokers)
+                            if (broker.config && !broker.config.error)
+                                prepareSynonyms(broker.config.configs);
 
-                    // don't assign if the value didn't change
-                    // we'd re-trigger all observers!
-                    // TODO: it would probably be easier to just annotate 'clusterInfo' with a structural comparer
-                    if (!comparer.structural(this.clusterInfo, v.clusterInfo))
-                        this.clusterInfo = v.clusterInfo;
+                        // don't assign if the value didn't change
+                        // we'd re-trigger all observers!
+                        // TODO: it would probably be easier to just annotate 'clusterInfo' with a structural comparer
+                        if (!comparer.structural(this.clusterInfo, v.clusterInfo))
+                            this.clusterInfo = v.clusterInfo;
 
-                    for (const b of v.clusterInfo.brokers)
-                        if (b.config.error)
-                            this.brokerConfigs.set(b.brokerId, b.config.error);
-                        else
-                            this.brokerConfigs.set(b.brokerId, b.config.configs);
-                });
+                        for (const b of v.clusterInfo.brokers)
+                            if (b.config.error)
+                                this.brokerConfigs.set(b.brokerId, b.config.error);
+                            else
+                                this.brokerConfigs.set(b.brokerId, b.config.configs);
+                    });
+                }
             }, addError);
     },
 
@@ -803,14 +808,16 @@ const apiStore = {
     refreshConsumerGroups(force?: boolean) {
         cachedApiRequest<GetConsumerGroupsResponse>(`${appConfig.restBasePath}/consumer-groups`, force)
             .then(v => {
-                for (const g of v.consumerGroups)
-                    addFrontendFieldsForConsumerGroup(g);
-
-                transaction(() => {
-                    this.consumerGroups.clear();
+                if (v?.consumerGroups != null) {
                     for (const g of v.consumerGroups)
-                        this.consumerGroups.set(g.groupId, g);
-                });
+                        addFrontendFieldsForConsumerGroup(g);
+
+                    transaction(() => {
+                        this.consumerGroups.clear();
+                        for (const g of v.consumerGroups)
+                            this.consumerGroups.set(g.groupId, g);
+                    });
+                }
             }, addError);
     },
 
@@ -1390,14 +1397,15 @@ const apiStore = {
         return parseOrUnwrap<any>(response, null);
     },
 
-     async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<void> {
+    async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<void> {
         const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`, {
             method: 'PUT',
             headers: [
                 ['Content-Type', 'application/json']
             ],
             body: JSON.stringify({
-                secretData: secretValue            }),
+                secretData: secretValue
+            }),
         });
         return parseOrUnwrap<any>(response, null);
     },
