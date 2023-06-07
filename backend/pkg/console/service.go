@@ -9,7 +9,11 @@
 
 package console
 
-//go:generate ifacemaker --file ./*.go --struct Service --iface Servicer --doc false --pkg console --output servicer.go -y "Servicer is an interface for the Console package that offers all methods to serve the responses for the API layer."
+import (
+	"github.com/redpanda-data/console/backend/pkg/git"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
+)
 
 import (
 	"context"
@@ -19,9 +23,6 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
-	"github.com/redpanda-data/console/backend/pkg/git"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // Service offers all methods to serve the responses for the REST API. This usually only involves fetching
