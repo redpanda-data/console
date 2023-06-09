@@ -10,12 +10,6 @@
 package console
 
 import (
-	"github.com/redpanda-data/console/backend/pkg/git"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
-	"github.com/redpanda-data/console/backend/pkg/redpanda"
-)
-
-import (
 	"context"
 	"fmt"
 
@@ -23,6 +17,9 @@ import (
 
 	"github.com/redpanda-data/console/backend/pkg/config"
 	"github.com/redpanda-data/console/backend/pkg/connect"
+	"github.com/redpanda-data/console/backend/pkg/git"
+	"github.com/redpanda-data/console/backend/pkg/kafka"
+	"github.com/redpanda-data/console/backend/pkg/redpanda"
 )
 
 // Service offers all methods to serve the responses for the REST API. This usually only involves fetching
@@ -97,6 +94,8 @@ func (s *Service) Stop() {
 	s.kafkaSvc.KafkaClient.Close()
 }
 
+// IsHealthy checks if the Kafka service is reachable and therefore
+// considered healthy.
 func (s *Service) IsHealthy(ctx context.Context) error {
 	return s.kafkaSvc.IsHealthy(ctx)
 }
