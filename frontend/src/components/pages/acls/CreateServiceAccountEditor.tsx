@@ -1,12 +1,16 @@
 import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Input, Select, Tooltip } from 'antd';
+import { Tooltip, Select } from 'antd';
+import { Button, Input, Flex } from '@redpanda-data/ui';
 import { observer } from 'mobx-react';
+import { useState } from 'react';
 import { CreateUserRequest } from '../../../state/restInterfaces';
 import { Label, LabelTooltip } from '../../../utils/tsxUtils';
 
 export const CreateServiceAccountEditor = observer((p: { state: CreateUserRequest }) => {
 
     const state = p.state;
+    const [showPw, setShowPw] = useState(false)
+    const toggleShowPw = () => setShowPw(!showPw);
 
     return <div>
         <div style={{ display: 'flex', gap: '2em', flexDirection: 'column' }}>
@@ -39,26 +43,36 @@ export const CreateServiceAccountEditor = observer((p: { state: CreateUserReques
                     The password should not exceed 64 characters.
                 </LabelTooltip>}
             >
-                <Input.Group compact>
-                    <Input.Password
+                <Flex alignItems="center" gap="2">
+                    <Input type={showPw ? 'text' : 'password'}
                         value={state.password}
                         onChange={e => state.password = e.target.value}
                         spellCheck={false}
                         {...{ autocomplete: 'off' }}
                         style={{ width: 'calc(100% - 45px)' }}
                     />
+
+                    <Button h="2rem" w="5rem" onClick={toggleShowPw}>
+                        {showPw ? 'Hide' : 'Show'}
+                    </Button>
+
                     <Tooltip trigger="hover" overlay={'Generate new random password'}>
-                        <Button
-                            onClick={() => state.password = generatePassword(30)}
-                            style={{ width: '45px' }}
-                        >
+                        <Button onClick={() => state.password = generatePassword(30)} variant="ghost" width="35px" display="inline-flex">
                             <ReloadOutlined />
                         </Button>
                     </Tooltip>
-                </Input.Group>
+                </Flex>
             </Label>
 
             <Label text="Mechanism">
+                {/* <Select options={[
+                    { label: 'SCRAM-SHA-256', value: 'SCRAM-SHA-256' },
+                    { label: 'SCRAM-SHA-512', value: 'SCRAM-SHA-512' },
+                ]}
+                    value={state.mechanism}
+                    onChange={e => state.mechanism = e}
+                /> */}
+
                 <Select
                     style={{ width: '300px' }}
                     value={state.mechanism}

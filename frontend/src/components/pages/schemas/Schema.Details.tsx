@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Button, message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
+import { message, Row, Select, Statistic, Table, Tag, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { appGlobal } from '../../../state/appGlobal';
 import { api } from '../../../state/backendApi';
@@ -19,14 +19,14 @@ import { DefaultSkeleton, Label, OptionGroup, toSafeString } from '../../../util
 import { KowlJsonView } from '../../misc/KowlJsonView';
 import { JsonField, JsonFieldType, JsonSchema, Schema, SchemaField, SchemaType } from '../../../state/restInterfaces';
 import { uiSettings } from '../../../state/ui';
-import { ClipboardCopyIcon } from '@heroicons/react/outline';
 import { NoClipboardPopover } from '../../misc/NoClipboardPopover';
 import { isClipboardAvailable } from '../../../utils/featureDetection';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { makeObservable, observable } from 'mobx';
 import { editQuery } from '../../../utils/queryHelper';
-
+import { Button, Icon } from '@redpanda-data/ui';
+import { AiOutlineCopy } from 'react-icons/ai';
 
 function renderSchemaType(value: any, _record: SchemaField, _index: number) {
     return toSafeString(value);
@@ -226,13 +226,14 @@ class SchemaDetailsView extends PageComponent<{ subjectName: string }> {
                             <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
                                 <Tooltip overlay="Copy raw JSON to clipboard">
                                     <Button
-                                        disabled={!isClipboardAvailable}
-                                        icon={<ClipboardCopyIcon style={{ width: '18px', color: '#555' }} />}
+                                        isDisabled={!isClipboardAvailable}
                                         onClick={() => {
                                             navigator.clipboard.writeText(rawSchema);
                                             message.success('Schema copied to clipboard', 1.2);
                                         }}
-                                    />
+                                    >
+                                        <Icon as={AiOutlineCopy} color="#555" width="18px" />
+                                    </Button>
                                 </Tooltip>
                             </div>
                         </NoClipboardPopover>

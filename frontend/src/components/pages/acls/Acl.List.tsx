@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Input, Button, Alert, Tag, message, Dropdown, Menu, Tooltip, Modal } from 'antd';
+import { Empty, Input, Tag, message, Dropdown, Menu, Tooltip, Modal } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -30,7 +30,7 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-
+import { Alert, AlertIcon, Button } from '@redpanda-data/ui';
 
 @observer
 class AclList extends PageComponent {
@@ -129,7 +129,7 @@ class AclList extends PageComponent {
                             Delete (ACLs only)
                         </Menu.Item>
                     </Menu>}>
-                    <Button type="text" className="iconButton deleteButton" style={{ marginLeft: 'auto' }}                    >
+                    <Button variant="ghost" className="iconButton deleteButton" style={{ marginLeft: 'auto' }}>
                         <TrashIcon />
                     </Button>
                 </Dropdown>
@@ -232,11 +232,17 @@ class AclList extends PageComponent {
         if (api.ACLs?.aclResources === undefined) return DefaultSkeleton;
 
         const warning = api.ACLs === null
-            ? <Alert type="warning" message="You do not have the necessary permissions to view ACLs" showIcon style={{ marginBottom: '1em' }} />
+            ? <Alert status="warning" style={{ marginBottom: '1em' }}>
+                <AlertIcon />
+                You do not have the necessary permissions to view ACLs
+            </Alert>
             : null;
 
         const noAclAuthorizer = !api.ACLs?.isAuthorizerEnabled
-            ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} />
+            ? <Alert status="warning" style={{ marginBottom: '1em' }}>
+                <AlertIcon />
+                There's no authorizer configured in your Kafka cluster
+            </Alert>
             : null;
 
         const groups = this.principalGroups;
@@ -407,12 +413,12 @@ class AclList extends PageComponent {
                 <span style={{ marginLeft: 'auto' }} >{' '}</span>
 
                 <Tooltip trigger={!Features.createUser ? 'hover' : 'none'} overlay="The cluster does not support this feature" >
-                    <Button disabled={!Features.createUser} onClick={this.showCreateServiceAccountModal}>
+                    <Button variant="outline" isDisabled={!Features.createUser} onClick={this.showCreateServiceAccountModal}>
                         Create User
                     </Button>
                 </Tooltip>
 
-                <Button onClick={() => {
+                <Button variant="outline" onClick={() => {
                     this.editorType = 'create';
                     this.edittingPrincipalGroup = {
                         host: '',
@@ -462,7 +468,7 @@ const PermissionDenied = <>
                 </div>
 
                 <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-                    <Button type="primary">Redpanda Console documentation</Button>
+                    <Button>Redpanda Console documentation</Button>
                 </a>
             </Empty>
         </Section>

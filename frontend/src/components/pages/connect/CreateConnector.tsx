@@ -140,7 +140,7 @@ const ConnectorType = observer(
                             </Box>
                         </Flex>
 
-                        <Tabs isLazy items={[
+                        <Tabs items={[
                             {
                                 key: 'all',
                                 name: 'All',
@@ -157,7 +157,7 @@ const ConnectorType = observer(
                                 component: <></>
                             },
                         ]} marginBlock="2"
-                            onChange={index => state.tabFilter = tabFilterModes[index]}
+                            onChange={index => state.tabFilter = tabFilterModes[Number(index)]}
                             index={tabFilterModes.indexOf(state.tabFilter)}
                         />
 

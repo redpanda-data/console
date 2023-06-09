@@ -13,13 +13,14 @@ import React, { CSSProperties } from 'react';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 import { toJson } from '../../utils/jsonUtils';
-import { Button, Layout, message, Space } from 'antd';
+import { Layout, message, Space } from 'antd';
 import { CopyOutlined, CloseOutlined } from '@ant-design/icons';
 import { envVarDebugAr } from '../../utils/env';
 import { NoClipboardPopover } from './NoClipboardPopover';
 import { isClipboardAvailable } from '../../utils/featureDetection';
 import { ObjToKv } from '../../utils/tsxUtils';
 import StackTrace from 'stacktrace-js';
+import { Button, Icon } from '@redpanda-data/ui';
 
 const { Content } = Layout;
 
@@ -182,14 +183,16 @@ export class ErrorBoundary extends React.Component<{ children?: React.ReactNode 
                 <h1>Rendering Error!</h1>
                 <p>Please report this at <a style={{ textDecoration: 'underline', fontWeight: 'bold' }} href="https://github.com/redpanda-data/console/issues">our GitHub Repo</a></p>
                 <Space size={'large'} style={{ marginTop: '0', marginBottom: '2rem' }}>
-                    <Button icon={<CloseOutlined />} type="primary" size="large" style={{ width: '16rem' }} onClick={() => this.dismiss()}>
+                    <Button variant="primary" size="large" style={{ width: '16rem' }} onClick={() => this.dismiss()}>
+                        <Icon as={CloseOutlined} />
                         Dismiss
                     </Button>
                     <NoClipboardPopover>
-                        <Button type="primary" size="large" ghost icon={<CopyOutlined />}
+                        <Button variant="ghost" size="large"
                             disabled={!isClipboardAvailable || !this.decodingDone}
-                            loading={!this.decodingDone}
+                            isLoading={!this.decodingDone}
                             onClick={() => this.copyError()}>
+                            <Icon as={CopyOutlined} />
                             Copy Info
                         </Button>
                     </NoClipboardPopover>

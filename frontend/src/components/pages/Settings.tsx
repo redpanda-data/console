@@ -52,13 +52,6 @@ export class SettingsPage extends PageComponent {
 
             {this.MakeRow('2nd setting',
                 <Text>hliuhlh</Text>)}
-
-            {/*
-            <Alert type='error' message={<>
-                <Button danger onClick={this.showDeleteConfirm}>Clear User Settings</Button>
-            </>}>
-            </Alert>
-             */}
         </MotionDiv>
         );
     }

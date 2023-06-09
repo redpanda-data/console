@@ -11,11 +11,12 @@
 
 import { Component, ReactNode } from 'react';
 import { observer } from 'mobx-react';
-import { Menu, Button, Modal, Input, message, Checkbox, InputNumber } from 'antd';
+import { Menu, Modal, Input, message, InputNumber } from 'antd';
 import { clearSettings, uiSettings } from '../../state/ui';
 import { Label } from '../../utils/tsxUtils';
 import { makeObservable, observable, transaction } from 'mobx';
 import { ToolsIcon } from '@primer/octicons-react';
+import { Button, Checkbox, IconButton } from '@redpanda-data/ui';
 
 type Action = () => void;
 
@@ -43,7 +44,11 @@ export class UserPreferencesButton extends Component {
 
         return <>
             <UserPreferencesDialog visible={this.isOpen} onClose={() => this.isOpen = false} />
-            <Button shape="circle" icon={<ToolsIcon size={17} />} className="hoverButton userPreferencesButton"
+            <IconButton
+                className="hoverButton userPreferencesButton"
+                variant="outline"
+                aria-label="user preferences"
+                icon={<ToolsIcon size={17} />}
                 onClick={() => this.isOpen = true}
             />
         </>;
@@ -76,7 +81,7 @@ export class UserPreferencesDialog extends Component<{ visible: boolean, onClose
                     <div style={{ fontFamily: '"Open Sans", sans-serif', fontSize: '10.5px', color: '#828282' }}>
                         Changes are saved automatically
                     </div>
-                    <Button type="primary" onClick={onClose} >Close</Button>
+                    <Button variant="outline" onClick={onClose} >Close</Button>
                 </div>}
                 className="preferencesDialog"
                 bodyStyle={{ padding: '0', display: 'flex', flexDirection: 'column' }}
@@ -115,10 +120,10 @@ class StatsBarTab extends Component {
             <p>Controls on what pages Redpanda Console shows the statistics bar</p>
             <div style={{ display: 'inline-grid', gridAutoFlow: 'row', gridRowGap: '24px', gridColumnGap: '32px', marginRight: 'auto' }}>
                 <Label text="Topic Details" >
-                    <Checkbox children="Enabled" checked={uiSettings.topicDetailsShowStatisticsBar} onChange={e => uiSettings.topicDetailsShowStatisticsBar = e.target.checked} />
+                    <Checkbox children="Enabled" isChecked={uiSettings.topicDetailsShowStatisticsBar} onChange={e => uiSettings.topicDetailsShowStatisticsBar = e.target.checked} />
                 </Label>
                 <Label text="Consumer Group Details" >
-                    <Checkbox children="Enabled" checked={uiSettings.consumerGroupDetails.showStatisticsBar} onChange={e => uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked} />
+                    <Checkbox children="Enabled" isChecked={uiSettings.consumerGroupDetails.showStatisticsBar} onChange={e => uiSettings.consumerGroupDetails.showStatisticsBar = e.target.checked} />
                 </Label>
             </div>
         </div>;
@@ -223,7 +228,7 @@ class ImportExportTab extends Component {
                             clearSettings();
                             message.success('All settings have been reset to their defaults');
                             this.resetConfirm = '';
-                        }} danger disabled={this.resetConfirm != 'reset'}>Reset</Button>
+                        }} colorScheme="red" disabled={this.resetConfirm != 'reset'}>Reset</Button>
                     </div>
                     <span className="smallText">Clear all your user settings, resetting them to the default values</span>
                 </>

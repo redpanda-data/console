@@ -22,8 +22,9 @@ import { uriTransformer as baseUriTransformer } from 'react-markdown';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import { motion } from 'framer-motion';
 import { animProps } from '../../../utils/animationProps';
-import { Button, Empty } from 'antd';
+import { Empty } from 'antd';
 import { observer } from 'mobx-react';
+import { Button } from '@redpanda-data/ui';
 
 
 // Test for link sanitizer
@@ -126,7 +127,7 @@ function renderDocuError(title: string, body: JSX.Element) {
 
                 {/* todo: fix link once we have a better guide */}
                 <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-                    <Button type="primary">Redpanda Console Documentation</Button>
+                    <Button variant="solid">Redpanda Console Documentation</Button>
                 </a>
             </Empty>
         </motion.div>

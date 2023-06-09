@@ -10,7 +10,6 @@
  */
 
 import { Component } from 'react';
-import { Spin } from 'antd';
 import { api } from '../../state/backendApi';
 import { ApiError, UserData } from '../../state/restInterfaces';
 import { appGlobal } from '../../state/appGlobal';
@@ -19,6 +18,7 @@ import { uiState } from '../../state/uiState';
 import { getBasePath } from '../../utils/env';
 import { match } from 'react-router-dom';
 import { queryToObj } from '../../utils/queryHelper';
+import { Spinner } from '@redpanda-data/ui';
 
 class LoginCompletePage extends Component<{ provider: string, match: match<any> }> {
 
@@ -75,7 +75,7 @@ class LoginCompletePage extends Component<{ provider: string, match: match<any> 
         return <div style={{ height: '100vh', display: 'flex', placeContent: 'center', background: '#f3f3f3' }}>
             <div style={{ display: 'flex', placeContent: 'center', placeItems: 'center', flexFlow: 'column' }}>
                 <span style={{ fontSize: '1.5em', color: 'rgba(0,0,0,0.75)' }}>Completing login...</span><br />
-                <Spin />
+                <Spinner size="lg" />
             </div>
         </div>
     }

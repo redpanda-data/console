@@ -15,8 +15,8 @@ import { PageComponent, PageInitHelper } from './Page';
 import { motion } from 'framer-motion'
 import { AnimatePresence, animProps, MotionDiv } from '../../utils/animationProps';
 import { observer } from 'mobx-react';
-import { Checkbox } from 'antd';
 import { makeObservable, observable } from 'mobx';
+import { Checkbox } from '@redpanda-data/ui';
 
 @observer
 export class UrlTestPage extends PageComponent {
@@ -53,7 +53,7 @@ export class UrlTestPage extends PageComponent {
 
                 <div>
                     <h4>Test</h4>
-                    <div><Checkbox checked={this.test} onChange={e => this.test = e.target.checked}>Test Prop</Checkbox></div>
+                    <div><Checkbox isChecked={this.test} onChange={e => this.test = e.target.checked}>Test Prop</Checkbox></div>
                     <AnimatePresence >
 
                         {this.test

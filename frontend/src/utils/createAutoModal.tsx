@@ -9,11 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button, Modal, ModalProps as AntdModalProps, Result } from 'antd';
+import { Modal, ModalProps as AntdModalProps, Result } from 'antd';
 import { action, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import React from 'react';
 import { toJson } from './jsonUtils';
+import { Button } from '@redpanda-data/ui';
 
 export type AutoModalProps = Omit<AntdModalProps, 'visible' | 'onCancel' | 'onOk' | 'afterClose' | 'modalRender'> & {
     // skipSuccess?: boolean,
@@ -138,7 +139,7 @@ export default function createAutoModal<TShowArg, TModalState>(options: {
             <Result style={{ margin: 0, padding: 0, marginTop: '1em' }} status="success"
                 title={options.modalProps.successTitle ?? 'Success'}
                 subTitle={response}
-                extra={<Button type="default" size="large" style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
+                extra={<Button variant="solid" colorScheme="brand" size="lg" style={{ width: '16rem' }} onClick={onSuccessClose}>Close</Button>}
             />
         </>;
     };

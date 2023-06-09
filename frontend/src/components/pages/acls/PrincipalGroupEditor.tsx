@@ -11,15 +11,16 @@
 
 import { useState } from 'react';
 import { observer } from 'mobx-react';
-import { Select, Input, Button, Modal, AutoComplete, message } from 'antd';
+import { Select, Modal, AutoComplete, message } from 'antd';
 import { api } from '../../../state/backendApi';
 import { AclOperation, AclStrOperation, AclStrResourceType } from '../../../state/restInterfaces';
 import { AnimatePresence, animProps_radioOptionGroup, MotionDiv } from '../../../utils/animationProps';
 import { containsIgnoreCase } from '../../../utils/utils';
 import { Code, Label, LabelTooltip } from '../../../utils/tsxUtils';
-import { TrashIcon } from '@heroicons/react/solid';
+import { HiOutlineTrash } from 'react-icons/hi';
 import { AclPrincipalGroup, createEmptyConsumerGroupAcl, createEmptyTopicAcl, createEmptyTransactionalIdAcl, ResourceACLs, unpackPrincipalGroup } from './Models';
 import { Operation } from './Operation';
+import { Button, Icon, Input, InputGroup } from '@redpanda-data/ui';
 const { Option } = Select;
 
 
@@ -115,7 +116,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                     Do not include the prefix so <code>my-user</code> instead of <code>User:my-user</code>.<br />
                     You can use <code>*</code> to target all users.
                 </LabelTooltip>} >
-                    <Input.Group compact>
+                    <InputGroup>
                         <Select
                             value={group.principalType}
                             onChange={x => group.principalType = x}
@@ -141,7 +142,7 @@ export const AclPrincipalGroupEditor = observer((p: {
                             }}
                             {...{ spellCheck: false }}
                         />
-                    </Input.Group>
+                    </InputGroup>
                 </Label>
 
                 <Label text="Host" textSuffix={<LabelTooltip nowrap left>
@@ -149,14 +150,14 @@ export const AclPrincipalGroupEditor = observer((p: {
                     Can be set to left empty or set to <code>*</code> to allow any host.
                 </LabelTooltip>}>
                     <Input
-                        style={{ width: 200 }}
+                        width="200px"
                         value={group.host}
                         onChange={e => group.host = e.target.value}
                         spellCheck={false}
                     />
                 </Label>
 
-                <Button onClick={() => {
+                <Button variant="outline" onClick={() => {
                     if (group.topicAcls.length == 0)
                         group.topicAcls.push(createEmptyTopicAcl());
                     group.topicAcls[0].selector = '*';
@@ -194,8 +195,8 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 onDelete={() => group.topicAcls.remove(t)}
                             />
                         )}
-                        <Button
-                            block
+                        <Button variant="outline"
+                            width="100%"
                             onClick={() => group.topicAcls.push(createEmptyTopicAcl())}
                         >Add Topic ACL
                         </Button>
@@ -213,8 +214,8 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 onDelete={() => group.consumerGroupAcls.remove(t)}
                             />
                         )}
-                        <Button
-                            block
+                        <Button variant="outline"
+                            width="100%"
                             onClick={() => group.consumerGroupAcls.push(createEmptyConsumerGroupAcl())}
                         >Add Consumer Group ACL
                         </Button>
@@ -232,8 +233,8 @@ export const AclPrincipalGroupEditor = observer((p: {
                                 onDelete={() => group.transactionalIdAcls.remove(t)}
                             />
                         )}
-                        <Button
-                            block
+                        <Button variant="outline"
+                            width="100%"
                             onClick={() => group.transactionalIdAcls.push(createEmptyTransactionalIdAcl())}
                         >Add Transactional ID ACL
                         </Button>
@@ -340,11 +341,11 @@ const ResourceACLsEditor = observer((p: {
         {p.onDelete &&
             <AnimatePresence>
                 <Button
-                    type="text"
+                    variant="ghost"
                     style={{ position: 'absolute', right: '8px', top: '8px', padding: '4px', color: 'rgb(0, 0, 0, 0.35)' }}
                     onClick={p.onDelete}
                 >
-                    <TrashIcon />
+                    <Icon as={HiOutlineTrash} fontSize="22px" />
                 </Button>
             </AnimatePresence>
         }

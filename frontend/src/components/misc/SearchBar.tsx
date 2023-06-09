@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Checkbox, Input } from 'antd';
+import { Input } from 'antd';
 import { autorun, IReactionDisposer, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
@@ -88,13 +88,6 @@ class SearchBar<TItem> extends Component<{
         </div>;
     }
 
-    Settings = observer(() => {
-        return <div>
-            <Checkbox checked={true}>Column 1</Checkbox>
-            <div style={{ height: 1, margin: '1em 0', background: '#0003' }} />
-            <Checkbox>Case-Sensitive</Checkbox>
-        </div>;
-    })
 
     FilterSummary = observer((() => {
         const searchSummary = this.computeFilterSummary();

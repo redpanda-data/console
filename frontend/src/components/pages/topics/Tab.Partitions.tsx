@@ -12,7 +12,7 @@
 import { Component } from 'react';
 import React from 'react';
 import { Partition, Topic, } from '../../../state/restInterfaces';
-import { Table, Alert, Popover, } from 'antd';
+import { Table, Popover, } from 'antd';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
 import { sortField, makePaginationConfig } from '../../misc/common';
@@ -21,6 +21,7 @@ import { uiState } from '../../../state/uiState';
 import { numberToThousandsString, DefaultSkeleton, InfoText, findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
 import { BrokerList } from '../../misc/BrokerList';
 import { WarningTwoTone } from '@ant-design/icons';
+import { Alert, AlertIcon } from '@redpanda-data/ui';
 
 
 @observer
@@ -36,7 +37,10 @@ export class TopicPartitions extends Component<{ topic: Topic }> {
 
         let warning: JSX.Element = <></>
         if (topic.cleanupPolicy.toLowerCase() == 'compact')
-            warning = <Alert type="warning" message="Topic cleanupPolicy is 'compact'. Message Count is an estimate!" showIcon style={{ marginBottom: '1em' }} />
+            warning = <Alert status="warning" marginBottom="1em">
+                <AlertIcon />
+                Topic cleanupPolicy is 'compact'. Message Count is an estimate!
+            </Alert>
 
         const table = <Table
             size={'middle'} style={{ margin: '0', padding: '0', whiteSpace: 'nowrap' }} bordered={false}
