@@ -44,12 +44,10 @@ type Service struct {
 // NewService creates a new Kafka service and immediately checks connectivity to all components. If any of these external
 // dependencies fail an error wil be returned.
 func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string) (*Service, error) {
-	// Kafka client
-	hooksChildLogger := logger.With(zap.String("source", "kafka_client_hooks"))
-	clientHooks := newClientHooks(hooksChildLogger, metricsNamespace)
+	kgoHooks := newClientHooks(logger.Named("kafka_client_hooks"), metricsNamespace)
 
 	logger.Debug("creating new kafka client", zap.Any("config", cfg.Kafka.RedactedConfig()))
-	kgoOpts, err := NewKgoConfig(&cfg.Kafka, logger, clientHooks)
+	kgoOpts, err := NewKgoConfig(&cfg.Kafka, logger, kgoHooks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a valid kafka client config: %w", err)
 	}
@@ -68,7 +66,7 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 		Multiplier:   cfg.Kafka.Startup.BackoffMultiplier,
 	}
 	attempt := 0
-	for attempt < cfg.Kafka.Startup.MaxRetries {
+	for attempt < cfg.Kafka.Startup.MaxRetries && cfg.Kafka.Startup.EstablishConnectionEagerly {
 		err = testConnection(logger, kafkaClient, time.Second*15)
 		if err == nil {
 			break
@@ -124,7 +122,7 @@ func NewService(cfg *config.Config, logger *zap.Logger, metricsNamespace string)
 	return &Service{
 		Config:           cfg,
 		Logger:           logger,
-		KafkaClientHooks: clientHooks,
+		KafkaClientHooks: kgoHooks,
 		KafkaClient:      kafkaClient,
 		KafkaAdmClient:   kadm.NewClient(kafkaClient),
 		SchemaService:    schemaSvc,

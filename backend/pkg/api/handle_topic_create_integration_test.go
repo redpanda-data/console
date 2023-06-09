@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -28,7 +27,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -59,7 +57,7 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 
 		res, body := s.apiRequest(ctx, http.MethodPost, "/api/topics", input)
 
-		assert.Equal(200, res.StatusCode)
+		require.Equal(200, res.StatusCode)
 
 		topicName := testutil.TopicNameForTest("create_topic")
 
@@ -279,20 +277,15 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 
 		// new kafka service
 		newConfig.Kafka.Brokers = fakeCluster.ListenAddrs()
-		newKafkaSvc, err := kafka.NewService(newConfig, log,
-			testutil.MetricNameForTest(strings.ReplaceAll(t.Name(), " ", "")))
-		assert.NoError(err)
 
 		// new console service
-		newConsoleSvc, err := console.NewService(newConfig.Console, log, newKafkaSvc, s.api.RedpandaSvc, s.api.ConnectSvc)
+		newConsoleSvc, err := console.NewService(newConfig, log, s.api.RedpandaSvc, s.api.ConnectSvc)
 		assert.NoError(err)
 
 		// save old
 		oldConsoleSvc := s.api.ConsoleSvc
-		oldKafkaSvc := s.api.KafkaSvc
 
 		// switch
-		s.api.KafkaSvc = newKafkaSvc
 		s.api.ConsoleSvc = newConsoleSvc
 
 		// call the fake control and expect function
@@ -328,9 +321,6 @@ func (s *APIIntegrationTestSuite) TestHandleCreateTopic() {
 
 		// undo switch
 		defer func() {
-			if oldKafkaSvc != nil {
-				s.api.KafkaSvc = oldKafkaSvc
-			}
 			if oldConsoleSvc != nil {
 				s.api.ConsoleSvc = oldConsoleSvc
 			}

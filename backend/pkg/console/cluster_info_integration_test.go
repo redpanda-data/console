@@ -19,7 +19,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -40,13 +39,9 @@ func (s *ConsoleIntegrationTestSuite) TestGetClusterInfo() {
 	cfg.MetricsNamespace = testutil.MetricNameForTest("get_cluster_info")
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
-	kafkaSvc, err := kafka.NewService(&cfg, log, cfg.MetricsNamespace)
+	svc, err := NewService(&cfg, log, nil, nil)
 	assert.NoError(err)
-
-	svc, err := NewService(cfg.Console, log, kafkaSvc, nil, nil)
-	assert.NoError(err)
-
-	defer svc.kafkaSvc.KafkaClient.Close()
+	defer svc.Stop()
 
 	info, err := svc.GetClusterInfo(ctx)
 	assert.NoError(err)

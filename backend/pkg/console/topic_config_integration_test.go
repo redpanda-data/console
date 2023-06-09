@@ -19,7 +19,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
-	"github.com/redpanda-data/console/backend/pkg/kafka"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
@@ -46,13 +45,10 @@ func (s *ConsoleIntegrationTestSuite) TestGetTopicConfigs() {
 	cfg.MetricsNamespace = testutil.MetricNameForTest("get_topic_configs")
 	cfg.Kafka.Brokers = []string{testSeedBroker}
 
-	kafkaSvc, err := kafka.NewService(&cfg, log, cfg.MetricsNamespace)
+	svc, err := NewService(&cfg, log, nil, nil)
 	assert.NoError(err)
 
-	svc, err := NewService(cfg.Console, log, kafkaSvc, nil, nil)
-	assert.NoError(err)
-
-	defer svc.kafkaSvc.KafkaClient.Close()
+	defer svc.Stop()
 
 	topicConfig, restErr := svc.GetTopicConfigs(ctx, topicName, nil)
 	assert.Nil(restErr)
