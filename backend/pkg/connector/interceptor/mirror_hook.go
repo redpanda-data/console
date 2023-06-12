@@ -319,6 +319,41 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 				},
 			},
 		},
+		model.ConfigDefinition{
+			Definition: model.ConfigDefinitionKey{
+				Name:          "consumer.auto.offset.reset",
+				Type:          "STRING",
+				DefaultValue:  "latest",
+				Importance:    "MEDIUM",
+				Required:      false,
+				DisplayName:   "Auto offset reset",
+				Documentation: "What to do when there is no initial offset in Kafka or if the current offset does not exist any more on the server (e.g. because that data has been deleted). 'earliest' - automatically reset the offset to the earliest offset. 'latest' - automatically reset the offset to the latest offset. 'none' - throw exception to the consumer if no previous offset is found for the consumer's group",
+			},
+			Value: model.ConfigDefinitionValue{
+				Name:              "consumer.auto.offset.reset",
+				Value:             "latest",
+				RecommendedValues: []string{"earliest", "latest", "none"},
+				Visible:           true,
+				Errors:            []string{},
+			},
+			Metadata: model.ConfigDefinitionMetadata{
+				ComponentType: model.ComponentRadioGroup,
+				RecommendedValues: []model.RecommendedValueWithMetadata{
+					{
+						Value:       "earliest",
+						DisplayName: "earliest",
+					},
+					{
+						Value:       "latest",
+						DisplayName: "latest",
+					},
+					{
+						Value:       "none",
+						DisplayName: "none",
+					},
+				},
+			},
+		},
 	)
 
 	return response
