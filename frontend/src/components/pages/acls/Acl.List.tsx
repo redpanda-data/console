@@ -30,7 +30,7 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertIcon, Button } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Icon } from '@redpanda-data/ui';
 
 @observer
 class AclList extends PageComponent {
@@ -130,7 +130,7 @@ class AclList extends PageComponent {
                         </Menu.Item>
                     </Menu>}>
                     <Button variant="ghost" className="iconButton deleteButton" style={{ marginLeft: 'auto' }}>
-                        <TrashIcon />
+                        <Icon as={TrashIcon} fontSize="24px" />
                     </Button>
                 </Dropdown>
             }

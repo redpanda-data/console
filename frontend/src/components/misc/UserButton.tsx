@@ -11,12 +11,12 @@
 
 import { Component } from 'react';
 import { observer } from 'mobx-react'
-import { Avatar, Dropdown } from 'antd';
+import { Dropdown } from 'antd';
 import { api } from '../../state/backendApi';
-import { UserOutlined } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
 import { UserPreferencesDialog } from './UserPreferences';
 import { AppFeatures } from '../../utils/env';
+import { Avatar } from '@redpanda-data/ui';
 
 @observer
 export class UserProfile extends Component {
@@ -57,9 +57,7 @@ export class UserProfile extends Component {
             >
                 <div className="profile">
                     <div className="avatar">
-                        <Avatar src={user.meta.avatarUrl || undefined} alt={user.meta.name} >
-                            <UserOutlined />
-                        </Avatar>
+                        <Avatar name={user.meta.name} src={user.meta.avatarUrl} size="sm" />
                     </div>
                     <div className="text">
                         <div className="userName">{user.meta.name}</div>
