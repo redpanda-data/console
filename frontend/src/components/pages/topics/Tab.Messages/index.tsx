@@ -206,7 +206,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         ];
 
         return <React.Fragment>
-            <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ margin: '0 1px', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', position: 'relative', zIndex: 2 }}>
                 {/* Search Settings*/}
                 <Label text="Partition" style={{ ...spaceStyle, minWidth: '9em' }}>
                     <SingleSelect<number>
