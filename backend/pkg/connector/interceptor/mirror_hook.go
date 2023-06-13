@@ -323,7 +323,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 			Definition: model.ConfigDefinitionKey{
 				Name:          "consumer.auto.offset.reset",
 				Type:          "STRING",
-				DefaultValue:  "latest",
+				DefaultValue:  "earliest",
 				Importance:    "MEDIUM",
 				Required:      false,
 				DisplayName:   "Auto offset reset",
@@ -331,7 +331,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "consumer.auto.offset.reset",
-				Value:             "latest",
+				Value:             "earliest",
 				RecommendedValues: []string{"earliest", "latest", "none"},
 				Visible:           true,
 				Errors:            []string{},
