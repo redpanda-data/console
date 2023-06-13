@@ -28,7 +28,6 @@ import { appGlobal } from './state/appGlobal';
 
 import { SetConfigArguments, setup } from './config';
 import HistorySetter from './components/misc/HistorySetter';
-import EnsureAuth from './components/HandleAuthzEmbedded';
 import AppContent from './components/layout/Content';
 import { observer } from 'mobx-react';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
@@ -74,9 +73,7 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
         <BrowserRouter basename={basePath}>
             <HistorySetter />
             <ChakraProvider theme={redpandaTheme}>
-                <EnsureAuth>
-                    <AppContent />
-                </EnsureAuth>
+                 <AppContent />
             </ChakraProvider>
         </BrowserRouter>
     );

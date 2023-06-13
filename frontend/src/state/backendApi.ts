@@ -101,7 +101,12 @@ async function handle401(res: Response) {
     // store.urlBeforeLogin = window.location.href;
 
     // Redirect to login
-    appGlobal.history.push(isEmbedded() ? '/unauthorized' : '/login');
+    if (isEmbedded()) {
+        // when is embedded redirect to the cloud-ui
+        window.location.replace(`/clusters/${appConfig.clusterId}/unauthorized`)
+    } else {
+        appGlobal.history.push('/login');
+    }
 }
 
 function processVersionInfo(headers: Headers) {
