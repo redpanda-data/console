@@ -61,21 +61,21 @@ func (*ConfigPatchHTTPSource) PatchDefinition(d model.ConfigDefinition, _ string
 			SetDefaultValue("org.apache.kafka.connect.json.JsonConverter")
 	case "http.timer":
 		d.SetComponentType(model.ComponentRadioGroup).
-			SetDocumentation("Controls the rate at which HTTP requests are performed by informing the task, how long until the next execution is due.").
+			SetDocumentation("Controls the rate at which HTTP requests are performed by informing the task, how long until the next execution is due").
 			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.timer.AdaptableIntervalTimer", "AdaptableIntervalTimer").
 			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.timer.FixedIntervalTimer", "FixedIntervalTimer").
 			SetDefaultValue("com.github.castorm.kafka.connect.timer.AdaptableIntervalTimer").
 			SetDisplayName("HTTP timer")
 	case "http.response.parser":
 		d.SetComponentType(model.ComponentRadioGroup).
-			SetDocumentation("A class translating HTTP response into the list of SourceRecords expected by Kafka Connect.").
+			SetDocumentation("A class translating HTTP response into the list of SourceRecords expected by Kafka Connect").
 			SetDisplayName("HTTP response parser").
 			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.http.response.PolicyHttpResponseParser", "PolicyHttpResponseParser").
 			AddRecommendedValueWithMetadata("com.github.castorm.kafka.connect.http.response.KvHttpResponseParser", "KvHttpResponseParser").
 			SetDefaultValue("com.github.castorm.kafka.connect.http.response.PolicyHttpResponseParser")
 	case "http.offset.initial":
 		d.SetDisplayName("HTTP initial offset").
-			SetDocumentation("Initial offset, comma separated list of pairs, example: 'property1=value1,property2=value2'. It is used to define where connector should start reading data from.")
+			SetDocumentation("Initial offset, comma separated list of pairs, example: 'property1=value1,property2=value2'. It is used to define where connector should start reading data from")
 	case name:
 		d.SetDefaultValue("http-source-connector-" + strings.ToLower(random.String(4)))
 	}

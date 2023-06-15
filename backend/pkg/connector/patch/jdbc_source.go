@@ -69,14 +69,14 @@ func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition, _ string
 			AddRecommendedValueWithMetadata("SqliteDatabaseDialect", "SQLite").
 			AddRecommendedValueWithMetadata("SqlServerDatabaseDialect", "SQL Server").
 			SetDefaultValue("").
-			SetDocumentation("The name of the database dialect that should be used for this connector. By default. the connector automatically determines the dialect based upon the JDBC connection URL. Use this if you want to override that behavior and use a specific dialect.")
+			SetDocumentation("The name of the database dialect that should be used for this connector. By default. the connector automatically determines the dialect based upon the JDBC connection URL. Use this if you want to override that behavior and use a specific dialect")
 	case "numeric.mapping":
 		d.SetDefaultValue("none")
 	case "table.blacklist":
-		d.SetDocumentation("List of tables to exclude from copying. If specified, Include Tables may not be set.").
+		d.SetDocumentation("List of tables to exclude from copying. If specified, Include Tables may not be set").
 			SetDisplayName("Exclude Tables")
 	case "table.whitelist":
-		d.SetDocumentation("List of tables to include in copying. If specified, Exclude Tables may not be set.").
+		d.SetDocumentation("List of tables to include in copying. If specified, Exclude Tables may not be set").
 			SetDisplayName("Include Tables")
 	case "catalog.pattern":
 		d.SetDocumentation("Catalog pattern to fetch table metadata from the database. null - (default) means that the catalog name should not be used to narrow the search so that all table metadata would be fetched, regardless of their catalog. \"\" - retrieves those without a catalog")
@@ -84,10 +84,10 @@ func (*ConfigPatchJdbcSource) PatchDefinition(d model.ConfigDefinition, _ string
 		d.SetDocumentation("Database JDBC connection URL")
 	case "connection.user":
 		d.SetDisplayName("User").
-			SetDocumentation("Name of the database user to be used when connecting to the database.")
+			SetDocumentation("Name of the database user to be used when connecting to the database")
 	case "connection.password":
 		d.SetDisplayName("Password").
-			SetDocumentation("Password of the database user to be used when connecting to the database.")
+			SetDocumentation("Password of the database user to be used when connecting to the database")
 	case "validate.non.null", "timestamp.column.name", "incrementing.column.name":
 		d.SetVisible(true)
 	case name:

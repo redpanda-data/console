@@ -61,8 +61,14 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 						ConfigKeys: []string{
 							"key.converter",
 							"key.converter.schemas.enable",
+							"key.converter.serializer.type",
+							"key.converter.data.serializer.type",
+							"key.converter.json.schemas.enable",
 							"value.converter",
 							"value.converter.schemas.enable",
+							"value.converter.serializer.type",
+							"value.converter.data.serializer.type",
+							"value.converter.json.schemas.enable",
 							"header.converter",
 
 							"database.include.list",
@@ -99,8 +105,8 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 			},
 
 			{
-				Name:        "Advanced connector configuration",
-				Description: "The following options list contains advanced connector properties. The default values for these properties rarely need to be changed.",
+				Name:        "Expert options",
+				Description: "The following options list contains expert connector properties. The default values for these properties rarely need to be changed",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
@@ -128,6 +134,7 @@ func NewDebeziumMySQLGuide(opts ...Option) Guide {
 							"database.initial.statements",
 							"event.processing.failure.handling.mode",
 							"gtid.source.filter.dml.events",
+							"producer.override.max.request.size",
 							"topic.creation.enable",
 							"topic.creation.default.partitions",
 							"topic.creation.default.replication.factor",

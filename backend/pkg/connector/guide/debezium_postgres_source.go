@@ -59,8 +59,14 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 						ConfigKeys: []string{
 							"key.converter",
 							"key.converter.schemas.enable",
+							"key.converter.serializer.type",
+							"key.converter.data.serializer.type",
+							"key.converter.json.schemas.enable",
 							"value.converter",
 							"value.converter.schemas.enable",
+							"value.converter.serializer.type",
+							"value.converter.data.serializer.type",
+							"value.converter.json.schemas.enable",
 							"header.converter",
 
 							"schema.include.list",
@@ -95,8 +101,8 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 			},
 
 			{
-				Name:        "Advanced connector configuration",
-				Description: "The following options list contains advanced connector properties. The default values for these properties rarely need to be changed.",
+				Name:        "Expert options",
+				Description: "The following options list contains expert connector properties. The default values for these properties rarely need to be changed",
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
@@ -133,6 +139,7 @@ func NewDebeziumPostgresGuide(opts ...Option) Guide {
 							"topic.naming.strategy",
 							"unavailable.value.placeholder",
 							"xmin.fetch.interval.ms",
+							"producer.override.max.request.size",
 							"topic.creation.enable",
 							"topic.creation.default.partitions",
 							"topic.creation.default.replication.factor",

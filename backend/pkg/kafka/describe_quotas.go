@@ -10,8 +10,9 @@
 package kafka
 
 import (
+	"context"
+
 	"github.com/twmb/franz-go/pkg/kmsg"
-	"golang.org/x/net/context"
 )
 
 // DescribeQuotas requests a list of configured Quota rules via the Kafka API.

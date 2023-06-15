@@ -57,7 +57,7 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition, _ string
 		d.SetDefaultValue("org.apache.kafka.connect.converters.ByteArrayConverter")
 	case "format.output.type":
 		d.SetDisplayName("S3 file format").
-			SetDocumentation("Format of the output data from the connector.").
+			SetDocumentation("Format of the output data from the connector").
 			SetComponentType(model.ComponentRadioGroup)
 	case "file.compression.type":
 		d.SetDisplayName("Output file compression").
@@ -91,7 +91,7 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition, _ string
 	case "kafka.retry.backoff.ms":
 		d.SetDisplayName("Retry back-off").
 			SetDocumentation("Retry backoff in milliseconds. Useful for performing recovery in case " +
-				"of transient exceptions. Maximum value is 86400000 (24 hours).")
+				"of transient exceptions. Maximum value is 86400000 (24 hours)")
 	case "aws.s3.backoff.max.delay.ms":
 		d.SetDisplayName("S3 maximum back-off")
 	case "aws.s3.backoff.max.retries":
@@ -100,7 +100,7 @@ func (*ConfigPatchRedpandaS3) PatchDefinition(d model.ConfigDefinition, _ string
 		d.SetDisplayName("S3 retry back-off")
 	case "avro.codec":
 		d.SetComponentType(model.ComponentRadioGroup).
-			SetDocumentation("The Avro compression codec to be used for Avro output files.").
+			SetDocumentation("The Avro compression codec to be used for Avro output files").
 			AddRecommendedValueWithMetadata("null", "uncompressed").
 			AddRecommendedValueWithMetadata("deflate", "deflate").
 			AddRecommendedValueWithMetadata("snappy", "snappy").

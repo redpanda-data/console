@@ -63,6 +63,7 @@ func mirrorClusterConnection() model.ValidationResponseStep {
 					"source.cluster.sasl.mechanism",
 					"source.cluster.sasl.username",
 					"source.cluster.sasl.password",
+					"source.cluster.sasl.jaas.config",
 					"source.cluster.ssl.truststore.certificates",
 					"source.cluster.ssl.keystore.key",
 					"source.cluster.ssl.keystore.certificate.chain",

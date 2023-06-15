@@ -408,16 +408,16 @@ const apiStore = {
         for (let i = 0; i < binary.length; i++) {
             bytes[i] = binary.charCodeAt(i);
         }
-        
+
         let hex = '';
         for (let i = 0; i < bytes.length; i++) {
             const b = bytes[i].toString(16);
             hex += b.length === 1 ? '0' + b : b;
-            
+
             if (i < bytes.length - 1)
                 hex += ' ';
         }
-        
+
         return hex;
     },
 

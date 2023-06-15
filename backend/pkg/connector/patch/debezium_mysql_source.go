@@ -69,7 +69,7 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition,
 		"gtid.source.filter.dml.events":
 		d.SetDefaultValue("true")
 	case "database.ssl.mode":
-		d.SetDocumentation("Specifies whether to use an encrypted connection. 'disabled' specifies the use of an unencrypted connection. 'preferred' establishes an encrypted connection if the server supports secure connections. If the server does not support secure connections, falls back to an unencrypted connection. 'required' establishes an encrypted connection or fails if one cannot be made for any reason.").
+		d.SetDocumentation("Specifies whether to use an encrypted connection. 'disabled' specifies the use of an unencrypted connection. 'preferred' establishes an encrypted connection if the server supports secure connections. If the server does not support secure connections, falls back to an unencrypted connection. 'required' establishes an encrypted connection or fails if one cannot be made for any reason").
 			SetComponentType(model.ComponentRadioGroup).
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("disabled", "disabled").
@@ -85,12 +85,14 @@ func (*ConfigPatchDebeziumMysqlSource) PatchDefinition(d model.ConfigDefinition,
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("io.debezium.converters.CloudEventsConverter", "CloudEvents")
 	case valueConverter:
 		d.SetDefaultValue("org.apache.kafka.connect.json.JsonConverter").
 			ClearRecommendedValuesWithMetadata().
 			AddRecommendedValueWithMetadata("io.confluent.connect.avro.AvroConverter", "AVRO").
-			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON")
+			AddRecommendedValueWithMetadata("org.apache.kafka.connect.json.JsonConverter", "JSON").
+			AddRecommendedValueWithMetadata("io.debezium.converters.CloudEventsConverter", "CloudEvents")
 	}
 
 	// Importance Patches

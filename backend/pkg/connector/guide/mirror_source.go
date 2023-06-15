@@ -53,10 +53,14 @@ func NewMirrorSourceGuide(opts ...Option) Guide {
 							"offset-syncs.topic.replication.factor",
 							"config.properties.exclude",
 							"producer.override.compression.type",
+							"producer.override.max.request.size",
+							"consumer.auto.offset.reset",
 						},
 					},
 				},
 			},
+
+			sizing(),
 
 			reviewAndLaunch(),
 		},

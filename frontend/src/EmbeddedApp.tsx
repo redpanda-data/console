@@ -1,12 +1,15 @@
-/* Use of this software is governed by the Business Source License
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
  * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
  *
  * As of the Change Date specified in that file, in accordance with
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-
-import { useEffect } from 'react';
+ 
+ import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 /* start global stylesheets */
@@ -25,7 +28,6 @@ import { appGlobal } from './state/appGlobal';
 
 import { SetConfigArguments, setup } from './config';
 import HistorySetter from './components/misc/HistorySetter';
-import RequireAuth from './components/RequireAuth';
 import AppContent from './components/layout/Content';
 import { observer } from 'mobx-react';
 import { ChakraProvider, redpandaTheme } from '@redpanda-data/ui';
@@ -70,11 +72,8 @@ function EmbeddedApp({ basePath, ...p }: EmbeddedProps) {
     return (
         <BrowserRouter basename={basePath}>
             <HistorySetter />
-
             <ChakraProvider theme={redpandaTheme}>
-                <RequireAuth>
-                    <AppContent />
-                </RequireAuth>
+                 <AppContent />
             </ChakraProvider>
         </BrowserRouter>
     );

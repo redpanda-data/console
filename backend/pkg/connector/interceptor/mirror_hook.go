@@ -51,7 +51,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 					Importance:    "HIGH",
 					Required:      false,
 					DisplayName:   "Topics",
-					Documentation: "Topics to replicate. Supports comma-separated topic names and regexes.",
+					Documentation: "Topics to replicate. Supports comma-separated topic names and regexes",
 				},
 				Value: model.ConfigDefinitionValue{
 					Name:              "topics",
@@ -73,7 +73,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 					Importance:    "MEDIUM",
 					Required:      false,
 					DisplayName:   "Topics exclude",
-					Documentation: "Excluded topics. Supports comma-separated topic names and regexes.",
+					Documentation: "Excluded topics. Supports comma-separated topic names and regexes",
 				},
 				Value: model.ConfigDefinitionValue{
 					Name:              "topics",
@@ -95,12 +95,12 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 				Importance:   "HIGH",
 				Required:     true,
 				DisplayName:  "Source cluster broker list",
-				Documentation: "A list of host/port pairs to use for establishing the initial connection to the Kafka cluster. " +
+				Documentation: "A list of host/port pairs to use for establishing the initial connection to the Redpanda cluster. " +
 					"The client will make use of all servers irrespective of which servers are specified here for " +
 					"bootstrapping - this list only impacts the initial hosts used to discover the full set of servers. " +
 					"This list should be in the form \"host1:port1,host2:port2,...\". Since these servers are just used " +
 					"for the initial connection to discover the full cluster membership (which may change dynamically), " +
-					"this list need not contain the full set of servers (you may want more than one, though, in case a server is down).",
+					"this list need not contain the full set of servers (you may want more than one, though, in case a server is down)",
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "source.cluster.bootstrap.servers",
@@ -118,7 +118,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 				Importance:    "HIGH",
 				Required:      true,
 				DisplayName:   "Source cluster security protocol",
-				Documentation: "Protocol used to communicate with source brokers.",
+				Documentation: "Protocol used to communicate with source brokers",
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "source.cluster.security.protocol",
@@ -140,7 +140,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 				Importance:         "HIGH",
 				Required:           false,
 				DisplayName:        "Source cluster SASL mechanism",
-				Documentation:      "SASL mechanism used for client connections. This may be any mechanism for which a security provider is available. PLAIN is the default mechanism.",
+				Documentation:      "SASL mechanism used for client connections. This may be any mechanism for which a security provider is available. PLAIN is the default mechanism",
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "source.cluster.sasl.mechanism",
@@ -189,13 +189,30 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 		},
 		model.ConfigDefinition{
 			Definition: model.ConfigDefinitionKey{
+				Name:         "source.cluster.sasl.jaas.config",
+				Type:         "PASSWORD",
+				DefaultValue: "",
+				Importance:   "MEDIUM",
+				Required:     false,
+				DisplayName:  "Source cluster SASL JAAS config",
+			},
+			Value: model.ConfigDefinitionValue{
+				Name:              "source.cluster.sasl.jaas.config",
+				Value:             "",
+				RecommendedValues: []string{},
+				Visible:           false,
+				Errors:            []string{},
+			},
+		},
+		model.ConfigDefinition{
+			Definition: model.ConfigDefinitionKey{
 				Name:          "source.cluster.ssl.truststore.certificates",
 				Type:          "PASSWORD",
 				DefaultValue:  "",
 				Importance:    "MEDIUM",
 				Required:      false,
 				DisplayName:   "Source cluster SSL custom certificate",
-				Documentation: "Trusted certificates in the PEM format.",
+				Documentation: "Trusted certificates in the PEM format",
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "source.cluster.ssl.truststore.certificates",
@@ -213,7 +230,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 				Importance:    "MEDIUM",
 				Required:      false,
 				DisplayName:   "Source cluster SSL keystore key",
-				Documentation: "Private key in the PEM format.",
+				Documentation: "Private key in the PEM format",
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "source.cluster.ssl.keystore.key",
@@ -231,11 +248,29 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 				Importance:    "MEDIUM",
 				Required:      false,
 				DisplayName:   "Source cluster SSL keystore certificate chain",
-				Documentation: "Certificate chain in the PEM format.",
+				Documentation: "Certificate chain in the PEM format",
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "source.cluster.ssl.keystore.certificate.chain",
 				Value:             "",
+				RecommendedValues: []string{},
+				Visible:           true,
+				Errors:            []string{},
+			},
+		},
+		model.ConfigDefinition{
+			Definition: model.ConfigDefinitionKey{
+				Name:          "producer.override.max.request.size",
+				Type:          "INT",
+				DefaultValue:  "1048576",
+				Importance:    "MEDIUM",
+				Required:      false,
+				DisplayName:   "Max size of a request",
+				Documentation: "The maximum size of a request in bytes. This setting will limit the number of record batches the producer will send in a single request to avoid sending huge requests. This is also effectively a cap on the maximum uncompressed record batch size. Note that the server has its own cap on the record batch size (after compression if compression is enabled) which may be different from this. The default is 1048576",
+			},
+			Value: model.ConfigDefinitionValue{
+				Name:              "producer.override.max.request.size",
+				Value:             "1048576",
 				RecommendedValues: []string{},
 				Visible:           true,
 				Errors:            []string{},
@@ -249,7 +284,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 				Importance:    "MEDIUM",
 				Required:      false,
 				DisplayName:   "Compression type",
-				Documentation: "The compression type for all data generated by the producer. The default is none (i.e. no compression).",
+				Documentation: "The compression type for all data generated by the producer. The default is none (i.e. no compression)",
 			},
 			Value: model.ConfigDefinitionValue{
 				Name:              "producer.override.compression.type",
@@ -280,6 +315,41 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 					{
 						Value:       "zstd",
 						DisplayName: "ZSTD",
+					},
+				},
+			},
+		},
+		model.ConfigDefinition{
+			Definition: model.ConfigDefinitionKey{
+				Name:          "consumer.auto.offset.reset",
+				Type:          "STRING",
+				DefaultValue:  "earliest",
+				Importance:    "MEDIUM",
+				Required:      false,
+				DisplayName:   "Auto offset reset",
+				Documentation: "What to do when there is no initial offset in Kafka or if the current offset does not exist any more on the server (e.g. because that data has been deleted). 'earliest' - automatically reset the offset to the earliest offset. 'latest' - automatically reset the offset to the latest offset. 'none' - throw exception to the consumer if no previous offset is found for the consumer's group",
+			},
+			Value: model.ConfigDefinitionValue{
+				Name:              "consumer.auto.offset.reset",
+				Value:             "none",
+				RecommendedValues: []string{"earliest", "latest", "none"},
+				Visible:           true,
+				Errors:            []string{},
+			},
+			Metadata: model.ConfigDefinitionMetadata{
+				ComponentType: model.ComponentRadioGroup,
+				RecommendedValues: []model.RecommendedValueWithMetadata{
+					{
+						Value:       "earliest",
+						DisplayName: "earliest",
+					},
+					{
+						Value:       "latest",
+						DisplayName: "latest",
+					},
+					{
+						Value:       "none",
+						DisplayName: "none",
 					},
 				},
 			},

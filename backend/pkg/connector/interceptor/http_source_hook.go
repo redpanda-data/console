@@ -15,7 +15,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      true,
 			DisplayName:   "Topic",
-			Documentation: "Name of the topic where the record will be sent to.",
+			Documentation: "Name of the topic where the record will be sent to",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -33,7 +33,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      true,
 			DisplayName:   "HTTP URL",
-			Documentation: "HTTP URL to use in the request.",
+			Documentation: "HTTP URL to use in the request",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -116,7 +116,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      false,
 			DisplayName:   "Authentication type",
-			Documentation: "Type of authentication.",
+			Documentation: "Type of authentication",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -141,7 +141,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      false,
 			DisplayName:   "User",
-			Documentation: "Basic authentication user.",
+			Documentation: "Basic authentication user",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -159,7 +159,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceHigh,
 			Required:      false,
 			DisplayName:   "Password",
-			Documentation: "Basic authentication password.",
+			Documentation: "Basic authentication password",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -195,7 +195,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP response record offset pointer",
-			Documentation: "Comma separated list of key=/value pairs where the key is the name of the property in the offset, and the value is the JsonPointer to the value being used as offset for future requests.",
+			Documentation: "Comma separated list of key=/value pairs where the key is the name of the property in the offset, and the value is the JsonPointer to the value being used as offset for future requests",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -213,7 +213,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP timer interval",
-			Documentation: "Interval in between requests when up-to-date in milliseconds.",
+			Documentation: "Interval in between requests when up-to-date in milliseconds",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -231,7 +231,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP timer catchup interval",
-			Documentation: "Interval in between requests when catching up in milliseconds.",
+			Documentation: "Interval in between requests when catching up in milliseconds",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -249,7 +249,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP client connection timeout",
-			Documentation: "Timeout for opening a connection in milliseconds.",
+			Documentation: "Timeout for opening a connection in milliseconds",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -267,7 +267,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "Read timeout",
-			Documentation: "Timeout for reading a response in milliseconds.",
+			Documentation: "Timeout for reading a response in milliseconds",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -321,7 +321,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP response record mapper",
-			Documentation: "'SchemedKvSourceRecordMapper' maps key to a Struct schema with a single property key and value to a Struct schema with a single property value. 'StringKvSourceRecordMapper' maps both key and value to a String schema.",
+			Documentation: "'SchemedKvSourceRecordMapper' maps key to a Struct schema with a single property key and value to a Struct schema with a single property value. 'StringKvSourceRecordMapper' maps both key and value to a String schema",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
@@ -400,7 +400,7 @@ func KafkaConnectToConsoleHTTPSourceHook(response model.ValidationResponse, conf
 			Importance:    model.ConfigDefinitionImportanceMedium,
 			Required:      false,
 			DisplayName:   "HTTP request body",
-			Documentation: "HTTP body to use in the request.",
+			Documentation: "HTTP body to use in the request",
 			Dependents:    []string{},
 		},
 		Value: model.ConfigDefinitionValue{
