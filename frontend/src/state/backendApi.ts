@@ -14,7 +14,7 @@
 
 import { notification } from 'antd';
 import { comparer, computed, observable, transaction } from 'mobx';
-import { AppFeatures } from '../utils/env';
+import { AppFeatures, getBasePath } from '../utils/env';
 import fetchWithTimeout from '../utils/fetchWithTimeout';
 import { toJson } from '../utils/jsonUtils';
 import { LazyMap } from '../utils/LazyMap';
@@ -99,12 +99,18 @@ async function handle401(res: Response) {
 
     // Save current location url
     // store.urlBeforeLogin = window.location.href;
-
-    // Redirect to login
+    // get current path
+ 
     if (isEmbedded()) {
-        // when is embedded redirect to the cloud-ui
-        window.location.replace(`/clusters/${appConfig.clusterId}/unauthorized`)
+        const path = window.location.pathname.removePrefix(getBasePath() ?? '');
+        // get path you want to redirect to
+        const targetPath = `/clusters/${appConfig.clusterId}/unauthorized`;
+       // when is embedded redirect to the cloud-ui
+        if (path !== targetPath) {
+            window.location.replace(`/clusters/${appConfig.clusterId}/unauthorized`)
+        }
     } else {
+        // Redirect to login
         appGlobal.history.push('/login');
     }
 }
