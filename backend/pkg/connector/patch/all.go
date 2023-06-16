@@ -92,7 +92,10 @@ func (c *ConfigPatchAll) PatchDefinition(d model.ConfigDefinition, _ string) mod
 	}
 
 	if d.Definition.Name == "errors.tolerance" {
-		d.SetDisplayName("Error tolerance")
+		d.SetDisplayName("Error tolerance").
+			SetComponentType(model.ComponentRadioGroup).
+			AddRecommendedValueWithMetadata("none", "NONE").
+			AddRecommendedValueWithMetadata("all", "ALL")
 	}
 
 	d.SetDocumentation(strings.TrimRight(d.Definition.Documentation, "."))

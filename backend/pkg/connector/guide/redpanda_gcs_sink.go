@@ -45,7 +45,7 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
-						ConfigKeys: []string{
+						ConfigKeys: append([]string{
 							"key.converter",
 							"key.converter.schemas.enable",
 							"value.converter",
@@ -57,6 +57,7 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 							"file.name.prefix",
 							"format.output.fields",
 							"format.output.fields.value.encoding",
+							"format.output.envelope",
 							"file.compression.type",
 							"file.max.records",
 							"file.flush.interval.ms",
@@ -68,7 +69,7 @@ func NewRedpandaGCSSinkGuide(opts ...Option) Guide {
 							"gcs.retry.backoff.total.timeout.ms",
 							"kafka.retry.backoff.ms",
 							"errors.tolerance",
-						},
+						}, dlq()...),
 					},
 				},
 			},

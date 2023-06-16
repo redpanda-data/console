@@ -42,7 +42,7 @@ func NewBigQuerySinkGuide(opts ...Option) Guide {
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
-						ConfigKeys: []string{
+						ConfigKeys: append([]string{
 							"key.converter",
 							"value.converter",
 							"value.converter.schemas.enable",
@@ -56,7 +56,7 @@ func NewBigQuerySinkGuide(opts ...Option) Guide {
 							"bigQueryRetry",
 							"bigQueryRetryWait",
 							"errors.tolerance",
-						},
+						}, dlq()...),
 					},
 				},
 			},
