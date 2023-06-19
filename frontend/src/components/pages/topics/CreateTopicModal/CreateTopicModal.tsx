@@ -83,16 +83,14 @@ export class CreateTopicModalContent extends Component<Props> {
                     </Label>
                 </div>
 
-                <div style={{ display: 'flex', gap: '2em' }}>
+                <div style={{ display: 'flex', gap: '2em', zIndex: 5 }}>
                     <Label text="Cleanup Policy" style={{ flexBasis: '160px' }}>
                         <SingleSelect<'delete' | 'compact'> options={[
                             { value: 'delete', label: 'delete' },
-                            { value: 'compact', label: 'value' },
+                            { value: 'compact', label: 'compact' },
                         ]}
                             value={state.cleanupPolicy}
                             onChange={e => state.cleanupPolicy = e}
-                        // width="100%"
-
                         />
                     </Label>
                     <Label text="Retention Time" style={{ flexBasis: '220px', flexGrow: 1 }}>
@@ -238,45 +236,47 @@ function RetentionTimeSelect(p: {
         placeholder={placeholder}
         disabled={numDisabled}
 
-        addonAfter={<Select<RetentionTimeUnit>
+        addonAfter={<Box minWidth="130px">
+            <Select<RetentionTimeUnit>
+                // style={{ minWidth: '90px', background: 'transparent' }}
+                // bordered={false}
+                value={{ value: unit }}
+                onChange={arg => {
+                    if (isSingleValue(arg) && arg && arg.value) {
+                        const u = arg.value;
 
-            // style={{ minWidth: '90px', background: 'transparent' }}
-            // bordered={false}
-            value={{ value: unit }}
-            onChange={arg => {
-                if (isSingleValue(arg) && arg && arg.value) {
-                    const u = arg.value;
-
-                    if (u == 'default') {
-                        // * -> default
-                        // save as milliseconds
-                        p.onChangeValue(value * timeFactors[unit]);
-                    } else {
-                        // * -> real
-                        // convert to new unit
-                        const factor = unit == 'default' ? 1 : timeFactors[unit];
-                        const ms = value * factor;
-                        let newValue = ms / timeFactors[u];
-                        if (Number.isNaN(newValue))
-                            newValue = 0;
-                        if (/\.\d{4,}/.test(String(newValue)))
-                            newValue = Math.round(newValue);
-                        p.onChangeValue(newValue);
+                        if (u == 'default') {
+                            // * -> default
+                            // save as milliseconds
+                            p.onChangeValue(value * timeFactors[unit]);
+                        } else {
+                            // * -> real
+                            // convert to new unit
+                            const factor = unit == 'default' ? 1 : timeFactors[unit];
+                            const ms = value * factor;
+                            let newValue = ms / timeFactors[u];
+                            if (Number.isNaN(newValue))
+                                newValue = 0;
+                            if (/\.\d{4,}/.test(String(newValue)))
+                                newValue = Math.round(newValue);
+                            p.onChangeValue(newValue);
+                        }
+                        p.onChangeUnit(u);
                     }
-                    p.onChangeUnit(u);
+                }}
+                options={
+                    Object.entries(timeFactors).map(([name]) => {
+                        const isSpecial = name == 'default' || name == 'infinite';
+                        return {
+                            value: name as RetentionTimeUnit,
+                            label: isSpecial ? titleCase(name) : name,
+                            // style: isSpecial ? { fontStyle: 'italic' } : undefined,
+                        };
+                    })
                 }
-            }}
-            options={
-                Object.entries(timeFactors).map(([name]) => {
-                    const isSpecial = name == 'default' || name == 'infinite';
-                    return {
-                        value: name as RetentionTimeUnit,
-                        label: isSpecial ? titleCase(name) : name,
-                        // style: isSpecial ? { fontStyle: 'italic' } : undefined,
-                    };
-                })
-            }
-        />}
+            />
+        </Box>
+        }
     />
 }
 
@@ -321,44 +321,47 @@ function RetentionSizeSelect(p: {
         placeholder={placeholder}
         disabled={numDisabled}
 
-        addonAfter={<Select<RetentionSizeUnit>
-            // style={{ minWidth: '90px', background: 'transparent' }}
-            // bordered={false}
-            value={{ value: unit }}
-            onChange={arg => {
-                if (isSingleValue(arg) && arg && arg.value) {
-                    const u = arg.value;
+        addonAfter={<Box minWidth="130px">
+            <Select<RetentionSizeUnit>
+                // style={{ minWidth: '90px', background: 'transparent' }}
+                // bordered={false}
+                value={{ value: unit }}
+                onChange={arg => {
+                    if (isSingleValue(arg) && arg && arg.value) {
+                        const u = arg.value;
 
-                    if (u == 'default') {
-                        // * -> default
-                        // save as milliseconds
-                        p.onChangeValue(value * sizeFactors[unit]);
-                    } else {
-                        // * -> real
-                        // convert to new unit
-                        const factor = unit == 'default' ? 1 : sizeFactors[unit];
-                        const ms = value * factor;
-                        let newValue = ms / sizeFactors[u];
-                        if (Number.isNaN(newValue))
-                            newValue = 0;
-                        if (/\.\d{4,}/.test(String(newValue)))
-                            newValue = Math.round(newValue);
-                        p.onChangeValue(newValue);
+                        if (u == 'default') {
+                            // * -> default
+                            // save as milliseconds
+                            p.onChangeValue(value * sizeFactors[unit]);
+                        } else {
+                            // * -> real
+                            // convert to new unit
+                            const factor = unit == 'default' ? 1 : sizeFactors[unit];
+                            const ms = value * factor;
+                            let newValue = ms / sizeFactors[u];
+                            if (Number.isNaN(newValue))
+                                newValue = 0;
+                            if (/\.\d{4,}/.test(String(newValue)))
+                                newValue = Math.round(newValue);
+                            p.onChangeValue(newValue);
+                        }
+                        p.onChangeUnit(u);
                     }
-                    p.onChangeUnit(u);
+                }}
+                options={
+                    Object.entries(sizeFactors).map(([name]) => {
+                        const isSpecial = name == 'default' || name == 'infinite';
+                        return {
+                            value: name as RetentionSizeUnit,
+                            label: isSpecial ? titleCase(name) : name,
+                            // style: isSpecial ? { fontStyle: 'italic' } : undefined,
+                        };
+                    })
                 }
-            }}
-            options={
-                Object.entries(sizeFactors).map(([name]) => {
-                    const isSpecial = name == 'default' || name == 'infinite';
-                    return {
-                        value: name as RetentionSizeUnit,
-                        label: isSpecial ? titleCase(name) : name,
-                        // style: isSpecial ? { fontStyle: 'italic' } : undefined,
-                    };
-                })
-            }
-        />}
+            />
+        </Box>
+        }
     />
 }
 
@@ -518,7 +521,7 @@ const durationFactors = {
 
                         this.unit = u;
                         if (this.unit == 'infinite')
-                        this.props.onChange(unitFactors[this.unit]);
+                            this.props.onChange(unitFactors[this.unit]);
 
                         if (changedFromInfinite) {
                             // Example: if new unit is "seconds", then we'd want 1000 ms
