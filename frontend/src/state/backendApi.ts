@@ -381,13 +381,13 @@ const apiStore = {
                     const m = msg.message as TopicMessage;
 
                     if (m.key.encoding == 'binary' || m.key.encoding == 'utf8WithControlChars') {
-                        m.key.payload = decodeBase64(m.key.payload);
                         m.keyBinHexPreview = base64ToHexString(m.key.payload);
+                        m.key.payload = decodeBase64(m.key.payload);
                     }
 
                     if (m.value.encoding == 'binary' || m.value.encoding == 'utf8WithControlChars') {
-                        m.value.payload = decodeBase64(m.value.payload);
                         m.valueBinHexPreview = base64ToHexString(m.value.payload);
+                        m.value.payload = decodeBase64(m.value.payload);
                     }
 
                     m.keyJson = JSON.stringify(m.key.payload);

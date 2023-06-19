@@ -720,8 +720,7 @@ export function encodeBase64(rawData: string) {
 
 export function base64ToHexString(base64: string): string {
     try {
-
-        const binary = Base64.decode(base64);
+        const binary = Base64.atob(base64);
         const bytes = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) {
             bytes[i] = binary.charCodeAt(i);
