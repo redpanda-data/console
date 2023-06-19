@@ -45,7 +45,7 @@ func NewMongoSinkGuide(opts ...Option) Guide {
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
-						ConfigKeys: []string{
+						ConfigKeys: append([]string{
 							"key.converter",
 							"key.converter.schemas.enable",
 							"value.converter",
@@ -68,8 +68,8 @@ func NewMongoSinkGuide(opts ...Option) Guide {
 							"timeseries.expire.after.seconds",
 							"timeseries.granularity",
 
-							"mongo.errors.tolerance",
-						},
+							"errors.tolerance",
+						}, dlq()...),
 					},
 				},
 			},
