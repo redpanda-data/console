@@ -11,6 +11,15 @@ package guide
 
 import "github.com/redpanda-data/console/backend/pkg/connector/model"
 
+// dlq returns properties for handling dead letter queue.
+func dlq() []string {
+	return []string{
+		"errors.deadletterqueue.topic.name",
+		"errors.deadletterqueue.topic.replication.factor",
+		"errors.deadletterqueue.context.headers.enable",
+	}
+}
+
 // sizing returns a sizing wizard step.
 func sizing() model.ValidationResponseStep {
 	return model.ValidationResponseStep{

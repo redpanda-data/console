@@ -50,7 +50,7 @@ func NewJdbcSinkGuide(opts ...Option) Guide {
 				Groups: []model.ValidationResponseStepGroup{
 					{
 						// No Group name and description here
-						ConfigKeys: []string{
+						ConfigKeys: append([]string{
 							"key.converter",
 							"value.converter",
 							"header.converter",
@@ -69,7 +69,8 @@ func NewJdbcSinkGuide(opts ...Option) Guide {
 							"max.retries",
 							"retry.backoff.ms",
 							"dialect.name",
-						},
+							"errors.tolerance",
+						}, dlq()...),
 					},
 				},
 			},
