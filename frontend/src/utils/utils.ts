@@ -15,7 +15,7 @@ import prettyMillisecondsOriginal from 'pretty-ms';
 import { message } from 'antd';
 import { MessageType } from 'antd/lib/message';
 import { TopicMessage } from '../state/restInterfaces';
-
+import { Base64 } from 'js-base64';
 
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
 export const nameof = <T>(name: Extract<keyof T, string>): string => name;
@@ -485,7 +485,7 @@ export function groupConsecutive(ar: number[]): number[][] {
     return groups;
 }
 
-export const prettyBytesOrNA = function(n: number) {
+export const prettyBytesOrNA = function (n: number) {
     if (!isFinite(n) || n < 0) return 'N/A';
     return prettyBytes(n);
 }
@@ -505,7 +505,7 @@ function isUInt64Maximum(str: string) {
     return false;
 }
 
-export const prettyBytes = function(n: number | string | null | undefined, options?: PrettyValueOptions) {
+export const prettyBytes = function (n: number | string | null | undefined, options?: PrettyValueOptions) {
     if (typeof n === 'undefined' || n === null)
         return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
 
@@ -535,7 +535,7 @@ export const prettyBytes = function(n: number | string | null | undefined, optio
     return prettyBytesOriginal(n, { binary: true });
 }
 
-export const prettyMilliseconds = function(n: number | string, options?: prettyMillisecondsOriginal.Options & PrettyValueOptions) {
+export const prettyMilliseconds = function (n: number | string, options?: prettyMillisecondsOriginal.Options & PrettyValueOptions) {
     if (typeof n === 'undefined' || n === null)
         return options?.showNullAs ?? 'N/A'; // null, undefined -> N/A
 
@@ -711,23 +711,35 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
 
 // See: https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
 export function decodeBase64(base64: string) {
-    const data = atob(base64);
-    const length = data.length;
-    const bytes = new Uint8Array(length);
-    for (let i = 0; i < length; i++)
-        bytes[i] = data.charCodeAt(i);
-
-    const decoder = new TextDecoder(); // default is utf-8
-    return decoder.decode(bytes);
+    return Base64.decode(base64);
 }
 
 export function encodeBase64(rawData: string) {
-    // first we use encodeURIComponent to get percent-encoded UTF-8,
-    // then we convert the percent encodings into raw bytes which
-    // can be fed into btoa.
-    return btoa(encodeURIComponent(rawData).replace(/%([0-9A-F]{2})/g, function(match, p1) {
-        return String.fromCharCode(parseInt(p1, 16))
-    }))
+    return Base64.encode(rawData);
+}
+
+export function base64ToHexString(base64: string): string {
+    try {
+
+        const binary = Base64.decode(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        let hex = '';
+        for (let i = 0; i < bytes.length; i++) {
+            const b = bytes[i].toString(16);
+            hex += b.length === 1 ? '0' + b : b;
+
+            if (i < bytes.length - 1)
+                hex += ' ';
+        }
+
+        return hex;
+    }
+    catch (err) {
+        return '<<Unable to decode message>>';
+    }
 }
 
 export function delay(timeoutMs: number): Promise<void> {

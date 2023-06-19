@@ -47,8 +47,7 @@ import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
 import colors from '../../../../colors';
 import { CollapsedFieldProps } from '@textea/json-viewer';
-import { Buffer } from 'buffer';
-import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box } from '@redpanda-data/ui';
+import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
 
@@ -219,7 +218,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                     />
                 </Label>
                 <Label text="Start Offset" style={{ ...spaceStyle }}>
-                    <InputGroup style={{ display: 'inline-block', width: 'auto', minWidth: '9em' }}>
+                    <InputGroup>
                         <SingleSelect<PartitionOffsetOrigin>
                             value={searchParams.offsetOrigin}
                             onChange={e => searchParams.offsetOrigin = e}
@@ -293,14 +292,13 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 </div>
 
                 {/* Quick Search */}
-                <div className={styles.quickSearchWrapper}>
-                    <Input placeholder="Quick Search" /* allowClear={true} */ size="middle"
-                        className={styles.quickSearchInput}
-                        value={uiState.topicSettings.quickSearch}
-                        onChange={e => uiState.topicSettings.quickSearch = this.messageSource.filterText = e.target.value}
-                        isDisabled={this.fetchError != null}
+                <Box maxWidth="230px">
+                    <SearchField
+                        searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''}
+                        setSearchText={x => uiState.topicSettings.quickSearch = x}
+
                     />
-                </div>
+                </Box>
 
                 {/* Search Progress Indicator: "Consuming Messages 30/30" */}
                 {
@@ -823,11 +821,14 @@ class MessageKeyPreview extends Component<{ msg: TopicMessage, previewFields: ()
 
             let text: ReactNode = <></>;
 
-            if (key.encoding == 'binary' || key.encoding == 'utf8WithControlChars') {
+            if (key.encoding == 'binary') {
                 text = cullText(msg.keyBinHexPreview, 44);
             }
+            else if (key.encoding == 'utf8WithControlChars') {
+                text = highlightControlChars(key.payload);
+            }
             else if (isPrimitive) {
-                text = cullText(key.payload, 44)
+                text = cullText(key.payload, 44);
             }
             else {
                 // Only thing left is 'object'
@@ -1057,28 +1058,9 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
         // Decode payload from base64 and render control characters as code highlighted text, such as
         // `NUL`, `ACK` etc.
         if (payload.encoding == 'utf8WithControlChars') {
-            const decodedString = Buffer.from(val, 'base64').toString('utf8');
+            const elements = highlightControlChars(val);
 
-            const elements: JSX.Element[] = [];
-            // To reduce the number of JSX elements we try to append normal chars to a single string
-            // until we hit a control character.
-            let sequentialChars = '';
-            for (const char of decodedString) {
-                const code = char.charCodeAt(0);
-                if (code < 32) {
-                    if (sequentialChars.length > 0) {
-                        elements.push(<>{sequentialChars}</>)
-                        sequentialChars = ''
-                    }
-                    elements.push(<span className="codeBox">{getControlCharacterName(code)}</span>)
-                } else {
-                    sequentialChars += char;
-                }
-            }
-            if (sequentialChars.length > 0) {
-                elements.push(<>{sequentialChars}</>)
-            }
-            return <code style={{ fontSize: '.85em', lineHeight: '1em', whiteSpace: 'normal' }}>{elements}</code>;
+            return <div className="codeBox">{elements}</div>;
         }
 
         if (isPrimitive) {
@@ -1090,6 +1072,38 @@ function renderPayload(payload: Payload, shouldExpand?: ((x: CollapsedFieldProps
     catch (e) {
         return <span style={{ color: 'red' }}>Error in RenderExpandedMessage: {((e as Error).message ?? String(e))}</span>;
     }
+}
+
+function highlightControlChars(str: string, maxLength?: number): JSX.Element[] {
+    const elements: JSX.Element[] = [];
+    // To reduce the number of JSX elements we try to append normal chars to a single string
+    // until we hit a control character.
+    let sequentialChars = '';
+    let numChars = 0;
+
+    for (const char of str) {
+        const code = char.charCodeAt(0);
+        if (code < 32) {
+            if (sequentialChars.length > 0) {
+                elements.push(<>{sequentialChars}</>)
+                sequentialChars = ''
+            }
+            elements.push(<span className="controlChar">{getControlCharacterName(code)}</span>)
+        } else {
+            sequentialChars += char;
+        }
+
+        if (maxLength != undefined) {
+            numChars++;
+            if (numChars >= maxLength)
+                break;
+        }
+    }
+
+    if (sequentialChars.length > 0)
+        elements.push(<>{sequentialChars}</>);
+
+    return elements;
 }
 
 function getControlCharacterName(code: number): string {

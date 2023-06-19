@@ -3865,3 +3865,21 @@ $borderRadius: 8px;
         font-style: normal !important;
     }
 }
+
+
+.controlChar {
+    display: inline-block;
+    margin: 0;
+    margin-right: 1px;
+    padding: 0px 2px;
+    padding-bottom: 0.05em;
+    white-space: nowrap;
+    font-size: 9px;
+    font-family: monospace;
+    background: hsl(357deg 71% 59%);
+    color: hsl(0, 0%, 90%);
+    border-radius: 3px;
+    font-weight: 700;
+
+    user-select: none;
+}
