@@ -29,6 +29,7 @@ const (
 	connectorStateUnassigned connectorState = "UNASSIGNED"
 	connectorStateRunning    connectorState = "RUNNING"
 	connectorStatePaused     connectorState = "PAUSED"
+	connectorStateStopped    connectorState = "STOPPED"
 	connectorStateFailed     connectorState = "FAILED"
 	connectorStateRestarting connectorState = "RESTARTING"
 	connectorStateDestroyed  connectorState = "DESTROYED"
@@ -43,6 +44,7 @@ const (
 	connectorStatusUnhealthy  connectorStatus = "UNHEALTHY"
 	connectorStatusDegraded   connectorStatus = "DEGRADED"
 	connectorStatusPaused     connectorStatus = "PAUSED"
+	connectorStatusStopped    connectorStatus = "STOPPED"
 	connectorStatusRestarting connectorStatus = "RESTARTING"
 	connectorStatusUnassigned connectorStatus = "UNASSIGNED"
 	connectorStatusDestroyed  connectorStatus = "DESTROYED"
@@ -338,6 +340,8 @@ func connectorsResponseToClusterConnectorInfo(c *con.ListConnectorsResponseExpan
 			c.Info.Name, strings.ToLower(c.Status.Connector.State), failedTasks, totalTasks)
 	} else if c.Status.Connector.State == connectorStatePaused {
 		connStatus = connectorStatusPaused
+	} else if c.Status.Connector.State == connectorStateStopped {
+		connStatus = connectorStatusStopped
 	} else if (c.Status.Connector.State == connectorStateRestarting) ||
 		(totalTasks > 0 && restartingTasks > 0) {
 		connStatus = connectorStatusRestarting
