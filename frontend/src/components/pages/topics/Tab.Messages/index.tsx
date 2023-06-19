@@ -292,11 +292,12 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 </div>
 
                 {/* Quick Search */}
-                <Box maxWidth="230px">
+                <Box>
                     <SearchField
+                        width="230px"
+                        marginLeft="6"
                         searchText={this.fetchError == null ? uiState.topicSettings.quickSearch : ''}
                         setSearchText={x => uiState.topicSettings.quickSearch = x}
-
                     />
                 </Box>
 
@@ -369,7 +370,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
     cancelSearch = () => api.stopMessageSearch();
 
     isFilterMatch(str: string, m: TopicMessage) {
-        str = str.toLowerCase();
+        str = uiState.topicSettings.quickSearch.toLowerCase();
         if (m.offset.toString().toLowerCase().includes(str)) return true;
         if (m.keyJson && m.keyJson.toLowerCase().includes(str)) return true;
         if (m.valueJson && m.valueJson.toLowerCase().includes(str)) return true;

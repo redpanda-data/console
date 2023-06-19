@@ -11,7 +11,7 @@
 
 import { Component } from 'react';
 import { UserDetails } from '../../../state/restInterfaces';
-import { Table, Input, Collapse, Tooltip } from 'antd';
+import { Table, Collapse, Tooltip } from 'antd';
 import { observer } from 'mobx-react';
 import { api, } from '../../../state/backendApi';
 import { sortField } from '../../misc/common';
@@ -21,6 +21,7 @@ import { RoleComponent } from './Admin.Roles';
 import { UserOutlined } from '@ant-design/icons';
 import { makeObservable, observable } from 'mobx';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
+import { SearchField } from '@redpanda-data/ui';
 
 @observer
 export class AdminUsers extends Component<{}> {
@@ -76,11 +77,9 @@ export class AdminUsers extends Component<{}> {
 
         return <MotionDiv>
             <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px' }}>
-                <Input placeholder="Quick Search" allowClear={true} size="middle"
-                    style={{ width: '300px', padding: '2px 8px', whiteSpace: 'nowrap' }}
-                    value={this.quickSearch}
-                    onChange={e => this.quickSearch = e.target.value}
-                    addonAfter={null}
+                <SearchField width="300px"
+                    searchText={this.quickSearch}
+                    setSearchText={x => this.quickSearch = x}
                 />
             </div>
 

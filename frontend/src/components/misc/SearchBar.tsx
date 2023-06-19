@@ -9,12 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { Input } from 'antd';
 import { autorun, IReactionDisposer, transaction } from 'mobx';
 import { observer } from 'mobx-react';
 import React, { Component } from 'react';
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animationProps';
 import { FilterableDataSource } from '../../utils/filterableDataSource';
+import { SearchField } from '@redpanda-data/ui';
 
 // todo: extract out where the filterText is retreived from / saved.
 //       this component was originally extracted out of another component, but we probably want to re-use it elsewhere in the future
@@ -57,9 +57,9 @@ class SearchBar<TItem> extends Component<{
         });
     }
 
-    onChange(e: React.ChangeEvent<HTMLInputElement>) {
-        this.filteredSource.filterText = e.target.value;
-        this.props.onQueryChanged(e.target.value);
+    onChange(text: string) {
+        this.filteredSource.filterText = text;
+        this.props.onQueryChanged(text);
     }
 
     componentWillUnmount() {
@@ -74,9 +74,9 @@ class SearchBar<TItem> extends Component<{
                 onChange={v => this.filteredSource.filterText = String(v)}
                 dataSource={['battle-logs', 'customer', 'asdfg', 'kafka', 'some word']}
             > */}
-            <Input allowClear={true} placeholder="Quick Search" size="large" style={{ width: '350px' }}
-                onChange={this.onChange}
-                value={this.props.filterText}
+            <SearchField width="350px"
+                searchText={this.props.filterText}
+                setSearchText={this.onChange}
             // addonAfter={
             //     <Popover trigger='click' placement='right' title='Search Settings' content={<this.Settings />}>
             //         <Icon type='setting' style={{ color: '#0006' }} />

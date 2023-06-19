@@ -182,7 +182,6 @@ export default class ConfigurationEditor extends Component<{
         return <div style={{ paddingTop: '1em' }}>
             <div className="configGroupTable">
                 <SearchField
-                    className="searchBar"
                     searchText={this.filter || ''}
                     placeholderText="Filter"
                     setSearchText={value => this.filter = value}

@@ -30,7 +30,7 @@ import PageContent from '../../misc/PageContent';
 import createAutoModal from '../../../utils/createAutoModal';
 import { CreateServiceAccountEditor, generatePassword } from './CreateServiceAccountEditor';
 import { Features } from '../../../state/supportedFeatures';
-import { Alert, AlertIcon, Button, Icon } from '@redpanda-data/ui';
+import { Alert, AlertIcon, Button, Icon, SearchField } from '@redpanda-data/ui';
 
 @observer
 class AclList extends PageComponent {
@@ -405,9 +405,9 @@ class AclList extends PageComponent {
 
         return (
             <div style={{ margin: '0 1px', marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <Input allowClear={true} placeholder="Quick Search" style={{ width: '250px' }}
-                    onChange={x => uiSettings.aclList.configTable.quickSearch = x.target.value}
-                    value={uiSettings.aclList.configTable.quickSearch}
+                <SearchField width="300px"
+                    searchText={uiSettings.aclList.configTable.quickSearch}
+                    setSearchText={x => uiSettings.aclList.configTable.quickSearch = x}
                 />
 
                 <span style={{ marginLeft: 'auto' }} >{' '}</span>
