@@ -1,8 +1,8 @@
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { PencilIcon } from '@heroicons/react/solid';
 import { AdjustmentsIcon } from '@heroicons/react/outline'
-import { Icon, SearchField } from '@redpanda-data/ui';
-import { Alert, Input, message, Modal, Popover, Radio, Select, Tooltip } from 'antd';
+import { Alert, Icon, SearchField, AlertIcon } from '@redpanda-data/ui';
+import { Input, message, Modal, Popover, Radio, Select, Tooltip } from 'antd';
 import { action, makeObservable, observable } from 'mobx';
 import { Observer, observer } from 'mobx-react';
 import { Component } from 'react';
@@ -98,7 +98,10 @@ export default class ConfigurationEditor extends Component<{
                         </Radio>
                     </Radio.Group>
 
-                    {this.modalError && <Alert type="error" message={this.modalError} showIcon style={{ margin: '1em 0' }} />}
+                    {this.modalError && <Alert status="error" style={{ margin: '1em 0' }}>
+                        <AlertIcon />
+                        {this.modalError}
+                    </Alert>}
 
                 </div>
             }}</Observer>,
@@ -178,11 +181,10 @@ export default class ConfigurationEditor extends Component<{
 
         return <div style={{ paddingTop: '1em' }}>
             <div className="configGroupTable">
-                <SearchField 
-                    className="searchBar"
+                <SearchField
                     searchText={this.filter || ''}
                     placeholderText="Filter"
-                    setSearchText={value => this.filter = value} 
+                    setSearchText={value => this.filter = value}
                     icon="filter"
                 />
                 {categories.map(x => <ConfigGroup key={x.key} groupName={x.key} entries={x.items} onEditEntry={this.editConfig} canEdit={canEdit} />)}

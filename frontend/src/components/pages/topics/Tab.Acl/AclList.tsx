@@ -14,9 +14,9 @@ import { observer } from 'mobx-react';
 import { sortField } from '../../../misc/common';
 import Table, { ColumnProps, TablePaginationConfig } from 'antd/lib/table';
 import { toJson } from '../../../../utils/jsonUtils';
-import { Alert } from 'antd';
 
 import type { GetAclOverviewResponse } from '../../../../state/restInterfaces';
+import { Alert, AlertIcon } from '@redpanda-data/ui';
 
 type Acls = GetAclOverviewResponse | null | undefined;
 
@@ -50,8 +50,14 @@ export default observer(function ({ acl, onChange, paginationConfig }: AclListPr
 
     return (
         <>
-            {acl == null ? <Alert type="warning" message="You do not have the necessary permissions to view ACLs" showIcon style={{ marginBottom: '1em' }} /> : null}
-            {!acl?.isAuthorizerEnabled ? <Alert type="warning" message="There's no authorizer configured in your Kafka cluster" showIcon style={{ marginBottom: '1em' }} /> : null}
+            {acl == null ? <Alert status="warning" style={{ marginBottom: '1em' }}>
+                <AlertIcon />
+                You do not have the necessary permissions to view ACLs
+            </Alert> : null}
+            {!acl?.isAuthorizerEnabled ? <Alert status="warning" style={{ marginBottom: '1em' }}>
+                <AlertIcon />
+                There's no authorizer configured in your Kafka cluster
+            </Alert> : null}
             <Table
                 dataSource={resources}
                 columns={columns}

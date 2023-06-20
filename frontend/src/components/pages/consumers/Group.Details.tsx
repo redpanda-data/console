@@ -27,10 +27,9 @@ import { HideStatisticsBarButton } from '../../misc/HideStatisticsBarButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/solid';
 import { EditOffsetsModal, GroupOffset, DeleteOffsetsModal, GroupDeletingMode } from './Modals';
 import { ShortNum } from '../../misc/ShortNum';
-import Tabs from '../../misc/tabs/Tabs';
 import AclList from '../topics/Tab.Acl/AclList';
 import { SkipIcon } from '@primer/octicons-react';
-import { Section } from '@redpanda-data/ui';
+import { Section, Tabs } from '@redpanda-data/ui';
 import PageContent from '../../misc/PageContent';
 import { Features } from '../../../state/supportedFeatures';
 
@@ -93,10 +92,10 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
 
                     <span style={{ marginLeft: 'auto' }} />
 
-                    <Button onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>
+                    <Button variant="outline" onClick={() => this.editGroup()} disabledReason={cannotEditGroupReason(group)}>
                         Edit Group
                     </Button>
-                    <Button danger onClick={() => this.deleteGroup()} disabledReason={cannotDeleteGroupReason(group)}>
+                    <Button variant="outline" colorScheme="red" onClick={() => this.deleteGroup()} disabledReason={cannotDeleteGroupReason(group)}>
                         Delete Group
                     </Button>
                 </div>
@@ -165,16 +164,17 @@ class GroupDetails extends PageComponent<{ groupId: string }> {
                 <Section>
                     {/* View Buttons */}
                     <Tabs
-                        tabs={[
+                        isFitted
+                        items={[
                             {
                                 key: 'partitions',
-                                title: 'Partitions',
-                                content: this.renderPartitions(group),
+                                name: 'Partitions',
+                                component: this.renderPartitions(group),
                             },
                             {
                                 key: 'acl',
-                                title: 'ACL',
-                                content: (
+                                name: 'ACL',
+                                component: (
                                     <AclList acl={api.consumerGroupAcls.get(group.groupId)} />
                                 ),
                             },
@@ -317,7 +317,8 @@ class GroupByTopics extends Component<{
                             <Tag color="rgb(225, 66, 38)">assigned partitions: {partitionsAssigned}</Tag>
                         </Tooltip>
                         <Button
-                            size="small"
+                            variant="outline"
+                            size="sm"
                             style={{ marginLeft: 'auto' }}
                             onClick={() => appGlobal.history.push(`/topics/${encodeURIComponent(g.topicName)}`)}
                         >View Topic</Button>

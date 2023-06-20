@@ -14,8 +14,9 @@ import { DragDropContext, Draggable, Droppable, DropResult, ResponderProvided } 
 import { arrayMoveMutable } from 'array-move';
 import { autorun, computed, IReactionDisposer, makeObservable, observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { Button, Input, Tooltip } from 'antd';
+import { Tooltip } from 'antd';
 import { ThreeBarsIcon, XIcon } from '@primer/octicons-react';
+import { Button, Input } from '@redpanda-data/ui';
 
 
 @observer
@@ -82,7 +83,7 @@ export class CommaSeparatedStringList extends Component<{
 
                 <Input
                     className="ghostInput"
-                    size="small"
+                    size="sm"
                     style={{ flexGrow: 1, flexBasis: '400px' }}
 
                     onFocus={() => {
@@ -163,7 +164,7 @@ export class CommaSeparatedStringList extends Component<{
 
             <Button
                 style={{ padding: '0px 16px', height: '100%', minWidth: '120px' }}
-                type="primary"
+                variant="solid"
                 disabled={this.newEntryError != null || !this.newEntry || this.newEntry.trim().length == 0}
                 onClick={() => {
                     this.data.push({ id: this.newEntry! });

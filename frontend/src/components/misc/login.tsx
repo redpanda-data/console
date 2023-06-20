@@ -10,7 +10,7 @@
  */
 
 import { Component } from 'react';
-import { Spin, Modal } from 'antd';
+import { Modal } from 'antd';
 import { observer } from 'mobx-react';
 import { makeObservable, observable } from 'mobx';
 import SvgLogo from '../../assets/logos/redpanda-text-color.svg';
@@ -151,7 +151,7 @@ class Login extends Component {
                               color: '#ddd',
                             }}
                           >
-                            <Spin size="large" />
+                          <Spinner size="lg" />
                             <br />
                             Retreiving login method from backend...
                           </div>
@@ -236,7 +236,7 @@ const PlainLoginBox = observer((p: { provider?: Provider }) => {
                 onChange={e => state.password = e.target.value}
             />
 
-            <Button 
+        <Button
                 marginTop="1rem"
                 colorScheme="brand"
                 disabled={state.isLoading}

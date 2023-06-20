@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Empty, Button, Alert } from 'antd';
+import { Empty } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -25,6 +25,7 @@ import { prettyBytes, prettyNumber } from '../../../utils/utils';
 import { QuotaType } from '../../../state/restInterfaces';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { Alert, AlertIcon, Button } from '@redpanda-data/ui';
 
 @observer
 class QuotasList extends PageComponent {
@@ -51,7 +52,10 @@ class QuotasList extends PageComponent {
         if (api.Quotas === undefined) return DefaultSkeleton;
 
         const warning = api.Quotas === null
-            ? <Alert type="warning" message="You do not have the necessary permissions to view Quotas" showIcon style={{ marginBottom: '1em' }} />
+            ? <Alert variant="solid" status="warning" style={{ marginBottom: '1em' }}>
+                <AlertIcon />
+                You do not have the necessary permissions to view Quotas
+            </Alert>
             : null;
 
         const resources = this.quotasList;
@@ -109,7 +113,7 @@ const PermissionDenied = <>
                 </div>
 
                 <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-                    <Button type="primary">Redpanda Console documentation for roles and permissions</Button>
+                    <Button variant="solid">Redpanda Console documentation for roles and permissions</Button>
                 </a>
             </Empty>
         </Section>

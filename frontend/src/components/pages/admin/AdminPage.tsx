@@ -11,7 +11,6 @@
 
 import React from 'react';
 import { observer } from 'mobx-react';
-import { Alert, Tabs } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { toJson } from '../../../utils/jsonUtils';
@@ -21,6 +20,7 @@ import { AdminRoles } from './Admin.Roles';
 import { DefaultSkeleton } from '../../../utils/tsxUtils';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { Alert, AlertIcon, Tabs } from '@redpanda-data/ui';
 
 
 @observer
@@ -47,30 +47,29 @@ export default class AdminPage extends PageComponent {
         return <PageContent>
             <Section>
                 {hasAdminPermissions ?
-                    <Tabs style={{ overflow: 'visible' }} animated={false} >
+                    <Tabs size="lg" items={[
+                        {
+                            key: 'users',
+                            name: 'Users',
+                            component: <AdminUsers />
+                        },
+                        {
+                            key: 'roles',
+                            name: 'Roles',
+                            component: <AdminRoles />
+                        },
+                        {
+                            key: 'debug',
+                            name: 'Debug',
+                            component: <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
+                        },
+                    ]} />
 
-                        <Tabs.TabPane key="users" tab="Users">
-                            <AdminUsers />
-                        </Tabs.TabPane>
-
-                        <Tabs.TabPane key="roles" tab="Roles">
-                            <AdminRoles />
-                        </Tabs.TabPane>
-
-                        {/* <Tabs.TabPane key="bindings" tab="Bindings">
-                        <AdminRoleBindings />
-                    </Tabs.TabPane> */}
-
-                        <Tabs.TabPane key="debug" tab="Debug">
-                            <code><pre>{toJson(api.adminInfo, 4)}</pre></code>
-                        </Tabs.TabPane>
-
-                    </Tabs>
                     : <div>
-                        <Alert type="error" showIcon
-                            message="Permission denied"
-                            description="You do not have the neccesary permissions to view this page."
-                        />
+                        <Alert status="error">
+                            <AlertIcon />
+                            You do not have the neccesary permissions to view this page.
+                        </Alert>
                     </div>
                 }
             </Section>

@@ -10,7 +10,7 @@
  */
 
 import { observer } from 'mobx-react';
-import { Statistic, Row, Tooltip, Button, Skeleton } from 'antd';
+import { Statistic, Row, Tooltip, Skeleton } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -25,7 +25,7 @@ import { KowlColumnType, KowlTable } from '../../misc/KowlTable';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import './Overview.scss';
-import { Heading, Icon, Link } from '@redpanda-data/ui';
+import { Heading, Icon, Link, Button } from '@redpanda-data/ui';
 import { CheckIcon } from '@primer/octicons-react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import React from 'react';
@@ -100,7 +100,7 @@ class Overview extends PageComponent {
             },
             {
                 width: '100px', title: '', render: (_, r) => {
-                    return <Button onClick={() => appGlobal.history.push('/overview/' + r.brokerId)}>
+                    return <Button size="sm" variant="ghost" onClick={() => appGlobal.history.push('/overview/' + r.brokerId)}>
                         View
                     </Button>
                 }

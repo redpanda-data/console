@@ -20,6 +20,7 @@ import { Label } from '../../../../utils/tsxUtils';
 import KowlEditor, { IStandaloneCodeEditor } from '../../../misc/KowlEditor';
 import Tabs, { Tab } from '../../../misc/tabs/Tabs';
 import HeadersEditor from './Headers';
+import { Box } from '@redpanda-data/ui';
 
 type Props = {
     state: {
@@ -110,12 +111,7 @@ export class PublishMessagesModalContent extends Component<Props> {
                 </Label>
             </div>
 
-            <Tabs tabs={this.tabs} defaultSelectedTabKey="value"
-                wrapperStyle={{ marginTop: '1em', minHeight: '320px' }}
-                tabButtonStyle={{ maxWidth: '150px' }}
-                barStyle={{ marginBottom: '.5em' }}
-                contentStyle={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}
-            />
+            <Tabs tabs={this.tabs} defaultSelectedTabKey="value" />
         </div>;
     }
 
@@ -159,16 +155,26 @@ export class PublishMessagesModalContent extends Component<Props> {
             ? 'json'
             : undefined;
 
+        let result = <></>
+
         if (tab === 'headers')
-            return <><HeadersEditor items={r.headers} /></>
+            result = <><HeadersEditor items={r.headers} /></>
 
         if (tab === 'key')
-            return <><KowlEditor key={tab} {...common} value={r.key} onChange={x => r.key = x ?? ''} /></>
+            result = <><KowlEditor key={tab} {...common} value={r.key} onChange={x => r.key = x ?? ''} /></>
 
         if (tab === 'value')
-            return <><KowlEditor key={tab} {...common} value={r.value} onChange={x => r.value = x ?? ''} language={valueLanguage} /></>
+            result = <><KowlEditor key={tab} {...common} value={r.value} onChange={x => r.value = x ?? ''} language={valueLanguage} /></>
 
-        return <></>
+        // wrapperStyle={{ marginTop: '1em', minHeight: '320px' }}
+        // tabButtonStyle={{ maxWidth: '150px' }}
+        // barStyle={{ marginBottom: '.5em' }}
+        // contentStyle={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}
+        result = <Box display="flex" flexDirection="column" flexGrow={1} minHeight="320px">
+            {result}
+        </Box>
+
+        return result;
     }
 
     tabs: Tab[] = [

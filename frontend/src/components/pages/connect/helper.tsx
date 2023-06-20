@@ -11,14 +11,12 @@
 
 
 
-import { Alert, Button, Empty, message, Modal, Popover, Statistic } from 'antd';
+import { Alert, Empty, message, Modal, Popover, Statistic } from 'antd';
 import { observer } from 'mobx-react';
 import React, { Component, CSSProperties, useState } from 'react';
-
 import { api } from '../../../state/backendApi';
 import { ApiError, ClusterConnectorInfo, ClusterConnectors, ClusterConnectorTaskInfo, ConnectorState, ConnectorStatus } from '../../../state/restInterfaces';
 import { findPopupContainer, ZeroSizeWrapper } from '../../../utils/tsxUtils';
-
 import ElasticLogo from '../../../assets/connectors/elastic.svg';
 import MsSqlLogo from '../../../assets/connectors/mssql.png';
 import MySqlLogo from '../../../assets/connectors/mysql.svg';
@@ -46,6 +44,7 @@ import { CheckCircleTwoTone, ExclamationCircleTwoTone, HourglassTwoTone, PauseCi
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { isEmbedded } from '../../../config';
+import { Button } from '@redpanda-data/ui';
 
 interface ConnectorMetadata {
     readonly className?: string;         // match by exact match
@@ -450,7 +449,7 @@ export function NotConfigured() {
                     </div>
 
                     <a target="_blank" rel="noopener noreferrer" href="https://docs.redpanda.com/docs/manage/console/">
-                        <Button type="primary">Redpanda Console Config Documentation</Button>
+                        <Button variant="solid">Redpanda Console Config Documentation</Button>
                     </a>
                 </Empty>
             </Section>
@@ -655,7 +654,7 @@ export const TaskState = observer((p: { observable: { state: ClusterConnectorTas
     let errBtn: JSX.Element | undefined = undefined;
     let errModal: JSX.Element | undefined = undefined;
     if (task.trace) {
-        errBtn = <Button danger onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
+        errBtn = <Button colorScheme="red" variant="outline" onClick={() => showErr(task.trace)} style={{ padding: '0px 12px', display: 'inline-flex', alignItems: 'center', height: '30px', gap: '5px' }}>
             {stateContent}
             <span>(Show Error)</span>
         </Button>

@@ -9,11 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { Slider } from 'antd';
 import React, { Component } from 'react';
 import { uiSettings } from '../../../../state/ui';
-import { prettyBytesOrNA } from '../../../../utils/utils';
+import { prettyNumber } from '../../../../utils/utils';
 import '../../../../utils/numberExtensions';
+import { Slider, SliderFilledTrack, SliderMark, SliderThumb, SliderTrack, Tooltip } from '@redpanda-data/ui';
+import { makeObservable, observable } from 'mobx';
 
 //
 // BandwidthSlider can work with two kinds of inputs
@@ -26,38 +27,74 @@ import '../../../../utils/numberExtensions';
 type ValueAndChangeCallback = { value: number | null, onChange: (x: number | null) => void };
 type BindableSettings = Pick<typeof uiSettings.reassignment, 'maxReplicationTraffic'>;
 
+const labelStyles = {
+    mt: '1',
+    mb: '2',
+    ml: '-2',
+    fontSize: 'sm',
+}
+
 export class BandwidthSlider extends Component<ValueAndChangeCallback | { settings: BindableSettings }> {
+
+    @observable isDragging = false;
+
+    constructor(p: any) {
+        super(p);
+        makeObservable(this);
+    }
 
     render() {
         const value = this.value ?? 0;
+        const sliderValue = Math.log10(value);
 
-        return <Slider style={{ minWidth: '300px', margin: '0 1em', paddingBottom: '2em', flex: 1 }}
-            min={2} max={12} step={0.1}
-            marks={{
-                2: '-',
-                3: '1kB', 6: '1MB', 9: '1GB', 12: '1TB',
-            }}
-            included={true}
-            tipFormatter={f => {
-                if (f == null) return null;
-                if (f < 3) return 'No change';
-                if (f > 12) return 'Unlimited';
-                const v = Math.round(Math.pow(10, f.clamp(3, 12)));
-                return prettyBytesOrNA(v) + '/s';
-            }}
+        const tipText = (f: number | null) => {
+            if (f == null) return null;
+            if (f < 3) return 'No change';
+            if (f > 12) return 'Unlimited';
+            const v = Math.round(Math.pow(10, f.clamp(3, 12)));
+            return prettyNumber(v).toUpperCase() + 'B/s';
+        }
 
-            value={Math.log10(value)}
+        return <Slider
+            min={2} max={12.1} step={0.1}
+            value={sliderValue}
             onChange={(n: number) => {
                 switch (true) {
                     case n < 2.5:
-                        this.value = null; return;
+                        this.value = null;
+                        return;
                     // case n > 12.5:
                     //     this.value = Number.POSITIVE_INFINITY; return;
                     default:
-                        this.value = Math.round(Math.pow(10, n.clamp(3, 12))); return;
+                        this.value = Math.round(Math.pow(10, n.clamp(3, 12)));
+                        return;
                 }
             }}
-        />
+            mt="6" mx="4" mb="4"
+            onMouseEnter={() => this.isDragging = true}
+            onMouseLeave={() => this.isDragging = false}
+        >
+            <SliderMark value={2} {...labelStyles}>-</SliderMark>
+            <SliderMark value={3} {...labelStyles}>1kB</SliderMark>
+            <SliderMark value={6} {...labelStyles}>1MB</SliderMark>
+            <SliderMark value={9} {...labelStyles}>1GB</SliderMark>
+            <SliderMark value={12} {...labelStyles}>1TB</SliderMark>
+
+            <SliderTrack>
+                <SliderFilledTrack />
+            </SliderTrack>
+
+            <Tooltip
+                hasArrow
+                bg="hsl(0 0% 30%)"
+                color="white"
+                placement="top"
+                isOpen={this.isDragging}
+                label={tipText(sliderValue)}
+            >
+                <SliderThumb />
+            </Tooltip>
+        </Slider>
     }
 
     get value(): number | null {

@@ -10,7 +10,8 @@
  */
 import { SyncIcon } from '@primer/octicons-react';
 import { MdPause, MdPlayCircleOutline } from 'react-icons/md';
-import { Button, Popover } from 'antd';
+import { Popover } from 'antd';
+import { Button, Icon } from '@redpanda-data/ui';
 import { autorun, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { ReactNode } from 'react';
@@ -19,7 +20,6 @@ import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backendApi';
 import { uiSettings } from '../../../../state/ui';
 import { prettyMilliseconds } from '../../../../utils/utils';
 import styles from '../buttons.module.scss';
-import { Icon } from '@redpanda-data/ui';
 
 
 const autoRefresh = observable({
@@ -108,19 +108,27 @@ export const DataRefreshButton = observer(() => {
     return <div className={styles.dataRefreshButton}>
         <Popover title="Auto Refresh" content={autoRefreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
             <Button
-                style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center' }}
-                icon={autoRefresh.active
+                display="inline-flex" justifyContent="center" alignItems="center"
+                width="35px" borderRadius="100px"
+                colorScheme="whiteAlpha"
+                className={`${styles.hoverButton} ${autoRefresh.active ? styles.pulsating : ''}`}
+                onClick={autoRefresh.toggleAutorefresh} >
+                {autoRefresh.active
                     ? <Icon as={MdPause} fontSize="16px" />
                     : <Icon as={MdPlayCircleOutline} fontSize="19px" />}
-                shape="circle"
-                className={`${styles.hoverButton} ${autoRefresh.active ? styles.pulsating : ''}`}
-                onClick={autoRefresh.toggleAutorefresh} />
+            </Button>
         </Popover>
         {
             (api.activeRequests.length == 0)
                 ? <>
                     <Popover title="Force Refresh" content={refreshTextFunc} placement="rightTop" overlayClassName="popoverSmall" >
-                        <Button icon={<SyncIcon size={16} className="flipX" />} shape="circle" className={`${styles.hoverButton} ${autoRefresh.active ? styles.rotation : ''}`} onClick={() => appGlobal.onRefresh()} />
+                        <Button
+                            className={`${styles.hoverButton} ${autoRefresh.active ? styles.rotation : ''}`}
+                            borderRadius="100px" width="35px"
+                            colorScheme="whiteAlpha"
+                            onClick={() => appGlobal.onRefresh()} >
+                            <SyncIcon size={16} className="flipX" />
+                        </Button>
                     </Popover>
                     {autoRefresh.active && <>
                         <span style={{ paddingRight: '10px', fontSize: '80%', userSelect: 'none' }}>Refreshing in {autoRefresh.remainingSeconds} secs</span>

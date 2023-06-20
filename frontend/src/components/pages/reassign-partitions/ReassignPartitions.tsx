@@ -11,7 +11,7 @@
 
 import React, { } from 'react';
 import { observer } from 'mobx-react';
-import { Statistic, Row, Steps, Button, message, notification, Modal } from 'antd';
+import { Statistic, Row, Steps, message, notification, Modal } from 'antd';
 import { PageComponent, PageInitHelper } from '../Page';
 import { api, partialTopicConfigs } from '../../../state/backendApi';
 import { uiSettings } from '../../../state/ui';
@@ -37,6 +37,7 @@ import { showErrorModal } from '../../misc/ErrorModal';
 import { ChevronLeftIcon, ChevronRightIcon } from '@primer/octicons-react';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
+import { Button } from '@redpanda-data/ui';
 
 
 const { Step } = Steps;
@@ -239,8 +240,8 @@ class ReassignPartitions extends PageComponent {
                         {step.backButton &&
                             <Button
                                 onClick={this.onPreviousPage}
-                                disabled={this.currentStep <= 0 || this.requestInProgress}
-                                style={{ minWidth: '14em', height: 'auto' }}
+                                    isDisabled={this.currentStep <= 0 || this.requestInProgress}
+                                    style={{ minWidth: '14em' }}
                             >
                                 <span><ChevronLeftIcon /></span>
                                 <span>{step.backButton}</span>
@@ -251,9 +252,9 @@ class ReassignPartitions extends PageComponent {
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '2em' }}>
                             <div>{nextButtonHelp}</div>
                             <Button
-                                type="primary"
-                                style={{ minWidth: '14em', height: 'auto', marginLeft: 'auto' }}
-                                disabled={!nextButtonEnabled || this.requestInProgress}
+                                    variant="solid"
+                                    style={{ minWidth: '14em', marginLeft: 'auto' }}
+                                    isDisabled={!nextButtonEnabled || this.requestInProgress}
                                 onClick={this.onNextPage}
                                 autoFocus={true}
                             >

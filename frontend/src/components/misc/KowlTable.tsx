@@ -10,7 +10,7 @@
  */
 
 import React, { Component } from 'react';
-import { Checkbox, Input, InputRef, Pagination, Table } from 'antd';
+import { Input, InputRef, Pagination, Table } from 'antd';
 import { ColumnType } from 'antd/lib/table';
 import styles from './KowlTable.module.scss';
 import { ColumnTitleProps, ExpandableConfig, FilterDropdownProps, FilterValue, SorterResult, TableCurrentDataSource, TablePaginationConfig } from 'antd/lib/table/interface';
@@ -21,6 +21,7 @@ import { clone } from '../../utils/jsonUtils';
 import { SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import { findPopupContainer } from '../../utils/tsxUtils';
+import { Checkbox } from '@redpanda-data/ui';
 
 type EnumFilter = {
     type: 'enum',
@@ -339,10 +340,10 @@ export class KowlTable<T extends object = any> extends Component<{
                     return <>
                         <div style={{ minWidth: '200px' }}>
                             {p.filters?.map(f =>
-                                <li key={f.text + String(f.value)} className="ant-dropdown-menu-item" style={{ position: 'relative' }}>
+                                <li key={f.text + String(f.value)} style={{ position: 'relative' }}>
                                     <Checkbox
                                         className={'filterCheckbox ' + optionClass}
-                                        checked={p.selectedKeys.includes(f.value as React.Key)}
+                                        isChecked={p.selectedKeys.includes(f.value as React.Key)}
                                         onChange={e => {
                                             const newKeys = e.target.checked
                                                 ? [...p.selectedKeys, f.value as React.Key]
