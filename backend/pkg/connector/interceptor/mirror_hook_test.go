@@ -14,7 +14,7 @@ func TestConsoleToKafkaConnectMirrorSourceHook(t *testing.T) {
 		want   map[string]any
 	}{
 		{
-			name: "Should not truststore and keysotre types if given",
+			name: "Should not set truststore and keystore types if given",
 			config: map[string]any{
 				"source.cluster.ssl.truststore.type": "JKS",
 				"source.cluster.ssl.keystore.type":   "JKS",

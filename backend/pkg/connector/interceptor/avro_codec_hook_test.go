@@ -74,7 +74,7 @@ func TestKafkaConnectToConsoleAvroCodecHook(t *testing.T) {
 			},
 		},
 		{
-			name: "Should not faile when avro.codec config not found",
+			name: "Should not fail when avro.codec config not found",
 			args: args{
 				response: model.ValidationResponse{
 					Configs: []model.ConfigDefinition{
