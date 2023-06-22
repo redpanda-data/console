@@ -76,7 +76,7 @@ func KafkaConnectToConsoleMirrorSourceHook(response model.ValidationResponse, _ 
 					Documentation: "Excluded topics. Supports comma-separated topic names and regexes",
 				},
 				Value: model.ConfigDefinitionValue{
-					Name:              "topics",
+					Name:              "topics.exclude",
 					Value:             ".*[\\-\\.]internal,.*\\.replica,__consumer_offsets,_redpanda_e2e_probe,__redpanda.cloud.sla_verification,_internal_connectors.*,_schemas",
 					RecommendedValues: []string{},
 					Visible:           true,
