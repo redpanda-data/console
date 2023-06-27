@@ -86,35 +86,33 @@ const KafkaConnectorMain = observer(
             {/* [Pause] [Restart] [Delete] */}
             <Flex flexDirection="row" alignItems="center" gap="3">
 
-                {/* [Pause/Resume]  [Restart] */}
-                {connectClusterStore.validateConnectorState(connectorName, ['FAILED', 'UNASSIGNED']) ? (
-                    null
-                ) : (
-                    <>
-                        <Tooltip
-                            placement="top"
-                            trigger={!canEdit ? 'hover' : 'none'}
-                            mouseLeaveDelay={0}
-                            getPopupContainer={findPopupContainer}
-                            overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                        >
-                                <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
-                                {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
-                            </Button>
-                        </Tooltip>
-                        <Tooltip
-                            placement="top"
-                            trigger={!canEdit ? 'hover' : 'none'}
-                            mouseLeaveDelay={0}
-                            getPopupContainer={findPopupContainer}
-                            overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
-                        >
-                                <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
-                                Restart
-                            </Button>
-                        </Tooltip>
-                    </>
-                )}
+                {/* [Pause/Resume] */}
+                {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
+                    <Tooltip
+                        placement="top"
+                        trigger={!canEdit ? 'hover' : 'none'}
+                        mouseLeaveDelay={0}
+                        getPopupContainer={findPopupContainer}
+                        overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
+                    >
+                        <Button disabled={!canEdit} onClick={() => ($state.pausingConnector = connector)} variant="outline" minWidth="32">
+                            {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
+                        </Button>
+                    </Tooltip>
+                ) : null}
+
+                {/* [Restart] */}
+                <Tooltip
+                    placement="top"
+                    trigger={!canEdit ? 'hover' : 'none'}
+                    mouseLeaveDelay={0}
+                    getPopupContainer={findPopupContainer}
+                    overlay={'You don\'t have \'canEditConnectCluster\' permissions for this connect cluster'}
+                >
+                    <Button disabled={!canEdit} onClick={() => ($state.restartingConnector = connector)} variant="outline" minWidth="32">
+                        Restart
+                    </Button>
+                </Tooltip>
 
                 {/* [Delete] */}
                 <Tooltip
