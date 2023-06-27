@@ -45,7 +45,6 @@ import { PublishMessageModalProps, PublishMessagesModalContent } from '../Publis
 import { getPreviewTags, PreviewSettings } from './PreviewSettings';
 import styles from './styles.module.scss';
 import createAutoModal from '../../../../utils/createAutoModal';
-import colors from '../../../../colors';
 import { CollapsedFieldProps } from '@textea/json-viewer';
 import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
@@ -451,7 +450,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                 onFilterDropdownVisibleChange: (_) => this.showColumnSettings = true,
                 filterIcon: (_) => {
                     return <Tooltip title="Column Settings" mouseEnterDelay={0.1} getPopupContainer={findPopupContainer} placement="left">
-                        <SettingFilled style={IsColumnSettingsEnabled ? { color: colors.brandOrange } : { color: '#a092a0' }} />
+                        <SettingFilled style={IsColumnSettingsEnabled ? { color: 'hsl(255 15% 65%)' } : { color: '#a092a0' }} />
                     </Tooltip>;
                 },
                 render: (_text, record) => !record.value.isPayloadNull && (
