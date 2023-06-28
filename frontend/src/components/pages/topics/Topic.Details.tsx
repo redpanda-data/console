@@ -33,7 +33,7 @@ import { TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
 import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
-import { AppFeatures } from '../../../utils/env';
+import { AppFeatures, isServerless } from '../../../utils/env';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Button } from '@redpanda-data/ui';
@@ -145,6 +145,10 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
                 t => t.documentation == 'NOT_EXISTENT' ? mkDocuTip('Documentation for this topic was not found in the configured repository', warnIcon) : null,
             ]),
         ];
+
+        if (isServerless())
+            this.topicTabs.removeAll(x => x.id == 'documentation');
+
         makeObservable(this);
     }
 

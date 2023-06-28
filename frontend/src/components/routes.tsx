@@ -35,7 +35,7 @@ import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import CreateConnector from './pages/connect/CreateConnector';
 import QuotasList from './pages/quotas/Quotas.List';
-import { AppFeature, AppFeatures } from '../utils/env';
+import { AppFeature, AppFeatures, isServerless } from '../utils/env';
 import { ItemType } from 'antd/lib/menu/hooks/useItems';
 import { AnimatePresence } from '../utils/animationProps';
 import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
@@ -318,8 +318,31 @@ export const APP_ROUTES: IRouteEntry[] = [
 ].filterNull();
 
 
-const ignoredRoutes = ['/quotas', '/reassign-partitions', '/admin', '/overview'];
-export const embeddedAvailableRoutes = APP_ROUTES.filter((x) => x.icon != null)
-    .filter((x) => !ignoredRoutes.includes(x.path))
+const routesIgnoredInEmbedded = [
+    '/overview',
+    '/quotas',
+    '/reassign-partitions',
+    '/admin',
+];
+
+const routesIgnoredInServerless = [
+    '/overview',
+    '/schema-registry',
+    '/quotas',
+    '/reassign-partitions',
+    '/admin',
+    '/connect-clusters',
+];
+
+
+export const embeddedAvailableRoutes = APP_ROUTES
+    .filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
+    .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
+    .filter(x => {
+        if (isServerless())
+            if (routesIgnoredInServerless.includes(x.path))
+                return false; // remove entry
+        return true;
+    })
 
 

@@ -29,7 +29,7 @@ import { ColumnList, FilterEntry, PreviewTagV2, PartitionOffsetOrigin } from '..
 import { uiState } from '../../../../state/uiState';
 import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
-import { IsDev } from '../../../../utils/env';
+import { IsDev, isServerless } from '../../../../utils/env';
 import { isClipboardAvailable } from '../../../../utils/featureDetection';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';
@@ -191,7 +191,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
         const searchParams = uiState.topicSettings.searchParams;
         const topic = this.props.topic;
         const spaceStyle = { marginRight: '16px', marginTop: '12px' };
-        const canUseFilters = api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true;
+        const canUseFilters = (api.topicPermissions.get(topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
         const isCompacted = this.props.topic.cleanupPolicy.includes('compact');
 
@@ -242,13 +242,16 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         options={[1, 3, 5, 10, 20, 50, 100, 200, 500].map(i => ({ value: i }))}
                     />
                 </Label>
-                <Label text="Filter" style={{ ...spaceStyle }}>
-                    <div style={{ height: '32px', paddingTop: '4px' }}>
-                        <Tooltip title="You don't have permissions to use search filters in this topic" trigger={canUseFilters ? 'none' : 'hover'}>
-                            <Switch size="lg" isChecked={searchParams.filtersEnabled && canUseFilters} onChange={v => searchParams.filtersEnabled = v.target.checked} isDisabled={!canUseFilters} />
-                        </Tooltip>
-                    </div>
-                </Label>
+
+                {!isServerless() &&
+                    <Label text="Filter" style={{ ...spaceStyle }}>
+                        <div style={{ height: '32px', paddingTop: '4px' }}>
+                            <Tooltip title="You don't have permissions to use search filters in this topic" trigger={canUseFilters ? 'none' : 'hover'}>
+                                <Switch size="lg" isChecked={searchParams.filtersEnabled && canUseFilters} onChange={v => searchParams.filtersEnabled = v.target.checked} isDisabled={!canUseFilters} />
+                            </Tooltip>
+                        </div>
+                    </Label>
+                }
 
                 {/* Refresh Button */}
                 <Label text="" style={{ ...spaceStyle }}>
@@ -586,7 +589,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     async executeMessageSearch(): Promise<void> {
         const searchParams = uiState.topicSettings.searchParams;
-        const canUseFilters = api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true;
+        const canUseFilters = (api.topicPermissions.get(this.props.topic.topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
         if (searchParams.offsetOrigin != PartitionOffsetOrigin.Custom)
             searchParams.startOffset = searchParams.offsetOrigin;
