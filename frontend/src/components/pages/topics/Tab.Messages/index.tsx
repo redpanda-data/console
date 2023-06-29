@@ -29,7 +29,7 @@ import { ColumnList, FilterEntry, PreviewTagV2, PartitionOffsetOrigin } from '..
 import { uiState } from '../../../../state/uiState';
 import { AnimatePresence, animProps_span_messagesStatus, MotionDiv, MotionSpan } from '../../../../utils/animationProps';
 import '../../../../utils/arrayExtensions';
-import { IsDev } from '../../../../utils/env';
+import { IsDev, isServerless } from '../../../../utils/env';
 import { isClipboardAvailable } from '../../../../utils/featureDetection';
 import { FilterableDataSource } from '../../../../utils/filterableDataSource';
 import { sanitizeString, wrapFilterFragment } from '../../../../utils/filterHelper';

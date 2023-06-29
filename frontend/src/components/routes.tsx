@@ -35,7 +35,7 @@ import KafkaConnectorDetails from './pages/connect/Connector.Details';
 import KafkaClusterDetails from './pages/connect/Cluster.Details';
 import CreateConnector from './pages/connect/CreateConnector';
 import QuotasList from './pages/quotas/Quotas.List';
-import { AppFeature, AppFeatures } from '../utils/env';
+import { AppFeature, AppFeatures, isServerless } from '../utils/env';
 import { ItemType } from 'antd/lib/menu/hooks/useItems';
 import { AnimatePresence } from '../utils/animationProps';
 import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
