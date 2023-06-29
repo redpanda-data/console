@@ -42,6 +42,7 @@ export interface SetConfigArguments {
     };
     setSidebarItems?: (items: SidebarItem[]) => void;
     setBreadcrumbs?: (items: Breadcrumb[]) => void;
+    isServerless?: boolean;
 }
 
 export interface SidebarItem {
@@ -65,6 +66,7 @@ interface Config {
     clusterId?: string;
     setSidebarItems: (items: SidebarItem[]) => void;
     setBreadcrumbs: (items: Breadcrumb[]) => void;
+    isServerless: boolean;
 }
 
 export const config: Config = observable({
@@ -74,13 +76,15 @@ export const config: Config = observable({
     assetsPath: getBasePath(),
     clusterId: 'default',
     setSidebarItems: () => {},
-    setBreadcrumbs: () => {},
+    setBreadcrumbs: () => { },
+    isServerless: false,
 });
 
-export const setConfig = ({ fetch, urlOverride, jwt, ...args }: SetConfigArguments) => {
+export const setConfig = ({ fetch, urlOverride, jwt, isServerless, ...args }: SetConfigArguments) => {
     const assetsUrl = urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
     Object.assign(config, {
         jwt,
+        isServerless,
         websocketBasePath: getWebsocketBasePath(urlOverride?.ws),
         restBasePath: getRestBasePath(urlOverride?.rest),
         fetch: fetch ?? window.fetch.bind(window),
@@ -128,6 +132,10 @@ setTimeout(() => {
 
 export function isEmbedded() {
     return config.jwt != null;
+}
+
+export function isServerless() {
+    return config.isServerless;
 }
 
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {

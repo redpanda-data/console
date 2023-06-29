@@ -44,8 +44,7 @@ export const IsCI = env.REACT_APP_BUILT_FROM_PUSH && env.REACT_APP_BUILT_FROM_PU
 
 const appFeatureNames = [
     'SINGLE_SIGN_ON',
-    'REASSIGN_PARTITIONS',
-    'REDPANDA_SERVERLESS'
+    'REASSIGN_PARTITIONS'
 ] as const;
 export type AppFeature = typeof appFeatureNames[number];
 
@@ -59,10 +58,6 @@ for (const f of appFeatureNames)
     features[f] = enabledFeatures.includes(f);
 
 export const AppFeatures = features;
-
-export function isServerless() {
-    return AppFeatures.REDPANDA_SERVERLESS;
-}
 
 const basePathRaw: string = (window as any)['BASE_URL'];
 const basePath = (typeof basePathRaw === 'string' && !basePathRaw.startsWith('__BASE_PATH'))

@@ -33,10 +33,11 @@ import { TopicMessageView } from './Tab.Messages';
 import { TopicPartitions } from './Tab.Partitions';
 import { WarningOutlined } from '@ant-design/icons';
 import { LockIcon } from '@primer/octicons-react';
-import { AppFeatures, isServerless } from '../../../utils/env';
+import { AppFeatures } from '../../../utils/env';
 import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Button } from '@redpanda-data/ui';
+import { isServerless } from '../../../config';
 
 const { Text } = Typography;
 
