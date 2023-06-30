@@ -41,6 +41,7 @@ import { AnimatePresence } from '../utils/animationProps';
 import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import Overview from './pages/overview/Overview';
 import { BrokerDetails } from './pages/overview/Broker.Details';
+import { isServerless } from '../config';
 
 //
 //	Route Types

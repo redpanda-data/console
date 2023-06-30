@@ -49,6 +49,7 @@ import { CollapsedFieldProps } from '@textea/json-viewer';
 import { Button, Input, InputGroup, Switch, Alert, AlertIcon, Tabs as RpTabs, Box, SearchField } from '@redpanda-data/ui';
 import { MdExpandMore } from 'react-icons/md';
 import { SingleSelect } from '../../../misc/Select';
+import { isServerless } from '../../../../config';
 
 const { Text } = Typography;
 const { Option } = Select;
