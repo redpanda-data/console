@@ -87,7 +87,7 @@ export default class ConfigurationEditor extends Component<{
                                 <Radio value="custom">
                                     <span>Custom</span>
                                     <div className="subText">Set at topic configuration</div>
-                                    <div onClick={e => {
+                                    <div style={{ position: 'relative', zIndex: 2 }}  onClick={e => {
                                         if (isCustom) {
                                             // If the editor is *already* active, we don't want to propagate clicks out to the radio buttons
                                             // otherwise they will steal focus, closing any select/dropdowns
