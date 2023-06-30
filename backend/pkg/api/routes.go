@@ -153,6 +153,7 @@ func (api *API) routes() *chi.Mux {
 				// Console Endpoints that inform which endpoints & features are available to the frontend.
 				r.Get("/console/endpoints", api.handleGetEndpoints())
 			})
+			api.Hooks.Route.ConfigAPIRouterPostRegistration(r)
 		})
 
 		if api.Cfg.ServeFrontend {
