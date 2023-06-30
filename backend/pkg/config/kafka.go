@@ -99,6 +99,7 @@ func (c Kafka) RedactedConfig() Kafka {
 	copiedCfg.SASL.Password = redactString(c.SASL.Password)
 	copiedCfg.SASL.GSSAPIConfig.Password = redactString(c.SASL.GSSAPIConfig.Password)
 	copiedCfg.SASL.OAUth.Token = redactString(c.SASL.OAUth.Token)
+	copiedCfg.SASL.OAUth.ClientSecret = redactString(c.SASL.OAUth.ClientSecret)
 	copiedCfg.SASL.AWSMskIam.SecretKey = redactString(c.SASL.AWSMskIam.SecretKey)
 	copiedCfg.SASL.AWSMskIam.SessionToken = redactString(c.SASL.AWSMskIam.SessionToken)
 
