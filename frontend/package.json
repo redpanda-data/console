@@ -23,10 +23,12 @@
     },
     "dependencies": {
         "@ant-design/icons": "^4.7",
+        "@chakra-ui/icons": "^2.0.19",
+        "@chakra-ui/react-use-disclosure": "^2.0.8",
         "@heroicons/react": "^1.0.6",
         "@monaco-editor/react": "^4.5",
         "@primer/octicons-react": "^17",
-        "@redpanda-data/ui": "^3.0.0",
+        "@redpanda-data/ui": "^3.2.0",
         "@textea/json-viewer": "^1.24.4",
         "antd": "^4.21",
         "array-move": "^4",
@@ -43,6 +45,7 @@
         "react-dom": "^18.2.0",
         "react-draggable": "^4.4.3",
         "react-highlight-words": "^0.18.0",
+        "react-icons": "^4.10.1",
         "react-markdown": "^8.0.7",
         "react-router-dom": "^5.2.0",
         "react-scripts": "^5.0.1",
@@ -53,6 +56,7 @@
         "stacktrace-js": "^2.0.2"
     },
     "devDependencies": {
+        "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
         "@testing-library/jest-dom": "^5.12.0",
         "@testing-library/react": "^11.2.6",
         "@types/jest": "26.0.23",
