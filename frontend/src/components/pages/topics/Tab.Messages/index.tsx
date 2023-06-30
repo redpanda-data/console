@@ -457,7 +457,7 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
                         <SettingFilled style={IsColumnSettingsEnabled ? { color: 'hsl(255 15% 65%)' } : { color: '#a092a0' }} />
                     </Tooltip>;
                 },
-                render: (_text, record) => !record.value.isPayloadNull && (
+                render: (_text, record) => (
                     <NoClipboardPopover placement="left">
                         <div> {/* the additional div is necessary because popovers do not trigger on disabled elements, even on hover */}
                             <Dropdown disabled={!isClipboardAvailable} overlayClassName="disableAnimation" overlay={this.copyDropdown(record)} trigger={['click']}>
@@ -573,10 +573,10 @@ export class TopicMessageView extends Component<TopicMessageViewProps> {
 
     copyDropdown = (record: TopicMessage) => (
         <Menu>
-            <Menu.Item key="0" onClick={() => copyMessage(record, 'jsonKey')}>
+            <Menu.Item key="0" disabled={record.key.isPayloadNull} onClick={() => copyMessage(record, 'jsonKey')}>
                 Copy Key
             </Menu.Item>
-            <Menu.Item key="2" onClick={() => copyMessage(record, 'jsonValue')}>
+            <Menu.Item key="2" disabled={record.value.isPayloadNull} onClick={() => copyMessage(record, 'jsonValue')}>
                 Copy Value
             </Menu.Item>
             <Menu.Item key="4" onClick={() => copyMessage(record, 'timestamp')}>
