@@ -36,6 +36,10 @@ type RouteHooks interface {
 	// ConfigAPIRouter allows you to modify the router responsible for all /api routes
 	ConfigAPIRouter(router chi.Router)
 
+	// ConfigAPIRouterPostRegistration allows you to modify the router responsible for
+	// all /api routes after all routes have been registered.
+	ConfigAPIRouterPostRegistration(router chi.Router)
+
 	// ConfigWsRouter allows you to modify the router responsible for all websocket routes
 	ConfigWsRouter(router chi.Router)
 
@@ -143,10 +147,11 @@ func newDefaultHooks() *Hooks {
 }
 
 // Router Hooks
-func (*defaultHooks) ConfigAPIRouter(_ chi.Router)      {}
-func (*defaultHooks) ConfigWsRouter(_ chi.Router)       {}
-func (*defaultHooks) ConfigInternalRouter(_ chi.Router) {}
-func (*defaultHooks) ConfigRouter(_ chi.Router)         {}
+func (*defaultHooks) ConfigAPIRouter(_ chi.Router)                 {}
+func (*defaultHooks) ConfigAPIRouterPostRegistration(_ chi.Router) {}
+func (*defaultHooks) ConfigWsRouter(_ chi.Router)                  {}
+func (*defaultHooks) ConfigInternalRouter(_ chi.Router)            {}
+func (*defaultHooks) ConfigRouter(_ chi.Router)                    {}
 
 // Authorization Hooks
 func (*defaultHooks) CanSeeTopic(_ context.Context, _ string) (bool, *rest.Error) {
