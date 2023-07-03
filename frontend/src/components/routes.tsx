@@ -41,7 +41,6 @@ import { AnimatePresence } from '../utils/animationProps';
 import { NavLinkProps } from '@redpanda-data/ui/dist/components/Nav/NavLink';
 import Overview from './pages/overview/Overview';
 import { BrokerDetails } from './pages/overview/Broker.Details';
-import { isServerless } from '../config';
 
 //
 //	Route Types
@@ -318,32 +317,5 @@ export const APP_ROUTES: IRouteEntry[] = [
 
 ].filterNull();
 
-
-const routesIgnoredInEmbedded = [
-    '/overview',
-    '/quotas',
-    '/reassign-partitions',
-    '/admin',
-];
-
-const routesIgnoredInServerless = [
-    '/overview',
-    '/schema-registry',
-    '/quotas',
-    '/reassign-partitions',
-    '/admin',
-    '/connect-clusters',
-];
-
-
-export const embeddedAvailableRoutes = APP_ROUTES
-    .filter((x) => x.icon != null) // routes without icon are "nested", so they shouldn't be visible directly
-    .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // things that should not be visible in embedded/cloud mode
-    .filter(x => {
-        if (isServerless())
-            if (routesIgnoredInServerless.includes(x.path))
-                return false; // remove entry
-        return true;
-    })
 
 
