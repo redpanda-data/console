@@ -79,6 +79,7 @@ func (s *APIIntegrationTestSuite) SetupSuite() {
 	httpListenPort := rand.Intn(50000) + 10000
 	s.cfg = &config.Config{}
 	s.cfg.SetDefaults()
+	s.cfg.ServeFrontend = false
 	s.cfg.REST = config.Server{
 		Config: rest.Config{
 			HTTPListenAddress: "0.0.0.0",
@@ -517,4 +518,11 @@ func (a *assertHooks) EnabledConnectClusterFeatures(_ context.Context, _ string)
 		assertHookCall(a.t)
 	}
 	return nil
+}
+
+func (a *assertHooks) CheckWebsocketConnection(r *http.Request, req ListMessagesRequest) (context.Context, error) {
+	if !a.isCallAllowed("any") {
+		assertHookCall(a.t)
+	}
+	return r.Context(), nil
 }
