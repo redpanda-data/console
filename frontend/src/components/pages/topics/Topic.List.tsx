@@ -30,6 +30,7 @@ import Section from '../../misc/Section';
 import PageContent from '../../misc/PageContent';
 import { Button, Icon, Checkbox, Alert, AlertIcon } from '@redpanda-data/ui';
 import { HiOutlineTrash } from 'react-icons/hi';
+import { isServerless } from '../../../config';
 
 @observer
 class TopicList extends PageComponent {
@@ -89,7 +90,7 @@ class TopicList extends PageComponent {
         if (!api.topics) return DefaultSkeleton;
 
         let topics = api.topics;
-        if (uiSettings.topicList.hideInternalTopics) {
+        if (uiSettings.topicList.hideInternalTopics || isServerless()) {
             topics = topics.filter(x => !x.isInternal && !x.topicName.startsWith('_'));
         }
 
@@ -150,13 +151,15 @@ class TopicList extends PageComponent {
                         >
                             Create Topic
                         </Button>
-                        <Checkbox
-                            isChecked={!uiSettings.topicList.hideInternalTopics}
-                            onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
-                            style={{ marginLeft: 'auto' }}
-                        >
-                            Show internal topics
-                        </Checkbox>
+
+                        {!isServerless() &&
+                            <Checkbox
+                                isChecked={!uiSettings.topicList.hideInternalTopics}
+                                onChange={x => uiSettings.topicList.hideInternalTopics = !x.target.checked}
+                                style={{ marginLeft: 'auto' }}>
+                                Show internal topics
+                            </Checkbox>
+                        }
                         <this.CreateTopicModal />
                     </div>
                     <KowlTable
