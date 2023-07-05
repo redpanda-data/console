@@ -28,9 +28,9 @@ require (
 	github.com/redpanda-data/redpanda/src/go/rpk v0.0.0-20230519052114-f355828dd427
 	github.com/stretchr/testify v1.8.3
 	github.com/testcontainers/testcontainers-go/modules/redpanda v0.20.1
-	github.com/twmb/franz-go v1.13.4
+	github.com/twmb/franz-go v1.13.6
 	github.com/twmb/franz-go/pkg/kadm v1.8.2-0.20230503140309-bf5970577daf
-	github.com/twmb/franz-go/pkg/kfake v0.0.0-20230508025141-88d5c46db15b
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20230703040638-f324841a32b4
 	github.com/twmb/franz-go/pkg/kmsg v1.5.0
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	github.com/twmb/go-cache v1.0.0
@@ -38,9 +38,8 @@ require (
 	github.com/zencoder/go-smile v0.0.0-20220221105746-06ef4fe5fa0a
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
-	golang.org/x/net v0.10.0
 	golang.org/x/sync v0.2.0
-	golang.org/x/text v0.9.0
+	golang.org/x/text v0.10.0
 	google.golang.org/protobuf v1.30.0
 )
 
@@ -118,10 +117,11 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/term v0.9.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.55.0 // indirect

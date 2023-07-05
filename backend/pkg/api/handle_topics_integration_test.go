@@ -27,6 +27,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"golang.org/x/exp/slices"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
 	"github.com/redpanda-data/console/backend/pkg/testutil"
@@ -315,8 +316,10 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 			case *kmsg.MetadataRequest:
 				return nil, nil, false
 			case *kmsg.DescribeConfigsRequest:
-				// TODO(bojan) this request is not mocked / controlled by kfake yet
-				// See https://github.com/twmb/franz-go/blob/master/pkg/kfake/NOTES
+
+				slices.SortFunc(v.Resources, func(a, b kmsg.DescribeConfigsRequestResource) bool {
+					return a.ResourceName < b.ResourceName
+				})
 
 				assert.Len(v.Resources, 3)
 				assert.Equal(kmsg.ConfigResourceTypeTopic, v.Resources[0].ResourceType)
@@ -328,7 +331,7 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 				assert.Equal([]string{"cleanup.policy"}, v.Resources[1].ConfigNames)
 
 				assert.Equal(kmsg.ConfigResourceTypeTopic, v.Resources[2].ResourceType)
-				assert.Equal(testutil.TopicNameForTest("get_topics_2"), v.Resources[1].ResourceName)
+				assert.Equal(testutil.TopicNameForTest("get_topics_2"), v.Resources[2].ResourceName)
 				assert.Equal([]string{"cleanup.policy"}, v.Resources[2].ConfigNames)
 
 				drRes := v.ResponseKind().(*kmsg.DescribeConfigsResponse)
@@ -380,10 +383,14 @@ func (s *APIIntegrationTestSuite) TestHandleGetTopics() {
 		// verify warning logs
 		allLogs := obs.All()
 
-		assert.Len(allLogs, 2)
-		assert.Equal("could not describe topic configs", allLogs[0].Message)
-		assert.Equal(zap.ErrorLevel, allLogs[0].Level)
-		assert.Equal("failed to fetch topic configs to return cleanup.policy", allLogs[1].Message)
-		assert.Equal(zap.WarnLevel, allLogs[1].Level)
+		require.Len(allLogs, 1)
+		assert.Equal("config resource response has an error", allLogs[0].Message)
+		assert.Equal(zap.WarnLevel, allLogs[0].Level)
+		contextMap := allLogs[0].ContextMap()
+		logObj, ok := contextMap["error"]
+		assert.True(ok)
+		fieldValue, ok := logObj.(string)
+		assert.True(ok)
+		assert.Equal("INVALID_TOPIC_EXCEPTION: The request attempted to perform an operation on an invalid topic.", fieldValue)
 	})
 }
